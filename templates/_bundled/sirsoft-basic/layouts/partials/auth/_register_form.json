@@ -275,7 +275,7 @@
                     ]
                 },
                 {
-                    "comment": "규칙·자리표시 숫자는 보안 환경설정 값을 따른다(#736) — 8 을 박아 두면 운영자가 최소 길이를 올려도 화면이 옛 규칙을 안내한다.",
+                    "comment": "규칙·자리표시 숫자는 보안 환경설정 값을 따른다 — 8 을 박아 두면 운영자가 최소 길이를 올려도 화면이 옛 규칙을 안내한다.",
                     "type": "basic",
                     "name": "PasswordInput",
                     "props": {
@@ -301,7 +301,7 @@
                     "text": "{{_local.errors?.password?.[0] ?? ''}}"
                 },
                 {
-                    "comment": "화면이 미리 확인할 수 없는 규칙(서버만 판정)은 작은 글로 알린다 — 켜진 것만 보인다(#736).",
+                    "comment": "화면이 미리 확인할 수 없는 규칙(서버만 판정)은 작은 글로 알린다 — 켜진 것만 보인다.",
                     "type": "basic",
                     "name": "P",
                     "if": "{{!!_global.settings?.security?.password_block_identifier || !!_global.settings?.security?.password_block_repeated_chars || !!_global.settings?.security?.password_block_sequential_chars}}",
@@ -529,7 +529,7 @@
                             },
                             "children": [
                                 {
-                                    "comment": "동의 값은 체크 상태(true/false)로 직접 잇는다 — 폼 값이 빈 객체로 시작해 자동바인딩이 값 바인딩을 고르면\n               체크를 풀어도 \"1\"(동의)이 남는다(#757 후속).",
+                                    "comment": "동의 값은 체크 상태(true/false)로 직접 잇는다 — 폼 값이 빈 객체로 시작해 자동바인딩이 값 바인딩을 고르면\n               체크를 풀어도 \"1\"(동의)이 남는다.",
                                     "type": "basic",
                                     "name": "Checkbox",
                                     "actions": [

@@ -301,7 +301,7 @@
                                     ]
                                 },
                                 {
-                                    "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490)",
+                                    "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다",
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{!!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.real_name : report_detail?.data?.comment?.author?.real_name)}}",
@@ -734,7 +734,7 @@
                                                             "text": "$t:sirsoft-board.admin.reports.detail.deleted_user"
                                                         },
                                                         {
-                                                            "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490)",
+                                                            "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다",
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "if": "{{!!reporter.reporter?.real_name}}",

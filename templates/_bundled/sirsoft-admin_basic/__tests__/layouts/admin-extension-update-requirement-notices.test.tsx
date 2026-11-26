@@ -141,7 +141,7 @@ function buildLayout(kind: 'module' | 'plugin' | 'template', row: Json): Json {
       [s.force]: false,
       [s.updating]: false,
       layoutSyncStrategy: 'keep',
-      // 실행 버튼은 화면별 처리 미리보기가 준비(ready)된 뒤에만 풀린다(#888)
+      // 실행 버튼은 화면별 처리 미리보기가 준비(ready)된 뒤에만 풀린다
       layoutPreviewState: 'ready',
       updateChangelog: [],
     },

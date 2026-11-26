@@ -1,6 +1,6 @@
 /**
  * @file DisplayNameComponents.test.tsx
- * @description 관리자 화면의 사용자 표시 컴포넌트(UserProfile, AdminHeader)가 표시 이름을 쓰는지 (#490 8단계)
+ * @description 관리자 화면의 사용자 표시 컴포넌트(UserProfile, AdminHeader)가 표시 이름을 쓰는지
  *
  * 관리자 화면의 로그인 사용자 응답은 실명(`name`)을 그대로 두고 관리자 화면 자리에서 보일 이름을 `display_name` 으로 따로 싣는다.
  * 두 컴포넌트는 `display_name ?? name ?? ''` 순서로 읽는다. 이름 항목을 쓰지 않는 사이트는 `name` 이 null 이어도

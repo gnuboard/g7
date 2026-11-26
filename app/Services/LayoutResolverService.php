@@ -181,7 +181,7 @@ class LayoutResolverService
     private function checkOverrideVersionCompatibility(TemplateLayout $override): bool
     {
         $content = is_string($override->content)
-            // layout-assoc-decode-ok: 버전 제약 판정 전용 — 서빙하지 않는다(#758 S9)
+            // layout-assoc-decode-ok: 버전 제약 판정 전용 — 서빙하지 않는다
             ? json_decode($override->content, true)
             : $override->content;
 

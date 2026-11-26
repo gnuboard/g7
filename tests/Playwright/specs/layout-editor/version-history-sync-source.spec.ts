@@ -1,5 +1,5 @@
 /**
- * Layout Editor — [버전 기록] 창의 동기화 판 (#888).
+ * Layout Editor — [버전 기록] 창의 동기화 판.
  *
  * 레이아웃 갱신·확장 업데이트가 운영자 판을 새 판으로 덮기 직전에 남긴 판은 목록 맨 위(최신)에 놓여도
  * 지금 본문과 다르다. 그 판에 [복원] 이 없으면 덮인 운영자 판을 되돌릴 길이 없다(관리자 코드 편집기 버전 창과 같은 조건).
@@ -89,7 +89,7 @@ async function openVersionHistory(page: Page): Promise<void> {
   await expect(page.getByTestId('g7le-version-row-903')).toBeVisible({ timeout: 30_000 });
 }
 
-test.describe('레이아웃 편집기 버전 기록 — 동기화 판 (#888)', () => {
+test.describe('레이아웃 편집기 버전 기록 — 동기화 판', () => {
   test.describe.configure({ timeout: 150_000 });
 
   /**

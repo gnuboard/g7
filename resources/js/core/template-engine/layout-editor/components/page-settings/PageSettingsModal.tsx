@@ -140,7 +140,7 @@ const TAB_LABEL_KEY: Record<PageSettingsTabKey, string> = {
  * 템플릿 전체 수준 errorHandling 코드 — 템플릿 설정(`/api/templates/{id}/config`)의 errorHandling 키.
  *
  * 런타임에서 TemplateApp 이 ErrorHandlingResolver.setTemplateConfig 로 등록하는 그 값이다. [에러 처리] 탭은 이 코드를
- * 〔템플릿〕 출처로 보이고, 이 페이지에 동작이 없으면 [덮기] 를 낸다(#869 — 종전엔 병합본 키를 넘겨 나올 수 없었다).
+ * 〔템플릿〕 출처로 보이고, 이 페이지에 동작이 없으면 [덮기] 를 낸다(종전엔 병합본 키를 넘겨 나올 수 없었다).
  *
  * @param templateIdentifier 편집 대상 템플릿 식별자
  * @return 템플릿 수준 오류 코드 목록(없거나 실패하면 빈 배열)

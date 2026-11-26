@@ -1,4 +1,4 @@
-// e2e:allow 레이아웃·화면 동작 변경 없음 — 관리자 회원 폼 저장 본문(#916 의 fields_version 덧붙임)에 맞춰 정적 잠금 단언만 고친다. 저장 본문 화면 동작은 admin_basic Vitest admin-user-form-member-fields 가 잠근다
+// e2e:allow 레이아웃·화면 동작 변경 없음 — 관리자 회원 폼 저장 본문에 맞춰 정적 잠금 단언만 고친다. 저장 본문 화면 동작은 admin_basic Vitest admin-user-form-member-fields 가 잠근다
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -50,7 +50,7 @@ describe('admin_user_form.json — 코어 회원 저장 한 번에 통화까지 
   it('회원 저장 요청은 폼 전체(_local.form)를 본문으로 보낸다 — 확장 항목 칸 값이 함께 실린다', () => {
     const saveCalls = collectApiCalls(form).filter((c) => String(c.target ?? '').includes('/api/admin/users'));
     expect(saveCalls.length).toBeGreaterThan(0);
-    // 본문은 폼 전체이거나, 폼 전체를 바탕으로 코어 항목 집합 판(`fields_version`)만 덧붙인 것이어야 한다(#916).
+    // 본문은 폼 전체이거나, 폼 전체를 바탕으로 코어 항목 집합 판(`fields_version`)만 덧붙인 것이어야 한다.
     // 폼에서 칸을 골라 담는 본문으로 바뀌면 확장 항목 칸 값이 빠지므로 막는다.
     for (const call of saveCalls) {
       expect(call.params?.body).toMatch(/^\{\{(_local\.form|Object\.assign\(\{\}, _local\.form, [^}]*fields_version[\s\S]*\))\}\}$/);

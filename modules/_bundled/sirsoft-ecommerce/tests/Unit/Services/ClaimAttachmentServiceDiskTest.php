@@ -120,7 +120,7 @@ class ClaimAttachmentServiceDiskTest extends ModuleTestCase
     }
 
     /**
-     * 클레임 첨부·내보내기·본문 미디어 서비스는 비공개 첨부 저장소 선택을 따르고 공개 자산 디스크는 따르지 않는다(#916).
+     * 클레임 첨부·내보내기·본문 미디어 서비스는 비공개 첨부 저장소 선택을 따르고 공개 자산 디스크는 따르지 않는다.
      *
      * @scenario case=private_attachment_selection
      *

@@ -55,7 +55,7 @@ class MenuUserOverridesListenerTest extends PureTestCase
         $this->assertEquals('handleAfterSyncRoles', $hooks['core.menu.after_sync_roles']['method']);
 
         // 순서 변경은 UserOverridesAwareBuilder 가 실제로 바뀐 메뉴만 기록한다 — 훅 핸들러로 payload 전부에
-        // order 를 기록하던 과잉 기록은 제거됐다(#727 W11).
+        // order 를 기록하던 과잉 기록은 제거됐다.
         $this->assertArrayNotHasKey('core.menu.after_update_order', $hooks);
         $this->assertArrayNotHasKey('core.menu.after_update_order_flat', $hooks);
     }
@@ -234,7 +234,7 @@ class MenuUserOverridesListenerTest extends PureTestCase
     }
 
     /**
-     * 같은 아이콘을 구조형·공백만 다른 표기로 보내면 icon 을 기록하지 않는다 — 서비스가 icon_spec 을 정규 저장값으로 바꿔 넘긴다 (#381).
+     * 같은 아이콘을 구조형·공백만 다른 표기로 보내면 icon 을 기록하지 않는다 — 서비스가 icon_spec 을 정규 저장값으로 바꿔 넘긴다.
      *
      * @scenario surface=menu
      *
@@ -255,7 +255,7 @@ class MenuUserOverridesListenerTest extends PureTestCase
     }
 
     /**
-     * 정규 저장값(JSON)으로 바뀐 아이콘(class → svg)은 icon 으로 기록한다 (#381).
+     * 정규 저장값(JSON)으로 바뀐 아이콘(class → svg)은 icon 으로 기록한다.
      *
      * @scenario surface=menu
      *

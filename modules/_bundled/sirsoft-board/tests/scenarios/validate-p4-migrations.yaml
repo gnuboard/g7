@@ -1,4 +1,4 @@
-feature: 게시판 마이그레이션 재실행 가드 (#599 validate P4)
+feature: 게시판 마이그레이션 재실행 가드
 
 description: |
   첨부 조치 주체(`board_attachments.trigger_type`) 마이그레이션이 컬럼만 만들고 인덱스 단계에서

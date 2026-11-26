@@ -6,7 +6,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 플러그인 설정 화면 진입 권한 잠금 (#434 W18)
+ * 플러그인 설정 화면 진입 권한 잠금
  *
  * 설정 조회 API 는 「플러그인 보기」(`core.plugins.read`)로 열려 있고 응답 `abilities.can_update` 로 화면이 읽기 전용을 고른다.
  * 그런데 화면 레이아웃이 진입에 「플러그인 수정」(`core.plugins.update`)을 요구하면 보기 권한만 있는 운영자는

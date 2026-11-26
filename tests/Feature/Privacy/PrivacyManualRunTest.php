@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 /**
- * 개인정보 조치 관리자 직권 실행 회귀 테스트 (이슈 #636 후속)
+ * 개인정보 조치 관리자 직권 실행 회귀 테스트
  *
  * 「지금 실행」이 큐에 접수되고, 큐 작업이 토글과 무관하게 처리하고, 결과를 기록·로그로 남기는지,
  * 권한·중복·버려진 기록·배치와의 락 공유·휴면 대기기간 생략을 고정합니다.
@@ -375,7 +375,7 @@ class PrivacyManualRunTest extends TestCase
 
     /**
      * 운영 모드에서 DB·PHP 내부 예외로 실패한 기록은 원문 대신 일반 문구를 남긴다 — 카드·상태 API·활동 로그에
-     * SQL·DB 호스트·서버 경로가 실리지 않는다(#736 H 영역 실측). 큐 작업이 끝내 실패한 경로(`failed()`)도 같다.
+     * SQL·DB 호스트·서버 경로가 실리지 않는다(H 영역 실측). 큐 작업이 끝내 실패한 경로(`failed()`)도 같다.
      * 확장이 일부러 던진 사용자용 사유는 {@see test_extension_runner_failures_are_recorded()} 가 그대로 남는지 고정한다.
      *
      * @return void 반환값 없음

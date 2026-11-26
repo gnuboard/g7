@@ -1409,7 +1409,7 @@ return [
         'update_failed' => 'Failed to update shipping country.',
     ],
 
-    // Member-owned data admin lists (#524 §4.1)
+    // Member-owned data admin lists
     'user_address' => [
         'admin_list_retrieved' => 'Member addresses retrieved.',
         'admin_deleted' => 'Address deleted.',
@@ -1422,7 +1422,7 @@ return [
         'admin_bulk_deleted' => ':count inquiry deleted.|:count inquiries deleted.',
     ],
 
-    // 개인정보 보유기간 (이슈 #636) — 코어 보유기간 커맨드의 핸들러 이름과 연간 통지문 「주문 정보」 섹션
+    // 개인정보 보유기간 — 코어 보유기간 커맨드의 핸들러 이름과 연간 통지문 「주문 정보」 섹션
     'privacy_retention' => [
         'handler_label' => 'E-commerce closed order personal information',
         'target_columns' => [
@@ -1567,7 +1567,7 @@ return [
             'order_custom_email' => [
                 'app_name' => 'Site name',
             ],
-            // 내보내기(#787)
+            // 내보내기
             'export_completed' => [
                 'name' => 'Recipient (requester) name',
                 'type_label' => 'Export type (orders, products, mileage)',
@@ -2000,7 +2000,7 @@ return [
             ],
         ],
     ],
-    // 내보내기(#787)
+    // 내보내기
     'export' => [
         'download_link_issued' => 'A download link has been issued.',
         'catalog_retrieved' => 'Export options loaded.',

@@ -128,7 +128,7 @@ class ExecuteUpgradeStepsCommand extends Command
      *
      * CoreUpdateCommand::spawnUpgradeStepsProcess 가 자식에 `G7_UPDATE_IN_PROGRESS=1` env 를 전달한다(beta.3 부터).
      * `getenv` 가 막힌 호스팅에서도 판정은 성립해야 한다 — 부모는 `$_ENV`/`$_SERVER` 에도 같은 값을 심고,
-     * 서브프로세스 러너는 그 둘을 합쳐 자식에게 물려준다 (#609 D34). 단독 호출(운영자 수동) 시엔 env 미설정.
+     * 서브프로세스 러너는 그 둘을 합쳐 자식에게 물려준다. 단독 호출(운영자 수동) 시엔 env 미설정.
      *
      * @return bool spawn 자식이면 true
      */
@@ -227,7 +227,7 @@ class ExecuteUpgradeStepsCommand extends Command
         //
         // 단독 호출 (운영자 수동) 시엔 env 미설정 → 모든 단계 정상 진행.
         // `getenv` 가 막힌 호스팅에서도 판정은 성립해야 한다 — 부모는 `$_ENV`/`$_SERVER`
-        // 에도 같은 값을 심고, 서브프로세스 러너는 그 둘을 합쳐 자식에게 물려준다 (#609 D34).
+        // 에도 같은 값을 심고, 서브프로세스 러너는 그 둘을 합쳐 자식에게 물려준다.
         // (판정은 handle() 의 isSpawnChild())
 
         // 사전 단계 (단독 실행 안전성 보장).

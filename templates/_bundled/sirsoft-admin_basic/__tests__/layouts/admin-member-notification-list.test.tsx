@@ -1,6 +1,6 @@
 /**
  * @file admin-member-notification-list.test.tsx
- * @description 관리자 회원 알림함 (#524 WP-F) — 발송 이력 화면과 같은 틀이지만 «다른 축»임을 고정한다.
+ * @description 관리자 회원 알림함 — 발송 이력 화면과 같은 틀이지만 «다른 축»임을 고정한다.
  *
  * 이 화면이 지키는 계약:
  *  - 조회 대상은 회원이 «받은» in-app 알림이다. 발송 이력(`admin_notification_log_list`)이
@@ -45,7 +45,7 @@ function actionForEvent(node: any, event: string): any {
 
 const columns = asArray(grid.props.columns);
 
-describe('관리자 회원 알림함 — 레이아웃 계약 (#524 WP-F)', () => {
+describe('관리자 회원 알림함 — 레이아웃 계약', () => {
     describe('데이터소스 · 권한', () => {
         // @scenario surface=admin_member_notifications
         // @effects list_datasource_passes_all_filters

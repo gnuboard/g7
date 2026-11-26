@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 주문 상세 결제 리소스의 결제수단 표시 라벨 (#933 S5)
+ * 주문 상세 결제 리소스의 결제수단 표시 라벨
  *
  * 관리자 주문 목록만 간편결제 원 수단 이름(「카카오페이 (토스페이먼츠)」)을 보이고, 관리자 주문 상세·관리자 클레임 상세의
  * 주문 결제 카드·마이페이지 주문 상세는 「신용카드」만 보였다. 주문 결제 리소스도 같은 훅·같은 규칙

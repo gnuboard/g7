@@ -1,5 +1,5 @@
 /**
- * E2E: 브라우저 검수에서 짚은 것들 (이슈 #682 S3 라운드 4)
+ * E2E: 브라우저 검수에서 짚은 것들
  *
  * 이 넷은 레이아웃 계약 테스트로는 끝까지 잠글 수 없다.
  *
@@ -15,7 +15,7 @@
 import { authenticatePage, expect, issueToken, test } from '../../fixtures/auth';
 import { AnalyticsSettingsGuard, bearer } from '../../fixtures/analytics';
 
-test.describe('#682 라운드 4 — 검수 지적의 브라우저 왕복', () => {
+test.describe('검수 지적의 브라우저 왕복', () => {
   test.beforeEach(async ({ page }) => {
     // 방문자 목록은 개인정보 권한이 있어야 열린다 — 한 토큰으로 네 축을 모두 돈다.
     await authenticatePage(page, issueToken('core.analytics.read', 'core.analytics.privacy'));
@@ -28,7 +28,7 @@ test.describe('#682 라운드 4 — 검수 지적의 브라우저 왕복', () =>
     await expect(page.locator('#analytics_period_bar')).toBeVisible({ timeout: 30_000 });
 
     // 달력은 서버가 되돌려 준 구간(`data.meta.from`)을 읽는다 — 클릭 직후에는 직전 응답의 구간이 보이므로
-    // 값이 새 구간으로 바뀐 뒤에 읽는다(#682 S3 라운드 14: 개요만 틀린 경로를 읽어 늘 브라우저 계산값이
+    // 값이 새 구간으로 바뀐 뒤에 읽는다(개요만 틀린 경로를 읽어 늘 브라우저 계산값이
     // 즉시 보였고, 그래서 이 대기가 없어도 초록이었다).
     const periodFrom = page.locator('#period_from');
     await expect(periodFrom).not.toHaveValue('');
@@ -130,7 +130,7 @@ test.describe('#682 라운드 4 — 검수 지적의 브라우저 왕복', () =>
   });
 });
 
-test.describe('#682 라운드 6 — 마스킹 표시·회원 이동·CSV 파일명', () => {
+test.describe('마스킹 표시·회원 이동·CSV 파일명', () => {
   // @scenario screen=visitor_detail, state=normal, viewport=1440, locale=ko, e2e=overview
   // @effects masked_ip_is_labelled_as_masked
   test('IP 마스킹을 켜면 방문자 상세·정보주체 화면이 그 사실을 함께 보인다', async ({ page }) => {
@@ -216,7 +216,7 @@ test.describe('#682 라운드 6 — 마스킹 표시·회원 이동·CSV 파일�
   test('진단·설정 화면의 시간대 배지가 보는 사람의 시간대가 다를 때만 뜬다', async ({ page }) => {
     // 통계의 모든 시각은 사이트 표준시로 나간다. 두 화면은 공통 경고 조각을 쓰지 않아
     // (「설정에서 켜세요」가 순환 안내가 된다) 각자 배지로 그 사실을 알린다 — 진단 화면은
-    // 시각을 여섯 자리 찍으면서 기준을 한 줄도 밝히지 않고 있었다(#682 S3 라운드 7).
+    // 시각을 여섯 자리 찍으면서 기준을 한 줄도 밝히지 않고 있었다.
     //
     // 서버가 계정 시간대와 사이트 표준시를 견주므로, 브라우저에서 확인하려면 계정 쪽을
     // 실제로 바꿔야 한다. 레이아웃 계약 테스트는 「배지가 있다」까지만 잠근다.
@@ -224,7 +224,7 @@ test.describe('#682 라운드 6 — 마스킹 표시·회원 이동·CSV 파일�
     await authenticatePage(page, token);
 
     // 프로필 갱신은 부분 수정이 아니다 — 이름·이메일이 없으면 422 로 거절한다.
-    // 시간대만 실어 보내면 이 축은 영영 빨갛다(#682 S3 라운드 8 실측).
+    // 시간대만 실어 보내면 이 축은 영영 빨갛다.
     const profile = (await (await page.request.get('/api/me', { headers: bearer(token) })).json())?.data;
     const original = profile?.timezone ?? null;
 
@@ -258,13 +258,13 @@ test.describe('#682 라운드 6 — 마스킹 표시·회원 이동·CSV 파일�
   });
 });
 
-test.describe('#682 라운드 8 — 실측이 드러낸 자리', () => {
+test.describe('실측이 드러낸 자리', () => {
   // @scenario screen=settings, state=normal, viewport=1440, locale=ko, e2e=settings_privacy
   // @effects opt_out_button_says_what_pressing_it_does
   test('「내 방문은 세지 않기」 버튼이 자기가 하는 일을 말한다', async ({ page }) => {
     // 배지는 상태를, 버튼은 행동을 말해야 한다. 삼항이 뒤집혀 있어 세는 중인데 「제외 끄기」가
     // 보였다 — 구운 JSON 으로도 잠갔지만, 누른 뒤 글자가 실제로 뒤집히는지는 브라우저에서만
-    // 드러난다(#682 S3 라운드 8: 눌렀더니 opted_out false→true 인데 글자는 그대로 반대였다).
+    // 드러난다(눌렀더니 opted_out false→true 인데 글자는 그대로 반대였다).
     const token = issueToken('core.analytics.read', 'core.analytics.update');
     await authenticatePage(page, token);
 
@@ -304,7 +304,7 @@ test.describe('#682 라운드 8 — 실측이 드러낸 자리', () => {
   test('익명으로 내려간 사유가 있으면 개요가 그 사실을 알린다', async ({ page }) => {
     // 서버가 `full` 모드에서도 익명으로 내릴 수 있다(동의 플러그인이 쿠키를 막을 때).
     // 종전 게이트는 `consent` 모드만 봐서 그 경우 한 면도 안 떴다 — 실제로 익명으로 모으는데
-    // 운영자는 설정에 적힌 「전체 수집」만 본다(#682 S3 라운드 8 실측).
+    // 운영자는 설정에 적힌 「전체 수집」만 본다.
     const token = issueToken('core.analytics.read');
     await authenticatePage(page, token);
 
@@ -317,7 +317,7 @@ test.describe('#682 라운드 8 — 실측이 드러낸 자리', () => {
 
     await page.goto('/admin/analytics?preset=7d');
     await expect(page.locator('#analytics_period_bar')).toBeVisible({ timeout: 30_000 });
-    // 문구는 사유마다 다르다(동의 플러그인이면 「동의하지 않은 방문자는 익명」 — #682 S4 라운드 8) — 안내 요소가
+    // 문구는 사유마다 다르다(동의 플러그인이면 「동의하지 않은 방문자는 익명」) — 안내 요소가
     // 뜨고 익명 수집을 말하는지만 본다.
     const alert = page.locator('#alert_consent_fallback');
     await expect(alert, '사유가 실렸는데 안내가 없으면 운영자는 익명 수집을 모른 채 지표를 읽는다').toBeVisible({ timeout: 20_000 });
@@ -326,14 +326,14 @@ test.describe('#682 라운드 8 — 실측이 드러낸 자리', () => {
 });
 
 /**
- * #682 실측 후속 4 — 필터 초기화 · 전체 삭제 확인 창의 경고 아이콘.
+ * 필터 초기화 · 전체 삭제 확인 창의 경고 아이콘.
  *
  * 초기화는 구운 JSON 으로 「키를 지우는 이동이 있다」까지 잰다(analyticsFilterReset.test.ts). 여기서는 그 이동 뒤
  * **입력칸·선택·칩이 주소를 따라 비워지는가**와 **다른 영역의 조건이 남는가**를 브라우저에서 잰다 — 입력칸 값이
  * 주소를 다시 읽지 않으면 주소는 비었는데 칸에 옛 검색어가 남는다.
  * 경고 아이콘은 클래스 조합이 아니라 실제로 그려진 글리프 크기와 원 안 위치를 잰다.
  */
-test.describe('#682 실측 후속 4 — 필터 초기화 · 경고 아이콘', () => {
+test.describe('필터 초기화 · 경고 아이콘', () => {
   // @scenario screen=visitors, state=normal, viewport=1440, locale=ko, e2e=overview
   // @effects every_filter_area_has_a_reset_that_clears_its_keys, filter_reset_is_locked_when_nothing_to_clear
   test('방문자 초기화는 검색어·유형만 걷고 기간은 남기며, 걷은 뒤 잠긴다', async ({ page }) => {

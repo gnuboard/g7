@@ -1,5 +1,5 @@
 /**
- * 메뉴 관리 — URL 직접 진입 시 선택/편집 상태 복원 (#518 / 공개 #76)
+ * 메뉴 관리 — URL 직접 진입 시 선택/편집 상태 복원 (공개 #76)
  *
  * 결함: `initMenuFromUrl` 이 목록 데이터소스에서 행 배열을 꺼낼 때 `dataSource.data` 가 배열이라고
  *   가정했는데, 실제 형태는 응답 envelope 를 그대로 담은 `{success, message, data:{data:[...]}}` 다.

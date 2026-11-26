@@ -22,7 +22,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 완료 후 환불 미접수 발견성 테스트 (#599 후속 §3-12 · D9)
+ * 완료 후 환불 미접수 발견성 테스트
  *
  * 반품·저가 교환을 완료하면서 환불신청서를 접수하지 않으면 운영자가 그 사실을 찾을 수 있어야 한다.
  * 판정의 단일 출처는 `AdminClaimService::pendingRefundFor()` 이고, 목록은 금액 계산 없이 같은 술어의

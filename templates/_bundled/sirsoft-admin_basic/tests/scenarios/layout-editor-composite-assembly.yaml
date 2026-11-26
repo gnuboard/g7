@@ -31,7 +31,7 @@ effects:
   - layout_editor_highlights_selected_items              # 고른 파일·판본이 강조된다
   - layout_editor_save_alert_auto_dismisses              # 저장 알림이 뜬 뒤 스스로 사라진다
   - layout_editor_tolerates_empty_or_malformed_data      # 빈 목록·잘못된 날짜에도 안내를 그리며 깨지지 않는다
-  # LayoutFileList 단위 계약 (LayoutFileList.test.tsx, #399 선행 마킹 정리)
+  # LayoutFileList 단위 계약 (LayoutFileList.test.tsx, 선행 마킹 정리)
   - layout_file_list_renders_file_names                  # 파일 이름을 목록 항목으로 그린다
   - layout_file_list_formats_updated_at                  # 수정 시각을 YYYY-MM-DD HH:MM 으로 보여 준다
   - layout_file_list_click_reports_file_id               # 항목을 누를 때마다 그 파일 id 로 onSelect 를 부른다(같은 항목 반복 포함)

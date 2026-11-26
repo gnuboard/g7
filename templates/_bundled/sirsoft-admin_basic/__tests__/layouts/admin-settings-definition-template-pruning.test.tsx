@@ -2,13 +2,13 @@
  * @file admin-settings-definition-template-pruning.test.tsx
  * @description 알림 정의 목록 — 템플릿 프루닝 후 화면 계약 회귀 테스트
  *
- * 회귀 배경 (#518 / 공개 #76):
+ * 회귀 배경 (공개 #76):
  * 두 정의 목록이 행마다 채널×로케일 템플릿 본문을 전량 싣고 있었다. 계획서는 목록에서
  * `templates` 를 빼고 `withCount` 로 대체하라고 했으나, 소비처를 실측하니 두 화면 모두 템플릿
  * 본문을 실제로 렌더하고 있었다 — 통째로 빼면 기능이 사라진다. 그래서 방식을 바꿨다.
  *
  *  - 알림 정의: 행은 그대로 두고 **각 행의 템플릿을 한 채널로 좁혀** 싣는다(`template_channel`).
- *  - (본인인증 정의 목록은 7.1.0 에서 알림 정의로 통합되어 위 규칙을 그대로 따른다 — #699)
+ *  - (본인인증 정의 목록은 7.1.0 에서 알림 정의로 통합되어 위 규칙을 그대로 따른다)
  *
  * 이 방식은 응답을 줄이는 대신 **새로운 방식의 회귀 가능성**을 만든다.
  *
@@ -128,7 +128,7 @@ function extractConsumerChannel(bindings: string[]): string | null {
     return null;
 }
 
-describe('알림 정의 목록 — 채널 스코프 (#518 / 공개 #76)', () => {
+describe('알림 정의 목록 — 채널 스코프 (공개 #76)', () => {
     /**
      * @scenario resource=notification_definition,endpoint=list,observation=consumer_screen
      * @effects definition_list_channel_scope_matches_consumer
@@ -168,7 +168,7 @@ describe('알림 정의 목록 — 채널 스코프 (#518 / 공개 #76)', () => 
      * @effects definition_list_channel_scope_matches_consumer
      */
     it('채널 표현식이 URL 단일 출처다 (_local 을 섞지 않는다)', () => {
-        // 회귀 배경 (#518 실측 결함):
+        // 회귀 배경 (실측 결함):
         // 종전 표현식은 `_local.activeNotificationChannel ?? query.channel ?? 'mail'` 이었다.
         // 데이터소스와 소비자에 **글자까지 같은** 식이 적혀 있었으므로 위의 동치 단언은 통과했지만,
         // 두 출처는 갱신 시점이 다르다. 다른 설정 탭에 갔다 돌아오면 URL 의 channel 은 사라지고

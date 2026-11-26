@@ -1,6 +1,6 @@
 /**
  * @file page-show-preview-banner.test.tsx
- * @description 미발행 페이지 관리자 미리보기 배너 (이슈 #424-15)
+ * @description 미발행 페이지 관리자 미리보기 배너 (15)
  *
  * 정책: 페이지 조회 권한 관리자가 사용자 화면에서 미발행 페이지를 미리볼 때,
  *   상단에 "미발행 페이지 미리보기 중" 안내 배너를 노출한다. 백엔드(PublicPageResource)가
@@ -47,7 +47,7 @@ function findById(root: unknown, id: string): Node | undefined {
     return collectNodes(root, (n) => n.id === id)[0];
 }
 
-describe('이슈 #424-15 — 미발행 페이지 미리보기 배너 (page/show.json)', () => {
+describe('15 — 미발행 페이지 미리보기 배너 (page/show.json)', () => {
     it('미리보기 배너 블록(page_preview_banner)이 존재한다', () => {
         const banner = findById(pageShow, 'page_preview_banner');
         expect(banner).toBeDefined();

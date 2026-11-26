@@ -117,7 +117,7 @@ const canReceiveFocus = (el: HTMLElement | null | undefined): el is HTMLElement 
 };
 
 /**
- * 알림을 닫은 뒤 포커스를 돌린다 — 알림 직전 요소가 쓸 수 있으면 그리로, 아니면 본문 시작점으로(#869 키보드 접근).
+ * 알림을 닫은 뒤 포커스를 돌린다 — 알림 직전 요소가 쓸 수 있으면 그리로, 아니면 본문 시작점으로(키보드 접근).
  * 본문 시작점이 원래 포커스를 받지 않는 요소면 `tabIndex=-1` 을 잠시 주고, 포커스가 떠나면 거둔다.
  *
  * @param previous 알림이 뜨기 직전에 포커스가 있던 요소
@@ -211,7 +211,7 @@ export const Toast: React.FC<ToastProps> = ({
   const trackedRef = useRef<Map<string | number, { hideAt: number; timer: ReturnType<typeof setTimeout> | null }>>(new Map());
   // 숨기기를 시작했거나(닫기·시간 만료) 표시 시간이 이미 지나 상태에서 빼기를 요청한 항목
   const removedRef = useRef<Set<string | number>>(new Set());
-  // 알림마다 뜨기 직전에 포커스가 있던 요소와 그 알림의 뿌리 요소 — 닫을 때 포커스를 돌린다(#869 키보드 접근)
+  // 알림마다 뜨기 직전에 포커스가 있던 요소와 그 알림의 뿌리 요소 — 닫을 때 포커스를 돌린다(키보드 접근)
   const previousFocusRef = useRef<Map<string | number, HTMLElement>>(new Map());
   const itemRootsRef = useRef<Map<string | number, HTMLElement | null>>(new Map());
 

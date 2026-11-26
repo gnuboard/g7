@@ -97,7 +97,7 @@ describe('setDateRangeHandler', () => {
     expect(result.endDate).toMatch(dateTimeLocalRegex);
   });
 
-  // format 인자 (#705) — 날짜 칸(<input type="date">)은 datetime 값을 받지 못해 빈칸이 된다.
+  // format 인자 — 날짜 칸(<input type="date">)은 datetime 값을 받지 못해 빈칸이 된다.
   // @scenario filter_axis=created_at, outcome=narrows
   // @effects date_quick_uses_date_format
   it("format='date' 면 YYYY-MM-DD 만 반환 (3months)", () => {

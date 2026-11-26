@@ -10,7 +10,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Http\UploadedFile;
 
 /**
- * 메뉴 아이콘 업로드 파일 내용 검증 규칙 (#381).
+ * 메뉴 아이콘 업로드 파일 내용 검증 규칙.
  *
  * - 이름이 .svg 면 내용도 SVG 여야 하고 인라인 SVG 규칙(32KB·위험 요소)을 통과해야 한다.
  * - 이름이 래스터면 내용이 SVG 가 아니어야 하고(`.png` 로 이름 바꾼 SVG 거부) 이미지로 읽혀야 한다.

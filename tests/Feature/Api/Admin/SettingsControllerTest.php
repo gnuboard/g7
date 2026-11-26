@@ -852,7 +852,7 @@ class SettingsControllerTest extends TestCase
     /**
      * 허용값이 닫힌 설정(실행 모드)은 단건 저장 경로에서도 선언 밖 값을 거부한다.
      *
-     * 회귀 테스트 (#609 G1 검증 16.2 #1): 벌크 저장(`SaveSettingsRequest`)만 허용값을
+     * 회귀 테스트 (검증 16.2 #1): 벌크 저장(`SaveSettingsRequest`)만 허용값을
      * 검사하면 `PUT /settings/{key}` 가 우회로가 되어 임의 문자열이 `system.json` 에 남는다.
      * 런타임은 Auto 로 폴백해 파손은 없지만 설정 파일에 뜻 모를 값이 기록되는 것 자체를 막는다.
      *
@@ -1804,7 +1804,7 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
-     * 드라이버 탭 저장 왕복에 S3 신규 키(s3_endpoint/s3_use_path_style)가 포함되어야 합니다 (#563).
+     * 드라이버 탭 저장 왕복에 S3 신규 키(s3_endpoint/s3_use_path_style)가 포함되어야 합니다.
      *
      * @scenario case=tab_store
      *
@@ -2159,7 +2159,7 @@ class SettingsControllerTest extends TestCase
     /**
      * 사용량 조회 실패 시 폴백 배열 구조 검증: unknownUsage 는 total/used/free 를
      * 'unknown' 으로, percentage 를 null(측정 불가) 로 채워 memory_usage·disk_usage 형식을 유지한다.
-     * 0 이 아니다 — 0 은 실측 0% 라 측정 불가와 구분되지 않는다 (#609 A-8).
+     * 0 이 아니다 — 0 은 실측 0% 라 측정 불가와 구분되지 않는다.
      *
      * @scenario probe_item=memory_usage,probe_outcome=throws_error,auth_state=authenticated_with_permission
      *

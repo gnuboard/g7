@@ -1,5 +1,5 @@
 /*
- * 설정 화면 부품 의미 클래스 — .sirsoft-basic-settings 안에서만 (#434 D28·D29)
+ * 설정 화면 부품 의미 클래스 — .sirsoft-basic-settings 안에서만
  *
  * 이 템플릿 설정 화면 부품은 관리자 화면 모양(버튼·안내 상자·입력칸·스위치)을 쓴다. 다른 관리자 템플릿에는 그 클래스가 없으므로
  * 설정 화면 묶음이 자기 규칙을 가져간다 — 화면 뿌리(.sirsoft-basic-settings) 안으로 범위를 좁혀 켜진 관리자 템플릿 화면을 바꾸지 않는다.
@@ -32,7 +32,7 @@
   }
   .sirsoft-basic-settings .btn {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
-    /* 링크(<a>)로 그린 단추의 비활성 — <a> 에는 :disabled 가 없어 aria-disabled 로 같은 꾸밈 (#757) */
+    /* 링크(<a>)로 그린 단추의 비활성 — <a> 에는 :disabled 가 없어 aria-disabled 로 같은 꾸밈 */
     @apply aria-disabled:opacity-50 aria-disabled:cursor-not-allowed;
   }
   .sirsoft-basic-settings .btn-primary {
@@ -177,7 +177,7 @@
   .sirsoft-basic-settings .tab-content {
     @apply pt-6;
   }
-  /* 여백(p-4·p-6·p-8)은 설정 화면 부품이 엔진 폭으로 고른다 — 의미 클래스에 폭 분기를 두지 않는다(#869) */
+  /* 여백(p-4·p-6·p-8)은 설정 화면 부품이 엔진 폭으로 고른다 — 의미 클래스에 폭 분기를 두지 않는다 */
   .sirsoft-basic-settings .admin-page-content-responsive {
     @apply min-h-screen bg-gray-50;
     @apply dark:bg-gray-900;

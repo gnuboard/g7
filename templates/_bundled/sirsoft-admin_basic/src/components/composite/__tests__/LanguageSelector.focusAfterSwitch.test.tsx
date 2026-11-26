@@ -1,5 +1,5 @@
 /**
- * LanguageSelector — 언어를 고른 뒤 포커스가 언어 단추로 돌아온다 (#869 8차 5부 실측)
+ * LanguageSelector — 언어를 고른 뒤 포커스가 언어 단추로 돌아온다 (8차 5부 실측)
  *
  * 머리글 「언어」 메뉴에서 日本語를 고르면 포커스가 body 로 빠졌다. 두 단계에서 잃었다.
  * ① 고른 항목(목록)이 닫히며 사라진다. ② 언어 전환은 엔진을 다시 띄워 같은 화면을 새로 마운트한다
@@ -94,7 +94,7 @@ describe('LanguageSelector 언어 전환 뒤 포커스', () => {
   });
 });
 
-describe('LanguageSelector 전환 중 다시 열기 (#869 8차 7부)', () => {
+describe('LanguageSelector 전환 중 다시 열기 (8차 7부)', () => {
   const g7 = (window as any).G7Core;
   const originalApi = g7.api;
   const originalLocale = g7.locale;

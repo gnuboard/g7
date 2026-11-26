@@ -582,7 +582,7 @@ class Plugin extends AbstractPlugin
     }
 
     /**
-     * 스케줄 작업 목록 반환 (#597 §3.4).
+     * 스케줄 작업 목록 반환.
      *
      * 검수중(requested) 알림톡 템플릿의 카카오 검수 상태를 30분 주기로 동기화한다.
      * 커맨드는 requested 행이 없으면 카카오 API 를 호출하지 않으며, 화면의 수동

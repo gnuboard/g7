@@ -1,6 +1,6 @@
 /**
  * @file analyticsOverview.test.tsx
- * @description 방문자 통계 개요 화면 + 공통 조각(기간 바·KPI·실시간 줄·상단 경고)의 런타임 계약 검증 (이슈 #682 S3)
+ * @description 방문자 통계 개요 화면 + 공통 조각(기간 바·KPI·실시간 줄·상단 경고)의 런타임 계약 검증
  *
  * 잠그는 것: 데이터소스 id·엔드포인트·fallback·403 처리, 기간 바의 이동이 `mergeQuery` + `page:1` 인 것,
  * 프리셋이 `setAnalyticsPeriod` 를 거치는 것, 실시간 폴링 타이머 id 고정과 이탈 시 정리, KPI 카드 4장,
@@ -79,14 +79,14 @@ describe('개요 화면 — 데이터소스 계약', () => {
     expect(preset?.resultTo).toEqual({ target: '_local', key: 'periodComputed' });
 
     // 화면 상태(`_local.period`)로 그리면 뒤로 가기가 주소만 되돌리고 바는 직전 기간을 가리킨 채
-    // 남는다 — 실측으로 확인한 뒤 바를 주소 기준으로 돌렸다(#682 라운드 4, 검수 지적 ①ⓑ).
+    // 남는다 — 실측으로 확인한 뒤 바를 주소 기준으로 돌렸다(검수 지적 ①ⓑ).
     expect(stringify(periodBar)).not.toContain('_local.period?.');
     expect(stringify(periodBar)).toContain('query.preset');
     expect(stringify(periodBar)).toContain('query.exclude');
 
     // 프리셋은 주소에 날짜를 남기지 않으므로 달력 두 칸은 화면이 넘겨 준 구간을 읽는다.
     expect(layout.computed?.periodFrom).toContain('query.from');
-    // 개요 응답은 구간을 `data.meta` 에 싣는다 — `data.from` 을 읽으면 식이 조용히 브라우저 날짜로 떨어진다(#682 S3 라운드 14).
+    // 개요 응답은 구간을 `data.meta` 에 싣는다 — `data.from` 을 읽으면 식이 조용히 브라우저 날짜로 떨어진다.
     expect(layout.computed?.periodFrom).toContain('analytics_overview?.data?.meta?.from');
     expect(layout.computed?.periodTo).toContain('analytics_overview?.data?.meta?.to');
   });
@@ -114,7 +114,7 @@ describe('개요 화면 — 데이터소스 계약', () => {
 });
 
 describe('기간 바 조각', () => {
-  // 모집단은 핸들러 상수다 — 리터럴로 적으면 9번째 프리셋이 생겨도 검사 밖에 남는다(#682 S3 R7-D9).
+  // 모집단은 핸들러 상수다 — 리터럴로 적으면 9번째 프리셋이 생겨도 검사 밖에 남는다.
   const presets = [...ANALYTICS_PERIOD_PRESETS];
 
   // @scenario screen=overview, state=normal, viewport=1440, locale=ko
@@ -177,7 +177,7 @@ describe('기간 바 조각', () => {
     const csvClass = String(nodeById(periodBar, 'csv_download_button')?.props?.className ?? '');
     expect(csvClass).toContain('w-full');
     expect(csvClass).not.toContain('sm:');
-    // 640 이상 구간 실효값(기본 className 위에 구간 class-merge, #399) — 전폭이 자기 폭으로 교체된다
+    // 640 이상 구간 실효값(기본 className 위에 구간 class-merge) — 전폭이 자기 폭으로 교체된다
     const csvWide = rangeClassName(nodeById(periodBar, 'csv_download_button'), '640-').split(/\s+/);
     expect(csvWide).toContain('w-auto');
     expect(csvWide).not.toContain('w-full');
@@ -230,7 +230,7 @@ describe('기간 바 — 달력 두 칸', () => {
   });
 
   // 두 칸이 읽는 값은 화면이 넘겨 주는 `_computed.periodFrom`·`periodTo` 다 — 주소의 날짜가 먼저고,
-  // 프리셋이면 서버가 되돌려 준 구간, 그것도 없으면 초기화가 계산해 둔 범위다(#682 라운드 4).
+  // 프리셋이면 서버가 되돌려 준 구간, 그것도 없으면 초기화가 계산해 둔 범위다.
   const range = () => ({ periodFrom: '2026-08-21', periodTo: '2026-09-19' });
 
   const renderDates = async (local: Record<string, any>, computed: Record<string, any> = range()) => {
@@ -426,10 +426,10 @@ describe('KPI·실시간 줄·상단 경고 조각', () => {
     // `consent_plugin_blocks_cookies` 를 **`full` 모드에서만** 만든다
     // (`app/Analytics/AnalyticsConfig.php` 의 `anonymousFallbackReason`). 두 조건이 배타적이라
     // 「전체 수집 + GDPR」 사이트는 실제로 익명 수집 중인데 안내가 한 면도 안 떴다
-    // (#682 S3 라운드 8 브라우저 실측). 사유가 실리면 띄우는 것이 옳은 계약이다.
+    //. 사유가 실리면 띄우는 것이 옳은 계약이다.
     expect(nodeById(statusAlerts, 'alert_consent_fallback')?.if).toContain('anonymous_fallback_reason');
     expect(nodeById(statusAlerts, 'alert_queue_backlog')?.if).toContain('queue?.backlogged === true');
-    // 링크(#757)는 path 없는 navigate 가 A 의 href 로 간다 — 목적지는 href 쪽에서 읽는다
+    // 링크는 path 없는 navigate 가 A 의 href 로 간다 — 목적지는 href 쪽에서 읽는다
     const navs = moveTargets(statusAlerts).map((t) => String(t.path).split('?')[0]);
     expect(navs).toEqual(expect.arrayContaining(['/admin/analytics/settings', '/admin/analytics/diagnostics']));
   });

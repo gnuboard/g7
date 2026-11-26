@@ -12,7 +12,7 @@ use Illuminate\Support\ServiceProvider;
 use Tests\TestCase;
 
 /**
- * custom 예약 자리 연결 프로바이더 테스트 (#792 WP-K2 — W9·W10)
+ * custom 예약 자리 연결 프로바이더 테스트 (W9·W10)
  *
  * `.html` 뷰는 custom 뷰에서만 파일 그대로 나가고 코어 뷰 해석은 바뀌지 않으며, `lang/custom`·
  * `database/migrations/custom`·개발자 프로바이더가 있을 때만 연결되는지 잠근다.

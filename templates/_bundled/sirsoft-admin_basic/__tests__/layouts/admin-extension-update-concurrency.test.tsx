@@ -68,7 +68,7 @@ describe('확장 업데이트 모달 — 동시 업데이트 409 · 업데이트
   it.each(cases)('$name: 409 는 오류 상자 없이 안내 토스트만 띄우고 버튼을 푼다', ({ modal, flag, errorKey }) => {
     const call = findUpdateApiCall(modal);
     const onError = call!.onError as Json[];
-    // 작업 잠금 409 — 패키지 무결성 거절(#916, 같은 409 를 쓴다)과는 응답 표지로 갈린다
+    // 작업 잠금 409 — 패키지 무결성 거절과는 응답 표지로 갈린다
     const conflict = onError.filter(runsWith({ status: 409, message: '진행 중', errors: { operation_in_progress: true } }));
     const conflictState = conflict.find((a) => a.handler === 'setState');
     const conflictToast = conflict.find((a) => a.handler === 'toast');
@@ -100,7 +100,7 @@ describe('확장 업데이트 모달 — 동시 업데이트 409 · 업데이트
    * @scenario case=modal_409_and_message
    * @effects update_modal_routes_integrity_409_to_panel_not_lock_notice
    */
-  it.each(cases)('$name: 미서명 409(errors.package_unsigned)는 잠금 안내·오류 상자 없이 무결성 기록만 담는다 (#916)', ({ modal, flag, errorKey }) => {
+  it.each(cases)('$name: 미서명 409(errors.package_unsigned)는 잠금 안내·오류 상자 없이 무결성 기록만 담는다 ', ({ modal, flag, errorKey }) => {
     const call = findUpdateApiCall(modal);
     const onError = call!.onError as Json[];
     const active = onError.filter(runsWith({ status: 409, message: '미서명', errors: { package_unsigned: true, integrity: { status: 'unsigned' } } }));

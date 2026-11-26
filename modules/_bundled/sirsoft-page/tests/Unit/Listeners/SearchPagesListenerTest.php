@@ -230,7 +230,7 @@ class SearchPagesListenerTest extends ModuleTestCase
     }
 
     /**
-     * 비활성 탭 배지도 잘린 건수를 정확한 것처럼 보고하지 않는지 확인 (#519)
+     * 비활성 탭 배지도 잘린 건수를 정확한 것처럼 보고하지 않는지 확인
      *
      * @scenario total_relation=at_least, consumer=tab_badge, surface=module_search
      *

@@ -234,7 +234,7 @@ describe('home 레이아웃 (gnuboard7-hello_user_template)', () => {
 
     await testUtils.render();
 
-    // 홈 이동은 링크(#757 — 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있게)
+    // 홈 이동은 링크(가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있게)
     const home = screen.getByText('홈으로').closest('a');
     expect(home).not.toBeNull();
     expect(home?.getAttribute('href')).toBe('/');

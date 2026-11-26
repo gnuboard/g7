@@ -48,7 +48,7 @@ class PluginSettingsService
      * 복호화 전 설정 캐시 (identifier => 기본값+저장값 병합, 계산값 키 제외)
      *
      * 설정 미러는 민감 필드를 버리므로 복호화가 필요 없다. 미러가 먼저 읽어도 파일은 한 번만 읽고,
-     * 뒤이어 `get()` 이 불리면 이 값을 복호화해 쓴다(#860).
+     * 뒤이어 `get()` 이 불리면 이 값을 복호화해 쓴다.
      *
      * @var array<string, array>
      */
@@ -121,7 +121,7 @@ class PluginSettingsService
      * 설정 미러에 담을 값을 반환합니다 — 민감 필드를 복호화하지 않고 키째 뺀 값.
      *
      * 미러는 봇 전용 화면 생성기가 키 제한 없이 읽는 경로라 민감값을 담지 않는다. 담지 않을 값을 복호화했다가
-     * 버리던 낭비를 없앤다(#860). 반환 형태는 `get()` 에서 민감 키를 뺀 것과 같다.
+     * 버리던 낭비를 없앤다. 반환 형태는 `get()` 에서 민감 키를 뺀 것과 같다.
      *
      * @param  string  $identifier  플러그인 식별자
      * @return array<string, mixed> 민감 필드를 뺀 설정 (플러그인이 없으면 빈 배열)
@@ -261,10 +261,10 @@ class PluginSettingsService
             // 이 호출이 없으면 상주 프로세스가 저장 후에도 옛 값을 계속 읽는다.
             app(ExtensionSettingsMirror::class)->refreshPlugin($identifier);
 
-            // 큐 워커가 바뀐 것을 알 수 있도록 설정 버전을 올린다 — 워커는 작업 시작 전에 비교해 다시 읽는다(#724).
+            // 큐 워커가 바뀐 것을 알 수 있도록 설정 버전을 올린다 — 워커는 작업 시작 전에 비교해 다시 읽는다.
             SettingsVersion::bump();
 
-            // 동의 제공자의 수집 여부가 플러그인 설정에 달려 있을 수 있다 — 같은 요청의 선택 상태 메모를 비운다(#860)
+            // 동의 제공자의 수집 여부가 플러그인 설정에 달려 있을 수 있다 — 같은 요청의 선택 상태 메모를 비운다
             if (app()->resolved(ConsentManager::class)) {
                 app(ConsentManager::class)->forgetSelection();
             }
@@ -563,7 +563,7 @@ class PluginSettingsService
             }
         }
 
-        // 빈 객체 `{}` 를 보존해 읽는다 — 응답에서 `[]` 로 나가지 않게 (#758)
+        // 빈 객체 `{}` 를 보존해 읽는다 — 응답에서 `[]` 로 나가지 않게
         $layout = EmptyMap::decodePreserving($content);
 
         if (json_last_error() !== JSON_ERROR_NONE || ! is_array($layout)) {

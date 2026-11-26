@@ -1,5 +1,5 @@
 /**
- * 회원 클레임 신청 셸 — 주문 조회 404 를 주소(route.claim_number)로 가른다 (#753 X3).
+ * 회원 클레임 신청 셸 — 주문 조회 404 를 주소(route.claim_number)로 가른다.
  * 템플릿 sirsoft-basic (유저 화면).
  *
  * 작성 진입(`/mypage/orders/:order_number/claims/apply/:type`)의 404 는 열 수 없는 주문이라 오류 화면(404)을 세운다.

@@ -4,7 +4,7 @@
 #   한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도 audit:allow). 본 변경은 계산 API
 #   연동 고도화(메서드/인증/필드매핑/응답추출/테스트호출)를 PHPUnit Unit/Feature 가
 #   method × auth × response_type × field_map cross product 로 커버하며 green.
-# 원장(2026-11-14 #857 후속 실측): 이 표식을 [cross_product] 로 좁히면 effects 미검증 10건이 드러난다 —
+# 원장(2026-11-14): 이 표식을 [cross_product] 로 좁히면 effects 미검증 10건이 드러난다 —
 #   method_get_sends_query_string, method_post_sends_json_body, bearer_attaches_authorization_header,
 #   custom_header_attaches_named_header, field_map_renames_request_keys, json_nested_path_extracted,
 #   text_currency_stripped_to_number, non_numeric_falls_back_to_base_fee(ShippingApiAdvancedCalculationTest),
@@ -67,7 +67,7 @@ effects:
   - test_call_result_panel_shown                       # 테스트 호출 버튼 → 결과 영역 표시
 
 pending_effects:
-  # 아직 재는 테스트가 없는 효과 — 지우지 않고 원장으로 보존한다 (2026-11-14 #857 후속 확인).
+  # 아직 재는 테스트가 없는 효과 — 지우지 않고 원장으로 보존한다 (2026-11-14 확인).
   # 구현은 src/Casts/ShippingApiConfigCast.php(encryptString/decryptString)와
   # src/Services/ShippingPolicyService.php(빈 토큰이면 기존 토큰 승계)에 있으나, 저장소 어느 테스트도
   # 저장된 api_config 원문의 암호문 여부나 수정 요청의 토큰 승계를 단언하지 않는다.

@@ -62,7 +62,7 @@ class AttachmentController extends AdminBaseController
             $tempKey = $validated['temp_key'] ?? null;
 
             // 기존 글에 붙이는 업로드는 이 게시판 글이어야 하고(아니면 404), 관리자 글 수정과 같은 스코프 권한이 있어야 한다
-            // (「본인 글만」 위임 관리자가 남의 글에 파일을 붙이지 못하게, #883)
+            // (「본인 글만」 위임 관리자가 남의 글에 파일을 붙이지 못하게)
             if ($postId !== null) {
                 $post = $this->postService->getPost($slug, $postId);
 
@@ -94,7 +94,7 @@ class AttachmentController extends AdminBaseController
                         'url' => $this->attachmentService->getUrl($slug, $attachment->id),
                         'order' => $attachment->order,
                         'created_at' => $attachment->created_at,
-                        // 올린 본인에게만 주는 임시 키 (사용자 업로드와 같은 응답 형태, #883)
+                        // 올린 본인에게만 주는 임시 키 (사용자 업로드와 같은 응답 형태)
                         'temp_key' => $attachment->temp_key,
                     ],
                 ],

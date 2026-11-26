@@ -4,7 +4,7 @@ description: |
   게시판 첨부파일을 회원이 다운로드하면 활동이력(attachment.download)의 행위자(user_id)가
   그 회원으로 기록된다. 비회원(게스트)은 종전과 동일하게 user_id 가 NULL 로 남는다.
 
-  수정 이력 (이슈 #413 item 58b):
+  수정 이력 (item 58b):
     - 결함: 다운로드가 레이아웃의 <a href="{{download_url}}"> 브라우저 직접 링크(GET)였다.
       G7 은 Sanctum 토큰 전용 인증인데 <a> 네비게이션에는 Authorization 헤더(토큰)가 실리지
       않아, download_url 이 가리키는 optional.sanctum 라우트가 요청을 guest 로 통과시켰다.

@@ -732,7 +732,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->logChannel->shouldReceive('info')
             ->once()
             ->with('attachment.upload', Mockery::on(function (array $context) {
-                // #413-58: original_filename 으로 정정 (이전 original_name 은 모델 필드 부재로 항상 빈값)
+                // 58: original_filename 으로 정정 (이전 original_name 은 모델 필드 부재로 항상 빈값)
                 return $context['log_type'] === ActivityLogType::Admin
                     && $context['description_key'] === 'sirsoft-board::activity_log.description.board_attachment_upload'
                     && $context['description_params']['post_id'] === 10
@@ -760,7 +760,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
         $this->logChannel->shouldReceive('info')
             ->once()
             ->with('attachment.delete', Mockery::on(function (array $context) {
-                // #413-58: original_filename 으로 정정
+                // 58: original_filename 으로 정정
                 return $context['log_type'] === ActivityLogType::Admin
                     && $context['description_key'] === 'sirsoft-board::activity_log.description.board_attachment_delete'
                     && $context['description_params']['post_id'] === 10
@@ -782,7 +782,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     #[Test]
     public function handle_attachment_after_download은_attachment_download_로그를_기록한다(): void
     {
-        // #413-58: 첨부 다운로드 시 활동이력 기록
+        // 58: 첨부 다운로드 시 활동이력 기록
         $attachment = $this->createMockAttachment('document.pdf', 1024, 10);
 
         $this->logChannel->shouldReceive('info')
@@ -810,7 +810,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     #[Test]
     public function handle_attachment_after_download은_null_첨부에_안전하다(): void
     {
-        // #413-58: 큐 워커 시점 모델 소멸 등 — null 이면 로그 미기록
+        // 58: 큐 워커 시점 모델 소멸 등 — null 이면 로그 미기록
         $this->logChannel->shouldNotReceive('info');
 
         $this->listener->handleAttachmentAfterDownload(null, 'user');
@@ -1332,7 +1332,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
      */
     private function createMockAttachment(string $originalName, int $size, ?int $postId = null): Attachment
     {
-        // #413-58: 실제 컬럼은 original_filename (모델에 original_name 필드/accessor 없음).
+        // 58: 실제 컬럼은 original_filename (모델에 original_name 필드/accessor 없음).
         $attachment = Mockery::mock(Attachment::class)->makePartial();
         $attachment->shouldReceive('getAttribute')->with('original_filename')->andReturn($originalName);
         $attachment->shouldReceive('getAttribute')->with('size')->andReturn($size);

@@ -3,7 +3,7 @@
   로 URL 만 바꾸면 갱신된다. 새로고침·뒤로가기·링크 공유가 그대로 되는 것이 그 대가로 얻는 것이다.
   예외는 삭제 뒤 한 자리다(URL 이 안 바뀌므로 `refetch-data-source` 를 쓴다).
 
-  필터 영역은 쿠폰·상품·주문 목록과 같은 구조다(기본/상세 + 검색편집, #705) — 조각 파일 머리 주석 참조.
+  필터 영역은 쿠폰·상품·주문 목록과 같은 구조다(기본/상세 + 검색편집) — 조각 파일 머리 주석 참조.
   검색어 조건은 기존 `filters[0][*]` 형식을 그대로 두고(외부 링크·테스트가 이 형식에 묶여 있다),
   새 조건은 평면 키(`status[]`·`role_ids[]`·`start_date` …)로 더했다. 확장이 더하는 조건은
   `ext_filters[]` 배열 칸 하나로 모인다.
@@ -160,7 +160,7 @@
     <wait-for>users</wait-for>
     <wait-for>roles</wait-for>
   </transition-overlay>
-  <!-- 검색 실행 — 필터 조각의 검색 버튼·Enter 가 이 액션 하나를 공유한다. 열거한 조건만 덮어쓰고 정렬/페이지당 개수 등 나머지 목록 상태는 유지한다. 「전체」는 조건이 아니므로 빈 값으로 떨어뜨리고(빈 값·빈 배열은 엔진이 URL 에서 키를 지운다), 조건이 바뀌었으니 쪽수는 `page=""` 로 떨궈 첫 쪽으로 되돌린다 — list-context.md 「페이지 되돌림은 빈 값」, 회귀 테스트 admin-list-context-round-trip (#75). 검색도 표를 다시 그리므로 페이지 이동과 동일하게 표 본문에 전환 오버레이를 건다 (#245). transition_overlay_target 은 replace:true 인 navigate 에서만 읽히므로 함께 둔다. 빠른 기간 표시(`*DateQuick`)는 URL 에 싣지 않는다 — 참조 목록들과 같이 새로고침하면 버튼 하이라이트만 꺼진다. -->
+  <!-- 검색 실행 — 필터 조각의 검색 버튼·Enter 가 이 액션 하나를 공유한다. 열거한 조건만 덮어쓰고 정렬/페이지당 개수 등 나머지 목록 상태는 유지한다. 「전체」는 조건이 아니므로 빈 값으로 떨어뜨리고(빈 값·빈 배열은 엔진이 URL 에서 키를 지운다), 조건이 바뀌었으니 쪽수는 `page=""` 로 떨궈 첫 쪽으로 되돌린다 — list-context.md 「페이지 되돌림은 빈 값」, 회귀 테스트 admin-list-context-round-trip (#75). 검색도 표를 다시 그리므로 페이지 이동과 동일하게 표 본문에 전환 오버레이를 건다. transition_overlay_target 은 replace:true 인 navigate 에서만 읽히므로 함께 둔다. 빠른 기간 표시(`*DateQuick`)는 URL 에 싣지 않는다 — 참조 목록들과 같이 새로고침하면 버튼 하이라이트만 꺼진다. -->
   <action name="searchUsers">
     <navigate path="/admin/users" :mergeQuery="true" :replace="true" transition_overlay_target="users_data_grid__body">
       <query page="" filters[0][field]="{{_local.filter.searchField || 'all'}}" filters[0][value]="{{_local.filter.searchKeyword || undefined}}" filters[0][operator]="like" status[]="{{_local.filter.status || []}}" role_ids[]="{{_local.filter.role || []}}" admin_scope="{{_local.filter.adminScope !== 'all' ? _local.filter.adminScope : ''}}" lock_state="{{_local.filter.lockState !== 'all' ? _local.filter.lockState : ''}}" start_date="{{_local.filter.createdStartDate}}" end_date="{{_local.filter.createdEndDate}}" last_login_start="{{_local.filter.neverLoggedIn ? '' : _local.filter.lastLoginStartDate}}" last_login_end="{{_local.filter.neverLoggedIn ? '' : _local.filter.lastLoginEndDate}}" never_logged_in="{{_local.filter.neverLoggedIn ? 'true' : ''}}" dormant_start="{{_local.filter.dormantStartDate}}" dormant_end="{{_local.filter.dormantEndDate}}" status_changed_type="{{_local.filter.statusChangedType}}" status_changed_start="{{_local.filter.statusChangedType ? _local.filter.statusChangedStart : ''}}" status_changed_end="{{_local.filter.statusChangedType ? _local.filter.statusChangedEnd : ''}}" language="{{_local.filter.language}}" country="{{_local.filter.country}}" email_verified="{{_local.filter.emailVerified !== 'all' ? _local.filter.emailVerified : ''}}" identity_verified="{{_local.filter.identityVerified !== 'all' ? _local.filter.identityVerified : ''}}" required_missing="{{_local.filter.requiredMissing ? '1' : ''}}" nickname_duplicate="{{_local.filter.nicknameDuplicate ? '1' : ''}}" ext_filters="{{_local.userFilterExtraQuery || []}}"/>

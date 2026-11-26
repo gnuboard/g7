@@ -16,7 +16,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 회원 차단과 해제 공개 진입점 `UserService::blockUser()` / `unblockUser()` (#798 K10 · D7 · D21)
+ * 회원 차단과 해제 공개 진입점 `UserService::blockUser()` / `unblockUser()`
  *
  * 차단은 이미 차단된 회원이어도 토큰을 전부 회수한다(프로비저닝이 다시 차단해도 남은 토큰이 없게). 액션 훅 두 개와 활동 로그 두 개가
  * 남는다. 행위자가 없는 시스템 경로도 쓸 수 있고, 최고관리자는 대상이 될 수 없다.

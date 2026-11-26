@@ -270,7 +270,7 @@ describe('실제 레이아웃 JSON - abilities 패턴 사용 검증', () => {
     expect(deleteButton.if).not.toContain('is_default');
   });
 
-  it('상품 체크박스는 신청 가능한 유형이 있을 때만 선다 (#599 후속 U-3)', () => {
+  it('상품 체크박스는 신청 가능한 유형이 있을 때만 선다', () => {
     // 회귀: 체크박스 조건이 `abilities?.can_cancel` 을 함께 보던 시절, 미결제 주문에서는
     // 체크박스만 서고 **누를 버튼이 없었다** — 취소 버튼은 이미 취소·환불 신청 입구로
     // 통합돼 `claimable_types` 를 보는데 체크박스만 옛 축에 남아 있었기 때문이다.

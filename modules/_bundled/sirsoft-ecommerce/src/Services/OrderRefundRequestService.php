@@ -39,7 +39,7 @@ use Modules\Sirsoft\Ecommerce\Support\SystemActor;
  * 취소·환불 신청 분기 서비스 (S5 · D2)
  *
  * 유저의 [취소/환불신청] 은 하나의 신청서 작성 화면이지만 서버에서는 **상품 상태로 자동 분기**한다.
- * **두 분기 모두 환불신청서를 만든다** — 다른 것은 전이 방식뿐이다(#599 후속 D1·D2):
+ * **두 분기 모두 환불신청서를 만든다** — 다른 것은 전이 방식뿐이다:
  *
  *  - 선택 상품이 전부 `claim.instant_cancel_statuses`(기본 미결제 2종 + 결제완료)에 있으면 `auto` —
  *    환불신청서를 `REQUESTED` 로 접수한 뒤 승인·완료까지 **자동 전이**한다(`autoAdvance()`).
@@ -768,7 +768,7 @@ class OrderRefundRequestService
         // auto_approve_refund_request` 설정이 한 일이다. 접수자를 그대로 실어 나르면 활동로그
         // 「환불 신청서 상태 변경(환불신청 → 환불승인)」의 작업자가 고객 이름으로 남아,
         // 나중에 「누가 승인했나」를 물을 때 고객이 자기 신청을 승인한 것처럼 읽힌다
-        // (#599 세션A 실측 2026-09-21 · RF20260921-1616082573 · 운영 결정 2026-09-22).
+        // (세션A 실측 2026-09-21 · RF20260921-1616082573 · 운영 결정 2026-09-22).
         //
         // 새 라벨을 만들지 않고 저장소가 이미 쓰는 관례에 합류한다 — 1-T 입금기한 만료
         // 자동취소도 작업자를 NULL 로 남기고 화면이 그것을 시스템으로 읽는다.
@@ -970,7 +970,7 @@ class OrderRefundRequestService
      * @param  bool  $operator  운영자 수정 여부 (S15 — 출처와 무관하게 수정, 판매자 귀책 사유 허용)
      * @return OrderRefund 수정된 환불신청서
      *
-     * 수정 가능 여부는 **신청서 행 잠금 안에서 다시 읽은 상태**로 판정한다(#599 validate P2 #8) —
+     * 수정 가능 여부는 **신청서 행 잠금 안에서 다시 읽은 상태**로 판정한다(validate P2 #8) —
      * 호출부 모델로 판정하면 그 사이 승인된 신청서의 사유·계좌가 수정된다. 교환·반품의
      * `updateRequest()` 와 같은 규율이다.
      *
@@ -1017,7 +1017,7 @@ class OrderRefundRequestService
             // 저장이 기록된 계좌를 지우지 않는다. 실제 송금 대상(주문 결제행)은 여기서 바꾸지
             // 않는다 — 그 갱신은 환불을 실행하는 시점의 책임이다. 컬럼 조립과 3필드 짝 검증은
             // 교환·반품과 같은 공용 규칙(`AppliesRefundBankAccount::refundBankColumns()`)이 한다 —
-            // 예전에는 빠진 키를 직접 인덱싱해 500 이 났다(#599 validate P2 #9).
+            // 예전에는 빠진 키를 직접 인덱싱해 500 이 났다(validate P2 #9).
             $bank = $payload['refund_bank'] ?? null;
             $updates += $this->refundBankColumns(is_array($bank) ? $bank : null);
 
@@ -1232,7 +1232,7 @@ class OrderRefundRequestService
         ?int $processedBy = null,
         bool $pgAlreadySettled = false,
     ): OrderRefund {
-        // 출처 가드는 두지 않는다(#599 후속 §4-5). 구형 취소 발(`cancel`) 행도 운영자가 완료
+        // 출처 가드는 두지 않는다. 구형 취소 발(`cancel`) 행도 운영자가 완료
         // 처리할 수 있어야 한다 — 그 행들은 지금 `approved` 에서 멈춰 있고, 막아 두면 완료로
         // 옮길 API 가 저장소 어디에도 없어 영구 정지한다(P1).
         $refundId = $refund->id;
@@ -1853,7 +1853,7 @@ class OrderRefundRequestService
      * `pg` 의 판정은 `pgRefundAvailable()` 하나다 — [금액 수정]의 저장, 상세 화면의 선택지
      * (`AdminClaimService::refundMethodOptions()`), [환불하기] 실행 게이트가 모두 그것을 읽는다.
      * 예전에는 여기만 결제수단(`needsPgProvider`)을 보고 실행 게이트는 실효 수단을 봐, PG 리스너가
-     * 없어 계좌 환불로 떨어지는 주문(P14)에서 PG 가 저장은 되는데 실행은 막혔다(#599 validate P2-A 후속).
+     * 없어 계좌 환불로 떨어지는 주문(P14)에서 PG 가 저장은 되는데 실행은 막혔다(A 후속).
      *
      * `bank` 는 결제수단과 무관하게 사람이 돌려주는 경로라 제한하지 않는다. `points` 는 회원 주문에서만,
      * 그리고 현금을 마일리지로 돌려주려면 마일리지 기능이 켜진 상점에서만 쓸 수 있다(D1·Q21 —
@@ -2363,11 +2363,11 @@ class OrderRefundRequestService
 
         // 상품 단위 전이의 before 훅 — 잠금·쓰기 전이라 리스너가 던지면 어떤 행도 옮겨지지 않는다.
         // 상품 단위 전용 필터는 두지 않는다(교환·반품과 같은 판단 — 대상·목표는 운영자 판단). 자유 입력인
-        // 반려 사유만 아래에서 헤더 경로와 같은 `filter_status_change_data` 를 거친다(#599 후속).
+        // 반려 사유만 아래에서 헤더 경로와 같은 `filter_status_change_data` 를 거친다.
         HookManager::doAction('sirsoft-ecommerce.claim.refund.before_option_status_change', $refund, $specs, $target->value, $context);
 
         // 반려 사유는 신청서 한 칸(`reject_reason`)에 남는 자유 입력이라 헤더 경로와 **같은 필터**를 거친다
-        // (#599 후속 운영 결정) — 어느 칸에서 적었느냐에 따라 확장이 손댈 수 있는지가 갈리면 금칙어 필터 같은
+        // (후속 운영 결정) — 어느 칸에서 적었느냐에 따라 확장이 손댈 수 있는지가 갈리면 금칙어 필터 같은
         // 확장이 상품 칸으로 우회된다. 받아들이는 키도 같다(처리자·목표 상태는 되돌린다).
         if ($rejectReason !== '') {
             $filterInput = ['reject_reason' => $rejectReason] + $context;
@@ -2385,7 +2385,7 @@ class OrderRefundRequestService
         $split = [];
 
         // 신청서 행을 잠그고 **잠금 안에서** 상품 행을 다시 읽어 판정한다. 헤더 동기화도 같은
-        // 트랜잭션 안에서 한다(#599 validate P2 #19 — 교환·반품과 같은 규율). 훅은 커밋 뒤다(#7).
+        // 트랜잭션 안에서 한다(validate P2 #19 — 교환·반품과 같은 규율). 훅은 커밋 뒤다(#7).
         DB::transaction(function () use ($refund, $itemIds, $quantities, $target, $processedBy, $rejectReason, &$succeeded, &$skipped, &$changes, &$split) {
             $locked = $this->refundRepository->findForUpdate((int) $refund->getKey()) ?? $refund;
             $rows = $this->resolveItems($locked, $itemIds);

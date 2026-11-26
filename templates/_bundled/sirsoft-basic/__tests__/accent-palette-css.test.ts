@@ -1,6 +1,6 @@
 /**
  * @file accent-palette-css.test.ts
- * @description 템플릿 설정 포인트 색(`branding.accent`)의 선택지마다 CSS 팔레트 규칙이 있는지 잠근다 (#434).
+ * @description 템플릿 설정 포인트 색(`branding.accent`)의 선택지마다 CSS 팔레트 규칙이 있는지 잠근다.
  *
  * - 코어가 `<html data-g7-accent="{값}">` 을 싣고, 이 템플릿 CSS 가 `[data-g7-accent=…]` 에서 파랑 변수(`--color-blue-*`)를
  *   고른 색 변수로 바꾼다 — 선택지를 선언에 추가하고 CSS 를 빠뜨리면 그 색을 골라도 화면이 그대로 파랑이다
@@ -59,7 +59,7 @@ const expectOverridesBlue = (body: string, value: string): void => {
     }
 };
 
-describe('포인트 색 팔레트 CSS — sirsoft-basic (#434)', () => {
+describe('포인트 색 팔레트 CSS — sirsoft-basic', () => {
     // @scenario case=settings_layout
     // @effects template_settings_exposed_to_global, accent_palette_defined_per_option
     it('선언에서 읽은 포인트 색 선택지가 있고 기본값은 그 안에 있다', () => {

@@ -8,7 +8,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 비밀번호 만료 건수·명단 API 테스트 (#736 A10·A13·D22)
+ * 비밀번호 만료 건수·명단 API 테스트
  *
  * 건수(`password-expiry-preview`)가 설정 그룹의 `{key}` 와일드카드에 흡수되지 않고, 명단이 건수·배치와
  * **같은 모집단**을 만료가 가까운 순으로 보여 주며, 명단 권한(설정 읽기 + 회원 읽기, 둘 다 전체 범위)이

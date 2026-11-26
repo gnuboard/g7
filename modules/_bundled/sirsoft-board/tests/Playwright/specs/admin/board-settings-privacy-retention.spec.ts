@@ -1,5 +1,5 @@
 /**
- * E2E: 게시판 환경설정 > 「개인정보 보유기간」 탭 (이슈 #636 S5)
+ * E2E: 게시판 환경설정 > 「개인정보 보유기간」 탭
  *
  * 검증:
  *  1. 카드가 **꺼진 채** 번역문과 함께 마운트되고, 꺼져 있으면 기간·방식 칸이 없다
@@ -219,7 +219,7 @@ test('저장하면 본문에 privacy_retention 이 실리고 뱃지가 미리보
 
   await page.reload();
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
-  // 두 축의 건수는 토글 아래 줄에 있다 — 기간 칸 묶음(켰을 때만 보임) 안에 두지 않는다(#636 §1-E).
+  // 두 축의 건수는 토글 아래 줄에 있다 — 기간 칸 묶음(켰을 때만 보임) 안에 두지 않는다(E).
   const badges = page.locator('#privacy_retention_targets .board-badge');
   await expect(badges).toHaveCount(2, { timeout: 20_000 });
   await expect(badges.nth(0)).toContainText(String(preview.body.data.ip));
@@ -250,7 +250,7 @@ test('기능이 꺼져 있어도 두 축의 건수가 보이고 「IP 대상 보
     // 행 링크는 관리자 상세다 — 대상의 휴지통 글은 사용자 화면에서 403 이라 열 수 없다
     await expect(rows.first().locator('a').first()).toHaveAttribute('href', /^\/admin\/board\/[^/]+\/post\/\d+$/);
 
-    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다(#869 P1)
+    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다
     await page.getByRole('dialog').locator('.modal-footer-bar button').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   } finally {

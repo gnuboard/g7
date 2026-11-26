@@ -6,7 +6,7 @@ use App\Contracts\Extension\TemplateManagerInterface;
 use Mockery;
 
 /**
- * 템플릿 수동 설치(ZIP·GitHub)의 패키지 서명 검증 (#916 ④) — 시나리오는 `ExtensionInstallSignatureTestCase`.
+ * 템플릿 수동 설치(ZIP·GitHub)의 패키지 서명 검증 — 시나리오는 `ExtensionInstallSignatureTestCase`.
  *
  * @scenario package-integrity
  */

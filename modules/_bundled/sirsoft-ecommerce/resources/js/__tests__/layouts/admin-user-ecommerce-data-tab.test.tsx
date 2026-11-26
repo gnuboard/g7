@@ -1,6 +1,6 @@
 /**
  * @file admin-user-ecommerce-data-tab.test.tsx
- * @description 회원 상세 「쇼핑 데이터」 탭 (#524 WP-E) — 네 목록으로 가는 갈림길.
+ * @description 회원 상세 「쇼핑 데이터」 탭 — 네 목록으로 가는 갈림길.
  *
  * 이 탭이 지키는 계약:
  *  - 탭 버튼(`inject_props` → `tabs._append`)과 본문(`append_child`)은 서로 다른 앵커에 붙고
@@ -30,7 +30,7 @@ const LINKS = [
     ['user-inquiries-link', '/admin/ecommerce/inquiries', 'inquiry_count'],
 ] as const;
 
-describe('회원 상세 쇼핑 데이터 탭 (#524 WP-E)', () => {
+describe('회원 상세 쇼핑 데이터 탭', () => {
     // @scenario surface=member_detail_tab
     // @effects ecommerce_member_tab_targets_admin_user_detail
     it('회원 상세 레이아웃을 대상으로 삼는다', () => {
@@ -139,7 +139,7 @@ describe('회원 상세 쇼핑 데이터 탭 (#524 WP-E)', () => {
 
             expect(link).toBeTruthy();
 
-            // 링크다(#757 WP-L) — 주소는 href 한 곳(회원 uuid 를 쿼리에 싣는다)에 두고, 보통 클릭의 navigate 는
+            // 링크다 — 주소는 href 한 곳(회원 uuid 를 쿼리에 싣는다)에 두고, 보통 클릭의 navigate 는
             // path 없이 그 href 로 간다. 2026-09-15 실측의 「href 바인딩이 undefined 로 죽는다」는 종전 A 컴포넌트
             // 조건이었고, 이번 A 는 바인딩된 href 를 그대로 그린다 — 브라우저 확인은 M1 링크 실측(T1·T2) 몫이다.
             expect(String(link.props.href).split('?')[0]).toBe(path);

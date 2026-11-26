@@ -576,7 +576,7 @@ if (! function_exists('installer_verify_drop_confirm')) {
      *
      * 최초 사용: 해시·접두사·탐지 테이블 불변·미만료 모두 만족해야 한다.
      * 이미 소비된 확인(같은 소유자의 재시도): 해시·접두사만 확인한다 — 이전 시도가 일부 테이블을
-     * 지우거나 만든 뒤 재시도하는 경로(이슈 #319)에서 테이블 목록이 달라지는 것은 정상이다.
+     * 지우거나 만든 뒤 재시도하는 경로에서 테이블 목록이 달라지는 것은 정상이다.
      *
      * @param  mixed  $record  state.drop_confirm
      * @param  string  $token  요청이 제시한 확인 토큰

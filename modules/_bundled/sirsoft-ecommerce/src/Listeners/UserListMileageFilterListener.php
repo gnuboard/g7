@@ -10,7 +10,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInt
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 
 /**
- * 회원관리 목록의 「마일리지 잔액」 확장 필터 (#705 예제 E1)
+ * 회원관리 목록의 「마일리지 잔액」 확장 필터 (예제 E1)
  *
  * 코어 회원 목록이 연 확장 필터 규약의 서버 쪽 세 층을 한 리스너가 맡는다.
  *

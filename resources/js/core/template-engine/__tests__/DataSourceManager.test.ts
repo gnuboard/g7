@@ -1007,7 +1007,7 @@ describe('DataSourceManager', () => {
      */
     it('한 번 성공한 소스는 다음 요청이 실패해도 마지막 값을 지킨다', async () => {
       // 폴링이 한 번 실패했다고 fallback(0)으로 되돌리면 실시간 화면이 「지금 0명」이라는 거짓을 말한다
-      // (브라우저 실측 이슈 #682 §8 M4-T4). fallback 은 아직 한 번도 못 받았을 때의 첫 그림이다.
+      // (브라우저 실측). fallback 은 아직 한 번도 못 받았을 때의 첫 그림이다.
       const mockApiClient = getApiClient();
       const sources: DataSource[] = [
         {
@@ -1040,7 +1040,7 @@ describe('DataSourceManager', () => {
      */
     it.each([401, 403])('[case:cache-21] 권한 오류(%i)면 마지막 값을 지키지 않고 fallback 으로 비운다', async (status) => {
       // 같은 브라우저의 다른 탭에서 권한이 적은 계정으로 로그인하면, 관리자 탭의 요청은 403 으로 막히는데
-      // 마지막 값이 남아 이전 계정이 보던 대시보드(리뷰·문의·비밀글 제목)가 그대로 보였다(#695 병합 전수 검사 실측).
+      // 마지막 값이 남아 이전 계정이 보던 대시보드(리뷰·문의·비밀글 제목)가 그대로 보였다(병합 전수 검사 실측).
       const mockApiClient = getApiClient();
       const sources: DataSource[] = [
         {

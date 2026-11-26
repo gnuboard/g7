@@ -1,4 +1,4 @@
-// e2e:allow #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
+// e2e:allow 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측과 Vitest 로 고정한다.
 /**
  * 클레임 신청내역 핸들러 (회원 · 비회원 공용)
  *
@@ -228,7 +228,7 @@ export async function withdrawClaimHandler(
  * 그러나 확정 **뒤에 낼 수 없게 되는 경우**가 있다 — 마일리지 잔액이 모자라거나, 운영자가 그
  * 수단을 `claim.charge_payment_methods` 에서 내리거나. 두 경우 모두 `pay()` 가 거절하는데, 화면이
  * 수단을 다시 고를 수 없으면 사용자는 「미수납 ○○원 + 결제하기」를 보면서 누를 때마다 같은 422 를
- * 받는다(#599 실측 — 출구가 신청서 철회뿐이었다).
+ * 받는다(출구가 신청서 철회뿐이었다).
  *
  * 종전 주석은 수단 변경을 미루는 이유로 「카탈로그(`claimable-options`)가 주문 스코프라 상세가
  * 데이터소스를 하나 더 들어야 한다」를 들었으나 **그것은 사실이 아니었다** — 허용 목록의 단일
@@ -315,7 +315,7 @@ export async function payClaimOutstandingHandler(
             );
 
             // 결제 플러그인이 결제창을 열기 전에 실패하면(승인키 거절·비회원 주문 확인 만료 등) 진행 표시를 내리고
-            // 그 문구를 버튼 아래에 남긴다 — 결제 건은 결제 대기 그대로라 [결제하기]로 다시 낼 수 있다(#855).
+            // 그 문구를 버튼 아래에 남긴다 — 결제 건은 결제 대기 그대로라 [결제하기]로 다시 낼 수 있다.
             const pgFailure = claimPgDispatchFailureMessage(
                 pgResult,
                 claimText('sirsoft-ecommerce.user.claim.pay.failed', '결제를 시작하지 못했습니다.')

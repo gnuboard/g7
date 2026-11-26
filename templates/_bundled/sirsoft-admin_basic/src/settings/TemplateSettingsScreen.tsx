@@ -1,5 +1,5 @@
 /**
- * 템플릿 설정 화면 (sirsoft-admin_basic 공급, #434 D28·D29)
+ * 템플릿 설정 화면 (sirsoft-admin_basic 공급)
  *
  * 이 템플릿 설정 화면(`settings/template_settings.g7.html`)이 부르는 부품이다. 설정 화면 묶음(`dist/settings/*`)으로 공급돼
  * 어느 관리자 템플릿이 켜져 있든 이 부품으로 그린다 — 머리·안내·섹션 탭·저장 결과·칸·저장 바·확인 창을 직접 그리고, 관리자
@@ -189,7 +189,7 @@ export const TemplateSettingsScreen: React.FC<TemplateSettingsScreenProps> = ({
 }) => {
   const [pending, setPending] = useState<Pending>(null);
 
-  // 폭 분기는 엔진 폭으로 고른다 — Tailwind 반응형 접두는 창 폭으로 판정되어 편집기 미리보기·엔진 responsive 와 경계가 갈린다(#869).
+  // 폭 분기는 엔진 폭으로 고른다 — Tailwind 반응형 접두는 창 폭으로 판정되어 편집기 미리보기·엔진 responsive 와 경계가 갈린다.
   // 본문 여백은 폐지 예정 의미 클래스(admin-page-content-responsive) 대신 폭마다 통째로 고른다(640 미만 4, 1024 미만 6, 그 이상 8).
   const renderWidth = useRenderWidth();
   const pagePadding = isWidthAtLeast(renderWidth, 'lg') ? 'p-8' : isWidthAtLeast(renderWidth, 'sm') ? 'p-6' : 'p-4';

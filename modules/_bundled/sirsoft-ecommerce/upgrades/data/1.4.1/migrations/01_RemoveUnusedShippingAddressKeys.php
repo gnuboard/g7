@@ -9,7 +9,7 @@ use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
 
 /**
- * 배송 설정 저장값에서 쓰이지 않는 키 2개를 지웁니다. (#952)
+ * 배송 설정 저장값에서 쓰이지 않는 키 2개를 지웁니다.
  *
  * `shipping.address_validation_enabled`·`shipping.address_api_provider` 는 화면도 읽는 코드도 없이 저장만 되던 잔재다.
  * idempotent: 키가 없으면 아무것도 하지 않는다. 파일이 없거나 읽을 수 없으면 건너뛴다.
@@ -68,7 +68,7 @@ class RemoveUnusedShippingAddressKeys implements DataMigration
         }
 
         File::put($path, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-        // sudo 코어 업데이트 경로에서 root 로 실행되면 새로 쓴 파일이 root 소유로 남는다 — 부모 소유권 상속 (#651)
+        // sudo 코어 업데이트 경로에서 root 로 실행되면 새로 쓴 파일이 root 소유로 남는다 — 부모 소유권 상속
         FilePermissionHelper::inheritOwnershipFromParent($path);
 
         $context->logger->info('[ecommerce:1.4.1] 쓰이지 않는 배송 설정 키 정리: '.implode(', ', $present));

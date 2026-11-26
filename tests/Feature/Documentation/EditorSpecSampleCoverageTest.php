@@ -7,7 +7,7 @@ use App\Support\ExtensionDoc\FrontendInventory;
 use Tests\TestCase;
 
 /**
- * 편집기 프리뷰 샘플 커버리지 판정 계약 (#636)
+ * 편집기 프리뷰 샘플 커버리지 판정 계약
  *
  * `ext:docgen` 은 확장 레이아웃의 `data_source` 중 편집기 프리뷰 샘플이 없는 것을 문서에
  * 적습니다. 샘플이 없으면 편집기 캔버스에서 그 자리만 빈 화면이 되는데, **실제 화면은
@@ -27,7 +27,7 @@ class EditorSpecSampleCoverageTest extends TestCase
      * 그 실패가 `continue` 로 조용히 접혀** 미커버 집합이 항상 빈 배열이 됐습니다. 결과는
      * 「이 확장 레이아웃의 data_source 는 전부 프리뷰 샘플이 붙습니다」의 무조건 출력입니다.
      *
-     * 2026-09-21 실측(#636 S3) — sirsoft-gdpr 의 신규 `data_source` 2종이 그렇게 통과했고,
+     * 2026-09-21 실측 — sirsoft-gdpr 의 신규 `data_source` 2종이 그렇게 통과했고,
      * 검증 라운드 둘이 그 출력을 근거로 부수의무를 닫았습니다.
      *
      * 판정은 **짝 `.json` 을 읽는지**로 합니다 — 같은 화면을 담은 두 파일 중 기계가 읽을

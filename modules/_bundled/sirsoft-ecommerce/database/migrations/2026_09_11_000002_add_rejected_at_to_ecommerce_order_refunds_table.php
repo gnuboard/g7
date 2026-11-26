@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 환불신청서에 반려 시각(`rejected_at`) 컬럼을 추가합니다. (#599 후속 F4)
+ * 환불신청서에 반려 시각(`rejected_at`) 컬럼을 추가합니다.
  *
  * 교환·반품 신청서에는 승인·반려·철회 시각이 모두 있는데 환불만 반려 시각이 없었다 —
  * 컬럼 자체가 스키마에 없어 `stampFor()` 가 반려 시 `reject_reason` 만 찍었다. 그 결과

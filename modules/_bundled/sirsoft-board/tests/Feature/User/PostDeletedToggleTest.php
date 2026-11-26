@@ -309,7 +309,7 @@ class PostDeletedToggleTest extends BoardTestCase
     }
 
     // ==========================================
-    // 삭제 게시글/댓글 원본 노출 권한 (#413-50-2)
+    // 삭제 게시글/댓글 원본 노출 권한 (50-2)
     // manager 권한자는 삭제글 상세에서 제목/본문 원본을 볼 수 있어야 한다.
     // 기존: getFilteredTitle/Content 가 admin.manage 만 검사 → manager 진입자에게도
     //       "삭제된 게시글" 문구로 필터링되는 권한 불일치.

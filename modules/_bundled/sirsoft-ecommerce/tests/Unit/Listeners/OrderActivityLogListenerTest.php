@@ -49,7 +49,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
      * `order_shipping.tracking_updated` 3 + `order.after_deposit_recorded`(입금 기록) 1 = 26.
      *
      * 뒤의 3건은 구독이 늘어날 때 이 개수가 함께 갱신되지 않아 이 테스트가 오래 red 였다
-     * (#599 통합실측 세션2 에서 발견 — 실제 구독 25 vs 기대 22). 개수만 고치면 같은 일이
+     * (통합실측 세션2 에서 발견 — 실제 구독 25 vs 기대 22). 개수만 고치면 같은 일이
      * 반복되므로 **세 훅의 키 확인을 아래 목록에 함께 넣어** 무엇이 늘었는지가 남게 한다.
      *
      * @scenario listener_subscription=hook_set
@@ -63,7 +63,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
         $hooks = OrderActivityLogListener::getSubscribedHooks();
 
         $this->assertCount(28, $hooks);
-        // 결제사 계약의 재결제 복구 — 28번째 구독 (#916)
+        // 결제사 계약의 재결제 복구 — 28번째 구독 
         $this->assertArrayHasKey('sirsoft-ecommerce.order.payment_retry_restored', $hooks);
         // 수동 결제 처리 세 항목·재활성 복원 결과 — 27번째 구독 (Q13·Q26)
         $this->assertArrayHasKey('sirsoft-ecommerce.order.after_manual_paid_effects', $hooks);
@@ -1201,7 +1201,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
     public function test_handle_order_after_send_email_logs_activity(): void
     {
         // 발행부(OrderService::sendEmail)가 실제로 넘기는 모양 — camelCase 키. 예전 테스트는 발행부에 없는
-        // snake_case 키를 직접 만들어 넣어, 활동 로그의 주문번호·주문 ID 가 늘 빈 값이던 결함을 놓쳤다(#699 검증 중 발견).
+        // snake_case 키를 직접 만들어 넣어, 활동 로그의 주문번호·주문 ID 가 늘 빈 값이던 결함을 놓쳤다(검증 중 발견).
         $data = [
             'recipientEmail' => 'buyer@example.com',
             'subject' => '배송 안내',

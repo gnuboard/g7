@@ -23,7 +23,7 @@ use Illuminate\Validation\ValidationException;
  *   `SettingsService::saveSettings()`(화면 「저장」과 같은 경로), 탭이 없으면 `UpdateSettingRequest` →
  *   `SettingsService::setSetting()`(단건 경로).
  * - 플러그인: 현재 값 + 변경을 `UpdatePluginSettingsRequest` 로 검증해 바뀐 키만 `PluginSettingsService::save()`.
- * - 템플릿(#434): 현재 값 + 변경을 `UpdateTemplateSettingsRequest` 로 검증해 바뀐 키만 `TemplateSettingsService::save()`.
+ * - 템플릿: 현재 값 + 변경을 `UpdateTemplateSettingsRequest` 로 검증해 바뀐 키만 `TemplateSettingsService::save()`.
  *   첨부 키(파비콘 등)는 조회만 한다 — 파일 업로드는 관리자 화면에서만.
  * - 모듈: 모듈 설정 서비스의 선택 메서드 `settingsSaveRequestClass()` 가 돌려주는 FormRequest 로 검증해
  *   그 서비스의 `saveSettings()` 와 코어 훅 `core.module_settings.after_save`(화면 저장과 같은 훅). 메서드가 없는
@@ -410,7 +410,7 @@ class SettingsConsoleService
     }
 
     /**
-     * 템플릿 설정 저장 — 관리자 화면과 같은 FormRequest 로 검증하고 바뀐 키만 저장한다 (#434).
+     * 템플릿 설정 저장 — 관리자 화면과 같은 FormRequest 로 검증하고 바뀐 키만 저장한다.
      *
      * 키는 `섹션.키`(언어별 문구는 `섹션.키.ko` 처럼 더 깊게도 된다). 첨부 칸은 파일 업로드가 필요해 터미널에서 바꾸지
      * 않는다(조회만). 계산 키도 거부한다. 언어별 문구·목록 값은 JSON 으로 준다.

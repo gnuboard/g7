@@ -2,7 +2,7 @@ feature: 포털 메뉴 키보드 — 작성자 메뉴(UserInfo)
 
 description: |
   메뉴가 포털로 문서 끝에 붙어, Enter 로 열어도 포커스가 여는 단추에 남았다. 그래서 Tab 은 메뉴 밖 다음 자리로 가고 화살표는
-  움직이지 않았다(#869 8차 8부). WAI-ARIA 메뉴 단추 관례대로 바꿨다. 여는 단추는 `aria-haspopup`, `aria-expanded`,
+  움직이지 않았다(8차 8부). WAI-ARIA 메뉴 단추 관례대로 바꿨다. 여는 단추는 `aria-haspopup`, `aria-expanded`,
   `aria-controls` 를 갖고, 목록은 `role="menu"` 다. 연 순간 첫 항목(ArrowUp 이면 마지막)으로 포커스가 가고, 화살표는 순환하며,
   Home 과 End, Enter 와 Space 실행, Esc 와 Tab 은 닫고 여는 단추로 돌아간다(Tab 은 그 뒤 단추 다음 자리로).
   관리자 ActionMenu 와 같은 규칙이며, 두 템플릿 `keyboardActivation.ts` 의 `menuKeyDown`, `menuTriggerKeyDown` 이 맡는다.

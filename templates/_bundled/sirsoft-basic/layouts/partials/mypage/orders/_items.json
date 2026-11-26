@@ -372,7 +372,7 @@
                                                     "text": "{{$localized(item.option_snapshot?.option_name)}}"
                                                 },
                                                 {
-                                                    "comment": "품목 과세 종류 — 면세·영세만 표시하고 과세는 표시하지 않는다(주문 시점 확정값, #612)",
+                                                    "comment": "품목 과세 종류 — 면세·영세만 표시하고 과세는 표시하지 않는다(주문 시점 확정값)",
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "if": "{{item.tax_status === 'tax_free' || item.tax_status === 'zero_rated'}}",

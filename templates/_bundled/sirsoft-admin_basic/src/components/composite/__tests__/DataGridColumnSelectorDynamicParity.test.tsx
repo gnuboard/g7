@@ -1,6 +1,6 @@
 /**
  * @file DataGridColumnSelectorDynamicParity.test.tsx
- * @description 회원 목록의 표와 열 선택기가 같은 동적 열 집합과 순서를 본다 (#490 6단계, 0단계 S9)
+ * @description 회원 목록의 표와 열 선택기가 같은 동적 열 집합과 순서를 본다
  *
  * 실제 레이아웃(`admin_user_list`, 조각 `_partial_filter_section`)의 정적 열 정의와 배선을 그대로 가져와 진짜 부품 둘을
  * 레이아웃처럼 잇는다: 선택기가 보이는 열을 정해 알리면(전역 상태) 표가 그 목록을 받는다. 두 부품은 같은 동적 열을

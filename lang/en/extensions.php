@@ -185,7 +185,7 @@ return [
     ],
 
     'commands' => [
-        // extension:trust-key, extension:keygen, extension:sign 명령 출력 (#916)
+        // extension:trust-key, extension:keygen, extension:sign 명령 출력 
         'trust_key' => [
             'invalid_action' => 'The action must be add, remove or list.',
             'public_key_missing' => 'add requires a public key (base64) argument.',
@@ -614,7 +614,7 @@ return [
             'manifest_icon_missing' => 'The file referenced by the manifest icon does not exist.',
         ],
     ],
-    // Layout three-way merge results of extension update/activation (#727)
+    // Layout three-way merge results of extension update/activation
     'declarative_deletion' => [
         'type' => [
             'notification_definition' => 'Notification definition',

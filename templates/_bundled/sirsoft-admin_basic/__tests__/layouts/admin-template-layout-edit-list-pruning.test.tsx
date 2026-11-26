@@ -2,7 +2,7 @@
  * @file admin-template-layout-edit-list-pruning.test.tsx
  * @description 레이아웃 파일트리·확장 라우트트리 — 목록 프루닝 후 화면 계약 회귀 테스트
  *
- * 회귀 배경 (#518 / 공개 #76):
+ * 회귀 배경 (공개 #76):
  * 레이아웃 목록(`GET .../layouts`)과 확장 목록(`GET .../layout-extensions`)이 페이지네이션
  * 없이 전 행을 돌려주면서 행마다 본문(`content`)과 파싱된 블록(`components` 등)을 통째로
  * 싣고 있었다. 템플릿 하나에 레이아웃이 수십 개면 편집기 진입만으로 그 전부의 JSON 전문이
@@ -58,7 +58,7 @@ function readDataSources(): Array<Record<string, unknown>> {
  * @scenario resource=layout,endpoint=list,observation=consumer_screen
  * @effects list_omits_layout_content, detail_still_returns_full_payload
  */
-describe('레이아웃 파일트리 — 목록 프루닝 (#518 / 공개 #76)', () => {
+describe('레이아웃 파일트리 — 목록 프루닝 (공개 #76)', () => {
     it('목록 데이터소스가 확장자 없는 목록 엔드포인트를 그대로 쓴다', () => {
         const source = readDataSources().find((d) => d.id === LIST_SOURCES.layouts);
 
@@ -98,7 +98,7 @@ describe('레이아웃 파일트리 — 목록 프루닝 (#518 / 공개 #76)', (
  * @scenario resource=layout_extension,endpoint=list,observation=consumer_screen
  * @effects list_omits_extension_content, detail_still_returns_full_payload
  */
-describe('확장 라우트트리 — 목록 프루닝 (#518 / 공개 #76)', () => {
+describe('확장 라우트트리 — 목록 프루닝 (공개 #76)', () => {
     it('확장 목록 데이터소스가 목록 엔드포인트를 그대로 쓴다', () => {
         const source = readDataSources().find((d) => d.id === LIST_SOURCES.extensions);
 

@@ -74,7 +74,7 @@ trait HasUserOverrides
                 }
 
                 // 표기만 다른 저장(공백·빈 문자열/null·[]/null·숫자 문자열)은 수정이 아니다 — 저장만 해도
-                // "수정됨" 이 되면 새 버전 교정이 영영 막힌다(#727 §5.11).
+                // "수정됨" 이 되면 새 버전 교정이 영영 막힌다.
                 if (UserOverrideValueComparator::same(
                     $model->comparableTrackableValue($field, $model->getOriginal($field)),
                     $model->comparableTrackableValue($field, $model->getAttribute($field)),
@@ -213,7 +213,7 @@ trait HasUserOverrides
             }
 
             // 모델 저장(save)은 바뀐 칸을 **직렬화한 값**으로 이 빌더에 넘긴다 — 배열 캐스트 칸은 JSON 문자열이다.
-            // 디코드하지 않으면 원래 값(null)과 문자열 `'[]'` 이 달라 보여, 아무것도 안 바꾼 저장이 수정으로 기록된다(#699).
+            // 디코드하지 않으면 원래 값(null)과 문자열 `'[]'` 이 달라 보여, 아무것도 안 바꾼 저장이 수정으로 기록된다.
             if (is_string($incoming) && $this->hasCast($field, ['array', 'json', 'object', 'collection', 'encrypted:array', 'encrypted:json'])) {
                 $decoded = json_decode($incoming, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
@@ -295,7 +295,7 @@ trait HasUserOverrides
      *   - 나머지 locale 키는 신규 값으로 갱신 (활성 언어팩 자동 동기화)
      *   - 호환성: user_overrides 에 컬럼명(`field`) 만 있는 legacy row 는 컬럼 전체 보존 (기존 동작)
      *
-     * **합의 해제 규칙**(#727): 표식이 있는 칸이라도 지금 값과 새 선언값이 같으면 표식을 지운다 — 운영자 값과 새 버전 값이
+     * **합의 해제 규칙**: 표식이 있는 칸이라도 지금 값과 새 선언값이 같으면 표식을 지운다 — 운영자 값과 새 버전 값이
      * 같아졌으니 더는 수정본이 아니고, 다음 버전의 변경부터 다시 들어와야 한다. 과거의 거짓 표식이 업데이트를 거치며
      * 저절로 줄어드는 경로다. 표식이 바뀌면 반환값에 `user_overrides` 키가 실린다.
      *

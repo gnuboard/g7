@@ -1,4 +1,4 @@
-feature: 배너 파일의 공개 자산 디스크 — 직접 주소(원본)와 API 주소(썸네일), 행 disk 추종 (#878)
+feature: 배너 파일의 공개 자산 디스크 — 직접 주소(원본)와 API 주소(썸네일), 행 disk 추종
 
 description: |
   배너 이미지·영상은 공개 API `/api/plugins/sirsoft-hero_section/images/{hash}` 로만 나갔다 — 확장자 없는 PHP 응답이라 CDN 이

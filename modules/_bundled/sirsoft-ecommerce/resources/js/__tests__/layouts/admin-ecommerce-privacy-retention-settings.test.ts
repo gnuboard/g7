@@ -1,6 +1,6 @@
 // e2e:allow 시험·시험 헬퍼 파일 — 런타임 동작을 바꾸지 않는다. 대상 화면(정보 탭·회원 목록·TagInput 두 화면·클레임 상세)은 headless 브라우저로 수정 전·후를 실측했고 정보 탭·추정 건수는 E2E settings-info-value-alignment.spec.ts 가 잠근다
 /**
- * 쇼핑몰 환경설정 — 개인정보 보유기간 탭 계약 테스트 (이슈 #636 S5)
+ * 쇼핑몰 환경설정 — 개인정보 보유기간 탭 계약 테스트
  *
  * @description
  * 종결 주문의 개인정보를 보유기간이 지나면 익명화·삭제하는 탭이다. 되돌릴 수 없는 처리라
@@ -198,7 +198,7 @@ function settingsLang(locale: string): any {
     return JSON.parse(fs.readFileSync(path.join(moduleRoot(), `resources/lang/partial/${locale}/admin/settings.json`), 'utf-8'));
 }
 
-describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 창 (#636 §1-E)', () => {
+describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 창 (E)', () => {
     const viewButtons = collectWithAncestors(tab, (n) => /^view_.*targets$/.test(n.id ?? ''));
 
     /**
@@ -321,7 +321,7 @@ describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 �
     });
 });
 
-describe('보유기간 탭 — 대상 보기 줄의 좁은 화면 줄바꿈 (#636 §8.5 T8, 브라우저 실측 결함)', () => {
+describe('보유기간 탭 — 대상 보기 줄의 좁은 화면 줄바꿈 (브라우저 실측 결함)', () => {
     /**
      * 390px 실측에서 제목·건수 배지·버튼이 한 줄에 끼여 배지가 「대상 24 / 건」으로 쪼개졌다.
      * 버튼을 담은 줄은 넘치면 다음 줄로 흘러야 한다 — 부모 줄에 wrap 이 없으면 red.
@@ -403,7 +403,7 @@ function manualRunLang(locale: string, key: string): any {
     return key.split('.').reduce((acc: any, part: string) => (acc == null ? undefined : acc[part]), lang);
 }
 
-describe('개인정보 조치 직권 실행 — 「지금 실행」 (#636 후속)', () => {
+describe('개인정보 조치 직권 실행 — 「지금 실행」', () => {
     const buttons: Array<[string, string]> = [['run_privacy_retention', 'retention:sirsoft-ecommerce.order']];
     const runModal: any = runModalLayout;
 
@@ -482,7 +482,7 @@ describe('개인정보 조치 직권 실행 — 「지금 실행」 (#636 후속
      */
     it('확인 창은 코어 직권 실행 API 로 접수하고 이 확장의 문구(ko·en)만 쓴다', () => {
         const execute = manualRunNode(runModal, 'privacy_run_execute');
-        // 더블클릭 이중 접수 방지 — disabled 의 submitting 은 다시 그려진 뒤에야 걸린다(#736 H 실측: 게시판 확인 창 연타 2건 접수).
+        // 더블클릭 이중 접수 방지 — disabled 의 submitting 은 다시 그려진 뒤에야 걸린다(게시판 확인 창 연타 2건 접수).
         expect(execute.props?.lockRepeatClick).toBe(true);
         const call = actionsOf(actionsOf(execute).find((a: any) => a.type === 'click')).find((a: any) => a.handler === 'apiCall');
         expect(call.params.method).toBe('POST');

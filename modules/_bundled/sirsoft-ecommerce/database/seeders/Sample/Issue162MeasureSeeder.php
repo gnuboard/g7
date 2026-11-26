@@ -115,7 +115,7 @@ class Issue162MeasureSeeder extends Seeder
     }
 
     /**
-     * 상품 설명에 본문 미디어 표본을 넣습니다(#883 4·5단계) — 캡션 이미지 1·동영상 1·유튜브 외부 영상 1.
+     * 상품 설명에 본문 미디어 표본을 넣습니다(4·5단계) — 캡션 이미지 1·동영상 1·유튜브 외부 영상 1.
      * 파일은 실제 업로드 경로(`ContentMediaService::upload` → `syncWithContent`)로 붙인다. 이미 넣었으면 건너뛴다.
      *
      * @param  Product  $product  표지 상품

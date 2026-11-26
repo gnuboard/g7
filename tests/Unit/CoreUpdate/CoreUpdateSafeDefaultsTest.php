@@ -13,7 +13,7 @@ use ReflectionClass;
 use Tests\TestCase;
 
 /**
- * 웹은 안전 기본값을 고정한다 (#609 D27).
+ * 웹은 안전 기본값을 고정한다.
  *
  * CLI 에는 파괴적 선택이 있다 — `--force`(버전 비교 생략) · `--prune`(전체 덮어쓰기 +
  * 삭제) · `--no-backup`(되돌릴 것 없음) · `--no-maintenance`. 웹 동선에는 그 넷이

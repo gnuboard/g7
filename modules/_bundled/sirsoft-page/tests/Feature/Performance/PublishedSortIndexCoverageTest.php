@@ -8,7 +8,7 @@ use Modules\Sirsoft\Page\Models\Page;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 
 /**
- * 발행 페이지 목록 정렬 색인 회귀 테스트 (#519 F5)
+ * 발행 페이지 목록 정렬 색인 회귀 테스트
  *
  * 색인은 "만들었다" 가 아니라 "쿼리가 그것을 고른다" 가 목표다. 존재 여부만 확인하면
  * 컬럼 순서가 어긋나 옵티마이저가 무시하는 색인을 정상으로 판정한다.

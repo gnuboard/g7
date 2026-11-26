@@ -7,7 +7,7 @@ use App\Helpers\InlineMediaPolicy;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 재생 가능 MIME 단일 출처 — `InlineMediaPolicy` 의 인라인 재생 목록이 `ContentMediaKind` 에서 만들어진다 (#887, G11)
+ * 재생 가능 MIME 단일 출처 — `InlineMediaPolicy` 의 인라인 재생 목록이 `ContentMediaKind` 에서 만들어진다
  *
  * 7.1.5 개발 중에는 같은 MIME 목록이 두 곳(종류별 확장자 표와 서빙 헤더 판정)에 따로 적혀 있었다. 한쪽만 고치면 업로드는
  * 받는데 서빙이 다운로드로 내려가는 어긋남이 생긴다. 출처를 하나로 모으면서 값은 바꾸지 않았다는 것을 옛 목록 그대로 잠근다.

@@ -1,7 +1,7 @@
 /**
  * editorSpecLoader.bundleRequest.test.ts — 편집기 스펙을 묶음 한 요청으로 받는지
  *
- * 배경 (설계 확정 2026-11-08, #869): 편집기를 열 때 활성 확장마다 editor-spec 을 따로 요청해
+ * 배경 (설계 확정 2026-11-08): 편집기를 열 때 활성 확장마다 editor-spec 을 따로 요청해
  * 개발 서버에서 27건(건당 2~5.7초)이 나갔다. 로더가 묶음 엔드포인트
  * (`/api/templates/{id}/editor-spec-bundle`)를 한 번만 부르고, 항목 단위 부분 실패를 견디는지 잠근다.
  *

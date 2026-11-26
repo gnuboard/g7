@@ -22,7 +22,7 @@ use App\Support\LayoutMarkup\LayoutMarkupRoundTrip;
 use Illuminate\Console\Command;
 
 /**
- * 설치본(DB 행) 전량을 역변환→프로덕션 컴파일→왕복 대조하는 점검 커맨드 (#476 C5).
+ * 설치본(DB 행) 전량을 역변환→프로덕션 컴파일→왕복 대조하는 점검 커맨드.
  *
  * `layout:compile --roundtrip` 은 **디스크 소스**만 본다. 코드 편집기는 `template_layouts`·
  * `template_layout_extensions` 행을 JSON→`.g7.html` 로 열고 저장 때 다시 컴파일하므로, 그 행이 프로덕션
@@ -34,13 +34,13 @@ use Illuminate\Console\Command;
  *
  * 실패·불일치·부적합·소실·고아 중 하나라도 있으면 exit 1. `--json` 은 기계 판독용이다.
  *
- * 「JSON 조각 참조 누락」 절(#712): 활성 모듈·플러그인과 점검 대상 템플릿의 레이아웃 소스를 등록 없이 다시 검증해, 7.0 JSON
+ * 「JSON 조각 참조 누락」 절: 활성 모듈·플러그인과 점검 대상 템플릿의 레이아웃 소스를 등록 없이 다시 검증해, 7.0 JSON
  * 레이아웃의 깨진 조각 참조가 빈 자리로 등록된 곳을 표로 보여 준다. 설치를 막지 않은 경고라 종료 코드에는 반영하지 않는다.
  *
- * 읽지 못한 조각 소스(컴파일·파싱 실패)는 등록 정합성의 `unreadable` 로 출처당 1행 보고하고 실패로 친다(#725) — 종전에는
+ * 읽지 못한 조각 소스(컴파일·파싱 실패)는 등록 정합성의 `unreadable` 로 출처당 1행 보고하고 실패로 친다 — 종전에는
  * 「소실」 판정에서 조용히 빠져 로그에만 남았고 점검은 「이상 없음」 으로 끝났다.
  *
- * 「라우트에 연결되지 않은 플러그인 사용자 화면」 절(#725): 플러그인 `layouts/user` 화면은 사용자 템플릿에 등록되지만 플러그인
+ * 「라우트에 연결되지 않은 플러그인 사용자 화면」 절: 플러그인 `layouts/user` 화면은 사용자 템플릿에 등록되지만 플러그인
  * 라우트는 관리자 템플릿에만 병합된다. 공개 필터 `core.routes.filter_merged` 로 라우트를 주입하지 않으면 고객이 들어갈 길이
  * 없다 — 어느 활성 사용자 템플릿 라우트에도 없는 화면을 정보로 보여 준다(종료 코드에 반영하지 않는다).
  */
@@ -294,7 +294,7 @@ class LayoutCheckInstalledCommand extends Command
                 ->all();
             $dbKeySet = array_fill_keys($dbKeys, true);
 
-            // 소실 — 소스에 있고 이 템플릿에 붙을 자리가 있는데 DB 행이 없다. 꺼진 템플릿은 켤 때 등록되므로 소실이 아니다(#725 —
+            // 소실 — 소스에 있고 이 템플릿에 붙을 자리가 있는데 DB 행이 없다. 꺼진 템플릿은 켤 때 등록되므로 소실이 아니다(
             // 등록·재활성화 복원 모두 켜진 템플릿에만 행을 만든다).
             foreach ($definitions as $definition) {
                 if (! $templateActive || isset($dbKeySet[$definition['key']])) {
@@ -499,7 +499,7 @@ class LayoutCheckInstalledCommand extends Command
     }
 
     /**
-     * 「JSON 조각 참조 누락」 — 레이아웃 소스를 등록 없이 다시 검증해 빈 자리로 등록된 조각 참조를 모읍니다 (#712).
+     * 「JSON 조각 참조 누락」 — 레이아웃 소스를 등록 없이 다시 검증해 빈 자리로 등록된 조각 참조를 모읍니다.
      *
      * 대상은 활성 모듈·플러그인 전부와 점검 대상 템플릿이다. 설치 경로와 같은 검증({@see validateLayoutFiles()})을 돌리므로
      * 판정 규칙이 갈리지 않는다. 엄격 갈래 실패(설치 자체가 거부되는 레이아웃)는 이 절의 대상이 아니라 건너뛴다.

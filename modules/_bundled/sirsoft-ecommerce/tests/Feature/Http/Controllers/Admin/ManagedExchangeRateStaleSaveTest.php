@@ -7,7 +7,7 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 관리 환율이 화면을 연 사이 갱신됐을 때의 통화 설정 저장 회귀 테스트 (#703)
+ * 관리 환율이 화면을 연 사이 갱신됐을 때의 통화 설정 저장 회귀 테스트
  *
  * 회귀 배경: 환율 제공자가 관리하는 통화의 환율 칸은 화면에서 잠겨 있어 운영자가 바꿀 수 없다. 그런데
  * 저장할 때 화면이 받아 둔 환율을 그대로 다시 보냈고, 그 사이 제공자가 환율을 갱신했다면 저장값과 달라

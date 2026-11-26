@@ -1,4 +1,4 @@
-<!-- 템플릿 레이아웃 원문 편집기 — **HTML(`.g7.html`) 이 정본**이고 JSON 은 읽기 전용 산출물이다(#476).
+<!-- 템플릿 레이아웃 원문 편집기 — **HTML(`.g7.html`) 이 정본**이고 JSON 은 읽기 전용 산출물이다.
   화면 전체가 **`selectedNodeKind` 한 값으로 갈린다** — `layout` 이면 레이아웃 파일을, `extension` 이면
   확장 주입 조각을 다룬다. 좌측 트리가 그 둘을 구역으로 나눠 보여 준다.
 
@@ -36,7 +36,7 @@
   </data-source>
   <!-- 선택한 레이아웃의 본문. `?with_markup=1` 로 역변환본(`content_markup`)을 함께 받는다.
        **그 값은 더 이상 전역으로 심지 않는다** — `<code-workspace>` 가 `serverValue` prop 으로 직접 읽고,
-       편집 중인 값은 그 컴포넌트 안의 파일별 버퍼가 소유한다(#476 개편). 종전에는 여기서 `editorMarkup`
+       편집 중인 값은 그 컴포넌트 안의 파일별 버퍼가 소유한다. 종전에는 여기서 `editorMarkup`
        전역을 덮어썼기 때문에, 파일을 바꾸면 앞 파일의 저장하지 않은 수정이 말없이 사라졌다.
        JSON 뷰(`editorContent`)와 컴파일 경고·오류는 파일 단위 버퍼가 아니라 **지금 열린 파일의 서버 상태**라
        그대로 전역에 둔다. 선택이 아직 없으면 목록 첫 파일로 떨어진다. -->
@@ -92,7 +92,7 @@
       </default>
     </error-handling>
   </data-source>
-  <!-- limit 는 서버 기본 상한(100)과 같은 값에서 출발해 '더 보기' 마다 한 묶음씩 넓힌다. 서버가 상한 조회만 지원하므로(#518) 이 파라미터가 없으면 100건을 넘는 버전은 이 화면에서 도달할 수 없다. 상한 500 은 서버 LayoutVersionListRequest::MAX_LIMIT 과 같아야 하며, 넘기면 목록 전체가 422 가 된다. -->
+  <!-- limit 는 서버 기본 상한(100)과 같은 값에서 출발해 '더 보기' 마다 한 묶음씩 넓힌다. 서버가 상한 조회만 지원하므로 이 파라미터가 없으면 100건을 넘는 버전은 이 화면에서 도달할 수 없다. 상한 500 은 서버 LayoutVersionListRequest::MAX_LIMIT 과 같아야 하며, 넘기면 목록 전체가 422 가 된다. -->
   <data-source id="layout_versions" label_key="$t:editor.data_source.layout_versions" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || _global.layoutFilesList?.[0]?.name}}/versions?limit={{_global.layoutVersionLimit ?? 100}}" method="GET" :auto_fetch="false" :auth_required="true">
     <fallback>
       <field name="data" :value="[]"/>
@@ -406,7 +406,7 @@
           </div>
         </div>
       </page-header>
-      <!-- 검수용 저장 띠(#888) — 실행 역할이 stage 인 서버에서 이 편집기의 저장은 그 서버 전용 레이아웃에만 들어가고
+      <!-- 검수용 저장 띠 — 실행 역할이 stage 인 서버에서 이 편집기의 저장은 그 서버 전용 레이아웃에만 들어가고
            운영 사이트에는 반영되지 않는다. 다음 배포가 검수 서버의 편집분을 버리므로, 저장 전에 그 사실을 알린다. -->
       <div data-ref="stage_editor_banner" data-if="{{_global.appConfig?.runtime_role === 'stage'}}" role="status" class="alert-warning mt-4">
         <icon name="flask" class="text-amber-700 dark:text-amber-300 flex-shrink-0"/>
@@ -449,7 +449,7 @@
            `nodes` 는 레이아웃 파일과 확장 주입 조각을 **한 배열**로 합쳐 넘긴다 — 트리 변환·폴더 묶기는
            컴포넌트가 하므로 백엔드 응답 스키마는 그대로 둔다.
            라우트가 있는 레이아웃은 `href`(이 화면 `?route=…`)를 실어 이름이 링크가 된다 — 가운데 클릭·Ctrl+클릭은 새 탭에서
-           그 레이아웃 편집으로 열리고(진입 init 이 query.route 로 고른다), 보통 클릭은 아래 onSelect 그대로다(#757).
+           그 레이아웃 편집으로 열리고(진입 init 이 query.route 로 고른다), 보통 클릭은 아래 onSelect 그대로다.
            라우트 없는 부분 레이아웃·확장 조각은 주소로 가리킬 수 없어 링크가 아니다. -->
       <file-tree-picker data-type="composite" data-ref="file_tree_picker" mode="auto" :hrefMergeQuery="true" storageKey="g7le.codeEditor.{{route.identifier}}" class="shrink-0 min-h-0"
         nodes="{{[...(layout_files?.data ?? []).map(f => ({ key: 'layout:' + f.name, kind: 'layout', path: f.name, meta: { size: f.size_formatted, updatedAt: f.updated_at }, href: f.route_path ? ('/admin/templates/' + route.identifier + '/edit?route=' + encodeURIComponent(f.route_path)) : undefined, badges: f.has_update ? [{ text: '$t:admin.templates.layout_edit.updated_badge', tone: 'red' }] : [] })), ...(layout_extensions?.data ?? []).flatMap(g => (g.extensions ?? []).map(e => ({ key: 'ext:' + e.id, kind: 'extension', path: e.target_name, label: e.fragment_key &amp;&amp; e.fragment_key !== e.target_name ? (e.target_name + ' · ' + e.fragment_key) : e.target_name, group: g.source_label, groupKind: g.source_type, meta: { size: e.size_formatted, disabled: e.is_active === false }, badges: [...(e.is_override ? [{ text: '$t:admin.templates.layout_edit.extension_override_badge', tone: 'indigo' }] : []), ...(e.is_modified ? [{ text: '$t:admin.templates.layout_edit.extension_modified_badge', tone: 'amber' }] : []), ...(e.is_active === false ? [{ text: '$t:admin.templates.layout_edit.extension_inactive_badge', tone: 'gray' }] : [])] })))]}}"

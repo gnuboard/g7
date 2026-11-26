@@ -11,7 +11,7 @@ use Plugins\Sirsoft\HeroSection\Contracts\TargetSiteUrlsInterface;
  * 게시판 대상 해석기 — 게시판 목록 위치(`board_hero`). 저장 키는 게시판 id, 화면 값은 주소의 slug(없을 때만 숫자 id — slug 가 먼저다).
  *
  * 게시판 모듈이 켜져 있고 조회 계약({@see BoardDirectory})이 바인딩돼 있을 때만 위치가 등록되므로 이 클래스도 그때만 만들어진다.
- * 게시판 모듈이 공개한 계약만 쓴다(#916) — 게시판 Model·저장소는 게시판 내부다.
+ * 게시판 모듈이 공개한 계약만 쓴다 — 게시판 Model·저장소는 게시판 내부다.
  */
 class BoardTargetResolver implements TargetResolverInterface, TargetSiteUrlsInterface
 {

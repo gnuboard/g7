@@ -9,7 +9,7 @@ use App\Support\LocalizedValue;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 본인인증 「사용자 지정」 범위의 확장 지점(체크포인트) 레지스트리 (7.2.1, #952)
+ * 본인인증 「사용자 지정」 범위의 확장 지점(체크포인트) 레지스트리 (7.2.1)
  *
  * 관리자가 본인인증 정책의 범위를 「사용자 지정」(scope=custom)으로 고르면 대상(target)은 이 레지스트리에 등록된 키만 된다.
  * 키는 활성 모듈·플러그인이 `getIdentityCheckpoints()` 로 선언하고, 그 확장의 코드가

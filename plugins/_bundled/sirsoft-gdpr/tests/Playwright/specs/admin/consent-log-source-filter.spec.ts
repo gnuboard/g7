@@ -1,5 +1,5 @@
 /**
- * E2E: 관리자 「GDPR 동의 이력」 화면 — 출처 필터 「회원탈퇴」 체크박스 (#601 문서화 세션 중 발견)
+ * E2E: 관리자 「GDPR 동의 이력」 화면 — 출처 필터 「회원탈퇴」 체크박스 (문서화 세션 중 발견)
  *
  * @scenario consent-source-vocabulary
  * 케이스(마커 아님 — 평문): admin_gdpr_consent_log_source_filter_withdraw
@@ -29,7 +29,7 @@ async function gotoConsentLog(page: import('@playwright/test').Page): Promise<vo
 
 // @scenario source_filter=withdraw
 // @effects withdraw_checkbox_visible
-test('#601 - 동의 이력 출처 필터에 "회원탈퇴" 체크박스가 보인다', async ({ page, privacyManageToken }) => {
+test('동의 이력 출처 필터에 "회원탈퇴" 체크박스가 보인다', async ({ page, privacyManageToken }) => {
   await authenticatePage(page, privacyManageToken);
   await gotoConsentLog(page);
 
@@ -40,7 +40,7 @@ test('#601 - 동의 이력 출처 필터에 "회원탈퇴" 체크박스가 보�
 
 // @scenario source_filter=withdraw, toggle=on_then_off
 // @effects withdraw_filter_updates_query_and_refetches
-test('#601 - "회원탈퇴" 체크 시 URL 쿼리에 반영되고, 해제하면 빠진다', async ({ page, privacyManageToken }) => {
+test('"회원탈퇴" 체크 시 URL 쿼리에 반영되고, 해제하면 빠진다', async ({ page, privacyManageToken }) => {
   await authenticatePage(page, privacyManageToken);
   await gotoConsentLog(page);
 

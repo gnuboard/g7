@@ -7,7 +7,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * 상품 과세 종류 Enum 테스트 (#612)
+ * 상품 과세 종류 Enum 테스트
  *
  * 영세(zero_rated)를 더한 세 값과, 옵션 지정 ?? 상품 기본값으로 실효 과세 종류를 고르는 규칙을 잠근다.
  */

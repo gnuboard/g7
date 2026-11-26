@@ -3,13 +3,13 @@ feature: 표시 통화 초기화(initPreferredCurrency) 우선순위 — 관리�
 description: |
   `sirsoft-ecommerce.initPreferredCurrency` 는 사용자와 관리자 기반 레이아웃의 init_actions 에서 표시 통화(`_global.preferredCurrency`)를
   정한다. 우선순위는 계정 통화 → 브라우저 저장값 → 게스트 화면 언어 추정 → 기본 통화 → KRW 다.
-  관리자 화면 언어를 English 로 바꾼 직후 헤더 통화 단추가 「KR JPY」(배송국가 코드 + 표시 통화)로 바뀌었다(#869 브라우저 실측).
+  관리자 화면 언어를 English 로 바꾼 직후 헤더 통화 단추가 「KR JPY」(배송국가 코드 + 표시 통화)로 바뀌었다.
   관리자 레이아웃은 current_user 를 전역으로 올리지 않아 핸들러가 계정 통화를 못 읽고, 게스트용 언어 추정으로 내려가 ko 는 KRW
   하나에, en 은 여러 통화에 걸려 기본 통화로 떨어졌다. 관리자 인증 문맥에서는 추정을 돌리지 않고 「브라우저 저장값 → 기본 통화」만
   쓴다(관리자 init 주석이 약속한 계약). 사용자 화면 게스트 추정은 그대로다.
 
 axes:
-  # 시험 하나가 시나리오 하나다. 앞 여덟은 우선순위 단계, locale_ 은 게스트 화면 언어 추정, 끝 셋은 관리자 화면(#869 S13)
+  # 시험 하나가 시나리오 하나다. 앞 여덟은 우선순위 단계, locale_ 은 게스트 화면 언어 추정, 끝 셋은 관리자 화면
   case:
     - stored
     - account_user

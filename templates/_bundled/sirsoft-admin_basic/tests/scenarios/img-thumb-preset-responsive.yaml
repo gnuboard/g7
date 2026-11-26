@@ -1,4 +1,4 @@
-feature: 이미지 썸네일 규격(thumbPreset) × 반응형 문법 — 관리자 템플릿 Img·DataGrid 셀 (#869)
+feature: 이미지 썸네일 규격(thumbPreset) × 반응형 문법 — 관리자 템플릿 Img·DataGrid 셀
 
 description: |
   레이아웃은 `responsive` 로 화면 폭마다 Img 에 다른 썸네일 규격을 줄 수 있다. 규격이 폭을 따라가지 않으면 화면은 멀쩡하고

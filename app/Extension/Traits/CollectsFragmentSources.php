@@ -37,7 +37,7 @@ trait CollectsFragmentSources
      * 읽기 실패 수집함 — 배열이면 실패를 로그로 남기지 않고 `[파일 기본 이름 => 원인]` 으로 모은다.
      *
      * 업데이트 백업을 다시 읽어 비교 기준을 만드는 읽기({@see BackupLayoutReader})만 켠다 —
-     * 그 실패는 「그 조각만 비교 기준 없이 진행」 하면 되는 일이라 업데이트 1회에 WARNING 1줄로 모아 알린다(#725).
+     * 그 실패는 「그 조각만 비교 기준 없이 진행」 하면 되는 일이라 업데이트 1회에 WARNING 1줄로 모아 알린다.
      * 본 레이아웃 쪽 {@see ValidatesLayoutFiles::$skippedLayoutErrors} 와 같은 모양이다.
      *
      * @var array<string, string>|null
@@ -159,7 +159,7 @@ trait CollectsFragmentSources
      * `null` 을 돌려 그 건만 건너뛴다 (확장 번들 concat 이 확장별 try/catch 를 쓰는 것과 같은 이유).
      *
      * 실패는 프로세스에 **파일마다 한 번만** 기록한다({@see FragmentReadCache}) — 등록 경로가 템플릿마다·경로마다 같은
-     * 파일을 다시 읽어도 같은 실패를 되풀이하지 않는다(#725). 파일을 고치면 mtime·크기가 바뀌어 다시 읽는다.
+     * 파일을 다시 읽어도 같은 실패를 되풀이하지 않는다. 파일을 고치면 mtime·크기가 바뀌어 다시 읽는다.
      *
      * @param  array{path: string, markup: bool}  $source  소스 디스크립터
      * @param  array<string, mixed>  $logContext  실패 로그에 덧붙일 문맥
@@ -188,7 +188,7 @@ trait CollectsFragmentSources
                 return $this->compileMarkupFragmentFile($path, $templateId);
             }
 
-            // 빈 객체 `{}` 를 보존해 읽는다 — 연관 배열 디코드는 등록하는 순간 `[]` 로 굳힌다 (#758)
+            // 빈 객체 `{}` 를 보존해 읽는다 — 연관 배열 디코드는 등록하는 순간 `[]` 로 굳힌다
             $data = EmptyMap::decodePreserving(File::get($path));
 
             if (json_last_error() !== JSON_ERROR_NONE) {
@@ -265,7 +265,7 @@ trait CollectsFragmentSources
     /**
      * 소스는 있는데 정의를 얻지 못한 조각을 원인과 함께 돌려줍니다 — `[조각 식별자 => 원인]`.
      *
-     * 점검 명령이 읽지 못한 조각을 보고할 때 쓴다(#725). 소스 선택·읽기는 이 트레이트가 끝낸다 — 호출처가 소스 목록을 따로
+     * 점검 명령이 읽지 못한 조각을 보고할 때 쓴다. 소스 선택·읽기는 이 트레이트가 끝낸다 — 호출처가 소스 목록을 따로
      * 모으면 그것이 규약 사본이 된다.
      *
      * @param  string  $extensionsPath  확장 fragment 디렉토리 경로

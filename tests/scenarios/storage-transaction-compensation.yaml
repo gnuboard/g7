@@ -1,4 +1,4 @@
-feature: 트랜잭션 파일 보상 도구 StorageTransaction — 커밋되면 옮기고 롤백되면 원래대로 (#883 3단계)
+feature: 트랜잭션 파일 보상 도구 StorageTransaction — 커밋되면 옮기고 롤백되면 원래대로
 
 description: |
   파일 저장소는 DB 트랜잭션에 참여하지 않는다. 글·상품 저장 도중 파일을 옮기고 뒤 단계가 실패해 DB 가 되돌아가면 파일만

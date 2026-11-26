@@ -68,7 +68,7 @@ async function openSocialTab(page: Page, token: string): Promise<void> {
 test('signup source filter narrows the list and survives reload', async ({ page }) => {
   await gotoUsers(page, admin);
   await page.click('#detail_search_toggle');
-  // #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+  // 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
   const select = page.locator('[id^="social_login_provider_filter__"]');
   await expect(select).toBeVisible();
   await expect(select.locator('option[value="facebook"]')).toHaveCount(1);

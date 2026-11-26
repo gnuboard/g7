@@ -86,7 +86,7 @@ class OrderActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.order.after_payment_complete' => ['method' => 'handleOrderAfterPaymentComplete', 'priority' => 20],
             'sirsoft-ecommerce.order.after_deposit_recorded' => ['method' => 'handleOrderAfterDepositRecorded', 'priority' => 20],
             'sirsoft-ecommerce.order.payment_failed' => ['method' => 'handleOrderAfterPaymentFailed', 'priority' => 20],
-            // 결제사 계약의 재결제 복구 — 결제 취소 주문을 결제 대기로 되돌린 전이 (#916)
+            // 결제사 계약의 재결제 복구 — 결제 취소 주문을 결제 대기로 되돌린 전이 
             'sirsoft-ecommerce.order.payment_retry_restored' => ['method' => 'handleOrderPaymentRetryRestored', 'priority' => 20],
             'sirsoft-ecommerce.coupon.use' => ['method' => 'handleCouponUse', 'priority' => 20],
             'sirsoft-ecommerce.mileage.use' => ['method' => 'handleMileageUse', 'priority' => 20],
@@ -525,7 +525,7 @@ class OrderActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 주문 상태 동기화가 끌고 간 주문상품 전이를 기록합니다. (#599 후속 §7-1 A1~A5)
+     * 주문 상태 동기화가 끌고 간 주문상품 전이를 기록합니다.
      *
      * 결제완료·0원 주문 확정·결제실패·관리자 주문 수정·일괄 상태변경은 주문상품 상태를
      * 관계 빌더의 raw update 로 한 번에 옮긴다 — `OrderOptionService` 의 분할·훅 경로를
@@ -603,7 +603,7 @@ class OrderActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 취소 뒤에도 남아 있는 발급 완료 세금계산서를 기록합니다. (#599 후속 P15)
+     * 취소 뒤에도 남아 있는 발급 완료 세금계산서를 기록합니다.
      *
      * 세금계산서는 취소·부분취소에 반응하지 않는다 — 국세청 연동 자동 취소·재발행은 이번
      * 범위 밖이다(§12-A). 그 누락을 **드러내는** 것이 이 줄의 역할이다: 아무 표시도 없으면
@@ -635,7 +635,7 @@ class OrderActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 운송장 기록·정정을 기록합니다. (#599 후속 F11)
+     * 운송장 기록·정정을 기록합니다.
      *
      * 예전에는 상태 전이를 동반할 때만 훅이 발화해, **이미 배송중인 건의 송장 정정**은 어떤
      * 줄도 남기지 않았다. 고객이 "운송장이 바뀌었다" 고 물어도 언제 누가 무엇으로 고쳤는지
@@ -929,7 +929,7 @@ class OrderActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 재결제 복구 후 로그 기록 (#916)
+     * 재결제 복구 후 로그 기록 
      *
      * @param  Order  $order  복구된 주문
      * @param  string  $provider  복구를 요청한 결제사 id

@@ -1,5 +1,5 @@
 /**
- * useLayoutDocument — `enabled:false` 면 레이아웃을 요청하지 않는다 (#869 λ 이월 5: 편집기 첫 적재)
+ * useLayoutDocument — `enabled:false` 면 레이아웃을 요청하지 않는다 (이월 5: 편집기 첫 적재)
  *
  * 배경: PreviewCanvas 는 문서 Provider(LayoutEditorChrome)가 있어도 레거시 호환용 `useLayoutDocument()` 를 늘 함께
  * 불러, 같은 레이아웃(`/api/layouts/{t}/{name}.json?with_source_meta=1`)을 두 번 받았다(실측: 각 6~7초, HEAD 부터 있던

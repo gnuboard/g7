@@ -1,6 +1,6 @@
 /**
  * @file pluginSettingsPublicAssetDisk.test.tsx
- * @description 팝업 환경설정 화면 — 공개 자산 디스크 필드 (#878, 에디터 플러그인 공개#100 계약 이식).
+ * @description 팝업 환경설정 화면 — 공개 자산 디스크 필드 (에디터 플러그인 공개#100 계약 이식).
  * 필드는 저장 키(public_asset_disk)와 **플러그인 설정 응답에 서버가 붙인** 카탈로그(available_public_asset_disks)를 바인딩한다.
  * 코어 설정 API(core.settings.read)를 교차 조회하면 화면 권한(core.plugins.read)과 표면이 갈려 커스텀 역할에서 목록만 빈다.
  * 설정 스키마·defaults 에 같은 키가 없으면 저장 검증이 규칙을 만들지 않아 값이 조용히 버려진다 — 세 지점을 대조한다.

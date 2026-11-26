@@ -6,7 +6,7 @@ description: |
   해당 섹션 내 TagInput에 빨간 테두리와 인라인 에러 메시지가 표시된다.
 
   수정 이력:
-    - 이슈 #413 item 8: view_roles/manage_roles 빈 배열 시 검증 통과하던 버그 수정
+    - view_roles/manage_roles 빈 배열 시 검증 통과하던 버그 수정
     - FormRequest nullable → required_with + min:1 으로 강화
     - 에러 메시지가 report_permissions(영문 키) 그대로 노출되던 버그 수정 (messages() array_merge)
     - 해당 섹션 내 TagInput에 인라인 에러 Span 누락 → 추가

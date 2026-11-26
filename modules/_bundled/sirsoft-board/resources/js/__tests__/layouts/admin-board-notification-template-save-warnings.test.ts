@@ -1,6 +1,6 @@
 /**
  * @file admin-board-notification-template-save-warnings.test.ts
- * @description 게시판 환경설정 → 알림 → 알림 문안 편집 창의 저장 경고와 회원 항목 변수 묶음 (#490)
+ * @description 게시판 환경설정 → 알림 → 알림 문안 편집 창의 저장 경고와 회원 항목 변수 묶음
  *
  * @scenario-manifest tests/scenarios/notification-template-save-warnings.yaml
  *

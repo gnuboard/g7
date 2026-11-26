@@ -8,7 +8,7 @@ use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 마일리지 일괄 유효기간 연장의 다회원 선택 회귀 테스트 (#703)
+ * 마일리지 일괄 유효기간 연장의 다회원 선택 회귀 테스트
  *
  * 회귀 배경: 마일리지 내역 화면에서 여러 회원의 적립건을 골라 「유효기간 연장」을 누르면 화면이 첫 행의
  * 회원 식별자 하나만 보냈고, 서버는 그 회원의 적립건만 골라 연장했다. 나머지 회원의 적립건은 오류 없이

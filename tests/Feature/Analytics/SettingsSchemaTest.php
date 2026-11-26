@@ -100,7 +100,7 @@ class SettingsSchemaTest extends TestCase
         $this->assertSame([10, 30, 60, 180, 600, 1800], AnalyticsConfig::parseBounds($defaults['duration_bucket_bounds'], ''));
         $this->assertSame([1, 2, 3, 4, 5, 7, 10, 14, 20], AnalyticsConfig::parseBounds($defaults['pages_bucket_bounds'], ''));
         $this->assertTrue($defaults['archive_on_view_enabled']);
-        // 적재 방식 설정은 없앴다 — 수집은 언제나 요청 안에서 끝난다(#682 S3 라운드 6).
+        // 적재 방식 설정은 없앴다 — 수집은 언제나 요청 안에서 끝난다.
         $this->assertArrayNotHasKey('dispatch_mode', $defaults);
     }
 

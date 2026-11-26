@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * [한시적 호환 Shim — 7.0.0-beta.1 → 7.0.0-beta.2 업그레이드 전용]
  *
- * beta.2 에서 알림 시스템 통합(#256)으로 MailTemplate 은 공식 제거되었으나,
+ * beta.2 에서 알림 시스템 통합으로 MailTemplate 은 공식 제거되었으나,
  * 업데이트 중 in-memory 로 실행되는 beta.1 의 `CoreUpdateService::syncCoreMailTemplates()`
  * 가 `MailTemplate::where()` / `::create()` 를 호출하여 autoload 가 필요하다.
  *

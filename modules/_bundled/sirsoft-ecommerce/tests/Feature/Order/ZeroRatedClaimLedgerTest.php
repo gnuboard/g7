@@ -26,7 +26,7 @@ use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 영세 품목의 클레임 재계산과 결제 행 취소 부가세 (#612)
+ * 영세 품목의 클레임 재계산과 결제 행 취소 부가세
  *
  * 부분취소 재계산은 주문 시점 스냅샷 모드로 돈다. 주문상품 행에 확정해 둔 과세 종류(`tax_status`)를
  * 따라야 남은 상품의 과세·영세·면세 갈래가 주문 생성 때와 같은 규칙으로 다시 나뉜다.

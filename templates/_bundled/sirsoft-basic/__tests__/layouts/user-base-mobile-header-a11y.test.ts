@@ -94,7 +94,7 @@ describe('모바일 머리글 아이콘 단추 접근 이름', () => {
     const $t = (k: string) => k;
     // eslint-disable-next-line no-new-func
     const run = (currentUser: unknown) => new Function('_global', '$t', `return (${m![1]});`)({ currentUser }, $t);
-    // 키는 base(#754)의 아이콘 단추 이름 정리(common.*)를 따른다. 로그인 여부는 topic 대로 uuid 로 가린다.
+    // 키는 base의 아이콘 단추 이름 정리(common.*)를 따른다. 로그인 여부는 topic 대로 uuid 로 가린다.
     expect(run({ uuid: 'u' })).toBe('$t:common.mypage');
     expect(run(null)).toBe('$t:common.login');
     // 비회원도 전역 currentUser 는 빈 값([] 또는 {})이고 참으로 읽힌다 — uuid 로 가려야 「마이페이지」 로 잘못 부르지 않는다

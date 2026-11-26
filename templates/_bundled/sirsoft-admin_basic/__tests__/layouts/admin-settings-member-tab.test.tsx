@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-member-tab.test.tsx
- * @description 환경설정 「회원」 탭(#490 4단계)의 뼈대와 렌더 계약
+ * @description 환경설정 「회원」 탭의 뼈대와 렌더 계약
  *
  * 탭 목록에 「회원」이 보안 뒤에 들어가 16개가 되고, 하위 탭 막대는 「가입 항목」「표시 이름」「닉네임 정책」 셋이다
  * (「표시 이름」 구획의 내용은 admin-settings-member-display-name 테스트가 잠근다). 항목 정의는 회원 탭에서만 받는다. 화면에 번역 키가 그대로 보이면 안 되고,

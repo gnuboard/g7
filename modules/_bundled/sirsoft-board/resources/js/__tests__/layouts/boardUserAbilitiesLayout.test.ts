@@ -164,7 +164,7 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
         // @scenario check=ability_key_present
         // @effects write_entry_splits_on_can_write
         it('_write_button.json: 쓸 수 있으면 링크 갈래, 아니면 disabled 에 abilities?.can_write 체크가 있는 단추 갈래', () => {
-            // #757 — 쓸 수 있는 회원은 글쓰기 화면 링크(새 탭 가능), 그 밖은 단추. 감싸개 Div 아래 두 갈래로 나뉜다
+            // 쓸 수 있는 회원은 글쓰기 화면 링크(새 탭 가능), 그 밖은 단추. 감싸개 Div 아래 두 갈래로 나뉜다
             const children = (writeButton as { children: Array<Record<string, unknown>> }).children;
             const link = children.find((c) => c.name === 'A');
             const button = children.find((c) => c.name === 'Button');

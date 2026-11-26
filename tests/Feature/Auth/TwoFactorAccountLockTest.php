@@ -247,7 +247,7 @@ class TwoFactorAccountLockTest extends TestCase
 
         $this->lockAccount();
 
-        // 7.2.0(#798 K13) — 잠기는 순간 기존 토큰이 회수되므로 잠기기 전 토큰은 인증부터 실패한다.
+        // 7.2.0 — 잠기는 순간 기존 토큰이 회수되므로 잠기기 전 토큰은 인증부터 실패한다.
         $this->app['auth']->forgetGuards();
         $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/user/auth/refresh')

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
- * 읽히지 않던 점검 모드 설정(`general.maintenance_mode`) 제거 (#888)
+ * 읽히지 않던 점검 모드 설정(`general.maintenance_mode`) 제거
  *
  * 점검 모드는 `php artisan down` / `php artisan up` 이 맡는다. 설정 키는 기본값에 있었지만 아무 코드도 읽지 않아,
  * 켜 두어도 사이트가 막히지 않았다. 7.2.0 은 기본값·저장 검증에서 키를 없애고, 업그레이드 데이터 스텝이 저장 파일에

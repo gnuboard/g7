@@ -302,7 +302,7 @@ describe('AdminSidebar', () => {
       replaceWindowLocation({ ...originalLocation, pathname } as Location);
     };
 
-    // URL 메뉴는 `<a href>` 로 그린다(#757 링크 단계) — 활성 스타일도 링크에 붙는다
+    // URL 메뉴는 `<a href>` 로 그린다(링크 단계) — 활성 스타일도 링크에 붙는다
     // @scenario surface=active_match
     // @effects active_menu_by_longest_prefix
     it('정확한 URL 매칭: /admin/boards에서 "게시판 관리"만 활성화', () => {
@@ -378,11 +378,11 @@ describe('AdminSidebar', () => {
 });
 
 /**
- * 구조형 메뉴 아이콘 (#381) — 사이드바의 네 렌더 분기(URL+하위 · 하위만 · URL만 · 둘 다 없음)가 모두
+ * 구조형 메뉴 아이콘 — 사이드바의 네 렌더 분기(URL+하위 · 하위만 · URL만 · 둘 다 없음)가 모두
  * `icon_spec`(class·image·svg)을 MenuIcon 으로 그리고, spec 없는 호환 문자열 icon 은 종전처럼 그 클래스를,
  * 깨진 이미지는 `fas fa-circle` 을 그린다.
  */
-describe('AdminSidebar — 구조형 메뉴 아이콘 (#381)', () => {
+describe('AdminSidebar — 구조형 메뉴 아이콘', () => {
   let originalG7Core: any;
 
   beforeEach(() => {

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
 /**
- * 본문 미디어 코어 계약 — 정책·검증 규칙·참조 추출·주소 재작성·업로드 계약 (#883 4단계)
+ * 본문 미디어 코어 계약 — 정책·검증 규칙·참조 추출·주소 재작성·업로드 계약
  *
  * @scenario-manifest tests/scenarios/content-media-contract.yaml
  */

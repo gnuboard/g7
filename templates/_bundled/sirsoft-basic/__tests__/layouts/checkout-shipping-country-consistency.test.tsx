@@ -1,12 +1,12 @@
 /**
  * @file checkout-shipping-country-consistency.test.tsx
- * @description 주문서·배송지 창의 배송국가 단일 출처 + 상세주소 필수 표시 회귀 검증 (#703)
+ * @description 주문서·배송지 창의 배송국가 단일 출처 + 상세주소 필수 표시 회귀 검증
  *
  * 회귀 배경:
  *   - 주문서의 배송국가 선택 칸은 `_local.shipping.country_code ?? _global.preferredShippingCountry` 를,
  *     국내/해외 주소 폼·결제 버튼 잠금은 `_local.shipping.country_code ?? 'KR'` 을 봤다. 진입 시에는
  *     배송비 계산용 `_local.checkout.country_code` 만 시드돼, 선호 배송국가가 미국이면 선택 칸은 「미국」인데
- *     주소 폼은 국내형이고 주문은 KR 로 저장됐다(도입: #421 유저별 배송국가 작업).
+ *     주소 폼은 국내형이고 주문은 KR 로 저장됐다(도입: 유저별 배송국가 작업).
  *   - 마이페이지 배송지 창·주문서 배송지 관리 창의 「새 배송지」도 같은 어긋남을 가졌다.
  *   - 국내 상세주소 칸은 서버 필수값인데 별표·오류 표시가 없었다.
  */

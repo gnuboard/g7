@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-upload-thumbnail.test.tsx
- * @description 환경설정 업로드 탭 「썸네일」·「썸네일 규격」 카드와 드라이버 탭 「이미지 처리」 카드 (#869)
+ * @description 환경설정 업로드 탭 「썸네일」·「썸네일 규격」 카드와 드라이버 탭 「이미지 처리」 카드
  *
  * 화면이 지켜야 할 약속을 고정한다.
  *  - 저장 위치 select 가 저장값과 다르면 그 줄은 사용량 대신 「저장 후 집계」를 보이고 규격 select·비우기를 잠근다
@@ -249,7 +249,7 @@ function staticKeys(json: unknown): string[] {
   return [...keys].filter((k) => k.startsWith('admin.settings.upload.thumbnail') || k.startsWith('admin.settings.drivers.image') || k.startsWith('admin.modal_label.admin_settings.settings_thumbnail'));
 }
 
-describe('업로드 탭 — 썸네일 카드 (#869)', () => {
+describe('업로드 탭 — 썸네일 카드', () => {
   let testUtils: Awaited<ReturnType<typeof renderCards>> | undefined;
 
   beforeEach(() => {
@@ -486,7 +486,7 @@ describe('업로드 탭 — 썸네일 카드 (#869)', () => {
   });
 });
 
-describe('업로드 탭 저장 본문 (#869)', () => {
+describe('업로드 탭 저장 본문', () => {
   /**
    * 저장 버튼의 요청 본문 식을 꺼냅니다.
    *
@@ -534,7 +534,7 @@ describe('업로드 탭 저장 본문 (#869)', () => {
   });
 });
 
-describe('기존 이미지 썸네일 만들기 사슬 (#869)', () => {
+describe('기존 이미지 썸네일 만들기 사슬', () => {
   /**
    * 한 걸음 명명 액션의 api-call 과 응답 처리 갈래를 꺼냅니다.
    *
@@ -664,7 +664,7 @@ describe('기존 이미지 썸네일 만들기 사슬 (#869)', () => {
   });
 });
 
-describe('썸네일 비우기 사슬 (#869)', () => {
+describe('썸네일 비우기 사슬', () => {
   /**
    * 비우기 한 걸음 명명 액션의 api-call 과 성공 갈래(쌓기 set-state·이어 갈지 정하는 switch)를 꺼냅니다.
    *
@@ -757,7 +757,7 @@ describe('썸네일 비우기 사슬 (#869)', () => {
   });
 });
 
-describe('기존 이미지 썸네일 만들기 창 — 확장 규격 이름 (#869)', () => {
+describe('기존 이미지 썸네일 만들기 창 — 확장 규격 이름', () => {
   // @scenario surface=pregenerate_chain
   // @effects pregenerate_modal_shows_extension_preset_label
   it('여는 버튼이 규격 이름표를 함께 넘기고, 창은 확장 규격을 이름(현재 언어)과 작은 식별자로 보인다', async () => {
@@ -836,7 +836,7 @@ describe('기존 이미지 썸네일 만들기 창 — 확장 규격 이름 (#86
   });
 });
 
-describe('규격 표 행 추가·삭제와 422 행 번호 (#869 검토)', () => {
+describe('규격 표 행 추가·삭제와 422 행 번호 (검토)', () => {
   /**
    * 업로드 조각에서 data-testid 식에 주어진 조각이 든 노드를 찾습니다.
    *
@@ -878,7 +878,7 @@ describe('규격 표 행 추가·삭제와 422 행 번호 (#869 검토)', () => 
   }
 });
 
-describe('업로드 탭 placeholder·전환 대기 (#869 검토)', () => {
+describe('업로드 탭 placeholder·전환 대기 (검토)', () => {
   // @scenario surface=presets_table
   // @effects preset_placeholders_translated
   it('규격 표 이름·세로 칸의 placeholder 는 다국어 키다', () => {
@@ -901,7 +901,7 @@ describe('업로드 탭 placeholder·전환 대기 (#869 검토)', () => {
   });
 });
 
-describe('드라이버 탭 — 이미지 처리 카드 (#869)', () => {
+describe('드라이버 탭 — 이미지 처리 카드', () => {
   // @scenario surface=driver_card
   // @effects image_driver_card_bound_to_catalog
   it('선택지는 available_drivers.image, 값 키는 drivers.image_driver, 사용 불가 안내가 있다', () => {
@@ -915,7 +915,7 @@ describe('드라이버 탭 — 이미지 처리 카드 (#869)', () => {
   });
 });
 
-describe('모두 비우기 창 — 위험 단추 진행 표시 (#869 검토)', () => {
+describe('모두 비우기 창 — 위험 단추 진행 표시 (검토)', () => {
   /**
    * 창의 하단 단추 줄을 주어진 진행 상태로 렌더합니다.
    *
@@ -959,7 +959,7 @@ describe('모두 비우기 창 — 위험 단추 진행 표시 (#869 검토)', (
   });
 });
 
-describe('썸네일 화면 다국어 (#869)', () => {
+describe('썸네일 화면 다국어', () => {
   // @scenario surface=i18n
   // @effects thumbnail_keys_exist_in_three_locales
   it('정적·동적 키가 ko·en·ja 세 언어에 모두 있다', () => {
@@ -988,7 +988,7 @@ describe('썸네일 화면 다국어 (#869)', () => {
   });
 });
 
-describe('업로드 탭 — 움직이는 이미지는 원본 사용 토글 (#869)', () => {
+describe('업로드 탭 — 움직이는 이미지는 원본 사용 토글', () => {
   let testUtils: Awaited<ReturnType<typeof renderCards>> | undefined;
 
   beforeEach(() => {
@@ -1056,7 +1056,7 @@ describe('업로드 탭 — 움직이는 이미지는 원본 사용 토글 (#869
   });
 });
 
-describe('업로드 탭 — 썸네일 「고급」 서버 보호 값 (#869)', () => {
+describe('업로드 탭 — 썸네일 「고급」 서버 보호 값', () => {
   let testUtils: Awaited<ReturnType<typeof renderCards>> | undefined;
 
   /** 칸 이름 → [저장 키 뒤, 서버 기본값, 하한, 상한] */

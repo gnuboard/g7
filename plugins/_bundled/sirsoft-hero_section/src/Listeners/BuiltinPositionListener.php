@@ -17,7 +17,7 @@ use Plugins\Sirsoft\HeroSection\Support\Targets\ProductTargetResolver;
  *
  * 사이트 홈·쇼핑몰 메인(정적)은 늘 넣고, 게시판 목록(게시판마다)·상품 상세(상품마다)·카테고리 목록(카테고리마다)은 그 모듈이 켜져 있을
  * 때만 넣는다. 해석기는 모듈이 공개한 조회 계약만 쓰므로, 모듈이 켜져 있어도 계약이 없는 옛 판(게시판 1.3.0·이커머스 1.4.0 미만)이면
- * 위치를 넣지 않는다(#916). 모듈을 끄면 그 위치가 목록에서 빠지고, 배너는 남는다.
+ * 위치를 넣지 않는다. 모듈을 끄면 그 위치가 목록에서 빠지고, 배너는 남는다.
  */
 class BuiltinPositionListener implements HookListenerInterface
 {

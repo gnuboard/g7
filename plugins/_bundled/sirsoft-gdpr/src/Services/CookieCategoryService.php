@@ -158,7 +158,7 @@ class CookieCategoryService
      * 설명(description)은 관리자 설정 화면에 편집 UI 가 없어(라벨만 편집 가능) 운영자가
      * 카테고리를 저장하면 description 이 유실된다. 따라서 설명은 관리자 설정(getCategories)이
      * 아니라 항상 코드 기본값(getDefaultCategories)에서 가져온다 — 운영자 라벨 커스텀과
-     * 무관하게 마이페이지·배너에 일관된 설명이 노출된다 (이슈 #430). 기본값에도 없으면 null.
+     * 무관하게 마이페이지·배너에 일관된 설명이 노출된다. 기본값에도 없으면 null.
      *
      * @param  string  $consentKey  동의 항목 키 (예: cookie_analytics)
      * @return string|null

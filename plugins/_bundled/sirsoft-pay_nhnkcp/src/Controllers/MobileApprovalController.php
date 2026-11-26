@@ -1,6 +1,6 @@
 <?php
 
-// audit:allow api-doc-coverage reason: 응답을 공통 형식(ResponseHelper)으로 바꾸고 오류 문구를 error 대신 번역된 message 에 싣는다 — 결제 핸들러는 error 와 message 를 모두 읽는다(#916). 해당 엔드포인트 문서 부재는 사전 상태
+// audit:allow api-doc-coverage reason: 응답을 공통 형식(ResponseHelper)으로 바꾸고 오류 문구를 error 대신 번역된 message 에 싣는다 — 결제 핸들러는 error 와 message 를 모두 읽는다. 해당 엔드포인트 문서 부재는 사전 상태
 
 declare(strict_types=1);
 
@@ -153,7 +153,7 @@ class MobileApprovalController
                     return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.order_not_found', 404);
                 }
 
-                // 회원 주문은 로그인 본인(아니면 403), 비회원 주문은 그 주문의 조회 토큰(아니면 401) — 클레임 경로와 한 판정(#883, #855)
+                // 회원 주문은 로그인 본인(아니면 403), 비회원 주문은 그 주문의 조회 토큰(아니면 401) — 클레임 경로와 한 판정
                 $ownershipError = $this->orderOwnershipRejection(
                     $request,
                     $order,
@@ -305,7 +305,7 @@ class MobileApprovalController
      */
     private function buildTaxFields(OrderRecord $order, int $paymentAmount): array
     {
-        // 면세 = 면세 + 영세, 과세 합계 = 영세를 뺀 과세 합계(이커머스 1.3.3, #612) — 영세는 부가세가 없어 KCP 에는 비과세로 넘긴다.
+        // 면세 = 면세 + 영세, 과세 합계 = 영세를 뺀 과세 합계(이커머스 1.3.3) — 영세는 부가세가 없어 KCP 에는 비과세로 넘긴다.
         // 세 값은 이커머스 결제 계약(pgTaxSplit)이 주문 저장값으로 계산한다.
         $taxSplit = $this->bridge->pgTaxSplit($order->orderNumber);
         $taxFreeAmt = (int) round($taxSplit->taxFree);

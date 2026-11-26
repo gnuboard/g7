@@ -1,6 +1,6 @@
 /**
  * @file TemplateSettingsFields.test.tsx
- * @description 템플릿 설정 공용 화면의 칸 그리기를 잠근다 (#434).
+ * @description 템플릿 설정 공용 화면의 칸 그리기를 잠근다.
  *
  * - 섹션마다 카드 하나, 칸 종류별 입력, 값이 바뀌면 폼 전체(섹션 중첩)를 올린다
  * - 업로더 콜백이 연달아 와도 앞 결과를 덮지 않는다(최신 값 이어 붙이기)
@@ -91,7 +91,7 @@ const value = {
   header: { max_boards: 5, show_theme_toggle: false, note: '', links: [{ label: { ko: '공지' }, url: '/notice' }] },
 };
 
-describe('TemplateSettingsFields (#434)', () => {
+describe('TemplateSettingsFields', () => {
   beforeEach(() => {
     uploaderProps.length = 0;
   });
@@ -249,7 +249,7 @@ const typedValue = {
   footer: { copyright: { ko: '저작권 한국어', en: 'Copyright English' } },
 };
 
-describe('TemplateSettingsFields — 칸 종류별 부품 (#434)', () => {
+describe('TemplateSettingsFields — 칸 종류별 부품', () => {
   let originalG7Core: unknown;
 
   beforeEach(() => {

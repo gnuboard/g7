@@ -129,7 +129,7 @@ trait ResolvesLayoutInstallSource
             }
 
             // 같은 파일의 미이행 경고는 프로세스에 한 번이다 — 등록 경로가 템플릿마다·경로마다 소스를 다시 모아도
-            // 되풀이하지 않는다(#725). 파일을 바꾸면 키가 바뀌어 다시 알린다.
+            // 되풀이하지 않는다. 파일을 바꾸면 키가 바뀌어 다시 알린다.
             if ($jsonForced && FragmentReadCache::firstNotice('json-forced|'.$sourceLabel.'|'.FragmentReadCache::key($markupFile))) {
                 Log::warning($sourceLabel.' 설치 소스 JSON 강제를 이행하지 못했습니다 (짝 .json 부재 — 마크업 컴파일로 대체)', [
                     'markup' => str_replace(base_path().DIRECTORY_SEPARATOR, '', $markupFile),

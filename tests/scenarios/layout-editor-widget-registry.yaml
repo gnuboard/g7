@@ -4,7 +4,7 @@ description: |
   속성 탭 컨트롤은 `widget` 이름으로 레지스트리에서 위젯 컴포넌트를 찾는다. 이름이 등록돼 있지 않으면 그 컨트롤은
   「지원하지 않는 컨트롤」 폴백으로 떨어져 편집할 수 없다(실측: `widget:"number"` 컨트롤이 편집 불가였던 원인).
   `registerCoreWidgets` 는 코어가 제공하는 위젯을 한 번에 등록하고, 두 번 불러도 같은 인스턴스를 유지한다.
-  `thumbnail-preset` 은 두 템플릿 controls.json 의 `imgThumbPreset`(Img 「썸네일 규격」, #869)이 가리키는 이름이다.
+  `thumbnail-preset` 은 두 템플릿 controls.json 의 `imgThumbPreset`(Img 「썸네일 규격」)이 가리키는 이름이다.
 
 axes:
   surface: [registry, core_widgets]

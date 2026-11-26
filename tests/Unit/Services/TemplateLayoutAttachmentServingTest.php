@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Tests\TestCase;
 
 /**
- * 템플릿 레이아웃 첨부 디스크 인지 서빙 테스트 (공개 #99 / 내부 #563)
+ * 템플릿 레이아웃 첨부 디스크 인지 서빙 테스트 (공개 #99)
  *
  * PublicAttachmentController 이미지 서빙과 동형 결함 — getServableFilePath 가
  * getBasePath 로 로컬 절대 경로를 조립해 S3 디스크 행에서 fileResponse(filemtime)가

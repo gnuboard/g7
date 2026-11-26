@@ -13,7 +13,7 @@ use App\Contracts\Extension\StorageInterface;
  *
  * 형제 이커머스 `Services\Concerns\ResolvesRowStorage` 와 같은 해석이다 — 종전에는 첨부 서비스의
  * 사본(private 메서드)만 있어 게시판 삭제(`BoardService::deleteAttachmentFiles()`)가 주입 디스크
- * 하나만 지웠다(#869 R1).
+ * 하나만 지웠다.
  */
 trait ResolvesRowStorage
 {

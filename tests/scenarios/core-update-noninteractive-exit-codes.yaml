@@ -1,7 +1,7 @@
 feature: 코어 업데이트의 미완료·결과 없음을 종료 코드로 드러낸다 (비대화형 실행)
 
 description: |
-  #888. 비대화형 실행(cron·스크립트)은 화면 문구가 아니라 종료 코드로 성공을 판단한다.
+  비대화형 실행(cron·스크립트)은 화면 문구가 아니라 종료 코드로 성공을 판단한다.
   - `core:update` 가 업그레이드 스텝 핸드오프(새 프로세스 재진입 요청)로 멈추면 정리·재개 안내는 그대로 두고 종료 코드
     75(`UpgradeHandoffException::EXIT_CODE`, 재개 필요)로 끝낸다. 단독 `core:execute-upgrade-steps` 와 같은 값이다. 종전에는 0.
   - 번들 일괄 업데이트 자식(`core:execute-bundled-updates`)이 정상 종료(0)했는데 결과 줄(`[BUNDLED-RESULT]`)이 없으면 실패

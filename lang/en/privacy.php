@@ -43,7 +43,7 @@ return [
             'withdraw_notice' => 'Notice before withdrawing dormant accounts',
             'withdraw' => 'Withdraw dormant accounts',
         ],
-        // Password expiry (#736) — security tab "Run now"
+        // Password expiry — security tab "Run now"
         'password_expiry_stages' => [
             'notice' => 'Password expiry advance notice',
             'expire' => 'Password expiry processing',

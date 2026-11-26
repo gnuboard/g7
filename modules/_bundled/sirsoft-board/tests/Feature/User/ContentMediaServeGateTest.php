@@ -13,7 +13,7 @@ use Modules\Sirsoft\Board\Services\PostContentMediaService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 본문 미디어 서빙 게이트 (#883 4단계)
+ * 본문 미디어 서빙 게이트
  *
  * 서빙 라우트에는 권한 미들웨어가 없다(`<img>`·`<video>` 요청에는 Bearer 가 없다). 서명이 있으면 통과, 없으면 글 읽기 권한 +
  * 삭제·비밀·블라인드 게이트. 임시 행은 서명이 있을 때만. 글 응답(PostResource)은 본문 주소를 서명 주소로 내보낸다.
@@ -182,7 +182,7 @@ class ContentMediaServeGateTest extends BoardTestCase
     }
 
     /**
-     * 서빙 라우트가 구간 요청을 받는다 — 1바이트 206 · 끝 기준 206 · 범위 밖 416 (#883 5단계 Responder 경유).
+     * 서빙 라우트가 구간 요청을 받는다 — 1바이트 206 · 끝 기준 206 · 범위 밖 416 (5단계 Responder 경유).
      *
      * @return void 반환값 없음
      *

@@ -285,7 +285,7 @@ class TemplateCacheManagementTest extends TestCase
     }
 
     /**
-     * template:cache-clear 커맨드가 공개 config 캐시를 삭제하는지 테스트 (#588, 공개 #119)
+     * template:cache-clear 커맨드가 공개 config 캐시를 삭제하는지 테스트 (공개 #119)
      *
      * `template.config.{identifier}` 는 버전 접미사 없는 고정 키라 캐시 버전 bump 로
      * 무효화되지 않는다 — 커맨드가 능동 forget 하지 않으면 TTL(1시간) 동안
@@ -317,7 +317,7 @@ class TemplateCacheManagementTest extends TestCase
     }
 
     /**
-     * template:cache-clear 전체 모드가 공개 config 캐시를 삭제하는지 테스트 (#588, 공개 #119)
+     * template:cache-clear 전체 모드가 공개 config 캐시를 삭제하는지 테스트 (공개 #119)
      *
      * @scenario cache_state=warm_stale,lifecycle_trigger=cache_clear_command_all,template_type=admin
      *
@@ -345,7 +345,7 @@ class TemplateCacheManagementTest extends TestCase
     }
 
     /**
-     * clearTemplateCache() 가 config + components_manifest 고정 키를 삭제하는지 테스트 (#588)
+     * clearTemplateCache() 가 config + components_manifest 고정 키를 삭제하는지 테스트
      *
      * components_manifest 는 숫자 id / identifier 두 변종 키가 실재한다
      * (ComponentExists 는 int|string 을 수용). 템플릿 업데이트로 components.json 이
@@ -387,7 +387,7 @@ class TemplateCacheManagementTest extends TestCase
     }
 
     /**
-     * 비활성화/삭제 라이프사이클이 공개 config 캐시를 삭제하는지 테스트 (#588, 공개 #119)
+     * 비활성화/삭제 라이프사이클이 공개 config 캐시를 삭제하는지 테스트 (공개 #119)
      *
      * 활성 시절 warm 된 config 캐시가 남으면 비활성/삭제된 템플릿의 manifest 를
      * 최대 1시간 200 으로 계속 서빙한다 (캐시 히트가 상태 검사보다 먼저).
@@ -427,7 +427,7 @@ class TemplateCacheManagementTest extends TestCase
     }
 
     /**
-     * 비활성화 시 편집기용 `.with_source_meta` 변종 레이아웃 캐시도 삭제되는지 테스트 (#588)
+     * 비활성화 시 편집기용 `.with_source_meta` 변종 레이아웃 캐시도 삭제되는지 테스트
      *
      * LayoutService 는 편집기 병합 응답을 `.with_source_meta` 접미사 키로 별도 캐싱한다.
      * 라이프사이클 무효화(forgetLayoutCacheKeys)가 접미사 없는 키만 지우면

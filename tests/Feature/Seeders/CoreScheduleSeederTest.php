@@ -56,7 +56,7 @@ class CoreScheduleSeederTest extends TestCase
         'auth-process-password-expiry' => ['auth:process-password-expiry --scheduled', '15 5 * * *'],
         'identity-expire-challenges' => ['identity:expire-challenges', '0 * * * *'],
         'analytics-prune' => ['analytics:prune', '10 5 * * *'],
-        // 7.2.0 신규 (#869) — 옛 console.php 에 없던 예약. 카탈로그 전수 대조를 위해 함께 둔다.
+        // 7.2.0 신규 — 옛 console.php 에 없던 예약. 카탈로그 전수 대조를 위해 함께 둔다.
         'thumbnails-prune' => ['thumbnails:prune --scheduled', '20 5 * * *'],
         'dashboard-broadcast-resources' => ['dashboard:broadcast-resources', 'everyThirtySeconds'],
         'analytics-archive-hour' => ['analytics:archive --period=hour --scheduled', '5 * * * *'],

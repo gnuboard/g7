@@ -1,6 +1,6 @@
 /**
  * @file downloadAttachment.post.test.ts
- * @description 첨부 다운로드 핸들러의 POST 본문 경로 (이슈 #682 S3)
+ * @description 첨부 다운로드 핸들러의 POST 본문 경로
  *
  * 방문자 통계 정보주체 내보내기(`POST /api/admin/analytics/privacy/subjects/export`)는 서버가 파일을 POST 응답으로
  * 흘려보낸다. `method: 'POST'` 를 주면 코어 ApiClient 의 post 로 본문을 실어 blob 을 받고, 생략하면 종전대로 GET 이다

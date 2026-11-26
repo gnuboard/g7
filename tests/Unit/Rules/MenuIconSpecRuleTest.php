@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
 /**
- * 메뉴 아이콘 구조형 값 검증 규칙(MenuIconSpecRule) 테스트 (#381).
+ * 메뉴 아이콘 구조형 값 검증 규칙(MenuIconSpecRule) 테스트.
  *
  * class·image(site·attachment·package)·svg 세 형의 형식·경로·첨부 소유·확장 이미지 읽기 전용·SVG 안전성을 판정하고,
  * 위반은 사유 문구로 실패시키는지 검증한다.

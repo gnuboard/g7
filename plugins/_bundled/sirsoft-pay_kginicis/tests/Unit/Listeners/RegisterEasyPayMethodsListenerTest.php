@@ -90,7 +90,7 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
         //
         // 과거에는 pg_provider 를 null 로 두었고(= "PG 없는 결제수단"), 그 결과 서버가
         // 간편결제 주문을 PG 결제가 아닌 주문으로 오인해 (a) 결제 실패했는데 관리자에게
-        // 신규주문 알림이 발송되고 (b) 임시주문이 즉시 삭제되어 재결제가 불가능해졌다(#475).
+        // 신규주문 알림이 발송되고 (b) 임시주문이 즉시 삭제되어 재결제가 불가능해졌다.
         foreach ($easyPayMethods as $method) {
             $this->assertArrayHasKey('defaults', $method);
 

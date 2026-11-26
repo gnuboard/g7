@@ -22,7 +22,7 @@ use ReflectionMethod;
 use Tests\TestCase;
 
 /**
- * 썸네일 서버 보호 값 여섯 — `.env`(`G7_THUMBNAIL_*`)와 업로드 탭 「고급」 칸 (#869)
+ * 썸네일 서버 보호 값 여섯 — `.env`(`G7_THUMBNAIL_*`)와 업로드 탭 「고급」 칸
  *
  * 값의 우선순위는 다른 `.env` 대응 설정과 같다(`EnvPriority`).
  *  - `.env` 우선 모드(`G7_ENV_PRIORITY=true`)에서 `.env` 에 값이 있으면 그 값이 이기고, 화면은 잠김으로 내려오며 저장이 그 키를 버린다.

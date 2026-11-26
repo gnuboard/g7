@@ -248,7 +248,7 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
-     * 첨부 업로더 확장점에 업로더 플러그인을 replace 로 주입하는 조각 행을 만든다(#916).
+     * 첨부 업로더 확장점에 업로더 플러그인을 replace 로 주입하는 조각 행을 만든다.
      *
      * @return void 반환값 없음
      */
@@ -319,7 +319,7 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
-     * 업로더 플러그인이 replace 로 주입하면 기본 업로더가 걷히고, 주입 노드가 계약과 콜백을 받는다(#916 ③).
+     * 업로더 플러그인이 replace 로 주입하면 기본 업로더가 걷히고, 주입 노드가 계약과 콜백을 받는다.
      *
      * @scenario case=attachment_uploader_replace
      *
@@ -343,7 +343,7 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
-     * 주입이 없으면 기본 업로더(default)가 그대로 children 이 된다 — 저장 흐름의 업로드 신호도 그대로다(#916 ③).
+     * 주입이 없으면 기본 업로더(default)가 그대로 children 이 된다 — 저장 흐름의 업로드 신호도 그대로다.
      *
      * @scenario case=attachment_uploader_without_injection
      *
@@ -364,7 +364,7 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
-     * 끌어 정렬 목록(`sortable`)의 행 템플릿(`itemTemplate`) 안 확장점도 채워진다(#916 ③).
+     * 끌어 정렬 목록(`sortable`)의 행 템플릿(`itemTemplate`) 안 확장점도 채워진다.
      *
      * 게시판 설정의 반응 유형 표는 행마다 아이콘 업로더를 두는데, 그 행 템플릿은 `children`·props 가 아니라 노드의
      * `itemTemplate` 에 실린다. 처리기가 그 자리를 따라가지 않으면 확장점에 default 도 안 채워져 업로더가 빈 칸이 된다.
@@ -401,7 +401,7 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
-     * 반응형 재정의(`responsive.{구간}.children`) 안 확장점도 채워진다(#916 ③ 브라우저 실측 회귀).
+     * 반응형 재정의(`responsive.{구간}.children`) 안 확장점도 채워진다.
      *
      * 게시판 설정의 반응 유형은 좁은 화면에서 `<responsive on="portable">` 로 카드 목록을 그리고, 카드마다 아이콘 업로더
      * 확장점을 둔다. 처리기가 `children`·props·`itemTemplate` 만 따라가면 이 확장점은 `default` 를 children 으로 받지 못해
@@ -445,7 +445,7 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
-     * 번들 레이아웃의 첨부 업로더 확장점 전부가 서비스 단계에서 replace 를 받는다 — 기본 업로더가 걷히고 같은 업로드 신호 이름을 넘긴다(#916 ③).
+     * 번들 레이아웃의 첨부 업로더 확장점 전부가 서비스 단계에서 replace 를 받는다 — 기본 업로더가 걷히고 같은 업로드 신호 이름을 넘긴다.
      *
      * 모집단은 손으로 적지 않는다. 번들 템플릿·모듈·플러그인 레이아웃 JSON 을 모두 훑어 확장점을 가진 파일과 그 수를 먼저 세고,
      * 서비스를 거친 결과에서 같은 수의 확장점이 주입 노드를 받았는지 본다. 처리기가 따라가지 않는 자리(모달 갈래·정렬 행 템플릿·
@@ -462,7 +462,7 @@ class LayoutExtensionServiceTest extends TestCase
         $this->createAttachmentUploaderReplacement();
 
         ['own' => $own, 'cases' => $cases] = $this->bundledAttachmentUploaderLayouts();
-        // #916 에서 21곳(14파일)을 감쌌다 — 훑기 경로가 틀려 모집단이 줄면 빈 통과가 되지 않게 하한을 둔다
+        // 21곳(14파일)을 감쌌다 — 훑기 경로가 틀려 모집단이 줄면 빈 통과가 되지 않게 하한을 둔다
         $this->assertGreaterThanOrEqual(21, array_sum($own), '번들 레이아웃의 attachment_uploader 확장점이 21개보다 적다 — 훑기 경로가 틀렸다');
         $this->assertGreaterThan(count($own), count($cases), '조각을 포함하는 레이아웃(반응형 재정의·탭 등)이 모집단에 없다 — partial 펼치기가 틀렸다');
 
@@ -618,7 +618,7 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
-     * Modal 고정 하단(`props.footer`)과 제목 앞뒤 붙임(`titlePrefix`·`titleSuffix`) 안의 확장점도 채워지는지 검증한다(#869).
+     * Modal 고정 하단(`props.footer`)과 제목 앞뒤 붙임(`titlePrefix`·`titleSuffix`) 안의 확장점도 채워지는지 검증한다.
      *
      * 이 세 자리는 `children` 이 아니라 Modal 의 props 에 실린다. 알림 템플릿 편집 창은 바닥 단추 줄에
      * `notification_template_form_footer_actions` 확장점을 두는데, 그 줄을 고정 하단으로 옮기면 서버가 확장점을
@@ -689,7 +689,7 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
-     * 실제 번들 알림 템플릿 편집 창(관리자 환경설정)의 고정 하단 확장점에 확장 단추가 주입되는지 검증한다(#869).
+     * 실제 번들 알림 템플릿 편집 창(관리자 환경설정)의 고정 하단 확장점에 확장 단추가 주입되는지 검증한다.
      *
      * 창의 바닥 줄(미리보기, 취소, 확장 슬롯, 저장)을 Modal 고정 하단으로 옮겼다. 확장 슬롯
      * `notification_template_form_footer_actions` 는 알림톡·SMS 채널이 「테스트 발송」 같은 단추를 넣는 자리라,
@@ -737,7 +737,7 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
-     * 오버레이(`target_id` 주입·`inject_props`)가 Modal 고정 하단(`props.footer`) 안의 노드도 찾는지 검증한다(#869).
+     * 오버레이(`target_id` 주입·`inject_props`)가 Modal 고정 하단(`props.footer`) 안의 노드도 찾는지 검증한다.
      *
      * 확인 창 바닥 단추를 고정 하단으로 모으자 그 단추는 `children` 이 아니라 Modal props 아래에 놓였다. 대상 찾기가
      * `children` 만 따라가면 「저장 단추 뒤에 단추 하나 더」 같은 오버레이가 조용히 빠진다.
@@ -805,7 +805,7 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
-     * 오버레이가 레이아웃 `modals` 갈래 창의 노드(본문과 고정 하단)도 겨누는지 검증한다(#869 C2).
+     * 오버레이가 레이아웃 `modals` 갈래 창의 노드(본문과 고정 하단)도 겨누는지 검증한다.
      *
      * 페이지 레이아웃의 확인 창은 대부분 `modals` 갈래에 있다. 대상 찾기가 `components` 트리만 걸으면 그 창의 단추
      * 뒤에 붙이는 주입과 props 주입이 경고 로그만 남기고 빠진다. `components` 를 먼저 찾고, 없을 때만 `modals` 를 찾는다.
@@ -874,7 +874,7 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
-     * 같은 id 가 `components` 와 `modals` 양쪽에 있으면 `components` 쪽 첫 노드 하나에만 주입하는지 검증한다(#869 C2).
+     * 같은 id 가 `components` 와 `modals` 양쪽에 있으면 `components` 쪽 첫 노드 하나에만 주입하는지 검증한다.
      *
      * overlay 는 트리에서 `target_id` 가 일치하는 첫 노드 하나에만 들어간다(종전 규칙). `modals` 를 찾는 범위에 더해도
      * 본문 트리가 먼저이고, 두 곳에 함께 들어가 같은 조각이 두 번 그려지지 않는다.
@@ -918,7 +918,7 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
-     * 편집 모드에서 확장이 주입한 Modal 의 고정 하단·제목 붙임 자식에도 출처 메타가 붙는지 검증한다(#869 C3).
+     * 편집 모드에서 확장이 주입한 Modal 의 고정 하단·제목 붙임 자식에도 출처 메타가 붙는지 검증한다.
      *
      * 출처 메타 부여가 `children` 만 걸으면 주입된 창의 바닥 단추에는 `__source` 가 없어, 편집기가 그 단추를
      * 호스트 노드로 보고 호스트 레이아웃에 저장해 버린다.
@@ -1795,7 +1795,7 @@ class LayoutExtensionServiceTest extends TestCase
      */
     public function test_restores_by_source(): void
     {
-        // 복원은 붙을 자리가 있는 활성 템플릿의 행만 되살린다(#725) — 확장점을 가진 호스트 화면을 둔다.
+        // 복원은 붙을 자리가 있는 활성 템플릿의 행만 되살린다 — 확장점을 가진 호스트 화면을 둔다.
         TemplateLayout::factory()->create([
             'template_id' => $this->template->id,
             'name' => 'point1_host',
@@ -3084,7 +3084,7 @@ class LayoutExtensionServiceTest extends TestCase
      * 이것이 없으면 확장은 목록 전체를 복사해야 하고, 그 복사본은 만든 날짜에 얼어붙는다 —
      * 호스트가 나중에 항목을 더해도 확장의 낡은 복사본이 그것을 **조용히 지운다.**
      *
-     * 실제 사고(#599 S2-D13): 결제 플러그인 3종이 주문목록에 배지 하나를 달려고 컬럼
+     * 실제 사고: 결제 플러그인 3종이 주문목록에 배지 하나를 달려고 컬럼
      * 11칸을 통째로 복사했고, 뒤에 추가된 클레임 컬럼이 화면에서 사라졌다. 복사본 11칸 중
      * 실제로 다른 칸은 **하나뿐**이었고 나머지 10칸은 원본과 완전히 같았다.
      *
@@ -3367,7 +3367,7 @@ class LayoutExtensionServiceTest extends TestCase
      * 「결제수단」 칸의 `cellChildren` 에 각자 테스트결제 배지를 달았는데, 그 탓에 우선순위가
      * 가장 높은 하나만 화면에 떴다. 그래서 그 하나가 나머지 두 결제사 몫까지 대신 그려 주는
      * 계단식 우회가 생겼고, 그 우회는 **남의 플러그인이 선언한 데이터소스**를 참조해야 해서
-     * 그 플러그인이 없는 사이트에서는 미정의 참조가 됐다(#599).
+     * 그 플러그인이 없는 사이트에서는 미정의 참조가 됐다.
      *
      * `_append` 가 있으면 각자 자기 것만 덧붙이면 되므로 그 의존이 사라진다.
      *

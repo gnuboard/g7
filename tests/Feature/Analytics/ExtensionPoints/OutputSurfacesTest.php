@@ -88,7 +88,7 @@ class OutputSurfacesTest extends AnalyticsApiTestCase
     }
 
     /**
-     * CSV 행 필터가 받는 화면용 행의 `extra` 는 부가 값이 없어도 배열이다 — 응답(JSON)에서만 빈 맵 `{}` 로 낸다(#758).
+     * CSV 행 필터가 받는 화면용 행의 `extra` 는 부가 값이 없어도 배열이다 — 응답(JSON)에서만 빈 맵 `{}` 로 낸다.
      * 리스너가 `$row['extra'][키]` 로 읽어도 오류가 나지 않는다.
      *
      * @scenario point=output, extension_state=active, input=registered

@@ -1,6 +1,6 @@
 /**
  * @file admin-user-detail-notifications-tab.test.tsx
- * @description 회원 상세 「알림함」 탭 (#524 WP-F) — 요약만 보여 주고 목록은 전용 화면으로 넘긴다.
+ * @description 회원 상세 「알림함」 탭 — 요약만 보여 주고 목록은 전용 화면으로 넘긴다.
  *
  * 이 탭이 지키는 계약:
  *  - 탭 항목과 섹션이 짝을 이룬다. 탭만 늘리고 섹션을 빠뜨리면 스크롤 스파이가 갈 곳이 없어
@@ -22,7 +22,7 @@ const tabNav = flattenNodes(layout).find((n: any) => n?.name === 'TabNavigationS
 const tabs = asArray(tabNav?.props?.tabs);
 const section = findById(layout, 'section_notifications_info');
 
-describe('회원 상세 「알림함」 탭 (#524 WP-F)', () => {
+describe('회원 상세 「알림함」 탭', () => {
     // @scenario surface=member_detail_tab
     // @effects member_detail_tab_follows_consent_tab
     it('동의이력 탭 뒤에 알림함 탭이 붙는다', () => {
@@ -76,7 +76,7 @@ describe('회원 상세 「알림함」 탭 (#524 WP-F)', () => {
     // @effects member_detail_tab_links_to_member_scoped_list
     it('「알림함 보기」가 uuid 로 회원을 한정해 전용 목록으로 보낸다', () => {
         const link = findById(section, 'notifications_inbox_link');
-        // 링크(#757) — 주소·회원 한정 쿼리는 A 의 href 한 곳, navigate 는 path 없이 그 href 로 간다
+        // 링크 — 주소·회원 한정 쿼리는 A 의 href 한 곳, navigate 는 path 없이 그 href 로 간다
         const anchor = flattenNodes(link).find((n: any) => n?.name === 'A');
         const navigate = actionsOf(anchor).find((a: any) => a.handler === 'navigate');
 

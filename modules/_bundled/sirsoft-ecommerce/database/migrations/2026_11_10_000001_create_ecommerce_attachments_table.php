@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 이커머스 범용 첨부 표를 만듭니다 (#887).
+ * 이커머스 범용 첨부 표를 만듭니다.
  *
  * 게시판 `board_attachments`·페이지 `page_attachments` 와 같은 모양의 이 모듈 첨부 표입니다. 행은 `collection` 으로 쓰임새를
  * 나누고(상품 설명·공통 정보 편집기 본문 미디어는 `content_media`), 소유자는 `attachmentable_type`(소유 모델의 morph 값)·

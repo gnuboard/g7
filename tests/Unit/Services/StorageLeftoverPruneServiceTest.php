@@ -1096,7 +1096,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * `cleanupPending()` 은 커맨드의 정상 경로와 **처리된** 실패 경로에서만 불린다.
      * 치명 오류·요청 시간 초과·kill(무CLI 웹 워커에서 특히 흔하다)이면 그 코드가 돌지
      * 않아 릴리즈 한 벌 크기의 디렉토리가 영구히 남는데, 형제 대상군(`core_pending`)은
-     * 같은 디렉토리의 **매니페스트 파일**만 접두사로 좁혀 본다 (#609 G6 — 회차 6 이관).
+     * 같은 디렉토리의 **매니페스트 파일**만 접두사로 좁혀 본다 (회차 6 이관).
      *
      * @scenario leftover_target=core_pending_staging, leftover_mode=real_delete, leftover_guard=aged_out
      *

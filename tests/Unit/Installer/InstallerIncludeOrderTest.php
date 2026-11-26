@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 인스톨러 include 파일의 로드 순서 독립성 회귀 가드 (이슈 #465 후속).
+ * 인스톨러 include 파일의 로드 순서 독립성 회귀 가드.
  *
  * 회귀: `install-process.php` 가 `installer-runtime.php` 를 `functions.php` 보다
  * *먼저* require 하도록 바뀌면서 다음 fatal 이 발생했다.

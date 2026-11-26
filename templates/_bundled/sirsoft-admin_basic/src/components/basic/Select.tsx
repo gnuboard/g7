@@ -144,7 +144,7 @@ export const Select: React.FC<SelectProps> = ({
   }, [normalizedOptions, value]);
 
   // 목록형 단추 이름 — 「{이름} {현재 값}」. 종전에는 aria-label 이 단추 이름을 덮어 고른 값이 빠지고,
-  // aria-labelledby 는 단추가 아니라 바깥 상자에 붙어 읽히지 않았다(#757). 숨은 이름 span + 값 span 을 잇는다.
+  // aria-labelledby 는 단추가 아니라 바깥 상자에 붙어 읽히지 않았다. 숨은 이름 span + 값 span 을 잇는다.
   const domId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const nameId = `${domId}-name`;
   const valueId = `${domId}-value`;

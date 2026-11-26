@@ -9,7 +9,7 @@ use Tests\Support\Concerns\GrantsExtensionAdminToken;
 use Tests\TestCase;
 
 /**
- * 활동 로그 목록의 「삭제 직전 기록만 보기」(`deletion_snapshot`) 필터 (#888).
+ * 활동 로그 목록의 「삭제 직전 기록만 보기」(`deletion_snapshot`) 필터.
  *
  * 켜면 영구 삭제(`*.force_deleted`)·선언 정리(`*.sync_deleted`)·커스텀 번역 삭제(`template_custom_translation.deleted`) 직전
  * 기록만 남는다 — 목록 행의 펼침 요약(`snapshot`)과 같은 판정(`ActivityLog::isDeletionSnapshotAction()`). 끄면 종전과 같다.

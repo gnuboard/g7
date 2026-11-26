@@ -8,7 +8,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 운영자 수정 기록 판정 비교기 단위 테스트 (#727 §5.11).
+ * 운영자 수정 기록 판정 비교기 단위 테스트.
  *
  * 폼이 표기만 다르게 보내는 값은 같다고, 실제로 다른 값은 다르다고 판정하는지 고정한다.
  */

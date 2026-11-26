@@ -90,7 +90,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   const [internalValue, setInternalValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
-  // Esc 로 접은 제안 — 다시 입력하거나 입력칸에 다시 들어오면 펼친다(#869)
+  // Esc 로 접은 제안 — 다시 입력하거나 입력칸에 다시 들어오면 펼친다
   const [suggestionsDismissed, setSuggestionsDismissed] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const previousValueRef = React.useRef<string>('');
@@ -142,7 +142,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   // 입력칸과 제안 항목이 포커스를 주고받는 동안에는 목록을 연 채로 둔다 — 종전에는 Tab 으로 제안에 가면 입력칸의 blur 가
-  // 200ms 뒤 목록을 닫아 키보드로는 제안을 고를 수 없었다(#869 키보드 접근)
+  // 200ms 뒤 목록을 닫아 키보드로는 제안을 고를 수 없었다(키보드 접근)
   const keepSuggestionsOpen = () => {
     if (blurTimerRef.current !== null) {
       clearTimeout(blurTimerRef.current);
@@ -177,7 +177,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    // 제안이 펼쳐져 있으면 Esc 로 접는다 — 포커스는 입력칸에 남는다(#869)
+    // 제안이 펼쳐져 있으면 Esc 로 접는다 — 포커스는 입력칸에 남는다
     <Div ref={containerRef} className={`relative ${className}`} style={style} id={id} {...editorAttrs} onKeyDown={escapeToClose(shouldShowSuggestions, () => setSuggestionsDismissed(true))}>
       <Form onSubmit={handleSubmit} className="relative">
         <Div className={`relative flex items-center ${showButton ? 'gap-2' : ''}`}>

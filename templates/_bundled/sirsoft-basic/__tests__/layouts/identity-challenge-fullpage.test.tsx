@@ -1,6 +1,6 @@
 /**
  * @file identity-challenge-fullpage.test.tsx
- * @description user 풀페이지 IDV 레이아웃의 max_attempts 정합성 회귀 차단 — 이슈 #275
+ * @description user 풀페이지 IDV 레이아웃의 max_attempts 정합성 회귀 차단
  *
  * 검증 대상:
  * 1. state.maxAttempts 초기값은 0 (무제한 기본 — 환경설정값을 응답에서 받아야 함)
@@ -87,7 +87,7 @@ describe('User 본인인증 풀페이지 (sirsoft-basic) — max_attempts 정합
     expect(offenders).toEqual([]);
   });
 
-  it('서버 응답의 attempts 를 읽지 않는다 (공개 폴링 경로라 서버가 싣지 않음 — 이슈 #276)', () => {
+  it('서버 응답의 attempts 를 읽지 않는다 (공개 폴링 경로라 서버가 싣지 않음)', () => {
     // 회귀: getStatus 응답에서 attempts 를 뺐는데 레이아웃이 계속 그 값을 읽고 있어,
     // 외부 redirect 콜백 후 진입 시 남은 시도 횟수가 실제보다 많게 표시되던 결함.
     const offenders: string[] = [];
@@ -103,7 +103,7 @@ describe('User 본인인증 풀페이지 (sirsoft-basic) — max_attempts 정합
     expect(offenders).toEqual([]);
   });
 
-  it('남은 시도 횟수를 화면에 표시하지 않는다 (정확한 값을 알 수 없음 — 이슈 #276)', () => {
+  it('남은 시도 횟수를 화면에 표시하지 않는다 (정확한 값을 알 수 없음)', () => {
     expect(JSON.stringify(fp)).not.toContain('remaining_attempts');
   });
 

@@ -67,7 +67,7 @@ class LayoutMarkupService
 
     /**
      * 설치된 모듈·플러그인 전부(활성 여부 무관)의 컴포넌트 매니페스트를 돌려줍니다 (요청 단위 캐시).
-     * 템플릿이 공급한 설정 화면 부품 매니페스트(`components.settings.json`, #434)도 확장 매니페스트로 함께 싣는다.
+     * 템플릿이 공급한 설정 화면 부품 매니페스트(`components.settings.json`)도 확장 매니페스트로 함께 싣는다.
      *
      * 편집 대상 템플릿의 검사 목록에 확장 컴포넌트(`식별자.이름`)를 싣기 위한 것이다 — 활성 여부로 거르면
      * 편집 도중 확장을 끈 순간 그 레이아웃을 다시 저장할 수 없게 된다(2026-09-28 결정). 설치 목록은
@@ -171,7 +171,7 @@ class LayoutMarkupService
      * @param  string|null  $identifier  행의 `source_identifier` (없으면 템플릿 식별자)
      * @param  string  $label  오류·경고 메시지의 파일명 자리에 들어갈 표시용 이름 (`{layout_name}.g7.html`). 실제 파일은 없다
      * @param  array<string, mixed>|null  $baseline  편집 중인 행의 저장본 — 주면 그 안에 이미 있던 미등록 템플릿 컴포넌트를
-     *                                               그 개수까지 허용한다(7.0 이 무차별 등록한 행을 저장할 수 있게, #712). 새 파일은 null
+     *                                               그 개수까지 허용한다(7.0 이 무차별 등록한 행을 저장할 수 있게). 새 파일은 null
      * @return CompileResult 산출 JSON + lint 경고
      *
      * @throws CompileError 토큰화·트리·문서·강검증 어느 단계든 위반 시

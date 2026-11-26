@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
  * 일괄 변경 바와 확인 모달은 `modules/_bundled/sirsoft-ecommerce/resources/lang/partial/{ko,en}/admin/order.json` 의 `status.*` 라는 **별도 사본**을
  * 참조한다. 두 사본이 갈리면 **같은 상태가 화면마다 다른 이름으로 보인다**.
  *
- * 실측(#599 통합실측 세션1 · 1-O): 같은 운영자에게 같은 상태가 이렇게 보였다.
+ * 실측(1-O): 같은 운영자에게 같은 상태가 이렇게 보였다.
  *
  *     주문상세 상태 Select   : 결제대기 · 배송보류
  *     주문목록 일괄 Select   : 입금대기 · 발송보류

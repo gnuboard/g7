@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * beta.4~beta.6 인스톨러 finalize 자가 차단 결함의 잔존 환경 자동 복구.
  *
- * 결함 (이슈 #371):
+ * 결함:
  *   finalize-env.php 가 `_guard.php` 의 installer_guard_or_410() 에 의해
  *   `storage/app/g7_installed` 락 파일 존재만으로 410 차단됨. 그 결과 `.env`
  *   머지와 `storage/installer/runtime.php` 삭제가 영구 누락된 상태로 운영 중일
@@ -131,7 +131,7 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
 
         $this->applyEnvPermissions($envPath, $preservedStat, $basePath, $context);
 
-        // 부모 프로세스의 process ENV 도 머지된 자격증명으로 갱신 (이슈 #371 후속 회귀 차단)
+        // 부모 프로세스의 process ENV 도 머지된 자격증명으로 갱신 (후속 회귀 차단)
         //
         // 배경: beta.4~6 손상 환경에서는 .env 가 .env.example 그대로 (DB_WRITE_USERNAME=root,
         // DB_WRITE_PASSWORD= 등) 이고 자격증명은 runtime.php 에 잔존. 부모 프로세스 부팅

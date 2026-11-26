@@ -6,7 +6,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 번들 확장 업그레이드 마이그레이션의 파일 쓰기 소유권 상속 패리티 (#651 B3).
+ * 번들 확장 업그레이드 마이그레이션의 파일 쓰기 소유권 상속 패리티.
  *
  * 업그레이드 스텝은 sudo 코어 업데이트 안에서 root 로 실행될 수 있다. `File::put()` 으로 설정 파일을
  * 쓰는 스텝 중 일부(gdpr 02·ckeditor5·pay_*)는 `inheritOwnershipFromParent` 를 부르고 일부는 부르지

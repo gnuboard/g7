@@ -188,7 +188,7 @@ async function renderSection(
       translations: { admin: adminKo },
       initialState: { _local: local, _global: { settingsAbilities: { can_update: !opts.readOnly }, queueStatusFailed: opts.failed === true } },
       initialData: {
-        // settings 는 폼(_local.form)을 채우는 소스 — 받은 뒤 상태를 재현한다(받는 중이면 sync 안내를 그리지 않는다, #915)
+        // settings 는 폼(_local.form)을 채우는 소스 — 받은 뒤 상태를 재현한다(받는 중이면 sync 안내를 그리지 않는다)
         settings: { data: {} },
         ...(opts.status === null ? {} : { queueStatus: { data: opts.status ?? STATUS } }),
         _computed: computedFor(local, opts.readOnly === true),

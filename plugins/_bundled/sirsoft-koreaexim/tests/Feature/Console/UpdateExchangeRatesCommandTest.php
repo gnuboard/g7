@@ -302,7 +302,7 @@ class UpdateExchangeRatesCommandTest extends PluginTestCase
     }
 
     /**
-     * 쇼핑몰 통화 설정 저장이 실패해도 수동 실행이 예외로 끝나지 않고 「환율 저장 실패」 이력으로 남는다 — 관리자 「지금 갱신」이 500 이던 결함(#916).
+     * 쇼핑몰 통화 설정 저장이 실패해도 수동 실행이 예외로 끝나지 않고 「환율 저장 실패」 이력으로 남는다 — 관리자 「지금 갱신」이 500 이던 결함.
      * 그 실행은 재적용 원본이 되지 않는다(응답 원본을 싣지 않음).
      *
      * @effects manual_run_save_failure_recorded

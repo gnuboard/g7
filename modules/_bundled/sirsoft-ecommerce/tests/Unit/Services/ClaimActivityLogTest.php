@@ -22,7 +22,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 전이 활동로그 전수 보강 테스트 (#599 후속 §7-1 · D16)
+ * 전이 활동로그 전수 보강 테스트
  *
  * 로그는 **훅 발행 → 리스너** 한 축뿐이다 — 모델 옵저버도 자동 기록도 없으므로
  * `훅이 없으면 로그도 없다` 가 예외 없이 성립한다. 그래서 이 파일은 "그 전이 지점에서 훅이

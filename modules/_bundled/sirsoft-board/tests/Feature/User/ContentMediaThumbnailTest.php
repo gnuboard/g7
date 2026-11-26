@@ -22,7 +22,7 @@ use Modules\Sirsoft\Board\Support\AttachmentThumbnailSourceProvider;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 게시판 본문 미디어 이미지의 썸네일 계약 (#883 본문 미디어와 #869 이미지 썸네일의 접합)
+ * 게시판 본문 미디어 이미지의 썸네일 계약 (본문 미디어와 이미지 썸네일의 접합)
  *
  * 본문 미디어 서빙 주소에 `?size=`·`?w=` 를 붙이면 글 게이트(읽기 권한·비밀·삭제·블라인드·서명)를 지난 뒤 줄인 이미지를 낸다.
  * 원본을 못 보는 요청은 썸네일도 못 본다. 서명 주소에 규격을 덧붙여도 서명이 유효하다. 본문 미디어 이미지는 게시판 첨부

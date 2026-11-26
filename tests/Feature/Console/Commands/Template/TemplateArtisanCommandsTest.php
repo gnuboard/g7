@@ -461,7 +461,7 @@ class TemplateArtisanCommandsTest extends TestCase
         $this->artisan('template:list', ['--status' => 'inactive'])
             ->assertExitCode(0);
 
-        // cache-clear 커맨드 (특정 템플릿) — 공개 config 캐시 실소멸까지 검증 (#588, 공개 #119)
+        // cache-clear 커맨드 (특정 템플릿) — 공개 config 캐시 실소멸까지 검증 (공개 #119)
         $coreCache = new CoreCacheDriver(config('cache.default', 'array'));
         $coreCache->put("template.config.{$identifier}", [
             'success' => true,

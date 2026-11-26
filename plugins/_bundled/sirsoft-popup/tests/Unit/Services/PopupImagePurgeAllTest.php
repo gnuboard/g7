@@ -12,7 +12,7 @@ use Plugins\Sirsoft\Popup\Services\PopupImageService;
 use Plugins\Sirsoft\Popup\Tests\PluginTestCase;
 
 /**
- * 「데이터까지 삭제」의 이미지 폴더 비우기가 행이 기록한 **모든 디스크**를 비우는지 고정한다 (#878).
+ * 「데이터까지 삭제」의 이미지 폴더 비우기가 행이 기록한 **모든 디스크**를 비우는지 고정한다.
  *
  * 공개 자산 디스크를 켰다 끈 사이트는 파일이 두 디스크 이상에 흩어진다. 주입 디스크만 비우면 다른 디스크의 파일이
  * 아무도 찾지 못하는 고아로 남는다.

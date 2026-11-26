@@ -305,7 +305,7 @@ class LayoutExtensionVersionRepositoryTest extends TestCase
     }
 
     /**
-     * 확장 조각 버전 저장도 부가 요약(병합 출처)을 계산된 카운트와 함께 남긴다 (#727).
+     * 확장 조각 버전 저장도 부가 요약(병합 출처)을 계산된 카운트와 함께 남긴다.
      *
      * @effects version_history_marks_extension_update_rows
      *

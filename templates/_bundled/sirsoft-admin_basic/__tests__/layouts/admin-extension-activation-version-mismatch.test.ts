@@ -1,6 +1,6 @@
 /**
  * @file admin-extension-activation-version-mismatch.test.ts
- * @description 활성화 경고 창이 의존 확장의 「버전 미달」을 사유와 함께 보인다 (코어 7.1.4, #819)
+ * @description 활성화 경고 창이 의존 확장의 「버전 미달」을 사유와 함께 보인다 (코어 7.1.4)
  *
  * 코어가 모듈·플러그인 활성화 때 의존 확장의 버전 제약까지 보게 되면서 미충족 목록에 `status: 'version_mismatch'`
  * (설치 버전·요구 버전 포함) 항목이 온다. 창이 이 상태를 몰라 배지 없이 이름만 보이면, 이미 설치·활성인 확장이 왜

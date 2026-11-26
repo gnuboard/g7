@@ -6,7 +6,7 @@ use App\Enums\ContentMediaKind;
 use InvalidArgumentException;
 
 /**
- * 본문 미디어 문맥 — 어느 확장·어느 문서의 본문 미디어를 누가 다루는지 (#887)
+ * 본문 미디어 문맥 — 어느 확장·어느 문서의 본문 미디어를 누가 다루는지
  *
  * 코어 골격(`AbstractContentMediaService`)·확장 어댑터(`ContentMediaStore`)·공용 훅(`core.content_media.*`)이 같은 값을
  * 주고받는다. 플러그인도 본문을 가질 수 있으므로 확장 종류(module|plugin)와 식별자를 함께 싣는다.

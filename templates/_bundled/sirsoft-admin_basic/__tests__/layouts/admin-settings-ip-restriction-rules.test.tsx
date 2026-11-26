@@ -45,7 +45,7 @@ describe('IP 접근 제한 규칙 — 스위치 이름', () => {
     const toggles = nodes(card).filter((n) => n.name === 'Toggle' && String(n.props?.checked ?? '').includes('rule.enabled'));
     expect(toggles).toHaveLength(2);
 
-    // 행마다 같은 「사용」이면 어느 규칙의 스위치인지 알 수 없다 — 행 이름(규칙 경로, 비면 「N번째 행」) + 열 이름(#757 판정 강화 3)
+    // 행마다 같은 「사용」이면 어느 규칙의 스위치인지 알 수 없다 — 행 이름(규칙 경로, 비면 「N번째 행」) + 열 이름(판정 강화 3)
     const rowName =
       "$t:common.row_cell|row={{rule.pattern || $t('common.row_n', {n: idx + 1})}}|column={{$t('admin.settings.security.ip_restriction.col_enabled')}}";
     for (const t of toggles) expect(t.props?.ariaLabel).toBe(rowName);

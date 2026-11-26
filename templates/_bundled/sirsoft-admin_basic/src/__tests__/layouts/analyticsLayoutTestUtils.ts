@@ -184,7 +184,7 @@ export function actionsWithHandler(root: unknown, handler: string): Record<strin
 }
 
 /**
- * 화면 이동의 목적지를 모은다 — navigate 의 path. 링크로 바뀐 칸(#757)은 path 없는 navigate 가 클릭한 A 의 href 로
+ * 화면 이동의 목적지를 모은다 — navigate 의 path. 링크로 바뀐 칸은 path 없는 navigate 가 클릭한 A 의 href 로
  * 가므로(엔진 D12) 그 href 를 목적지로 읽는다.
  */
 export function moveTargets(root: unknown): { path: string | undefined; navigate: Record<string, any>; node: Record<string, any> }[] {

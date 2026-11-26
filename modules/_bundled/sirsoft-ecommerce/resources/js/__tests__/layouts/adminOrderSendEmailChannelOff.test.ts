@@ -1,6 +1,6 @@
 /**
  * @file adminOrderSendEmailChannelOff.test.ts
- * @description 주문 상세 「고객에게 메일 보내기」 — 메일 채널이 꺼져 있을 때의 422 안내 (#699)
+ * @description 주문 상세 「고객에게 메일 보내기」 — 메일 채널이 꺼져 있을 때의 422 안내
  *
  * 1.3.0 부터 이 메일은 알림 정의 `order_custom_email` 로 보낸다. 메일 채널이 꺼져 있거나 준비되지 않았으면
  * 서버는 아무것도 보내지 않고 422(`messages.orders.email_channel_disabled`, `errors` 없음)로 답한다.

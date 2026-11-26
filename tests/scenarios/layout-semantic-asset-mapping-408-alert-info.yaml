@@ -1,9 +1,9 @@
 # audit:allow test-scenario-coverage reason: issue:#609 시각 회귀 없는 자산 정의 튜닝 + 호출처 토큰 전수 정리. .alert-{info,warning,danger,success,error} 패밀리의 padding/gap/text 톤을 자산에 흡수 + 외부 mt-* 책임 호출처로 위임 + 39개 JSON 호출처에서 redundant 토큰 일괄 제거. 데이터/액션/i18n 키 모두 동일.
 
-feature: 어드민·사용자 안내 박스 .alert-* 자산 시맨틱 완성 + 호출처 전수 redundant 토큰 제거 (#408 보강)
+feature: 어드민·사용자 안내 박스 .alert-* 자산 시맨틱 완성 + 호출처 전수 redundant 토큰 제거 (보강)
 
 description: |
-  이슈 #408 후속 — admin_basic 의 .alert-* 안내 박스 패밀리를 자산 단독으로 동작
+  admin_basic 의 .alert-* 안내 박스 패밀리를 자산 단독으로 동작
   가능한 수준까지 완성하고, 145개 호출처 중 자산 흡수로 정리 가능한 39개 호출처를
   스크립트로 일괄 정합.
 
@@ -33,7 +33,7 @@ description: |
       p-3 / text-sm + variant default 색 토큰 일괄 드랍 (스크립트 c:/tmp/alert-cleanup.cjs)
     - 39개 호출처 갱신: admin_basic 24건, sirsoft-basic 4건, board 10건, ecommerce 13건,
       plugin nicepayments 1건 — 자산 misuse (버튼/링크) 사이트는 보호 정규식으로 제외
-    - .alert-error 도 #408 통일 스타일 적용 — 옛 p-4 rounded-lg items-start 정의 제거
+    - .alert-error 도 통일 스타일 적용 — 옛 p-4 rounded-lg items-start 정의 제거
 
 axes:
   asset_class:

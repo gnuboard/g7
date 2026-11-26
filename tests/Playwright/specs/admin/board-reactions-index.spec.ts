@@ -1,5 +1,5 @@
 /**
- * 관리자 반응 관리 (#525 WP-C).
+ * 관리자 반응 관리.
  *
  * 실브라우저로 네 갈래를 잰다:
  *   ① 전 회원의 반응이 한 목록에 서고 상태가 배지로 갈린다(삭제된 대상 · 게시판 삭제됨 ·
@@ -37,7 +37,7 @@ async function openList(page: Page, token: string, query = ''): Promise<void> {
   await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 15_000 });
 }
 
-test.describe('관리자 반응 관리 (#525 WP-C)', () => {
+test.describe('관리자 반응 관리', () => {
   // @scenario case=screen_binds_all_filters_from_query
   // @effects index_marks_deleted_target_board_off_withdrawn_and_inactive_type
   test('전 회원 반응이 서고 상태가 배지로 갈린다', async ({ page, reactionSeed, reactionManageToken }) => {
@@ -177,7 +177,7 @@ test.describe('관리자 반응 관리 (#525 WP-C)', () => {
     await checkboxes.nth(1).click();
     await expect(checkboxes.nth(1)).toBeChecked();
 
-    // 선택 건수는 한 자리에서만 센다 — 두 곳이 세면 숫자가 어긋난다(#524 회귀).
+    // 선택 건수는 한 자리에서만 센다 — 두 곳이 세면 숫자가 어긋난다.
     const selectedLabels = await page.locator('body').innerText();
     expect(selectedLabels.match(/개 선택됨/g)?.length ?? 0).toBe(1);
 

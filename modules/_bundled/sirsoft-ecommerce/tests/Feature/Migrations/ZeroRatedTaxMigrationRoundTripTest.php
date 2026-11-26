@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 영세율 마이그레이션 3종 왕복(up → down → up) 안전성 테스트 (#612)
+ * 영세율 마이그레이션 3종 왕복(up → down → up) 안전성 테스트
  *
  * 모듈 삭제(delete_data)와 업그레이드 중 부분 적용 상태의 재실행에서 down()·up() 이 SQL 오류 없이 돌아야 한다.
  */

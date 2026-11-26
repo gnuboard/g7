@@ -20,7 +20,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Tests\Support\RecordingSchemaBuilder;
 
 /**
- * 이커머스 마이그레이션 결함 수정 검증 — DB 전용 raw SQL · 재실행 가드 · 주석 값 목록 (#599 validate P4)
+ * 이커머스 마이그레이션 결함 수정 검증 — DB 전용 raw SQL · 재실행 가드 · 주석 값 목록
  *
  * 재실행 가드는 "앞선 실행이 중간에 멈춘 상태" 에서만 드러나는데, 그 상태를 공유 테스트 DB 에
  * 만들면 DDL 이 암묵 커밋되어 테이블이 망가진다. 그래서 스키마 호출을 {@see RecordingSchemaBuilder}
@@ -32,7 +32,7 @@ class ValidateP4MigrationsTest extends ModuleTestCase
     /** 마이그레이션 디렉터리 (모듈 루트 기준). */
     private const DIR = 'database/migrations/';
 
-    /** #599 가 만든 클레임 테이블 생성 마이그레이션 7종 — 파일명 → 테이블명. */
+    /** 클레임 테이블 생성 마이그레이션 7종 — 파일명 → 테이블명. */
     private const CLAIM_CREATES = [
         '2026_08_20_000001_create_ecommerce_order_exchanges_table.php' => 'ecommerce_order_exchanges',
         '2026_08_20_000002_create_ecommerce_order_exchange_options_table.php' => 'ecommerce_order_exchange_options',
@@ -296,7 +296,7 @@ class ValidateP4MigrationsTest extends ModuleTestCase
     }
 
     /**
-     * #599 마이그레이션의 상태(문자열 enum)·불리언 컬럼 주석이 값 목록을 **값: 설명** 으로 모두 적는다.
+     * 클레임 마이그레이션의 상태(문자열 enum)·불리언 컬럼 주석이 값 목록을 **값: 설명** 으로 모두 적는다.
      *
      * 수정 전 실패 이유: `exchange_status` 가 "14종: requested ~ withdrawn" 처럼 범위만 적거나,
      * `charge_method`·`option_status` 가 Enum 이름만 적거나, 불리언 `is_stock_restored` 가 1/0 의미를

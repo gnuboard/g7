@@ -1,5 +1,5 @@
 /**
- * 비즈뿌리오 메시징 플러그인 권한 fixture (#597).
+ * 비즈뿌리오 메시징 플러그인 권한 fixture.
  *
  * 코어 `tests/Playwright/fixtures/auth.ts` 의 헬퍼(issueToken / authenticatePage)를 재사용한다.
  * 알림 템플릿 라이프사이클 화면은 플러그인 권한(messaging.view/manage)과 코어 알림 설정

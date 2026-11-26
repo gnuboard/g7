@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentLifecycle;
 /**
  * CBT 대사 레코드 저장소 — 주문 meta 의 이 결제사 키(`kginicis_cbt_reconciliation`)만 읽고 쓴다.
  *
- * 저장은 이커머스 공개 계약에 맡긴다(#916): 읽기는 잠금 없는 {@see OrderAccess::getOrderMeta()},
+ * 저장은 이커머스 공개 계약에 맡긴다: 읽기는 잠금 없는 {@see OrderAccess::getOrderMeta()},
  * 쓰기는 주문 행 잠금 아래의 {@see PaymentLifecycle::mutateOrderMetaWithLock()} (저장 때 주문 `updated_at` 갱신).
  */
 class CbtReconciliationRepository implements CbtReconciliationRepositoryInterface

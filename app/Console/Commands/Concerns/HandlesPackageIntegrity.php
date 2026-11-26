@@ -77,7 +77,7 @@ trait HandlesPackageIntegrity
             // `--yes` 는 진행 확인에만 「예」로 답한다 — 미서명 동의는 `--allow-unsigned` 하나로만 한다.
             // 그래서 `canAnswerConfirmation()`·`unifiedConfirm()`(둘 다 `--yes` 를 「답함」으로 봄) 대신 질문을 실제로 띄울 수
             // 있는지(`canShowPrompt()`)로 가르고 `optionalConfirm()` 으로 묻는다. 종전에는 `-y` 만 준 비대화형 실행이 미서명
-            // 패키지를 묻지도 않고 받아들였다(#918).
+            // 패키지를 묻지도 않고 받아들였다.
             if (! $this->canShowPrompt()) {
                 $this->line(__('extension_integrity.commands.unsigned_noninteractive_hint'));
                 throw $e->forConsole();

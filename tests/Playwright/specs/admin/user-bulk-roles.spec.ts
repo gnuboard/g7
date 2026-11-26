@@ -1,5 +1,5 @@
 /**
- * 회원 목록 — 역할 일괄 추가·제거 (#708)
+ * 회원 목록 — 역할 일괄 추가·제거
  *
  * 브라우저에서만 드러나는 연결을 고정한다.
  * - 목록에서 회원 여럿을 골라 「역할 추가」 → 역할 선택 → 「적용」 더블클릭은 PATCH 1건, 고른 회원 모두에 역할이 붙는다
@@ -35,7 +35,7 @@ function apiOf(page: import('@playwright/test').Page): Api {
     );
 }
 
-test.describe('회원 목록 역할 일괄 변경 (#708)', () => {
+test.describe('회원 목록 역할 일괄 변경', () => {
   // 준비 단계가 역할·회원을 API 로 만들고 지운다 — 기본 30초로는 모자라다
   test.setTimeout(90_000);
 
@@ -156,7 +156,7 @@ test.describe('회원 목록 역할 일괄 변경 (#708)', () => {
       mo.observe(document.body, { subtree: true, childList: true, characterData: true });
     });
     // 메뉴를 닫으려고 창 제목을 누른다 — 제목은 머리글 태그가 아니라 `.modal-title` 이다
-    // (id 는 창마다 달라 `modal-title-…` 꼴 — 겹친 창 이름 충돌 수정 #736)
+    // (id 는 창마다 달라 `modal-title-…` 꼴 — 겹친 창 이름 충돌 수정)
     await dialog.locator('.modal-title').click();
     await dialog.getByRole('button', { name: '적용', exact: true }).click();
     await expect(dialog).toBeHidden({ timeout: 15_000 });

@@ -12,7 +12,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use ReflectionProperty;
 
 /**
- * 비밀글 열람 토큰 서비스 (#789 §4.1 · D3 · D4)
+ * 비밀글 열람 토큰 서비스
  *
  * 브라우저 토큰 1개 + 서버의 글별 grant. 재사용·누적·만료·상한·신원 결속·키 해시를 고정한다.
  *

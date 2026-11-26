@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * Playwright E2E · 브라우저 실측용 회원 알림함 시드 커맨드 (#524 WP-F).
+ * Playwright E2E · 브라우저 실측용 회원 알림함 시드 커맨드.
  *
  * 관리자 회원 알림함은 «읽음/안 읽음» 과 «제목/본문 검색» 을 함께 다룬다. 그 넷을 한 화면에서
  * 확인하려면 회원 하나에 읽은 알림과 안 읽은 알림이 섞여 있고, 제목에만 있는 낱말과 본문에만

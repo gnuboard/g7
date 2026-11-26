@@ -1,8 +1,8 @@
 /**
- * 필터 슬롯 아웃렛 간격 회귀 테스트 (#408 퍼블리셔 시맨틱화 회귀)
+ * 필터 슬롯 아웃렛 간격 회귀 테스트 (퍼블리셔 시맨틱화 회귀)
  *
  * @description
- * #408 시맨틱화가 `.filter-row` 의 `mb-4`(행 자체 하단 마진)를 제거하고
+ * 시맨틱화가 `.filter-row` 의 `mb-4`(행 자체 하단 마진)를 제거하고
  * 행 간 간격 책임을 부모 컨테이너 `.filter-grid`(gap-4)로 이전했다.
  * 그러나 이 필터들은 슬롯 시스템을 사용한다 — 행은 작성 위치(숨김 등록 영역
  * `hidden filter-grid`)가 아니라 `basic_filters`/`detail_filters` 슬롯
@@ -56,7 +56,7 @@ const FILTERS: Array<[string, any]> = [
     ['쿠폰(coupon)', couponFilter],
 ];
 
-describe('필터 슬롯 아웃렛 간격 자산 검증 (#408 회귀 방지)', () => {
+describe('필터 슬롯 아웃렛 간격 자산 검증 (회귀 방지)', () => {
     it.each(FILTERS)(
         '%s — 모든 필터 슬롯 아웃렛이 간격 자산(filter-grid)을 보유해야 함',
         (_label, layout) => {

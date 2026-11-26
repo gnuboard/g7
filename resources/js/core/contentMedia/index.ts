@@ -1,5 +1,5 @@
 /**
- * 본문 미디어 업로드 런타임 진입점 (engine-v1.89.0, #883)
+ * 본문 미디어 업로드 런타임 진입점 (engine-v1.89.0)
  *
  * `G7Core.contentMedia` 파사드(`initContentMediaAPI`)와 시험이 {@link getContentMediaRuntime} 으로 같은 인스턴스를 쓴다.
  * 관리자·사용자 템플릿 모두에서 선다(편집기가 양쪽에 있다).

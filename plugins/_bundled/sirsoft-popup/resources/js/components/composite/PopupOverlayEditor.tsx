@@ -102,7 +102,7 @@ export const PopupOverlayEditor: React.FC<PopupOverlayEditorProps> = ({ value, i
   const languages = locales.length ? locales : [defaultLocale].filter(Boolean);
   const baseLocale = defaultLocale || languages[0] || '';
   const [deviceChoice, setDeviceChoice] = useState<Device>('pc');
-  // 크기·색 칸 2열 배치는 엔진 폭으로 고른다 — 창 폭 미디어(`gpp:sm:`)는 편집기 미리보기 기기 폭을 따르지 못한다(#869)
+  // 크기·색 칸 2열 배치는 엔진 폭으로 고른다 — 창 폭 미디어(`gpp:sm:`)는 편집기 미리보기 기기 폭을 따르지 못한다
   const wide = useViewportWidth(1024) >= SM_MIN_WIDTH;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [locale, setLocale] = useState(baseLocale);

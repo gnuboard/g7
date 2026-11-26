@@ -1,6 +1,6 @@
 /**
  * @file MenuIcon.test.tsx
- * @description 관리자 메뉴 아이콘 렌더러 — FA 클래스 · 이미지 · 인라인 SVG · 호환 문자열 (#381)
+ * @description 관리자 메뉴 아이콘 렌더러 — FA 클래스 · 이미지 · 인라인 SVG · 호환 문자열
  *
  * 사이드바·메뉴 관리 목록·상세(보기 판)·편집 미리보기가 같은 규칙으로 그린다. 보기 판은 레이아웃에서
  * `<menu-icon spec icon fallbackIcon="file" class="text-base text-secondary">` 로 쓰므로, 보기 판 조합은

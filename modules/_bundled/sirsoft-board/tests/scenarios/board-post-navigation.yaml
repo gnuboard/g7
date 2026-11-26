@@ -1,7 +1,7 @@
 feature: 게시글 상세 이전/다음 네비게이션 + 목록 복귀 상태 보존
 
 description: |
-  게시글 상세의 이전/다음 글 네비게이션과 목록 복귀 동작 정합 (이슈 #413 item 45, 47).
+  게시글 상세의 이전/다음 글 네비게이션과 목록 복귀 동작 정합 (item 45, 47).
 
   수정 이력:
     - 45-1 (목록 복귀 상태 미보존): 결함 수정.
@@ -54,7 +54,7 @@ effects:
   - asc_order_flips_prev_next_direction
   - notice_posts_excluded_from_navigation
   - newest_post_has_no_prev
-  # #609 docblock 정리 때 사후 등재 — PostNavigationApiTest 응답 구조 단언
+  # docblock 정리 때 사후 등재 — PostNavigationApiTest 응답 구조 단언
   - navigation_response_has_prev_next_keys
 
 test_files:

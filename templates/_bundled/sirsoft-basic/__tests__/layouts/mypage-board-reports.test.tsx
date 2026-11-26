@@ -1,6 +1,6 @@
 /**
  * @file mypage-board-reports.test.tsx
- * @description 마이페이지 「내 신고」 서브탭 레이아웃 회귀 (이슈 #525 WP-E)
+ * @description 마이페이지 「내 신고」 서브탭 레이아웃 회귀
  *
  * 이 화면이 지키는 계약:
  *  - 취소는 **대기 중인 신고만** 된다(`can_cancel`). 운영자가 이미 검토에 들어갔거나 판정이

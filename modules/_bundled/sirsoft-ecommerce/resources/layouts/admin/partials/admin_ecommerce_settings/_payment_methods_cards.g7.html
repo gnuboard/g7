@@ -19,7 +19,7 @@
             <div data-ref="payment_method_drag_handle_card_{{$methodIndex}}" data-if="{{!$method._orphaned &amp;&amp; !_computed.isReadOnly}}" :data-drag-handle="true" class="ecommerce:cursor-grab ecommerce-text-muted">
               <icon name="grip-vertical"/>
             </div>
-            <!-- 브랜드 마크(색 배지/SVG 로고) — 결제 플러그인이 카탈로그 brand_mark 로 선언한 수단(간편결제)만 그리고, 없으면 아이콘을 그린다(#639) -->
+            <!-- 브랜드 마크(색 배지/SVG 로고) — 결제 플러그인이 카탈로그 brand_mark 로 선언한 수단(간편결제)만 그리고, 없으면 아이콘을 그린다 -->
             <brand-mark data-type="composite" data-if="{{$method._cached_brand_mark}}" brandMark="{{$method._cached_brand_mark}}" :size="20"/>
             <icon data-if="{{!$method._cached_brand_mark}}" name="{{$method._cached_icon ?? 'circle-question'}}" class="ecommerce-text-secondary ecommerce:text-lg"/>
             <span class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate">{{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}</span>

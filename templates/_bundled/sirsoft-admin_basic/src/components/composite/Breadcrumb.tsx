@@ -145,7 +145,7 @@ interface BreadcrumbLinkProps {
 
 /**
  * 경로 항목 하나 — 주소가 있으면 링크(가운데 클릭·Ctrl+클릭 새 탭), 주소 없이 동작만 있으면 단추, 둘 다 없거나
- * 마지막 항목이면 글자. 주소 없는 `<a href="#">` 는 그리지 않는다(#757).
+ * 마지막 항목이면 글자. 주소 없는 `<a href="#">` 는 그리지 않는다.
  */
 const BreadcrumbLink: React.FC<BreadcrumbLinkProps> = ({ item, isLast }) => {
   const link = resolveLinkHref(item.href);

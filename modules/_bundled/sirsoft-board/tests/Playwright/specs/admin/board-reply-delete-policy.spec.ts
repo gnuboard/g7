@@ -1,5 +1,5 @@
 /**
- * 게시판 답글 삭제 정책 (block/cascade) — 설정 노출·저장 왕복 + block 차단 (#573, 공개 #106/#107 후속).
+ * 게시판 답글 삭제 정책 (block/cascade) — 설정 노출·저장 왕복 + block 차단 (공개 #106/#107 후속).
  *
  * 검증 축:
  *   ① 게시판 환경설정 "답변글" 탭에 정책 Select 렌더 + 기본값 cascade
@@ -85,7 +85,7 @@ async function createBoard(
 // 두 테스트가 같은 전용 게시판 slug 를 생성/삭제하므로 병렬 실행 시 경합한다 — 직렬 고정
 test.describe.configure({ mode: 'serial' });
 
-test.describe('게시판 답글 삭제 정책 (#573)', () => {
+test.describe('게시판 답글 삭제 정책', () => {
     test('환경설정 답변글 탭에 정책 Select 가 렌더되고 기본값이 cascade 다', async ({ page, replyPolicyToken }) => {
         await authenticatePage(page, replyPolicyToken);
 

@@ -10,7 +10,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * PostResource attachment_count 응답 키 회귀 테스트 (이슈 #304 Phase 2)
+ * PostResource attachment_count 응답 키 회귀 테스트
  *
  * 목적:
  * - PostResource 응답에 attachment_count (정수) 가 노출되는지 검증

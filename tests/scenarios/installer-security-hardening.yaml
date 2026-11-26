@@ -29,7 +29,7 @@ description: |
       반환하고 있었다.
     - 판정을 공용 정책(public/install/includes/binary-path-policy.php)으로 모아
       인스톨러 API·설치 워커·저장 시점이 같은 규칙을 쓰게 정렬했다. stat 은 호출하지
-      않는다 — #361 의 open_basedir 회귀를 재발시키지 않기 위함이다.
+      않는다 — open_basedir 회귀를 재발시키지 않기 위함이다.
 
 axes:
   vector: [getComposerCommand, getComposerCommandForDisplay, save_extensions_id, check_core_pending_path, escapeEnvValue, getDatabaseConnection, getPhpBinary, validatePhpPath, validateComposerPath, handleStep3Post, serializeEnvValue, installer_env_value_is_single_line]

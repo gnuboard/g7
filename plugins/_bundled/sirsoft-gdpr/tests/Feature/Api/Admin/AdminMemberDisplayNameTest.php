@@ -18,7 +18,7 @@ use Plugins\Sirsoft\Gdpr\Repositories\GdprPrivacyNoticeRepository;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 
 /**
- * GDPR 관리자 화면의 회원 이름 (#490)
+ * GDPR 관리자 화면의 회원 이름
  *
  * 동의 로그의 회원(`user.name`), 정책 버전의 발행자(`publisher.name`), 연간 안내 대상 명단의 회원 칸(`title`)은 회원 이름 컬럼을
  * 직접 싣지 않고 관리자 영역(`core:admin`) 표시 이름으로 계산한다. 실명은 회원 조회 권한(`core.users.read`)이 있는 관리자에게,

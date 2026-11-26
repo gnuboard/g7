@@ -112,7 +112,7 @@
           </on>
         </action-menu>
         <span data-if="{{post?.data?.author?.is_guest || !post?.data?.author?.uuid}}" class="board-text-heading">{{post?.data?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
-        <!-- 실명 보조 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+        <!-- 실명 보조 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다 -->
         <span data-testid="author-real-name" data-if="{{!!post?.data?.author?.real_name}}" class="board-text-label-subtle" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: post?.data?.author?.real_name })}}">{{$t('sirsoft-board.common.real_name_label', { name: post?.data?.author?.real_name })}}</span>
         <span data-if="{{post?.data?.author?.email}}" class="board-text-label-subtle">({{post?.data?.author?.email}})</span>
         <span data-if="{{post?.data?.author?.is_guest}}" class="board:inline-flex board:items-center board:px-1.5 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-600 board:dark:bg-gray-700 board:dark:text-gray-300">$t:sirsoft-board.admin.posts.guest</span>
@@ -139,7 +139,7 @@
         </div>
         <span data-if="{{post?.data?.ip_address}}">·</span>
         <span data-if="{{post?.data?.ip_address}}" class="board-text-tertiary">IP: {{post?.data?.ip_address}}</span>
-        <!-- 비회원 작성자가 낸 항목 값(이메일 등, #490) — 게시판 관리 권한(admin.manage)이 있을 때만 응답에 실린다(IP 와 같은 기준) -->
+        <!-- 비회원 작성자가 낸 항목 값(이메일 등) — 게시판 관리 권한(admin.manage)이 있을 때만 응답에 실린다(IP 와 같은 기준) -->
         <div data-ref="post_guest_field_values" data-if="{{(post?.data?.guest_field_values ?? []).length > 0}}" class="board-flex-center board:gap-2 board:flex-wrap board:min-w-0">
           <span data-ref="post_guest_field_{{gv.key}}" data-each="gv in {{post?.data?.guest_field_values ?? []}}" class="board-text-tertiary board:min-w-0 board:wrap-anywhere">· {{gv.label}}: {{gv.display_value ?? gv.value ?? ''}}</span>
         </div>

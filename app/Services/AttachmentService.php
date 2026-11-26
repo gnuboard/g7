@@ -122,7 +122,7 @@ class AttachmentService
         $path = "{$datePath}/{$storedFilename}";
 
         // 스토리지에 파일 저장
-        // 비공개 첨부 저장소 선택을 따른다(#916) — ATTACHMENT_DISK env 명시 > 선택 > 종전 규칙(s3 이면 s3, 아니면 attachments)
+        // 비공개 첨부 저장소 선택을 따른다 — ATTACHMENT_DISK env 명시 > 선택 > 종전 규칙(s3 이면 s3, 아니면 attachments)
         $disk = PrivateAttachmentDisk::forCore();
         $this->storage->withDisk($disk)->put('', $path, file_get_contents($file->getRealPath()));
 
@@ -261,7 +261,7 @@ class AttachmentService
      *
      * 로고·기본 공유 이미지·파비콘·템플릿 설정 첨부는 소유자(attachmentable) 없이 설정값이 직접 참조하는 첨부라
      * 판정식만으로는 고아와 구분되지 않습니다. 보호 목록은 설정 선언에서 파생합니다({@see SettingAttachmentReferences}) —
-     * 종전에는 사이트 로고 한 줄을 손으로 적어 기본 공유 이미지가 빠졌습니다(#434).
+     * 종전에는 사이트 로고 한 줄을 손으로 적어 기본 공유 이미지가 빠졌습니다.
      *
      * @return array<int, int> 보호할 첨부 ID 목록
      */
@@ -543,7 +543,7 @@ class AttachmentService
     }
 
     /**
-     * 파비콘 파일 정보 조회 — 파비콘 컬렉션 첨부만 (#434)
+     * 파비콘 파일 정보 조회 — 파비콘 컬렉션 첨부만
      *
      * 파비콘은 브라우저가 쿠키·토큰 없이 요청하므로 공개 경로다. 그래서 대상이 좁아야 한다 — 파비콘 컬렉션
      * (`site_favicon`, `template_settings.{템플릿}.favicon`)에 속하고 MIME 이 파비콘 목록 안인 첨부만 내보낸다.
@@ -686,7 +686,7 @@ class AttachmentService
     }
 
     /**
-     * 코어 다운로드(`download`·`getFileInfo`)로 내보내도 되는 행인지 판정합니다 (#887).
+     * 코어 다운로드(`download`·`getFileInfo`)로 내보내도 되는 행인지 판정합니다.
      *
      * 1. 코어 일반 규칙: 행을 만든 확장(`source_type` 이 module·plugin 이고 `source_identifier`)이 비활성·미설치면 거부한다 —
      *    그 확장의 권한 판정(리스너)이 꺼져 있어 원 리소스 권한을 확인할 수 없다. 리스너가 이 규칙을 뒤집지는 못한다.

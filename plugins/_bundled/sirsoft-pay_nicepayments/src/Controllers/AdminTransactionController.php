@@ -2,7 +2,7 @@
 
 namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 
-// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 결제 행 조회를 이커머스 공개 결제 계약으로 옮긴 내부 리팩토링 (#916)
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 결제 행 조회를 이커머스 공개 결제 계약으로 옮긴 내부 리팩토링 
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;

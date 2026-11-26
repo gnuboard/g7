@@ -1,15 +1,15 @@
-feature: 관리자 쇼핑몰 설정 본인인증 정책 탭 — 정책 삭제는 확인 모달로 연다 (#297)
+feature: 관리자 쇼핑몰 설정 본인인증 정책 탭 — 정책 삭제는 확인 모달로 연다
 
 description: |
   쇼핑몰 환경설정 "본인인증 정책" 탭의 삭제 버튼이 등록되지 않은 `confirm` 핸들러를 불러
-  "Unknown action handler: confirm" 토스트만 뜨고 삭제가 실행되지 않던 결함(#297)의 회귀 방지다.
+  "Unknown action handler: confirm" 토스트만 뜨고 삭제가 실행되지 않던 결함의 회귀 방지다.
   고친 구조는 세 조각으로 나뉜다.
 
   - 탭 partial: 삭제 버튼(PC 표와 모바일 카드 두 곳)은 `setState(_global.ecommerceIdentityPolicyDeleteId)`
     뒤에 `openModal(ecommerce_identity_policy_delete_modal)` 을 부르는 sequence 다. confirm 핸들러는 어디에도 없다.
   - 삭제 모달: 그 id 로 DELETE 를 보내고 성공하면 `ecommerceIdentityPolicies` 를 다시 읽는다. 진행 중
     값 `_global.ecommerceIdentityPolicyDeleting` 이 취소와 삭제 버튼을 함께 잠그고 스피너를 띄운다.
-    바닥 단추는 #869 P1 에서 Modal 고정 하단(`props.footer`)으로 옮겨 갔다.
+    바닥 단추는 Modal 고정 하단(`props.footer`)으로 옮겨 갔다.
   - 설정 레이아웃: 그 모달 partial 이 `modals` 배열에 등록돼 있어야 openModal 이 찾는다.
 
   같은 탭의 쪽 링크(admin-settings-identity-policies-pager)와 재는 동작이 달라 따로 둔다.

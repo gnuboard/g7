@@ -88,7 +88,7 @@ class OrderPaymentResource extends BaseApiResource
             'paid_amount_base_formatted' => $this->formatOrderCurrency($this->paid_amount_base),
             'vat_amount' => $this->roundToOrderCurrency($this->vat_amount),
             'vat_amount_formatted' => $this->formatOrderCurrency($this->vat_amount),
-            // 취소·환불로 줄어든 부가세 누적 — 승인 부가세(vat_amount)는 그대로 둔다(#612 ④)
+            // 취소·환불로 줄어든 부가세 누적 — 승인 부가세(vat_amount)는 그대로 둔다
             'cancelled_vat_amount' => $this->roundToOrderCurrency($this->cancelled_vat_amount ?? 0),
             'cancelled_vat_amount_formatted' => $this->formatOrderCurrency($this->cancelled_vat_amount ?? 0),
             // 결제 통화 코드(order_currency) — 화면 "결제 통화" 표기 SSoT. base 통화는 base_currency.

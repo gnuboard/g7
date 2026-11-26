@@ -138,7 +138,7 @@ class GzipEncodeResponse
 
         // 웹서버에 전송을 위임한 응답은 본문이 없다 — 여기서 파일을 읽어 gzip 본문으로 치환하면 웹서버는 위임
         // 헤더를 소비해 **원본 바이트**를 보내면서 앱이 붙인 `Content-Encoding: gzip` 을 그대로 실어, 브라우저가
-        // 깨진 본문을 받는다. 헬퍼(`fileResponse()`)의 선언과 별개로 응답 모양으로도 막는다(2차 방어, #878).
+        // 깨진 본문을 받는다. 헬퍼(`fileResponse()`)의 선언과 별개로 응답 모양으로도 막는다(2차 방어).
         if ($response->headers->has('X-Sendfile') || $response->headers->has('X-Accel-Redirect')) {
             return false;
         }

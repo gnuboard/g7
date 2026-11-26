@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Services\CouponIssueNotifier;
 
 /**
- * 쿠폰 발급 알림 리스너 (#952)
+ * 쿠폰 발급 알림 리스너
  *
  * 자동발급(가입·첫구매·생일)과 관리자 직접발급 1건마다 그 쿠폰의 발급 알림 훅을 발화한다. 큐로 돈다(기본) — 발급을 막지 않는다.
  */

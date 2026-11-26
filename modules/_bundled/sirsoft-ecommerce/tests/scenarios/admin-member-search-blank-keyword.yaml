@@ -1,4 +1,4 @@
-feature: 이커머스 관리자 회원 검색 — 빈 검색어 요청 차단 (#703)
+feature: 이커머스 관리자 회원 검색 — 빈 검색어 요청 차단
 
 description: |
   이커머스 관리자 화면 다섯 곳이 코어 회원 검색 API(`/api/admin/users/search`)를 검색어로 부른다.

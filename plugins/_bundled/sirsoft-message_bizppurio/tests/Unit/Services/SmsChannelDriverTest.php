@@ -27,7 +27,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
  * SmsChannelDriver — 전화번호 해석·sms_body 게이트·#{var} 치환·SMS/LMS 판별·Job 위임 검증
- * (#597 §3.5 — 본문 소스가 코어 템플릿에서 bizppurio_templates.sms_body 로 전환됨).
+ * (본문 소스가 코어 템플릿에서 bizppurio_templates.sms_body 로 전환됨).
  *
  * 발송 Job dispatch 를 Bus::fake 로 관찰한다(실제 발송은 SendMessageJobTest 가 커버).
  */
@@ -36,7 +36,7 @@ class SmsChannelDriverTest extends PluginTestCase
     /**
      * sms_body 를 담은 템플릿 행을 만듭니다.
      *
-     * sms_body 는 로케일 맵이다(#597 §14.3). 문자열을 넘기면 ko 본문으로 취급한다 —
+     * sms_body 는 로케일 맵이다. 문자열을 넘기면 ko 본문으로 취급한다 —
      * 로케일 축과 무관한 기존 케이스가 맵 표기를 반복하지 않게 하기 위한 편의다.
      *
      * @param  string|array<string, string>|null  $smsBody  로케일 맵 또는 ko 본문
@@ -222,7 +222,7 @@ class SmsChannelDriverTest extends PluginTestCase
     }
 
     /**
-     * sms_only 는 알림톡을 끄는 플래그지 SMS 를 켜거나 끄는 플래그가 아니다 (#597 §3.5).
+     * sms_only 는 알림톡을 끄는 플래그지 SMS 를 켜거나 끄는 플래그가 아니다.
      *
      * 두 값을 모두 태워야 "무관" 이 증명된다 — 한쪽만(특히 기본값과 같은 false 만) 넣으면
      * 이후 누군가 SmsChannelDriver 에 sms_only 분기를 넣어도 이 테스트는 green 으로 남는다.
@@ -337,7 +337,7 @@ class SmsChannelDriverTest extends PluginTestCase
         $member = User::factory()->create(['mobile' => '01011112222']);
         $builder = $this->spyBuilder();
 
-        // sms_body 는 알림톡 본문과 동일한 #{var} 표기를 쓴다 (#597 §3.1).
+        // sms_body 는 알림톡 본문과 동일한 #{var} 표기를 쓴다.
         $this->makeDriver($this->templateRow(smsBody: '[샵] #{name}님 #{order_number} 주문 완료'), $builder)
             ->send($member, $this->notification(['name' => '김철수', 'order_number' => 'A1']));
 
@@ -345,7 +345,7 @@ class SmsChannelDriverTest extends PluginTestCase
     }
 
     /**
-     * 알림 변수가 언어별 값(`{ko: …, en: …}`)이면 수신자 언어의 값으로 치환한다 (#798).
+     * 알림 변수가 언어별 값(`{ko: …, en: …}`)이면 수신자 언어의 값으로 치환한다.
      *
      * 코어가 알림 변수에 언어별 값을 허용한 뒤(GenericNotification::getDataFor) 이 드라이버가 getData() 를 그대로 읽으면
      * 배열이라 치환되지 않고 `#{name}` 이 본문에 남는다.
@@ -388,7 +388,7 @@ class SmsChannelDriverTest extends PluginTestCase
     }
 
     /**
-     * 수신자 로케일별 본문 선택 (#597 §14.3).
+     * 수신자 로케일별 본문 선택.
      *
      * 개편 과정에서 sms_body 가 단일 문자열이 되며 이 축이 사라진 적이 있다 — 코드에서
      * 로케일 해석을 빼도 어떤 테스트도 red 가 되지 않았고, 다국어 사이트의 en/ja 수신자가
@@ -433,7 +433,7 @@ class SmsChannelDriverTest extends PluginTestCase
     }
 
     /**
-     * LMS 제목도 본문과 같은 수신자 로케일로 렌더된다 (#597 §15.1).
+     * LMS 제목도 본문과 같은 수신자 로케일로 렌더된다.
      *
      * 본문만 로케일을 따르고 제목이 앱 로케일이면 한 통 안에서 언어가 갈린다. 이 축은
      * 라운드 5 까지 무단언이었다 — effect 이름은 "…_definition_label_subject" 인데 어느
@@ -470,7 +470,7 @@ class SmsChannelDriverTest extends PluginTestCase
     }
 
     /**
-     * 행 게이트는 맵 전체를 보고, 본문 선택은 로케일별로 다시 판정한다 (#597 §14.3).
+     * 행 게이트는 맵 전체를 보고, 본문 선택은 로케일별로 다시 판정한다.
      *
      * 두 판정은 층이 다르다. 행 게이트(hasSmsBody)가 "현재 앱 로케일의 본문" 만 보면
      * ko 만 채운 알림이 en 관리자 세션에서 "본문 없음" 으로 잘못 판정된다. 반대로 행
@@ -504,7 +504,7 @@ class SmsChannelDriverTest extends PluginTestCase
     }
 
     /**
-     * 모든 로케일이 빈 문자열이면 발송하지 않는다 (#597 §14.3).
+     * 모든 로케일이 빈 문자열이면 발송하지 않는다.
      *
      * 맵이 존재한다는 사실만으로 게이트를 통과하면 빈 SMS 가 나간다.
      *

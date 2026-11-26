@@ -1,5 +1,5 @@
 /**
- * sirsoft-admin_basic — 환경설정 업로드 탭 「움직이는 이미지는 원본 사용」 토글 (이슈 #869).
+ * sirsoft-admin_basic — 환경설정 업로드 탭 「움직이는 이미지는 원본 사용」 토글.
  *
  * 토글(`upload.thumbnail_animated_original`)은 움직이는 GIF·WebP·PNG 에 썸네일을 요청했을 때 원본을 그대로 낼지(켬),
  * 첫 장면으로 썸네일을 만들지(끔)를 정한다. 이 spec 은 화면에서 토글을 바꾸고 저장해 서버 값이 바뀌는지,

@@ -22,14 +22,14 @@ use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioDispatchRep
 use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioTemplateRepositoryInterface;
 
 /**
- * 코어 알림 시스템의 alimtalk 채널 드라이버 (#597 §3.5).
+ * 코어 알림 시스템의 alimtalk 채널 드라이버.
  *
  * ChannelManager::extend('alimtalk', …)(ServiceProvider::boot)로 등록되어, 코어가
  * `via()` 에서 'alimtalk' 채널을 선택하면 이 드라이버의 send() 가 호출된다.
  *
  * 발송 본문·요소의 출처는 bizppurio_templates 의 승인 스냅샷(approved_content)이다 —
  * 운영자가 시스템에서 작성해 검수 신청하고 승인된 그 내용 그대로다. 발송 시점의
- * 카카오 실시간 조회는 없다(DB 가 유일한 판정 근거, 이슈 #597 요구).
+ * 카카오 실시간 조회는 없다(DB 가 유일한 판정 근거).
  *
  * 발송 게이트: 행 존재 + alimtalk_enabled + is_active + status=approved +
  * approved_content 존재(BizppurioTemplate::isAlimtalkSendable). 승인 취소로 status 가
@@ -116,7 +116,7 @@ class AlimtalkChannelDriver
             );
         }
 
-        // 알림 변수는 받는 사람 언어로 해석해 쓴다 — 언어별 값({ko: …, en: …})이 그대로 배열로 남으면 치환되지 않는다(#798).
+        // 알림 변수는 받는 사람 언어로 해석해 쓴다 — 언어별 값({ko: …, en: …})이 그대로 배열로 남으면 치환되지 않는다.
         //    전화번호 같은 문자열 변수는 그대로 남는다.
         $data = $notification->getDataFor($notifiable);
 
@@ -182,7 +182,7 @@ class AlimtalkChannelDriver
     }
 
     /**
-     * SMS 대체발송 본문을 행의 sms_body 에서 렌더합니다 (#597 §3.5).
+     * SMS 대체발송 본문을 행의 sms_body 에서 렌더합니다.
      *
      * 대체 SMS 본문 소스는 코어 알림 템플릿이 아니라 bizppurio_templates.sms_body 다.
      * `#{var}` 표기를 알림 data 로 치환하며, 본문이 비어 있으면 빈 문자열을 반환하고

@@ -1,6 +1,6 @@
 /**
  * @file ColumnSelector.dynamicColumns.test.tsx
- * @description 열 선택기의 동적 열(dynamicColumns)과 저장값 (#490 6단계: 회원 목록이 첫 사용, 0단계 S9)
+ * @description 열 선택기의 동적 열(dynamicColumns)과 저장값 (6단계: 회원 목록이 첫 사용, 0단계 S9)
  *
  * 0단계 스파이크 S9 가 남긴 것: 「열 선택 저장값이 있는 운영자에게는 새 동적 열이 자동으로 켜지지 않는다」.
  * 처음 켜진 동적 열이 저장값을 만들기 때문에, 운영자가 두 번째로 켠 항목 열부터는 선택기를 열어 직접 켜야만 보였다.

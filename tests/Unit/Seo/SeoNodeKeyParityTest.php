@@ -229,7 +229,7 @@ class SeoNodeKeyParityTest extends TestCase
     }
 
     /**
-     * 봇 대상 자산의 이미지 썸네일 표기를 SEO 렌더러가 모두 해석합니다 (#869).
+     * 봇 대상 자산의 이미지 썸네일 표기를 SEO 렌더러가 모두 해석합니다.
      *
      * 썸네일은 노드 키가 아니라 Img 의 `thumbPreset` 속성과 표현식 파이프(`| thumb('md')`, `| thumbSrcset(...)`)로 적는다.
      * 위 키 분류 검사는 이 둘을 보지 않으므로, 사람 화면(React)만 썸네일 주소를 쓰고 봇 화면이 조용히 원본 주소를 내는

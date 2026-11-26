@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 게시판 첨부 소유 빈틈 (#883)
+ * 게시판 첨부 소유 빈틈
  *
  * 비회원 임시 첨부는 임시 키 소지로 소유를 판단한다(템플릿 무변경 — basic 복제 템플릿 호환). 그 위에서 남아 있던 빈틈을 막는다.
  * - 회원이 비회원의 임시 키로, 비회원이 회원 업로드를 잇던 교차

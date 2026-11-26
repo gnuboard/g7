@@ -21,7 +21,7 @@ use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
  *
  * 무효화와 사이트맵 색인 한 건은 저장한 요청 안에서 한다(sync) — 큐로 가면 워커가 돌 때까지(워커가 없으면
  * TTL 까지) 봇이 옛 상품 정보를 받는다. 본문은 DB::afterCommit 으로 감싸 트랜잭션 안에서 발화하면 커밋 뒤에
- * 비운다. 상세 페이지를 미리 다시 그리는 무거운 일은 {@see SeoProductDetailRegenerateListener}(큐)가 맡는다(#724).
+ * 비운다. 상세 페이지를 미리 다시 그리는 무거운 일은 {@see SeoProductDetailRegenerateListener}(큐)가 맡는다.
  */
 class SeoProductCacheListener implements HookListenerInterface
 {
@@ -124,7 +124,7 @@ class SeoProductCacheListener implements HookListenerInterface
             $cache = app(SeoCacheManagerInterface::class);
 
             // 상품 상세 페이지 캐시 무효화 — 상세 라우트는 번호와 상품 코드를 모두 받는다(Product::resolveRouteBinding).
-            // 화면 주소·사이트맵은 상품 코드 주소(#792 W12)를, 이전에 공유·색인된 링크는 번호 주소를 쓰므로 두 주소를 함께 비운다.
+            // 화면 주소·사이트맵은 상품 코드 주소를, 이전에 공유·색인된 링크는 번호 주소를 쓰므로 두 주소를 함께 비운다.
             $cache->invalidateByUrl("*/products/{$product->id}");
             foreach ($this->productCodesToInvalidate($product, $args[1] ?? null) as $productCode) {
                 $cache->invalidateByUrl("*/products/{$productCode}");

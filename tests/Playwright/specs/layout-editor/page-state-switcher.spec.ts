@@ -192,7 +192,7 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
     // 이 테스트가 의존하는 상태가 선택지에 있는지만 확인한다.
     //
     // 이전에는 `toHaveCount(3)` 으로 총 개수를 못박아 두었는데, 상태 그룹은 편집기 스펙에서
-    // 계속 늘어난다 — 실제로 `summary_details_expanded` 가 추가되어 4개가 되면서(#383,
+    // 계속 늘어난다 — 실제로 `summary_details_expanded` 가 추가되어 4개가 되면서(
     // `modules/_bundled/sirsoft-ecommerce/editor-spec.json` 의 `/shop/checkout` 그룹) 총 개수
     // 단언이 깨졌다. 개수는 이 테스트의 검증 대상(점 박힌 키 인라인 에러 노출)이 아니므로,
     // 새 상태가 추가돼도 깨지지 않게 필요한 값의 존재로 판정한다.

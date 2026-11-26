@@ -13,7 +13,7 @@ use Plugins\Sirsoft\Sso\Tests\PluginTestCase;
 use Plugins\Sirsoft\Sso\Tests\Support\PolicyFixtures;
 
 /**
- * SSO 플러그인이 회원 이름을 싣는 자리의 표시 이름 (#490)
+ * SSO 플러그인이 회원 이름을 싣는 자리의 표시 이름
  *
  * - 관리자 「회원 연결」 목록의 회원 이름은 관리자 영역(`core:admin`) 표시 이름이다. 실명은 회원 조회 권한(`core.users.read`)이
  *   있는 관리자에게, 실명이 표시 이름과 다를 때만 `user.real_name` 으로 실린다.

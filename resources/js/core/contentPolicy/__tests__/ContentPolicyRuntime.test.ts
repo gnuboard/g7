@@ -1,5 +1,5 @@
 /**
- * 본문 콘텐츠 규칙 런타임 — 정화·외부 영상 플레이어·규칙 없음 폴백 (#883 5단계, engine-v1.90.0)
+ * 본문 콘텐츠 규칙 런타임 — 정화·외부 영상 플레이어·규칙 없음 폴백 (5단계, engine-v1.90.0)
  *
  * @scenario-manifest tests/scenarios/content-render-policy.yaml
  */
@@ -55,7 +55,7 @@ describe('ContentPolicyRuntime', () => {
   });
 
   /**
-   * 기본 규칙(캡션 켬)에서 `drop_tags` 는 비어 있다 — 고정본은 서버 출력 그대로 (#887)
+   * 기본 규칙(캡션 켬)에서 `drop_tags` 는 비어 있다 — 고정본은 서버 출력 그대로
    * @scenario case=parity_fixture
    * @effects caption_off_drops_caption_keeps_image
    */
@@ -92,7 +92,7 @@ describe('ContentPolicyRuntime', () => {
 
   /**
    * 「그림 캡션」 끔 — 서버 `ContentHtmlPolicy::fromSettings(['allow_figure_caption' => false])->toFrontendArray()` 의 모양(외부 영상은 켬).
-   * 캡션(figcaption)만 내용째 지우고 그림(figure·img)은 남긴다. 편집기 금지 목록(forbid_tags)에는 넣지 않는다 — 저장 원문은 그대로, 다시 켜면 복원 (#887)
+   * 캡션(figcaption)만 내용째 지우고 그림(figure·img)은 남긴다. 편집기 금지 목록(forbid_tags)에는 넣지 않는다 — 저장 원문은 그대로, 다시 켜면 복원
    * @scenario case=runtime_caption_off
    * @effects caption_off_drops_caption_keeps_image
    */
@@ -113,7 +113,7 @@ describe('ContentPolicyRuntime', () => {
 
   /**
    * 「외부 영상 삽입」 끔 — 서버 `fromSettings(['allow_external_embed' => false])->toFrontendArray()` 의 모양(oembed 규칙·서비스 없음).
-   * 봇 화면(`finalize('bot')`)과 같이 원래 주소를 nofollow 링크로 — 빈 `<figure class="media">` 를 남기지 않는다 (#887)
+   * 봇 화면(`finalize('bot')`)과 같이 원래 주소를 nofollow 링크로 — 빈 `<figure class="media">` 를 남기지 않는다
    * @scenario case=runtime_embed_off
    * @effects embed_off_becomes_link
    */
@@ -145,7 +145,7 @@ describe('ContentPolicyRuntime', () => {
   });
 
   /**
-   * 운영자 추가 태그 svg — PHP `HtmlSanitizerContentPolicyTest::SAMPLE` 과 같은 표본(대표 패리티, #883)
+   * 운영자 추가 태그 svg — PHP `HtmlSanitizerContentPolicyTest::SAMPLE` 과 같은 표본(대표 패리티)
    * @scenario case=runtime_sanitize
    * @effects svg_allowed, runtime_sanitizes_with_policy
    */

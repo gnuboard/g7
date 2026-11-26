@@ -7,7 +7,7 @@
     <!-- 상세 재조회 — 응답을 **같은 전역(`selectedTemplate`)에 덮어쓴다**. 목록이 담아 준 얕은 값 위에
          전체 정보를 얹는 것이라, 창은 목록 값으로 먼저 그려지고 곧 채워진다.
          그래서 목록 응답에 없는 항목(컴포넌트·코어 요구·언어·외부 자원)의 「없음」은 상세 응답에만 있는
-         `metadata` 가 온 뒤에만 보인다 — 받기 전에 「없음」이 먼저 보였다가 바뀌지 않게(#915). -->
+         `metadata` 가 온 뒤에만 보인다 — 받기 전에 「없음」이 먼저 보였다가 바뀌지 않게. -->
     <data-source id="templateDetail" label_key="$t:editor.data_source.templateDetail" type="api" endpoint="/api/admin/templates/{{_global.selectedTemplate.identifier}}" :auth_required="true" initGlobal="selectedTemplate"/>
     <div class="flex flex-col max-h-[70vh]">
       <div class="flex-1 overflow-y-auto min-h-0 pr-2">
@@ -61,7 +61,7 @@
                   <span class="{{_global.selectedTemplate.status === 'active' ? 'badge badge-green' : (_global.selectedTemplate.status === 'uninstalled' ? 'badge badge-blue' : 'badge badge-gray')}}">{{_global.selectedTemplate.status === 'active' ? '$t:admin.templates.status.active' : (_global.selectedTemplate.status === 'uninstalled' ? '$t:admin.templates.status.not_installed' : '$t:admin.templates.status.inactive')}}</span>
                 </div>
               </div>
-              <!-- 패키지 서명(#916) — 설치·업데이트 때 남긴 검증 기록(integrity_status). verified 면 키 ID 콜론 앞(서명자)을 보인다.
+              <!-- 패키지 서명 — 설치·업데이트 때 남긴 검증 기록(integrity_status). verified 면 키 ID 콜론 앞(서명자)을 보인다.
                    기록이 없으면(이 기능 전에 설치했거나 옛 코어) 「기록 없음」이다. -->
               <div data-ref="package_signature_field">
                 <span class="text-label-subtle">$t:admin.package_integrity.signature_label</span>
@@ -77,7 +77,7 @@
                 <span class="text-label-subtle">$t:admin.license.license_text</span>
                 <button type="button" class="block text-left text-primary font-medium cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   <on type="click">
-                    <!-- 라이선스 이름을 누르면 전문을 받아 별도 창으로 띄운다. 전문은 길어 상세 응답에 싣지 않는다. 버튼이어야 키보드로도 열린다(#736 F 실측). -->
+                    <!-- 라이선스 이름을 누르면 전문을 받아 별도 창으로 띄운다. 전문은 길어 상세 응답에 싣지 않는다. 버튼이어야 키보드로도 열린다. -->
                     <sequence>
                       <api-call :auth_required="true" target="/api/admin/templates/{{_global.selectedTemplate.identifier}}/license" method="GET">
                         <success>
@@ -159,9 +159,9 @@
               </div>
             </div>
           </div>
-          <!-- 함께 쓰면 연동되는 확장 (#639) — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로
+          <!-- 함께 쓰면 연동되는 확장 — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로
             설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다.
-            요구 버전(`required_version`, 무제약 `*` 은 감춘다)·설치 버전을 보이고, 설치됐는데 제약을 못 맞추면(`is_met === false`) 「버전 미달」 배지를 단다(#822).
+            요구 버전(`required_version`, 무제약 `*` 은 감춘다)·설치 버전을 보이고, 설치됐는데 제약을 못 맞추면(`is_met === false`) 「버전 미달」 배지를 단다.
             옛 코어는 `is_met` 을 싣지 않으므로 `false` 일 때만 단다 — `!is_met` 이면 옛 코어에서 모든 항목에 배지가 붙는다. -->
           <div data-ref="integrations_section" data-if="{{(_global.selectedTemplate?.integrations ?? []).length > 0}}">
             <div class="flex-center gap-2 mb-3">

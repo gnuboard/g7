@@ -1,6 +1,6 @@
 /**
  * @file notificationRecipientSearch.test.tsx
- * @description 알림 템플릿 편집 창 — 수신자 회원 검색이 빈 검색어로 요청하지 않는지 (#703)
+ * @description 알림 템플릿 편집 창 — 수신자 회원 검색이 빈 검색어로 요청하지 않는지
  *
  * 코어 회원 검색 API(`/api/admin/users/search`)는 keyword 가 비면(공백만 있어도 요청 정리 뒤 비게 된다)
  * 422 로 거절한다. 검색칸을 지우면 드롭다운이 빈 문자열로 onSearch 를 부르는데, 그대로 요청하면

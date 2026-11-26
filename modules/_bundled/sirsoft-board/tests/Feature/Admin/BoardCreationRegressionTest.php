@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 보드 생성/삭제 회귀 테스트 (이슈 #269 / #12)
+ * 보드 생성/삭제 회귀 테스트 (#12)
  *
  * 파티션 스키마 폐지(1.0.0-beta.3) 후 회귀 방지:
  * - 잔여 파티션 DDL 호출로 인한 보드 생성 실패가 다시 발생하지 않도록 방어

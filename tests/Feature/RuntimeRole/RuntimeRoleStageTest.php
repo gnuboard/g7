@@ -32,7 +32,7 @@ use Tests\Support\Concerns\GrantsExtensionAdminToken;
 use Tests\TestCase;
 
 /**
- * 실행 역할 `G7_RUNTIME_ROLE=stage` 와 서버별 스케줄 스위치 `G7_SCHEDULER` (#888).
+ * 실행 역할 `G7_RUNTIME_ROLE=stage` 와 서버별 스케줄 스위치 `G7_SCHEDULER`.
  *
  * 같은 DB·캐시를 쓰는 검수 서버가 스케줄·큐 워커·사이트맵·SEO 캐시·방문 분석을 돌리고 관리자 화면에서 확장·코어 수명주기를 바꿀 수
  * 있었다. 판정은 `RuntimeRole` 하나(스케줄은 `schedulerEnabled()`)이고, 각 진입점은 live 에서 종전과 같다(회귀 축).
@@ -253,7 +253,7 @@ class RuntimeRoleStageTest extends TestCase
         $this->assertSame(1, Artisan::call('seo:generate-sitemap'));
 
         $token = $this->extensionAdminToken(['core.settings.update']);
-        // 수명주기 API 와 같은 라우트 미들웨어(`deny.stage`)가 막되, 안내는 사이트맵 문구다 — 확장·코어 변경 안내가 나오지 않는다 (#888)
+        // 수명주기 API 와 같은 라우트 미들웨어(`deny.stage`)가 막되, 안내는 사이트맵 문구다 — 확장·코어 변경 안내가 나오지 않는다
         $this->withToken($token)->postJson('/api/admin/seo/sitemap/regenerate')
             ->assertStatus(409)->assertJsonPath('message', __('errors.stage_role_locked_sitemap'));
         $this->assertNotSame('errors.stage_role_locked_sitemap', __('errors.stage_role_locked_sitemap'), '사이트맵 거절 문구 키가 있어야 한다');

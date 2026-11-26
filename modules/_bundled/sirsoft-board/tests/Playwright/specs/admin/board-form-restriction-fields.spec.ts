@@ -1,5 +1,5 @@
 /**
- * 게시판 생성/수정 폼 — 제한 키워드/허용 확장자 입력 (이슈 #413 item 24).
+ * 게시판 생성/수정 폼 — 제한 키워드/허용 확장자 입력 (item 24).
  *
  * 24-(2)/Q4 통일안: 제한 키워드(blocked_keywords)와 허용 확장자(allowed_extensions)를
  * 둘 다 배열 데이터 + TagInput UI 로 통일한다. 두 필드 모두 "게시글 설정" 탭에 유지하되
@@ -69,7 +69,7 @@ async function addTag(page: Page, label: string, value: string): Promise<void> {
   await box.press('Enter');
 }
 
-test.describe('게시판 폼 — 제한 키워드/허용 확장자 TagInput (#413)', () => {
+test.describe('게시판 폼 — 제한 키워드/허용 확장자 TagInput', () => {
   // 생성 저장 → 수정 화면 다시 불러오기까지 한 시험에서 하므로 느린 개발 PC 에서도 끝나도록 넉넉히 둔다
   test.describe.configure({ timeout: 180_000 });
 

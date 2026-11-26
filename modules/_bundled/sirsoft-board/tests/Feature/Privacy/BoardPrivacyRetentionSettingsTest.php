@@ -11,7 +11,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 게시판 개인정보 보유기간 설정·미리보기 API 테스트 (이슈 #636 S5)
+ * 게시판 개인정보 보유기간 설정·미리보기 API 테스트
  *
  * 설정 저장 경로(FormRequest 5곳 — 정수·불리언 캐스팅, 규칙, 카테고리 화이트리스트)와
  * 대상 건수 미리보기 API 의 「꺼짐 = null」 계약을 고정합니다. 카테고리 화이트리스트에서

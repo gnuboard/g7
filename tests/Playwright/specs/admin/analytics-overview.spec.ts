@@ -1,5 +1,5 @@
 /**
- * E2E: 방문자 통계 개요 — 기간 프리셋 왕복과 CSV 내려받기 (이슈 #682 S3)
+ * E2E: 방문자 통계 개요 — 기간 프리셋 왕복과 CSV 내려받기
  *
  * 레이아웃 계약 테스트는 「이동이 mergeQuery 다」까지만 잠근다. 실제 브라우저에서 프리셋 클릭이
  * 주소를 바꾸고, 새로고침이 그 주소를 복원하고, 「더보기」로 다른 화면에 가거나 서브탭을 눌러도
@@ -52,7 +52,7 @@ test.describe('방문자 통계 개요 — 기간 왕복과 CSV', () => {
 
     // 서브탭 전환(`?tab=`)은 화면 이동과 다른 경로다 — `mergeQuery` 가 아니라 기간 키를
     // `<query>` 로 **명시 전달**한다(쪽·검색·정렬은 일부러 버린다). 그 명시 목록에서 키가
-    // 하나라도 빠지면 탭만 눌러도 기간이 기본값으로 되돌아간다(#682 S3 라운드 7).
+    // 하나라도 빠지면 탭만 눌러도 기간이 기본값으로 되돌아간다.
     // 로케일 비의존으로 고르려고 라벨 대신 두 번째 탭(진입 페이지)을 순서로 집는다.
     const entryTabRequest = page.waitForResponse(
       (r) => r.url().includes('/api/admin/analytics/reports/entry_pages') && r.url().includes('preset=30d'),
@@ -93,7 +93,7 @@ test.describe('방문자 통계 개요 — 기간 왕복과 CSV', () => {
   });
 });
 
-test.describe('방문자 통계 — 빈 화면과 방문자 상세 (#682 S4 라운드 8)', () => {
+test.describe('방문자 통계 — 빈 화면과 방문자 상세', () => {
   // @scenario screen=referrers, state=empty, viewport=1440, locale=ko, e2e=overview
   // @effects empty_grid_shows_one_empty_message
   test('기록이 없는 기간의 유입 사이트 탭은 빈 안내를 한 번만 보이고 쪽 번호를 그리지 않는다', async ({ page }) => {
@@ -177,7 +177,7 @@ test.describe('방문자 통계 — 빈 화면과 방문자 상세 (#682 S4 라�
     await page.locator('#visit_item_0 button').first().click();
     await expect(page.locator('#visit_info_0')).toContainText(target!.resolution);
 
-    // 라벨 폭이 달라도 값은 열마다 한 줄로 시작하고, 라벨(작은 글자)과 값의 기준선이 맞는다(#682 S4 라운드 8).
+    // 라벨 폭이 달라도 값은 열마다 한 줄로 시작하고, 라벨(작은 글자)과 값의 기준선이 맞는다.
     const geometry = await page.locator('#visit_info_0').evaluate((grid) => {
       // 행 요소의 클래스와 무관하게 짝(라벨·값 span)을 잰다 — 모양 규칙이 아니라 보이는 위치가 기준이다.
       const spans = Array.from(grid.querySelectorAll(':scope > div > span')) as HTMLElement[];

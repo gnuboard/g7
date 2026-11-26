@@ -1,5 +1,5 @@
 /**
- * useEditorUrlSync — 첫 복원 dispatch 가 상태를 바꾸지 못해도 다음 편집 모드 진입은 기록을 남긴다 (#869 독립 검토 σ)
+ * useEditorUrlSync — 첫 복원 dispatch 가 상태를 바꾸지 못해도 다음 편집 모드 진입은 기록을 남긴다 (독립 검토 σ)
  *
  * 첫 복원과 같은 순회의 주소 보정은 건너뛰고(dispatched), 다음 보정을 복원으로 다룬다(settling, pushState 금지).
  * 그런데 복원 dispatch 가 상태를 바꾸지 못하면 다음 보정이 오지 않아 settling 이 남고, 사용자가 나중에

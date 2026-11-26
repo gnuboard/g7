@@ -11,7 +11,7 @@ use Tests\Concerns\PackageSignatureFixtures;
 use Tests\TestCase;
 
 /**
- * `extension:trust-key add|remove|list` (#916 ④, D20·D31)
+ * `extension:trust-key add|remove|list`
  *
  * vendor 범위는 하나 이상 필수, `sirsoft` vendor·서명자 이름은 내장 키 전용이라 거부, key_id 는 서버가 계산한다.
  */

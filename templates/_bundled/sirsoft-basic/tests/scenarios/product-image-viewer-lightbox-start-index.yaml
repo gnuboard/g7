@@ -1,4 +1,4 @@
-feature: 상품 상세 확대 창 — 고른 썸네일의 사진에서 시작 (#821)
+feature: 상품 상세 확대 창 — 고른 썸네일의 사진에서 시작
 
 description: |
   상품 상세(ProductImageViewer)에서 썸네일로 큰 사진을 바꾼 뒤 큰 사진을 누르면 확대 창(ImageGallery)이

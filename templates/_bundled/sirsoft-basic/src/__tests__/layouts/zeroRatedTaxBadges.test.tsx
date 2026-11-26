@@ -1,6 +1,6 @@
 /**
  * @file zeroRatedTaxBadges.test.tsx
- * @description 사용자 화면의 면세·영세 표시 (#612)
+ * @description 사용자 화면의 면세·영세 표시
  *
  * 사용자 화면은 과세는 표시하지 않고 면세·영세만 보인다.
  * - 주문상세 품목(회원·비회원 공용 `_items`): 품목 `tax_status` 가 면세·영세일 때만 배지.
@@ -111,7 +111,7 @@ async function shownCount(layout: any, data: Record<string, unknown>, initLocal:
     return count;
 }
 
-describe('사용자 화면 면세·영세 표시 (#612)', () => {
+describe('사용자 화면 면세·영세 표시', () => {
     beforeEach(() => {
         const registry = ComponentRegistry.getInstance();
         (registry as any).registry = {

@@ -3,7 +3,7 @@
  *
  * @description
  * - 사용자관리: named_actions.searchUsers 정의, 필터 조각의 actionRef 2개(Enter·검색 버튼),
- *   신규 필터 쿼리 키 전량과 확장 채널(ext_filters) 존재 (#705 — 필터 영역을 조각으로 분리하며
+ *   신규 필터 쿼리 키 전량과 확장 채널(ext_filters) 존재 (필터 영역을 조각으로 분리하며
  *   PC·모바일 두 벌이던 검색행이 반응형 한 벌이 되었다)
  * - 스케줄관리: named_actions.searchSchedules 정의 및 2개 actionRef 검증
  *
@@ -76,7 +76,7 @@ describe('사용자관리 named_actions 검증', () => {
 
     // @scenario filter_axis=status, outcome=narrows
     // @effects search_users_query_contract
-    it('신규 필터 쿼리 키를 전부 실어야 함 (#705 §5-3)', () => {
+    it('신규 필터 쿼리 키를 전부 실어야 함', () => {
         const query = (userList as any).named_actions.searchUsers.params.query;
         const keys = [
             'status[]', 'role_ids[]', 'admin_scope', 'lock_state', 'start_date', 'end_date',

@@ -11,7 +11,7 @@ use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioTemplateRep
 use Tests\PureTestCase;
 
 /**
- * 새 회원 알림의 문자·알림톡 기본값과 정의 삭제 시 템플릿 정리 (1.2.1, #952 P19·P24)
+ * 새 회원 알림의 문자·알림톡 기본값과 정의 삭제 시 템플릿 정리 (1.2.1)
  */
 class CouponIssuedChannelDefaultsTest extends PureTestCase
 {

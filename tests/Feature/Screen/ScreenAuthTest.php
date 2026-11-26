@@ -24,7 +24,7 @@ use Tests\Concerns\LoadsCustomRoutes;
 use Tests\TestCase;
 
 /**
- * 개발자 화면 회원 판정(ScreenAuth)·`custom.auth`·`custom.admin` 테스트 (#792 WP-A1 — F6-1~F6-4)
+ * 개발자 화면 회원 판정(ScreenAuth)·`custom.auth`·`custom.admin` 테스트 (F6-1~F6-4)
  *
  * 로그인 API 가 세션에 남긴 로그인과 그 로그인의 토큰을 짝으로 묶고, 토큰이 회수·만료되면 세션 로그인도 무효가
  * 되며, 토큰 갱신·가입이 짝을 맞추고, 개발자 화면 요청이 토큰 만료를 연장하는지 잠근다.
@@ -148,7 +148,7 @@ PHP);
     }
 
     /**
-     * 짝 토큰이 무효가 되면 정식 로그아웃(Logout 이벤트)으로 세션 로그인을 끝냅니다 (#792).
+     * 짝 토큰이 무효가 되면 정식 로그아웃(Logout 이벤트)으로 세션 로그인을 끝냅니다.
      *
      * @scenario case=revoked
      *

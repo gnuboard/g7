@@ -1005,7 +1005,7 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'core_update_pending_path' => 'Update Pending Directory Path',
     'core_update_pending_path_help' => 'Leave empty to use the default (storage/app/core_pending). Enter an absolute path or a path relative to the Gnuboard7 root to use a custom location.',
 
-    // 자산 URL 방식 (이슈 #486)
+    // 자산 URL 방식
     'asset_url_mode' => 'Asset file serving mode',
     'asset_url_mode_extension' => 'Use file extensions (recommended)',
     'asset_url_mode_extensionless' => 'No file extensions',

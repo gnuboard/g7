@@ -93,7 +93,7 @@ class CleanInicisRecordAtomicityTest extends PluginTestCase
     }
 
     /**
-     * 보관주기 파기 직전 훅에서 리스너가 challenge 매핑을 명시 삭제한다 (#888).
+     * 보관주기 파기 직전 훅에서 리스너가 challenge 매핑을 명시 삭제한다.
      *
      * 외래키 검사를 꺼 DB 연쇄 삭제가 일어나지 않는 상태로 파기한다 — 그래도 매핑이 0건이면
      * `core.identity_logs.before_purge` 리스너가 지운 것이다.

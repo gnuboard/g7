@@ -19,7 +19,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * 페이지 본문 미디어 — 기본 디스크를 바꾼 뒤에도 옛 행은 그 행의 디스크에서 서빙·복제·제거 (#887 G1 행 디스크)
+ * 페이지 본문 미디어 — 기본 디스크를 바꾼 뒤에도 옛 행은 그 행의 디스크에서 서빙·복제·제거 (행 디스크)
  *
  * 종전 페이지 본문 미디어 서비스는 서빙·복제 원본 읽기·본문에서 빠진 것의 삭제를 주입 저장소(지금 기본 디스크)로 고정해, 운영자가
  * 디스크를 바꾸면 옛 행이 404·복제 실패·파일 잔존이 됐다. 이제 코어 골격이 행에 기록된 디스크(`RowDiskStorage`)로 읽고 지운다.
@@ -248,7 +248,7 @@ class PageContentMediaRowDiskTest extends ModuleTestCase
     }
 
     /**
-     * 페이지 첨부·본문 미디어 서비스는 비공개 첨부 저장소 선택을 따른다(「기본」이면 modules, #916).
+     * 페이지 첨부·본문 미디어 서비스는 비공개 첨부 저장소 선택을 따른다(「기본」이면 modules).
      *
      * @scenario case=private_attachment_selection
      *

@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * 개발자 화면(routes/custom.php) 회원 필수 미들웨어 — 별칭 `custom.auth` (#792 W8).
+ * 개발자 화면(routes/custom.php) 회원 필수 미들웨어 — 별칭 `custom.auth`.
  *
  * 로그인 판정은 {@see ScreenAuth}(서버 세션 + 그 로그인의 토큰 생존). 비회원이면 G7 로그인 화면으로 보내고
  * 로그인 뒤 돌아올 주소를 `redirect` 로 넘긴다. JSON 을 기대하는 요청은 401.

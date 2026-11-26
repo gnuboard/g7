@@ -3728,7 +3728,7 @@
       ]
     },
     {
-      "comment": "업로드 탭 「두 곳 모두 비우기」 확인 창(#869). 카드의 버튼이 `_global.thumbnailPurgeAll.locations` 에 두 저장 위치의 요약을 담고 연다 — 상태 없이는 위치 상자가 하나도 그려지지 않는다. 값은 표본 thumbnailStats 의 것.",
+      "comment": "업로드 탭 「두 곳 모두 비우기」 확인 창. 카드의 버튼이 `_global.thumbnailPurgeAll.locations` 에 두 저장 위치의 요약을 담고 연다 — 상태 없이는 위치 상자가 하나도 그려지지 않는다. 값은 표본 thumbnailStats 의 것.",
       "scope": {
         "kind": "modal",
         "match": "settings_thumbnail_purge_all_modal"
@@ -3769,7 +3769,7 @@
       ]
     },
     {
-      "comment": "업로드 탭 「기존 이미지 썸네일 만들기」 창(#869). 카드의 버튼이 `_global.thumbnailPregen` 에 소스·규격 선택지와 진행 계수를 담고 연다 — 상태 없이는 선택지가 비고 진행률 칸이 그려지지 않는다. 진행 중 한 걸음을 마친 모습(처리 40/170)을 담는다.",
+      "comment": "업로드 탭 「기존 이미지 썸네일 만들기」 창. 카드의 버튼이 `_global.thumbnailPregen` 에 소스·규격 선택지와 진행 계수를 담고 연다 — 상태 없이는 선택지가 비고 진행률 칸이 그려지지 않는다. 진행 중 한 걸음을 마친 모습(처리 40/170)을 담는다.",
       "scope": {
         "kind": "modal",
         "match": "settings_thumbnail_pregenerate_modal"
@@ -5077,7 +5077,7 @@
       ]
     },
     {
-      "comment": "코어 업데이트 확인 결과 창은 창을 연 화면(환경설정 정보 탭)의 _local.coreUpdateInfo 를 읽는다. 「업데이트 확인」 클릭이 담는 값이라 편집기에서는 이 표본으로 담아야 버전과 custom 사전 검사 중단 영역(번역 인자 count·version)이 빈 채로 그려지지 않는다 (#792).",
+      "comment": "코어 업데이트 확인 결과 창은 창을 연 화면(환경설정 정보 탭)의 _local.coreUpdateInfo 를 읽는다. 「업데이트 확인」 클릭이 담는 값이라 편집기에서는 이 표본으로 담아야 버전과 custom 사전 검사 중단 영역(번역 인자 count·version)이 빈 채로 그려지지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "core_update_result_modal"
@@ -5117,7 +5117,7 @@
       ]
     },
     {
-      "comment": "외부 영상 서비스 추가·수정 창(#883) — 「서비스 추가」 단추가 창 상태를 통째로 만든다. 편집기는 그 클릭을 하지 않으므로 예시 주소 확인까지 마친 모습을 담는다(제목 식이 row_index, 안내 문구가 preview 를 읽는다).",
+      "comment": "외부 영상 서비스 추가·수정 창 — 「서비스 추가」 단추가 창 상태를 통째로 만든다. 편집기는 그 클릭을 하지 않으므로 예시 주소 확인까지 마친 모습을 담는다(제목 식이 row_index, 안내 문구가 preview 를 읽는다).",
       "scope": {
         "kind": "modal",
         "match": "embed_provider_form_modal"

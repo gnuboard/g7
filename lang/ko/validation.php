@@ -849,7 +849,7 @@ return [
         'login_handoff' => [
             'code_required' => '로그인 인계 코드가 없습니다. 다시 로그인해 주세요.',
         ],
-        // 로그인 비밀번호 변경 단계 (#736)
+        // 로그인 비밀번호 변경 단계
         'password_change' => [
             'challenge_required' => '비밀번호 변경 단계 정보가 없습니다. 처음부터 다시 로그인해주세요.',
             'challenge_invalid' => '비밀번호 변경 단계 정보가 올바르지 않습니다.',
@@ -945,7 +945,7 @@ return [
 
     // 설정 검증 메시지
     'settings' => [
-        // 본문 콘텐츠 (#883)
+        // 본문 콘텐츠
         'embed_provider_invalid' => ':index번째 외부 영상 서비스 항목 형식이 올바르지 않습니다.',
         'embed_provider_too_many' => '외부 영상 서비스는 최대 :max개까지 추가할 수 있습니다.',
         'embed_provider_id_duplicate' => ':index번째 서비스 식별자(:id)가 기본 서비스나 다른 항목과 겹칩니다.',
@@ -1262,7 +1262,7 @@ return [
         'file_delegation_accel_prefix_required' => 'nginx(X-Accel-Redirect)를 고르면 내부 위치 접두사를 입력해야 합니다.',
         'file_delegation_accel_prefix_format' => '내부 위치 접두사는 /_g7_sendfile/ 처럼 / 로 시작하고 끝나야 하며 영문·숫자·. _ - 만 쓸 수 있습니다.',
 
-        // 이미지 처리 엔진, 이미지 썸네일 (#869)
+        // 이미지 처리 엔진, 이미지 썸네일
         'image_driver_invalid' => '올바른 이미지 처리 엔진을 선택해주세요.',
         'thumbnail_presets_array' => '썸네일 규격 표 형식이 올바르지 않습니다.',
         'thumbnail_presets_max' => '썸네일 규격은 최대 :max개까지 둘 수 있습니다(고정 규격과 확장 규격 포함).',
@@ -1325,7 +1325,7 @@ return [
         'privacy_dormant_notice_days_min' => '사전 통지 기간은 1일 이상이어야 합니다.',
         'privacy_dormant_notice_days_max' => '사전 통지 기간은 최대 365일을 초과할 수 없습니다.',
         'privacy_dormant_notice_days_lt_dormant_days' => '사전 통지 기간은 휴면 전환 기간보다 짧아야 합니다. 같거나 길면 사전 안내 없이 전환과 통지가 같은 날 일어납니다.',
-        // 비밀번호 정책 (#736)
+        // 비밀번호 정책
         'password_policy_boolean' => ':attribute 값은 사용/사용 안 함 중 하나여야 합니다.',
         'password_policy_integer' => ':attribute 값은 정수여야 합니다.',
         'password_policy_min' => ':attribute 값은 :min 이상이어야 합니다.',
@@ -1442,10 +1442,10 @@ return [
 
     // 검증 속성명 (validation.attributes)
     'attributes' => [
-        // 회원 활동 기록 기간 조회 (7.2.1, #952)
+        // 회원 활동 기록 기간 조회 (7.2.1)
         'date_from' => '시작일',
         'date_to' => '종료일',
-        // 환경설정 「본문 콘텐츠」 저장 항목 (#883)
+        // 환경설정 「본문 콘텐츠」 저장 항목
         'content_settings' => '본문 콘텐츠 설정',
         'content_allow_figure_caption' => '그림 설명 허용',
         'content_allow_uploaded_video' => '동영상 업로드 허용',
@@ -1455,7 +1455,7 @@ return [
         'content_embed_custom_providers' => '직접 추가한 외부 영상 서비스',
         'content_custom_tags' => '추가 허용 태그',
         'content_media_url_ttl_minutes' => '본문 미디어 주소 유효 시간',
-        // 외부 영상 서비스 예시 주소 확인 (#883)
+        // 외부 영상 서비스 예시 주소 확인
         'embed_provider' => '외부 영상 서비스',
         'embed_provider_url_patterns' => '주소 형식',
         'embed_provider_player_url' => '플레이어 주소',
@@ -1758,7 +1758,7 @@ return [
         'private_attachment_disk' => '비공개 첨부 저장소',
         'file_delegation' => '웹서버 파일 위임',
         'file_delegation_accel_prefix' => '내부 위치 접두사',
-        // 이미지 처리 엔진, 이미지 썸네일 (#869)
+        // 이미지 처리 엔진, 이미지 썸네일
         'image_driver' => '이미지 처리 엔진',
         'thumbnail_enabled' => '이미지 썸네일 사용',
         'thumbnail_prune_enabled' => '썸네일 자동 정리',

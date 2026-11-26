@@ -32,7 +32,7 @@ class ModuleResource extends BaseApiResource
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
-            // 다른 확장에 공개하는 PHP 표면(manifest public_api) — 상세 「공개 API」 칸 (#916)
+            // 다른 확장에 공개하는 PHP 표면(manifest public_api) — 상세 「공개 API」 칸 
             'public_api' => $this->getValue('public_api'),
             // 이 모듈을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
             'integrated_by' => $this->integratedBy('module'),
@@ -71,7 +71,7 @@ class ModuleResource extends BaseApiResource
             ...$this->updateTargetRequirementFields(),
             // composer.json require/suggest ext-* 와 서버 로드 상태 — 목록 카드의 PHP 확장 배지(#151)
             ...$this->phpExtensionRequirementFields('module'),
-            // 레이아웃 갱신 응답에만 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+            // 레이아웃 갱신 응답에만 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고
             ...(is_array($this->getValue('layout_warnings')) ? ['layout_warnings' => $this->getValue('layout_warnings')] : []),
             // 레이아웃 갱신 응답에만 — 판정별 개수·충돌 화면(`layout_preview`)과 운영자 관련 행 보고(`layout_sync`)
             ...(is_array($this->getValue('layout_preview')) ? ['layout_preview' => $this->getValue('layout_preview')] : []),
@@ -127,7 +127,7 @@ class ModuleResource extends BaseApiResource
             'requires_core' => $this->getValue('requires_core'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
-            // 다른 확장에 공개하는 PHP 표면(manifest public_api) — 상세 「공개 API」 칸 (#916)
+            // 다른 확장에 공개하는 PHP 표면(manifest public_api) — 상세 「공개 API」 칸 
             'public_api' => $this->getValue('public_api'),
             // 이 모듈을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
             'integrated_by' => $this->integratedBy('module'),

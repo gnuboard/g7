@@ -1,5 +1,5 @@
 /**
- * 게시판 첨부 "허용 확장자" 빈 값 저장 차단 (#413).
+ * 게시판 첨부 "허용 확장자" 빈 값 저장 차단.
  *
  * 빈 값으로 저장하면 안내와 반대로 모든 파일 업로드가 거부되던 버그를 "빈 값 금지 — 최소 1개 필수"
  * 로 변경했다. 백엔드 검증(PHPUnit BoardRequestTest)과 레이아웃 구조/문구(Vitest)는 단위로 커버하고,
@@ -38,7 +38,7 @@ async function clearAllowedExtensionChips(page: import('@playwright/test').Page)
   }
 }
 
-test.describe.skip('게시판 허용 확장자 빈 값 저장 차단 (#413, #78)', () => {
+test.describe.skip('게시판 허용 확장자 빈 값 저장 차단 (#78)', () => {
   // @scenario surface=settings_attachment, use_file_upload=true
   // @effects empty_extensions_blocked_on_settings_save_when_upload_enabled
   test('환경설정에서 첨부 사용 ON + 허용 확장자를 비우고 저장하면 오류가 노출된다', async ({

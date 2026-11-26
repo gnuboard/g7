@@ -39,7 +39,7 @@ function queryOf(url: string): URLSearchParams {
 /**
  * 목록의 게시글 행 로케이터.
  *
- * basic 형 목록의 행은 상세 주소를 가진 링크(`<a href>` + 경로 없는 navigate, #757)이며, 접근성 이름이
+ * basic 형 목록의 행은 상세 주소를 가진 링크(`<a href>` + 경로 없는 navigate)이며, 접근성 이름이
  * "번호 제목 … 작성일 조회수" 형태다. 페이지 번호 링크("1")와 구분하기 위해
  * 번호로 시작하는 이름만 고른다.
  *

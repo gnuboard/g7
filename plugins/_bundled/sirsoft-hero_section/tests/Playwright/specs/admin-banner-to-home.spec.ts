@@ -1,5 +1,5 @@
 /**
- * E2E: 관리자가 배너를 다루면 사이트 홈(순서 변경은 배너가 없는 게시판) 상단 슬라이더에 그대로 반영된다 (#810)
+ * E2E: 관리자가 배너를 다루면 사이트 홈(순서 변경은 배너가 없는 게시판) 상단 슬라이더에 그대로 반영된다
  *
  * @scenario-manifest tests/scenarios/e2e-flows.yaml
  * 효과 요약(마커 아님 — 평문): user_screen_reflects_admin_change, test_data_cleaned_up
@@ -80,7 +80,7 @@ test('등록 화면에서 저장을 빠르게 두 번 눌러도 배너는 한 �
   await expect(page.locator('#footer_save_button')).toBeVisible({ timeout: 30_000 });
   await page.locator('[name="title[ko]"]').fill(title);
   const uploaded = page.waitForResponse((r) => r.url().includes(`${API}/admin/banner-images`) && r.request().method() === 'POST');
-  // #408 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+  // 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
   await page.locator('[id^="pc_image_uploader__"] input[type="file"]').setInputFiles({ name: 'e2e-pc.png', mimeType: 'image/png', buffer: PNG_1X1 });
   expect((await uploaded).status()).toBe(201);
   await expect(page.locator('#footer_save_button')).toBeEnabled();

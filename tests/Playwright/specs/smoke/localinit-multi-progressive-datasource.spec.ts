@@ -14,7 +14,7 @@
  *   그 결과 배송설정 탭의 배송가능 국가 표가 간헐적으로 비어 "No shipping countries registered."
  *   가 표시되었다. 직접 URL 접근/새로고침으로는 재현되지 않는다 (SPA 진입에서만 발생).
  *
- *   ⓘ 이후 #471(관리자 설정 탭 지연로딩)이 데이터소스에 탭 `if` 게이트를 붙이면서, 두 소스가 함께
+ *   ⓘ 이후 관리자 설정 탭 지연로딩이 데이터소스에 탭 `if` 게이트를 붙이면서, 두 소스가 함께
  *   뜨는 탭이 바뀌었다. 최초 재현 무대였던 배송설정 탭에는 이제 `initLocal` 소스가 하나뿐이라
  *   경합이 성립하지 않는다 — 검증은 `PROGRESSIVE_PAIR_TAB` 에서 수행한다.
  *
@@ -41,8 +41,8 @@ import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth'
  * `settings`(게이트 없음, 모든 탭)와 `ecommerceNotificationDefinitions`
  * (`if`: `notification_definitions`·`mileage` 탭 한정).
  *
- * 이 스펙이 처음 작성된 #459(07-10) 시점에는 게이트가 없어 **배송설정 탭에서도** 두 소스가 함께
- * 떴다. 그 뒤 #471(07-14)의 관리자 설정 탭 지연로딩이 `if` 게이트를 도입하면서 배송설정 탭에는
+ * 이 스펙이 처음 작성된 시점에는 게이트가 없어 **배송설정 탭에서도** 두 소스가 함께
+ * 떴다. 그 뒤 관리자 설정 탭 지연로딩이 `if` 게이트를 도입하면서 배송설정 탭에는
  * `initLocal` 소스가 `settings` 하나만 남았다 — 경합 자체가 성립하지 않는다. 그래서 이 회귀를
  * 실제로 재현하려면 두 소스가 함께 뜨는 탭에서 돌려야 한다.
  *
@@ -70,7 +70,7 @@ async function throttleCpu(page: import('@playwright/test').Page, rate: number):
 /**
  * SPA 네비게이션으로 이커머스 환경설정의 특정 탭에 진입한다 (직접 URL 접근으로는 재현되지 않는다).
  *
- * 탭을 인자로 받는 이유: #471 의 **관리자 설정 탭 지연로딩**이 데이터소스마다 `if` 게이트를
+ * 탭을 인자로 받는 이유: **관리자 설정 탭 지연로딩**이 데이터소스마다 `if` 게이트를
  * 붙이면서, "progressive `initLocal` 소스가 둘 이상" 인 화면 상태가 탭에 따라 달라졌다.
  * 아래 `PROGRESSIVE_PAIR_TAB` 주석 참조.
  */

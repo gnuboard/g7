@@ -10,7 +10,7 @@ use Tests\Support\Concerns\BuildsLayoutMergeFixtures;
 use Tests\TestCase;
 
 /**
- * 템플릿 오버라이드 레이아웃(`layouts/overrides/{모듈}/`)의 운영자 수정이 keep 갱신에 보존되는지 고정한다 (#727 R7).
+ * 템플릿 오버라이드 레이아웃(`layouts/overrides/{모듈}/`)의 운영자 수정이 keep 갱신에 보존되는지 고정한다.
  *
  * 결함(수정 전): 오버라이드는 원본 해시 없이 `updateOrCreate` 로만 등록돼, keep 을 골라도 갱신마다 파일로
  * 덮어쓰고 「수정한 레이아웃」 목록에도 뜨지 않았다. 번들 템플릿에는 오버라이드가 0개라 브라우저로는 볼 수

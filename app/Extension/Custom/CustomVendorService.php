@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 개발자 전용 composer(`custom/composer.json`·`vendor/`·`vendor-bundle.zip`, #792) 관리.
+ * 개발자 전용 composer(`custom/composer.json`·`vendor/`·`vendor-bundle.zip`) 관리.
  *
  * 모듈처럼 별도 composer.json·vendor 를 둔다 — 코어 업데이트는 코어 `composer.json`·`vendor` 만 다시 설치하므로
  * Twig 같은 개발자 패키지가 사라지지 않는다. composer 가 없는 서버는 `custom/vendor-bundle.zip` 을 올려 두면

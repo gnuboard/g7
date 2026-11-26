@@ -22,7 +22,7 @@ class SeoServiceProvider extends ServiceProvider
         // 인터페이스 → 구현체 바인딩
         $this->app->singleton(SeoCacheManagerInterface::class, SeoCacheManager::class);
         // 렌더러는 플러그인 설정 서비스(요청·작업 단위)를 생성자로 받는다 — 싱글톤이면 큐 워커가 첫 작업의
-        // 설정을 재시작 전까지 쓴다. 그래서 렌더러와 그것을 쥐는 재생성기는 작업마다 새로 만든다(scoped, #860)
+        // 설정을 재시작 전까지 쓴다. 그래서 렌더러와 그것을 쥐는 재생성기는 작업마다 새로 만든다(scoped)
         $this->app->scoped(SeoRendererInterface::class, SeoRenderer::class);
         $this->app->singleton(SitemapUrlRepositoryInterface::class, SitemapUrlRepository::class);
 

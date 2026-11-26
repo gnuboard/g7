@@ -96,7 +96,7 @@ return [
         'message_body_empty' => 'Could not send: message body is empty. (notification type: :type)',
     ],
 
-    // Notification template lifecycle (#597 — BizppurioTemplateController responses and state guards)
+    // Notification template lifecycle (BizppurioTemplateController responses and state guards)
     'template' => [
         'created' => 'Notification template saved.',
         'updated' => 'Notification template updated.',

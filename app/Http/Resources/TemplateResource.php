@@ -51,7 +51,7 @@ class TemplateResource extends BaseApiResource
             'dependencies_met' => $this->areDependenciesMet(),
             'icon_url' => $this->getValue('icon_url'),
             'icon_source' => $this->getValue('icon_source', 'none'),
-            // 템플릿 환경설정 화면 유무·경로 (#434) — 카드 더보기의 「설정」 이 읽는다(플러그인 목록과 같은 필드)
+            // 템플릿 환경설정 화면 유무·경로 — 카드 더보기의 「설정」 이 읽는다(플러그인 목록과 같은 필드)
             'has_settings' => (bool) $this->getValue('has_settings', false),
             'settings_route' => $this->getValue('settings_route'),
             // 업데이트 관련 필드
@@ -81,7 +81,7 @@ class TemplateResource extends BaseApiResource
             ...$this->updateCoreCompatibilityFields(),
             // 업데이트 대상 판이 요구하는 의존·연동 중 못 미치는 것(업데이트가 있을 때만) — 업데이트 창이 실행 전에 경고한다.
             ...$this->updateTargetRequirementFields(),
-            // 설치·레이아웃 갱신 응답에만 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712).
+            // 설치·레이아웃 갱신 응답에만 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고.
             // `when()` 대신 펼침으로 둔다 — 리소스를 `toArray()` 로 직접 부르는 경로에서 MissingValue 가 새지 않게.
             ...(is_array($this->getValue('layout_warnings')) ? ['layout_warnings' => $this->getValue('layout_warnings')] : []),
             // 레이아웃 갱신 응답에만 — 판정별 개수·충돌 화면(`layout_preview`)과 운영자 관련 행 보고(`layout_sync`)
@@ -272,7 +272,7 @@ class TemplateResource extends BaseApiResource
         foreach ($this->enrichedDependencies() as $item) {
             $summary[$item['type'] === 'module' ? 'modules' : 'plugins'][] = [
                 'identifier' => $item['identifier'],
-                // 이름이 비어 있으면(null·빈 문자열) 식별자로 대신한다 — 목록 카드는 이 값을 글자로 그린다(#727 React #31).
+                // 이름이 비어 있으면(null·빈 문자열) 식별자로 대신한다 — 목록 카드는 이 값을 글자로 그린다(React #31).
                 'name' => $item['name'] ?: $item['identifier'],
                 'type' => $item['type'],
                 'is_met' => $item['is_met'],

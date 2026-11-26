@@ -7,7 +7,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 
 /**
- * 본문 미디어 문서당 개수 초과 예외 — 422 (#883 4단계, D8)
+ * 본문 미디어 문서당 개수 초과 예외 — 422
  *
  * 본문이 참조하는 본문 미디어 수가 정책의 문서당 최대 개수를 넘으면 저장을 막는다. 첨부 개수 상한과 따로 센다.
  * `render()` 는 컨트롤러가 잡지 않은 경우에도 같은 형태(`errors.code = content_media_limit_exceeded`)로 응답하게 한다.

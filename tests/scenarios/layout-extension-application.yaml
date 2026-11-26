@@ -36,11 +36,11 @@ effects:
   - applies_extension_point_components
   # 셀 템플릿(DataGrid columns[].cellChildren·cardColumns·expandChildren) 안의 확장점 — children 만 따라가면 빈 자리로 남는다
   - applies_extension_points_inside_datagrid_cell_templates
-  - applies_extension_points_inside_modal_footer   # Modal 고정 하단·제목 앞뒤 붙임(props.footer·titlePrefix·titleSuffix) 안 확장점도 채운다(#869)
-  - overlay_targets_nodes_inside_modal_footer      # 오버레이 대상 찾기가 Modal 고정 하단 안 노드도 걷는다(#869)
-  - overlay_targets_nodes_inside_modals_branch     # 오버레이 대상 찾기가 레이아웃 modals 갈래 창의 본문과 고정 하단도 걷는다(#869 C2)
-  - overlay_prefers_components_over_modals_once    # 같은 id 가 components 와 modals 에 함께 있으면 components 첫 노드 하나에만 넣는다(#869 C2)
-  - source_meta_reaches_modal_surface_children     # 편집 모드 출처 메타가 주입된 Modal 의 고정 하단과 제목 붙임 자식에도 붙는다(#869 C3)
+  - applies_extension_points_inside_modal_footer   # Modal 고정 하단·제목 앞뒤 붙임(props.footer·titlePrefix·titleSuffix) 안 확장점도 채운다
+  - overlay_targets_nodes_inside_modal_footer      # 오버레이 대상 찾기가 Modal 고정 하단 안 노드도 걷는다
+  - overlay_targets_nodes_inside_modals_branch     # 오버레이 대상 찾기가 레이아웃 modals 갈래 창의 본문과 고정 하단도 걷는다
+  - overlay_prefers_components_over_modals_once    # 같은 id 가 components 와 modals 에 함께 있으면 components 첫 노드 하나에만 넣는다
+  - source_meta_reaches_modal_surface_children     # 편집 모드 출처 메타가 주입된 Modal 의 고정 하단과 제목 붙임 자식에도 붙는다
   - marks_extension_source_with_type_and_identifier_in_edit_mode
   - marks_extension_source_on_injected_data_sources_in_edit_mode
   - marks_injected_props_on_host_node_in_edit_mode

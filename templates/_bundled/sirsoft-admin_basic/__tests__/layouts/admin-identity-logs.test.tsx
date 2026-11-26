@@ -1,8 +1,8 @@
 /**
  * @file admin-identity-logs.test.tsx
- * @description 본인인증 이력 (#297) — 알림 발송 이력과 동일 수준 UI/필터/DataGrid 회귀 테스트
+ * @description 본인인증 이력 — 알림 발송 이력과 동일 수준 UI/필터/DataGrid 회귀 테스트
  *
- * 회귀 사례 (#297):
+ * 회귀 사례:
  *  - 검색 input 이 사용자 ID/target 해시 모두로 동작하지 않던 문제
  *    (백엔드: AdminIdentityLogIndexTest 에서 별도 회귀 보장)
  *  - 알림 발송 이력 대비 UI 일관성 부족 (탭/필터/DataGrid/responsive 누락)
@@ -51,7 +51,7 @@ function collectNodes(node: any, predicate: (n: any) => boolean): any[] {
     return result;
 }
 
-describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회귀 (#297)', () => {
+describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회귀', () => {
     describe('data_sources — 새 검색/정렬 파라미터 + 알림 이력과 동일 응답 구조', () => {
         /**
          * @scenario surface=data_source
@@ -425,7 +425,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
         });
     });
 
-    describe('채널 라벨 다국어 변환 회귀 (#415 — 채널 식별자 raw 노출 버그)', () => {
+    describe('채널 라벨 다국어 변환 회귀 (채널 식별자 raw 노출 버그)', () => {
         // 배경: 채널이 'email'/'ipin' 같은 식별자 그대로 표시되던 버그.
         // ProviderResource 가 channel_labels(채널키→다국어라벨) 를 내려주고,
         // 레이아웃 3곳(필터 체크박스 / DataGrid 채널 컬럼 / 상세 모달)이 이를 변환한다.
@@ -493,7 +493,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
         });
     });
 
-    describe('배열 필터 query 키 접근 회귀 (#415 — 상태/목적/채널/발생유형 필터 전부 미적용 버그)', () => {
+    describe('배열 필터 query 키 접근 회귀 (상태/목적/채널/발생유형 필터 전부 미적용 버그)', () => {
         // 배경(라이브 증거): 화면에서 "요청됨" 체크 후 검색 → URL 은 ?statuses[]=requested 로 정상 기록되나,
         // 데이터소스가 보낸 실제 API 요청에서 statuses 가 누락되어 필터가 전혀 안 걸러짐(108건 그대로).
         // 근본 원인: DataSourceManager.parseQueryParams 가 배열 URL 파라미터를
@@ -590,7 +590,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
         });
     });
 
-    describe('인증수단 탭 전환 시 필터 초기화 회귀 (#420-4 — 탭 전환 후 필터 미적용 버그)', () => {
+    describe('인증수단 탭 전환 시 필터 초기화 회귀 (4 — 탭 전환 후 필터 미적용 버그)', () => {
         // 배경(라이브 증거): 상태 필터(예: '요청됨') 체크 후 인증수단 탭을 전환하면,
         // 체크박스는 체크된 채로 남는데(=_local.filter 유지) 목록은 필터 없는 전체가 노출된다.
         // 근본 원인: onTabChange 가 navigate(replace:true)로 URL 쿼리를 {provider_id,page} 로

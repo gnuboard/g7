@@ -1,5 +1,5 @@
 # e2e:allow 화면 변경 없음 — 실패 이력은 기존 현금영수증 이력·재발급 화면에 그대로 나타난다.
-feature: 현금영수증 발급·취소 실패는 FAILED 이력으로 남는다 (B1 · B2 · B3) — #747 C9
+feature: 현금영수증 발급·취소 실패는 FAILED 이력으로 남는다 (B1 · B2 · B3)
 
 description: |
   - B1·B2 프로바이더 예외를 실패 결과(PROVIDER_EXCEPTION)로 받아 FAILED 이력을 남긴다 — 이력이 있어야 재발급 버튼이 선다.
@@ -11,7 +11,7 @@ axes:
 effects:
   - provider_exception_leaves_a_failed_receipt_record
   - unconvertible_amount_is_not_issued_in_base_currency
-  - provider_exception_reason_hides_internal_detail   # 운영 모드 이력 사유는 번역 실패 문구, 원문은 서버 로그 (#858)
+  - provider_exception_reason_hides_internal_detail   # 운영 모드 이력 사유는 번역 실패 문구, 원문은 서버 로그
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CashReceiptFailureRecordTest.php

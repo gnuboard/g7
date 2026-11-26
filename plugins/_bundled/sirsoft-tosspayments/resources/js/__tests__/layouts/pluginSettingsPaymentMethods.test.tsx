@@ -108,7 +108,7 @@ describe('plugin_settings — 결제 방식 섹션', () => {
   });
 
   /**
-   * 애플페이는 iOS 주문서에서만 보인다는 안내를 토글 바로 아래에 둔다 (#933).
+   * 애플페이는 iOS 주문서에서만 보인다는 안내를 토글 바로 아래에 둔다.
    *
    * @scenario payment_method=toss_applepay, device=non_ios
    * @effects admin_payment_methods_layout_contract
@@ -237,7 +237,7 @@ describe('plugin_settings — 가상계좌 섹션', () => {
    * 설정을 받은 직후, 받은 값이 폼(`_local.form`, initLocal)에 들어오기 전 한 박자에도 에스크로를 쓰지 않으면
    * 안내가 보이지 않는다. 진행형 소스의 initLocal 은 받은 데이터를 그린 다음 박자에 들어오므로, 종전 조건
    * (`settings !== undefined && _local.form?.use_escrow !== 'off'`)은 그 박자에 `undefined !== 'off'` 로 참이 되어
-   * 안내가 30~50ms 번쩍였다(#915 결함군).
+   * 안내가 30~50ms 번쩍였다.
    *
    * @scenario use_escrow=off
    * @effects escrow_operation_notice_not_flashed_before_form_filled

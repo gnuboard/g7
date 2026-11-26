@@ -1,5 +1,5 @@
 /**
- * ErrorHandlingResolver — 데이터소스 오류 처리 실행 문맥에 route·query 싣기 (engine-v1.80.0, #753 D4)
+ * ErrorHandlingResolver — 데이터소스 오류 처리 실행 문맥에 route·query 싣기 (engine-v1.80.0)
  *
  * 데이터소스 오류 처리기(onError·errorHandling·errorCondition)의 실행 문맥이 `{ auth, error }` 뿐이라
  * 작성/수정 겸용 화면이 404 를 주소(`route.claim_number`)로 가를 수 없었다. 그래서 레이아웃은 그 판정을
@@ -16,7 +16,7 @@ import { Logger } from '../../utils/Logger';
 /** setActionExecutor 가 받는 실행기 시그니처 */
 type ActionExecutor = Parameters<ErrorHandlingResolver['setActionExecutor']>[0];
 
-describe('ErrorHandlingResolver — 추가 실행 문맥 (#753)', () => {
+describe('ErrorHandlingResolver — 추가 실행 문맥', () => {
   let resolver: ErrorHandlingResolver;
   let mockExecutor: Mock<ActionExecutor>;
 

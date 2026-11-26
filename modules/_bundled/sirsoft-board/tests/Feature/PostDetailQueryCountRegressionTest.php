@@ -11,7 +11,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use Tests\Concerns\CountsQueries;
 
 /**
- * 게시글 상세 조회의 중복 읽기 회귀 테스트 (#519 F3)
+ * 게시글 상세 조회의 중복 읽기 회귀 테스트
  *
  * 상세 화면은 사이트에서 가장 자주 열리는 경로다. 종전에는 권한 판정용으로 글 행을 한 번
  * 읽고, 관계를 붙여 응답에 쓸 글 행을 한 번 더 읽어 **같은 행을 두 번** 가져왔다. 게시판
@@ -181,7 +181,7 @@ class PostDetailQueryCountRegressionTest extends BoardTestCase
 
     /**
      * 비밀 답변 스레드 상세의 경로 판정 쿼리 수 — 토큰 없는 비회원은 +0, 답변을 쓴 적 없는 회원은
-     * 「답변 존재」 확인 한 번(+≤1) (#789 §4.2 성능).
+     * 「답변 존재」 확인 한 번(+≤1) (§4.2 성능).
      *
      * 같은 비밀 스레드를 게시판 설정 「답변마다 따로」(per_post — 경로 판정을 하지 않음)일 때와
      * 「경로 규칙」(thread_path)일 때의 쿼리 수를 비교해 경로 판정이 더한 몫만 잰다.

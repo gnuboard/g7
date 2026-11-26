@@ -164,7 +164,7 @@ class VisitorControllerTest extends AnalyticsApiTestCase
      *
      * 집계표는 유입처를 호스트까지만 쌓아 「naver.com 에서 왔다」까지만 말한다. 어느 검색
      * 결과에서 왔는지는 원장의 `referrer_url` 에만 있는데, 이 값은 모으기만 하고 어느 화면·
-     * 응답에도 실리지 않아 운영자가 볼 길이 없었다(#682 라운드 4, 검수 지적 ⑥).
+     * 응답에도 실리지 않아 운영자가 볼 길이 없었다.
      *
      * @return void 없음
      *
@@ -197,7 +197,7 @@ class VisitorControllerTest extends AnalyticsApiTestCase
      *
      * 목록은 방문자 키와 회원 번호만 실어 「누가 왔는지」를 답하지 못했다. 화면이 이름을
      * 쓰고 「회원 정보 보기」로 건너뛰려면 이름과 uuid 가 응답에 있어야 한다. 비회원은
-     * 붙일 것이 없으므로 null 이다(#682 라운드 4, 검수 지적 ⑦).
+     * 붙일 것이 없으므로 null 이다.
      *
      * @return void 없음
      *
@@ -367,7 +367,7 @@ class VisitorControllerTest extends AnalyticsApiTestCase
      * 방문자 상세는 원장이 아는 방문 부수정보를 모두 싣고 모두 그린다.
      *
      * 해상도·브라우저/OS 버전·언어·로케일·지역·도시·유입 검색어·캠페인이 원장에 있는데 화면과
-     * 정보주체 열람 파일에서 빠져 있었다(#682 S4 라운드 8 「방문자 정보에는 해상도 등
+     * 정보주체 열람 파일에서 빠져 있었다(라운드 8 「방문자 정보에는 해상도 등
      * 부수정보가 모두 나와야 한다」). 모집단은 **원장 스키마의 열 전부**이고, 내부용 열만 사유와
      * 함께 뺀다 — 열이 늘면 응답·화면 어디에도 없어 red 다. 응답에 실린 방문 값은 다시 화면
      * 레이아웃이 그리는지 대조한다.
@@ -446,7 +446,7 @@ class VisitorControllerTest extends AnalyticsApiTestCase
     /**
      * 방문자 화면이 받는 코드값마다 사람이 읽을 이름이 함께 오는지 확인합니다.
      *
-     * 집계 실행의 「실행」 열이 `scheduled` 로 찍히던 결함과 같은 모양 전수(#682 S4 라운드 8).
+     * 집계 실행의 「실행」 열이 `scheduled` 로 찍히던 결함과 같은 모양 전수.
      * 모집단 = 방문자 목록 행 · 방문자 카드 · 방문 펼침 × 코드 필드. 코드는 그대로 두고(내보내기·CSV 정본)
      * 이름 필드가 코드와 다른 사람 말이어야 한다.
      *
@@ -525,7 +525,7 @@ class VisitorControllerTest extends AnalyticsApiTestCase
 
         $this->assertStringStartsWith(CsvExporter::BOM, $body, 'BOM 이 없으면 엑셀에서 한글이 전부 깨진다');
         // 전체 유입 주소는 집계표에 없는 값이라 CSV 에도 실어야 한다 — 호스트만으로는
-        // 어느 글에서 왔는지 알 수 없다(#682 라운드 4, 검수 지적 ⑥).
+        // 어느 글에서 왔는지 알 수 없다.
         // 열 전체를 머리행으로 잠근다 — 뒤쪽만 재면 앞의 방문 열이 빠져도 초록이다.
         $this->assertSame(
             'visit_id,first_action_at,last_action_at,visitor_type,country_code,device_type,browser,os,'
@@ -654,7 +654,7 @@ class VisitorControllerTest extends AnalyticsApiTestCase
     {
         // 목록에는 회원 이름이 있는데 상세 카드에는 없어서, 이름을 보고 들어온 운영자가 그 사람을
         // 카드에서 다시 잃었다. 재방문 여부도 와이어프레임에 있는데 어느 응답에도 없었다
-        // (#682 S3 라운드 5, 계획서 §4.11 방문자 상세).
+        // (계획서 §4.11 방문자 상세).
         $member = User::factory()->create(['name' => '두 번 온 회원']);
         $key = str_repeat('e', 32);
 
@@ -776,7 +776,7 @@ class VisitorControllerTest extends AnalyticsApiTestCase
     {
         // 화면이 찍는 주소는 설정대로 뒤 옥텟을 지운 값이다. 그 사실을 함께 내려보내지 않으면
         // 운영자가 마스킹된 값을 원래 주소로 읽고, 정보주체가 「내 접속 기록이 맞느냐」 물었을 때
-        // 그 주소로 답한다(#682 S3 라운드 6, 계획서 §4.10 「IP(마스킹 표시)」).
+        // 그 주소로 답한다(계획서 §4.10 「IP(마스킹 표시)」).
         $key = str_repeat('f', 32);
         $this->visit(['visitor_key' => $key]);
 
@@ -805,7 +805,7 @@ class VisitorControllerTest extends AnalyticsApiTestCase
     {
         // 부록 D 의 파일명 규약은 `analytics-{report}-{from}_{to}.csv` 다. 기간이 없으면 같은
         // 사람을 두 기간으로 내려받았을 때 앞 파일을 덮어, 정보주체에게 건넬 때 어느 구간인지
-        // 알 수 없다(#682 S3 라운드 6).
+        // 알 수 없다.
         $key = str_repeat('9', 32);
         $this->visit(['visitor_key' => $key]);
 

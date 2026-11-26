@@ -7,7 +7,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * board_posts.ip_address nullable 마이그레이션 왕복 테스트 (이슈 #636 S5)
+ * board_posts.ip_address nullable 마이그레이션 왕복 테스트
  *
  * 모듈 삭제(delete_data)·업데이트 재실행에서 up → down → up 이 깨지지 않아야 한다. 이 마이그레이션은
  * MODIFY COLUMN(DDL)이라 트랜잭션 격리가 무의미하다 — MySQL DDL 은 암묵 커밋이다. 그래서 이 클래스만

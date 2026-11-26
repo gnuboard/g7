@@ -328,7 +328,7 @@ class HeroControllerTest extends PluginTestCase
     }
 
     /**
-     * 공개 응답의 이미지에는 직접 주소 키(`direct_url`)가 있다 — 기본 디스크 행은 null 이고 `url` 은 공개 API 주소다 (#878).
+     * 공개 응답의 이미지에는 직접 주소 키(`direct_url`)가 있다 — 기본 디스크 행은 null 이고 `url` 은 공개 API 주소다.
      *
      * @scenario surface=direct_url
      *

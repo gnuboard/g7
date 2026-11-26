@@ -200,13 +200,13 @@ class CoreBackupHelperApplyListTest extends TestCase
 
     /**
      * targets 에 명시된 `{domain}/_bundled` 경로는 상위 protected(`{domain}`)보다
-     * 우선하여 apply 목록에 포함됩니다 (공개 #64 / 내부 #452 회귀).
+     * 우선하여 apply 목록에 포함됩니다 (공개 #64).
      *
      * 배경: `config/app.php` 의 update.targets 에는 `modules/_bundled`,
      * `plugins/_bundled`, `templates/_bundled`, `lang-packs/_bundled` 가 있고,
      * protected_paths 에는 부모 `modules`, `plugins`, `templates`, `lang-packs` 가
      * 있다. protected 는 자동 발견 폴백이 활성 서브디렉토리(`modules/sirsoft-*`)를
-     * 통째로 삭제하는 회귀(#347)를 막기 위한 것인데, 정상 증분 흐름의 apply 산출에서
+     * 통째로 삭제하는 회귀를 막기 위한 것인데, 정상 증분 흐름의 apply 산출에서
      * `{domain}/_bundled/...` 파일이 `{domain}/` 접두사에 걸려 통째로 제외되면
      * 코어 업데이트 시 번들 확장의 새 파일(composer.json·vendor-bundle.*)이
      * 반영되지 않는다. targets 에 더 구체적으로 명시된 경로는 상위 protected 를

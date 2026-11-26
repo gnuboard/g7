@@ -1,6 +1,6 @@
 /**
  * @file adminOrderExtraFields.test.ts
- * @description 관리자 주문 상세의 「주문서 추가 항목」 구획(#490)
+ * @description 관리자 주문 상세의 「주문서 추가 항목」 구획
  *
  * 운영자가 주문서에 더한 항목과 다른 확장이 기여한 항목의 값은 주문 응답의 `extra_fields`
  * (`[{ key, label, section, display_value }]`, 값이 있는 것만)로 온다. 주문 정보 탭은 값이 하나라도 있을 때만

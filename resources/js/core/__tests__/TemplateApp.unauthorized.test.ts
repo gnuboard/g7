@@ -1,5 +1,5 @@
 /**
- * TemplateApp.showRouteError 401 가드 테스트 (Issue #301)
+ * TemplateApp.showRouteError 401 가드 테스트
  *
  * 레이아웃 fetch 가 401 재시도 후에도 실패하면 코어가
  * 로그인 페이지로 자동 리다이렉트하는 동작을 검증한다.
@@ -96,7 +96,7 @@ vi.mock('../template-engine/ComponentRegistry', () => {
   };
 });
 
-describe('TemplateApp - 401 자동 리다이렉트 (Issue #301)', () => {
+describe('TemplateApp - 401 자동 리다이렉트', () => {
   let app: TemplateApp;
 
   beforeEach(() => {
@@ -258,7 +258,7 @@ describe('TemplateApp - 401 자동 리다이렉트 (Issue #301)', () => {
    * @effects unauthorized_layout_redirects_to_login_with_session_expired_reason
    */
   it('토큰 만료(LayoutLoader 가 retry 후 토큰 제거 상태) + details.hadToken=true → reason=session_expired 부여', () => {
-    // 회귀 차단 (Issue #301 후속): LayoutLoader 가 401 시 토큰을 자동 제거하고
+    // 회귀 차단: LayoutLoader 가 401 시 토큰을 자동 제거하고
     // 재시도하므로 가드 진입 시점에 apiClient.getToken() = null 이지만,
     // LayoutLoader 가 details.hadToken=true 로 마킹하여 가드가 토큰 만료 케이스를
     // 인식할 수 있어야 한다. 마킹이 없으면 토큰 만료 사용자에게도 토스트가 안 떠
@@ -392,7 +392,7 @@ describe('TemplateApp - 401 자동 리다이렉트 (Issue #301)', () => {
   });
 
   /**
-   * #883 1단계(D2) — TemplateApp 이 ApiClient 에 거는 401 콜백은 「토큰을 실었던 요청이 거부됐다」 경우에만 불린다
+   * TemplateApp 이 ApiClient 에 거는 401 콜백은 「토큰을 실었던 요청이 거부됐다」 경우에만 불린다
    * (토큰 없이 보낸 요청의 401 은 ApiClient 가 걸러 호출자에게 돌려준다 — ApiClient.anonymousUnauthorized.test.ts).
    * 그래서 콜백 자체는 종전대로 토큰을 지우고 session_expired 로 로그인 화면에 보낸다(현행 유지).
    *

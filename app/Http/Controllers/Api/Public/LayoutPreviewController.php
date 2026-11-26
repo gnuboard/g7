@@ -47,7 +47,7 @@ class LayoutPreviewController extends PublicBaseController
         // 미리보기만 걸러지지 않으면 편집자가 보는 화면이 실제와 다르고 권한 식별자가 응답에 남는다.
         $layout = app(LayoutService::class)->filterComponentsByPermissions($layout, request()->user());
 
-        // 비어 있는 맵 섹션(meta, initLocal 등)은 `{}` 로 낸다 — 공개 서빙과 같은 계약 (#758)
+        // 비어 있는 맵 섹션(meta, initLocal 등)은 `{}` 로 낸다 — 공개 서빙과 같은 계약
         $layout = LayoutEmptyObjects::restoreRootMapSections($layout);
 
         // audit:allow response-helper-bypass reason: 미리보기 서빙은 엔진이 읽는 레이아웃 JSON 원형을 그대로 낸다(공개 서빙과 같은 계약 — 봉투 없음)

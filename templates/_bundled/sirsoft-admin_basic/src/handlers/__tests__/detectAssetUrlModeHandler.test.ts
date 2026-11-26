@@ -1,5 +1,5 @@
 /**
- * detectAssetUrlMode 감지 로직 테스트 — 이슈 #486 §12 L6 전용 가드
+ * detectAssetUrlMode 감지 로직 테스트 — 전용 가드
  *
  * L6: "프로브 판정은 **본문 매직 토큰 + Content-Type** 기준"
  *

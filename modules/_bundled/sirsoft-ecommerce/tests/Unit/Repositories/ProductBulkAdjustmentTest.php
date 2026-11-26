@@ -10,7 +10,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 상품 일괄 가격·재고 증감의 결과값 회귀 테스트 (#519)
+ * 상품 일괄 가격·재고 증감의 결과값 회귀 테스트
  *
  * 증감·비율 계산을 행마다 update() 하지 않고 단일 statement 로 합치는 것이 목적이지만,
  * 그 과정에서 SET 절에 값이 실리는 경로가 깨지면 조용히 엉뚱한 값이 기록된다.

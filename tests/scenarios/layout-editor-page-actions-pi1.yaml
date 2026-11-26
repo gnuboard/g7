@@ -1,5 +1,5 @@
 # 레이아웃 편집기 페이지 설정 동작 목록과 오류 처리
-# #869 이월 0 회차(π1): tsc 정리 때 건드린 편집기 시험의 시나리오 표식 누락을 채우며 만든 매니페스트다.
+# tsc 정리 때 건드린 편집기 시험의 시나리오 표식 누락을 채우며 만든 매니페스트다.
 # 축 subject 는 각 시험 파일이 재는 대상(컴포넌트 또는 함수)이고, effects 는 시험 하나하나가 단언하는 동작이다.
 feature: layout_editor_page_actions_pi1
 
@@ -85,7 +85,7 @@ effects:
   - init_actions_inherit_base_locked_self_editable
   - init_actions_inherit_base_group_read_only
   - init_actions_inherit_self_remove_keeps_base
-  # 「설정 안 함」은 그 코드 키를 지운다(#869 결함 수정)와 그 근거
+  # 「설정 안 함」은 그 코드 키를 지운다(결함 수정)와 그 근거
   - error_unset_page_settings_removes_code_key
   - error_unset_rows_on_clear_removes_key
   - error_unset_data_source_saves_without_code_key
@@ -97,7 +97,7 @@ effects:
   - save_prune_leaves_editor_document_untouched
   - save_prune_keeps_layout_default_and_template_fallback
   - save_prune_keeps_data_source_on_error
-  # 템플릿 설정 코드의 〔템플릿〕 출처와 [덮기], 레이아웃 선언 코드의 행(#869 λ 실측)
+  # 템플릿 설정 코드의 〔템플릿〕 출처와 [덮기], 레이아웃 선언 코드의 행
   - error_template_code_without_page_action_offers_override_here
   - error_layout_declared_code_gets_row
   - error_shell_passes_template_config_codes_not_merged_keys

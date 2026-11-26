@@ -110,7 +110,7 @@ class LayoutExtensionRepository implements LayoutExtensionRepositoryInterface
      * 출처의 지워진(soft delete) 확장 행을 조회합니다 — 재활성화 복원 후보.
      *
      * 어느 행을 되살릴지는 서비스가 정한다(활성 템플릿 + 붙을 자리 — {@see LayoutExtensionService::restoreBySource()}).
-     * 종전에는 여기서 후보 전부를 한 번에 되살려, 일부러 숨긴 오등록 행과 꺼진 템플릿의 행까지 살아났다(#725).
+     * 종전에는 여기서 후보 전부를 한 번에 되살려, 일부러 숨긴 오등록 행과 꺼진 템플릿의 행까지 살아났다.
      *
      * @param  LayoutSourceType  $sourceType  출처 타입
      * @param  string  $identifier  출처 식별자

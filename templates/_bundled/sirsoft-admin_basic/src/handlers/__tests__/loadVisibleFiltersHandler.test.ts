@@ -1,5 +1,5 @@
 /**
- * loadVisibleFiltersHandler 테스트 (#705)
+ * loadVisibleFiltersHandler 테스트
  *
  * FilterVisibilitySelector 가 저장한 키(`g7_filters_{id}_{uuid}`)를 같은 규칙으로 읽는지,
  * 「배열이면서 비어 있지 않을 때만 채택」 판정과 기본값 폴백을 확인한다.

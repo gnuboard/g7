@@ -48,7 +48,7 @@ class LayoutExtensionService
      * Modal 이 `children` 밖에서 그리는 컴포넌트 배열 props — 고정 하단과 제목 앞뒤 붙임.
      *
      * 확장점 채우기와 오버레이 대상 찾기가 이 자리도 걷는다. 걷지 않으면 확인 창 바닥 단추 줄의 확장점과
-     * 그 단추를 겨눈 오버레이가 조용히 빠진다(#869).
+     * 그 단추를 겨눈 오버레이가 조용히 빠진다.
      */
     private const MODAL_SURFACE_PROPS = ['footer', 'titlePrefix', 'titleSuffix'];
 
@@ -418,7 +418,7 @@ class LayoutExtensionService
                 $resultComponent['children'] = $this->applySourceMetaRecursively($component['children'], $sourceMeta);
             }
 
-            // 주입된 Modal 의 고정 하단·제목 앞뒤 붙임 자식도 같은 확장의 노드다(#869 C3)
+            // 주입된 Modal 의 고정 하단·제목 앞뒤 붙임 자식도 같은 확장의 노드다
             foreach (self::MODAL_SURFACE_PROPS as $surface) {
                 if (isset($component['props'][$surface]) && is_array($component['props'][$surface]) && array_is_list($component['props'][$surface])) {
                     $resultComponent['props'][$surface] = $this->applySourceMetaRecursively($component['props'][$surface], $sourceMeta);
@@ -646,7 +646,7 @@ class LayoutExtensionService
     private function processExtensionPointsRecursive(array $components, int $templateId, array &$dataSources, array &$scripts, array &$modals, bool $withSourceMeta = false): array
     {
         foreach ($components as $index => &$component) {
-            // 반복 렌더 템플릿(props 아래)은 값 자리라 빈 노드 `{}` 가 빈 stdClass 로 온다 — 컴포넌트가 아니므로 그대로 둔다 (#758)
+            // 반복 렌더 템플릿(props 아래)은 값 자리라 빈 노드 `{}` 가 빈 stdClass 로 온다 — 컴포넌트가 아니므로 그대로 둔다
             if (! is_array($component)) {
                 continue;
             }
@@ -657,12 +657,12 @@ class LayoutExtensionService
 
                 // 실제로 적용될 행만 — 활성 출처 · 호환 오버라이드 우선 · 비호환이면 원본으로 대체 (오버레이·편집기 트리와
                 // 같은 판정 한 벌, {@see resolveApplicableExtensions()}). 종전에는 원본을 먼저 지운 뒤 비호환 오버라이드를
-                // 건너뛰어 확장점이 빈 자리로 남았다(#725).
+                // 건너뛰어 확장점이 빈 자리로 남았다.
                 $extensions = $this->resolveApplicableExtensions($this->applyPreviewOverrides(
                     $this->repository->getByExtensionPoint($templateId, $extensionPointName)
                 ));
 
-                // 대체 컴포넌트 목록 — 값 자리의 `default: {}` 는 빈 stdClass 로 오므로 빈 목록으로 읽는다 (#758)
+                // 대체 컴포넌트 목록 — 값 자리의 `default: {}` 는 빈 stdClass 로 오므로 빈 목록으로 읽는다
                 $injectedComponents = is_array($component['default'] ?? null) ? $component['default'] : [];
 
                 foreach ($extensions as $extension) {
@@ -786,7 +786,7 @@ class LayoutExtensionService
             }
 
             // 반응형 재정의(`responsive.{구간}.children`)는 그 화면 폭에서 `children` 을 갈아 끼운다. 이 자리를 따라가지 않으면
-            // 재정의 안 확장점이 default 를 받지 못해 빈 칸으로 그려진다(게시판 설정 반응 유형의 좁은 화면 카드 업로더, #916 실측).
+            // 재정의 안 확장점이 default 를 받지 못해 빈 칸으로 그려진다(게시판 설정 반응 유형의 좁은 화면 카드 업로더).
             if (isset($component['responsive']) && is_array($component['responsive'])) {
                 foreach ($component['responsive'] as $breakpoint => $override) {
                     if (! is_array($override) || ! isset($override['children']) || ! is_array($override['children'])) {
@@ -849,7 +849,7 @@ class LayoutExtensionService
         }
 
         // 확장 행·하위 행 템플릿과 Modal 의 고정 하단·제목 앞뒤 붙임(`footer`·`titlePrefix`·`titleSuffix`)도
-        // 컴포넌트 배열이 props 에 실린다 — 고정 하단의 확장점(알림 템플릿 편집 창 바닥 단추 등)이 비지 않게 한다(#869)
+        // 컴포넌트 배열이 props 에 실린다 — 고정 하단의 확장점(알림 템플릿 편집 창 바닥 단추 등)이 비지 않게 한다
         foreach (['expandChildren', 'subRowChildren', ...self::MODAL_SURFACE_PROPS] as $templateKey) {
             if (isset($props[$templateKey]) && is_array($props[$templateKey]) && array_is_list($props[$templateKey])) {
                 $props[$templateKey] = $this->processExtensionPointsRecursive(
@@ -944,7 +944,7 @@ class LayoutExtensionService
                         ? $this->buildInjectedPropsMeta($overlay, $propsToInject)
                         : null;
 
-                    // 본문 트리를 먼저 찾고, 없을 때만 `modals` 갈래 창을 찾는다 — 첫 일치 노드 하나에만 주입(#869 C2)
+                    // 본문 트리를 먼저 찾고, 없을 때만 `modals` 갈래 창을 찾는다 — 첫 일치 노드 하나에만 주입
                     $injected = $this->injectPropsAtTarget(
                         $layout['components'],
                         $targetId,
@@ -969,7 +969,7 @@ class LayoutExtensionService
                         );
                     }
 
-                    // 본문 트리를 먼저 찾고, 없을 때만 `modals` 갈래 창(본문·고정 하단·제목 붙임)을 찾는다(#869 C2)
+                    // 본문 트리를 먼저 찾고, 없을 때만 `modals` 갈래 창(본문·고정 하단·제목 붙임)을 찾는다
                     $injected = $this->injectAtTarget(
                         $layout['components'],
                         $targetId,
@@ -1075,7 +1075,7 @@ class LayoutExtensionService
                 }
             }
 
-            // Modal 고정 하단·제목 앞뒤 붙임 — 확인 창 바닥 단추가 여기 놓인다(#869)
+            // Modal 고정 하단·제목 앞뒤 붙임 — 확인 창 바닥 단추가 여기 놓인다
             foreach (self::MODAL_SURFACE_PROPS as $surface) {
                 if (isset($component['props'][$surface]) && is_array($component['props'][$surface]) && array_is_list($component['props'][$surface])
                     && $this->injectAtTarget($component['props'][$surface], $targetId, $position, $newComponents)) {
@@ -1177,7 +1177,7 @@ class LayoutExtensionService
                 }
             }
 
-            // Modal 고정 하단·제목 앞뒤 붙임 안의 노드도 대상이 된다(#869)
+            // Modal 고정 하단·제목 앞뒤 붙임 안의 노드도 대상이 된다
             foreach (self::MODAL_SURFACE_PROPS as $surface) {
                 if (isset($component['props'][$surface]) && is_array($component['props'][$surface]) && array_is_list($component['props'][$surface])
                     && $this->injectPropsAtTarget($component['props'][$surface], $targetId, $propsToInject, $injectMeta)) {
@@ -1230,7 +1230,7 @@ class LayoutExtensionService
      * 목록 **전체를 복사**해야 하고, 그 복사본은 만든 날짜에 얼어붙는다 — 호스트가 나중에
      * 항목을 더해도 확장의 낡은 복사본이 그것을 덮어써 **조용히 지운다**. 실제로 결제
      * 플러그인 3종이 주문목록에 배지 하나를 달려고 컬럼 11칸을 통째로 복사했고, 뒤에
-     * 추가된 클레임 컬럼이 화면에서 사라졌다(#599 S2-D13). 그중 실제로 다른 칸은
+     * 추가된 클레임 컬럼이 화면에서 사라졌다. 그중 실제로 다른 칸은
      * **하나뿐**이었고 나머지 10칸은 원본과 완전히 같았다.
      *
      * 형식 — `_patch.by` 로 항목을 식별할 키를, `_patch.items` 로 바꿀 항목만 적는다:
@@ -1282,7 +1282,7 @@ class LayoutExtensionService
 
                     continue;
                 }
-                // 지시값이 빈 객체(stdClass — 값 자리 보존, #758)면 덧붙일 것이 없다
+                // 지시값이 빈 객체(stdClass — 값 자리 보존)면 덧붙일 것이 없다
                 $component['props'][$propKey] = array_merge(
                     is_array($existing) ? $existing : [],
                     is_array($propValue['_append']) ? $propValue['_append'] : []
@@ -1317,7 +1317,7 @@ class LayoutExtensionService
                     is_array($existing) ? $existing : [],
                     is_array($propValue['_merge']) ? $propValue['_merge'] : []
                 );
-                // `_merge` 는 맵 병합이다 — 결과가 비면 빈 맵(`{}`)으로 둔다. 배열로 두면 화면이 키-값 대신 목록을 받는다 (#758)
+                // `_merge` 는 맵 병합이다 — 결과가 비면 빈 맵(`{}`)으로 둔다. 배열로 두면 화면이 키-값 대신 목록을 받는다
                 $component['props'][$propKey] = $merged === [] ? new \stdClass : $merged;
             } elseif (isset($propValue['_patch'])) {
                 $existing = $component['props'][$propKey] ?? [];
@@ -1416,7 +1416,7 @@ class LayoutExtensionService
 
             // 기존에 없는 키 — 새 항목으로 끝에 붙인다. 원문을 그대로 붙이면 항목 안의
             // `_append`·중첩 `_patch` 지시자 객체가 리터럴로 남아 렌더러가 배열 자리에서 객체를
-            // 받는다(#599 validate). 빈 항목에 병합해 지시자를 푼다.
+            // 받는다. 빈 항목에 병합해 지시자를 푼다.
             $existing[] = $this->mergePatchItem([], $patchItem, $componentId, $propKey);
             $indexByKey[$key] = array_key_last($existing);
         }
@@ -1434,7 +1434,7 @@ class LayoutExtensionService
      * 확장은 priority 순서로 적용되므로 앞선 확장이 넣은 것을 뒤의 확장이 통째로 지운다.
      * 실제로 결제 플러그인 3종이 주문목록 「결제수단」 칸의 `cellChildren` 에 각자 배지를
      * 달았는데 우선순위가 가장 높은 하나만 살아남았고, 그래서 그 하나가 나머지 두 결제사
-     * 몫까지 대신 그려 주는 계단식 우회가 생겼다(#599). 그 우회는 남의 플러그인이 선언한
+     * 몫까지 대신 그려 주는 계단식 우회가 생겼다. 그 우회는 남의 플러그인이 선언한
      * 데이터소스를 참조해야 해서, 그 플러그인이 없는 사이트에서는 미정의 참조가 된다.
      *
      * `_append` 가 있으면 각 확장이 **자기 것만** 덧붙이면 되므로 그 의존이 사라진다 —
@@ -1891,7 +1891,7 @@ class LayoutExtensionService
 
         // 트리 = 화면 — 렌더와 같은 판정({@see resolveApplicableExtensions()})을 (extension_type, target_name) 범위마다
         // 적용한다. 대상 확장이 꺼진 오버라이드·비호환 오버라이드·호환 오버라이드에 가려진 원본은 화면에 적용되지
-        // 않으므로 트리에서도 빠진다. 활성 여부는 조회 시점에 판정한다(DB 컬럼 없음 — #725 D5).
+        // 않으므로 트리에서도 빠진다. 활성 여부는 조회 시점에 판정한다(DB 컬럼 없음).
         $this->initializeActiveExtensions();
         $extensions = $this->repository->getByTemplateId($templateId)
             ->groupBy(fn (LayoutExtension $extension) => $extension->extension_type->value.'|'.$extension->target_name)
@@ -2129,7 +2129,7 @@ class LayoutExtensionService
 
         // content 키가 있으면 추출 (UpdateLayoutExtensionContentRequest 사용 시)
         $newContent = $data['content'] ?? null;
-        // 수정 전 원문 — 캐스트는 `{}` 를 `[]` 로 만든다 (#758)
+        // 수정 전 원문 — 캐스트는 `{}` 를 `[]` 로 만든다
         $oldContent = LayoutEmptyObjects::rawPreserving($extension);
 
         $updateData = [];
@@ -2359,9 +2359,9 @@ class LayoutExtensionService
      *
      * 재활성화가 부른다. 조각 키 집합을 넘기면 **그 키의 행만** 후보로 본다 — 비활성화가 지운 행과 함께, 이전에
      * 고아 정리(`removeOrphanFragments`)가 지운 행(소스에 없는 조각·백필된 옛 키 행)까지 되살리면 같은 조각이
-     * 두 행으로 살아 두 번 주입된다 (#703).
+     * 두 행으로 살아 두 번 주입된다.
      *
-     * 후보 가운데 **템플릿이 활성**이고 그 템플릿에 **붙을 자리**(호스트 레이아웃·확장점)가 있는 행만 되살린다(#725 D4).
+     * 후보 가운데 **템플릿이 활성**이고 그 템플릿에 **붙을 자리**(호스트 레이아웃·확장점)가 있는 행만 되살린다.
      * 종전에는 후보 전부를 되살려, 대상 부재로 일부러 숨긴 오등록 행이 재활성화마다 살아났다가 다시 숨겨졌고(이력이
      * 흔들림), 꺼진 템플릿의 행은 살아남았다. 나머지 행은 손대지 않는다(`deleted_at` 그대로). 필요한 행은 뒤따르는 등록이
      * `withTrashed` 조회로 되살리고, 운영자 수정본은 행과 함께 그대로 돌아온다.
@@ -2428,7 +2428,7 @@ class LayoutExtensionService
         $stats = ['modules' => 0, 'plugins' => 0, 'skipped' => 0];
 
         // 템플릿이 없으면 등록할 곳도 없다. 조각 컴파일은 템플릿과 무관해 실패 로그에도 템플릿을 싣지 않는다 — 실을수록
-        // 「그 템플릿에서 깨졌다」 로 읽혔다(#725). 같은 파일의 실패는 프로세스에 한 번만 기록된다.
+        // 「그 템플릿에서 깨졌다」 로 읽혔다. 같은 파일의 실패는 프로세스에 한 번만 기록된다.
         if ($this->templateRepository->findById($templateId) === null) {
             return $stats;
         }
@@ -2493,7 +2493,7 @@ class LayoutExtensionService
      *
      * 이 경로는 **다른 확장**의 활성화·업데이트나 템플릿 활성화가 활성 확장 전부를 다시 훑을 때 탄다. 그래서 운영자
      * 수정본을 보존하고(`preserveModified=true` — 종전 `false` 는 무관한 확장의 수정본과 원본 해시까지 덮어썼다),
-     * 등록 뒤 소스에 없는 조각 행을 정리해 옛 키 행이 남아 두 번 주입되지 않게 한다 (#703).
+     * 등록 뒤 소스에 없는 조각 행을 정리해 옛 키 행이 남아 두 번 주입되지 않게 한다.
      *
      * @param  array<int, array{path: string, data: array<string, mixed>, key: string}>  $definitions  fragment 정의 목록
      * @param  array<int, string>  $liveKeys  소스 디렉토리에 실재하는 조각 키 집합 ({@see CollectsFragmentSources::fragmentSourceKeys()})
@@ -2519,7 +2519,7 @@ class LayoutExtensionService
      *
      * 조각 행을 쓰는 경로(확장 활성화·업데이트·갱신, 다른 확장이 부르는 재등록, 템플릿 활성화)가 모두 이 한 곳을
      * 탄다. 종전에는 갱신 경로만 고아 정리를 했고, 나머지는 새 키로 행을 만들기만 해 7.0.11 에서 올라온 설치의
-     * 백필 행(키 = 대상 이름)이 새 행과 함께 살아 같은 조각이 두 번 주입됐다 (#703).
+     * 백필 행(키 = 대상 이름)이 새 행과 함께 살아 같은 조각이 두 번 주입됐다.
      *
      *  1. 백필된 옛 행을 파일 키로 옮긴다({@see adoptLegacyFragmentRows()}) — 운영자 수정본을 지닌 채 이어진다.
      *  2. 붙을 자리가 있는 조각은 등록하고, 없으면 오등록 행을 정리한다(교차 템플릿 가드 포함).
@@ -2554,7 +2554,7 @@ class LayoutExtensionService
                 if (! $this->isExtensionApplicableToTemplate($definition['data'], $templateId)) {
                     $stats['inapplicable']++;
                     // debug — 활성화 1회마다 조각 수 × 템플릿 수 × 경로 수만큼 반복되는 정상 판정이다. 개수는 확장별
-                    // 요약(`skipped_no_host`)이 남긴다(#725). 오등록 행을 실제로 지울 때의 info 는 그대로 둔다.
+                    // 요약(`skipped_no_host`)이 남긴다. 오등록 행을 실제로 지울 때의 info 는 그대로 둔다.
                     Log::debug("레이아웃 확장 등록 건너뜀 (대상 부재): {$definition['path']}", [
                         'source' => $identifier,
                         'template_id' => $templateId,
@@ -2753,7 +2753,7 @@ class LayoutExtensionService
      * 조각 파일이 사라졌거나, 템플릿이 그 대상을 더는 오버라이드하지 않거나, 조각 식별자 마이그레이션이
      * 대상 이름으로 백필한 옛 행(등록은 파일 이름 키로 새 행을 만든다) — 은 지운다. 모듈·플러그인 갱신의
      * `removeOrphanFragments` 와 같은 역할이다. 이 정리가 없어 7.0.11 에서 올라온 설치에서 같은 조각이 두 행으로
-     * 남아 두 번 주입됐다(#703 실측 — 주문서 「주소 검색」 버튼 중복).
+     * 남아 두 번 주입됐다(주문서 「주소 검색」 버튼 중복).
      *
      * @param  string  $templateIdentifier  템플릿 식별자
      * @param  int  $templateId  템플릿 ID
@@ -2884,7 +2884,7 @@ class LayoutExtensionService
      * 같은 범위(extension_type · target_name) 행 묶음에서 **실제로 화면에 적용될 행**만 남깁니다.
      *
      * 화면 렌더(오버레이·확장점)와 편집기 트리가 이 한 함수를 쓴다 — 트리 = 화면. 종전에는 판정이 세 벌이라
-     * 확장점은 비호환 오버라이드가 있으면 빈 자리가 됐고, 트리는 활성 여부를 보지 않았다(#725 D5·D9).
+     * 확장점은 비호환 오버라이드가 있으면 빈 자리가 됐고, 트리는 활성 여부를 보지 않았다.
      *
      *  1. 출처가 꺼진 행은 뺀다 — 템플릿 오버라이드는 오버라이드 **대상** 확장의 활성 여부로 본다.
      *  2. 대상별로 호환 오버라이드가 하나라도 있으면 첫 호환 오버라이드만 남기고 그 대상의 원본(모듈·플러그인) 행을 뺀다.

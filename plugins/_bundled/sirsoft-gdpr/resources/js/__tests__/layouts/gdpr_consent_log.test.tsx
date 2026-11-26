@@ -131,9 +131,9 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
 
         // @scenario area=filter
         // @effects consent_log_checkbox_filters_apply_immediately
-        it('action 필터의 체크박스 4개 모두 옵션 C 패턴 (이슈 #430 거부 추가)', () => {
+        it('action 필터의 체크박스 4개 모두 옵션 C 패턴 (거부 추가)', () => {
             const checkboxes = findCheckboxesIn('action_filter');
-            // 전체 / granted / revoked / rejected — 이슈 #430 에서 거부(rejected) 필터 추가
+            // 전체 / granted / revoked / rejected — 거부(rejected) 필터 추가
             expect(checkboxes.length, '체크박스 4개 (전체 / granted / revoked / rejected)').toBe(4);
             checkboxes.forEach((cb, idx) => expectSequencePattern(cb, `action[${idx}]`));
         });
@@ -142,7 +142,7 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
          * @scenario entry=reject, subject=member, category=optional
          * @effects admin_log_filter_rejected_checkbox
          */
-        it('action 필터에 거부(rejected) 체크박스가 존재한다 (이슈 #430)', () => {
+        it('action 필터에 거부(rejected) 체크박스가 존재한다', () => {
             const layoutJson = JSON.stringify(root);
             expect(layoutJson).toContain("'rejected'");
             expect(layoutJson).toContain('sirsoft-gdpr.admin.consent_log.action.rejected');
@@ -153,7 +153,7 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
         it('source 필터의 체크박스 7개 모두 옵션 C 패턴', () => {
             const checkboxes = findCheckboxesIn('source_filter');
             // 허용 어휘의 SSoT 는 ConsentSource enum 6종 — 화면 필터가 그 부분집합이면
-            // 일부 이력이 어떤 필터로도 도달 불가해진다 (#492, 회원탈퇴 철회 `withdraw` 는 1.0.4).
+            // 일부 이력이 어떤 필터로도 도달 불가해진다 (회원탈퇴 철회 `withdraw` 는 1.0.4).
             expect(
                 checkboxes.length,
                 '체크박스 7개 (전체 / banner / preference_center / register / mypage / mypage_renew_all / withdraw)'
@@ -323,7 +323,7 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
         });
     });
 
-    describe('action 배지 — 거부(rejected) 케이스 (이슈 #430)', () => {
+    describe('action 배지 — 거부(rejected) 케이스', () => {
         const layoutJson = JSON.stringify(root);
 
         /**

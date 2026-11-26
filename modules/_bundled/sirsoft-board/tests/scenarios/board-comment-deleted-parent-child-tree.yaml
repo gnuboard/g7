@@ -1,7 +1,7 @@
 feature: 부모 댓글 삭제 시 자식 댓글 트리 보존 (tombstone)
 
 description: |
-  이슈 #413 item 56-2 — 부모 댓글을 삭제해도 살아있는 자식 댓글이 트리에서
+  부모 댓글을 삭제해도 살아있는 자식 댓글이 트리에서
   사라지지 않도록, 살아있는 자식이 있는 삭제 부모를 tombstone("삭제된 댓글입니다")
   으로 일반 조회 트리에 복구한다.
 
@@ -17,7 +17,7 @@ description: |
       tombstone 노드 복구. 자식 없는 삭제 부모는 고아 자식이 없어 자연 제외.
     · countDescendants() 보정 — tombstone(삭제) 댓글은 "답글 N" 집계 모수에서 제외
       (트리 노드로는 유지, 살아있는 자손은 계속 카운트). 확정 정책.
-    · content 권한·표시(tombstone 안내 + 관리자 원문 토글)는 #413-50 기구현 재사용.
+    · content 권한·표시(tombstone 안내 + 관리자 원문 토글)는 기존 구현 재사용.
     · withTrashed=true(manager del_cmt 토글) 경로는 이미 전체 노출 → 고아 복구 비적용.
 
   관련:

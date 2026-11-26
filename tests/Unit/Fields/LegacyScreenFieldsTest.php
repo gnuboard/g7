@@ -8,7 +8,7 @@ use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 /**
- * 옛 화면 호환의 기준 칸 목록(LegacyScreenFields)이 7.1.x 레이아웃에서 뽑은 칸과 같은지 (#916).
+ * 옛 화면 호환의 기준 칸 목록(LegacyScreenFields)이 7.1.x 레이아웃에서 뽑은 칸과 같은지 .
  *
  * 목록은 런타임에 옛 레이아웃을 읽을 수 없어 고정해 두었다. 이 시험이 레이아웃에서 칸을 다시 뽑아 대조한다 — 입력칸 `name` 과
  * 폼 상태 참조(`form.country` 처럼 입력이 아닌 복합 칸)를 모아 코어 항목의 저장 컬럼으로 맞춘다.

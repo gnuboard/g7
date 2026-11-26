@@ -11,7 +11,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 신고 케이스 영구 삭제 시 신고 로그의 명시 삭제 (#888)
+ * 신고 케이스 영구 삭제 시 신고 로그의 명시 삭제
  *
  * 신고 로그(`boards_report_logs.report_id`)는 케이스(`boards_reports`)에 삭제 연쇄 외래키로 걸려 있다. 영구 삭제는
  * 그 연쇄에 기대지 않고 로그를 먼저 지워야 한다 — 외래키 검사를 끈 채 지워도 고아 로그가 남지 않아야 하고,

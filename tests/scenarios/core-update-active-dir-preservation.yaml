@@ -55,7 +55,7 @@ axes:
   apply_mode: [incremental, prune, fallback_no_backup]                     # 파일 적용 방식
   three_way_verdict: [unchanged_same, added_new, changed_size, changed_md5] # base↔theirs 판정
   user_local_modification: [modified, untouched]                          # mine 이 base 와 다른지 (사용자 수정)
-  # targets 의 {domain}/_bundled 가 상위 protected({domain}) 를 오버라이드해 apply 되는지 (공개 #64 / 내부 #452)
+  # targets 의 {domain}/_bundled 가 상위 protected({domain}) 를 오버라이드해 apply 되는지 (공개 #64)
   bundled_apply_override: [override_applies, sibling_active_preserved, target_equals_protected_still_blocked]
   protected_override_domain: [modules, plugins, templates, lang-packs]     # 오버라이드 대상 4종 확장
 
@@ -106,7 +106,7 @@ effects:
   - test_apply_update_incremental_does_not_remove_orphans                  # 증분=삭제 안 함
   - test_apply_update_prune_removes_orphans_and_overwrites_all             # prune=전체 덮어쓰기+삭제
   - test_apply_update_null_apply_list_falls_back_to_full_overwrite         # 백업 부재 fallback
-  # targets 의 {domain}/_bundled 가 상위 protected 를 오버라이드해 코어 업데이트로 번들 확장 파일이 갱신됨 (공개 #64 / 내부 #452).
+  # targets 의 {domain}/_bundled 가 상위 protected 를 오버라이드해 코어 업데이트로 번들 확장 파일이 갱신됨 (공개 #64).
   # effect 명 = 실제 테스트 메서드명 (CoreBackupHelperApplyListTest / CoreUpdateServiceTest).
   - test_bundled_target_overrides_parent_protected_path                    # 4종 확장 전수 (dataProvider)
   - test_target_equal_to_protected_is_still_excluded                       # target==protected 는 여전히 제외 (방어 유지)

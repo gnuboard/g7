@@ -20,7 +20,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 
 /**
- * 쿠폰 자동발급 서비스 (#952)
+ * 쿠폰 자동발급 서비스
  *
  * 관리자가 쿠폰 등록에서 고른 「자동발급 → 회원가입·첫구매·생일」 을 실제로 발급한다.
  *

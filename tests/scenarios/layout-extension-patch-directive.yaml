@@ -1,4 +1,4 @@
-feature: inject_props `_patch` 의 새 항목 지시자 정규화 (#599 validate)
+feature: inject_props `_patch` 의 새 항목 지시자 정규화
 
 description: |
   `_patch` 대상 항목이 호스트에 없으면 패치 항목을 원문 그대로 끝에 붙여, `_append`·중첩 `_patch` 지시자

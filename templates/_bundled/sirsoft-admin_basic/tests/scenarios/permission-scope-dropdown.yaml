@@ -1,4 +1,4 @@
-feature: 역할 폼 권한 범위(스코프) 드롭다운 노출 조건 (sirsoft-admin_basic, #789)
+feature: 역할 폼 권한 범위(스코프) 드롭다운 노출 조건 (sirsoft-admin_basic)
 
 description: |
   역할 수정 화면의 권한 트리는 체크한 권한 옆에 범위(전체·소유역할·본인만) 드롭다운을 그린다.

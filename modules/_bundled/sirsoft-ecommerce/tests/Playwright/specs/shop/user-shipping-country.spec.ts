@@ -2,7 +2,7 @@
  * 유저별 배송국가(ecommerce_preferred_shipping_country, 옛 키 preferred_shipping_country) — 설정·게이트·차단·표시 E2E.
  * 템플릿 sirsoft-basic (유저 화면) + 모듈 설정/엔드포인트.
  *
- * #490 이후 배송국가는 이커머스가 회원 항목 집합(core.user)에 선언한 회원 항목이다. 내 정보 보기와 수정 화면에서는
+ * 배송국가는 이커머스가 회원 항목 집합(core.user)에 선언한 회원 항목이다. 내 정보 보기와 수정 화면에서는
  * 예전 주입 조각(설정 카드, `mypage-shipping-country-select`)이 아니라 **이커머스 확장별 카드**(보기
  * `#profile_view_extension_card_ext_sirsoft-ecommerce`, 수정 `#profile_extension_card_ext_sirsoft-ecommerce`) 안의 회원 항목 칸
  * (`#field_view_{키}`, `#field_{키}`)으로 그려진다. 해외배송을 끈 사이트에서는 항목 자체가 화면 계약에서 빠진다.

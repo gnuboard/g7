@@ -22,7 +22,7 @@
         }
       },
       "contentMediaTarget": {
-        "comment": "작성 화면 편집기의 본문 미디어 업로드 계약(GET admin/content-media/target, #887). 받는 종류가 없거나 올릴 권한이 없으면 data 가 null 이다.",
+        "comment": "작성 화면 편집기의 본문 미디어 업로드 계약(GET admin/content-media/target). 받는 종류가 없거나 올릴 권한이 없으면 data 가 null 이다.",
         "data": {
           "version": 1,
           "endpoint": "/api/modules/sirsoft-page/admin/content-media",

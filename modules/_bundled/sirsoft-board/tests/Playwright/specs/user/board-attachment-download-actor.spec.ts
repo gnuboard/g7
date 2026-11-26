@@ -1,5 +1,5 @@
 /**
- * 게시판 첨부 다운로드 — 토큰 동반으로 활동이력 행위자(user_id) 기록 (이슈 #413 item 58b).
+ * 게시판 첨부 다운로드 — 토큰 동반으로 활동이력 행위자(user_id) 기록 (item 58b).
  *
  * 결함: 다운로드가 <a href="{{download_url}}"> 브라우저 직접 링크(GET)였다. <a> 네비게이션에는
  * Authorization 헤더(토큰)가 실리지 않아, download_url 이 가리키는 optional.sanctum 라우트가
@@ -26,7 +26,7 @@ const SLUG = 'notice';
 const POST_PATH = `/board/${SLUG}/1`;
 const DOWNLOAD_API = `**/api/modules/sirsoft-board/boards/${SLUG}/attachment/**`;
 
-test.describe.skip('게시판 첨부 다운로드 행위자 기록 (#413-58b)', () => {
+test.describe.skip('게시판 첨부 다운로드 행위자 기록 (58b)', () => {
   // @scenario card=user_post
   // @effects download_via_api_client_with_token, member_download_records_user_id
   test('회원 다운로드 요청에는 Authorization 헤더가 실린다 (행위자 기록 경로)', async ({

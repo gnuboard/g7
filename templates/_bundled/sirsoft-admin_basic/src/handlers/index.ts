@@ -22,22 +22,22 @@ import {
   updateMultilingualTagValueHandler,
 } from './multilingualTagHandler';
 import { setDateRangeHandler } from './setDateRangeHandler';
-// 목록 필터 배치 복원 — FilterVisibilitySelector 가 저장한 키를 코어 템플릿이 직접 읽는다 (#705)
+// 목록 필터 배치 복원 — FilterVisibilitySelector 가 저장한 키를 코어 템플릿이 직접 읽는다
 import { loadVisibleFiltersHandler } from './loadVisibleFiltersHandler';
-// 회원 목록 확장 필터 값 채널(ext_filters[]) 조립 (#705)
+// 회원 목록 확장 필터 값 채널(ext_filters[]) 조립
 import { setUserFilterExtHandler } from './setUserFilterExtHandler';
 // 방문자 통계 기간 프리셋 — 날짜 문자열(YYYY-MM-DD)을 돌려준다 (setDateRange 는 datetime 이라 통계 API 가 422)
 import { setAnalyticsPeriodHandler } from './setAnalyticsPeriodHandler';
 import { toggleSidebarHandler, initSidebarHandler } from './sidebarHandler';
-// 게시판 첨부 다운로드 핸들러 (토큰 동반 → 활동이력 행위자 기록, #413 item 58b)
+// 게시판 첨부 다운로드 핸들러 (토큰 동반 → 활동이력 행위자 기록)
 import { downloadAttachmentHandler } from './downloadAttachment';
 import { downloadMarkupFileHandler } from './downloadMarkupFile';
 import { copyMarkupToClipboardHandler } from './copyMarkupToClipboard';
-// 자산 URL 방식 자동 감지 (이슈 #486) — 브라우저에서 프로브 쌍을 던져 재판정
+// 자산 URL 방식 자동 감지 — 브라우저에서 프로브 쌍을 던져 재판정
 import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './detectAssetUrlModeHandler';
 // 클립보드 복사 — 값이 화면에 없어도 복사할 수 있어야 하는 자리(웹 크론 호출 주소)가 있다
 import { copyToClipboardHandler } from './copyToClipboardHandler';
-// 코어 업데이트 웹 단계 실행 (#609 G6) — 서버가 한 요청에 한 단계만 수행하므로
+// 코어 업데이트 웹 단계 실행 — 서버가 한 요청에 한 단계만 수행하므로
 // 반복 호출의 주체가 화면이다 (요청 경계가 곧 R25 방어선).
 import {
   startCoreUpdateHandler,
@@ -88,16 +88,16 @@ export const handlerMap = {
   updateMultilingualTagValue: updateMultilingualTagValueHandler,
   // 날짜 범위 프리셋 핸들러 (format: 'date' 면 YYYY-MM-DD)
   setDateRange: setDateRangeHandler,
-  // 목록 필터 기본/상세 배치 복원 (#705)
+  // 목록 필터 기본/상세 배치 복원
   loadVisibleFilters: loadVisibleFiltersHandler,
-  // 회원 목록 확장 필터 값 조립 (#705)
+  // 회원 목록 확장 필터 값 조립
   setUserFilterExt: setUserFilterExtHandler,
-  // 방문자 통계 기간 프리셋 (#682) — 통계 화면 기간 바 8버튼이 부른다
+  // 방문자 통계 기간 프리셋 — 통계 화면 기간 바 8버튼이 부른다
   setAnalyticsPeriod: setAnalyticsPeriodHandler,
   // 데스크톱 사이드바 접기 핸들러
   toggleSidebar: toggleSidebarHandler,
   initSidebar: initSidebarHandler,
-  // 게시판 첨부 다운로드 (토큰 동반 → 활동이력 행위자 기록, #413 item 58b)
+  // 게시판 첨부 다운로드 (토큰 동반 → 활동이력 행위자 기록)
   downloadAttachment: downloadAttachmentHandler,
   // 클립보드 복사 (가림 상태에서도 동작해야 하는 값 — 웹 크론 호출 주소)
   copyToClipboard: copyToClipboardHandler,

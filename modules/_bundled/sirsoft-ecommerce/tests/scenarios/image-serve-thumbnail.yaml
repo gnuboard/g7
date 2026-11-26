@@ -1,4 +1,4 @@
-feature: 이커머스 이미지 서빙의 썸네일 (`?size=` · `?w=`, #869)
+feature: 이커머스 이미지 서빙의 썸네일 (`?size=` · `?w=`)
 
 description: |
   상품·카테고리·리뷰·클레임 이미지 서빙 4곳이 코어 `ThumbnailResponder` 를 게이트 바로 뒤·원본 응답 바로 앞에서
@@ -30,8 +30,8 @@ description: |
     15. 카테고리 공유 카드의 og:image 는 끝에 `size=og` 가 붙는다.
     16. 카테고리 이미지 서빙의 예상 밖 오류는 500 이다.
     17. 공개 자산 디스크(CDN) 행의 직접 URL(`download_url`)은 썸네일 대상이 아니고(`isThumbnailable` 거짓), 함께 내리는
-        `preview_url`(API 서빙 주소)은 대상이다 — 화면·og 는 `preview_url` 에 규격을 건다(#878).
-    18. CDN 카테고리 행의 공유 카드 og:image 도 API 주소 + `size=og` 이고 직접 주소(CDN 호스트)가 나가지 않는다(#878).
+        `preview_url`(API 서빙 주소)은 대상이다 — 화면·og 는 `preview_url` 에 규격을 건다.
+    18. CDN 카테고리 행의 공유 카드 og:image 도 API 주소 + `size=og` 이고 직접 주소(CDN 호스트)가 나가지 않는다.
 
 axes:
   surface: [product_image, category_image, review_image, claim_image, registration]
@@ -75,7 +75,7 @@ effects:
   - ecommerce_claim_operator_receives_thumbnail
   - ecommerce_source_provider_chunk_cursor_advances
   - ecommerce_source_providers_resolve_dependencies_lazily
-  - ecommerce_direct_url_row_thumbnails_through_preview_url   # 불변식 17·18 (#878)
+  - ecommerce_direct_url_row_thumbnails_through_preview_url   # 불변식 17·18
   # 브라우저 E2E (Playwright)
   - screen_img_requests_thumbnail_only
 

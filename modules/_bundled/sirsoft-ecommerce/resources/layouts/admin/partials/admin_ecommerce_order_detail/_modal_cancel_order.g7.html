@@ -128,7 +128,7 @@
         <!-- 상세 사유 필드 에러 -->
         <span data-if="{{_local.cancelValidationErrors?.reason_detail}}" class="ecommerce-form-error-xs ecommerce:mt-1 ecommerce:block">{{Array.isArray(_local.cancelValidationErrors?.reason_detail) ? _local.cancelValidationErrors.reason_detail[0] : _local.cancelValidationErrors?.reason_detail}}</span>
       </div>
-      <!-- 환불 계좌 (W-4 / #454). 가상계좌·무통장에서만 노출한다 — 카드·간편결제는 원 결제수단으로 환불되므로 계좌가 불필요하다. 가상계좌 입금완료 건은 서버(CancelOrderRequest)가 필수로 강제한다. 주문 시 입력값은 레이아웃 initLocal 이 프리필하며, cancelOrderHandlers 가 _local.refundBank* 를 읽어 전송한다. 신설 블록이므로 responsive.portable 로 작성한다(§6-0). **돌려줄 돈이 없으면 감춘다** — 아직 입금되지 않은 무통장 주문에까지 계좌칸을 세우면 운영자는 존재하지 않는 환불을 위해 계좌를 찾게 된다(브라우저 실측). 서버의 같은 판정(CancelOrderRequest::hasMoneyToReturn)과 축을 맞춘다. 입금을 「기록만」 한 결제 전 주문은 헤더의 받은 돈이 0 이지만 돌려줄 돈이 있으므로 서버 판정(payment.has_cash_to_return)도 함께 읽는다(S3-D7). -->
+      <!-- 환불 계좌 (W-4). 가상계좌·무통장에서만 노출한다 — 카드·간편결제는 원 결제수단으로 환불되므로 계좌가 불필요하다. 가상계좌 입금완료 건은 서버(CancelOrderRequest)가 필수로 강제한다. 주문 시 입력값은 레이아웃 initLocal 이 프리필하며, cancelOrderHandlers 가 _local.refundBank* 를 읽어 전송한다. 신설 블록이므로 responsive.portable 로 작성한다(§6-0). **돌려줄 돈이 없으면 감춘다** — 아직 입금되지 않은 무통장 주문에까지 계좌칸을 세우면 운영자는 존재하지 않는 환불을 위해 계좌를 찾게 된다(브라우저 실측). 서버의 같은 판정(CancelOrderRequest::hasMoneyToReturn)과 축을 맞춘다. 입금을 「기록만」 한 결제 전 주문은 헤더의 받은 돈이 0 이지만 돌려줄 돈이 있으므로 서버 판정(payment.has_cash_to_return)도 함께 읽는다(S3-D7). -->
       <div data-ref="cancel_refund_bank_section" data-if="{{['vbank', 'dbank'].includes(order.data?.payment?.payment_method) &amp;&amp; (((Number(order.data?.total_paid_amount ?? 0) - Number(order.data?.total_refunded_amount ?? 0)) > 0) || order.data?.payment?.has_cash_to_return === true)}}">
         <span class="ecommerce-text-body ecommerce:font-medium ecommerce:block ecommerce:mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_label</span>
         <!-- 가상계좌 입금완료 건은 필수임을 미리 안내한다 (서버가 422 로 막기 전에) -->
@@ -355,7 +355,7 @@
             <span class="ecommerce:text-right ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{_local.refundEstimate?.original_snapshot?.formatted?.total_vat_amount ?? (_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0).toLocaleString()}}</span>
             <span class="ecommerce:text-right {{(_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0) ? 'ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:font-semibold' : 'ecommerce:text-gray-900 ecommerce:dark:text-gray-100'}}">{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_vat_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0).toLocaleString()}}</span>
           </div>
-          <!-- 영세금액 — 과세금액에 포함된 세율 0% 몫. 취소 전·후 어느 쪽이든 있을 때만 (#612) -->
+          <!-- 영세금액 — 과세금액에 포함된 세율 0% 몫. 취소 전·후 어느 쪽이든 있을 때만 -->
           <div data-if="{{(_local.refundEstimate?.original_snapshot?.total_zero_rated_amount ?? 0) > 0 || (_local.refundEstimate?.recalculated_snapshot?.total_zero_rated_amount ?? 0) > 0}}" class="ecommerce:grid ecommerce:grid-cols-3 ecommerce:gap-2 ecommerce:py-1.5 ecommerce:text-sm">
             <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.zero_rated_amount</span>
             <span class="ecommerce:text-right ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{_local.refundEstimate?.original_snapshot?.formatted?.total_zero_rated_amount ?? (_local.refundEstimate?.original_snapshot?.total_zero_rated_amount ?? 0).toLocaleString()}}</span>

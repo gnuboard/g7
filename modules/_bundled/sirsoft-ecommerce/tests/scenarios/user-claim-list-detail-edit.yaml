@@ -1,4 +1,4 @@
-feature: 구매자 클레임 신청내역 — 목록 · 상세 · 수정 (#599 S13)
+feature: 구매자 클레임 신청내역 — 목록 · 상세 · 수정
 
 description: |
   S11·S12 가 신청서를 **내는** 화면을 놓았고, 이 세션은 낸 뒤에 보고 고치는 화면을 놓는다 —
@@ -67,7 +67,7 @@ exclusions:
   - { screen: edit, entry: none, reason: "수정은 언제나 목록 또는 상세의 [수정] 버튼으로 들어온다 — 주소를 직접 입력한 진입도 그 둘과 같은 화면이다" }
 
 effects:
-  - user_claim_detail_shows_follow_up_refunds   # #747 보완 5
+  - user_claim_detail_shows_follow_up_refunds
   # 목록 — 서브탭과 목록 컨텍스트 왕복 (①)
   - claim_list_type_tabs_follow_the_query
   - claim_list_tab_switch_does_not_inherit_the_previous_page
@@ -95,7 +95,7 @@ effects:
   - claim_detail_contrast_axis_shows_both_sides
   - claim_detail_refund_account_reads_the_claim_row
   - claim_detail_reject_reason_leads_the_reason_card
-  # 상품 행 송장·선교환·판매자 접수 (#599 상품 행 송장) — 송장은 상품 행마다, 화면은 서버 묶음을 그린다
+  # 상품 행 송장·선교환·판매자 접수 (상품 행 송장) — 송장은 상품 행마다, 화면은 서버 묶음을 그린다
   - claim_detail_shipping_groups_by_waybill
   - claim_detail_item_row_shows_its_waybill
   - claim_detail_item_reject_reason_on_the_row
@@ -149,9 +149,9 @@ effects:
   - claim_withdraw_modal_target_lifecycle          # 철회 모달의 대상 세우기·지우기
   - claim_withdraw_handler_channel_contract        # 철회 전송·중복 차단·4xx 화면 / 5xx 토스트
   - claim_pay_handler_address_and_guards           # 결제 주소 조립 금지·중복 차단·PG 위임
-  - claim_pay_pg_entry_failure_releases_the_button # 결제창 열기 전 PG 실패 → 진행 표시 해제 + 문구(신청서 상세는 버튼 아래, 작성·수정은 토스트+상세 이동) (#855)
+  - claim_pay_pg_entry_failure_releases_the_button # 결제창 열기 전 PG 실패 → 진행 표시 해제 + 문구(신청서 상세는 버튼 아래, 작성·수정은 토스트+상세 이동)
 
-  # 대기 결제행의 수단을 다시 고르는 축 (#599 실측)
+  # 대기 결제행의 수단을 다시 고르는 축
   # 접수 때 확정한 수단이 뒤에 낼 수 없게 되는 경우가 둘 있다: 마일리지 잔액 부족, 운영자가
   # 그 수단을 카탈로그에서 내림. 고를 자리가 없으면 출구가 신청서 철회뿐이다.
   - claim_payment_method_choices_follow_the_setting          # 선택지는 전역 설정을 따른다
@@ -160,7 +160,7 @@ effects:
   - claim_pay_handler_sends_the_chosen_method                # 고른 수단이 서버로 간다
   - claim_payment_method_choices_carry_their_own_labels      # 카드·마일리지 밖의 수단은 카탈로그 이름으로 보인다 (S1-D14)
 
-  # 접수 시점 주문금액 비교표 — 저장 스냅샷 (#599 후속 P4)
+  # 접수 시점 주문금액 비교표 — 저장 스냅샷
   - claim_detail_comparison_renders_from_frozen_snapshot
   - claim_detail_comparison_absent_notice_for_legacy_claims
   - claim_detail_comparison_mobile_kv_form
@@ -168,7 +168,7 @@ effects:
   - claim_edit_entry_runs_the_first_preview
   - claim_edit_shell_sets_api_base_on_the_order_response
 
-  # 서버 API 계약 — 구매자 클레임 엔드포인트가 실제로 고정하는 것 (#599 역매핑)
+  # 서버 API 계약 — 구매자 클레임 엔드포인트가 실제로 고정하는 것 (역매핑)
   # 화면 effects 와 달리 이쪽은 UserClaimApiTest 가 HTTP 로 직접 재는 서버 면이다.
   - user_claim_index_returns_type_counts                      # 목록이 네 유형 서브탭 건수를 함께 낸다
   - user_claim_index_counts_apply_status_to_current_tab_only  # 상태 필터는 현재 탭 뱃지에만 걸린다

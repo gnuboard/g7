@@ -8,7 +8,7 @@ use Tests\Helpers\CreatesTemplateSettingsFixtures;
 use Tests\TestCase;
 
 /**
- * 파비콘 컬렉션 업로드 정책 테스트 (#434)
+ * 파비콘 컬렉션 업로드 정책 테스트
  *
  * 파비콘 컬렉션에서만 ico·svg 포함 7형식을 받고(전역 허용 목록과 무관), svg 내용·ico 매직바이트·1MB 를 검사한다.
  * 다른 컬렉션의 svg 차단은 그대로다.

@@ -12,7 +12,7 @@ use Tests\TestCase;
 // audit:allow test-extension-base-class reason: 메뉴 행(코어 테이블)만 쓰는 생명주기 테스트라 트랜잭션 격리로 충분하다 — PluginTestCase 의 RefreshDatabase(migrate:fresh)는 로컬 MySQL OOM 규율(mem:migrate-fresh-ddl-crashes-local-mysql)에 걸린다
 
 /**
- * 비즈뿌리오 플러그인 생명주기와 관리자 메뉴 (#708)
+ * 비즈뿌리오 플러그인 생명주기와 관리자 메뉴
  *
  * 이 플러그인은 관리자 메뉴를 만들지 않는다(진입은 코어 설정 페이지). 옛 판본 잔재 청소를
  * 비활성화에서 활성화로 옮겨, 비활성화는 메뉴 행을 지우지 않는 번들 플러그인 공통 관례를 따른다.
@@ -70,7 +70,7 @@ class MenuRolePreservationTest extends TestCase
 
     /**
      * 플러그인의 uninstall() 은 이 플러그인 소속 메뉴를 지우지 않는다 — 데이터 보존 제거에서도 불리므로, 메뉴는 「데이터도 함께
-     * 삭제」 제거에서 코어(PluginManager)가 지운다(#888). 코어 쪽 계약은 tests/Feature/Extension/PluginUninstallKeepsMenusTest.php.
+     * 삭제」 제거에서 코어(PluginManager)가 지운다. 코어 쪽 계약은 tests/Feature/Extension/PluginUninstallKeepsMenusTest.php.
      *
      * @scenario plugin=bizppurio, transition=uninstall
      *

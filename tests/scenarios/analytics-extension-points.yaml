@@ -3,7 +3,7 @@
 #   못한다(저장소 기존 시나리오와 같은 한계). 축 조합은 PHPUnit Feature 테스트가 커버하고
 #   green 이다.
 
-feature: 방문자 통계 확장 기여 표면 (이슈 #682 S4)
+feature: 방문자 통계 확장 기여 표면
 
 description: |
   확장이 방문자 통계에 전환·차원·집계 행·판정표·제외 규칙·개인정보 처리·출력 열을 보태는 길.
@@ -136,7 +136,7 @@ effects:
   # 출력
   - csv_columns_filter_appends_extension_extra_columns
   - csv_row_filter_can_format_values
-  # #758 — 응답의 extra 는 빈 맵 `{}` 이지만 CSV 행 필터가 받는 행의 extra 는 종전대로 배열
+  # 응답의 extra 는 빈 맵 `{}` 이지만 CSV 행 필터가 받는 행의 extra 는 종전대로 배열
   - csv_row_filter_receives_array_extra
   - csv_filename_is_safe_for_ext_dimensions
   - diagnostics_sections_filter_adds_extension_sections

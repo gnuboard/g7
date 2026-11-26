@@ -94,7 +94,7 @@
                                             "text": "{{comment?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}"
                                         },
                                         {
-                                            "comment": "실명 보조 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490)",
+                                            "comment": "실명 보조 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다",
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{!!comment?.author?.real_name}}",
@@ -150,7 +150,7 @@
                                             "text": "· IP: {{comment?.ip_address}}"
                                         },
                                         {
-                                            "comment": "비회원 댓글 작성자가 낸 항목 값(이메일 등, #490) — 게시판 관리 권한(admin.manage)이 있을 때만 응답에 실린다",
+                                            "comment": "비회원 댓글 작성자가 낸 항목 값(이메일 등) — 게시판 관리 권한(admin.manage)이 있을 때만 응답에 실린다",
                                             "id": "comment_guest_field_{{comment.id}}_{{gv.key}}",
                                             "type": "basic",
                                             "name": "Span",

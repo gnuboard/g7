@@ -4,7 +4,7 @@ description: |
   관리자 [활동 로그] 필터의 「삭제 직전 기록만 보기」를 켜면 목록 API 가 영구 삭제(`*.force_deleted`)·선언 정리
   (`*.sync_deleted`)·커스텀 번역 삭제(`template_custom_translation.deleted`) 직전 기록만 돌려준다. 판정은 목록 행의 펼침
   요약(`snapshot`)과 한 벌(`ActivityLog::isDeletionSnapshotAction()`)이다. 끄거나 주지 않으면 종전과 같고, 참·거짓이 아닌
-  값은 422 로 거절한다 (#888).
+  값은 422 로 거절한다.
 
 axes:
   filter: [on, off, invalid]

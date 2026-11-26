@@ -1,6 +1,6 @@
 // e2e:allow Vitest 컴포넌트 렌더 테스트(메뉴 편집기 단추·편집 판). 끌어서 놓기와 저장→사용자 화면은 Playwright E2E·브라우저 실측으로 별도 검증.
 /**
- * TemplateMenuField — 템플릿 설정 메뉴 칸 편집기 (#434)
+ * TemplateMenuField — 템플릿 설정 메뉴 칸 편집기
  *
  * 두 판(왼쪽 트리 · 오른쪽 편집 판)으로 추가·고르기·고치기·하위로/상위로·지우기를 하고 바뀐 트리를 onChange 로 올린다.
  */
@@ -41,7 +41,7 @@ const Harness: React.FC<{ initial: TemplateMenuNode[]; onChange?: (next: Templat
 const rows = () => screen.getAllByTestId('template-menu-row');
 const rowTitles = () => rows().map((row) => `${row.getAttribute('data-depth')}:${row.textContent?.replace(/자동|꺼짐|하위 메뉴/g, '').trim()}`);
 
-describe('TemplateMenuField (#434)', () => {
+describe('TemplateMenuField', () => {
   // @scenario case=menu_editor
   // @effects menu_editor_add_edit
   it('빈 메뉴 안내 → 「링크 추가」로 항목이 생기고 바로 편집 판에 고른다', () => {

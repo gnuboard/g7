@@ -1,7 +1,7 @@
 {
     "meta": {
         "is_partial": true,
-        "description": "Claim Detail - 접수 시점 주문금액 비교(전/후) 표 — #599 후속 (정산 카드 · 취소 신청서 카드 공용)"
+        "description": "Claim Detail - 접수 시점 주문금액 비교(전/후) 표 (정산 카드 · 취소 신청서 카드 공용)"
     },
     "comment": "접수 시점 주문금액 비교(전/후) — ClaimResource.calculation_comparison(저장 스냅샷 + 읽을 때 재생성한 다통화 줄). 값은 서버 formatted 직독이며 화면이 포맷·합산하지 않는다. 후열은 전열과 다를 때만 강조색. 교환은 후열이 옵션 치환 재계산 값이고 치환 근거 행이 함께 선다. 구형 신청서(스냅샷 없음)는 안내 한 줄. PC 3열 / 모바일 kv(원값 → 변경값).",
     "id": "claim_comparison_block",

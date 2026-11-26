@@ -1,5 +1,5 @@
 /**
- * 확장 목록 카드 스위치 — 서버 작업이 끝날 때까지 값을 바꾸지 않고, 그동안 손잡이 자리에 스피너 (#882)
+ * 확장 목록 카드 스위치 — 서버 작업이 끝날 때까지 값을 바꾸지 않고, 그동안 손잡이 자리에 스피너
  *
  * 종전에는 누르는 즉시 스위치가 뒤집히고 그 뒤에 작업이 돌아, 실패·거절돼도 「꺼졌다/켜졌다」로 읽혔다. 이제 누르면 원래 값에
  * 머물고 누른 카드만 잠기며(aria-busy) 손잡이 자리에 스피너가 돈다. 응답이 오면 — 성공은 목록을 다시 받아 새 값으로, 거절(409
@@ -133,7 +133,7 @@ test('끄기를 누르면 응답 전까지 켜진 채 스피너, 409 「진행 �
 
 /**
  * 켜기 성공 뒤에도 그 플러그인의 화면 파일(CSS)을 받는 동안은 잠금을 둔다 — 목록이 바뀌자마자 풀면 그 사이 다시 끌 수 있어
- * 받던 파일이 404 가 되고, 엔진이 「Failed to execute action: reloadPluginHandlers」 토스트를 띄웠다(#882 실측).
+ * 받던 파일이 404 가 되고, 엔진이 「Failed to execute action: reloadPluginHandlers」 토스트를 띄웠다.
  *
  * @scenario case=card_toggle_pending
  * @effects card_toggle_holds_until_post_success_work_done, extension_asset_reload_failure_is_silent

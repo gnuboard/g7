@@ -115,7 +115,7 @@ export const Icon: React.FC<IconProps> = ({
 
   // 스타일 토큰 해석 — FA5 단축형(fas·far·fal·fad·fab)과 FA6 장형(fa-solid 등)을 모두 읽는다.
   // 이름 속 토큰이 iconStyle prop 보다 우선한다(종전 fa-solid 동작과 같음). 종전에는 장형만 읽어
-  // `fas fa-users` 가 `fas fa-fas fa-users` 로 조합되고 `far`·`fab` 는 스타일을 잃었다(#381).
+  // `fas fa-users` 가 `fas fa-fas fa-users` 로 조합되고 `far`·`fab` 는 스타일을 잃었다.
   const parsed = parseIconName(nameStr);
   const resolvedStyle: IconStyle = parsed.style ?? iconStyle;
   let iconName = parsed.glyph;

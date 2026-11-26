@@ -36,7 +36,7 @@ class RouteCacheHelperContainerTest extends TestCase
 
     /**
      * 관리자 「시스템 최적화」·「캐시 정리」 도 같은 두 명령을 쓰므로 두 헬퍼를 거친다 — 헬퍼가 보존 래퍼로 감싸고,
-     * 임시 파일에 다 구운 뒤 바꿔 끼운다(#882: 명령을 직접 부르면 먼저 지운 사이 들어온 요청이 500).
+     * 임시 파일에 다 구운 뒤 바꿔 끼운다(명령을 직접 부르면 먼저 지운 사이 들어온 요청이 500).
      *
      * @effects route_cache_rebuild_preserves_container_instance
      *

@@ -239,7 +239,7 @@ class BoardRulesTest extends BoardTestCase
     /**
      * roles 누락 메시지는 권한 키 대신 다국어 라벨을 노출합니다.
      *
-     * 회귀: posts.read-secret(사용자) 라벨 누락으로 키가 그대로 노출되던 문제 (이슈 #413-20)
+     * 회귀: posts.read-secret(사용자) 라벨 누락으로 키가 그대로 노출되던 문제 (20)
      *
      * @scenario guarded_input=board_settings, input_case=violating
      *

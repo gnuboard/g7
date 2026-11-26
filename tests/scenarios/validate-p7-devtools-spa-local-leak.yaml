@@ -1,4 +1,4 @@
-feature: DevTools 진단 — spa-local-leak 감지기 오탐 제거 (#599 validate P7)
+feature: DevTools 진단 — spa-local-leak 감지기 오탐 제거
 
 description: |
   spa-local-leak 감지기가 「navigate 뒤 visibleColumns 를 $args[0] 로 되쓰는 setState」 만 보고 발화해,

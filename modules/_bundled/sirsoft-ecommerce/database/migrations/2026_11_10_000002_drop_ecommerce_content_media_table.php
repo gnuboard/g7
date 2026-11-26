@@ -6,9 +6,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 본문 미디어 저장소를 범용 첨부 표로 옮긴 뒤의 옛 전용 표 정리 (#887).
+ * 본문 미디어 저장소를 범용 첨부 표로 옮긴 뒤의 옛 전용 표 정리.
  *
- * 상품 설명·상품 공통 정보 편집기 본문 미디어는 1.3.4 개발 중 전용 표 `ecommerce_content_media` 에 두었다가(#883), 출시 전에 이 모듈
+ * 상품 설명·상품 공통 정보 편집기 본문 미디어는 1.3.4 개발 중 전용 표 `ecommerce_content_media` 에 두었다가, 출시 전에 이 모듈
  * 범용 첨부 표 `ecommerce_attachments`(collection = content_media, `2026_11_10_000001_create_ecommerce_attachments_table`)로 옮겼다.
  * 전용 표를 만들던 마이그레이션은 지웠고, 이미 그 표를 만든 개발 설치본을 위해 다음을 한다.
  *

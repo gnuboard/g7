@@ -22,7 +22,7 @@ use stdClass;
  *   (키 자신의 값이 빈 객체면 배열로 둔다 — `props: {}` 처럼 PHP 가 구조로 다루는 자리)
  *
  * 화면이 그대로 받는 자리(props 값·responsive props 값·overlay `injections[].props` 값·격리 상태·정적 데이터·
- * 요청 헤더·defines·computed 값)까지 넓힌 것은 #758 이다. 그 값을 PHP 가 배열로 병합하는 곳(`inject_props` 의
+ * 요청 헤더·defines·computed 값)까지 넓혔다. 그 값을 PHP 가 배열로 병합하는 곳(`inject_props` 의
  * `_merge` 등)은 빈 stdClass 를 받을 수 있으므로 `is_array` 로 가른다.
  *
  * 섹션 자체가 비어 있으면(`"meta": {}` 등) 응답 직전 {@see restoreRootMapSections()} 가 `{}` 로 돌려놓는다.
@@ -84,7 +84,7 @@ final class LayoutEmptyObjects
     }
 
     /**
-     * 모델의 저장 원문을 빈 객체 전부를 보존해 읽습니다 — 다시 저장하거나 그대로 응답할 때 쓴다 (#758).
+     * 모델의 저장 원문을 빈 객체 전부를 보존해 읽습니다 — 다시 저장하거나 그대로 응답할 때 쓴다.
      *
      * `array` 캐스트(`$model->content`)는 `{}` 를 `[]` 로 만든다. 그 값을 버전·복원·이름 바꾸기·편집기 응답으로
      * 다시 쓰면 DB 원문의 `{}` 가 영구히 `[]` 로 굳는다. 빈 객체 자리는 {@see EmptyMap} 표식으로 남고, 캐스트로

@@ -451,7 +451,7 @@ class OrderResourceFieldsTest extends ModuleTestCase
      * 스케줄러의 `getEarnableOptions` 는 `option_status = 적립트리거`(confirmed·delivered)
      * 만 곱으므로 **어느 설정에서도** 다시 적립 대상이 되지 않는다.
      *
-     * 실측(#599 통합실측 세션1 · 1-M · 주문 108 `20260915-0604289654`): 전량 취소되어
+     * 실측(1-M · 주문 108 `20260915-0604289654`): 전량 취소되어
      * 76,500원 전액 환불된 주문의 옵션 3행이 각각 `228P 적립예정` · `160P 적립예정` ·
      * `440P 적립예정` 을 말하고 있었다 — 그 주문의 `purchase_earn` 거래는 0건이고
      * 앞으로도 0건이다. 오류도 나지 않고 잡히는 신호도 없다 — 운영자가 물어봐야 생기는 차이다.
@@ -757,7 +757,7 @@ class OrderResourceFieldsTest extends ModuleTestCase
      *
      * 반면 `paid_amount_local` 은 PG 가 **실제 청구한 결제 통화** 금액이므로 주입값과 무관하게
      * 결제 행의 통화(`payment.currency`)로 포맷된다. 주입 통화로 표기하면 base≠결제 통화 주문에서
-     * 숫자와 기호의 단위가 어긋난다 (#421 기본통화≠결제통화 정합).
+     * 숫자와 기호의 단위가 어긋난다 (기본통화≠결제통화 정합).
      *
      * @effects child_resource_formats_base_fields_with_the_injected_order_currency, child_resource_formats_the_actually_charged_amount_with_the_payment_currency
      *
@@ -904,7 +904,7 @@ class OrderResourceFieldsTest extends ModuleTestCase
     }
 
     /**
-     * 주문상품 행이 품목별 과세 금액·부가세를 싣는지 확인 — 관리자 주문상세 실결제 셀의 「과세: · 부가세:」 줄 재료(#612 S7).
+     * 주문상품 행이 품목별 과세 금액·부가세를 싣는지 확인 — 관리자 주문상세 실결제 셀의 「과세: · 부가세:」 줄 재료.
      *
      * 수정 전에는 화면이 바인딩한 `subtotal_tax_amount`·`subtotal_vat_amount` 를 리소스가 싣지 않아
      * 그 줄이 한 번도 보이지 않았다.
@@ -930,7 +930,7 @@ class OrderResourceFieldsTest extends ModuleTestCase
     }
 
     /**
-     * 영세 주문상품 행은 과세 금액 전부를 영세 몫으로 싣고 부가세는 0 인지 확인 (#612 W9).
+     * 영세 주문상품 행은 과세 금액 전부를 영세 몫으로 싣고 부가세는 0 인지 확인.
      *
      * 상품 스냅샷은 과세(세율 10)라도 행에 확정한 과세 종류가 영세면 그 값을 따른다 — 스냅샷만 보면
      * 영세 행에 부가세 909 가 붙어 「과세: · 부가세:」 줄이 영세 품목을 과세로 보인다.
@@ -960,7 +960,7 @@ class OrderResourceFieldsTest extends ModuleTestCase
     }
 
     /**
-     * 주문 응답이 영세 금액과 과세 공급가액(과세 − 영세 − 부가세)을 싣는지 확인 (#612 W8).
+     * 주문 응답이 영세 금액과 과세 공급가액(과세 − 영세 − 부가세)을 싣는지 확인.
      *
      * 과세표준 24,000(영세 11,429 포함)·부가세 1,143 → 공급가액 11,428. 영세를 빼지 않으면 22,857 이 되어
      * PG 영수증 블록의 「공급가액」 줄이 결제사에 면세로 넘긴 영세 몫까지 과세로 보인다.
@@ -988,7 +988,7 @@ class OrderResourceFieldsTest extends ModuleTestCase
     }
 
     /**
-     * 영세가 없는 주문은 영세 금액 0, 공급가액 = 과세 − 부가세(종전 값)인지 확인 (#612 W8 회귀 방지).
+     * 영세가 없는 주문은 영세 금액 0, 공급가액 = 과세 − 부가세(종전 값)인지 확인 (회귀 방지).
      *
      * @effects order_exposes_zero_rated_and_taxable_supply_amounts
      *

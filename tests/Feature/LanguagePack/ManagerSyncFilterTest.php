@@ -23,7 +23,7 @@ use Tests\TestCase;
  *
  * 회귀 차단:
  * - syncModuleNotificationDefinitions / syncPluginNotificationDefinitions
- * - (호환층) getIdentityMessages() 선언 — 7.1.0 부터 알림 정의로 변환돼 같은 notifications 필터를 탄다(#699)
+ * - (호환층) getIdentityMessages() 선언 — 7.1.0 부터 알림 정의로 변환돼 같은 notifications 필터를 탄다
  *
  * 모듈/플러그인 IDV 정책 (`syncModuleIdentityPolicies` 등) 은 IdentityPolicy 모델에 다국어 필드
  * (name/description) 가 부재하므로 lang pack seed 적용 대상 외 — 본 테스트 범위 외.

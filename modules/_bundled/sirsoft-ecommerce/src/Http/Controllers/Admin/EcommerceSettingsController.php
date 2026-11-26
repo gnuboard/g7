@@ -43,7 +43,7 @@ class EcommerceSettingsController extends AdminBaseController
      * @param  EcommerceSettingsService  $settingsService  환경설정 서비스
      * @param  EcommerceSettingsAdminService  $adminSettingsService  관리자 설정 저장·조회 조립 서비스
      * @param  EcommerceDisplayNameSettingsService  $displayNames  기능별 작성자 표시 이름 설정 서비스
-     * @param  BirthdayFieldResolver  $birthdayField  생일 쿠폰 회원 항목 해석기 (#952)
+     * @param  BirthdayFieldResolver  $birthdayField  생일 쿠폰 회원 항목 해석기
      */
     public function __construct(
         private EcommerceSettingsService $settingsService,
@@ -72,7 +72,7 @@ class EcommerceSettingsController extends AdminBaseController
             // 화면이 리터럴을 들면 규칙이 바뀔 때 따라오지 못해 "화면은 받는데 저장은 422" 가 된다.
             $settings['_meta'] = [
                 'limits' => config('sirsoft-ecommerce.limits', []),
-                // 쿠폰 탭 「생일로 쓸 회원 항목」 후보 — 날짜 유형 + 값 테이블 저장 회원 항목 (#952)
+                // 쿠폰 탭 「생일로 쓸 회원 항목」 후보 — 날짜 유형 + 값 테이블 저장 회원 항목
                 'birthday_field_candidates' => $this->birthdayField->candidateOptions(),
             ];
 
@@ -416,7 +416,7 @@ class EcommerceSettingsController extends AdminBaseController
     }
 
     /**
-     * 종결 주문 개인정보 보유기간 처리 대상 건수를 미리 조회합니다 (이슈 #636).
+     * 종결 주문 개인정보 보유기간 처리 대상 건수를 미리 조회합니다.
      *
      * 설정 화면의 대상 건수 뱃지가 쓰는 값이며, 코어 보유기간 커맨드의 `--dry-run` 과 **같은
      * 조건식**({@see OrderRetentionHandler::preview()})을 지납니다. **저장된 설정** 기준이라 화면에서

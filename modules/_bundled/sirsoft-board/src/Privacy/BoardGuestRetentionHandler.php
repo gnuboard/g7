@@ -19,7 +19,7 @@ use Modules\Sirsoft\Board\Services\PostService;
 use Throwable;
 
 /**
- * 게시판 비회원 작성자 정보 보유기간 핸들러 (이슈 #636)
+ * 게시판 비회원 작성자 정보 보유기간 핸들러
  *
  * 비회원(`user_id` NULL)이 쓴 게시글·댓글을 작성 후 N일이 지나면 운영자가 고른 방식으로
  * 처리합니다. 회원 글은 대상이 아닙니다 — 회원의 개인정보는 회원 탈퇴·휴면 생명주기가

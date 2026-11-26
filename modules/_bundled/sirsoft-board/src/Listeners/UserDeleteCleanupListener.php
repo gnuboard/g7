@@ -9,7 +9,7 @@ use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Services\UserNotificationSettingService;
 
 /**
- * 회원 삭제 시 게시판이 소유한 회원 데이터를 명시적으로 지우는 리스너 (#888)
+ * 회원 삭제 시 게시판이 소유한 회원 데이터를 명시적으로 지우는 리스너
  *
  * 코어 `UserService::deleteUser()` 가 회원 삭제 트랜잭션 안에서 발화하는 `core.user.before_delete` 를 구독합니다.
  * 회원 행에 외래키(삭제 시 연쇄)로 걸린 게시판 테이블 세 개를 회원 행이 지워지기 전에 서비스 계층으로 지운다 —

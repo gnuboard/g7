@@ -377,7 +377,7 @@ describe('컬럼 표시 영속 — SSoT 는 ColumnSelector 자기 키 하나다 
     );
     const gridFields = (byId(datagrid, 'claim_datagrid').props.columns as Node[]).map((c) => c.field);
 
-    // 11 = 종전 10 + 운송장(tracking — 송장은 상품 행마다, #599)
+    // 11 = 종전 10 + 운송장(tracking — 송장은 상품 행마다)
     expect(selectorFields).toHaveLength(11);
     expect([...gridFields].sort()).toEqual([...selectorFields].sort());
   });
@@ -454,7 +454,7 @@ describe('일괄 상태 변경 바 (S8b)', () => {
 
   /**
    * 일괄 바에는 송장 한 쌍을 두지 않는다 — 송장은 신청서마다 달라 한 쌍을 여러 건에 나눠 쓸 수 없고,
-   * 회수중·발송중이면 확인 창이 신청서마다 한 줄씩 받는다(`trackings[]`, #599 후속 운영 결정).
+   * 회수중·발송중이면 확인 창이 신청서마다 한 줄씩 받는다(`trackings[]`, 운영 결정).
    *
    * @effects bulk_bar_has_no_uncontracted_tracking_inputs
    */
@@ -882,7 +882,7 @@ describe('i18n — 새 화면 라벨이 세 사전에 모두 있다', () => {
   });
 });
 
-describe('목록 일괄 반려 사유 (#599 후속 운영 결정)', () => {
+describe('목록 일괄 반려 사유 (후속 운영 결정)', () => {
   /**
    * 반려를 고르면 사유 입력칸이 열리고, [일괄 적용] 이 그 사유를 확인 데이터로 넘기며, 확인 모달이
    * 들어갈 사유를 한 번 더 보여 준다 — 비워 보내면 구매자 화면의 반려 사유가 빈 칸이 된다.
@@ -900,7 +900,7 @@ describe('목록 일괄 반려 사유 (#599 후속 운영 결정)', () => {
   });
 });
 
-describe('목록 일괄 회수중·발송중 송장 (#599 후속 운영 결정)', () => {
+describe('목록 일괄 회수중·발송중 송장 (후속 운영 결정)', () => {
   /**
    * [일괄 적용] 이 택배사 선택지를 넘기고, 확인 모달이 신청서마다 택배사·운송장 한 줄을 그리며, 한 줄이라도
    * 비면 [변경] 이 잠긴다 — 송장은 신청서마다 달라 한 쌍을 여러 건에 나눠 쓸 수 없다.
@@ -921,7 +921,7 @@ describe('목록 일괄 회수중·발송중 송장 (#599 후속 운영 결정)'
   });
 });
 
-describe('목록 행 뱃지 · 운송장 열 (#599 후속 §3-9·§3-12)', () => {
+describe('목록 행 뱃지 · 운송장 열', () => {
   const grid = byId(datagrid, 'claim_datagrid');
 
   /**

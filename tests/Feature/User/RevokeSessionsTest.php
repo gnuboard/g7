@@ -12,7 +12,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 관리자의 회원 강제 로그아웃 `POST /api/admin/users/{user}/sessions/revoke` (#798 K16 · P9)
+ * 관리자의 회원 강제 로그아웃 `POST /api/admin/users/{user}/sessions/revoke`
  *
  * 대상 회원의 토큰을 전부 지우고 액션 훅과 활동 로그를 남긴다. 회원 수정 권한이 없으면 403, 하위 관리자는 최고관리자를 대상으로 하지 못한다.
  */

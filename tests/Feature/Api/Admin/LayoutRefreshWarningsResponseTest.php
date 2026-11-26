@@ -13,7 +13,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * 레이아웃 갱신 API 3종이 빈 자리로 등록한 조각 참조 경고(`layout_warnings`)를 같은 자리에 싣는지 검증 (#712)
+ * 레이아웃 갱신 API 3종이 빈 자리로 등록한 조각 참조 경고(`layout_warnings`)를 같은 자리에 싣는지 검증
  *
  * 서비스는 세 확장 모두 갱신 결과에 `layout_warnings` 를 돌려주지만, 응답을 만드는 방식이 셋 다 달랐다 —
  * 모듈은 `ModuleResource` 가 필드를 버리고, 플러그인은 컨트롤러가 응답 배열을 손으로 짜며 빠뜨리고,

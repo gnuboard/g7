@@ -250,7 +250,7 @@ class PluginArtisanCommandsTest extends TestCase
      * plugin:cache-clear 커맨드가 모든 캐시를 삭제하는지 테스트
      *
      * 실재하는 상태 키(ext.plugins.*_identifiers)가 소멸하고 캐시 버전이 bump 되는지
-     * 검증한다 (#588 — 기존 forget 대상은 writer 없는 유령 키였다).
+     * 검증한다 (기존 forget 대상은 writer 없는 유령 키였다).
      *
      * @scenario case=cache_clear
      *

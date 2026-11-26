@@ -56,7 +56,7 @@ class CouponPerUserLimitTest extends ModuleTestCase
             'discount_value' => 10,
             'min_order_amount' => 1000,
             'discount_max_amount' => 5000,
-            // 회원당 한도 칸 검증은 직접발급 쿠폰으로 본다 — 자동발급은 한도를 0 으로 고정한다(#952 §4.5,
+            // 회원당 한도 칸 검증은 직접발급 쿠폰으로 본다 — 자동발급은 한도를 0 으로 고정한다(
             // CouponAutoIssueValidationTest 가 따로 지킨다)
             'issue_method' => CouponIssueMethod::DIRECT->value,
             'issue_condition' => CouponIssueCondition::MANUAL->value,

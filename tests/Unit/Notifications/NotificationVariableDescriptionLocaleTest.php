@@ -181,7 +181,7 @@ class NotificationVariableDescriptionLocaleTest extends TestCase
             ['key' => 'qa_unknown_variable', 'description' => '선언 그대로'],
         ], array_slice($array['variables'], 0, 3));
 
-        // 선언 변수 뒤에는 회원 공통 변수 묶음이 그대로 붙는다(#490 — 본인인증 알림이 아니면 덧붙인다)
+        // 선언 변수 뒤에는 회원 공통 변수 묶음이 그대로 붙는다(본인인증 알림이 아니면 덧붙인다)
         $this->assertNotEmpty(app(MemberVariables::class)->catalog());
         $this->assertSame(app(MemberVariables::class)->catalog(), array_slice($array['variables'], 3));
     }

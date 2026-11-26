@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 비즈뿌리오 알림 템플릿 테이블 (#597).
+ * 비즈뿌리오 알림 템플릿 테이블.
  *
  * 알림 1건(notification_definitions.type)당 1행. 알림톡 템플릿의 카카오 등록
  * 페이로드(content)·승인 스냅샷(approved_content)·검수 상태와, 대체 SMS/SMS 단독

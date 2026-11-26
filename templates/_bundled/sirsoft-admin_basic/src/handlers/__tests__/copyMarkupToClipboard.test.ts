@@ -1,6 +1,6 @@
 /**
  * @file copyMarkupToClipboard.test.ts
- * @description 코드 편집기 HTML 탭 본문을 클립보드에 복사하는 핸들러 단위 검증 (#476 C5)
+ * @description 코드 편집기 HTML 탭 본문을 클립보드에 복사하는 핸들러 단위 검증
  *
  * 클립보드 API 가 있으면 그것을, 없거나 실패하면 숨긴 textarea + execCommand('copy') 폴백을 쓴다.
  * 성공·실패는 토스트로 알린다(문구는 레이아웃이 params 로 넘긴다).
@@ -11,7 +11,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { copyMarkupToClipboardHandler } from '../copyMarkupToClipboard';
 
-describe('copyMarkupToClipboardHandler — 마크업 복사 (#476)', () => {
+describe('copyMarkupToClipboardHandler — 마크업 복사', () => {
   let toastSuccess: ReturnType<typeof vi.fn>;
   let toastError: ReturnType<typeof vi.fn>;
   const originalClipboard = (navigator as any).clipboard;

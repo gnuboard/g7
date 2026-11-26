@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
  * 상품 생성·수정 후 상품 상세 SEO 캐시를 미리 다시 그리는 리스너 (큐)
  *
  * 상세 페이지를 렌더링해 캐시에 넣는 일은 무겁다. 캐시 비우기({@see SeoProductCacheListener})는 저장한 요청
- * 안에서 sync 로 돌고, 다시 그리기만 이 리스너가 큐에서 맡는다(#724). 큐 작업은 커밋 뒤에 돌기 때문에 같은 훅에서
+ * 안에서 sync 로 돌고, 다시 그리기만 이 리스너가 큐에서 맡는다. 큐 작업은 커밋 뒤에 돌기 때문에 같은 훅에서
  * 비우기가 먼저 끝난 뒤에 다시 그린다. 다시 그리기가 늦거나 빠져도 다음 봇 방문이 그린다.
  */
 class SeoProductDetailRegenerateListener implements HookListenerInterface
@@ -87,7 +87,7 @@ class SeoProductDetailRegenerateListener implements HookListenerInterface
 
         try {
             $regenerator = app(SeoCacheRegenerator::class);
-            // G7 화면의 상품 주소는 상품 코드다(#792 W12) — 엔진 SEO 캐시는 필터 없는 기본 경로로 만든다(W16)
+            // G7 화면의 상품 주소는 상품 코드다 — 엔진 SEO 캐시는 필터 없는 기본 경로로 만든다(W16)
             $url = ShopPathResolver::path('products/'.($product->product_code ?? $product->id));
             $regenerator->renderAndCache($url);
 

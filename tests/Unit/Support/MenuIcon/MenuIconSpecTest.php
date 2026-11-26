@@ -8,7 +8,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\PureTestCase;
 
 /**
- * 메뉴 아이콘 값 객체(MenuIconSpec) 단위 테스트 (#381).
+ * 메뉴 아이콘 값 객체(MenuIconSpec) 단위 테스트.
  *
  * 저장 정규형(class 평문 · image/svg 키 사전순 JSON)과 레거시 문자열 해석, 사이트·패키지 경로 규칙,
  * 활동 로그 요약을 고정한다. 같은 뜻이면 같은 바이트여야 사용자 수정 표식이 오탐하지 않는다.
@@ -252,7 +252,7 @@ class MenuIconSpecTest extends PureTestCase
             'null_byte' => ["/a\0.png", 'null_byte'],
             'empty' => ['  ', 'empty'],
             'too_long' => ['/'.str_repeat('a', 500).'.png', 'too_long'],
-            // 사이트 안 경로에 공백 — 외부 주소가 아니라 경로 형식 오류다(#381 validate-plan O1)
+            // 사이트 안 경로에 공백 — 외부 주소가 아니라 경로 형식 오류다(plan O1)
             'whitespace' => ['/qa/my icon.png', 'whitespace'],
             'ok_png' => ['/storage/icons/a.png', null],
             'ok_upper_webp' => ['/qa/A.WEBP', null],

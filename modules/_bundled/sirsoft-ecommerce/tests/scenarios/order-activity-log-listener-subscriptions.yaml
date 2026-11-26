@@ -10,7 +10,7 @@ description: |
   그 사건의 이력이 통째로 사라지는데, 화면에는 "그 줄이 원래 없었던 것"처럼 보여
   런타임에서 알아채기 어렵다.
 
-  #599 통합실측 세션2 에서 그 잠금 자체가 풀려 있던 것을 발견했다:
+  실측에서 그 잠금 자체가 풀려 있던 것을 발견했다:
 
     Failed asserting that actual size 25 matches expected size 22.
 

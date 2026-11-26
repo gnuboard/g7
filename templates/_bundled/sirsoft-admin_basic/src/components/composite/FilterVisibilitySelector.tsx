@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 
 /**
  * 그누보드7 Core 에서 이 컴포넌트가 쓰는 부분만 적은 모양.
- * 전역 Window 를 넓히지 않는다 — 코어의 Window.G7Core 선언과 합쳐지면 코어 쪽 속성(TemplateEngine 등)이 가려진다(#869).
+ * 전역 Window 를 넓히지 않는다 — 코어의 Window.G7Core 선언과 합쳐지면 코어 쪽 속성(TemplateEngine 등)이 가려진다.
  */
 interface G7CoreLike {
   createLogger?: (name: string) => {

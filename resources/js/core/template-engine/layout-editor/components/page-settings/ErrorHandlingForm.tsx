@@ -56,7 +56,7 @@ export interface ErrorHandlingFormProps {
 
 /**
  * 행 코드 — 표준 코드, 템플릿 설정 코드, 레이아웃이 선언한 코드의 합집합(maintenance 제외) + default 행.
- * 종전엔 표준 코드만 행으로 만들어 레이아웃이 따로 선언한 코드(예 418)와 템플릿 설정 코드를 볼 수 없었다(#869).
+ * 종전엔 표준 코드만 행으로 만들어 레이아웃이 따로 선언한 코드(예 418)와 템플릿 설정 코드를 볼 수 없었다.
  */
 function buildRowCodes(errorConfigCodes: string[], templateCodes: string[], valueCodes: string[]): string[] {
   const codes = [...new Set([...errorConfigCodes, ...templateCodes, ...valueCodes])].filter(
@@ -197,7 +197,7 @@ function ErrorActionEditor({
   const setHandler = (h: string): void => {
     if (h === '') {
       // "설정 안 함" — 그 코드 키를 지운다. 빈 동작({})을 남기면 런타임이 「처리됨」으로 보아 같은 맵
-      // default 와 상위 기본 처리를 가린다(#869).
+      // default 와 상위 기본 처리를 가린다.
       onClear();
       return;
     }
@@ -222,7 +222,7 @@ function ErrorActionEditor({
   const HANDLER_OPTIONS = ['', 'showErrorPage', 'navigate', 'openModal', 'toast', 'setState', 'sequence', 'parallel'];
 
   // 이 칸이 다루지 않는 동작 — 분기(conditions·switch)·참조(action-ref)·조건부(if)·모르는 핸들러. 선택칸에 그리면
-  // 빈 값으로 보이고, 손대면 원래 동작이 사라진다. 코드 편집기에서 고치도록 읽기 전용으로 둔다(#753).
+  // 빈 값으로 보이고, 손대면 원래 동작이 사라진다. 코드 편집기에서 고치도록 읽기 전용으로 둔다.
   // 동작이 여럿인 배열도 — 첫 동작만 그려 고치면 나머지를 덮는다.
   const codeOnly = !!single && (
     (handler !== '' && !HANDLER_OPTIONS.includes(handler))
@@ -342,7 +342,7 @@ function ErrorActionEditor({
   );
 }
 
-/** 오류 처리 칸이 다루지 않지만 단일 동작을 고칠 때 보존하는 키 (#753) */
+/** 오류 처리 칸이 다루지 않지만 단일 동작을 고칠 때 보존하는 키 */
 const CARRIED_ACTION_KEYS = ['comment', 'onSuccess', 'onError', 'resultTo', 'errorHandling'] as const;
 
 const form: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 };

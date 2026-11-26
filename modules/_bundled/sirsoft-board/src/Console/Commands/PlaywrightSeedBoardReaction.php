@@ -20,7 +20,7 @@ use Modules\Sirsoft\Board\Models\ReportLog;
 use Modules\Sirsoft\Board\Services\BoardPermissionService;
 
 /**
- * Playwright E2E · 브라우저 실측용 반응 도메인 시드 커맨드 (#525).
+ * Playwright E2E · 브라우저 실측용 반응 도메인 시드 커맨드.
  *
  * 반응 화면은 **세 상태의 행**(정상 · 반응 꺼짐 · 대상 삭제됨)과 **게시판이 지워진 행**을 함께
  * 보여 준다. 여기에 글 반응과 댓글 반응이 섞이고, 유형 하나는 비활성이어야 「비활성 유형」

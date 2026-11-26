@@ -67,7 +67,7 @@
         <li data-each="emergency in _local.policyForm?.emergency_users ?? []" data-key="{{emergency.id}}" class="sso:py-2 sso:flex sso:items-center sso:gap-3" data-if="{{(_local.policyForm?.policy?.emergency_user_ids ?? []).includes(emergency.id)}}">
           <div class="sso:flex-1 sso:min-w-0">
             <p class="sso:text-sm sso:text-gray-900 sso:dark:text-white">{{emergency.name}}</p>
-            <!-- 실명 보조 줄 — 이름은 관리자 영역 표시 이름이고, 회원 조회 권한이 있으며 실명이 다를 때만 응답에 실린다(#490) -->
+            <!-- 실명 보조 줄 — 이름은 관리자 영역 표시 이름이고, 회원 조회 권한이 있으며 실명이 다를 때만 응답에 실린다 -->
             <span data-if="{{!!emergency.real_name}}" data-testid="emergency-real-name-sub" role="note" aria-label="{{$t('sirsoft-sso.admin.common.real_name_sub', { name: emergency.real_name })}}" class="sso:block sso:text-xs sso-text-muted">{{emergency.real_name}}</span>
             <p class="sso:text-xs sso-text-muted sso:break-all sso-break-all">{{emergency.email ?? ''}}</p>
             <p data-if="{{emergency.has_password === false}}" class="sso:text-xs sso:text-red-600 sso:dark:text-red-400">$t:sirsoft-sso.admin.settings.policy.emergency_no_password</p>

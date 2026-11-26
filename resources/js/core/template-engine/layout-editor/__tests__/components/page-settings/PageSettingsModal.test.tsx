@@ -440,7 +440,7 @@ describe('PageSettingsModal 셸 — 9탭 라우팅/배지/패널', () => {
     // 표준 코드(401/403/404/500/503) 항상 주입 → buildRowCodes 가 default 행을 덧붙인다.
     expect(errorFormProps.errorConfigCodes).toEqual(['401', '403', '404', '500', '503']);
     // templateCodes 는 템플릿 설정(/api/templates/{id}/config)의 errorHandling 코드다 — 병합본 키(418)가 아니다.
-    // 병합본 키를 넘기면 그 코드는 〔상속〕으로 먼저 판정돼 〔템플릿〕 출처와 [덮기] 가 나올 수 없다(#869 λ 실측).
+    // 병합본 키를 넘기면 그 코드는 〔상속〕으로 먼저 판정돼 〔템플릿〕 출처와 [덮기] 가 나올 수 없다.
     // 레이아웃이 따로 선언한 코드(418)의 행은 폼이 value 키로 만든다(ErrorHandlingTemplateOverride.test.tsx).
     await vi.waitFor(() => expect(errorFormProps.templateCodes).toEqual(['500']));
   });

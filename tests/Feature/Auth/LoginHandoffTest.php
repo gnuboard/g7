@@ -75,7 +75,7 @@ class LoginHandoffTest extends TestCase
     }
 
     /**
-     * 코드를 발급한 브라우저의 묶음 쿠키로 교환합니다 (#798 K2 — 코드는 발급 브라우저에 묶인다).
+     * 코드를 발급한 브라우저의 묶음 쿠키로 교환합니다 (코드는 발급 브라우저에 묶인다).
      *
      * @param  string  $code  인계 코드
      * @param  array<string, string>  $headers  요청 헤더

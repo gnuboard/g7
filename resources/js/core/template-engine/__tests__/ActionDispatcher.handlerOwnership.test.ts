@@ -1,7 +1,7 @@
 /**
  * ActionDispatcher.handlerOwnership.test.ts
  *
- * 핸들러 이름의 소유자 간 간섭을 실행 중 경고로 드러내는 계약을 잠근다 (engine-v1.94.0, #816 S1).
+ * 핸들러 이름의 소유자 간 간섭을 실행 중 경고로 드러내는 계약을 잠근다 (engine-v1.94.0).
  *
  * ## 무엇이 깨져 있었나
  *

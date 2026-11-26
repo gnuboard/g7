@@ -678,7 +678,7 @@ $currentVendorMode = installerCoerceVendorModeForExecution((string) $currentVend
         </div>
 
         <!-- 네비게이션 -->
-        <?php /* 자산 URL 방식 (이슈 #486) — 아래 스크립트가 브라우저에서 프로브를 던져 채운다.
+        <?php /* 자산 URL 방식 — 아래 스크립트가 브라우저에서 프로브를 던져 채운다.
                  서버측에서 자기 APP_URL 로 curl 하면 loopback 이 vhost·프록시 체인을 우회해
                  오판하므로 반드시 브라우저가 판정해야 한다. 판정 실패 시 빈 값으로 남고
                  설치는 defaults.json 기본값(extension)으로 진행된다. */ ?>

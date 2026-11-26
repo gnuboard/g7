@@ -51,7 +51,7 @@ class PostResource extends BaseApiResource
 
             // 상세 전용: 필터링된 제목/내용 (삭제글·비밀글 권한 체크)
             'title' => $this->getFilteredTitle($request, $slug),
-            // 본문 미디어 정식 주소는 게이트를 통과한 이 직렬화에서만 서명 주소로 바꾼다 (#883)
+            // 본문 미디어 정식 주소는 게이트를 통과한 이 직렬화에서만 서명 주소로 바꾼다
             'content' => $this->presentContentMedia($this->getFilteredContent($request, $slug), $slug),
 
             // 상세 전용: 작성자 UUID
@@ -1082,7 +1082,7 @@ class PostResource extends BaseApiResource
     }
 
     /**
-     * 본문의 본문 미디어 정식 주소를 서명 주소로 바꿉니다 — HTML 모드 본문만 (#883).
+     * 본문의 본문 미디어 정식 주소를 서명 주소로 바꿉니다 — HTML 모드 본문만.
      *
      * 본문을 받을 자격(비밀·블라인드·삭제 게이트)을 통과한 뒤의 값에만 부른다. 서명은 그 자격의 위임이라, `<img>`·`<video>` 가
      * 인증 헤더 없이도 비밀글 본문 미디어를 받는다.
@@ -1097,7 +1097,7 @@ class PostResource extends BaseApiResource
             return $content;
         }
 
-        // 서명은 이 글 소유 본문 미디어만 — 다른 글의 해시는 원본 글의 게이트를 따른다 (#887)
+        // 서명은 이 글 소유 본문 미디어만 — 다른 글의 해시는 원본 글의 게이트를 따른다
         return app(PostContentMediaService::class)->presentContent($content, $slug, $this->resource instanceof Post ? $this->resource : null);
     }
 

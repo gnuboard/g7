@@ -140,7 +140,7 @@ class ScheduleFailureNotifierTest extends TestCase
 
     /**
      * 실패 알림의 스케줄 관리 링크는 화면 키 `admin.schedules` 로 주소 필터를 거치고, 베이스는 사이트 주소다
-     * (#792 화면 주소 계약 — 리베이스 접합부).
+     * (화면 주소 계약 — 리베이스 접합부).
      *
      * @scenario trigger=scheduled, outcome=failure
      *

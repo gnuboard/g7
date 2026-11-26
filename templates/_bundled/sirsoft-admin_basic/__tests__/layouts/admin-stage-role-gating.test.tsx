@@ -1,6 +1,6 @@
 /**
  * @file admin-stage-role-gating.test.tsx
- * @description 검수 서버(실행 역할 stage) 관리자 화면 — 상단 띠·편집기 띠·수명주기 버튼 잠금, 서버별 스케줄 꺼짐 안내 (#888)
+ * @description 검수 서버(실행 역할 stage) 관리자 화면 — 상단 띠·편집기 띠·수명주기 버튼 잠금, 서버별 스케줄 꺼짐 안내
  *
  * 운영 DB 를 공유하는 검수 서버(셸 설정 `appConfig.runtime_role === 'stage'`)에서는 확장·코어·언어팩 변경 API 가 409 로 막힌다.
  * 화면은 그 사실을 미리 보여야 한다 — 누른 뒤 오류로 알게 하지 않는다.
@@ -123,7 +123,7 @@ const extensionRow = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-describe('검수 서버(stage) 관리자 화면 잠금 (#888)', () => {
+describe('검수 서버(stage) 관리자 화면 잠금', () => {
   let registry: ComponentRegistry;
 
   beforeEach(() => {
@@ -294,7 +294,7 @@ describe('검수 서버(stage) 관리자 화면 잠금 (#888)', () => {
       const button = buttons[0] as HTMLButtonElement;
       expect(button.disabled).toBe(role === 'stage');
       expect(Boolean(button.getAttribute('title'))).toBe(role === 'stage');
-      // #399 R-1 — 꺼짐 모양은 `btn` 의미 클래스 정의(semantic.css)가 갖는다. 정의를 펼쳐 같은 유틸을 확인한다
+      // 꺼짐 모양은 `btn` 의미 클래스 정의(semantic.css)가 갖는다. 정의를 펼쳐 같은 유틸을 확인한다
       expect(button.className.split(/\s+/)).toContain('btn');
       expect(expandSemanticTokens(button.className)).toContain('disabled:opacity-50');
 

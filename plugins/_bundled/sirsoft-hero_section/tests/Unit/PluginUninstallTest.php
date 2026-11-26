@@ -20,7 +20,7 @@ use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
  *
  * `core.plugins.before_uninstall` 은 가드보다 먼저 발화하므로 거기서 지우면 제거가 막혀도 파일만 사라진다(전 배너 깨짐).
  * 코어는 데이터 삭제 때 마이그레이션을 먼저 되돌린 뒤 `uninstall()` 을 부르므로, 테이블이 없으면 데이터까지 지운 제거다.
- * 그때는 행을 읽을 수 없으므로 제거 시작 때 리스너가 행 디스크 목록만 읽어 두고, `uninstall()` 이 그 디스크까지 비운다(#878).
+ * 그때는 행을 읽을 수 없으므로 제거 시작 때 리스너가 행 디스크 목록만 읽어 두고, `uninstall()` 이 그 디스크까지 비운다.
  */
 class PluginUninstallTest extends PluginTestCase
 {

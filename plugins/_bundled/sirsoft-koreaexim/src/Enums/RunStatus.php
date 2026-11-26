@@ -17,7 +17,7 @@ enum RunStatus: string
     case BadResponse = 'bad_response';
     case NetworkError = 'network_error';
     case UnsupportedBase = 'unsupported_base';
-    // 받아 온 환율을 쇼핑몰 통화 설정에 저장하지 못함(#916) — 관리자 수동 실행에서도 예외 대신 이력으로 남긴다
+    // 받아 온 환율을 쇼핑몰 통화 설정에 저장하지 못함 — 관리자 수동 실행에서도 예외 대신 이력으로 남긴다
     case SaveFailed = 'save_failed';
 
     /**

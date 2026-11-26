@@ -14,7 +14,7 @@ description: |
 
   그런데 컴포지트가 `maxSize` 리터럴 기본값 10 을 들고 있어서, 상한을 넘기지 않은 그 화면에도
   드롭존이 「최대 5개, 각 10MB까지」를 찍었다. 바로 위 안내는 서버값 그대로 「1장당 2048KB」라
-  한 화면에서 두 상한이 맞선다(#599 세션A 실측 2026-09-21 · 회원·비회원 신청서 양쪽 재현).
+  한 화면에서 두 상한이 맞선다(세션A 실측 2026-09-21 · 회원·비회원 신청서 양쪽 재현).
   같은 도메인의 관리자 상세는 둘 다 2MB 로 일관해, 어긋난 쪽이 고객 화면임이 드러났다.
   원 계획서가 고정한 서버 설정은 `image_max_size_kb=2048`(= 2MB)이므로 **2MB 가 참**이다.
 
@@ -43,7 +43,7 @@ test_files:
 validation:
   audit_rule: frontend-change-requires-test
   browser_check: |
-    #599 세션A 실측(2026-09-22 · 비회원 신청서 `/shop/guest/orders/{no}/claims/apply/refund`).
+    실측(2026-09-22 · 비회원 신청서 `/shop/guest/orders/{no}/claims/apply/refund`).
     수정 전 드롭존 「최대 5개, 각 10MB까지」 ↔ 안내 「1장당 2048KB」.
     수정 후 드롭존 「최대 5개까지 (.jpg,.jpeg,.png,.gif,.webp)」 — 상한 문구는 안내 한 곳에만 남는다.
   note: |

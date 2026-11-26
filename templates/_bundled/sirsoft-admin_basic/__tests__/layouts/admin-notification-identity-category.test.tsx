@@ -1,6 +1,6 @@
 /**
  * @file admin-notification-identity-category.test.tsx
- * @description 알림 설정 — 분류 칩 · 본인인증 카드 · 본인인증 탭 안내 (#699)
+ * @description 알림 설정 — 분류 칩 · 본인인증 카드 · 본인인증 탭 안내
  *
  * 7.1.0 에서 본인인증 메일 문구가 알림 정의(category=identity)가 되어 「알림 설정」 탭으로 옮겨졌다.
  * 이 파일은 그 화면 계약을 바인딩 식을 실제 값으로 평가해 고정한다.

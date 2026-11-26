@@ -1,7 +1,7 @@
-// e2e:allow 관리자 화면의 작성자(회원) 이름 아래 실명 보조 줄을 실물 레이아웃 노드로 그려, 응답에 실명 키가 있을 때만 보이는지 잰다 — 브라우저 축은 #490 화면 실측이 덮는다
+// e2e:allow 관리자 화면의 작성자(회원) 이름 아래 실명 보조 줄을 실물 레이아웃 노드로 그려, 응답에 실명 키가 있을 때만 보이는지 잰다 — 브라우저 축은 화면 실측이 덮는다
 /**
  * @file admin-board-posts-real-name.test.tsx
- * @description 게시판 관리자 화면 — 작성자(회원) 이름의 실명 보조 줄 (#490 P17)
+ * @description 게시판 관리자 화면 — 작성자(회원) 이름의 실명 보조 줄
  *
  * 관리자 응답의 이름 키에는 「관리자 화면의 표시 이름」이 실리고, 요청한 관리자에게 회원 조회 권한이 있고
  * 실명이 표시 이름과 다를 때만 실명이 별도 키(`real_name`, `author_real_name`)로 실린다.
@@ -106,7 +106,7 @@ async function draw(nodes: Node[], itemVar: string | null, item: Record<string, 
 
 const line = (container: HTMLElement): HTMLElement | null => container.querySelector('[data-testid="author-real-name"]');
 
-describe('게시글 관리 목록 — 작성자 칸의 실명 보조 줄 (#490 P17)', () => {
+describe('게시글 관리 목록 — 작성자 칸의 실명 보조 줄', () => {
     const cell = cellOf(postsIndex, 'author');
 
     // @scenario case=posts_index_with_real_name
@@ -194,7 +194,7 @@ const SPOTS: Array<{
     { name: '대시보드 미처리 신고', root: () => dashboard, count: 2, pick: (nodes) => nodes.find((n) => String(n.if).includes('report?.real_name'))!, itemVar: 'report', withName: { author_name: '길동이', real_name: '홍길동' }, withoutName: { author_name: '길동이' }, text: '실명: 홍길동' },
 ];
 
-describe('관리자 화면 전반 — 실명 보조 줄 (#490 P17)', () => {
+describe('관리자 화면 전반 — 실명 보조 줄', () => {
     for (const spot of SPOTS) {
         // @scenario case=other_screens_real_name
         // @effects real_name_line_drawn_when_key_present, real_name_line_absent_when_key_missing

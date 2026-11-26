@@ -462,7 +462,7 @@ class BoardPermissionServiceTest extends ModuleTestCase
     }
 
     // -------------------------------------------------------------------------
-    // removeBoardPermissions — DB CASCADE 비의존 명시 삭제 (#888)
+    // removeBoardPermissions — DB CASCADE 비의존 명시 삭제
     // -------------------------------------------------------------------------
 
     /**

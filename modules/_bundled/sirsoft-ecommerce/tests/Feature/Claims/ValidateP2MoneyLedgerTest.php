@@ -24,7 +24,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use ReflectionMethod;
 
 /**
- * 장부·예외 계약 결함 수정 검증 — 헤더 결제금액 통화·Repository 경계·세금 컬럼 화이트리스트·예외 키 (#599 validate P2-B)
+ * 장부·예외 계약 결함 수정 검증 — 헤더 결제금액 통화·Repository 경계·세금 컬럼 화이트리스트·예외 키 (B)
  *
  * 검증 축:
  * - 헤더 결제금액 정합화가 결제 통화 금액을 기준 통화 칸에 적지 않고 소수를 보존한다(#6).

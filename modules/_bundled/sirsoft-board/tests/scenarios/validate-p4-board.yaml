@@ -1,7 +1,7 @@
-feature: 게시판 알림 데이터 리스너의 조회를 Repository 로만 (#599 validate P4 board)
+feature: 게시판 알림 데이터 리스너의 조회를 Repository 로만 (validate P4 board)
 
 description: |
-  리스너는 Repository 경유가 규정이다(board AGENTS.md — Model·DB 직접 접근 금지). #599 가 게시판
+  리스너는 Repository 경유가 규정이다(board AGENTS.md — Model·DB 직접 접근 금지). 이전 변경이 게시판
   관리자 해석을 헬퍼로 뽑으면서 `$role->users()->get()` · `User::superAdmins()` 를 그대로 옮겼고,
   신고 접수 알림은 `$report->logs()` 로 현재 주기 로그를 직접 세고 `loadMissing(['logs'])` 로 전
   로그를 읽었다. 역할 사용자·최고관리자 폴백은 코어 Repository, 신고 로그 수·최근 로그는

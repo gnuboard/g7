@@ -28,7 +28,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\TestCase;
 
 /**
- * 선택 연동(`integrations`) 생명주기 안내 — 막지 않고 알리기만 한다 (#822 P10·D10)
+ * 선택 연동(`integrations`) 생명주기 안내 — 막지 않고 알리기만 한다
  *
  * - 설치·활성화·업데이트: 연동 대상 중 미설치·비활성·버전 미달을 `integration_notices` 와 완료 문구 한 줄로 알린다.
  * - 비활성화·제거: 이 확장을 연동으로 선언한 활성 확장을 `integrated_by` 로 알린다.

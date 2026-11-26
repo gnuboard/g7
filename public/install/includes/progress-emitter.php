@@ -109,7 +109,7 @@ class SseEmitter implements ProgressEmitter
         $this->exitIfNotOwner();
 
         // flush 직후 connection 상태 검사 — disconnect 면 워커 즉시 종료.
-        // 이슈 #319 부수 발견: SSE 워커가 disconnect 후 백그라운드에서 진행을
+        // 부수 발견: SSE 워커가 disconnect 후 백그라운드에서 진행을
         // 계속하여 폴링 워커와 race condition 발생. flush 시 EPIPE 가 발생해야
         // connection_status() 가 NORMAL 외 값을 반환하므로 emit 마다 검사.
         $this->exitIfDisconnected();

@@ -165,7 +165,7 @@ class OrderService
         // 필터 데이터 가공 훅
         $filters = HookManager::applyFilters('sirsoft-ecommerce.order.filter_list_params', $filters);
 
-        // 결제수단 선택지를 결제 행 조건으로 푼다 — PG 별칭(toss_kakaopay 등)은 코어 값으로 저장돼 id 로는 찾을 수 없다 (#933).
+        // 결제수단 선택지를 결제 행 조건으로 푼다 — PG 별칭(toss_kakaopay 등)은 코어 값으로 저장돼 id 로는 찾을 수 없다.
         // 훅 뒤에서 풀어 훅이 내부 조건 키를 주입하지 못하게 한다.
         $filters = $this->paymentMethodResolver()->expandOrderListPaymentFilter($filters);
 
@@ -1040,7 +1040,7 @@ class OrderService
      * 주문 관련 안내 메일을 고객에게 발송합니다 (주문 상세 「고객에게 메일 보내기」).
      *
      * 알림 정의 `order_custom_email` 로 알림 시스템을 거쳐 보낸다 — 이커머스 「알림 채널」의 메일 토글·
-     * 메일 설정 준비 상태·발송 로그(notification_logs)가 이 메일에도 적용된다(#699). 7.1.0 전에는
+     * 메일 설정 준비 상태·발송 로그(notification_logs)가 이 메일에도 적용된다. 7.1.0 전에는
      * `Mail::raw()` 로 알림 밖에서 보내 채널을 꺼도 나갔고 발송 로그도 남지 않았다.
      *
      * 수신자: 주문 회원의 이메일과 같으면 회원(언어·발송 로그 연결), 아니면 입력한 주소의 비회원.
@@ -1136,7 +1136,7 @@ class OrderService
         // 필터 데이터 가공 훅
         $filters = HookManager::applyFilters('sirsoft-ecommerce.order.filter_export_params', $filters);
 
-        // 목록과 같은 결제수단 조건 (#933)
+        // 목록과 같은 결제수단 조건
         $filters = $this->paymentMethodResolver()->expandOrderListPaymentFilter($filters);
 
         return $this->repository->getForExport($filters, $ids);

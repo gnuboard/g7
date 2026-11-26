@@ -1,5 +1,5 @@
 /**
- * sirsoft-admin_basic — 관리자 입력칸의 접근 가능한 이름 (#757).
+ * sirsoft-admin_basic — 관리자 입력칸의 접근 가능한 이름.
  *
  * 결함: 메뉴 관리 스위치는 「스위치, 켬」만, 역할 등록의 권한 그룹 체크박스는 「체크박스」만, 역할 목록 행 스위치는 이름 없이,
  *   회원 목록 정렬 선택 상자는 고른 값(「가입일시 최근순」)만 읽혔다. 검색 필터 칩은 실제 체크박스가 display:none 이라
@@ -38,7 +38,7 @@ async function leakedNames(page: Page, selector: string): Promise<string[]> {
   );
 }
 
-test.describe('@sirsoft-admin_basic 입력칸 이름 (#757)', () => {
+test.describe('@sirsoft-admin_basic 입력칸 이름', () => {
   // @scenario component=sortable_menu_item
   // @effects controls_have_accessible_name
   test('메뉴 관리 스위치가 「{메뉴명} 사용」으로 읽힌다', async ({ page }) => {

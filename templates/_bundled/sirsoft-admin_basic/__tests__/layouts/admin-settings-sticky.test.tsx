@@ -47,7 +47,7 @@ describe('admin_settings 환경설정 sticky 고정', () => {
   // @scenario region=top_tabs
   // @effects settings_tabs_stay_pinned_while_scrolling
   it('상단 탭 컨테이너(sticky_header)가 모든 폭에서 sticky top-0 z-40 으로 고정된다', () => {
-    // #399 Phase 1.3: sticky 책임이 TabNavigation 노드 자체가 아니라 그를 감싸는
+    // sticky 책임이 TabNavigation 노드 자체가 아니라 그를 감싸는
     // 래퍼 Div(sticky_header) 로 이동했다. 폭에 따라 여백이 바뀌는 sticky 탭 바는 의미 클래스 대신
     // 엔진 responsive 구간 값으로 그린다 — 기본 클래스와 모든 구간 값이 sticky 고정 토큰을 함께 가져야 한다.
     const stickyHeader = findById(adminSettingsLayout, 'sticky_header');
@@ -79,7 +79,7 @@ describe('admin_settings 환경설정 sticky 고정', () => {
   // @scenario region=top_tabs
   // @effects settings_tabs_stay_pinned_while_scrolling, settings_save_buttons_stay_pinned_while_scrolling
   it('상단/하단 sticky 자산 정의가 sticky/top|bottom/z 토큰을 포함 (계층 보장)', () => {
-    // 시맨틱화 (#399 Phase 1.3 ~ 1.5) 이후 회귀 의도 보존:
+    // 시맨틱화 (Phase 1.3 ~ 1.5) 이후 회귀 의도 보존:
     // .sticky-tab-nav 안에 sticky/top-0/z-40, .sticky-footer-buttons 안에
     // sticky/bottom-0/z-10 토큰이 살아있어야 상단 탭과 하단 저장 버튼이
     // 콘텐츠 스크롤 시 가려지지 않고, 헤더 (z-50) 보다 낮은 계층을 유지한다.

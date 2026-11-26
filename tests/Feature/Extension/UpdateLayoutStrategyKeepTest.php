@@ -168,9 +168,9 @@ class UpdateLayoutStrategyKeepTest extends TestCase
     // ========================================================================
 
     /**
-     * 활성화 경로의 register 는 이제 keep 규칙이라 refresh **앞에서** 불러도 수정 마커를 지우지 않는다 (#727 D3).
+     * 활성화 경로의 register 는 이제 keep 규칙이라 refresh **앞에서** 불러도 수정 마커를 지우지 않는다.
      *
-     * 종전(#700 까지)에는 register 가 전략을 모른 채 content 와 original_content_hash 를 파일로 덮어써, 이 순서면
+     * 종전에는 register 가 전략을 모른 채 content 와 original_content_hash 를 파일로 덮어써, 이 순서면
      * keep 이 무효였다. 이제 모든 행 쓰기가 동기화기를 지나므로 register 를 몇 번 불러도 운영자 수정은 남는다.
      *
      * @effects activation_preserves_operator_modification

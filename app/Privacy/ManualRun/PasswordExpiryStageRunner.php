@@ -13,7 +13,7 @@ use App\Services\PasswordExpiryService;
  * 두 단계(사전 안내 · 만료일 처리)가 각각 하나의 「지금 실행」이다. 같은 회원 행의 표지를 다루므로
  * 락은 단계와 무관하게 하나(`password-expiry-run`)를 쓰고, 새벽 배치 `auth:process-password-expiry` 도
  * 같은 락을 잡는다. 휴면·보존기간과 달리 직권 실행도 토글이 켜져 있어야 한다 — 꺼져 있으면 로그인 관문이
- * 변경을 요구하지 않아, 꺼진 채 처리하면 "다음 로그인 때 변경" 안내와 로그아웃만 남는다(#736, 2026-10-03 확정).
+ * 변경을 요구하지 않아, 꺼진 채 처리하면 "다음 로그인 때 변경" 안내와 로그아웃만 남는다(2026-10-03 확정).
  * 접수는 {@see PrivacyManualRunRequiresEnabledInterface} 로 거절되고, 접수 뒤 꺼지면 서비스가 처리하지 않는다.
  * 설정을 보기만 하는 관리자도 마지막 실행 기록을 본다({@see PrivacyManualRunReadableInterface}, 2026-10-04 결정).
  *

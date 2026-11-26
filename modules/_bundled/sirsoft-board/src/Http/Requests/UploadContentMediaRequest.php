@@ -8,7 +8,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Services\PostContentMediaService;
 
 /**
- * 게시판 본문 미디어 업로드 요청 검증 (#883 4단계)
+ * 게시판 본문 미디어 업로드 요청 검증
  *
  * 파일은 그 게시판 본문 미디어 정책(종류별 허용·확장자·파일당 MB)으로 검증한다(`ContentMediaFile`). 「파일 첨부 사용」
  * (`use_file_upload`)·첨부 확장자는 보지 않는다(D26). 임시 키는 필수다 — 본문 미디어는 늘 임시로 올리고 글 저장 때 이 키로

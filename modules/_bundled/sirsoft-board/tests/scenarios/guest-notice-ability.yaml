@@ -1,4 +1,4 @@
-feature: 비회원 글쓰기 화면의 공지 옵션 노출 (#703)
+feature: 비회원 글쓰기 화면의 공지 옵션 노출
 
 description: |
   guest 역할에 공지 등록 권한(posts.write-notice)을 주면 글쓰기 화면이 비회원에게 공지 체크박스를 보였지만

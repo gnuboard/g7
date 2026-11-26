@@ -1,4 +1,4 @@
-feature: 게시판 관리자 화면 DOM id 유일성 — 환경설정 본인인증 탭 머리 id (#408)
+feature: 게시판 관리자 화면 DOM id 유일성 — 환경설정 본인인증 탭 머리 id
 
 description: |
   HTML id 는 한 문서에 하나여야 한다. 게시판 환경설정 「본인인증 정책」 탭 조각의 머리 노드가 `page_header` 였는데,

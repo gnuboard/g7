@@ -1,7 +1,7 @@
-// e2e:allow 게시판 설정 폼의 「비회원 작성자 항목」 표를 실물 조각으로 그려 스위치 잠금, 값 변경, 출처 배지, 사용 불가 행, 저장 본문을 잰다 — 브라우저 축은 #490 화면 실측이 덮는다
+// e2e:allow 게시판 설정 폼의 「비회원 작성자 항목」 표를 실물 조각으로 그려 스위치 잠금, 값 변경, 출처 배지, 사용 불가 행, 저장 본문을 잰다 — 브라우저 축은 화면 실측이 덮는다
 /**
  * @file admin-board-form-guest-author-fields.test.tsx
- * @description 게시판 설정 폼 「글 설정」 탭 — 비회원 작성자 항목 표 (#490)
+ * @description 게시판 설정 폼 「글 설정」 탭 — 비회원 작성자 항목 표
  *
  * 실제 조각 JSON(`_tab_post.json`)의 `guest_author_fields_field` 를 엔진 렌더러(createLayoutTest)로 그린다.
  * - 고정 행(이름, 비밀번호)은 네 칸이 모두 켜진 채 잠겨 있다
@@ -236,7 +236,7 @@ function expectAllBoolean(fields: Record<string, any>): void {
     }
 }
 
-describe('게시판 설정 폼 — 비회원 작성자 항목 표 (#490)', () => {
+describe('게시판 설정 폼 — 비회원 작성자 항목 표', () => {
     // @scenario case=guest_fields_fixed_rows
     // @effects guest_fields_fixed_rows_locked_on
     it('표에 여섯 열과 서버가 준 행이 모두 나오고, 고정 행(이름, 비밀번호)은 네 칸이 켜진 채 잠겨 있다', async () => {

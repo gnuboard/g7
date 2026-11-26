@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Modules\Sirsoft\Ecommerce\Enums\ContentMediaOwnerType;
 
 /**
- * 이커머스 본문 미디어 모델 — 상품 설명·공통 정보 편집기 본문의 이미지·동영상·오디오 (#883 4단계)
+ * 이커머스 본문 미디어 모델 — 상품 설명·공통 정보 편집기 본문의 이미지·동영상·오디오
  *
- * 저장은 이 모듈의 범용 첨부 표 `ecommerce_attachments` 의 `collection = content_media` 행이다(#887 — 개발 중 전용 표
+ * 저장은 이 모듈의 범용 첨부 표 `ecommerce_attachments` 의 `collection = content_media` 행이다(개발 중 전용 표
  * `ecommerce_content_media` 를 옮김). 이 모델은 그 컬렉션만 보는 범위 모델이다 — 조회·생성 모두 전역 범위로 묶여 같은 표의
  * 다른 쓰임새 행을 건드리지 않는다.
  *

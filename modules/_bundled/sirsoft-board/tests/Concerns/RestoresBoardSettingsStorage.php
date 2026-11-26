@@ -10,7 +10,7 @@ use App\Support\ExtensionStoragePath;
  * 테스트 환경의 모듈 설정 저장소(`storage/framework/testing/modules/sirsoft-board/settings`)는
  * DB 트랜잭션 롤백이 닿지 않는 실제 디렉터리라, 시험이 `setSetting`·`saveSettings`·설정 저장 API 로
  * 쓴 값이 다음 시험·다음 실행으로 새어 나간다. 신고 알림 시험이 남긴 `auto_hide_threshold = 100` 이
- * 샘플 시더 시험의 「대량 신고 케이스」 기준을 바꿔 환경마다 결과가 갈린 것이 그 예다(#789 P17).
+ * 샘플 시더 시험의 「대량 신고 케이스」 기준을 바꿔 환경마다 결과가 갈린 것이 그 예다.
  *
  * 시험 시작 시 디렉터리의 파일 내용을 그대로 떠 두고, 끝나면 그 상태로 되돌린다 — 바뀐 파일은
  * 원래 내용으로, 새로 생긴 파일은 지우고, 원래 없던 디렉터리는 통째로 지운다. 바뀌지 않은 파일은

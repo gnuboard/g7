@@ -439,7 +439,7 @@ class ClaimPaymentService
         if (empty($result['success'])) {
             // 실패 기록은 **아직 결제 대기일 때만** 쓴다 — PG 왕복 동안 행을 잠그지 않으므로 그
             // 사이 다른 요청이 같은 건을 확정했을 수 있다. 무조건 쓰면 결제 완료된 행의 원응답이
-            // 실패 응답으로 덮여 대사 근거가 사라진다(#599 validate P2).
+            // 실패 응답으로 덮여 대사 근거가 사라진다.
             $this->paymentRepository->updateIfStatus($locked, ClaimPaymentStatusEnum::PENDING, [
                 'pg_error_code' => $result['error_code'] ?? null,
                 'pg_error_message' => $result['error_message'] ?? null,
@@ -457,7 +457,7 @@ class ClaimPaymentService
             throw OrderClaimException::paymentFailed((string) ($result['error_code'] ?? 'unknown'));
         }
 
-        // 승인 금액을 대조할 수 없으면(`paid_amount` 미반환) **불일치로 처리한다**(#599 validate P2 #11).
+        // 승인 금액을 대조할 수 없으면(`paid_amount` 미반환) **불일치로 처리한다**(validate P2 #11).
         // 종전에는 키가 없으면 대조를 건너뛰어, 금액을 돌려주지 않는 연동은 얼마가 승인됐든 확정됐다
         // — 결제창 금액을 조작한 요청이 그대로 결제 완료가 된다.
         $paidAmountReported = isset($result['paid_amount']) && is_numeric($result['paid_amount']);
@@ -699,7 +699,7 @@ class ClaimPaymentService
     public function refundPayment(ClaimPayment $payment, ?float $amount = null, ?string $reason = null): ClaimPayment
     {
         // **잔액 판정 → PG·마일리지 환급 → 누적 갱신**을 결제 건 행 잠금 하나 안에서 한다
-        // (#599 validate P2). 종전에는 잠금이 최신 행을 읽는 데서 끝나, 철회 환급과 차액 정산 같은
+        //. 종전에는 잠금이 최신 행을 읽는 데서 끝나, 철회 환급과 차액 정산 같은
         // 두 요청이 같은 잔액을 읽고 각자 다른 금액을 PG 에 보냈다 — 멱등키가 금액을 재료로
         // 쓰므로 PG 가 둘을 한 번으로 접지 못해 낸 돈보다 더 돌려준다. PG 응답을 기다리는 동안
         // 그 한 행이 잠기는 비용은 이중 환급보다 작다(다른 결제 건·주문은 막지 않는다).
@@ -982,7 +982,7 @@ class ClaimPaymentService
      * 결제 대기 건의 수단은 접수 시점에 확정되지만 그 뒤에 **낼 수 없게 되는 경우**가 있다 —
      * 마일리지 잔액이 모자라거나, 운영자가 그 수단을 `claim.charge_payment_methods` 에서 내리거나.
      * 두 경우 모두 `pay()` 가 거절하므로, 화면이 다른 수단을 고를 수 있어야 사용자가 신청서를
-     * 철회하지 않고 빠져나갈 수 있다(#599 실측).
+     * 철회하지 않고 빠져나갈 수 있다.
      *
      * 허용 목록의 단일 출처는 전역 모듈 설정이다 — 신청 화면이 `claimable` 응답에서 읽는 것도
      * 같은 설정의 사본이라, 신청서 상세가 데이터소스를 더 들 필요가 없다. 판정은 `pay()` 가
@@ -1475,7 +1475,7 @@ class ClaimPaymentService
     /**
      * 이번 환급액(기준통화)을 PG 에 보낼 결제 통화 금액으로 환산합니다.
      *
-     * **누적 차분**으로 구한다(#599 validate P2 #9): `결제통화(환급 후 누적) − 결제통화(환급 전 누적)`.
+     * **누적 차분**으로 구한다(validate P2 #9): `결제통화(환급 후 누적) − 결제통화(환급 전 누적)`.
      * 회차마다 따로 반올림하면 0 자리 통화에서 334 + 334 + 334 = 1,002 처럼 합이 결제 총액(1,001)을
      * 넘고, 종전처럼 소수 2자리로 두면 엔화에 333.63 같은 금액을 보내 PG 가 거절한다. 누적 차분은
      * 매 회차 결제 통화 자릿수를 지키면서 마지막 회차가 정확히 잔액이 되게 한다.

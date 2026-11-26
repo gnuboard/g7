@@ -14,7 +14,7 @@ use Plugins\Sirsoft\Ckeditor5\Tests\PluginTestCase;
  * file_path 의 첫 세그먼트=카테고리 일반형 분해와 행 storage_disk 기준
  * 직접 URL/스트리밍 폴백을 검증합니다.
  *
- * `preview_url`(#878)은 행 disk 와 무관하게 항상 API 서빙 경로다 — 관리 목록 미리보기와 본문 srcset
+ * `preview_url`은 행 disk 와 무관하게 항상 API 서빙 경로다 — 관리 목록 미리보기와 본문 srcset
  * 후보(`?size=`)가 이 주소를 쓴다. 직접 URL 이 없으면 `download_url` 과 같다.
  */
 class Ckeditor5ImageUploadUrlTest extends PluginTestCase

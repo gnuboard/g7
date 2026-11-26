@@ -1,4 +1,4 @@
-feature: 이커머스 본문 미디어 전용 표 → 범용 첨부 표 이관 (1.3.4 업그레이드 데이터 단계, #887)
+feature: 이커머스 본문 미디어 전용 표 → 범용 첨부 표 이관 (1.3.4 업그레이드 데이터 단계)
 
 description: |
   1.3.4 개발 중 만든 전용 표 `ecommerce_content_media` 의 행을 이 모듈 범용 첨부 표 `ecommerce_attachments`(collection=content_media)

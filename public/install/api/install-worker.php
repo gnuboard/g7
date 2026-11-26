@@ -148,7 +148,7 @@ if (installerHasFunction('set_time_limit')) {
     set_time_limit((int) INSTALLER_TASK_TIME_LIMIT);
 }
 
-// 클라이언트 연결 끊김 시 즉시 워커 종료 (이슈 #319 부수 발견)
+// 클라이언트 연결 끊김 시 즉시 워커 종료 (부수 발견)
 // 폴링 풀백과 SSE 워커 동시 실행으로 인한 race condition 차단.
 // PHP_INI default 는 0(false) 이지만 명시적으로 설정하여 환경 차이를 봉합.
 if (installerHasFunction('ignore_user_abort')) {

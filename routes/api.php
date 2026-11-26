@@ -270,7 +270,7 @@ Route::group([], function () use ($publicDataThrottle) {
     Route::get('locales/active', [PublicLocaleController::class, 'active'])
         ->name('api.public.locales.active');
 
-    // 공개 설정 — G7 셸(window.G7Config)과 같은 값을 외부 화면(Next.js·HTML+jQuery·Blade)이 받는다(#792 D8).
+    // 공개 설정 — G7 셸(window.G7Config)과 같은 값을 외부 화면(Next.js·HTML+jQuery·Blade)이 받는다.
     // 회원 토큰이 있으면 회원 맥락으로(로케일 등) 응답한다. 사용자 템플릿이 없어도 동작한다.
     Route::get('frontend-config', [PublicFrontendConfigController::class, 'show'])
         ->middleware(['optional.sanctum', $publicDataThrottle])
@@ -306,7 +306,7 @@ Route::group([], function () use ($publicDataThrottle) {
 });
 
 // 브로드캐스팅 인증 (Sanctum 토큰 사용)
-// allow.pending_required_fields: 추가 정보 입력 요구 관문 통과 표식 — 채널 인증은 사용자 콘텐츠 쓰기가 아닌 기술 요청이다 (#490)
+// allow.pending_required_fields: 추가 정보 입력 요구 관문 통과 표식 — 채널 인증은 사용자 콘텐츠 쓰기가 아닌 기술 요청이다
 Route::middleware(['auth:sanctum', 'allow.pending_required_fields'])->post('broadcasting/auth', function (Request $request) {
     // 웹소켓 사용 OFF 시 채널 인증 거부 (전 계층 SSoT — 공개#50).
     // 변경 1(reverb.key 무력화)을 우회한 직접 연결 시도까지 차단한다.
@@ -315,7 +315,7 @@ Route::middleware(['auth:sanctum', 'allow.pending_required_fields'])->post('broa
         abort(403);
     }
 
-    // 채널 인가 콜백(코어·활성 확장)은 부팅이 아니라 여기서 한 번 등록한다 (#860)
+    // 채널 인가 콜백(코어·활성 확장)은 부팅이 아니라 여기서 한 번 등록한다
     app(BroadcastChannelRegistrar::class)->ensureRegistered();
 
     return Broadcast::auth($request);
@@ -325,7 +325,7 @@ Route::middleware(['auth:sanctum', 'allow.pending_required_fields'])->post('broa
 // challenge 라우트 파라미터를 IdentityVerificationLog 모델로 자동 resolve — PermissionMiddleware 의 owner_key='user_id' scope 매칭 표준 메커니즘 활용
 Route::model('challenge', IdentityVerificationLog::class);
 // allow.inactive_user: 공통 회원 상태 관문(EnsureActiveUser) 통과 표식 — 가입 후 인증 대기 회원이 본인인증을 마쳐 활성화하는 경로다
-// allow.pending_required_fields: 추가 정보 입력 요구 관문 통과 표식 — 추가 정보 입력 중에도 본인인증은 열어 둔다 (#490)
+// allow.pending_required_fields: 추가 정보 입력 요구 관문 통과 표식 — 추가 정보 입력 중에도 본인인증은 열어 둔다
 Route::prefix('identity')->middleware(['allow.inactive_user', 'allow.pending_required_fields'])->group(function () {
     Route::get('providers', [IdentityVerificationController::class, 'providers'])
         ->name('api.identity.providers.index');
@@ -363,7 +363,7 @@ Route::prefix('identity')->middleware(['allow.inactive_user', 'allow.pending_req
         ->post('challenges/{challenge}/cancel', [IdentityVerificationController::class, 'cancel'])
         ->name('api.identity.challenges.cancel');
 
-    // 본인인증 채움값 — 확인을 마친 토큰이 가리키는 인증 값(이름, 휴대폰, 생년월일, 성별)과 그 값으로 채울 회원 항목 (#490)
+    // 본인인증 채움값 — 확인을 마친 토큰이 가리키는 인증 값(이름, 휴대폰, 생년월일, 성별)과 그 값으로 채울 회원 항목
     Route::middleware(['throttle:30,1,identity_claims', 'optional.sanctum'])
         ->post('claims', [IdentityVerificationController::class, 'claims'])
         ->name('api.identity.claims');
@@ -417,10 +417,10 @@ Route::prefix('auth')->group(function () {
     // IDV 정책은 bootstrap/app.php 의 자동 매핑 미들웨어가 라우트 이름 기반으로 enforce.
     // 정책 DB 토글만으로 즉시 효과 — 라우트 코드 수정 불필요. 외부 모듈/플러그인이 자기 정책 키를
     // 강제하고 싶을 때만 ->middleware('identity.policy:KEY') 를 명시 사용.
-    // 가입 화면이 그릴 회원 항목(운영자 설정 반영)과 정의 버전 — 비로그인 화면이 부른다 (#490)
+    // 가입 화면이 그릴 회원 항목(운영자 설정 반영)과 정의 버전 — 비로그인 화면이 부른다
     Route::get('register/fields', [UserAuthController::class, 'registerFields'])->name('api.auth.register.fields');
     // 요청 제한(같은 IP·분당, 보안 환경설정): 가입 / 비밀번호 찾기 / 재설정·토큰 확인은 서로 따로 센다.
-    // 가입도 세션을 연다 — 가입 직후 개발자 화면(custom)에서 로그인으로 보이도록 세션에 로그인·토큰 짝을 남긴다(#792 D20)
+    // 가입도 세션을 연다 — 가입 직후 개발자 화면(custom)에서 로그인으로 보이도록 세션에 로그인·토큰 짝을 남긴다
     Route::post('register', [UserAuthController::class, 'register'])
         ->middleware('throttle:auth-register')
         ->middleware('start.api.session')
@@ -490,13 +490,13 @@ Route::prefix('user')->middleware(['optional.sanctum', 'check.user_status', 'thr
             ->name('api.user.auth.logout-all-devices');
         Route::get('user', [UserAuthController::class, 'user'])
             ->name('api.user.auth.user');
-        // 갱신도 세션을 연다 — 세션의 개발자 화면 짝 토큰을 새 토큰으로 바꾼다(#792 F6-2)
+        // 갱신도 세션을 연다 — 세션의 개발자 화면 짝 토큰을 새 토큰으로 바꾼다
         Route::post('refresh', [UserAuthController::class, 'refresh'])
             ->middleware(['start.api.session', 'allow.pending_required_fields'])
             ->name('api.user.auth.refresh');
     });
 
-    // 사용자 알림 — 읽음, 삭제는 자기 알림 상태만 바꾸므로 추가 정보 입력 요구 관문을 통과시킨다 (#490)
+    // 사용자 알림 — 읽음, 삭제는 자기 알림 상태만 바꾸므로 추가 정보 입력 요구 관문을 통과시킨다
     Route::prefix('notifications')->middleware('allow.pending_required_fields')->group(function () {
         Route::get('/', [UserNotificationController::class, 'index'])
             ->middleware('permission:user,core.user-notifications.read')
@@ -544,15 +544,15 @@ Route::prefix('user')->middleware(['optional.sanctum', 'check.user_status', 'thr
 Route::get('me', [UserProfileController::class, 'show'])
     ->middleware(['auth:sanctum', 'check.user_status:core.profile.read', 'throttle:'.config('auth.throttle.user'), RefreshTokenExpiration::class])
     ->name('api.me.show');
-// allow.pending_required_fields: 추가 정보 입력 요구 관문 통과 표식 — 내 정보, 추가 정보 저장, 비밀번호, 재확인, 탈퇴는 미입력 회원에게도 연다 (#490)
+// allow.pending_required_fields: 추가 정보 입력 요구 관문 통과 표식 — 내 정보, 추가 정보 저장, 비밀번호, 재확인, 탈퇴는 미입력 회원에게도 연다
 Route::prefix('me')->middleware(['auth:sanctum', 'check.user_status', 'throttle:'.config('auth.throttle.user'), RefreshTokenExpiration::class, 'allow.pending_required_fields'])->group(function () {
-    // 내 정보 수정·보기 화면이 그릴 회원 항목(운영자 설정, 잠금 반영) (#490)
+    // 내 정보 수정·보기 화면이 그릴 회원 항목(운영자 설정, 잠금 반영)
     Route::get('fields', [UserProfileController::class, 'fields'])->name('api.me.fields');
-    // 본인의 파일·이미지 항목 — 폼 저장과 따로 바로 올리고 지운다 (#490)
+    // 본인의 파일·이미지 항목 — 폼 저장과 따로 바로 올리고 지운다
     Route::post('fields/{key}/file', [UserProfileFieldFileController::class, 'store'])->where('key', '[a-z][a-z0-9_]{1,49}')->name('api.me.fields.file.store');
     Route::delete('fields/{key}/file', [UserProfileFieldFileController::class, 'destroy'])->where('key', '[a-z][a-z0-9_]{1,49}')->name('api.me.fields.file.destroy');
     Route::put('/', [UserProfileController::class, 'update'])->name('api.me.update');
-    // 추가 정보 입력 화면의 저장 — 비어 있던 필수 항목만 받는다. 재확인을 요구하지 않는다 (#490)
+    // 추가 정보 입력 화면의 저장 — 비어 있던 필수 항목만 받는다. 재확인을 요구하지 않는다
     Route::put('required-fields', [UserProfileController::class, 'completeRequiredFields'])->name('api.me.required-fields.update');
     Route::delete('/', [UserProfileController::class, 'destroy'])->name('api.me.destroy');
     Route::post('avatar', [UserProfileController::class, 'uploadAvatar'])->name('api.me.avatar.upload');
@@ -574,7 +574,7 @@ Route::get('attachment/{hash}', [PublicAttachmentController::class, 'download'])
     ->where('hash', '[a-zA-Z0-9]{12}')
     ->name('api.attachment.download');
 
-// 업로드한 파비콘 (공개, #434) — 파비콘 컬렉션 첨부만 이미지로 내보낸다(그 밖은 404). 다운로드 경로와 같은 해시 형식.
+// 업로드한 파비콘 (공개) — 파비콘 컬렉션 첨부만 이미지로 내보낸다(그 밖은 404). 다운로드 경로와 같은 해시 형식.
 Route::get('favicon/{hash}', [PublicFaviconController::class, 'show'])
     ->where('hash', '[a-zA-Z0-9]{12}')
     ->name('api.favicon.show');
@@ -607,7 +607,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->middleware('permission:admin,core.admin.identity.logs.purge')
             ->name('api.admin.identity.logs.purge');
 
-        // 「사용자 지정」 범위의 확장 지점 목록 (7.2.1, #952) — 정책 목록과 같은 권한
+        // 「사용자 지정」 범위의 확장 지점 목록 (7.2.1) — 정책 목록과 같은 권한
         Route::get('checkpoints', [AdminIdentityPolicyController::class, 'checkpoints'])
             ->middleware('permission:admin,core.admin.identity.policies.read')
             ->name('api.admin.identity.checkpoints.index');
@@ -863,7 +863,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->name('api.admin.extensions.custom-assets.destroy');
     });
 
-    // 개인정보 조치 대상 목록 (#636) — 설정 화면 「대상 N건」 옆 「더보기」 모달이 부른다.
+    // 개인정보 조치 대상 목록 — 설정 화면 「대상 N건」 옆 「더보기」 모달이 부른다.
     // 보유기간 명단의 권한은 대상 공급자가 선언한 「설정 읽기 + 도메인 읽기」를 컨트롤러가 요청 시점에
     // 검사한다 — 확장 핸들러는 필터 훅으로 동적으로 붙으므로 라우트가 그 권한을 정적으로 알 수 없다.
     // 휴면 명단은 권한이 고정(설정 읽기 + 회원 읽기)이라 라우트에 건다. 적용 범위(전체만 명단 허용)는
@@ -871,10 +871,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
     Route::prefix('privacy')->group(function () {
         Route::get('retention-targets/{handler}', [AdminPrivacyTargetController::class, 'retention'])->name('api.admin.privacy.retention-targets');
         Route::get('dormant-targets/{stage}', [AdminPrivacyTargetController::class, 'dormant'])->middleware('permission:admin,core.settings.read|core.users.read')->name('api.admin.privacy.dormant-targets');
-        // 비밀번호 만료 대상 명단 (#736) — 휴면 명단과 같은 권한(설정 읽기 + 회원 읽기). 보안 탭이 같은 명단 창을 쓴다.
+        // 비밀번호 만료 대상 명단 — 휴면 명단과 같은 권한(설정 읽기 + 회원 읽기). 보안 탭이 같은 명단 창을 쓴다.
         Route::get('password-expiry-targets/{stage}', [AdminPrivacyTargetController::class, 'passwordExpiry'])->middleware('permission:admin,core.settings.read|core.users.read')->name('api.admin.privacy.password-expiry-targets');
 
-        // 관리자 직권 실행 (#636 후속) — 카드의 「지금 실행」. 대상(보유기간 핸들러·휴면 단계·확장 조치)은
+        // 관리자 직권 실행 — 카드의 「지금 실행」. 대상(보유기간 핸들러·휴면 단계·확장 조치)은
         // 수집기가 키로 찾고, 실행 권한(설정 수정 + 도메인 수정, 전체 범위)은 대상이 선언해 컨트롤러가
         // 요청 시점에 검사한다. 접수는 큐에 넣고 202 로 끝나며 결과는 상태 조회가 돌려준다.
         Route::get('manual-runs', [AdminPrivacyManualRunController::class, 'index'])->name('api.admin.privacy.manual-runs.index');
@@ -882,7 +882,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('manual-runs/{target}', [AdminPrivacyManualRunController::class, 'store'])->where('target', '[A-Za-z0-9:._-]+')->name('api.admin.privacy.manual-runs.store');
     });
 
-    // 항목 집합(회원 가입 항목 등)의 항목 관리 (#490)
+    // 항목 집합(회원 가입 항목 등)의 항목 관리
     // 권한은 집합마다 다르다(회원 집합은 환경설정 권한, 확장 집합은 그 확장의 권한) — `field_set.permission`
     // 미들웨어가 `{set}` 으로 집합을 찾아 그 집합의 조회·수정 권한을 확인한다(집합이 없으면 404).
     // `{set}` 은 `core.user`, `sirsoft-board.guest_author` 같은 식별자다.
@@ -897,7 +897,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('{field}/missing-count', [AdminFieldDefinitionController::class, 'missingCount'])->middleware('field_set.permission:read')->name('api.admin.field-sets.fields.missing-count');
     });
 
-    // 환경설정 회원 탭의 안내 값 (#490) — 닉네임 중복 금지를 켜기 전의 겹침 수, 켠 뒤 도는 중복 검사 준비의 진행 상태
+    // 환경설정 회원 탭의 안내 값 — 닉네임 중복 금지를 켜기 전의 겹침 수, 켠 뒤 도는 중복 검사 준비의 진행 상태
     Route::prefix('member-fields')->middleware('permission:admin,core.settings.read')->group(function () {
         Route::get('nickname-duplicates', [AdminMemberFieldController::class, 'nicknameDuplicates'])->name('api.admin.member-fields.nickname-duplicates');
         Route::get('nickname-recompute-status', [AdminMemberFieldController::class, 'nicknameRecomputeStatus'])->name('api.admin.member-fields.nickname-recompute-status');
@@ -914,19 +914,19 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 읽기 전용 진단 (#124). 값 편집 엔드포인트는 두지 않는다 — 편집은 .env 전용.
         // `{key}` 와일드카드보다 먼저 등록해야 그 라우트에 흡수되지 않는다.
         Route::get('trusted-proxy', [AdminSettingsController::class, 'trustedProxy'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.trusted-proxy');
-        // 웹서버 파일 위임 실제 전송 확인 (#878) — 저장된 위임 설정으로 작은 JSON 파일을 내보내고, 화면이 본문 수신 여부로 판정한다.
+        // 웹서버 파일 위임 실제 전송 확인 — 저장된 위임 설정으로 작은 JSON 파일을 내보내고, 화면이 본문 수신 여부로 판정한다.
         // `{key}` 와일드카드보다 먼저.
         Route::get('file-delegation-probe', [AdminSettingsController::class, 'fileDelegationProbe'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.file-delegation-probe');
-        // 초기 화면 정적 파일(정적 게시) 상태 + 관리자 수동 복구 (#651). 상태는 `{key}` 와일드카드보다 먼저.
+        // 초기 화면 정적 파일(정적 게시) 상태 + 관리자 수동 복구. 상태는 `{key}` 와일드카드보다 먼저.
         Route::get('static-cache', [AdminSettingsController::class, 'staticCacheStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.static-cache');
         Route::post('static-cache/republish', [AdminSettingsController::class, 'republishStaticCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.static-cache.republish');
         // 큐 워커 상태(연결·큐별 대기·워커 신호, #139) — 읽기 전용. `{key}` 와일드카드보다 먼저.
         Route::get('queue-status', [AdminSettingsController::class, 'queueStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.queue-status');
         // 개인정보 보유기간·휴면 dry-run 건수 — 읽기 전용이라 settings.read 로 충분하다.
         Route::get('privacy-preview', [AdminSettingsController::class, 'privacyPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.privacy-preview');
-        // 「본문 콘텐츠」 외부 영상 서비스 추가 창의 예시 주소 확인 (#883) — 저장 없음, 저장 때와 같은 컴파일 규칙. `{key}` 와일드카드보다 먼저.
+        // 「본문 콘텐츠」 외부 영상 서비스 추가 창의 예시 주소 확인 — 저장 없음, 저장 때와 같은 컴파일 규칙. `{key}` 와일드카드보다 먼저.
         Route::post('content/embed-preview', [AdminSettingsController::class, 'embedProviderPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.content.embed-preview');
-        // 비밀번호 만료 사전 안내·만료 처리 대상 건수 (#736) — 읽기 전용. `{key}` 와일드카드보다 먼저.
+        // 비밀번호 만료 사전 안내·만료 처리 대상 건수 — 읽기 전용. `{key}` 와일드카드보다 먼저.
         Route::get('password-expiry-preview', [AdminSettingsController::class, 'passwordExpiryPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.password-expiry-preview');
         Route::get('app-key', [AdminSettingsController::class, 'getAppKey'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.app-key');
         // 앱 키 재생성은 최고관리자(is_super)만 — 판정은 FormRequest 가 아니라 미들웨어가 한다(권한 로직 위치 규율).
@@ -963,7 +963,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::delete('{trustKey}', [AdminExtensionTrustKeyController::class, 'destroy'])->whereNumber('trustKey')->middleware('permission:admin,core.settings.update')->name('api.admin.extension-trust-keys.destroy');
     });
 
-    // 관리자 공개 설정 — 관리자 셸(window.G7Config)과 같은 값(#792 D8). 관리자 그룹 인증만 요구한다
+    // 관리자 공개 설정 — 관리자 셸(window.G7Config)과 같은 값. 관리자 그룹 인증만 요구한다
     // (관리자 셸은 모든 관리자에게 같은 설정을 내린다).
     Route::get('frontend-config', [AdminFrontendConfigController::class, 'show'])->name('api.admin.frontend-config');
 
@@ -1010,7 +1010,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 그룹의 admin 미들웨어만 둔다 — 응답은 컨트롤러가 내 역할에 지정된 메뉴로 좁힌다(roles/active 와 같은 구조).
         Route::get('active', [AdminMenuController::class, 'active'])->name('api.admin.menus.active');
         Route::post('/', [AdminMenuController::class, 'store'])->middleware('permission:admin,core.menus.create')->name('api.admin.menus.store');
-        // 메뉴 아이콘 업로드 — 생성·수정 권한 중 하나면 된다(끝의 false = OR, #381)
+        // 메뉴 아이콘 업로드 — 생성·수정 권한 중 하나면 된다(끝의 false = OR)
         Route::post('icon-upload', [AdminMenuController::class, 'uploadIcon'])->middleware('permission:admin,core.menus.create|core.menus.update,false')->name('api.admin.menus.icon-upload');
         Route::put('order', [AdminMenuController::class, 'updateOrder'])->middleware('permission:admin,core.menus.update')->name('api.admin.menus.update-order');
         Route::patch('bulk-roles', [AdminMenuController::class, 'bulkUpdateRoles'])->middleware('permission:admin,core.menus.update')->name('api.admin.menus.bulk-roles');
@@ -1071,7 +1071,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('check-email', [AdminUserController::class, 'checkEmail'])->middleware('permission:admin,core.users.read')->name('api.admin.users.check-email');
         Route::patch('bulk-status', [AdminUserController::class, 'bulkUpdateStatus'])->middleware('permission:admin,core.users.update')->name('api.admin.users.bulk-status');
         Route::patch('bulk-roles', [AdminUserController::class, 'bulkUpdateRoles'])->middleware('permission:admin,core.users.update')->name('api.admin.users.bulk-roles');
-        // 회원 폼·상세가 그릴 회원 항목 — 추가 화면용(회원 없음)은 회원 추가 권한, 수정·상세용은 그 회원에 대한 조회 범위 (#490)
+        // 회원 폼·상세가 그릴 회원 항목 — 추가 화면용(회원 없음)은 회원 추가 권한, 수정·상세용은 그 회원에 대한 조회 범위
         Route::get('form-fields', [AdminUserController::class, 'formFields'])->middleware('permission:admin,core.users.create')->name('api.admin.users.form-fields');
         Route::get('{user}/form-fields', [AdminUserController::class, 'formFields'])->middleware('permission:admin,core.users.read')->name('api.admin.users.form-fields.show');
         Route::get('{user}', [AdminUserController::class, 'show'])->middleware('permission:admin,core.users.read')->name('api.admin.users.show');
@@ -1081,7 +1081,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('{user}/unlock', [AdminUserController::class, 'unlock'])->middleware('permission:admin,core.users.update')->name('api.admin.users.unlock');
         // 모든 기기에서 로그아웃(강제) — 그 회원의 토큰을 전부 지운다. 하위 관리자는 최고관리자를 대상으로 하지 못한다(등급 가드)
         Route::post('{user}/sessions/revoke', [AdminUserController::class, 'revokeSessions'])->middleware('permission:admin,core.users.update')->name('api.admin.users.sessions.revoke');
-        // 회원의 파일·이미지 항목 — 관리자 회원 폼이 바로 올리고 지운다 (#490)
+        // 회원의 파일·이미지 항목 — 관리자 회원 폼이 바로 올리고 지운다
         Route::post('{user}/fields/{key}/file', [AdminUserFieldFileController::class, 'store'])->where('key', '[a-z][a-z0-9_]{1,49}')->middleware('permission:admin,core.users.update')->name('api.admin.users.fields.file.store');
         Route::delete('{user}/fields/{key}/file', [AdminUserFieldFileController::class, 'destroy'])->where('key', '[a-z][a-z0-9_]{1,49}')->middleware('permission:admin,core.users.update')->name('api.admin.users.fields.file.destroy');
     });
@@ -1251,7 +1251,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('{identifier}/changelog', [AdminTemplateController::class, 'changelog'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.changelog');
         Route::get('{identifier}/license', [AdminTemplateController::class, 'license'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.license');
 
-        // 템플릿 환경설정 (#434) — 보기는 템플릿 조회 권한, 저장은 별도 권한(core.templates.settings)
+        // 템플릿 환경설정 — 보기는 템플릿 조회 권한, 저장은 별도 권한(core.templates.settings)
         Route::get('{identifier}/settings', [AdminTemplateSettingsController::class, 'show'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.settings.show');
         Route::put('{identifier}/settings', [AdminTemplateSettingsController::class, 'update'])->middleware('permission:admin,core.templates.settings')->name('api.admin.templates.settings.update');
         Route::post('{identifier}/settings/reset', [AdminTemplateSettingsController::class, 'reset'])->middleware('permission:admin,core.templates.settings')->name('api.admin.templates.settings.reset');

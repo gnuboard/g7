@@ -418,7 +418,7 @@ describe('ErrorPageHandler', () => {
     });
   });
 
-  describe('[case:components-misc-error-page-datasource-if] 데이터 소스 if 조건 (#822)', () => {
+  describe('[case:components-misc-error-page-datasource-if] 데이터 소스 if 조건', () => {
     /**
      * 오류 화면도 일반 화면처럼 데이터 소스의 `if` 를 평가해야 한다.
      * 꺼진 모듈의 API 를 부르는 공통 데이터 소스(`_user_base` 의 장바구니 수 등)가
@@ -478,7 +478,7 @@ describe('ErrorPageHandler', () => {
     });
   });
 
-  describe('코드 레이아웃이 없을 때의 대체 (#869 λ 4부 18)', () => {
+  describe('코드 레이아웃이 없을 때의 대체 (4부 18)', () => {
     const configWith = (layouts: Record<string, string> | null) => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,

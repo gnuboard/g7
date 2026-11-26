@@ -1,5 +1,5 @@
 /**
- * 게시판 신고 관리 목록 — 검색 기능 동작 검증 (이슈 #413 item 72).
+ * 게시판 신고 관리 목록 — 검색 기능 동작 검증 (item 72).
  *
  * 결함: 검색어 입력 setState 가 target:"global" 로 _global 에 저장되는데,
  * 검색 실행 액션(searchBoardReports)과 input value 바인딩은 _local 을 읽어
@@ -21,7 +21,7 @@ import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 
 const REPORTS_URL = '/admin/boards/reports';
 
-test.describe.skip('게시판 신고현황 — 검색 기능 동작 (#413-72)', () => {
+test.describe.skip('게시판 신고현황 — 검색 기능 동작 (72)', () => {
   // @scenario field=all
   // @effects search_keyword_propagated_to_url_query, search_field_propagated_to_url_query
   test('검색어 입력 후 검색 실행 시 URL query 에 filters[0][value] 가 실린다', async ({

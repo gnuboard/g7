@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * 회원 활동 기록 API — 페이지·기간·본인 활동만 (7.2.1, #952 E)
+ * 회원 활동 기록 API — 페이지·기간·본인 활동만 (7.2.1)
  */
 class ActivityLogTest extends TestCase
 {

@@ -59,7 +59,7 @@ describe('pathMatchesAny', () => {
 
   /**
    * 서버 판정식(`VisitExclusionPipeline::pathMatchesAny` — 끝의 `*` 를 `rtrim` 으로 모두 뗀
-   * 앞부분 일치, 아니면 완전 일치)에 같은 입력을 넣어 얻은 결과표다(#682 R12-D4, PHP 로 실측).
+   * 앞부분 일치, 아니면 완전 일치)에 같은 입력을 넣어 얻은 결과표다(PHP 로 실측).
    * 서버 규칙을 바꾸면 이 표를 서버 결과로 다시 채운다.
    */
   const SERVER_GLOB_CASES: Array<[pattern: string, path: string, serverResult: boolean]> = [

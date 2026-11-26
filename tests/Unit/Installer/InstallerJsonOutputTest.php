@@ -16,7 +16,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *   `echo false` 는 빈 문자열이라 HTTP 200 + 빈 본문이 나간다. 프론트는
  *   "Unexpected end of JSON input" 으로 죽는데 서버에는 예외도 로그도 없다.
  *
- *   2026-07 수정(#445)은 로그 축 4곳만 막았다. 응답 경계 전체를 단일 헬퍼로 닫지 않으면
+ *   2026-07 수정은 로그 축 4곳만 막았다. 응답 경계 전체를 단일 헬퍼로 닫지 않으면
  *   다음 사람이 `echo json_encode` 를 다시 써서 같은 결함이 재발한다.
  *
  * BASE_PATH 격리 패턴은 AddLogUtf8ScrubTest 와 동일하다.

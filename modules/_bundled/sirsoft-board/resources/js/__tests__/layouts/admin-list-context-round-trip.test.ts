@@ -92,7 +92,7 @@ function collectNavActions(node: unknown): NavAction[] {
 /**
  * 목적지로 가는 leg 액션을 찾습니다.
  *
- * 링크(#757)가 된 자리는 목적지가 링크의 `href` 에 있고 클릭 액션은 경로 없는 navigate 다 — 엔진은
+ * 링크가 된 자리는 목적지가 링크의 `href` 에 있고 클릭 액션은 경로 없는 navigate 다 — 엔진은
  * 그 navigate 를 클릭한 링크의 href 로 보낸다. 실행 재현을 위해 그 href 를 경로로 채운 액션을 돌려준다.
  *
  * @param rel 레이아웃 상대 경로

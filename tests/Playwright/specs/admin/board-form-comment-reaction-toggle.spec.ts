@@ -1,5 +1,5 @@
 /**
- * 게시판 폼 「댓글 반응 사용」 토글 (#525 WP-D).
+ * 게시판 폼 「댓글 반응 사용」 토글.
  *
  * 실브라우저로 두 갈래를 잰다:
  *   ① 토글이 폼에 서고, 글 반응이 꺼져 있으면 함께 잠긴다
@@ -15,7 +15,7 @@
  */
 import { test, expect, authenticatePage } from '../../fixtures/reaction-seed';
 
-test.describe('게시판 폼 댓글 반응 토글 (#525 WP-D)', () => {
+test.describe('게시판 폼 댓글 반응 토글', () => {
   // @scenario case=comment_reaction_toggle_off_blocks
   // @effects comment_reaction_requires_parent_toggle
   test('게시판 폼에 댓글 반응 토글이 선다', async ({ page, reactionSeed, settingsToken }) => {

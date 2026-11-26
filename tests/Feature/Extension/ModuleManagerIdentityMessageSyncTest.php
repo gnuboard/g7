@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 /**
- * (호환층) 모듈의 `getIdentityMessages()` 선언이 본인인증 알림 정의로 합류하는지 검증 (#699)
+ * (호환층) 모듈의 `getIdentityMessages()` 선언이 본인인증 알림 정의로 합류하는지 검증
  *
  * 7.1.0 부터 본인인증 메시지는 알림 정의(category=identity)다. 7.0.x 계약으로 선언한 서드파티
  * 모듈도 계속 동작하도록 ModuleManager 가 알림 정의 동기화 때 변환·합류시킨다

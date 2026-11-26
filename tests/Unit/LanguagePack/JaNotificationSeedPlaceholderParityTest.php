@@ -6,7 +6,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * ja 알림 시드의 자리표시자가 원본(ko) 알림 정의와 같은지 검증 (#703)
+ * ja 알림 시드의 자리표시자가 원본(ko) 알림 정의와 같은지 검증
  *
  * 언어팩 동기화 검사(check-language-pack-sync)는 키 집합만 비교해, 원본 본문의 자리표시자가 바뀐 뒤 ja 시드
  * 본문이 옛 자리표시자를 그대로 들고 있어도 통과한다. GDPR 연간 통지 메일이 그랬다 — ko·en 은 처리방침 주소가

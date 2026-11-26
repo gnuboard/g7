@@ -6,7 +6,7 @@ use Modules\Sirsoft\Page\Services\PageContentMediaService;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 
 /**
- * 페이지 편집기 본문 미디어 업로드 계약 — 표준 계약 엔드포인트 `GET admin/content-media/target` (#887 G10)
+ * 페이지 편집기 본문 미디어 업로드 계약 — 표준 계약 엔드포인트 `GET admin/content-media/target`
  *
  * 편집기 계약을 화면에 전하는 길을 확장마다 `…/content-media/target` 한 가지로 맞췄다. 권한은 업로드와 같고(등록·수정 어느 쪽이든),
  * 값은 페이지 모듈 설정이다. 옛 길(`GET admin/attachments/settings` 의 `content_media`)은 같은 값을 계속 싣는다.

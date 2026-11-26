@@ -905,7 +905,7 @@ describe('productOptionHandlers - A22 양방향 동기화', () => {
     });
 });
 
-describe('productOptionHandlers - 옵션 과세 종류 (#612)', () => {
+describe('productOptionHandlers - 옵션 과세 종류', () => {
     beforeEach(() => {
         (window as any).G7Core = {
             ...mockG7Core,

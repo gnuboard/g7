@@ -9,7 +9,7 @@ export interface Tab {
     badge?: string | number;
     /**
      * 탭이 가리키는 주소 — 주면 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
-     * 보통 클릭은 지금처럼 탭 전환(onTabChange)이다(#757).
+     * 보통 클릭은 지금처럼 탭 전환(onTabChange)이다.
      */
     href?: string;
 }

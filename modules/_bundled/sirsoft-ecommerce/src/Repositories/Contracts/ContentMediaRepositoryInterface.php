@@ -10,7 +10,7 @@ use Modules\Sirsoft\Ecommerce\Models\ContentMedia;
 /**
  * 이커머스 본문 미디어 Repository 인터페이스
  *
- * 저장은 이 모듈 범용 첨부 표(`ecommerce_attachments`)의 본문 미디어 행이다(`ContentMedia` 범위 모델 — collection = content_media, #887).
+ * 저장은 이 모듈 범용 첨부 표(`ecommerce_attachments`)의 본문 미디어 행이다(`ContentMedia` 범위 모델 — collection = content_media).
  */
 interface ContentMediaRepositoryInterface
 {
@@ -53,7 +53,7 @@ interface ContentMediaRepositoryInterface
     public function getByOwner(ContentMediaOwnerType $ownerType, int $ownerId): Collection;
 
     /**
-     * 소유자에 이어진 본문 미디어 — 본문에서 빠져 소프트 삭제된 것까지 (소유자 삭제 때 영구 삭제 대상, #887).
+     * 소유자에 이어진 본문 미디어 — 본문에서 빠져 소프트 삭제된 것까지 (소유자 삭제 때 영구 삭제 대상).
      *
      * @param  ContentMediaOwnerType  $ownerType  소유 종류
      * @param  int  $ownerId  소유자 ID
@@ -97,7 +97,7 @@ interface ContentMediaRepositoryInterface
     public function findStaleTemp(Carbon $threshold, int $limit): Collection;
 
     /**
-     * 본문에서 빠져 소프트 삭제된 지 오래된 행 — 소유자에 이어졌던 것만 (본문 미디어 파일 정리, #887).
+     * 본문에서 빠져 소프트 삭제된 지 오래된 행 — 소유자에 이어졌던 것만 (본문 미디어 파일 정리).
      *
      * @param  Carbon  $threshold  기준 시각 (이보다 먼저 소프트 삭제된 것)
      * @param  int  $limit  최대 건수

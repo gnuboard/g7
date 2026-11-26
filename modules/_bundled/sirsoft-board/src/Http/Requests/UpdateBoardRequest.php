@@ -108,7 +108,7 @@ class UpdateBoardRequest extends FormRequest
             }
         }
 
-        // 본문 미디어 정책: 「직접 정하기」 스위치가 꺼져 있으면 null(첨부 정책을 따름)로, 스위치 문자열은 불리언으로 (#883)
+        // 본문 미디어 정책: 「직접 정하기」 스위치가 꺼져 있으면 null(첨부 정책을 따름)로, 스위치 문자열은 불리언으로
         if (array_key_exists('content_media_policy', $data)) {
             $data['content_media_policy'] = ContentMediaPolicyRules::normalizeInput($data['content_media_policy']);
         }
@@ -254,7 +254,7 @@ class UpdateBoardRequest extends FormRequest
             'blocked_keywords' => ['sometimes', 'nullable', 'array'],
             'blocked_keywords.*' => ['string', 'max:100'],
 
-            // 본문 미디어 정책 (null: 첨부 정책을 따름, #883) — 보내지 않으면 바꾸지 않는다
+            // 본문 미디어 정책 (null: 첨부 정책을 따름) — 보내지 않으면 바꾸지 않는다
             ...ContentMediaPolicyRules::settingsRules('content_media_policy'),
 
             // 작성자 표시 이름(방식과 종류)과 비회원 작성자 항목의 게시판별 사용, 필수
@@ -303,7 +303,7 @@ class UpdateBoardRequest extends FormRequest
         // 영문 snake_case 로 노출되는 것을 차단) — 생성 요청과 같은 매핑을 쓴다
         $attributes = array_merge($attributes, $this->boardSettingAttributes());
 
-        // 본문 미디어 정책 하위 칸 (#883) — 생성·일괄 적용 요청과 같은 이름
+        // 본문 미디어 정책 하위 칸 — 생성·일괄 적용 요청과 같은 이름
         $attributes = array_merge($attributes, $this->contentMediaPolicyAttributes('content_media_policy'));
 
         // 작성자 표시 이름 칸과 비회원 작성자 항목 표

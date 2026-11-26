@@ -6,7 +6,7 @@ use App\Enums\ContentMediaKind;
 use Illuminate\Validation\Rule;
 
 /**
- * 본문 미디어 정책 설정값의 검증 규칙 — 확장 설정 FormRequest 가 함께 쓴다 (#883 4단계)
+ * 본문 미디어 정책 설정값의 검증 규칙 — 확장 설정 FormRequest 가 함께 쓴다
  *
  * 게시판(게시판별 `content_media_policy`)·페이지·이커머스(모듈 설정 `content_media`)가 같은 형식을 검증하게 한다.
  * 확장자는 종류별 후보 안에서만 고른다. 정책 전체를 비우면(null) 확장의 첨부 정책을 따른다.

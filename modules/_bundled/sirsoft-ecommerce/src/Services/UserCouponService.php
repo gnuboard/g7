@@ -312,7 +312,7 @@ class UserCouponService
     }
 
     /**
-     * 비로그인 방문자도 볼 수 있는 쿠폰존 목록을 조회합니다. (#952)
+     * 비로그인 방문자도 볼 수 있는 쿠폰존 목록을 조회합니다.
      *
      * 회원용 목록과 같은 쿠폰·같은 정렬이다. 로그인한 회원이 부르면(토큰이 있으면) 받은 여부를 함께 채우고, 비로그인이면 채우지 않는다
      * (응답은 허용 목록 리소스가 정한다). 쿠폰존 화면이 로그인 확인 전후로 주소를 바꾸지 않게 한 주소로 둘 다 답한다.
@@ -336,7 +336,7 @@ class UserCouponService
     }
 
     /**
-     * 받기 목록의 쿠폰 1장에 화면 표시값을 채웁니다. 회원용·공개용 목록이 함께 씁니다. (#952)
+     * 받기 목록의 쿠폰 1장에 화면 표시값을 채웁니다. 회원용·공개용 목록이 함께 씁니다.
      *
      * @param  Coupon  $coupon  쿠폰 (포함·제외 상품·분류 관계 로드)
      * @param  int|null  $userId  회원 ID (비로그인이면 null — 받은 여부를 계산하지 않는다)
@@ -568,7 +568,7 @@ class UserCouponService
             throw new CouponNotIssuableException('user_withdrawn');
         }
 
-        // 자동발급 쿠폰의 직접발급은 자동발급과 한도를 공유한다(#952) — 같은 발급 키로 기록해, 직접 받은 회원이
+        // 자동발급 쿠폰의 직접발급은 자동발급과 한도를 공유한다 — 같은 발급 키로 기록해, 직접 받은 회원이
         // 같은 조건으로 자동으로 다시 받지 않게 한다. 회원당 횟수는 발급 키와 DB 유니크가 정한다(per_user_limit 은 0 고정).
         $autoKey = $this->autoIssueKeyFor($coupon);
         if ($autoKey !== null) {
@@ -594,7 +594,7 @@ class UserCouponService
     }
 
     /**
-     * 자동발급 쿠폰 1건을 회원에게 발급합니다. (#952)
+     * 자동발급 쿠폰 1건을 회원에게 발급합니다.
      *
      * 쿠폰 잠금·발급 가능 판정·발급 키 중복 확인은 호출 측(`CouponAutoIssueService::issueOne`)이 한 트랜잭션 안에서 먼저 한다.
      * 활성 회원만 받는다 — 탈퇴·차단·본인인증 대기 회원은 예외로 거절한다.
@@ -626,7 +626,7 @@ class UserCouponService
     }
 
     /**
-     * 자동발급 쿠폰의 발급 키를 반환합니다. 자동발급 쿠폰이 아니면 null 입니다. (#952)
+     * 자동발급 쿠폰의 발급 키를 반환합니다. 자동발급 쿠폰이 아니면 null 입니다.
      *
      * 생일 쿠폰은 사이트 시간대의 올해로 「해마다 1회」 를 나눈다.
      *
@@ -667,7 +667,7 @@ class UserCouponService
      * @param  Coupon  $coupon  발급 대상 쿠폰(잠금 조회된 인스턴스)
      * @param  int  $userId  발급 대상 회원 ID
      * @param  string  $codePrefix  쿠폰 코드 접두사 (DL=다운로드, DR=직접발급, AU=자동발급)
-     * @param  array<string, mixed>  $extra  발급 행에 더할 값 (issue_source·auto_issue_key·source_order_id, #952)
+     * @param  array<string, mixed>  $extra  발급 행에 더할 값 (issue_source·auto_issue_key·source_order_id)
      * @return CouponIssue 생성된 발급 레코드
      */
     protected function createIssueRecord(Coupon $coupon, int $userId, string $codePrefix, array $extra = []): CouponIssue

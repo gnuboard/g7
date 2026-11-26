@@ -7,7 +7,7 @@ import enAdmin from '../../lang/partial/en/admin.json';
 import jaAdmin from '../../../../../lang-packs/_bundled/g7-template-sirsoft-admin_basic-ja/frontend/partial/admin.json';
 
 /**
- * 환경설정 「업데이트」 탭 (W6 — 이슈 #609 G6).
+ * 환경설정 「업데이트」 탭 (W6).
  *
  * 여기서 잠그는 것은 화면의 모양이 아니라 **그 화면이 성립하기 위한 배선**이다:
  *

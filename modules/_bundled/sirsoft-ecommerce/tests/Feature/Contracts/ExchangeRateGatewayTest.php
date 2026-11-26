@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 환율 반영 공개 계약 (#916)
+ * 환율 반영 공개 계약 
  *
  * 환율 제공 확장(수출입은행)은 쇼핑몰 설정 서비스 대신 이 계약으로 통화 설정을 읽고 환율을 반영한다. 결과는 설정 서비스와 같아야 한다.
  */

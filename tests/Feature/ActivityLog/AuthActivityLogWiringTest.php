@@ -69,7 +69,7 @@ class AuthActivityLogWiringTest extends TestCase
     /**
      * 메일 재설정으로 바꾼 비밀번호 기록 훅이 비밀번호 재설정 로그를 남긴다 — 재설정 링크(비로그인)는 본인이 행위자다.
      *
-     * 비밀번호 변경 로그는 #736 부터 경로·행위자를 아는 `core.auth.password_change_recorded` 에서 남긴다
+     * 비밀번호 변경 로그는 이제 경로·행위자를 아는 `core.auth.password_change_recorded` 에서 남긴다
      * (종전 `after_password_changed` 는 인자가 회원뿐이라 모든 변경을 "재설정" 으로 적었다).
      *
      * @scenario case=password_changed_self

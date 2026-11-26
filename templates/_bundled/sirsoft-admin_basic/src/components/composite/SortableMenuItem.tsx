@@ -35,7 +35,7 @@ export interface MenuItemData {
   url: string;
   /** 호환 문자열 아이콘 — 메뉴는 FA 클래스(이미지·SVG 면 null), 이커머스 브랜드·카테고리는 맨 이름(`tag`·`folder`) */
   icon: string | null;
-  /** 구조형 아이콘 (#381) — 없으면 icon 을 class 로 그린다 */
+  /** 구조형 아이콘 — 없으면 icon 을 class 로 그린다 */
   iconSpec?: MenuIconSpecData | null;
   isActive: boolean;
   isModuleMenu: boolean;
@@ -50,7 +50,7 @@ export interface MenuItemData {
    */
   roleCount?: number;
   /**
-   * 항목 편집 주소 — 있으면 이름이 행 전체를 덮는 링크(`after:` 덮개)가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 연다(#757).
+   * 항목 편집 주소 — 있으면 이름이 행 전체를 덮는 링크(`after:` 덮개)가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 연다.
    * 보통 클릭은 지금처럼 onClick(선택). 끌기 손잡이·펼침 단추·스위치는 덮개 위층이라 링크 안에 들어가지 않는다.
    */
   href?: string;
@@ -156,7 +156,7 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
       style={style}
       className={link ? `relative ${combinedClassName}` : `${combinedClassName}${!selectable && onClick ? ` ${FOCUS_VISIBLE_RING}` : ''}`}
       onClick={onClick}
-      // 덮는 링크가 있으면 링크가, 선택 모드면 체크박스가 키보드를 받는다. 그 밖의 행은 행 자체가 단추다(#869 키보드 접근)
+      // 덮는 링크가 있으면 링크가, 선택 모드면 체크박스가 키보드를 받는다. 그 밖의 행은 행 자체가 단추다(키보드 접근)
       {...(!link && !selectable ? keyboardActivationProps(onClick) : {})}
     >
       {/* 드래그 핸들 - enableDrag가 true일 때만 표시 */}
@@ -206,7 +206,7 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
           }}
           onChange={() => onClick?.()}
           onClick={(e: React.MouseEvent) => e.stopPropagation()}
-          // 체크박스는 Space 로만 토글된다 — 마우스 행 클릭과 같게 Enter 로도 고른다(#869 키보드 접근)
+          // 체크박스는 Space 로만 토글된다 — 마우스 행 클릭과 같게 Enter 로도 고른다(키보드 접근)
           onKeyDown={(e: React.KeyboardEvent) => {
             if (e.key === 'Enter') {
               e.preventDefault();
@@ -289,7 +289,7 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
       {/* 토글 스위치 — 선택 모드에서는 숨긴다(행 클릭이 선택 토글이라 상태 전환과 섞이지 않게) */}
       {!selectable && (
         <Div className={`${above}flex-shrink-0`} onClick={(e) => e.stopPropagation()}>
-          {/* 이름 — 앞 형제가 없어 「스위치, 켬」만 읽혔다(메뉴·브랜드·카테고리, #757) */}
+          {/* 이름 — 앞 형제가 없어 「스위치, 켬」만 읽혔다(메뉴·브랜드·카테고리) */}
           <Toggle
             checked={item.isActive}
             onChange={() => onToggle?.(new MouseEvent('click') as unknown as React.MouseEvent)}

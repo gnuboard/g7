@@ -8,7 +8,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Tests\PureTestCase;
 
 /**
- * 이커머스 모듈의 ActivityLog action 라벨 영역 분리 회귀 차단 (이슈 #317).
+ * 이커머스 모듈의 ActivityLog action 라벨 영역 분리 회귀 차단.
  *
  * 검증 포인트:
  *   1) 모듈 listener 의 FQCN 이 ExtensionManager 에 의해 'sirsoft-ecommerce' 로 정확히
@@ -71,7 +71,7 @@ class ActivityLogActionLabelTest extends PureTestCase
         $this->assertFileExists($langFile);
 
         $lang = require $langFile;
-        $this->assertArrayHasKey('action', $lang, '모듈 lang 에 action 배열이 신설되어야 함 (이슈 #317)');
+        $this->assertArrayHasKey('action', $lang, '모듈 lang 에 action 배열이 신설되어야 함');
 
         // 이커머스 specific 키들 — 코어 lang 에서 제거되었으므로 모듈 lang 에 정의 필수
         // 클레임(S7) last segment — 코어 lang 에 없어 모듈 lang 이 유일 출처다.
@@ -100,7 +100,7 @@ class ActivityLogActionLabelTest extends PureTestCase
         $this->assertFileExists($langFile);
 
         $lang = require $langFile;
-        $this->assertArrayHasKey('action', $lang, 'Module lang must define action array (#317)');
+        $this->assertArrayHasKey('action', $lang, 'Module lang must define action array');
 
         // 클레임(S7) last segment — 코어 lang 에 없어 모듈 lang 이 유일 출처다.
         $required = [

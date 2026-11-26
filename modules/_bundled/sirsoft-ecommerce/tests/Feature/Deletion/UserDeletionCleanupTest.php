@@ -27,7 +27,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 회원 완전 삭제 시 이커머스 회원 소유 데이터 명시 삭제 (#888)
+ * 회원 완전 삭제 시 이커머스 회원 소유 데이터 명시 삭제
  *
  * 종전에는 회원 행을 지우면 DB 외래키의 연쇄 삭제가 프리셋·찜·장바구니·쿠폰 발급·배송지·리뷰·프로필을 지웠다.
  * 그 경로는 훅·로그를 남기지 않고 리뷰 이미지 파일을 저장소에 고아로 남기며, 쿠폰 발급 수량을 되돌리지 않았다.

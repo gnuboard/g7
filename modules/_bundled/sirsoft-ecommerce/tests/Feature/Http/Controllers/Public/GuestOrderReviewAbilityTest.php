@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 비회원 주문 상세의 리뷰 작성 버튼 노출 회귀 테스트 (#703)
+ * 비회원 주문 상세의 리뷰 작성 버튼 노출 회귀 테스트
  *
  * 회귀 배경: 리뷰 작성 가능 여부(can_write_review)가 권한만 보고 판정돼, 비회원(guest 역할에
  * 리뷰 작성 권한이 기본 부여)이 구매확정한 품목에도 true 로 내려갔다. 비회원 주문 상세에는 리뷰 작성

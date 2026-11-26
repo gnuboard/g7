@@ -98,7 +98,7 @@ describe('회원 상세 계정 잠금 해제 (C1)', () => {
     expect(conditions).toContain(
       '{{user?.data?.locked_permanently !== true && user?.data?.is_locked === true}}',
     );
-    // 「정상」은 회원 정보를 받은 뒤에만 판정한다(받는 중을 「잠금 아님」으로 읽지 않는다, #915)
+    // 「정상」은 회원 정보를 받은 뒤에만 판정한다(받는 중을 「잠금 아님」으로 읽지 않는다)
     expect(conditions).toContain('{{user !== undefined && (user?.data?.is_locked !== true)}}');
   });
 

@@ -1,7 +1,7 @@
 feature: GDPR 쿠키 거부 (명시적 reject) 저장 및 표기
 
 description: |
-  이슈 #430 — 쿠키 배너에서 "동의하지 않고 계속하기"(거부) 를 명시적 상태로 저장하고
+  쿠키 배너에서 "동의하지 않고 계속하기"(거부) 를 명시적 상태로 저장하고
   마이페이지·관리자 화면에 표기한다.
 
   기존 시스템은 거부·철회·미동의를 모두 is_consented=false 로만 저장하여 구분이 불가능했다.
@@ -44,7 +44,7 @@ effects:
   # 거부 저장 (Service / Controller)
   - rejection_marks_optional_consent_as_rejected            # 선택형 거부 → is_rejected=true + rejected_at + history rejected
   - rejection_persists_even_when_status_already_false        # 가드 결함 회귀: 이미 false 여도 is_rejected 저장 (핵심 수정)
-  - required_category_excluded_from_status                    # 필수는 status/history 양쪽에서 제외 (재설계 #430 — 동의 축 아님)
+  - required_category_excluded_from_status                    # 필수는 status/history 양쪽에서 제외 (재설계 — 동의 축 아님)
   - guest_rejection_records_history_only                     # 게스트 거부는 status 미사용, history action=rejected
   - member_rejection_intent_marks_optional_as_rejected       # 컨트롤러 경로(회원): intent:'reject' → 선택형 rejected
   - guest_rejection_intent_records_history_as_rejected       # 컨트롤러 경로(게스트): history rejected

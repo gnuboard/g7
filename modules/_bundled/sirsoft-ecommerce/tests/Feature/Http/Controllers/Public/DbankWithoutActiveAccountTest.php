@@ -7,7 +7,7 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 사용 중인 입금 계좌가 없을 때의 무통장입금 노출·활성화 회귀 테스트 (#703)
+ * 사용 중인 입금 계좌가 없을 때의 무통장입금 노출·활성화 회귀 테스트
  *
  * 회귀 배경: 설치 기본값은 무통장입금(dbank)을 켜 두고 입금 계좌는 비어 있는 비활성 1건만 둔다.
  * 공개 결제 설정이 그대로 dbank 를 내보내 주문서가 무통장입금을 기본 선택하는데, 고를 계좌가 없어

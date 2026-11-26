@@ -15,7 +15,7 @@ use Plugins\Sirsoft\MessageBizppurio\Services\BizppurioTemplateService;
 use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
- * BizppurioTemplateService — 라이프사이클 오케스트레이션 검증 (#597 §3.2·§3.4).
+ * BizppurioTemplateService — 라이프사이클 오케스트레이션 검증.
  *
  * 채번(codeCheck 재시도)·검수 신청(add/update 분기)·전이 가드·동기화(승인 스냅샷 동결·
  * 반려 사유 저장)·삭제(카카오측 조건부 동반 삭제)를 Http::fake 요청 캡처로 검증한다.
@@ -161,7 +161,7 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     {
         $template = $this->row(['status' => BizppurioTemplateStatus::Requested->value]);
 
-        // content 키가 실리면 값의 동일 여부와 무관하게 잠긴다 (#597 §3.2).
+        // content 키가 실리면 값의 동일 여부와 무관하게 잠긴다.
         // "값이 달라질 때만 막는다" 완화는 라운드 3 에서 철회했다 — DB 가 JSON 키 순서를
         // 정규화해 저장하므로 동일성 비교가 성립하지 않았고(항상 '변경됨'), 화면도 검수중·
         // 승인 상태에서는 수정 진입 자체를 막고 있어 완화가 보호하는 경로가 없었다.
@@ -884,7 +884,7 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
-     * 요약 맵은 SMS 본문의 유무·미리보기를 **모델 판정 결과로** 내보낸다 (#597 라운드 5 R4).
+     * 요약 맵은 SMS 본문의 유무·미리보기를 **모델 판정 결과로** 내보낸다.
      *
      * 화면이 로케일 맵을 직접 훑으면 발송 게이트와 규칙이 갈린다 — 실제로 행 하단은
      * truthy 판정(공백만 있어도 "본문 있음")에 폴백 로케일을 'ko' 로 박아 두었고,
@@ -925,7 +925,7 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
-     * 미리보기 로케일 해석이 모델과 같은 체인을 탄다 (#597 라운드 5 R4).
+     * 미리보기 로케일 해석이 모델과 같은 체인을 탄다.
      *
      * @effects sms_body_presence_and_preview_resolved_by_server
      *
@@ -950,7 +950,7 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
-     * 검수자 전달 의견은 kapi request 의 comment 로만 실린다 (#597 §18.7 — 제품 결정 2026-08-23).
+     * 검수자 전달 의견은 kapi request 의 comment 로만 실린다 (제품 결정 2026-08-23).
      *
      * 카카오 심사 가이드가 요구하는 변수 '예시 텍스트' 를 전할 유일한 통로가 request comment 다.
      * 등록(add) 페이로드에는 섞이지 않고, 행에도 남지 않는다.

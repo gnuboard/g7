@@ -173,7 +173,7 @@ describe('CKEditor5 공개 자산 디스크 필드 — 계약', () => {
 describe('CKEditor5 공개 자산 디스크 필드 — 저장 후 안내', () => {
     /**
      * 설정 재조회(initLocal)는 폼에 없는 키를 지우지 않는다 — 저장 성공 처리가 안내 키를 응답값으로 덮지 않으면
-     * 새 디스크를 골라 저장해 저장값이 바뀐 뒤에도 「쓸 수 없는 디스크」 안내가 남았다(#703 브라우저 실측).
+     * 새 디스크를 골라 저장해 저장값이 바뀐 뒤에도 「쓸 수 없는 디스크」 안내가 남았다.
      *
      * @scenario disk_setting=fake_cdn, override=module_override
      * @effects stale_disk_normalized_with_notice
@@ -288,7 +288,7 @@ describe('CKEditor5 공개 자산 디스크 필드 — 렌더링', () => {
         testUtils = makeUtils({ public_asset_disk: 'none', public_asset_disk_unavailable: 'gone_cdn' });
         const { container } = await testUtils.render();
 
-        // 경고 글자색은 관리자 템플릿 text-warning-soft 와 같은 색 팔레트(라이트·다크 짝)를 이 플러그인 접두 유틸리티로 싣는다(#757)
+        // 경고 글자색은 관리자 템플릿 text-warning-soft 와 같은 색 팔레트(라이트·다크 짝)를 이 플러그인 접두 유틸리티로 싣는다
         const notice = container.querySelector('p.ckeditor\\:text-yellow-700');
         expect(notice?.textContent).toContain('gone_cdn');
         expect(notice?.textContent).toContain('스트리밍');

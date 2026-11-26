@@ -6,7 +6,7 @@
  *          no_console_error_on_list_refresh,
  *          edit_panel_fills_name
  *
- * 배경(#736 브라우저 실측 2026-10-05, 트러블슈팅 state-global 사례 10): 목록 데이터 소스의 init-local 이
+ * 배경(브라우저 실측 2026-10-05, 트러블슈팅 state-global 사례 10): 목록 데이터 소스의 init-local 이
  * form.name.ko = "" 를 빈 기본값으로 착각해 적었는데, 데이터 소스 initLocal 의 값은 응답 경로라 목록
  * 응답 전체가 이름 칸에 들어갔다. 새로고침하면 다국어 입력이 문자열이 아닌 값을 받아 콘솔에
  * `trim is not a function` 이 나고 입력하던 이름이 덮였다.

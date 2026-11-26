@@ -25,7 +25,7 @@ effects:
   - handler_throws_on_failure
   - success_clears_progress_and_closes_modal
   - failure_clears_progress_and_shows_error_toast
-  - excel_modal_count_hint_passes_translation_params       # 범위 안내 문구가 건수를 |count= 로 넘긴다 (#703 실측: `:` 구분자로 원문 노출)
+  - excel_modal_count_hint_passes_translation_params       # 범위 안내 문구가 건수를 |count= 로 넘긴다 (`:` 구분자로 원문 노출)
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/downloadFile.test.ts

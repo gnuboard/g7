@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\MaintenanceModeBypassCookie;
 use Tests\TestCase;
 
 /**
- * 점검 모드 통과 수단 — `down --secret`·`--except`·허용 IP·`--retry`·`--refresh`·`--redirect` (#888).
+ * 점검 모드 통과 수단 — `down --secret`·`--except`·허용 IP·`--retry`·`--refresh`·`--redirect`.
  *
  * Laravel 기본 점검 미들웨어를 `MaintenanceModePage` 로 바꾼 뒤로 이 미들웨어는 우회 쿠키를 검증만 하고 발급하지 않아,
  * `php artisan down --secret=abc` 뒤 `/abc` 를 열어도 503 이었다. `down` 데이터의 나머지 옵션도 읽지 않았다.

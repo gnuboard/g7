@@ -51,7 +51,7 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         if (! is_file($runtimePath)) {
             // beta.7 한시 보정 — 이미 finalize 완료된 환경의 stale process ENV 회귀 차단.
             //
-            // 배경 (이슈 #371): beta.4~6 손상 환경에서 beta.7 코어 업그레이드의 spawn 자식 1
+            // 배경: beta.4~6 손상 환경에서 beta.7 코어 업그레이드의 spawn 자식 1
             // (core:execute-upgrade-steps) 이 .env 머지 + runtime.php 삭제를 마쳐도, 부모
             // 프로세스의 process ENV (getenv / $_ENV / $_SERVER) 는 부팅 시점의 stale 값
             // (.env.example fallback: DB_WRITE_USERNAME=root) 그대로 유지된다. 그 직후 부모가
@@ -119,7 +119,7 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      * 두 가지는 runtime 이 그대로 이깁니다:
      *   - APP_KEY — 지금까지 암호화에 쓰인 키는 runtime 의 것이다. 다른 키로 바꾸면 암호화된 설정·세션을 읽지 못한다.
      *   - `.env` 의 DB 계정이 예시 파일 기본값(`root`)이고 runtime 의 계정은 그렇지 않을 때 — 설치 마무리가 `.env` 를
-     *     채우지 못하고 끝난 사이트의 표식이다(#371). 이때 `.env` 를 믿으면 업데이트 도중 DB 에 붙지 못한다.
+     *     채우지 못하고 끝난 사이트의 표식이다. 이때 `.env` 를 믿으면 업데이트 도중 DB 에 붙지 못한다.
      * 둘 다 7.1.6 업그레이드 단계가 `.env` 로 옮기고 runtime 파일을 지우면 사라지는 상태다.
      *
      * @param  array<string, mixed>  $runtime  인스톨러 런타임 설정

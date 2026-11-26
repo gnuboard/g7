@@ -6,19 +6,19 @@ use App\Extension\HookManager;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 본문 HTML 규칙 — 표시기·정화기·편집기가 함께 쓰는 허용 태그·속성·미디어 출처·외부 영상 (#883 5단계, D17~D21)
+ * 본문 HTML 규칙 — 표시기·정화기·편집기가 함께 쓰는 허용 태그·속성·미디어 출처·외부 영상 (5단계, D17~D21)
  *
  * 규칙은 코어 환경설정 「본문 콘텐츠」(`content` 카테고리)에 둔다 — 편집기 설정에 두면 표시기·정화기가 편집기에 의존하고, 편집기를
  * 바꾸면 표시 규칙이 사라지기 때문이다. 소비자: 두 템플릿 HtmlContent(`G7Core.contentPolicy`), 코어 봇 정화기(`HtmlSanitizer`),
  * 이커머스 저장 정화기(`PurifiesHtml`), 편집기 플러그인. 아무도 태그 목록을 하드코딩하지 않는다.
  *
  * - 안전 후보(켜고 끔): 그림 캡션(figure·figcaption), 업로드 동영상(video·source·track), 업로드 오디오(audio·source), 외부 영상 삽입(oembed)
- * - 끈 후보 중 브라우저가 원래 받는 태그(figcaption)는 표시 단계에서 내용째 지운다(`drop_tags`) — 저장 원문·편집기는 그대로라 다시 켜면 복원 (#887)
+ * - 끈 후보 중 브라우저가 원래 받는 태그(figcaption)는 표시 단계에서 내용째 지운다(`drop_tags`) — 저장 원문·편집기는 그대로라 다시 켜면 복원
  * - 외부 영상 삽입을 끄면 `oembed` 는 원래 주소 nofollow 링크로 보인다(사람 화면은 런타임 `renderEmbeds`, 봇 화면은 `finalize('bot')`)
  * - 운영자 자유 추가(`custom_tags`): D19 거절 목록만 막고 나머지는 경고 후 허용
- * - 미디어 `src`·`poster` 는 서빙 주소 패턴에 맞아야 남는다 — 패턴은 확장이 등록한 실제 서빙 라우트에서 만든다(`MediaSourceRoutes`, #887)
+ * - 미디어 `src`·`poster` 는 서빙 주소 패턴에 맞아야 남는다 — 패턴은 확장이 등록한 실제 서빙 라우트에서 만든다(`MediaSourceRoutes`)
  *   + 필터 훅 `core.content.filter_media_source_patterns` 추가분
- * - 저장용 규칙(`forStorage()`)은 후보 스위치·외부 영상 켜고 끄기와 무관하다 — 켜고 끄기는 표시에서만 따른다(#887)
+ * - 저장용 규칙(`forStorage()`)은 후보 스위치·외부 영상 켜고 끄기와 무관하다 — 켜고 끄기는 표시에서만 따른다
  * - 속성 정화(`on*`·`javascript:`)는 늘 한다
  *
  * @since 7.1.5
@@ -52,7 +52,7 @@ final class ContentHtmlPolicy
     ];
 
     /**
-     * 후보를 끄면 표시(사람·봇 화면)에서 내용째 지울 태그 — 설정 키 => 태그 (#887).
+     * 후보를 끄면 표시(사람·봇 화면)에서 내용째 지울 태그 — 설정 키 => 태그.
      *
      * figcaption 은 기본 금지 목록에 없어(브라우저·DOMPurify 가 원래 받는 태그) 후보를 꺼도 그대로 보였다. 금지 목록(`forbid_tags`)에 넣으면
      * 편집기(GHS `disallow`)가 저장 단계에서 캡션을 지워 다시 켜도 복원되지 않으므로 별도 목록으로 내린다. 내용째 지우는 이유는 금지 태그의
@@ -121,7 +121,7 @@ final class ContentHtmlPolicy
     }
 
     /**
-     * 저장 정화용 규칙 — 지금 설정에서 후보 스위치와 외부 영상 서비스(프리셋·직접 추가·확장 제공)를 모두 켠 규칙 (#887).
+     * 저장 정화용 규칙 — 지금 설정에서 후보 스위치와 외부 영상 서비스(프리셋·직접 추가·확장 제공)를 모두 켠 규칙.
      *
      * 후보 스위치(그림 캡션·업로드 동영상·오디오·외부 영상 삽입)와 서비스 켜고 끄기는 **표시에서만** 따른다 — 저장 정화가 스위치를
      * 따르면 끈 동안 저장한 본문에서 그 요소가 지워져 다시 켜도 돌아오지 않는다. 운영자 추가 태그·미디어 출처 패턴은 지금 설정 그대로다.
@@ -231,7 +231,7 @@ final class ContentHtmlPolicy
     }
 
     /**
-     * 표시에서 내용째 지울 태그 — 꺼진 후보의 `DISPLAY_DROP_WHEN_OFF` 태그 중 다른 후보·운영자 추가 태그가 허용하지 않은 것 (#887).
+     * 표시에서 내용째 지울 태그 — 꺼진 후보의 `DISPLAY_DROP_WHEN_OFF` 태그 중 다른 후보·운영자 추가 태그가 허용하지 않은 것.
      *
      * 저장 원문은 건드리지 않는다(`finalize('store')` 는 쓰지 않음) — 화면(`drop_tags`)과 봇 화면(`finalize('bot')`)만 쓴다.
      *
@@ -284,7 +284,7 @@ final class ContentHtmlPolicy
      * 미디어 `src`·`poster` 가 맞아야 하는 서빙 주소 정규식(구분자 없음).
      *
      * 확장이 등록한 실제 서빙 라우트에서 만든 패턴(`MediaSourceRoutes::patterns()`)에 필터 훅 `core.content.filter_media_source_patterns`
-     * 추가분을 더한다(#887). 라우터·레지스트리가 없는 자리는 빈 목록에서 시작한다 — 그때 미디어 요소는 출처 검사에서 지워진다.
+     * 추가분을 더한다. 라우터·레지스트리가 없는 자리는 빈 목록에서 시작한다 — 그때 미디어 요소는 출처 검사에서 지워진다.
      * 정규식으로 컴파일되지 않는 값은 버린다.
      *
      * @return array<int, string> 정규식
@@ -363,9 +363,9 @@ final class ContentHtmlPolicy
 
     /**
      * 정화 뒤 마무리 — DOM 한 번 순회: 미디어 출처 검사(어긋나면 요소 제거), 후보 태그 속성 허용 목록, 이벤트·`javascript:` 속성 제거,
-     * `oembed` 처리(`store` 는 http(s) 주소면 서비스를 몰라도 원문 그대로 두고 `url` 외 속성만 정리, `bot` 은 늘 링크 — #887),
+     * `oembed` 처리(`store` 는 http(s) 주소면 서비스를 몰라도 원문 그대로 두고 `url` 외 속성만 정리, `bot` 은 늘 링크),
      * `bot` 은 꺼진 후보의 표시 제거 태그(`displayDropTags`)를 내용째 지운다 — 사람 화면(`drop_tags`)과 같게. `store` 는 저장 원문이라
-     * 지우지 않는다(다시 켜면 복원, #887). 어느 서비스로 재생할지·링크로 보일지는 표시가 그때 설정으로 정한다.
+     * 지우지 않는다(다시 켜면 복원). 어느 서비스로 재생할지·링크로 보일지는 표시가 그때 설정으로 정한다.
      *
      * @param  string  $html  정화된 HTML
      * @param  string  $mode  `store` | `bot`
@@ -506,7 +506,7 @@ final class ContentHtmlPolicy
     /**
      * `oembed` 를 유지하거나 링크로 바꿉니다.
      *
-     * 저장(`store`)은 http(s) 주소면 서비스를 몰라도 원문 그대로 둔다(#887) — 저장 때 링크로 바꾸면 운영자가 나중에 그 서비스를 더해도
+     * 저장(`store`)은 http(s) 주소면 서비스를 몰라도 원문 그대로 둔다 — 저장 때 링크로 바꾸면 운영자가 나중에 그 서비스를 더해도
      * 플레이어로 돌아오지 않는다. 봇(`bot`)은 늘 원래 주소 링크다. http(s) 가 아닌 주소(`javascript:` 등)·빈 주소는 어느 쪽이든 지운다.
      *
      * @param  \DOMDocument  $document  문서

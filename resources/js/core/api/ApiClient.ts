@@ -325,7 +325,7 @@ class ApiClient {
         ) {
           // 토큰 없이 보낸 요청의 401 은 세션 만료가 아니다 — 비회원이 권한 없는 기능(편집기 이미지
           // 업로드 등)을 눌렀을 뿐이다. 갱신·토큰 삭제·로그인 이동을 하지 않고 호출자에게 돌려준다.
-          // 종전에는 이 요청도 세션 만료로 보고 로그인 화면으로 옮겨 쓰던 글이 사라졌다(#883, engine-v1.88.2).
+          // 종전에는 이 요청도 세션 만료로 보고 로그인 화면으로 옮겨 쓰던 글이 사라졌다(engine-v1.88.2).
           if (!originalRequest?._g7AuthTokenSent) {
             this.completeDevToolsRequest(originalRequest, error);
             error.g7Auth = Object.freeze({ tokenSent: false });

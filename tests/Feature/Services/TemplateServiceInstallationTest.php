@@ -307,7 +307,7 @@ class TemplateServiceInstallationTest extends TestCase
             ->with($identifier)
             ->andReturn($templateInfo);
 
-        // 설치가 빈 자리로 등록한 조각 참조 경고를 꺼내 결과에 싣는다 (#712)
+        // 설치가 빈 자리로 등록한 조각 참조 경고를 꺼내 결과에 싣는다
         $warning = ['file' => 'templates/test-template/layouts/home.json', 'partial' => 'partials/x.json', 'reason' => 'include_file_not_found', 'message' => 'm'];
         $this->templateManager
             ->shouldReceive('takeLastLayoutWarnings')
@@ -526,7 +526,7 @@ class TemplateServiceInstallationTest extends TestCase
     /**
      * 같은 유형(admin)의 다른 활성 템플릿을 만듭니다.
      *
-     * 유형의 마지막 활성 템플릿은 끌 수 없으므로(#703) 비활성화 경로를 보는 테스트는 이 짝을 남긴다.
+     * 유형의 마지막 활성 템플릿은 끌 수 없으므로 비활성화 경로를 보는 테스트는 이 짝을 남긴다.
      *
      * @return Template 짝 활성 템플릿
      */

@@ -1,5 +1,5 @@
 /**
- * E2E: 관리자 환경설정 > 쿠키 배너 > 정책 버전 > 보기 — 처리방침 링크 (#509 체크리스트 12번 → 1.1.0 처리방침 주소 전환)
+ * E2E: 관리자 환경설정 > 쿠키 배너 > 정책 버전 > 보기 — 처리방침 링크 (체크리스트 12번 → 1.1.0 처리방침 주소 전환)
  * + 관리자 환경설정 카드 제목 색상 회귀 가드 (브라우저 스크린샷으로 발견)
  * + 정책 버전 이력 토글 sequence handler 회귀 가드
  *
@@ -8,7 +8,7 @@
  * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): snapshot_modal_opens, policy_link_href_equals_server_resolved_url, card_title_not_error_color, policy_history_toggle_expands_and_refetches
  *
  * 배경: 1.0.x 는 스냅샷의 슬러그를 화면에서 페이지 모듈 주소 규칙(`/page/{slug}`)으로 조합했고,
- * `/page/` 가 빠져 404 가 나는 결함(#509)이 있었다. 1.1.0 부터 운영자가 처리방침 주소를 직접 적고,
+ * `/page/` 가 빠져 404 가 나는 결함이 있었다. 1.1.0 부터 운영자가 처리방침 주소를 직접 적고,
  * 상세 API 가 `privacy_policy.url`(옛 슬러그 스냅샷은 그 시절 링크 경로로 푼 값)을 내보낸다.
  * 화면은 그 값을 그대로 href 로 쓴다 — 여기서는 현재 버전의 상세 API 응답과 모달 링크가 일치하는지,
  * 주소가 없으면 링크 대신 안내가 보이는지를 검증한다(사이트마다 현재 버전 스냅샷이 달라 둘 다 받는다).
@@ -82,7 +82,7 @@ test('정책 버전 snapshot 모달의 처리방침 링크가 상세 API 가 푼
 
 // @scenario tab=card_operator, permitted=yes
 // @effects card_title_not_error_color
-test('#509 - 관리자 환경설정 카드 제목이 에러 색상(빨간색)으로 표시되지 않는다', async ({ page, privacyManageToken }) => {
+test('관리자 환경설정 카드 제목이 에러 색상(빨간색)으로 표시되지 않는다', async ({ page, privacyManageToken }) => {
   await authenticatePage(page, privacyManageToken);
   await gotoGdprSettings(page);
 
@@ -112,7 +112,7 @@ test('#509 - 관리자 환경설정 카드 제목이 에러 색상(빨간색)으
 
 // @scenario tab=card_cookie_banner, permitted=yes
 // @effects policy_history_toggle_expands_and_refetches
-test('#509 - 정책 버전 이력 토글 버튼 클릭 시 이력 표가 펼쳐진다 (sequence handler 정상 동작 확인)', async ({ page, privacyManageToken }) => {
+test('정책 버전 이력 토글 버튼 클릭 시 이력 표가 펼쳐진다 (sequence handler 정상 동작 확인)', async ({ page, privacyManageToken }) => {
   await authenticatePage(page, privacyManageToken);
   await gotoGdprSettings(page);
 

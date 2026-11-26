@@ -14,7 +14,7 @@ use Modules\Sirsoft\Page\Services\PageContentMediaService;
  * 연결 시점에 본경로로 옮겨지므로 `temp_key` 가 남아 있다는 것은 "끝내 연결되지 않았다" 는
  * 뜻이고, 그래서 별도 운영자 토글 없이 상시 동작합니다 (운영 데이터가 아닌 폼 세션 부산물).
  * 편집기 본문에 올리고 저장하지 않은 본문 미디어 임시 행도 같은 기준으로 함께 지웁니다 — 본문 미디어는
- * 코어 골격의 정리가 맡아 행마다 `core.content_media.before_delete` 를 발화합니다 (#887). 건수는 둘을 합칩니다.
+ * 코어 골격의 정리가 맡아 행마다 `core.content_media.before_delete` 를 발화합니다. 건수는 둘을 합칩니다.
  *
  * @example php artisan sirsoft-page:prune-temp-attachments --dry-run
  * @example php artisan sirsoft-page:prune-temp-attachments --days=1

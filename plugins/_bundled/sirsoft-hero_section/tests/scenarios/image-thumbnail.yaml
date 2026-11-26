@@ -71,4 +71,4 @@ test_files:
 notes: |
   조건부 요청(304)·파일 서빙 계약은 public-hero.yaml(PublicBannerImageTest)이 소유한다 — 이 매니페스트의 변경 뒤에도 그 시나리오가 green 이어야 한다.
   관리 목록 이미지 규격(thumb md 파이프)은 admin-screens.yaml 의 list_image_thumbnail_preset 이 소유한다.
-  공개 자산 디스크 행(#878)의 슬라이더는 원본 후보만 direct_url 로 바꾸고 축소 후보는 이 매니페스트의 API ?size= 를 그대로 쓴다 — public-asset-disk.yaml 이 소유한다.
+  공개 자산 디스크 행의 슬라이더는 원본 후보만 direct_url 로 바꾸고 축소 후보는 이 매니페스트의 API ?size= 를 그대로 쓴다 — public-asset-disk.yaml 이 소유한다.

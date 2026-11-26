@@ -113,7 +113,7 @@
                     ]
                 },
                 {
-                    "comment": "배송국가 (D10 — 해외배송 활성 시에만 표시. _global.editingAddress.country_code 저장. 선택에 따라 국내/해외 주소 입력 분기. 체크아웃 배송지 관리 모달과 동형.)\n           선택 칸과 주소 칸이 같은 값(editingAddress.country_code, 없으면 KR)을 본다 — 새 배송지의 기본 국가는 「추가」 버튼이 채운다(#703).",
+                    "comment": "배송국가 (D10 — 해외배송 활성 시에만 표시. _global.editingAddress.country_code 저장. 선택에 따라 국내/해외 주소 입력 분기. 체크아웃 배송지 관리 모달과 동형.)\n           선택 칸과 주소 칸이 같은 값(editingAddress.country_code, 없으면 KR)을 본다 — 새 배송지의 기본 국가는 「추가」 버튼이 채운다.",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
@@ -714,7 +714,7 @@
                     "name": "Div",
                     "responsive": {
                         "-640": {
-                            "comment": "이 줄은 저장 단추가 폼 제출이라 고정 하단으로 옮기지 않는다. 640px 이하에서는 세로로 쌓고 폭을 채운다(Modal 고정 하단과 같은 경계, #869)",
+                            "comment": "이 줄은 저장 단추가 폼 제출이라 고정 하단으로 옮기지 않는다. 640px 이하에서는 세로로 쌓고 폭을 채운다(Modal 고정 하단과 같은 경계)",
                             "props": {
                                 "className": "flex flex-col gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
                             }

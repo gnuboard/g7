@@ -1,5 +1,5 @@
 /**
- * #599 validate 결함 수정 (P7) — 관리자 클레임 화면 레이아웃 계약
+ * validate 결함 수정 — 관리자 클레임 화면 레이아웃 계약
  *
  * 브랜치 검증이 관리자 클레임 목록·상세에서 찾은 결함을 **구워진 짝 `.json`**(런타임이 먹는 값)
  * 으로 잠근다. 소스 `.g7.html` 만 고치고 굽기를 빼먹으면 여기서 red 가 된다.
@@ -159,7 +159,7 @@ describe('#5 Select 는 placeholder 를 그리지 않는다 — 빈 선택지를
      * @effects claim_selects_lead_with_empty_option
      */
     it.each([
-        // 송장 입력은 상품 칸 선택 바 하나다(송장은 상품 행마다 — #599). 방향은 옆 셀렉트가 정한다.
+        // 송장 입력은 상품 칸 선택 바 하나다(송장은 상품 행마다). 방향은 옆 셀렉트가 정한다.
         ['item carrier', () => byId(claimItems, 'ci_007_carrier')],
         ['item bulk status', () => byId(claimItems, 'ci_002_item_status')],
         ['charge method', () => byId(claimPayment, 'cst_003_charge_method')],

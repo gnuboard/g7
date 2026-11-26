@@ -12,7 +12,7 @@ use Plugins\Sirsoft\Popup\Models\PopupImage;
  * 관리자 이미지 업로더(`file-uploader`)가 기대하는 첨부 모양(id·hash·original_filename·mime_type·size·
  * size_formatted·download_url·order·is_image)에 미리보기·권장 크기 안내용 url·width·height·device 를 더한다.
  *
- * 주소 필드(#878): `url`·`preview_url` = 공개 API 주소(썸네일 `?size=` 기준, 같은 출처), `direct_url` = 행 disk 의 직접
+ * 주소 필드: `url`·`preview_url` = 공개 API 주소(썸네일 `?size=` 기준, 같은 출처), `direct_url` = 행 disk 의 직접
  * 주소(공개 자산 디스크가 아니면 null), `download_url` = 원본 한 장(직접 주소가 있으면 그것, 없으면 API).
  *
  * @mixin PopupImage

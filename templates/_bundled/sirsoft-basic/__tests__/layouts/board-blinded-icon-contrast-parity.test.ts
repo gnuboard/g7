@@ -4,7 +4,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * 게시판 스킨 3종의 블라인드 아이콘 색 패리티 (#519)
+ * 게시판 스킨 3종의 블라인드 아이콘 색 패리티
  *
  * 블라인드 아이콘은 흰 배경 위에서 배경과 구분되어야 한다. `orange-300` 은 라이트 배경
  * 대비가 1.63 에 그쳐 사실상 보이지 않는다(WCAG 비텍스트 최소 3.0). 이 색을 `orange-500`

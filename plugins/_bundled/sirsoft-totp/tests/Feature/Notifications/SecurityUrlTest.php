@@ -10,7 +10,7 @@ use Plugins\Sirsoft\Totp\Listeners\TotpNotificationDataListener;
 use Plugins\Sirsoft\Totp\Tests\PluginTestCase;
 
 /**
- * 2단계 인증 알림의 보안 설정 주소 (1.1.1, #952 W9)
+ * 2단계 인증 알림의 보안 설정 주소 (1.1.1)
  *
  * 받는 사람은 대상 회원 자신이다 — 일반 회원에게 관리자 화면 주소를 보내면 열 수 없다.
  */

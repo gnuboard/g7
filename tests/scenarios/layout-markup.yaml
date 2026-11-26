@@ -112,17 +112,17 @@ effects:
   # 소유 매니페스트는 layout-editor-element-placement.yaml 이고, 게이트 필터 `LayoutServing` 에 걸려 함께 돌므로 여기에도 등재한다.
   - serving_cache_key_uses_server_current_version_not_client_query_version
   - save_followup_reload_returns_fresh_editor_response_with_new_lock_version
-  # #747 유입 — 서빙 응답의 빈 객체·빈 배열 보존(LayoutServingEmptyObjectTest, 소유 매니페스트 layout-serving-empty-object.yaml).
-  # 게이트 필터 `LayoutServing` 에 걸려 도는 테스트라 그 effect 도 등재한다. 코어 수정(#759 리베이스로 합류)으로 두 effect 모두 통과한다.
+  # 서빙 응답의 빈 객체·빈 배열 보존(LayoutServingEmptyObjectTest, 소유 매니페스트 layout-serving-empty-object.yaml).
+  # 게이트 필터 `LayoutServing` 에 걸려 도는 테스트라 그 effect 도 등재한다. 코어 수정(리베이스로 합류)으로 두 effect 모두 통과한다.
   - empty_object_served_as_object
   - empty_array_served_as_array
-  # 같은 테스트 파일이 topic(#759) 쪽에서 단 효과 — issue759 → develop-7.1.0 리베이스로 한 파일에 합쳐져 게이트에서 함께 돈다.
+  # 같은 테스트 파일이 topic 쪽에서 단 효과 — issue759 → develop-7.1.0 리베이스로 한 파일에 합쳐져 게이트에서 함께 돈다.
   - init_state_empty_object_preserved
   - fallback_empty_object_preserved
   - action_params_empty_object_preserved
   - empty_list_stays_list
   - root_map_section_restored
-  # #758 — 같은 테스트 파일에 더한 보존 범위 확대(props 값·격리 상태·정적 데이터·헤더·defines·computed·확장 props)와 캐시 경유 응답.
+  # 같은 테스트 파일에 더한 보존 범위 확대(props 값·격리 상태·정적 데이터·헤더·defines·computed·확장 props)와 캐시 경유 응답.
   # 소유 매니페스트는 layout-serving-empty-object.yaml 이고, 게이트 필터 `LayoutServing` 에 걸려 함께 돌므로 여기에도 등재한다.
   - expanded_value_positions_preserved
   - structural_self_empty_stays_array
@@ -210,7 +210,7 @@ effects:
   # "어느 파일이 어느 단락에 속하고 몇 자리가 남았는가" 다. 착수기의 계량이 스크래치패드에만
   # 있어 다음 단락이 재현할 수 없었고, 계획서 표가 실측보다 9% 높았다.
   - stage_rules_partition_the_corpus_with_no_gap
-  # 2026-09-28 #599 — S21 완료 선언 뒤 이 브랜치의 클레임·배송지·주문서 작업이 새로 만든 자리 53(19파일)이 잔여로
+  # 2026-09-28 — 완료 선언 뒤 클레임·배송지·주문서 작업이 새로 만든 자리 53(19파일)이 잔여로
   # 남아 이 단언이 16·17차 병합 게이트에서 red 였다. 53자리를 채워 잔여 0 으로 되돌렸다 — 산출 JSON 은 comment 키
   # 말고 바뀐 것이 0 이다(19파일 대조). 완료 단락에 새 자리를 만드는 작업은 같은 변경에서 주석을 단다.
   - completed_injection_stages_keep_zero_remaining_anchor
@@ -448,7 +448,7 @@ effects:
   - component_name_not_in_registry_is_rejected
   # C3(2026-09-28 결정): 목록에 없는 확장 컴포넌트는 경고일 뿐 저장을 막지 않는다 — 점 없는 템플릿 오타만 오류.
   - missing_extension_component_is_not_a_strong_validation_error
-  # #712 후속: slot 키는 슬롯 래퍼 컴포넌트에 붙는다 — 참조로 보고 건너뛸 것은 partial 뿐.
+  # slot 키는 슬롯 래퍼 컴포넌트에 붙는다 — 참조로 보고 건너뛸 것은 partial 뿐.
   - slot_wrapper_subtree_is_checked_for_registry
   # 미등록 컴포넌트 오류에 소스 줄·칸 — 편집기 마커가 그 줄에 찍힌다(2026-10-01 실측: 1행에 찍힘)
   - unregistered_component_error_carries_source_position
@@ -598,7 +598,7 @@ effects:
   - fragment_helper_directory_read_includes_markup_only
   - fragment_helper_directory_read_dedupes_pairs
   - fragment_helper_directory_read_returns_empty_when_absent
-  # #476 C13 — 디렉토리 수집이 조각 식별자를 함께 돌려준다. 확장이 키 없이 등록하면 같은 대상에
+  # 디렉토리 수집이 조각 식별자를 함께 돌려준다. 확장이 키 없이 등록하면 같은 대상에
   # 행이 둘일 때 어느 조각인지 가릴 수 없어 아무것도 하지 않으므로, 파일에서 바로 얻은 키를 넘긴다.
   - fragment_helper_directory_read_carries_fragment_key
   # 사본 재발 가드 — 판정을 표기(후행 슬래시)에 의존하지 않게 넓히고 종료 게이트(--filter=LayoutMarkup)
@@ -774,9 +774,9 @@ effects:
   # ㊻ — fragment 등록 세 갈래 중 템플릿 오버라이드만 `glob('*.json')` 로 소스를 무시하던
   # 사각. 공용 trait `CollectsFragmentSources` 로 통일하며 심은 실패 테스트 4건이다.
   - template_override_markup_only_is_registered
-  - template_override_refresh_removes_backfilled_stale_row   # 템플릿 오버라이드 재등록이 소스에 없는 옛 행(백필 키 등)을 정리 — 주소 검색 버튼 이중 주입 (#703 실측)
+  - template_override_refresh_removes_backfilled_stale_row   # 템플릿 오버라이드 재등록이 소스에 없는 옛 행(백필 키 등)을 정리 — 주소 검색 버튼 이중 주입
   - template_override_refresh_keeps_rows_of_failing_sources   # 소스는 있으나 컴파일 실패한 조각의 행은 보존 (정리 기준 = 소스 존재)
-  # #703 — 조각 식별자 백필·편집기 파일 조작이 7.0.11 업그레이드 설치에서 드러낸 등록 결함군
+  # 조각 식별자 백필·편집기 파일 조작이 7.0.11 업그레이드 설치에서 드러낸 등록 결함군
   - backfilled_fragment_row_is_rekeyed_not_duplicated   # 활성화·재등록·템플릿 활성화가 백필된 옛 키 행을 파일 키로 잇는다(모호하면 정리) — 조각 이중 주입 차단
   - edited_backfilled_row_keeps_its_edits_when_rekeyed   # 운영자가 고친 옛 키 행은 수정본을 지닌 채 이어진다(keep 전략이 본다)
   - reregistration_preserves_other_extensions_edits   # 한 확장의 활성화·업데이트가 부르는 전 확장 재등록은 다른 확장 수정본을 덮지 않는다
@@ -968,7 +968,7 @@ effects:
   # 없었다. 두 경로가 갈리면 어느 쪽으로 설치했느냐에 따라 산출이 달라진다(실측 92파일 153자리).
   - empty_map_survives_the_json_install_path
   - extension_badge_injection_is_idempotent_and_scoped
-  # B2(2026-09-28): 결제 플러그인 업데이트 뒤 주문 목록 결제수단 칸 확장점 조각도 다시 등록된다. #725 에서 결제 플러그인
+  # B2(2026-09-28): 결제 플러그인 업데이트 뒤 주문 목록 결제수단 칸 확장점 조각도 다시 등록된다. 결제 플러그인
   # 4종의 복원 리스너(꺼진 템플릿까지 행을 만들던 사본)를 지우고 코어 재등록으로 수렴했다 — 관측은
   # PaymentPluginUpdateFragmentConvergenceTest 가 진다(소유 매니페스트는 admin-order-list-payment-method-badges.yaml).
   - extension_point_fragment_is_restored_after_plugin_update
@@ -993,7 +993,7 @@ effects:
   - deleted_orphan_layouts_stay_deleted
   - bare_node_partial_declares_meta_is_partial
 
-  # --- #476 코드 편집기 HTML 기본화가 이 트랙에 얹은 컴파일 축.
+  # --- 코드 편집기 HTML 기본화가 이 트랙에 얹은 컴파일 축.
   #
   # 편집기 정본이 `.g7.html` 이 되면서 **편집기 저장 경로가 이 트랙의 컴파일 파사드를 탄다**.
   # 그래서 그 경로의 테스트 5파일은 클래스명이 게이트 필터 `LayoutMarkup` 에 걸려 여기서 돌고,
@@ -1043,7 +1043,7 @@ effects:
   # 2026-09-28 결정: 조각 컴파일은 붙을 템플릿과 무관(C10 의 템플릿별 컴파일 폐기)
   - fragment_compile_does_not_depend_on_the_target_template
   - late_host_is_filled_by_reregistration_and_orphans_are_removed
-  # #725 — 「붙을 자리 없는 대상」 잡음·죽은 행 결함군 (조각 실패 1회 기록 · 백업 경고 · 복원 범위 · 오버라이드 단일 판정 ·
+  # 「붙을 자리 없는 대상」 잡음·죽은 행 결함군 (조각 실패 1회 기록 · 백업 경고 · 복원 범위 · 오버라이드 단일 판정 ·
   # 활성화 격리 · 점검 명령 보고). 결함 재현은 각 테스트 docblock 에 있다.
   - broken_fragment_is_logged_once_per_process_without_template_tag
   - each_broken_fragment_logs_once_and_fixed_file_recompiles
@@ -1077,7 +1077,7 @@ effects:
   # 소스 파일에는 없고 DB 행에만 있어 코퍼스 게이트가 구조적으로 보지 못했다(설치본 점검이 잡았다).
   - inline_modal_data_sources_round_trip_as_body_data_source_children
   - inlined_node_layout_name_round_trips_as_data_layout_name
-  # #712 — 7.0 JSON 조각 참조 관용과 템플릿 활성화 조각 순서. 조합 축은 `legacy-json-extension-compat.yaml`
+  # 7.0 JSON 조각 참조 관용과 템플릿 활성화 조각 순서. 조합 축은 `legacy-json-extension-compat.yaml`
   # 이 소유하고, 두 파일이 게이트 필터 `LayoutMarkup` 에 걸려 여기서도 돌기 때문에 그 마킹을 함께 선언한다.
   - json_circular_partial_is_tolerated
   - json_host_invalid_partial_json_is_tolerated
@@ -1090,7 +1090,7 @@ effects:
   # 조건(when) 안 액션의 debounce 는 엔진이 무시한다 — 린터가 경고한다(7.1.0 잔여 관측 R-05)
   - nested_action_debounce_is_warned
   - mixed_debounce_on_same_event_is_warned
-  # #753 — 엔진이 이벤트 받기·실패 처리·첫 진입 동작을 통째로 실행한다(engine-v1.80.0). 진입점 전용 키(key·
+  # 엔진이 이벤트 받기·실패 처리·첫 진입 동작을 통째로 실행한다(engine-v1.80.0). 진입점 전용 키(key·
   # stopPropagation)를 그 자리에 적으면 린터가 알리고, init 은 sequence·switch·action-ref 를 굽고, 분기 모양이 왕복한다.
   - entry_only_key_is_warned
   - init_accepts_flow_handlers_and_action_ref
@@ -1100,15 +1100,15 @@ effects:
   - security_violation_carries_source_line
   - returned_json_has_no_position_markers
   - init_layout_with_unlocated_warning_compiles
-  # #757 링크 — `NavigationLinkMarkupTest` 가 게이트에서 돌므로 그 효과를 여기에도 둔다. 조합 축(컴파일러 / 봇 HTML)은
+  # 링크 — `NavigationLinkMarkupTest` 가 게이트에서 돌므로 그 효과를 여기에도 둔다. 조합 축(컴파일러 / 봇 HTML)은
   # `navigation-link-markup.yaml` 이 소유한다.
   - prevent_default_key_is_top_level
   - navigate_without_path_compiles_inside_link
   - bot_html_keeps_anchor_href
-  # #757 추가 11 — `NavigateFallbackPathMarkupTest` 가 게이트에서 돌므로 그 효과를 여기에도 둔다. 조합 축(path_kind × fallback_path)은
+  # `NavigateFallbackPathMarkupTest` 가 게이트에서 돌므로 그 효과를 여기에도 둔다. 조합 축(path_kind × fallback_path)은
   # `navigate-fallback-path.yaml` 이 소유한다.
   - markup_fallback_path_compiles_to_params
-  # #399 — `ResponsiveClassMergeMarkupTest` 가 게이트에서 돌므로 그 효과를 여기에도 둔다. 조합 축은
+  # `ResponsiveClassMergeMarkupTest` 가 게이트에서 돌므로 그 효과를 여기에도 둔다. 조합 축은
   # `responsive-class-merge.yaml` 이 소유한다.
   - markup_class_merge_compiles_and_round_trips
   - linter_warns_breakpoint_variant_in_class_merge
@@ -1200,7 +1200,7 @@ test_files:
   # ㊻ — 템플릿 확장 오버라이드의 `.g7.html` 소스 무시 사각 (CollectsFragmentSources 통일)
   - tests/Feature/LayoutMarkup/TemplateOverrideMarkupInstallTest.php
   - tests/Feature/LayoutMarkup/TemplateOverrideStaleRowCleanupTest.php
-  # #703 — 조각 행 수렴·해시 정규화·편집기 레이아웃 보존·오버라이드 대상 고유 키
+  # 조각 행 수렴·해시 정규화·편집기 레이아웃 보존·오버라이드 대상 고유 키
   - tests/Feature/LayoutMarkup/FragmentRowConvergenceTest.php
   - tests/Feature/LayoutMarkup/LayoutContentHashEmptyMapTest.php
   - tests/Feature/LayoutMarkup/TemplateLayoutRefreshPreservationTest.php
@@ -1245,7 +1245,7 @@ test_files:
   # 35차 근본 조치 J — 가드 품질 속성을 등록부로 모아 전 가드에 곱집합 집행 (계약 × 가드).
   # 회차마다 "그 회차에 깨진 개체" 에만 성질을 심던 구조를 끊는 지점이다.
   - tests/Unit/Support/LayoutMarkup/GuardContractGuardTest.php
-  # S18 P1 — 확장이 자기 확장점을 읽는 소비 축 (게이트 필터 EnsureAdminOrder). 업데이트 복원 리스너 4종은 #725 에서 지웠다.
+  # S18 P1 — 확장이 자기 확장점을 읽는 소비 축 (게이트 필터 EnsureAdminOrder). 업데이트 복원 리스너 4종은 지웠다.
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListenerTest.php
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/EnsureAdminOrderDetailTestModeLayoutListenerTest.php
   # 31차 — 게이트 상주 모집단을 phpunit.xml 도출로 반전하자 드러난 미등재분(자매 4파일과 같은 축)
@@ -1257,7 +1257,7 @@ test_files:
   - tests/Unit/Extension/PluginPartialResolutionParityTest.php
   - tests/Unit/Extension/LayoutPartialBaseDirectoryTest.php
   - tests/Unit/Extension/GeneratesComponentManifestTest.php
-  # 6차 병합(develop #601 계열) — 형제 GeneratesComponentManifestTest 와 같은 게이트 네임스페이스(tests/Unit/Extension)에 상주
+  # 6차 develop 병합 — 형제 GeneratesComponentManifestTest 와 같은 게이트 네임스페이스(tests/Unit/Extension)에 상주
   - tests/Unit/Extension/GeneratesComponentManifestNewlineTest.php
   # 39차 — fixture 생성 커맨드의 소스 선택 (문서 루트만 `.json` 전용이던 자리를 규약으로 편입)
   - tests/Feature/LayoutMarkup/LayoutFixtureCommandSourceTest.php
@@ -1295,12 +1295,12 @@ test_files:
   # 미리보기 서빙(무인증 토큰)도 있고, 그쪽은 분기가 둘이라 진입점 한 자리에서 제거한다.
   # 한 소비자에서 초록이 나면 나머지가 보이지 않는다 — 그래서 소비자마다 표본을 둔다.
   - tests/Feature/Api/Public/LayoutPreviewControllerTest.php
-  # 11차 develop 병합 유입(7.0.11 · #670 계열) — develop 라인이 만든 서빙 캐시 키 회귀 테스트. 이 트랙 산출물이 아니지만
+  # 11차 develop 병합 유입(7.0.11 계열) — develop 라인이 만든 서빙 캐시 키 회귀 테스트. 이 트랙 산출물이 아니지만
   # 클래스명이 S21.1 게이트 필터 `LayoutServing` 에 걸려 게이트에서 돌므로 등재한다(소유는 develop, 이 트랙 변경은 사례 번호 재번호뿐).
   - tests/Feature/Api/Public/LayoutServingStaleClientVersionKeyTest.php
-  # #747 이커머스 전수 실측 유입 — 서빙 응답이 빈 객체 `{}` 를 빈 배열 `[]` 로 바꾸는 코어 결함을 고정한 테스트(소유 매니페스트는
+  # 이커머스 전수 실측 유입 — 서빙 응답이 빈 객체 `{}` 를 빈 배열 `[]` 로 바꾸는 코어 결함을 고정한 테스트(소유 매니페스트는
   # layout-serving-empty-object.yaml). 이 트랙 산출물이 아니지만 클래스명이 게이트 필터 `LayoutServing` 에 걸려 게이트에서 돌므로 등재한다.
-  # 코어 수정이 #759 리베이스로 합류해 지금은 통과해야 한다(빈 객체 보존 시험 8효과).
+  # 코어 수정이 리베이스로 합류해 지금은 통과해야 한다(빈 객체 보존 시험 8효과).
   - tests/Feature/Api/Public/LayoutServingEmptyObjectTest.php
   # S21.4 — 같은 명제의 **세 번째 파일 종류**: 상속원(베이스 레이아웃).
   # 이 단락이 `_admin_base` 에 26건을 넣었고 그것은 관리자 전 화면이 상속하는 자리다. 베이스 주석이
@@ -1313,7 +1313,7 @@ test_files:
   # 파일 이름을 `LayoutServing…` 으로 둔 것은 이것이 SEO 설정이 아니라 **레이아웃 서빙 계약**을 재는
   # 시험이기 때문이고, 그래서 기존 게이트 필터(`LayoutServing`)에 그대로 든다.
   - tests/Feature/Seo/LayoutServingSeoInvarianceTest.php
-  # #476 — 편집기 정본이 `.g7.html` 이 되면서 이 트랙 파사드를 타게 된 다섯 파일.
+  # 편집기 정본이 `.g7.html` 이 되면서 이 트랙 파사드를 타게 된 다섯 파일.
   # 클래스명이 전부 게이트 필터 `LayoutMarkup` 에 걸려 **이미 게이트에서 돌고 있었는데** 등재가
   # 없었다(`GateMembershipGuardTest::test_every_gate_resident_test_is_declared_in_manifest` 가 red
   # 로 잡았다). 편집기 표면의 조합 축은 `code-editor-markup-default.yaml` 이 따로 소유한다.
@@ -1321,7 +1321,7 @@ test_files:
   - tests/Unit/Services/LayoutMarkupServiceTest.php
   - tests/Feature/LayoutMarkup/LayoutCheckInstalledCommandTest.php
   - tests/Feature/LayoutMarkup/FragmentRegistrationPolicyTest.php
-  # #725 — 「붙을 자리 없는 대상」 잡음·죽은 행 결함군
+  # 「붙을 자리 없는 대상」 잡음·죽은 행 결함군
   - tests/Feature/LayoutMarkup/FragmentFailureLogOnceTest.php
   - tests/Feature/LayoutMarkup/BackupFragmentReadWarningTest.php
   - tests/Feature/LayoutMarkup/EditorTreeLayoutReadFailureMessageTest.php
@@ -1334,16 +1334,16 @@ test_files:
   # 게이트에서 돈다. 조합 축(lint 경고 / 보안 위반)은 `layout-markup-issue-location.yaml` 이 소유한다.
   - tests/Feature/Api/Admin/LayoutMarkupIssueLocationTest.php
   - tests/Feature/LayoutMarkup/LayoutCompileSelfCheckTest.php
-  # #712 — 네임스페이스 `Tests\Feature\LayoutMarkup` 이라 게이트에서 돌지만 `legacy-json-extension-compat.yaml`
-  # 에만 등재돼 있었다(#712 리베이스 뒤 종료 게이트에서 `test_every_gate_resident_test_is_declared_in_manifest` 가 red).
+  # 네임스페이스 `Tests\Feature\LayoutMarkup` 이라 게이트에서 돌지만 `legacy-json-extension-compat.yaml`
+  # 에만 등재돼 있었다(리베이스 뒤 종료 게이트에서 `test_every_gate_resident_test_is_declared_in_manifest` 가 red).
   - tests/Feature/LayoutMarkup/LegacyJsonPartialToleranceTest.php
   - tests/Feature/LayoutMarkup/TemplateActivationFragmentOrderTest.php
-  # #757 링크 — 네임스페이스 `Tests\Unit\Support\LayoutMarkup` 이라 게이트에서 돈다. 조합 축(컴파일러 / 봇 HTML)은
+  # 링크 — 네임스페이스 `Tests\Unit\Support\LayoutMarkup` 이라 게이트에서 돈다. 조합 축(컴파일러 / 봇 HTML)은
   # `navigation-link-markup.yaml` 이 소유한다(액션 키 `preventDefault` top-level · 링크 안 path 없는 navigate).
   - tests/Unit/Support/LayoutMarkup/NavigationLinkMarkupTest.php
-  # #757 추가 11 — 네임스페이스 `TestsUnitSupportLayoutMarkup` 이라 게이트에서 돈다. 조합 축은 `navigate-fallback-path.yaml` 이
+  # 네임스페이스 `TestsUnitSupportLayoutMarkup` 이라 게이트에서 돈다. 조합 축은 `navigate-fallback-path.yaml` 이
   # 소유한다(`<navigate fallbackPath>` → `params.fallbackPath` · 마크업 왕복).
   - tests/Unit/Support/LayoutMarkup/NavigateFallbackPathMarkupTest.php
-  # #399 — 네임스페이스 `Tests\Unit\Support\LayoutMarkup` 이라 게이트에서 돈다. 조합 축(`<responsive class-merge>` 컴파일 ·
+  # 네임스페이스 `Tests\Unit\Support\LayoutMarkup` 이라 게이트에서 돈다. 조합 축(`<responsive class-merge>` 컴파일 ·
   # 빈 값 거부 · 역출력 생략 · 왕복 · 린트 ⑯)은 `responsive-class-merge.yaml` 이 소유한다.
   - tests/Unit/Support/LayoutMarkup/ResponsiveClassMergeMarkupTest.php

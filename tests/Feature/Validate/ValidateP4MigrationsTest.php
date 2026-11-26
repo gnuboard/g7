@@ -6,7 +6,7 @@ use Tests\Support\RecordingSchemaBuilder;
 use Tests\TestCase;
 
 /**
- * 코어 마이그레이션 재실행 가드 검증 (#599 validate P4)
+ * 코어 마이그레이션 재실행 가드 검증
  *
  * 재실행 가드는 "앞선 실행이 중간에 멈춘 상태" 에서만 드러나는데, 그 상태를 공유 테스트 DB 에
  * 만들면 DDL 이 암묵 커밋되어 테이블이 망가진다. 그래서 스키마 호출을 {@see RecordingSchemaBuilder}
@@ -20,7 +20,7 @@ class ValidateP4MigrationsTest extends TestCase
     /** 레이아웃 확장 조각 식별자 마이그레이션. */
     private const LAYOUT_FRAGMENT_KEY = 'database/migrations/2026_09_11_000001_add_fragment_key_to_template_layout_extensions_table.php';
 
-    /** 조각 고유 키를 옮겨 받아 거는 마이그레이션(#703). */
+    /** 조각 고유 키를 옮겨 받아 거는 마이그레이션. */
     private const LAYOUT_OVERRIDE_TARGET_KEY = 'database/migrations/2026_09_29_000001_add_override_target_key_to_template_layout_extensions_table.php';
 
     /** 전환 전 활동 로그의 공통 컬럼 (마이그레이션이 after()·인덱스로 참조하는 것). */
@@ -92,7 +92,7 @@ class ValidateP4MigrationsTest extends TestCase
     /**
      * 조각 고유 키는 존재를 확인한 뒤에만 만들고 지운다 — 다시 돌려도, 키 전에 멈춘 설치본을 되돌려도 막히지 않는다.
      *
-     * 고유 키는 #703 부터 조각 식별자 마이그레이션이 아니라 대상 확장 키 마이그레이션이 건다. 조각 식별자
+     * 고유 키는 이제 조각 식별자 마이그레이션이 아니라 대상 확장 키 마이그레이션이 건다. 조각 식별자
      * 마이그레이션은 키를 만들지 않고, 되돌릴 때 앞선 판이 남긴 키만 확인 뒤 지운다. 두 마이그레이션은
      * MySQL 에서 접두 길이 고유 키를 raw 문으로 만들고 백필 UPDATE 도 실제로 내므로 기록기 위에서 돌리지 않고
      * 소스를 읽는다(실행하면 공유 테스트 DB 에 DDL·DML 이 나간다).
@@ -109,7 +109,7 @@ class ValidateP4MigrationsTest extends TestCase
     public function test_layout_fragment_key_unique_index_is_guarded_on_rerun_and_rollback(): void
     {
         [$fragmentUp, $fragmentDown] = $this->upAndDown(self::LAYOUT_FRAGMENT_KEY);
-        $this->assertFalse(strpos($fragmentUp, 'ADD UNIQUE'), '조각 식별자 마이그레이션이 다시 고유 키를 겁니다(#703 이후 다음 마이그레이션 몫)');
+        $this->assertFalse(strpos($fragmentUp, 'ADD UNIQUE'), '조각 식별자 마이그레이션이 다시 고유 키를 겁니다(그 뒤 마이그레이션 몫)');
         $this->assertNotFalse(
             strpos($fragmentDown, "Schema::hasIndex('template_layout_extensions', 'uk_layout_extension_fragment')"),
             '조각 식별자 마이그레이션 down() 이 고유 키 존재를 확인하지 않고 지웁니다'

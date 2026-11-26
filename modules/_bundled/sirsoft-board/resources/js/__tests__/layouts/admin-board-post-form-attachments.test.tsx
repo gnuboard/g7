@@ -213,7 +213,7 @@ describe('관리자 폼 저장 버튼 (admin_board_post_form.json)', () => {
         const handlers = getSequenceHandlers(headerButton.actions);
 
         // 저장 표시 → 업로드 신호 → 저장 요청 순서. 사이에 업로드 실패 수를 모으고 실패면 알리는 단계가 끼며,
-        // 저장 요청은 실패가 없을 때만 나간다(#869 브라우저 실측 — uploadFailureStopsSave.test.ts 가 실행으로 잰다)
+        // 저장 요청은 실패가 없을 때만 나간다(uploadFailureStopsSave.test.ts 가 실행으로 잰다)
         expect(handlers[0]).toBe('setState');
         expect(handlers.indexOf('emitEvent')).toBeGreaterThan(0);
         expect(handlers.indexOf('apiCall')).toBeGreaterThan(handlers.indexOf('emitEvent'));
@@ -326,7 +326,7 @@ describe('사용자 폼 (_post_form.json)', () => {
 
         const handlers = getSequenceHandlers(saveButton.actions);
         // 저장 표시 → 업로드 신호 → 저장 요청 순서. 사이에 업로드 실패 수를 모으고 실패면 알리는 단계가 끼며,
-        // 저장 요청은 실패가 없을 때만 나간다(#869 브라우저 실측 — uploadFailureStopsSave.test.ts 가 실행으로 잰다)
+        // 저장 요청은 실패가 없을 때만 나간다(uploadFailureStopsSave.test.ts 가 실행으로 잰다)
         expect(handlers[0]).toBe('setState');
         expect(handlers.indexOf('emitEvent')).toBeGreaterThan(0);
         expect(handlers.indexOf('apiCall')).toBeGreaterThan(handlers.indexOf('emitEvent'));

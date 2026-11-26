@@ -1,5 +1,5 @@
 /**
- * #810 후속 — 최대 길이 문구(제목 100·설명 300·버튼 30자)가 사이트 홈 구좌에서 잘리거나 넘치지 않는다.
+ * 최대 길이 문구(제목 100·설명 300·버튼 30자)가 사이트 홈 구좌에서 잘리거나 넘치지 않는다.
  * @scenario-manifest tests/scenarios/preview-frame-and-conflict.yaml
  * 효과 요약(마커 아님 — 평문): long_text_not_lost
  *

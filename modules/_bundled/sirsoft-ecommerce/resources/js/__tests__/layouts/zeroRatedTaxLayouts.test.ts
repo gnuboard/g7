@@ -1,6 +1,6 @@
 /**
  * @file zeroRatedTaxLayouts.test.ts
- * @description 관리자 화면의 영세율·옵션별 과세 종류 표면 (#612)
+ * @description 관리자 화면의 영세율·옵션별 과세 종류 표면
  *
  * - 상품 폼 판매정보: 과세 여부 버튼에 「영세」가 넓은·좁은 화면 모두 있고, 옵션마다 바꾸는 곳 안내가 붙는다.
  * - 상품 폼 옵션 표: 판매가 다음 「과세 종류」 열 — 빈 값(기본값 따름)·과세·면세·영세 네 선택지, 바꾸면
@@ -51,7 +51,7 @@ function textOf(node: unknown): string {
     return JSON.stringify(node);
 }
 
-describe('관리자 영세율·옵션별 과세 종류 레이아웃 (#612)', () => {
+describe('관리자 영세율·옵션별 과세 종류 레이아웃', () => {
     // @scenario surface=admin_product_form
     // @effects admin_product_form_offers_zero_rated
     it('판매정보 과세 여부 버튼에 영세가 넓은·좁은 화면 모두 있고 안내 문구가 붙는다', () => {

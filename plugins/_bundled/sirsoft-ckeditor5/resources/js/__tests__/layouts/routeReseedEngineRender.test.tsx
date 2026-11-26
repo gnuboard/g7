@@ -29,10 +29,10 @@ import path from 'path';
 import { configure, waitFor } from '@testing-library/react';
 
 // 실물 엔진 렌더(레이아웃 로드·폼 응답·편집기 조각 마운트)는 다른 스위트가 함께 돌면 1초를 넘길 수 있다 — 조건 대기의 한도를
-// 넉넉히 둔다. 대기는 조건이 서는 즉시 끝나므로 평소 실행 시간은 그대로다(#869 G6)
+// 넉넉히 둔다. 대기는 조건이 서는 즉시 끝나므로 평소 실행 시간은 그대로다
 configure({ asyncUtilTimeout: 5000 });
 // 이 파일 시험은 단독으로도 1~3초 걸리고(고정 대기 합이 2.7초까지) 조건 대기 한도가 5초라, 기본 시험 한도 5초로는 부하에서 조건 대기가
-// 끝나기 전에 시험 한도에 먼저 걸린다(#869 C4 — 동시 부하 재현에서 `Test timed out in 5000ms` 로 실패)
+// 끝나기 전에 시험 한도에 먼저 걸린다(동시 부하 재현에서 `Test timed out in 5000ms` 로 실패)
 vi.setConfig({ testTimeout: 30000 });
 
 /** API 대역 — 엔드포인트로 응답을 정하고, 잡아 두기를 켜면 풀 때까지 기다린다 */
@@ -253,7 +253,7 @@ function installWatchCounter(): void {
 /**
  * 감시 주기가 두 번 돌 때까지 기다린다 — 최소 900ms(종전 고정 대기)를 기다린 뒤, 살아 있는 감시가 있으면 그 감시가 이 호출 뒤로
  * 두 번 더 돌았는지 확인한다. 고정 900ms 만 기다리면 부하로 감시가 늦게 붙거나 주기가 밀렸을 때 감시가 돌기 전에 단언을 읽었다
- * (#869 C4). 감시가 결함으로 되돌리지 못하면 두 주기 뒤에도 앞 글 본문이라 여전히 잡힌다.
+ *. 감시가 결함으로 되돌리지 못하면 두 주기 뒤에도 앞 글 본문이라 여전히 잡힌다.
  *
  * @return 두 주기가 지나면 풀리는 약속
  */
@@ -616,7 +616,7 @@ describe('같은 레이아웃 경로 이동 — 편집기가 새 글 값으로 �
         // 이 하네스는 첫 렌더 문맥에 `_local` 이 아직 없어 같은 식이 빈 값으로 풀리므로, 첫 렌더에 있는 받은 값으로 같은 꼴을 만든다.
         const { go } = await mount(ROUTES.e96, { assetHeld: true, contentExpr: "{{form_data?.data?.content ?? ''}}" });
         // mount 는 폼 값이 _local 에 선 것까지만 기다린다 — 편집기 조각의 initEditor 호출은 그 뒤 렌더에서 오므로, 부하가 걸리면
-        // 아직 호출 전(initCalls 가 빔)일 수 있다. 호출을 조건으로 기다린다(#869 C4 — 동시 부하 재현에서 이 줄이 undefined 로 실패)
+        // 아직 호출 전(initCalls 가 빔)일 수 있다. 호출을 조건으로 기다린다(동시 부하 재현에서 이 줄이 undefined 로 실패)
         await waitFor(() => expect(initCalls[0]?.content, '마운트 때 앞 글 본문을 받는다(브라우저와 같은 꼴)').toBe('앞 글 본문'));
         await waitFor(() => expect(asset.reject).not.toBeNull());
         expect(fallbackArea(), '본체를 싣는 동안은 입력칸이 없다').toBeNull();
@@ -627,7 +627,7 @@ describe('같은 레이아웃 경로 이동 — 편집기가 새 글 값으로 �
         asset.reject?.();
         await waitFor(() => expect(fallbackArea()).not.toBeNull());
         // 재시딩 감시가 두 번 돌 시간은 그대로 준다(그 사이 앞 글 본문으로 되돌아가면 안 된다). 단언은 고정 대기 직후 바로 읽지 않고
-        // 조건으로 기다린다 — 부하로 타이머가 한꺼번에 만기되면 감시가 일으킨 렌더보다 대기 뒤 단언이 먼저 돌 수 있다(#869 G6)
+        // 조건으로 기다린다 — 부하로 타이머가 한꺼번에 만기되면 감시가 일으킨 렌더보다 대기 뒤 단언이 먼저 돌 수 있다
         await settleTwoTicks();
 
         await waitFor(() => expect(fallbackArea().value, '새 글 화면 입력칸에 앞 글 본문이 서면 안 된다').toBe(''));

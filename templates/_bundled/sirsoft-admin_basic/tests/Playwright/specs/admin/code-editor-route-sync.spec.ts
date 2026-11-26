@@ -26,7 +26,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 route 동기화', () => {
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
 
     // init_actions 가 query.route → board/form 레이아웃으로 복원.
-    // 사용자에게 보이는 결과(에디터 카드 파일명 헤더 "board/form.g7.html")로 검증 — 편집기 정본이 HTML 이다 (#476).
+    // 사용자에게 보이는 결과(에디터 카드 파일명 헤더 "board/form.g7.html")로 검증 — 편집기 정본이 HTML 이다.
     await expect(
       page.locator('#editor_card').getByText('board/form.g7.html'),
     ).toBeVisible({ timeout: 20_000 });

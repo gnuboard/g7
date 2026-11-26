@@ -394,7 +394,7 @@ class PaymentCallbackController
 
             // 승인액은 **PG 승인 응답**의 TotPrice 만 쓴다. 콜백 TotPrice 를 먼저 쓰면 결제창 금액을 바꾼
             // 요청이 청구액을 적어 보내는 것만으로 대조를 통과한다(대조가 항등식이 된다). 응답에 금액이
-            // 없으면 0 이 되어 아래 대조에서 망취소 + 실패로 끝난다 (#599 validate P2, 클레임 경로와 같은 규칙).
+            // 없으면 0 이 되어 아래 대조에서 망취소 + 실패로 끝난다 (클레임 경로와 같은 규칙).
             $totPrice = is_numeric($pgResponse['TotPrice'] ?? $pgResponse['totPrice'] ?? null)
                 ? (int) ($pgResponse['TotPrice'] ?? $pgResponse['totPrice'])
                 : 0;
@@ -445,7 +445,7 @@ class PaymentCallbackController
                     'is_test_mode' => $this->apiService->isTestMode(),
                     'pg_response_sanitized' => true,
                     'pg_raw_response' => $this->sanitizePgResponse($pgResponse, self::PC_AUTH_RESPONSE_KEYS),
-                    // 결제창이 과세 구분(tax·taxfree)을 실은 결제 — 부분취소가 같은 구분을 싣는 근거(#820)
+                    // 결제창이 과세 구분(tax·taxfree)을 실은 결제 — 부분취소가 같은 구분을 싣는 근거
                 ], $this->buildEasyPayPaymentMeta($selectedEasyPayMethod), $this->buildTaxSplitApprovalMeta($order, $totPrice)),
                 paymentDevice: DeviceDetector::detect($request),
                 isEscrow: $this->apiService->isEscrowEnabled(),

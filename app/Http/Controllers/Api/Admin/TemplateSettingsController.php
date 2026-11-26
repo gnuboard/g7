@@ -12,7 +12,7 @@ use App\Services\TemplateSettingsService;
 use Illuminate\Http\JsonResponse;
 
 /**
- * 템플릿 환경설정 API 컨트롤러 (#434)
+ * 템플릿 환경설정 API 컨트롤러
  *
  * 조회·저장·기본값 되돌리기·레이아웃 조회. 꺼진 템플릿도 설치돼 있으면 설정할 수 있다(켜진 뒤 적용) — 미설치·선언 없는 템플릿은 404.
  */

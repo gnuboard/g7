@@ -6,7 +6,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
- * `artisan test` 부모 프로세스의 확장 오토로드 등록 회귀 가드 (이슈 #599 후속).
+ * `artisan test` 부모 프로세스의 확장 오토로드 등록 회귀 가드.
  *
  * 회귀: `artisan` 은 `test` 명령일 때 확장 오토로드 등록을 건너뛰면서
  * (`tests/bootstrap.php` 가 `_bundled` 기준으로 우선 로드한다는 전제)

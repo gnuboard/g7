@@ -166,7 +166,7 @@ describe('Pagination', () => {
   });
 
   /**
-   * hasMorePages 와 last_page 의 우선순위 회귀 (#519)
+   * hasMorePages 와 last_page 의 우선순위 회귀
    *
    * 총 건수가 정확해 last_page 를 아는 목록은 페이지 산술이 언제나 옳다. 그때 응답에
    * has_more_pages 가 없어 레이아웃이 `?? false` 로 채워 넣더라도 그 false 가 "다음" 을

@@ -74,7 +74,7 @@ class PositionRegistryTest extends PluginTestCase
 
     /**
      * 모듈이 켜져 있어도 조회 계약이 없는 옛 판(게시판 1.3.0·이커머스 1.4.0 미만)이면 동적 위치를 넣지 않는다 — 해석기가 계약으로만
-     * 대상을 찾으므로, 넣으면 위치를 고를 때 해석기 생성이 실패한다(#916).
+     * 대상을 찾으므로, 넣으면 위치를 고를 때 해석기 생성이 실패한다.
      *
      * @scenario case=builtin_dynamic_positions_follow_modules
      *

@@ -66,7 +66,7 @@ class UserTemplateComposer
             $activeTemplate = null;
         }
 
-        // 프론트엔드 공개 설정 — 공개 설정 API(`GET /api/frontend-config`)와 같은 함수로 조립한다(#792 D8)
+        // 프론트엔드 공개 설정 — 공개 설정 API(`GET /api/frontend-config`)와 같은 함수로 조립한다
         $bundle = $this->frontendConfigService->settingsBundle(FrontendConfigService::SCOPE_USER);
         $frontendSettings = $bundle['settings'];
         $consentInitial = $bundle['consentInitial'];
@@ -104,7 +104,7 @@ class UserTemplateComposer
 
         $view->with('activeUserTemplate', $activeTemplate);
         $view->with('extensionCacheVersion', $extensionCacheVersion);
-        // 템플릿 설정 중 template.json `expose` 선언 키만 — 엔진이 첫 화면 전 config API 를 부르지 않게 한다(선언 없으면 null) (#879)
+        // 템플릿 설정 중 template.json `expose` 선언 키만 — 엔진이 첫 화면 전 config API 를 부르지 않게 한다(선언 없으면 null)
         $view->with('exposedTemplateConfig', $activeTemplate !== null ? $this->templateService->getExposedTemplateConfig($activeTemplate) : null);
         // 카테고리 값은 화면이 이름표로 읽는 맵이다 — 빈 카테고리(`identity`)를 `{}` 로 바꾸는 일은 공개 설정 API 와 같은 조립 함수가 한다
         $view->with('frontendSettings', $frontendSettings);
@@ -127,10 +127,10 @@ class UserTemplateComposer
         $view->with('extensionClassPrefixes', $this->collectExtensionClassPrefixes());
         $view->with('customAssetsDisabled', $this->customAssetsDisabledByRequest());
         $view->with('trustedScriptHosts', $trustedScriptHosts);
-        // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다 (#639)
+        // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다
         $view->with('stateContracts', StateContracts::forFrontend());
         $view->with('consentInitial', $consentInitial);
-        // 엔진이 전체 페이지 이동으로 넘길 custom 주소(routes/custom.php, #792 W5) · 실시간 알림 접속정보
+        // 엔진이 전체 페이지 이동으로 넘길 custom 주소(routes/custom.php) · 실시간 알림 접속정보
         $view->with('customRoutes', $this->frontendConfigService->customRoutes());
         $view->with('websocketConfig', $this->frontendConfigService->websocket());
         $view->with('frontendLocale', $this->frontendConfigService->locale());

@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-favicon.test.ts
- * @description 환경설정 일반 탭 파비콘 칸과 저장 후 전역 갱신을 잠근다 (#434).
+ * @description 환경설정 일반 탭 파비콘 칸과 저장 후 전역 갱신을 잠근다.
  *
  * - 파비콘 업로더: 파비콘 전용 형식(ico·svg 포함)·1개·1MB·지연 업로드·이미지 압축 없음(ico·svg 변환 방지)
  * - 완료 시 폼 값을 **교체**(1개짜리), 제거 시 걸러 냄
@@ -78,7 +78,7 @@ const general = read('layouts/partials/admin_settings/_tab_general.json');
 const settings = read('layouts/admin_settings.json');
 const channelOff = read('layouts/partials/admin_settings/_modal_notification_channel_off_confirm.json');
 
-describe('환경설정 일반 탭 파비콘 칸 (#434)', () => {
+describe('환경설정 일반 탭 파비콘 칸', () => {
     const uploader = find(general, (n) => n.id === 'site_favicon_uploader');
 
     // @scenario surface=admin_settings
@@ -122,7 +122,7 @@ describe('환경설정 일반 탭 파비콘 칸 (#434)', () => {
             expect(notice).not.toBeNull();
             expect(notice!.if).toBe(`{{settings?.data?._meta?.favicon?.${target}?.source === 'template'}}`);
 
-            // 다른 화면 이동은 실제 주소를 가진 링크(#757 WP-L)
+            // 다른 화면 이동은 실제 주소를 가진 링크
             const link = find(notice, (n) => n.name === 'A');
             expect(link!.if).toContain(`favicon?.${target}?.settings_route`);
             expect(link!.props.href).toContain(`favicon?.${target}?.settings_route`);
@@ -132,7 +132,7 @@ describe('환경설정 일반 탭 파비콘 칸 (#434)', () => {
     });
 });
 
-describe('저장 후 전역 설정 갱신 (#434 S-3)', () => {
+describe('저장 후 전역 설정 갱신', () => {
     // @scenario surface=admin_settings
     // @effects site_favicon_saved_and_replaced
     it('저장 버튼이 파비콘 업로드 신호를 로고 다음에 보낸다', () => {

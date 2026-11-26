@@ -67,7 +67,7 @@ const TestButton: React.FC<any> = ({
     data-testid={
       ariaLabel === '닫기'
         ? 'dismiss-btn'
-        // 복구 단추는 관리자 주 버튼이다 — #399 D2 로 파랑 인라인 묶음(bg-blue-600 …)이 의미 클래스 `btn btn-primary` 로 바뀌었다
+        // 복구 단추는 관리자 주 버튼이다 — 파랑 인라인 묶음(bg-blue-600 …)이 의미 클래스 `btn btn-primary` 로 바뀌었다
         : String(className ?? '').split(/\s+/).includes('btn-primary')
           ? 'recover-btn'
           : undefined
@@ -163,7 +163,7 @@ function setupDefaultMocks(testUtils: ReturnType<typeof createLayoutTest>) {
 
 // 레이아웃 트리에서 id 로 노드 찾기.
 //
-// iteration template 안의 노드는 HTML id 유일성을 위해 `{{$idx}}` 접미가 붙는다(#421).
+// iteration template 안의 노드는 HTML id 유일성을 위해 `{{$idx}}` 접미가 붙는다.
 // 따라서 정확 일치뿐 아니라 `<id>_{{$idx}}` 형태도 같은 노드로 인정한다.
 // 정확 일치만 쓰면 iteration id 보간 도입 시 조용히 null 이 되어 테스트가 깨진다.
 function findById(node: any, id: string): any | null {
@@ -250,7 +250,7 @@ describe('어드민 대시보드 - 재호환 알림 (recovery_available)', () =>
     const recoverBtn = findByIdPrefix(dashboardLayout, 'alert_recover_button');
     expect(recoverBtn).not.toBeNull();
     // 버튼 조건은 subtype 이 아니라 **복구 엔드포인트의 존재**다 — 정적 게시 실패 알림처럼
-    // 다른 subtype 의 알림도 recover_endpoint 만 싣으면 같은 배선으로 복구된다 (#651 D11)
+    // 다른 subtype 의 알림도 recover_endpoint 만 싣으면 같은 배선으로 복구된다
     expect(recoverBtn.if).toBe('{{!!alert.recover_endpoint}}');
 
     const action = asArray(recoverBtn?.actions)[0];

@@ -24,7 +24,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 취소신청서 기록 지점과 자동 전이 엔진 테스트 (#599 후속 §4-2·§4-3)
+ * 취소신청서 기록 지점과 자동 전이 엔진 테스트
  *
  * 구매자가 주문 상품 하나를 마이페이지에서 환불했는데 **주문취소 기록만 남고 환불신청서가
  * 없었다**. 결함이 아니라 설계 기본값이었다 — 즉시취소가 환불 행을 이미 완료 상태로
@@ -251,7 +251,7 @@ class ClaimCancellationRecordTest extends ModuleTestCase
     }
 
     // ================================================================
-    // 잔여 한도 이중 차감 (#599 후속 §12-B)
+    // 잔여 한도 이중 차감 (B)
     // ================================================================
 
     /**
@@ -290,7 +290,7 @@ class ClaimCancellationRecordTest extends ModuleTestCase
         $this->assertGreaterThan(
             0,
             (float) $second['refund']->refund_amount,
-            '2차 부분환불이 0원이면 잔여 한도가 두 번 깎인 것이다 (#599 후속 §12-B)',
+            '2차 부분환불이 0원이면 잔여 한도가 두 번 깎인 것이다',
         );
     }
 

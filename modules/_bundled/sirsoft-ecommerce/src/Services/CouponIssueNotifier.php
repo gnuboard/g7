@@ -10,7 +10,7 @@ use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 
 /**
- * 쿠폰 발급 알림 발화기 (#952)
+ * 쿠폰 발급 알림 발화기
  *
  * 발급 1건마다 그 쿠폰 전용 훅(`sirsoft-ecommerce.coupon.notify_issued.{쿠폰ID}`)을 한 번 발화한다. 그 훅은 쿠폰의 알림 종류
  * (`coupon_issued.{쿠폰ID}`)가 구독하므로, 발송 채널·문구·수신동의 판정은 알림 템플릿 시스템과 데이터 리스너가 맡는다.

@@ -101,7 +101,7 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
     });
   });
 
-  describe('getLoginRedirectUrl - reason 파라미터 (Issue #301)', () => {
+  describe('getLoginRedirectUrl - reason 파라미터', () => {
     it('reason 인자가 있으면 쿼리에 reason 파라미터가 결합되어야 한다', () => {
       const returnUrl = '/admin/dashboard';
       const result = authManager.getLoginRedirectUrl('admin', returnUrl, 'session_expired');
@@ -129,7 +129,7 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
     });
   });
 
-  describe('updateConfig - 인증 설정 부분 갱신 (Issue #301 Tier 1)', () => {
+  describe('updateConfig - 인증 설정 부분 갱신', () => {
     it('updateConfig 로 loginPath 변경 후 getLoginRedirectUrl 이 새 경로를 반환해야 한다', () => {
       authManager.updateConfig('user', { loginPath: '/account/signin' });
       const result = authManager.getLoginRedirectUrl('user', '/me', 'session_expired');

@@ -95,7 +95,7 @@ class PartialReferenceCorpusTest extends LayoutMarkupTestCase
 
         // 하한은 **루트별**이다. 전역 하나면 한 루트가 통째로 관측 밖이 되어도 나머지가 채워
         // 침묵한다 — `FragmentSourceCopyGuardTest` 가 앞서 템플릿 축을 그렇게 잃었던 형태다.
-        // 템플릿 설정 화면 루트(`settings/`, #434)는 조각을 쓰지 않는 단일 화면이라 참조 하한 대신 파일 도달 하한을 건다.
+        // 템플릿 설정 화면 루트(`settings/`)는 조각을 쓰지 않는 단일 화면이라 참조 하한 대신 파일 도달 하한을 건다.
         foreach ($referencesPerRoot as $rootGlob => $count) {
             if ($this->isPartialFreeRoot($rootGlob)) {
                 $this->assertNotEmpty($filesPerRoot[$rootGlob],
@@ -120,7 +120,7 @@ class PartialReferenceCorpusTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 조각 참조가 없는 것이 정상인 레이아웃 루트인지 판정합니다 — 템플릿 설정 화면 루트(`settings/`, #434).
+     * 조각 참조가 없는 것이 정상인 레이아웃 루트인지 판정합니다 — 템플릿 설정 화면 루트(`settings/`).
      *
      * @param  string  $rootGlob  루트 글롭
      * @return bool 참조 하한을 걸지 않을 루트면 true

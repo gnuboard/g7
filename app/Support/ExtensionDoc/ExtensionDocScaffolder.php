@@ -808,7 +808,7 @@ class ExtensionDocScaffolder
                 ], $requiredBy),
             );
 
-        // 선택 연동(#639) — 선언이 있는 확장에만 절을 둔다(없음 문장으로 모든 문서를 바꾸지 않는다).
+        // 선택 연동 — 선언이 있는 확장에만 절을 둔다(없음 문장으로 모든 문서를 바꾸지 않는다).
         $integrates = $ctx['deps']['integrates'] ?? [];
         if ($integrates !== []) {
             $sections[] = '';

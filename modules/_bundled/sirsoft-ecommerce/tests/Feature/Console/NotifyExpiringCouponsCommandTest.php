@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Feature\Coupon\AutoIssue\Concerns\CreatesAut
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 쿠폰 만료 임박 알림 명령 (#952 P8)
+ * 쿠폰 만료 임박 알림 명령
  */
 class NotifyExpiringCouponsCommandTest extends ModuleTestCase
 {

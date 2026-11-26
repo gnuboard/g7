@@ -7,7 +7,7 @@ use Tests\Helpers\CreatesTemplateSettingsFixtures;
 use Tests\TestCase;
 
 /**
- * 파비콘 공개 서빙 테스트 (#434)
+ * 파비콘 공개 서빙 테스트
  */
 class FaviconControllerTest extends TestCase
 {

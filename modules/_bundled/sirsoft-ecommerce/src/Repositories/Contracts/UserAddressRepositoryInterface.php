@@ -141,7 +141,7 @@ interface UserAddressRepositoryInterface
     public function countByUser(int $userId): int;
 
     /**
-     * 배송지를 가진 회원 ID 서브쿼리를 만듭니다 (회원 목록 확장 필터용, #705).
+     * 배송지를 가진 회원 ID 서브쿼리를 만듭니다 (회원 목록 확장 필터용).
      *
      * @param  string|null  $countryCode  국가 코드 (null 이면 국가 무관 — 배송지가 하나라도 있는 회원)
      * @return Builder user_id 한 열을 고르는 서브쿼리

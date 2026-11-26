@@ -13,7 +13,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * 탈퇴·삭제 회원 수신 정책의 단일화 (#599 validate 코어 major 5)
+ * 탈퇴·삭제 회원 수신 정책의 단일화 (validate 코어 major 5)
  *
  * 발송 루프는 탈퇴 회원에게 바깥 채널을 막는데, 수신자 해석은 계정이 삭제된 회원을
  * 확장이 실은 게스트 재료(주문서 연락처)로 대신 불러 메일을 보냈다. 같은 "그 회원은 더 이상

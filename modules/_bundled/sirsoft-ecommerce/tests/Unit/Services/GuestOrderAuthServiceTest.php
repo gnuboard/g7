@@ -377,7 +377,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * 누군가 그 입력에서 만료시각을 빼는 순간 이 테스트가 red 로 선다.
      *
      * 2026-09-16 브라우저 실측으로도 확인했다 — 만료를 1년 뒤로 늘린 토큰은 404 였다
-     * (#599 세션2 계획서준수검증 2차 · 계획서 1011).
+     * (세션2 계획서준수검증 2차 · 계획서 1011).
      *
      * @scenario guest_auth_gate=expiry_tamper
      *

@@ -10,7 +10,7 @@
                 | 'layers'(사용자 셸 — 확장 CSS 의미 칸 `@layer g7-extension;` 순서 선언, 템플릿 CSS 링크 **뒤**)
                 | 'layers-admin'(관리자 셸 — `@layer g7-preview, g7-extension;` 순서 선언, 템플릿 CSS 링크 **뒤**)
                   층 순서는 그 층 이름이 문서에 처음 나온 자리로 정해지므로, 순서 선언만 담은 파일을 템플릿 CSS
-                  `<link>` 뒤에 두면 종전 인라인 `<style>` 선언과 같은 자리를 차지한다(#816 × #163).
+                  `<link>` 뒤에 두면 종전 인라인 `<style>` 선언과 같은 자리를 차지한다(#163).
 --}}
 @php
     $g7CoreSheet = in_array($sheet ?? 'core', ['standalone', 'layers', 'layers-admin'], true) ? $sheet : 'core';

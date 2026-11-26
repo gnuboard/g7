@@ -8,7 +8,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\PureTestCase;
 
 /**
- * 본인인증 알림 type 규칙 테스트 (#699)
+ * 본인인증 알림 type 규칙 테스트
  *
  * 옛 IDV 메시지 표의 3단 폴백(policy → purpose → provider_default)을 알림 type 후보 3개로
  * 바꾼 규칙을 잠근다 — type 컬럼 길이(100자) 경계·해시 결정성·후보 순서·옛 범위 변환.

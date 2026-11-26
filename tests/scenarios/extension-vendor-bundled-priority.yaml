@@ -4,7 +4,7 @@ description: |
   확장 시험은 `_bundled` 코드를 검증한다 — 확장 자기 코드(PSR-4·진입 classmap)는 `tests/bootstrap.php` 가 이미 `_bundled` 를
   prepend 해 우선시킨다. 그런데 확장 vendor(제3자 composer 패키지) 맵은 활성 디렉토리를 먼저 모아(먼저 찾은 것이 이김),
   개발 사이트에 낡은 설치본이 있으면 시험이 그 설치본 패키지를 읽어 거짓 결과를 냈고, 설치·제거 도중에는 사라진 파일을
-  include 해 실패했다(#798 — sirsoft-sso 는 플러그인 시험 쪽 `BundledVendorLoader` 로 우회해 왔고 그 우회는 남긴다).
+  include 해 실패했다(sirsoft-sso 는 플러그인 시험 쪽 `BundledVendorLoader` 로 우회해 왔고 그 우회는 남긴다).
 
   이 매니페스트가 고정하는 계약:
     - 같은 확장의 활성·번들 사본이 모두 있으면 classmap 은 번들 경로, PSR-4·PSR-0 검색 순서는 번들 → 활성, files 는 번들 먼저.

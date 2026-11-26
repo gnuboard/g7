@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 메뉴 아이콘 정규형과 사용자 수정 표식(user_overrides) 테스트 (#381).
+ * 메뉴 아이콘 정규형과 사용자 수정 표식(user_overrides) 테스트.
  *
  * 레거시 문자열과 구조형이 같은 바이트로 저장되므로 같은 아이콘을 다시 저장해도 「수정됨」이 생기지 않고,
  * 실제로 바꾸면 생기는지 — 모델 저장·mass update·업그레이드 계획·서비스 수정 네 경로에서 검증한다.

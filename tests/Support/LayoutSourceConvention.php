@@ -104,19 +104,19 @@ final class LayoutSourceConvention
             .'규약에서 나오므로 그 수 자체가 선택의 함수다.',
         'validateLayoutFiles' => '레이아웃 파일 묶음을 검증한다. 검증 대상 집합이 선택 결과라 '
             .'통과/실패 판정이 선택에 의존한다.',
-        // #727: 조각 출처 표식을 켜고 끄는 래퍼와 본문으로 갈렸다 — 본문이 collectLayoutSources() 를 부른다.
+        // 조각 출처 표식을 켜고 끄는 래퍼와 본문으로 갈렸다 — 본문이 collectLayoutSources() 를 부른다.
         'validateLayoutFilesAnnotated' => 'validateLayoutFiles() 의 본문(조각 출처 표식이 켜진 상태). '
             .'collectLayoutSources() 의 선택 결과를 검증·컴파일해 반환하므로 **출력이 선택에서 나온다** — '
             .'위 항목과 같은 이유로 문지기 대상이고, 결과를 소비할 뿐이라 면제로 쓰면 안 된다.',
 
-        // ── #476: 조각 식별자(fragment_key) 도입으로 생긴 선택 소비 표면 ──
+        // ── 조각 식별자(fragment_key) 도입으로 생긴 선택 소비 표면 ──
         'fragmentSourceKeys' => '조각 디렉토리의 **소스 파일** 키 집합을 만든다. 집합의 원소가 '
             .'collectFragmentSources() 의 짝 접기(.g7.html 우선·짝 1건)에서 나오므로 **출력이 '
             .'선택 결과다** — 갱신 경로는 이 집합의 여집합을 "파일에서 사라진 조각" 으로 보고 DB 행을 '
             .'지우므로, 선택이 틀리면 살아 있는 행이 지워진다. 동시에 면제로 쓰면 안 된다: 이것을 '
             .'부른다고 그 코드가 우선순위 규약을 따르는 것이 아니라 결과를 소비할 뿐이다.',
 
-        // #725: 점검 명령(layout:check-installed)이 읽지 못한 조각을 보고하려고 생긴 선택 소비 표면.
+        // 점검 명령(layout:check-installed)이 읽지 못한 조각을 보고하려고 생긴 선택 소비 표면.
         'unreadableFragmentSources' => '소스는 있는데 정의를 얻지 못한 조각을 원인과 함께 돌려준다. 대상 '
             .'집합이 collectFragmentSources() 의 짝 접기(.g7.html 우선·짝 1건)에서 나오므로 **출력이 '
             .'선택 결과다** — 선택이 틀리면 멀쩡한 조각을 「읽지 못함」 으로 보고하거나 깨진 조각을 놓친다. '

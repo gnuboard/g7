@@ -115,7 +115,7 @@
       <div data-ref="sidebar_header" class="sidebar_header">
         <responsive on="portable" class="hidden"/>
         <div data-ref="sidebar_logo" data-leave-guard="true" class="sidebar_logo">
-          <!-- 관리자 로고 = 템플릿 설정 branding.logo(관리자 전용 변형), 비우면 환경설정 사이트 로고 (#434).
+          <!-- 관리자 로고 = 템플릿 설정 branding.logo(관리자 전용 변형), 비우면 환경설정 사이트 로고.
                원본 대신 md 규격 썸네일. 첫 화면에 보이는 자리라 지연 로딩하지 않는다(eager) -->
           <img data-ref="logo_image" data-if="{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}" src="{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}" thumbPreset="md" loading="eager" alt="{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}" class="logo_image"/>
           <span data-ref="app_name" data-if="{{!(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}" class="text-primary font-bold text-xl truncate">{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}</span>
@@ -176,7 +176,7 @@
       </div>
     </div>
     <div data-ref="right_content_wrapper" class="right_content_wrapper">
-      <!-- 검수 서버 띠(#888) — 실행 역할이 stage 인 서버(운영 DB 를 공유하는 검수 사이트)에서만 그린다. 셸 설정 `appConfig.runtime_role` 을 읽는다.
+      <!-- 검수 서버 띠 — 실행 역할이 stage 인 서버(운영 DB 를 공유하는 검수 사이트)에서만 그린다. 셸 설정 `appConfig.runtime_role` 을 읽는다.
            그 서버에서는 확장·코어·언어팩 변경 API 가 409 로 막히므로, 왜 버튼이 잠겼는지 모든 관리자 화면 맨 위에서 알린다. -->
       <div data-ref="stage_role_banner" data-if="{{_global.appConfig?.runtime_role === 'stage'}}" role="status" class="flex-center gap-2 px-4 py-2 text-sm font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border-b border-amber-300 dark:border-amber-700">
         <icon name="flask" class="flex-shrink-0"/>

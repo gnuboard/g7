@@ -1,5 +1,5 @@
 /**
- * 관리자 클레임 상세 골격 — 섹션 탭 스크롤 동기화·모바일 전환·권한 게이팅 (#599 S9a)
+ * 관리자 클레임 상세 골격 — 섹션 탭 스크롤 동기화·모바일 전환·권한 게이팅
  *
  * 상세 화면에서 브라우저로만 드러나는 축을 본다:
  *
@@ -22,7 +22,7 @@
  * **특정 모양의 신청서**가 있어야 끝까지 재는 세 시험(옵션 변경 교환의 소계·차액, 회수중으로 옮길
  * 상품 1건짜리 반품의 송장 입력, 계좌가 빈 승인 환불의 확인 창)은 운영 데이터에 그런 건이 우연히
  * 있을 때만 돌면 「건너뜀」이 통과로 세어진다. 그 셋은 `claimDetailSeed`(워커 단위 fixture —
- * `playwright:seed-claim-detail`)가 세운 신청서를 연다(#757). 운영 데이터 발견은 시드 표식
+ * `playwright:seed-claim-detail`)가 세운 신청서를 연다. 운영 데이터 발견은 시드 표식
  * (`E2ECLM`)이 든 번호를 건너뛴다 — 다른 워커가 정리 중인 시드 건을 집지 않게.
  *
  *  ⑥ **신청상품 표의 금액·추가옵션 표기**(S17). 이 표는 DataGrid 셀 안에서 그려지므로
@@ -115,7 +115,7 @@ async function waitForDetail(page: import('@playwright/test').Page): Promise<voi
   await expect(page.locator('#claim_tab_navigation')).toBeVisible({ timeout: 30_000 });
 }
 
-test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
+test.describe('관리자 클레임 상세 골격', () => {
   /**
    * 라우트가 없으면 템플릿 404 다 — 목록의 클레임번호를 눌러도 아무 화면이 나오지 않는다.
    * 없는 번호는 서버가 404 로 답하고 화면은 오류 페이지로 떨어진다.
@@ -156,7 +156,7 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
 
     await expect(page.locator('#cd_003_claim_number')).toHaveText(claim!.claimNumber);
 
-    // 「주문 보기」는 원 주문 상세로 가는 새 창 링크다(#757 결정 — 종전 openWindow 단추). 주소가 href 에 있어
+    // 「주문 보기」는 원 주문 상세로 가는 새 창 링크다(종전 openWindow 단추). 주소가 href 에 있어
     // 가운데 클릭·새 탭·주소 복사가 같은 곳을 가리키고, 보통 클릭도 지금 보던 신청서를 두고 새 창으로 연다.
     const orderLink = page.locator('#cd_009_order_link_button');
     await expect(orderLink).toBeVisible({ timeout: 30_000 });
@@ -397,7 +397,7 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
       await expect(memoSave).toBeDisabled();
     }
 
-    // 송장 입력은 상품 칸 선택 바의 [송장만 저장] 하나다(송장은 상품 행마다 — #599). 배송 정보 탭의
+    // 송장 입력은 상품 칸 선택 바의 [송장만 저장] 하나다(송장은 상품 행마다). 배송 정보 탭의
     // 운송장 묶음 [도착 처리] 도 같은 전이 권한을 따른다.
     const trackingOnly = page.locator('#ci_009_tracking_only');
     if (await trackingOnly.count()) {
@@ -489,7 +489,7 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
   });
 
   /**
-   * 상세에서 신청서 단위 전이를 할 수 있다 (#599 후속 F1).
+   * 상세에서 신청서 단위 전이를 할 수 있다.
    *
    * 예전에는 이 진입점이 통째로 없었다 — 승인·반려·보류는 **목록의 일괄 바**에서만 가능했고,
    * 운영자는 상세를 열어 내용을 확인한 뒤 목록으로 되돌아가 그 줄을 다시 찾아야 했다. 환불
@@ -596,7 +596,7 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
    * 수량 1 에서는 값이 같아 보인다.
    *
    * 신청서는 시드가 세운다 — 옵션 변경 교환, 수량 2, 상위 옵션(차액 ≠ 0). 운영 데이터에 그 모양의 교환이
-   * 없으면 이 시험은 끝까지 재지 못하고 건너뛰었다(#757 M1 실측 skip).
+   * 없으면 이 시험은 끝까지 재지 못하고 건너뛰었다(실측 skip).
    */
   // @scenario claim_type=exchange, claim_stage=in_progress
   // @effects detail_items_amount_pairs_subtotal, detail_items_price_difference_shows_amount
@@ -681,7 +681,7 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
 
   // @scenario claim_type=exchange, claim_stage=in_progress
   // @effects admin_claim_detail_comparison_in_settlement_card
-  test("'이 클레임의 정산' 카드 첫머리에 접수 시점 주문금액 비교표(또는 구형 안내)가 선다 (#599 후속 P8)", async ({ page, request, claimsManageToken }) => {
+  test("'이 클레임의 정산' 카드 첫머리에 접수 시점 주문금액 비교표(또는 구형 안내)가 선다", async ({ page, request, claimsManageToken }) => {
     const claim = await discoverClaim(request, claimsManageToken);
     test.skip(claim === null, '교환·반품 신청서가 한 건도 없다 — 클레임 시드 선행');
 
@@ -725,7 +725,7 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
   });
   /**
    * 탭 막대가 스크롤 영역 위에 붙어 있어야 한다 — 헤더 묶음 안에 있으면 sticky 가 부모 경계에
-   * 막혀 스크롤과 함께 사라지고, 긴 구역을 지나 탭으로 돌아가려면 끝까지 올려야 했다(#599 후속 운영 지적).
+   * 막혀 스크롤과 함께 사라지고, 긴 구역을 지나 탭으로 돌아가려면 끝까지 올려야 했다(후속 운영 지적).
    */
   // @scenario claim_type=exchange, claim_stage=in_progress
   // @effects detail_tab_nav_stays_visible_on_scroll
@@ -836,7 +836,7 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
    * 송장을 비운 채 [적용] 하면 요청을 보내지 않고 안내한다 — 쓰기 없이 입구만 잰다.
    *
    * 신청서는 시드가 세운다 — 상품 1건짜리 승인 반품(송장 없음). 운영 데이터에서 그 모양을 찾던 때는 없으면
-   * 건너뛰었다(#757 M1 실측 skip).
+   * 건너뛰었다(실측 skip).
    */
   // @scenario claim_type=return, claim_stage=in_progress
   // @effects detail_item_logistics_opens_prefilled_tracking
@@ -855,7 +855,7 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
     expect(items.length, '시드한 반품이 상품 1건짜리가 아니다').toBe(1);
     expect(status, `시드한 반품 행을 회수중·발송중으로 옮길 수 없다 — 선택지 ${JSON.stringify(first)}`).not.toBeNull();
 
-    // 미리 채움은 고른 **행**의 송장이다 — 송장은 상품 행마다 있다(#599 P1).
+    // 미리 채움은 고른 **행**의 송장이다 — 송장은 상품 행마다 있다.
     const saved = status === 'redelivering' ? items[0].redelivery_tracking_number : items[0].collection_tracking_number;
     const target = { claimNumber, status: status!, tracking: saved ?? '' };
 
@@ -894,7 +894,7 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
    * 실행은 하지 않는다 — 열림과 칸·버튼 상태까지만 본다.
    *
    * 신청서는 시드가 세운다 — 계좌가 빈 승인 환불신청서(입금된 가상계좌 주문, 저장 현금 있음). 운영 데이터에서
-   * 찾던 때는 없으면 건너뛰었다(#757 M1 실측 skip).
+   * 찾던 때는 없으면 건너뛰었다(실측 skip).
    */
   // @scenario payment=vbank_deposited, stored_account=none
   // @effects refund_modal_account_rows_follow_selected_method

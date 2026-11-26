@@ -1,5 +1,5 @@
 /**
- * 관리자 게시글 상세 — 원글·답변 카드 첨부 내려받기 (#703).
+ * 관리자 게시글 상세 — 원글·답변 카드 첨부 내려받기.
  *
  * 결함 두 겹:
  *   ① 두 카드가 관리자 템플릿에만 있는 접두어 없는 `downloadAttachment` 를 불러, 다른 관리자 템플릿에서는
@@ -143,7 +143,7 @@ async function uploadAttachment(
 // 전용 게시판 slug 를 생성/삭제하므로 병렬 실행 시 경합한다 — 직렬 고정
 test.describe.configure({ mode: 'serial' });
 
-test.describe('관리자 게시글 상세 — 원글·답변 첨부 내려받기 (#703)', () => {
+test.describe('관리자 게시글 상세 — 원글·답변 첨부 내려받기', () => {
     // @scenario outcome=success
     // @effects reply_card_lists_its_own_attachments, admin_detail_downloads_post_and_reply_attachments_in_browser
     test('답변 카드에도 자기 첨부가 보이고, 두 카드 모두 토큰을 실어 원본 파일명으로 저장된다', async ({

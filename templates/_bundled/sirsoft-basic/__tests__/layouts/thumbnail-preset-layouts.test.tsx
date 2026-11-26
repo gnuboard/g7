@@ -1,6 +1,6 @@
 /**
  * @file thumbnail-preset-layouts.test.tsx
- * @description 썸네일 규격 레이아웃 적용 — 장바구니 항목·게시판 카드형·상품 상세 렌더링 테스트 (#869)
+ * @description 썸네일 규격 레이아웃 적용 — 장바구니 항목·게시판 카드형·상품 상세 렌더링 테스트
  *
  * 배경: 업로드 이미지는 2000px 원본이 64px 장바구니 칸·카드 목록에 그대로 내려갔다. 레이아웃의 `<img>` 가
  * 표시 크기에 맞는 규격(`thumbPreset`)을 들고 있어야 Img 가 `?size=` 를 붙여 썸네일을 받는다. 이 규격이
@@ -19,7 +19,7 @@
  * 효과 요약(마커 아님, 평문): layout_img_requests_thumbnail_size, zoom_view_keeps_original, reaction_icon_keeps_original_shape
  * 효과 요약(마커 아님, 평문): direct_url_row_requests_thumbnail_through_preview_url
  *
- * 공개 자산 디스크(CDN) 행(#878): `download_url` 은 직접 주소라 규격이 붙지 않는다. 리뷰 사진 칸·카테고리 배너는
+ * 공개 자산 디스크(CDN) 행: `download_url` 은 직접 주소라 규격이 붙지 않는다. 리뷰 사진 칸·카테고리 배너는
  * 서버가 함께 내리는 `preview_url`(API)에 규격을 걸고, 확대 창은 `download_url`(원본)을 그대로 쓴다.
  */
 
@@ -283,7 +283,7 @@ describe('상품 상세 (shop/show.json · 리뷰 탭 · 리뷰 확대 창)', ()
     utils.cleanup();
   });
 
-  // 공개 자산 디스크(CDN) 행 — download_url 은 직접 주소라 규격이 붙지 않으므로 preview_url(API)에 sm 을 건다(#878)
+  // 공개 자산 디스크(CDN) 행 — download_url 은 직접 주소라 규격이 붙지 않으므로 preview_url(API)에 sm 을 건다
   // @scenario screen=product_detail_reviews
   // @effects direct_url_row_requests_thumbnail_through_preview_url
   it('CDN 리뷰 사진 칸은 preview_url(API) 의 sm 규격 주소를 요청한다', async () => {
@@ -405,7 +405,7 @@ describe('카테고리 배너 (shop/category.json)', () => {
   });
 });
 
-describe('반응 아이콘 — 썸네일 면제 (#869 검토)', () => {
+describe('반응 아이콘 — 썸네일 면제 (검토)', () => {
   // 반응 아이콘은 16~20px 칸에 object-contain 으로 모양을 그대로 보인다. xs(64×64 가운데 자르기)를 붙이면 정사각이
   // 아닌 아이콘의 양 끝이 서버에서 잘려 모양이 바뀌므로 규격 없이 원본을 받고 면제 사유를 남긴다
   for (const [name, layout, count] of [

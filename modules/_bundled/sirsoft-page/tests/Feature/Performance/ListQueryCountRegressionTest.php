@@ -8,7 +8,7 @@ use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 use Tests\Concerns\CountsQueries;
 
 /**
- * 페이지 목록 조회의 쿼리 수 회귀 테스트 (#519)
+ * 페이지 목록 조회의 쿼리 수 회귀 테스트
  *
  * 행 수를 늘려도 쿼리 수가 늘지 않는지 단언한다 — 그것이 N+1 의 정의다.
  *

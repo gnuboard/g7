@@ -1,5 +1,5 @@
 /**
- * 관리자 게시글 일괄 처리 (#524 WP-D).
+ * 관리자 게시글 일괄 처리.
  *
  * 실브라우저로 두 갈래를 잰다:
  *   ① 두 건을 골라 일괄 블라인드하면 한 요청으로 처리되고 목록의 상태 배지가 바뀐다
@@ -31,7 +31,7 @@ async function openPostList(page: Page, token: string, slug: string): Promise<vo
   await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 15_000 });
 }
 
-test.describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
+test.describe('관리자 게시글 일괄 처리', () => {
   // @scenario bulk_action=blind, permission=manage, row_state=published
   // @effects admin_post_bulk_buttons_share_one_modal
   test('세 버튼이 같은 확인 창을 열고 갈래만 달리 심는다', async ({ page, scrapSeed }) => {

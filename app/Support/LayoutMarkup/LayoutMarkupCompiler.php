@@ -92,7 +92,7 @@ final class LayoutMarkupCompiler
      *
      * 이 단계는 경고에 줄을 붙이려는 **보조** 단계다. 10-07 에는 표식이 `<init>` 액션의 키 검사에 걸려
      * (`init_action_key_forbidden`) 컴파일 전체가 실패했고, 그 실패가 설치·활성화까지 막을 수 있었다(원인은 `ea5286728`
-     * 이 고쳤다). 보조 단계의 실패가 컴파일을 세우지 않도록 여기서 가둔다(#725).
+     * 이 고쳤다). 보조 단계의 실패가 컴파일을 세우지 않도록 여기서 가둔다.
      *
      * @param  array<int, MarkupElement>  $roots  소스 트리 루트
      * @param  string  $rootKind  문서 루트 종류

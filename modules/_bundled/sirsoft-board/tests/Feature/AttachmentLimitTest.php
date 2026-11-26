@@ -141,7 +141,7 @@ class AttachmentLimitTest extends BoardTestCase
     }
 
     /**
-     * 업로더가 보내는 `post_attachments` 처럼 `attachments` 가 아닌 컬렉션도 상한에 센다 (#883).
+     * 업로더가 보내는 `post_attachments` 처럼 `attachments` 가 아닌 컬렉션도 상한에 센다.
      *
      * 종전 서비스 상한은 `attachments` 컬렉션만 세어, 다른 이름으로 올린 첨부가 상한 밖이었다. 예약 컬렉션
      * (본문 미디어)만 뺀다.

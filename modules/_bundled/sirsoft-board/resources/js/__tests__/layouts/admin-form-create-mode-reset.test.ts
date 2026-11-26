@@ -2,7 +2,7 @@
  * 게시판 폼·게시글 폼 — 같은 레이아웃 재사용(수정 → 등록) 시 form 잔존 제거 (레이아웃 JSON 구조 검증)
  *
  * @description
- * 배경(브라우저 실측 2026-09-14, #599): 엔진은 layout_name 이 바뀔 때만 `_local` 을 비운다.
+ * 배경(브라우저 실측 2026-09-14): 엔진은 layout_name 이 바뀔 때만 `_local` 을 비운다.
  * 게시판 수정 → 게시판 등록, 게시글 수정 → 게시글 등록은 같은 레이아웃이라 `_local.form` 이 남고,
  * 두 폼은 생성 모드에서도 데이터소스(initLocal: form)가 폼을 채우는데 엔진이 그 페이로드를
  * **기존 `_local.form` 과 깊은 병합**해 두므로(TemplateApp processInitOptions) 직전 글의 id,

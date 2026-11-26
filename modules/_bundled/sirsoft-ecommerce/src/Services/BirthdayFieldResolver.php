@@ -8,7 +8,7 @@ use App\Support\LocalizedValue;
 use Illuminate\Support\Collection;
 
 /**
- * 생일 쿠폰이 쓸 회원 항목을 고르는 해석기 (#952)
+ * 생일 쿠폰이 쓸 회원 항목을 고르는 해석기
  *
  * 쇼핑몰 환경설정(쿠폰 탭)의 「생일로 쓸 회원 항목」(`promotion.birthday_field_key`)은 코어 회원 항목 집합
  * (`core.user`) 중 **날짜 유형이고 공용 값 테이블에 저장하는 항목**만 고를 수 있다. 꺼진 항목은 후보로 보이되

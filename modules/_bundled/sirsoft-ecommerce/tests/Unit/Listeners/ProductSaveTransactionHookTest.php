@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Fixtures\ProductTransactionHookProbeListener
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 상품 저장 트랜잭션 안 훅 `before_create_commit`·`before_update_commit` (#883 3단계)
+ * 상품 저장 트랜잭션 안 훅 `before_create_commit`·`before_update_commit`
  *
  * 실제 등록 경로(HookListenerRegistrar)로 sync 리스너를 붙여, 트랜잭션 안·마지막 저장 뒤에 돌고(바뀐 값이 보인다)
  * 예외를 던지면 저장 전체가 되돌아가는지 본다. 기존 `after_*` 는 그대로 커밋 뒤다.

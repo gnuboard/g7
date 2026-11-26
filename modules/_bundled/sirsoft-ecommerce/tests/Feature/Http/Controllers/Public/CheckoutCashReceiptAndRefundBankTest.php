@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * 주문 생성 시 현금영수증 신청 + 환불계좌 수집 검증 (#454 S3)
+ * 주문 생성 시 현금영수증 신청 + 환불계좌 수집 검증
  *
  * 검증 축:
  *  - FormRequest 4단계 사슬: rules 명시 → getter → createFromTempOrder 시그니처 → createOrderPayment 저장
@@ -377,7 +377,7 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
     /**
      * 고객이 주문서에서 고를 수 있으면서 무통장(dbank)이 아닌 결제수단.
      *
-     * `point`·`deposit`·`free` 는 뺀다(#599 후속 P10) — 코어에 이 수단들의 **결제 실행 경로가
+     * `point`·`deposit`·`free` 는 뺀다 — 코어에 이 수단들의 **결제 실행 경로가
      * 없어** 실결제액이 0보다 큰 주문에 고르면 `PENDING_ORDER` 에 영구 정박한다. 그래서 주문
      * 생성이 그 조합을 거절하며, 거절되는 조합으로 "현금영수증을 저장하지 않는다" 를 재 봤자
      * 저장 경로에 도달하지 못한 것을 통과로 읽게 된다.

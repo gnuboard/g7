@@ -6,7 +6,7 @@ use App\Support\LayoutEmptyObjectRepair;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 굳은 빈 객체 복구 판정 테스트 (#758)
+ * 굳은 빈 객체 복구 판정 테스트
  *
  * 원본이 `{}` 이고 저장본의 같은 자리가 `[]` 일 때만 `{}` 로 되돌린다. 운영자가 바꾼 다른 값은
  * 건드리지 않고, `id` 를 가진 노드 목록은 `id` 로 짝을 맞춘다.

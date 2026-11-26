@@ -24,7 +24,7 @@ use Tests\TestCase;
  * 아니다 — 소급 익명화와 확장 데이터 정리도 같은 표에 running 행을 만든다.
  *
  * 소켓을 켠 사이트에서 화면을 다시 받는 유일한 신호가 이 방송이다. 익명화·정리가 방송하지 않으면
- * 작업이 끝나도 배지와 잠금이 새로고침 전까지 남는다(#682 S3 라운드 2 — 결정 「익명화·정리도
+ * 작업이 끝나도 배지와 잠금이 새로고침 전까지 남는다(결정 「익명화·정리도
  * 방송하게 한다」). 그래서 두 서비스가 시작과 종료를 같은 채널로 알리는지 직접 잰다.
  */
 class RunProgressBroadcastTest extends TestCase
@@ -102,7 +102,7 @@ class RunProgressBroadcastTest extends TestCase
      *
      * 건너뜀은 종료 상태다. 방송하지 않으면 소켓을 켠 사이트에서 화면의 `skipped` 분기가 도달하지
      * 못해, 전부 건너뛴 재집계는 시작 토스트만 남기고 이력 표가 새로고침 전까지 그대로 선다
-     * (#682 S3 라운드 3).
+     *.
      *
      * @scenario target=archive_runs, row_age=within, dry_run=false, retention_source=setting
      *

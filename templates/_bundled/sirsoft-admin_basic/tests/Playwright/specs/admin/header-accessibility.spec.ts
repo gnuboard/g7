@@ -182,7 +182,7 @@ test.describe('FileUploader 를 initialFiles 없이 놓은 화면', () => {
     const errors: string[] = [];
     page.on('console', (m) => { if (m.type() === 'error' && /Maximum update depth/.test(m.text())) errors.push(m.text()); });
     page.on('pageerror', (e) => errors.push(String(e)));
-    // 레이아웃 주소는 `admin_dashboard.json?v=…` 형태다(#615 정적 게시 이후) — `.json` 이 없는 패턴은 가로채지 못해 프로브가 주입되지 않았다
+    // 레이아웃 주소는 `admin_dashboard.json?v=…` 형태다(정적 게시 이후) — `.json` 이 없는 패턴은 가로채지 못해 프로브가 주입되지 않았다
     await page.route(/\/api\/layouts\/sirsoft-admin_basic\/admin_dashboard(\.json)?(\?|$)/, async (route) => {
       const res = await route.fetch();
       const json = await res.json();

@@ -73,7 +73,7 @@ class AdminIdentityPolicyController extends AdminBaseController
     }
 
     /**
-     * 「사용자 지정」 범위에서 고를 수 있는 확장 지점 목록을 조회합니다. (7.2.1, #952)
+     * 「사용자 지정」 범위에서 고를 수 있는 확장 지점 목록을 조회합니다. (7.2.1)
      *
      * 활성 모듈·플러그인이 `getIdentityCheckpoints()` 로 선언한 키다. 비어 있으면 정책 창이 「사용자 지정」 옵션을 숨긴다.
      *

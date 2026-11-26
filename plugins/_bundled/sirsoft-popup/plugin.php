@@ -17,7 +17,7 @@ use Plugins\Sirsoft\Popup\Services\PublicPopupService;
  * 팝업 플러그인
  *
  * 공지·프로모션·점검 안내를 사용자 화면 위 팝업 레이어로 띄운다. 사용자 템플릿은 고치지 않고 공통 확장점
- * `user_global_overlay` 에 붙으며(GDPR 쿠키 배너와 같은 방식), 레이어 컴포넌트·데이터·표시 방식은 이 플러그인이 소유한다(#812).
+ * `user_global_overlay` 에 붙으며(GDPR 쿠키 배너와 같은 방식), 레이어 컴포넌트·데이터·표시 방식은 이 플러그인이 소유한다.
  */
 class Plugin extends AbstractPlugin
 {
@@ -331,7 +331,7 @@ class Plugin extends AbstractPlugin
     private const PUBLIC_ASSET_CATEGORIES = ['images'];
 
     /**
-     * 카테고리별 스토리지 디스크 이름 반환 (#878)
+     * 카테고리별 스토리지 디스크 이름 반환
      *
      * 공개 자산 카테고리(`images`)만 공개 자산 디스크(플러그인 설정 public_asset_disk > 코어 전역
      * core.storage.public_asset_disk)를 따르고, 나머지 카테고리는 기본 디스크를 유지합니다. 미설정·고아 디스크는
@@ -347,7 +347,7 @@ class Plugin extends AbstractPlugin
     public function getStorageDiskFor(string $category): string
     {
         if (! in_array($category, self::PUBLIC_ASSET_CATEGORIES, true)) {
-            // 공개 자산이 아닌 키는 부모 규칙(비공개 첨부 저장소 바인딩 등, #916)을 거친다
+            // 공개 자산이 아닌 키는 부모 규칙(비공개 첨부 저장소 바인딩 등)을 거친다
             return parent::getStorageDiskFor($category);
         }
 

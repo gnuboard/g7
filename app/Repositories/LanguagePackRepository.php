@@ -212,7 +212,7 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
 
         // 정렬은 안정 키만 사용 (scope/target_identifier/locale).
         // status 우선 정렬은 설치/활성화 직후 항목이 페이지 위치를 이탈해
-        // 사용자가 다시 찾아야 하는 회귀를 만들어 제거함 (#263 의 active-first UX 폐기).
+        // 사용자가 다시 찾아야 하는 회귀를 만들어 제거함 (active-first UX 폐기).
         return $query
             ->orderBy('scope')
             ->orderBy('target_identifier')

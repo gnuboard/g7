@@ -442,7 +442,7 @@ describe('DataGrid', () => {
     expect(container.firstChild).toHaveClass('custom-grid');
   });
 
-  describe('서버 페이지네이션 목록의 헤더 정렬 (#492 D-18)', () => {
+  describe('서버 페이지네이션 목록의 헤더 정렬', () => {
     // 서버 페이지네이션이면 data 는 "전체 중 이번 페이지" 다. onSortChange 가 없으면
     // 컴포넌트는 서버에 정렬을 요청할 수단이 없는데, 그 상태로 헤더를 누를 수 있게 두면
     // 이 페이지 안에서만 순서가 바뀌고 화살표가 붙어 전체 정렬로 오인된다.
@@ -714,7 +714,7 @@ describe('DataGrid', () => {
       expect(screen.getByText('역할')).toBeInTheDocument();
     });
 
-    // 회귀 가드 (#492 브라우저 실측): 런타임에는 G7Core.useControllableState 가 존재하므로
+    // 회귀 가드: 런타임에는 G7Core.useControllableState 가 존재하므로
     // handleSort 가 폴백(onSortChange 직접 호출) 대신 controllable-state 경로를 탄다.
     // 이 훅을 주입하지 않은 테스트는 폴백만 검증하게 되어 런타임 결함을 통과시킨다.
     // (실측: 이름 desc 상태에서 이메일 헤더 클릭 → 헤더는 `이메일↑`, 요청은 sort_by=name&sort_order=asc)

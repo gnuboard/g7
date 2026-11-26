@@ -1,4 +1,4 @@
-feature: 인증 경계의 비회원 저장값 정리 (#639 ⑦)
+feature: 인증 경계의 비회원 저장값 정리
 
 description: |
   비회원 장바구니 키(`localStorage.g7_cart_key`)와 비회원 주문 조회 토큰(세션 저장소 3키)은

@@ -1,4 +1,4 @@
-feature: 검수 서버(실행 역할 stage) 관리자 화면 잠금과 서버별 스케줄 꺼짐 안내 (#888)
+feature: 검수 서버(실행 역할 stage) 관리자 화면 잠금과 서버별 스케줄 꺼짐 안내
 
 description: |
   운영 DB 를 공유하는 검수 서버(셸 설정 `appConfig.runtime_role === 'stage'`)에서는 확장·코어·언어팩 변경 API 가 409

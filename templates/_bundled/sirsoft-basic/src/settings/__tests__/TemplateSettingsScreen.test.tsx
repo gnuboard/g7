@@ -1,7 +1,7 @@
 // e2e:allow 화면 부품 단위 잠금 — 브라우저 흐름은 tests/Playwright/specs/admin/template-settings-screen.spec.ts·template-settings-favicon.spec.ts 가 덮는다
 /**
  * @file TemplateSettingsScreen.test.tsx
- * @description 템플릿이 공급한 설정 화면 부품을 잠근다 (#434 D28·D29).
+ * @description 템플릿이 공급한 설정 화면 부품을 잠근다.
  *
  * 토스트·모달·탭 줄 같은 관리자 템플릿 부품 없이 어느 관리자 템플릿에서나 뜨도록, 부품이 탭·저장 결과·확인 창을 직접 그린다.
  *
@@ -28,7 +28,7 @@ const data = {
   ],
 };
 
-describe('TemplateSettingsScreen (#434)', () => {
+describe('TemplateSettingsScreen', () => {
   // @scenario case=settings_layout
   // @effects settings_tabs_per_section
   it('변경이 없으면 바로 옮기고, 변경이 있으면 확인 창 뒤 「버렸다」로 알린다 — 머무르기는 옮기지 않는다', () => {

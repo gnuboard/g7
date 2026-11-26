@@ -1,6 +1,6 @@
 /**
  * @file couponAutoIssueForm.test.tsx
- * @description 쿠폰 등록·수정 폼의 자동발급 칸 (#952 A·B)
+ * @description 쿠폰 등록·수정 폼의 자동발급 칸
  *
  * - 발급방법이 자동이면 조건(가입·첫구매·생일)을, 아니면 수동 조건을 보인다
  * - 첫구매면 발급 시점 선택을 보이고, 조건을 바꾸면 시점을 채우거나 비운다
@@ -43,7 +43,7 @@ const issue = load('_partial_issue_settings.json');
 const notify = load('_partial_notification_settings.json');
 const scope = (form: Record<string, any>, extra: Record<string, any> = {}) => ({ _local: { form }, route: {}, coupon: undefined, coupon_abilities: undefined, ...extra });
 
-describe('쿠폰 폼 — 자동발급 조건 (#952)', () => {
+describe('쿠폰 폼 — 자동발급 조건', () => {
   // @scenario case=admin_coupon_form_condition_fields
   // @effects coupon_form_auto_condition_fields
   it('자동발급이면 자동 조건 칸, 아니면 수동 조건 칸을 보인다', () => {
@@ -98,7 +98,7 @@ describe('쿠폰 폼 — 자동발급 조건 (#952)', () => {
   });
 });
 
-describe('쿠폰 폼 — 발급 알림 구획 (#952)', () => {
+describe('쿠폰 폼 — 발급 알림 구획', () => {
   // @scenario case=admin_coupon_form_notification_section
   // @effects coupon_form_notification_section
   it('다운로드 쿠폰이면 구획을 숨기고, 알림을 켜야 광고성 선택이 보인다', () => {

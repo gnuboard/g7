@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 1.2.0 게시글 작성 IP 자리표시값 정리 업그레이드 스텝 테스트 (이슈 #636 S5).
+ * 1.2.0 게시글 작성 IP 자리표시값 정리 업그레이드 스텝 테스트.
  *
  * 배경: 1.2.0 이전 board_posts.ip_address 는 NOT NULL 이라 IP 를 알 수 없는 글에 '0.0.0.0' 을
  * 채웠다. 1.2.0 마이그레이션이 컬럼을 nullable 로 바꾼 뒤, 이 스텝이 기존 행의 자리표시값을

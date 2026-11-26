@@ -49,7 +49,7 @@ class PageService
      * @param  PageRepositoryInterface  $pageRepository  페이지 리포지토리
      * @param  PageVersionRepositoryInterface  $pageVersionRepository  페이지 버전 리포지토리
      * @param  PageAttachmentService  $pageAttachmentService  첨부 서비스
-     * @param  PageContentMediaService  $contentMediaService  본문 미디어 서비스 (#883)
+     * @param  PageContentMediaService  $contentMediaService  본문 미디어 서비스
      */
     public function __construct(
         private PageRepositoryInterface $pageRepository,
@@ -91,7 +91,7 @@ class PageService
         return DB::transaction(function () use ($data) {
             $userId = Auth::id();
 
-            // 본문 미디어 서명 주소는 정식 주소로 저장한다 (#883)
+            // 본문 미디어 서명 주소는 정식 주소로 저장한다
             if (array_key_exists('content', $data)) {
                 $data['content'] = $this->contentMediaService->normalizeContent($data['content']);
             }
@@ -117,11 +117,11 @@ class PageService
                 );
             }
 
-            // 본문이 참조한 본문 미디어만 잇는다 — 문서당 최대 개수를 넘으면 422 로 저장 전체를 되돌린다 (#883)
-            // 다른 페이지 소유 본문 미디어는 이 페이지 소유로 복제하고 본문 주소를 바꾼다 (#887)
+            // 본문이 참조한 본문 미디어만 잇는다 — 문서당 최대 개수를 넘으면 422 로 저장 전체를 되돌린다
+            // 다른 페이지 소유 본문 미디어는 이 페이지 소유로 복제하고 본문 주소를 바꾼다
             $page = $this->applyClonedContentMedia($page, $this->contentMediaService->syncWithContent($page, $data['temp_key'] ?? null));
 
-            // 버전 1 스냅샷 저장 — 본문 미디어 복제로 바뀐 본문을 담도록 동기화 뒤에 (#887)
+            // 버전 1 스냅샷 저장 — 본문 미디어 복제로 바뀐 본문을 담도록 동기화 뒤에
             $this->saveVersionSnapshot($page, $userId);
 
             HookManager::doAction('sirsoft-page.page.after_create', $page, $data);
@@ -157,7 +157,7 @@ class PageService
         return DB::transaction(function () use ($page, $data, $snapshot) {
             $userId = Auth::id();
 
-            // 본문 미디어 서명 주소는 정식 주소로 저장한다 (#883)
+            // 본문 미디어 서명 주소는 정식 주소로 저장한다
             if (array_key_exists('content', $data)) {
                 $data['content'] = $this->contentMediaService->normalizeContent($data['content']);
             }
@@ -182,11 +182,11 @@ class PageService
                 );
             }
 
-            // 본문 미디어 동기화 — 본문에서 빠진 것은 지우고 새로 참조한 임시 본문 미디어는 잇는다 (#883)
-            // 다른 페이지 소유 본문 미디어는 이 페이지 소유로 복제하고 본문 주소를 바꾼다 (#887)
+            // 본문 미디어 동기화 — 본문에서 빠진 것은 지우고 새로 참조한 임시 본문 미디어는 잇는다
+            // 다른 페이지 소유 본문 미디어는 이 페이지 소유로 복제하고 본문 주소를 바꾼다
             $page = $this->applyClonedContentMedia($page, $this->contentMediaService->syncWithContent($page, $data['temp_key'] ?? null));
 
-            // 버전 스냅샷 저장 — 본문 미디어 복제로 바뀐 본문을 담도록 동기화 뒤에 (#887)
+            // 버전 스냅샷 저장 — 본문 미디어 복제로 바뀐 본문을 담도록 동기화 뒤에
             $this->saveVersionSnapshot($page, $userId);
 
             HookManager::doAction('sirsoft-page.page.after_update', $page, $data, $snapshot);
@@ -199,7 +199,7 @@ class PageService
      * 페이지를 영구 삭제합니다 (소프트 삭제 없음 — 되돌리기 수단은 버전 이력이다).
      *
      * 첨부파일과 본문 미디어도 파일과 행째 함께 지웁니다 — 파일은 커밋된 뒤에 지워 롤백과 어긋나지 않게 합니다.
-     * 버전 이력(`page_versions`)도 페이지 행보다 먼저 명시적으로 지웁니다 (DB CASCADE 비의존, #888).
+     * 버전 이력(`page_versions`)도 페이지 행보다 먼저 명시적으로 지웁니다 (DB CASCADE 비의존).
      *
      * @param  Page  $page  페이지 모델
      * @return bool 삭제 성공 여부
@@ -220,10 +220,10 @@ class PageService
             }
 
             // 본문 미디어 삭제 — 첨부 목록 조회가 본문 미디어를 빼므로 따로 지운다. 빠뜨리면 파일이 영구히 남는다.
-            // 버전이 참조해 남겨 둔 것까지 모두 지운다(버전은 바로 아래에서 지운다). 행마다 core.content_media.before_delete (#887)
+            // 버전이 참조해 남겨 둔 것까지 모두 지운다(버전은 바로 아래에서 지운다). 행마다 core.content_media.before_delete
             $this->contentMediaService->deleteContentMediaForPage($page->id);
 
-            // 버전 이력 삭제 — 본문 미디어 정리가 버전 본문을 더는 보지 않게 된 뒤, 페이지 행보다 먼저 (DB CASCADE 의존 금지, #888)
+            // 버전 이력 삭제 — 본문 미디어 정리가 버전 본문을 더는 보지 않게 된 뒤, 페이지 행보다 먼저 (DB CASCADE 의존 금지)
             $this->pageVersionRepository->deleteByPageId($page->id);
 
             $result = $this->pageRepository->delete($page);
@@ -325,7 +325,7 @@ class PageService
      *
      * 지정된 버전의 스냅샷으로 현재 페이지 내용을 덮어쓰고
      * 새로운 버전 스냅샷을 생성합니다. 복원 본문은 저장 경로와 같이 본문 미디어 정규화·동기화를 거친 뒤
-     * 스냅샷을 남깁니다 (#887).
+     * 스냅샷을 남깁니다.
      *
      * @param  Page  $page  페이지 모델
      * @param  int  $versionId  복원할 버전 ID
@@ -351,7 +351,7 @@ class PageService
 
             $updateData = [
                 'title' => $version->title,
-                // 본문 미디어 서명 주소가 섞여 있어도 정식 주소로 저장한다 (#887)
+                // 본문 미디어 서명 주소가 섞여 있어도 정식 주소로 저장한다
                 'content' => $this->contentMediaService->normalizeContent($version->content),
                 'content_mode' => $version->content_mode,
                 'seo_meta' => $version->seo_meta,
@@ -362,10 +362,10 @@ class PageService
             $page = $this->pageRepository->update($page, $updateData);
 
             // 복원 본문과 본문 미디어를 맞춘다 — 그 버전이 참조하던 미디어는 버전 참조 덕에 남아 있으므로 그대로 이어지고,
-            // 다른 페이지 소유 미디어가 섞여 있으면 볼 수 있을 때 이 페이지 소유로 복제한다. 복원은 임시 업로드가 없다 (#887)
+            // 다른 페이지 소유 미디어가 섞여 있으면 볼 수 있을 때 이 페이지 소유로 복제한다. 복원은 임시 업로드가 없다
             $page = $this->applyClonedContentMedia($page, $this->contentMediaService->syncWithContent($page, null));
 
-            // 복원 버전 스냅샷 저장 (복원 원본 버전 번호 전달) — 본문 미디어 복제로 바뀐 본문을 담도록 동기화 뒤에 (#887)
+            // 복원 버전 스냅샷 저장 (복원 원본 버전 번호 전달) — 본문 미디어 복제로 바뀐 본문을 담도록 동기화 뒤에
             $this->saveVersionSnapshot($page, $userId, $version->version);
 
             HookManager::doAction('sirsoft-page.page.after_restore', $page, $version);
@@ -519,7 +519,7 @@ class PageService
     }
 
     /**
-     * 본문 미디어 동기화가 복제한 해시로 바뀐 본문을 페이지에 다시 저장합니다 — 저장 트랜잭션 안 (#887).
+     * 본문 미디어 동기화가 복제한 해시로 바뀐 본문을 페이지에 다시 저장합니다 — 저장 트랜잭션 안.
      *
      * @param  Page  $page  저장된 페이지
      * @param  array{cloned?: int, content?: mixed}  $result  `PageContentMediaService::syncWithContent` 결과

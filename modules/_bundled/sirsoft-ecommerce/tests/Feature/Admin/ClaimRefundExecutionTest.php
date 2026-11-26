@@ -323,7 +323,7 @@ class ClaimRefundExecutionTest extends ModuleTestCase
     }
 
     /**
-     * 구형 취소 발 환불도 운영자가 **완료 처리할 수 있다**. (#599 후속 P1)
+     * 구형 취소 발 환불도 운영자가 **완료 처리할 수 있다**.
      *
      * 예전에는 출처가 `cancel` 이면 422 로 막았다. 그런데 그 행들은 `approved` 에서 멈춰 있고
      * 완료로 옮길 API 가 저장소 어디에도 없어 **영구 정지**했다 — 운영자는 송금을 마쳐도

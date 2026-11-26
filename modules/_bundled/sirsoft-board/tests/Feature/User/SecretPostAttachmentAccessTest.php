@@ -768,7 +768,7 @@ class SecretPostAttachmentAccessTest extends BoardTestCase
     }
 
     // ==========================================
-    // 서명 preview URL + 썸네일 파라미터(size) 축 (#869)
+    // 서명 preview URL + 썸네일 파라미터(size) 축
     //
     // 화면은 서명 주소 뒤에 `size` 를 덧붙인다. 서명은 서버가 발급한 쿼리 전체에 걸려 있어
     // `size` 를 빼고 검증해야 열람 권한자의 비밀글 썸네일이 403 이 되지 않는다. 반대로 서명
@@ -953,7 +953,7 @@ class SecretPostAttachmentAccessTest extends BoardTestCase
     }
 
     /**
-     * 비밀글 아래 답변을 쓴 회원은 경로 규칙으로 원글 첨부를 내려받는다 (#789 D1 — 첨부도 본문과 같은 게이트).
+     * 비밀글 아래 답변을 쓴 회원은 경로 규칙으로 원글 첨부를 내려받는다 (첨부도 본문과 같은 게이트).
      *
      * @scenario viewer=thread_anchor
      *
@@ -983,7 +983,7 @@ class SecretPostAttachmentAccessTest extends BoardTestCase
     }
 
     /**
-     * 비밀글 조회 권한을 「본인만」으로 받은 회원은 남의 비밀글 첨부를 받을 수 없다 (#789 D9·B1).
+     * 비밀글 조회 권한을 「본인만」으로 받은 회원은 남의 비밀글 첨부를 받을 수 없다.
      *
      * @scenario viewer=read_secret_self
      *

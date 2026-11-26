@@ -1,4 +1,4 @@
-feature: 쇼핑몰 설정 클레임 탭 (#599 S10 — D23·D26)
+feature: 쇼핑몰 설정 클레임 탭 (D23·D26)
 
 description: |
   클레임 탭에 **정책 스칼라 축의 저장 경로**를 신설하고, 사유 카탈로그를 환불 1종에서
@@ -129,7 +129,7 @@ effects:
   - settings_claim_policy_persists_across_reentry
 
 
-  # ── #599 후속 — 클레임 정책 설정 키 2종 (D8·D10) ─────────────────────────
+  # ── 클레임 정책 설정 키 2종 ─────────────────────────
   - instant_cancel_statuses_accepts_pending_states          # 미결제 2종을 자동 전이 목록에 지정할 수 있다 (D10)
   - instant_cancel_statuses_default_includes_pending_states # 기본값에 미결제 2종이 들어 있다
   - auto_approve_refund_statuses_is_editable                # 자동승인 대상 상태 MultiSelect 가 화면에 있다 (D8)

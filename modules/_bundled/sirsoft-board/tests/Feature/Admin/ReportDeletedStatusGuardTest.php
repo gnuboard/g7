@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Models\Report;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 영구삭제(deleted) 신고건의 강제 상태변경 차단 회귀 테스트 (#413-74)
+ * 영구삭제(deleted) 신고건의 강제 상태변경 차단 회귀 테스트 (74)
  *
  * 검수: 영구삭제된 신고건을 백엔드 API로 강제로 다른 상태로 변경 요청하면
  * 422를 반환해야 하는데 200으로 떨어지는 결함. (실제 DB 상태는 불변)

@@ -8,7 +8,7 @@ use Tests\Concerns\IsolatesInstallerBasePath;
 use Tests\TestCase;
 
 /**
- * beta.7 잔존 인스톨러 runtime.php 자동 finalize 회귀 가드 (이슈 #371).
+ * beta.7 잔존 인스톨러 runtime.php 자동 finalize 회귀 가드.
  *
  * axis 전수:
  *   1. runtime.php 존재 + .env 의 INSTALLER_COMPLETED 부재 + state.json 존재
@@ -335,7 +335,7 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
-    // axis 9: 0600 으로 잠긴 .env 도 그대로 보존 — 본 회귀 (#371) 의 원인은 우리가
+    // axis 9: 0600 으로 잠긴 .env 도 그대로 보존 — 본 회귀 의 원인은 우리가
     //         0600 으로 강제 다운그레이드 한 것이었음. 운영자가 의도해서 0600 을 둔
     //         경우 (단일 사용자 환경) 도 같은 정책 — 기존 권한이 SSoT
     // -----------------------------------------------------------------------
@@ -360,7 +360,7 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
 
     // -----------------------------------------------------------------------
     // axis 10: .env 가 새로 생성될 때 default 권한이 0640 — 0600 으로 강제 금지
-    //          (#371 회귀 가드 — PHP-FPM 사용자가 그룹으로만 묶인 환경 보호)
+    //          (회귀 가드 — PHP-FPM 사용자가 그룹으로만 묶인 환경 보호)
     // -----------------------------------------------------------------------
     public function test_new_env_uses_group_readable_default_permission(): void
     {
@@ -439,7 +439,7 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     // axis 12: 머지 후 부모 프로세스의 process ENV (getenv() / $_ENV / $_SERVER)
     //          도 신규 자격증명으로 갱신되어야 함.
     //
-    //   배경 (이슈 #371 후속 회귀):
+    //   배경:
     //   beta.4~6 손상 환경에서는 .env 가 .env.example 그대로 (DB_WRITE_USERNAME=root,
     //   DB_WRITE_PASSWORD= 등) 이고 자격증명은 runtime.php 에 잔존. 부모 프로세스 부팅
     //   시점에 Dotenv 가 stale .env 의 ENV (DB_WRITE_USERNAME=root) 를 process ENV

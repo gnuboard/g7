@@ -1229,7 +1229,7 @@ function walk(node: EditorNode, path: ComponentPath, issues: ValidationIssue[]):
  * @since engine-v1.50.0
  */
 /**
- * 출처 메타(`__source`/`_fromBase`)를 디바이스 분기 children·컴포넌트 배열 prop(footer) 안으로 잇는다(#869).
+ * 출처 메타(`__source`/`_fromBase`)를 디바이스 분기 children·컴포넌트 배열 prop(footer) 안으로 잇는다.
  *
  * 서버는 편집 모드 응답에서 출처 메타를 `children` 으로만 내려 단다. 공통 레이아웃(base)·partial·확장 노드의
  * `responsive.{키}.children` 과 `props.footer` 안 노드는 메타가 없어 잠금 판정(`classifyLockKind`)이 「잠금 없음」이
@@ -1364,7 +1364,7 @@ function stripInheritedNode(node: EditorNode | undefined | null): EditorNode[] {
   if (Array.isArray(cleaned.children)) {
     cleaned.children = stripInheritedNodes(cleaned.children as EditorNode[]);
   }
-  // 컴포넌트 배열 prop(footer 등) 안 노드도 같은 규칙으로 마스킹한다(#869). 서버가 편집 모드 응답에서
+  // 컴포넌트 배열 prop(footer 등) 안 노드도 같은 규칙으로 마스킹한다. 서버가 편집 모드 응답에서
   // footer 안 노드에도 출처 메타를 붙이면, children 만 재귀할 때 그 메타가 저장 content 에 남고 확장·partial
   // 노드가 자식 레이아웃에 박힌다.
   if (cleaned.props && typeof cleaned.props === 'object') {
@@ -1527,7 +1527,7 @@ export function stripInheritedFromLayoutContent(
   delete skeleton.lock_version;
   delete skeleton.__editor;
 
-  // 4) 동작이 빈 오류 코드 항목 제거(설계 확정 2026-11-09, #869) — 페이지 설정과 데이터 소스 편집기의
+  // 4) 동작이 빈 오류 코드 항목 제거(설계 확정 2026-11-09) — 페이지 설정과 데이터 소스 편집기의
   //    [덮기]가 시작한 빈 동작(`{}`)을 고르지 않고 저장하면 런타임 findHandler 가 「처리됨」으로 보아
   //    같은 맵 default, onError, 템플릿 기본 처리를 가린다. 편집 중 문서(raw)는 건드리지 않는다.
   pruneEmptyErrorHandlingOnSave(skeleton);

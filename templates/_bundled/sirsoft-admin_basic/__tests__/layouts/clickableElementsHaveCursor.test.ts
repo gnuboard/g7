@@ -1,5 +1,5 @@
 /**
- * 번들 레이아웃 전수 — 클릭을 받는 비단추 요소는 손 모양 커서를 갖는다 (#869 κ)
+ * 번들 레이아웃 전수 — 클릭을 받는 비단추 요소는 손 모양 커서를 갖는다
  *
  * Tailwind v4 는 커서를 주지 않는다. 단추(`<button>`)는 두 템플릿 Button 부품이 기본으로 커서를 주고, 주소가 있는 링크는
  * 브라우저가 준다. 그 밖의 요소(div, span, li, tr, td, img, label, input)에 `<on type="click">` 을 달면 레이아웃이 커서를
@@ -66,7 +66,7 @@ function clickableNonButtons(): Hit[] {
   return hits;
 }
 
-describe('클릭을 받는 비단추 요소의 커서 (#869 κ)', () => {
+describe('클릭을 받는 비단추 요소의 커서', () => {
   const hits = clickableNonButtons();
 
   // @scenario surface=bundled_layouts

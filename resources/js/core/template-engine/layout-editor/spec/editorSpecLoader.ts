@@ -107,7 +107,7 @@ export interface LoadedEditorSpec {
   sampleGlobalSources: SampleGlobalSource[];
   /**
    * 묶음 요청 자체가 실패했는지(4xx·5xx·네트워크·형식 밖 응답, 5xx·네트워크는 한 번 다시 물은 뒤).
-   * 참이면 확장·템플릿 스펙이 하나도 없다 — 편집기가 알림과 다시 시도 단추를 보인다(#869, 설계 확정 2026-11-09).
+   * 참이면 확장·템플릿 스펙이 하나도 없다 — 편집기가 알림과 다시 시도 단추를 보인다(설계 확정 2026-11-09).
    * 한 항목만 실패한 부분 실패는 거짓이다(나머지 스펙은 있다). 선택 필드 — 종전 호출자는 읽지 않아도 된다.
    */
   bundleFailed?: boolean;
@@ -276,7 +276,7 @@ async function fetchSpecBundle(
     }
     if (items === null && !retryable) break;
   }
-  // 다시 물어도 실패했다 — 호출자가 알림을 띄우도록 알린다(조용히 빈 편집기를 보이지 않는다, #869)
+  // 다시 물어도 실패했다 — 호출자가 알림을 띄우도록 알린다(조용히 빈 편집기를 보이지 않는다)
   if (items === null) return { specs: empty, failed: true };
 
   const byKey = new Map<string, EditorSpecBundleItem>();

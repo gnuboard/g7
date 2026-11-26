@@ -1,6 +1,6 @@
 /**
  * @file extension_layout_warning_toast.test.ts
- * @description 7.0 JSON 레이아웃의 깨진 조각 참조 경고 토스트 (#712)
+ * @description 7.0 JSON 레이아웃의 깨진 조각 참조 경고 토스트
  *
  * 코어는 7.0 JSON 확장의 깨진 조각 참조를 설치·활성화를 막지 않고 빈 자리로 등록하며, 응답 `data.layout_warnings`
  * 에 그 목록을 싣는다. 관리자 화면은 모듈·플러그인 활성 토글, 의존성 경고를 거친 강제 활성 창(같은 활성화 API),

@@ -13,7 +13,7 @@ use Modules\Sirsoft\Page\Services\PageContentMediaService;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 
 /**
- * 페이지 본문 미디어 업로드가 코어 공용 훅을 한 번씩 발화한다 — 페이지 첨부 훅은 발화하지 않는다 (#887 G2)
+ * 페이지 본문 미디어 업로드가 코어 공용 훅을 한 번씩 발화한다 — 페이지 첨부 훅은 발화하지 않는다
  *
  * 본문 미디어 업로드는 코어 골격이 `core.content_media.before_upload` → `filter_upload_file` → `after_upload` 를 발화하고,
  * 리스너는 문맥(`ContentMediaContext`)으로 어느 확장·문서의 미디어인지 안다. 페이지 첨부 훅(`sirsoft-page.attachment.*`)이 같이

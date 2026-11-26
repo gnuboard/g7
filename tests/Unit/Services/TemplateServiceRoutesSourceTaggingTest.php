@@ -69,7 +69,7 @@ class TemplateServiceRoutesSourceTaggingTest extends TestCase
 
         $this->assertNotEmpty($templateRoutes, '템플릿 자체 라우트 최소 1건이 source.kind=template 으로 부여되어야 함');
 
-        // 템플릿 설정 화면 라우트(#434, `*/admin/templates/{id}/settings`)는 그 설정의 템플릿을 가리키도록
+        // 템플릿 설정 화면 라우트(`*/admin/templates/{id}/settings`)는 그 설정의 템플릿을 가리키도록
         // source.identifier 에 템플릿 식별자를 싣는다(TemplateService::loadTemplateSettingsRoutesData) — 공개 라우트
         // 응답 시험(PublicTemplateRoutesSourceTaggingTest)과 같은 기준이다. routes.json 에서 온 자체 라우트만 null 이다.
         $settingsPattern = '#^\*/admin/templates/([^/]+)/settings$#';

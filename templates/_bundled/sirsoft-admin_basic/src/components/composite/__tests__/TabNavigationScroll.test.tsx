@@ -90,7 +90,7 @@ describe('TabNavigationScroll', () => {
     global.IntersectionObserver = MockIntersectionObserver;
 
     // getElementById mock (Scroll Spy용)
-    // 실제 요소가 있으면 그것을 돌려준다 — 가짜 객체를 돌려주면 선택 상자의 이름(aria-labelledby) 계산이 깨진다(#757)
+    // 실제 요소가 있으면 그것을 돌려준다 — 가짜 객체를 돌려주면 선택 상자의 이름(aria-labelledby) 계산이 깨진다
     global.document.getElementById = vi.fn((id: string) => {
       return realGetElementById(id) ?? ({ id } as HTMLElement);
     });
@@ -726,7 +726,7 @@ describe('TabNavigationScroll', () => {
      * @scenario case=c40
      * @effects tab_navigation_scrolls, tab_nav_mobile_keeps_layout_padding
      */
-    it('모바일 모양도 레이아웃이 준 className 의 여백을 따른다 (#869 P2)', () => {
+    it('모바일 모양도 레이아웃이 준 className 의 여백을 따른다', () => {
       // 게시판 설정 하위 탭 막대(`#sub_tab_navigation`)는 좌우 24px(px-6)를 준다. 종전 모바일 모양은
       // 자기 클래스(px-4 py-3)로 감싸 16px 로 줄었다.
       const { container } = render(

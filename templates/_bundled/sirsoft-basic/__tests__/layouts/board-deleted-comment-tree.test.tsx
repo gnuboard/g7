@@ -3,11 +3,11 @@
 
 /**
  * @file board-deleted-comment-tree.test.tsx
- * @description 부모 댓글 삭제 시 tombstone 표시 + 자식 트리 보존 (이슈 #413-56-2)
+ * @description 부모 댓글 삭제 시 tombstone 표시 + 자식 트리 보존 (56-2)
  *
  * 검증 방식: 레이아웃 JSON 트리 직접 분석 (DOM 비의존).
  *
- * 정책(#413-56-2):
+ * 정책(56-2):
  *   - 부모 댓글이 삭제되어도 살아있는 자식이 있으면 부모는 tombstone("삭제된 댓글입니다")으로
  *     트리에 유지된다(백엔드 CommentRepository 가 tombstone 부모를 조회 트리에 복구).
  *   - tombstone 안내는 deleted_at 만 게이트로 하며 content 존재에 의존하지 않는다
@@ -61,7 +61,7 @@ function findByComment(root: unknown, commentText: string): Node[] {
     return collectNodes(root, (n) => typeof n.comment === 'string' && (n.comment as string).includes(commentText));
 }
 
-describe('이슈 #413-56-2 — 삭제 댓글 tombstone 표시 게이트 (_comment_item.json)', () => {
+describe('56-2 — 삭제 댓글 tombstone 표시 게이트 (_comment_item.json)', () => {
     /**
      * @scenario comment_trigger=user
      * @effects deleted_parent_with_live_child_shown_as_tombstone

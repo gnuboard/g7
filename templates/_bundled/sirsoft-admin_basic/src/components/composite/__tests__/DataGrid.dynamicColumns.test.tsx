@@ -1,6 +1,6 @@
 /**
  * @file DataGrid.dynamicColumns.test.tsx
- * @description DataGrid 의 동적 열(dynamicColumns)과 점 경로 값, 빈 값 글자 (#490 6단계: 회원 목록이 첫 사용)
+ * @description DataGrid 의 동적 열(dynamicColumns)과 점 경로 값, 빈 값 글자 (6단계: 회원 목록이 첫 사용)
  *
  *  - 동적 열은 `dynamicColumnsInsertAfter` 가 가리키는 열 뒤에 순서대로 끼이고, 그 열이 없으면 끝에 붙는다.
  *  - 열의 `field` 가 점 경로(`custom_fields.job`)면 행의 하위 객체에서 값을 읽는다. 행에 그 이름의 키가 그대로 있으면 그 값이 먼저다.

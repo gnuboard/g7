@@ -91,7 +91,7 @@ class ApiRouteInventoryFallbackTest extends TestCase
         }
 
         $names = array_column($routes, 'name');
-        // hello_module 의 관리자 메모 CRUD 는 #492 에서 `api/` 라우트(`api.modules.{id}.admin.memos.*`)로
+        // hello_module 의 관리자 메모 CRUD 는 `api/` 라우트(`api.modules.{id}.admin.memos.*`)로
         // 옮겨졌다 — machine-facing 이므로 문서 대상이다. 배제되는 것은 web 관리자 화면뿐이다.
         $this->assertContains('api.modules.gnuboard7-hello_module.admin.memos.store', $names);
         $this->assertNotContains('web.modules.gnuboard7-hello_module.admin.memos.store', $names);

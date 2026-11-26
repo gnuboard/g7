@@ -3,7 +3,7 @@
  * @description 게시판 목록 - 카테고리 필터 레이아웃 JSON 구조 검증
  *
  * 검증 방식: 인라인 fixture layout JSON 트리를 직접 분석 (DOM 렌더링 비의존).
- * (testId 도입을 회피하고 RTL 권장 패턴인 구조 검증으로 통합 — issue #204 후속 결정)
+ * (testId 도입을 회피하고 RTL 권장 패턴인 구조 검증으로 통합)
  */
 
 import { describe, it, expect } from 'vitest';

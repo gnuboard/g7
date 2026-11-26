@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Feature\Coupon\AutoIssue\Concerns\CreatesAut
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 쿠폰 자동발급 컬럼 마이그레이션 (#952 §6)
+ * 쿠폰 자동발급 컬럼 마이그레이션
  */
 class CouponAutoIssueColumnsMigrationTest extends ModuleTestCase
 {

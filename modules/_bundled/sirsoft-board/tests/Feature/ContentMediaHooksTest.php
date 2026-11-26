@@ -22,7 +22,7 @@ use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 게시판 본문 미디어의 코어 공용 훅 `core.content_media.*` 발화 (#887)
+ * 게시판 본문 미디어의 코어 공용 훅 `core.content_media.*` 발화
  *
  * 업로드·정리 흐름은 코어 골격이 돌리므로 게시판 본문 미디어에도 공용 훅이 발화한다. 업로드는 `before_upload` →
  * `filter_upload_file` → `after_upload` 순서이고, 문맥(`ContentMediaContext`)은 모듈 `sirsoft-board`·문서 `post`·범위

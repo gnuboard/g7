@@ -1,5 +1,5 @@
 /**
- * TemplateApp.loadG7Config() — `_global.templateSettings` 노출 (engine-v1.94.0, #434)
+ * TemplateApp.loadG7Config() — `_global.templateSettings` 노출 (engine-v1.94.0)
  *
  * 서버가 G7Config.templateSettings 로 싣는 「이 화면 종류의 활성 템플릿 공개 설정」(평면 객체)을 같은 이름의 전역 상태로 싣는다.
  * 키가 없는 옛 서버에서는 전역 상태를 만들지 않는다 — 레이아웃은 `{{_global.templateSettings?.키 ?? 기본}}` 로 읽는다.

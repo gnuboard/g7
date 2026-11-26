@@ -29,10 +29,10 @@ class DriverRegistryService
     private const CORE_DRIVER_IDS = [
         'storage' => ['local', 's3'],
         'public_asset' => ['none', 'public', 's3'],
-        // 비공개 첨부 저장소(#916) — 권한 확인 뒤 서버가 내려주는 원본(첨부·클레임 이미지·본문 미디어·내보내기)의 디스크.
+        // 비공개 첨부 저장소 — 권한 확인 뒤 서버가 내려주는 원본(첨부·클레임 이미지·본문 미디어·내보내기)의 디스크.
         // default 는 「사이트 스토리지 드라이버를 따름」(업데이트 전 동작). 플러그인이 비공개 디스크를 등록하면 선택지에 붙는다.
         'private_attachment' => ['default', 's3'],
-        // 웹서버 파일 위임(#878). PHP 는 웹서버 모듈 유무를 확정하지 못하므로 셋 다 늘 고를 수 있다 —
+        // 웹서버 파일 위임. PHP 는 웹서버 모듈 유무를 확정하지 못하므로 셋 다 늘 고를 수 있다 —
         // 구성 여부는 드라이버 시험(DriverConnectionTester::testFileDelegation)의 힌트와 화면 안내로 맡긴다.
         'file_delegation' => ['none', 'x-sendfile', 'x-accel-redirect'],
         'cache' => ['file', 'redis'],
@@ -60,7 +60,7 @@ class DriverRegistryService
     private const HIDE_UNUSABLE_CATEGORIES = ['image'];
 
     /**
-     * 쓰는 시점에 해석하는 디스크 카테고리 (#916 A7)
+     * 쓰는 시점에 해석하는 디스크 카테고리
      *
      * 플러그인 디스크(CloudFront 등)는 모든 프로바이더 부팅이 끝난 뒤(`app->booted`) 정의되므로, 코어가 부팅 중 카탈로그로
      * 판정하면 저장값을 기본값으로 덮는다. 이 카테고리는 부팅 시 폴백 쓰기를 하지 않고, 해석기(`PublicAssetDisk`·

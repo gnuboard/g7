@@ -18,7 +18,7 @@
  *
  * 파일 시스템 stat(`is_file`/`is_executable`)은 호출하지 않는다. 시놀로지 DSM 등
  * `open_basedir` 가 시스템 binary 영역을 차단하는 환경에서 정상 절대경로가 false negative
- * 로 거부되는 회귀가 있었고(#361), 그 회귀를 구조적으로 재발 불가하게 두기 위함이다.
+ * 로 거부되는 회귀가 있었고, 그 회귀를 구조적으로 재발 불가하게 두기 위함이다.
  * 실제 실행 가능 여부는 exec 결과로 최종 판정한다.
  *
  * 프레임워크·설정에 의존하지 않는다 — 인스톨러 API(라이브러리 모드)와 설치 워커
@@ -119,7 +119,7 @@ if (! function_exists('installer_binary_path_is_absolute')) {
      * UNC(`\\server\share`, `//server/share`)와 스트림 래퍼(`scheme://`)는 절대경로로
      * 인정하지 않는다. UNC 는 공격자가 지정한 원격 SMB 공유의 파일을 그대로 실행하게 만들고,
      * 스트림 래퍼는 로컬 파일이 아닌 것을 실행 대상으로 삼는다 (KVE-2026-2043).
-     * 판정은 전부 순수 문자열 규칙이라 `open_basedir` 회귀(#361)와 무관하다.
+     * 판정은 전부 순수 문자열 규칙이라 `open_basedir` 회귀와 무관하다.
      *
      * @param  string  $token  경로 토큰
      * @return bool 절대경로면 true
@@ -180,7 +180,7 @@ if (! function_exists('installer_resolve_php_composer_pair')) {
      *
      * 공백이 포함된 디렉토리(`C:\Program Files\...`)는 **인용부호로 감싸** 전달한다 —
      * `"C:\Program Files\PHP\php.exe" "C:\composer\composer.phar"`. 인용이 없으면 종전대로
-     * 공백을 토큰 경계로 본다(`#361` 이 명시한 기존 한계). Windows 기본 설치 위치가 공백을
+     * 공백을 토큰 경계로 본다(이전 수정이 명시한 기존 한계). Windows 기본 설치 위치가 공백을
      * 포함하므로, 인용 입력을 받지 않으면 그 환경은 입력이 조용히 무시되는 상태로 남는다.
      *
      * @param  string  $raw  공백으로 구분된 원본 입력 (각 토큰은 인용 가능)

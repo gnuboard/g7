@@ -1,6 +1,6 @@
 /**
  * @file footerBusinessInfo.test.ts
- * @description 쇼핑몰 푸터 사업자 정보 조각(user_global_footer)을 잠근다 (#434).
+ * @description 쇼핑몰 푸터 사업자 정보 조각(user_global_footer)을 잠근다.
  *
  * - 사용자 템플릿 공용 자리 `user_global_footer` 에 붙는다(어느 템플릿이든 그 자리만 있으면 같다)
  * - 쇼핑몰 설정 「사용자 화면 하단에 사업자 정보 표시」(show_business_footer, 기본 켜짐)가 꺼지거나 상호·사업자번호가 둘 다 비면 그리지 않는다
@@ -44,7 +44,7 @@ const root = all.find((n) => n.id === 'ecommerceFooterBusinessInfo')!;
 const evaluate = (binding: string, basicInfo: Record<string, unknown> | undefined) =>
     new Function('_global', `return (${binding.replace(/^\{\{|\}\}$/g, '')});`)({ modules: basicInfo ? { 'sirsoft-ecommerce': { basic_info: basicInfo } } : {} });
 
-describe('푸터 사업자 정보 조각 (#434)', () => {
+describe('푸터 사업자 정보 조각', () => {
     // @scenario case=fragment
     // @effects footer_business_info_rendered_when_enabled
     it('사용자 템플릿 공용 자리 user_global_footer 에 붙는다', () => {
@@ -90,7 +90,7 @@ describe('푸터 사업자 정보 조각 (#434)', () => {
     it('문구는 번역 키, 클래스는 모듈 앞글자(ecommerce:)만 쓴다', () => {
         const classes = all.map((n) => n.props?.className).filter((c): c is string => typeof c === 'string');
         expect(classes.length).toBeGreaterThan(5);
-        // 모듈 자기 CSS 만 쓴다 — 접두 유틸(`ecommerce:`) 또는 모듈 이름공간 의미 클래스 사본(`ecommerce-*`, #399 R-2).
+        // 모듈 자기 CSS 만 쓴다 — 접두 유틸(`ecommerce:`) 또는 모듈 이름공간 의미 클래스 사본(`ecommerce-*`).
         // 템플릿 의미 클래스(`text-muted`)나 접두 없는 Tailwind 는 쓰지 않는다.
         // 사본은 이름만 보지 않고 모듈 생성 CSS 에 그 클래스 규칙이 실제로 있는지까지 본다(정의 없는 사본은 화면에서 모양이 빠진다).
         const generatedCss = fs.readFileSync(path.join(ROOT, 'resources/css/g7-extension.generated.css'), 'utf8');

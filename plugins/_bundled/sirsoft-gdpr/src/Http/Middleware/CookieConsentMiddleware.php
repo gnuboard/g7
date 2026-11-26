@@ -56,7 +56,7 @@ class CookieConsentMiddleware
         /** @var Response $response */
         $response = $next($request);
 
-        // 0. 걸러낼 쿠키(허용목록 밖·파기 아님)가 없으면 동의를 읽을 필요가 없다 — DB 없이 통과 (#860).
+        // 0. 걸러낼 쿠키(허용목록 밖·파기 아님)가 없으면 동의를 읽을 필요가 없다 — DB 없이 통과.
         //    대상 집합은 아래 제거 단계가 지우던 집합과 같은 판정으로 만든다.
         $targets = $this->removableCookies($response);
         if ($targets === []) {

@@ -6,7 +6,7 @@ use App\Support\LayoutEmptyObjects;
 use App\Support\LayoutMarkup\EmptyMap;
 
 /**
- * 레이아웃·확장 저장/미리보기 요청의 `content` 를 빈 객체(`{}`)를 보존해 읽는 FormRequest 공용 트레이트 (#758).
+ * 레이아웃·확장 저장/미리보기 요청의 `content` 를 빈 객체(`{}`)를 보존해 읽는 FormRequest 공용 트레이트.
  *
  * 편집기는 본문을 두 형태로 보낸다 — 위지윅 레이아웃 저장은 `content: JSON.stringify(…)`(문자열), 확장 저장은
  * `content` 를 객체 그대로. 문자열은 `json_decode(true)` 가, 객체 본문은 Laravel 의 요청 해석이 `{}` 를 `[]` 로
@@ -53,7 +53,7 @@ trait DecodesLayoutContentPreserving
     /**
      * 검증기가 볼 데이터 — `content` 의 빈 객체 표식을 빈 배열로 낮춘 사본입니다.
      *
-     * 규칙(`array`·`ValidLayoutStructure` 등)은 #758 이전처럼 `{}` 를 `[]` 로 본다. 요청 입력 자체는 표식을 그대로 들고 있다.
+     * 규칙(`array`·`ValidLayoutStructure` 등)은 종전처럼 `{}` 를 `[]` 로 본다. 요청 입력 자체는 표식을 그대로 들고 있다.
      *
      * @return array<string, mixed> 검증 대상 데이터
      */

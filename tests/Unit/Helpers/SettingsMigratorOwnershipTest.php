@@ -98,7 +98,7 @@ class SettingsMigratorOwnershipTest extends TestCase
     }
 
     /**
-     * settings 디렉토리 생성도 파일과 대칭으로 부모 소유권을 상속한다 (#651 B1).
+     * settings 디렉토리 생성도 파일과 대칭으로 부모 소유권을 상속한다.
      *
      * 파일(`writeJsonFile`)만 상속하고 디렉토리(`makeDirectory`)는 상속하지 않던 비대칭 — sudo
      * 업그레이드 스텝이 디렉토리를 root 로 만들면 `storage/app/{modules,plugins}` 는 restore_ownership

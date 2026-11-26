@@ -42,7 +42,7 @@ function flatten(action: any): any[] {
   return [action];
 }
 
-/** 탭 전환 이벤트 — 탭 줄(변경 없음)과 확인 창 [이동] 이 보내고 탭 본문 틀이 받는다(#753) */
+/** 탭 전환 이벤트 — 탭 줄(변경 없음)과 확인 창 [이동] 이 보내고 탭 본문 틀이 받는다 */
 const SWITCH_EVENT = 'sirsoft-ecommerce:settings-switch-tab';
 
 const onTabChange = collect(layout, (n) => n.event === 'onTabChange')[0];

@@ -7,7 +7,7 @@ use Illuminate\Routing\RouteCollection;
 use Illuminate\Support\Facades\File;
 
 /**
- * 시험에서 `routes/custom.php` 를 운영 순서(G7 catch-all 보다 먼저)로 등록합니다 (#792).
+ * 시험에서 `routes/custom.php` 를 운영 순서(G7 catch-all 보다 먼저)로 등록합니다.
  */
 trait LoadsCustomRoutes
 {

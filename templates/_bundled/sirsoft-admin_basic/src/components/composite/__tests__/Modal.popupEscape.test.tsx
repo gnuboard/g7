@@ -122,7 +122,7 @@ describe('[case:components-misc-modal-escape-closes-open-popup-and-modal] admin_
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  // 같은 증상의 후속 결함(창이 bubble 단계에서 판정) — 사례 8 이 따로 잠근다 (#869 N3, 종전에는 사례 2 와 같은 앵커)
+  // 같은 증상의 후속 결함(창이 bubble 단계에서 판정) — 사례 8 이 따로 잠근다 (종전에는 사례 2 와 같은 앵커)
   describe('[case:components-misc-modal-escape-capture-before-focused-popup] 입력칸 팝업이 먼저 닫혀도 창은 capture 단계에서 판정한다', () => {
     /**
      * 입력칸에 초점이 있는 팝업(태그 입력·검색 선택)은 Esc 를 **자기 요소에서 먼저** 받아 목록을 닫는다. 그 뒤 document 로

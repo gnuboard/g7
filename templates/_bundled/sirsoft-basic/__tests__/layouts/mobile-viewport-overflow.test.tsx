@@ -105,7 +105,7 @@ describe('게시판 비회원 입력 행 — 좁은 화면 대비', () => {
   // @effects guest_comment_fields_two_columns_without_overflow
   it('댓글 입력폼의 이름/비밀번호 행은 좁은 화면에서도 2열이고, 칸이 격자 폭 안에서 줄어들어 넘치지 않는다 (+81px 오버플로 회귀)', () => {
     // 종전에는 줄어들지 못하는 flex-1 입력 2개가 문서를 +81px 넘겨 좁은 화면에서 세로로 쌓았다.
-    // 회원 항목 설정(#490)에서 이름과 비밀번호를 좁은 화면에서도 나란히 두기로 하면서, 넘침은 격자(각 열 minmax(0, 1fr))와
+    // 회원 항목 설정에서 이름과 비밀번호를 좁은 화면에서도 나란히 두기로 하면서, 넘침은 격자(각 열 minmax(0, 1fr))와
     // 칸과 입력의 min-w-0 으로 막는다. 플레이스홀더가 짧아(「이름」, 「비밀번호」) 글쓰기폼 같은 잘림이 없다.
     const layout = loadLayout('partials/board/show/_comment_input.json');
     const guestRow = findNode(layout, (n) => n.id === 'board_comment_guest_fixed_fields');
@@ -254,7 +254,7 @@ describe('게시글 상단 네비 — 긴 게시판명이 좌우 버튼을 압�
     // portable(0~1023) 이 아니라 mobile(0~767). 버튼 3개 고정폭 261px + 21자 제목 자연폭
     // 323px = 584px 이므로 태블릿(콘텐츠 735px)은 한 줄로 충분하다.
     expect(layout.responsive?.portable).toBeUndefined();
-    // 구간 실효 className(구간 class-merge 를 기본 className 위에 엔진 규칙으로 덧붙인 값, #399)
+    // 구간 실효 className(구간 class-merge 를 기본 className 위에 엔진 규칙으로 덧붙인 값)
     const mobile: string = rangeClassName(layout, 'mobile');
     expect(mobile).toContain('flex-wrap');
     expect(mobile).toContain('justify-between');
@@ -271,7 +271,7 @@ describe('게시글 상단 네비 — 긴 게시판명이 좌우 버튼을 압�
     );
     expect(title).toBeTruthy();
 
-    // 구간 실효 className(구간 class-merge 를 기본 className 위에 엔진 규칙으로 덧붙인 값, #399)
+    // 구간 실효 className(구간 class-merge 를 기본 className 위에 엔진 규칙으로 덧붙인 값)
     const mobile: string = rangeClassName(title, 'mobile');
     const tokens = mobile.split(/\s+/);
     expect(tokens).toContain('order-first');

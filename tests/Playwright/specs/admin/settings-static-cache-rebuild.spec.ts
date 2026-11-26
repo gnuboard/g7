@@ -1,5 +1,5 @@
 /**
- * E2E: 환경설정 > 일반 — 초기 화면 정적 파일 상태 카드 + 지금 다시 만들기 (#651 D4·D7)
+ * E2E: 환경설정 > 일반 — 초기 화면 정적 파일 상태 카드 + 지금 다시 만들기
  *
  * 시나리오 매니페스트: tests/scenarios/static-cache-admin-rebuild.yaml — 마킹은 각 테스트의
  * scenario(k=v 조합)·effects 주석이 담당한다.
@@ -35,7 +35,7 @@ async function isPublishable(page: import('@playwright/test').Page): Promise<boo
 
 // @scenario permission=granted, publishable=production_enabled, outcome=success
 // @effects card_renders_status_rows
-test('@smoke #651 - 일반 탭에 초기 화면 정적 파일 카드가 상태 행과 함께 렌더된다', async ({ page }) => {
+test('@smoke 일반 탭에 초기 화면 정적 파일 카드가 상태 행과 함께 렌더된다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -67,7 +67,7 @@ test('@smoke #651 - 일반 탭에 초기 화면 정적 파일 카드가 상태 �
 
 // @scenario permission=granted, publishable=non_production, outcome=success
 // @effects republish_button_disabled_when_not_publishable
-test('#651 - 게시가 쓰이지 않는 환경이면 버튼이 비활성이고 사유 힌트가 있다', async ({ page }) => {
+test('게시가 쓰이지 않는 환경이면 버튼이 비활성이고 사유 힌트가 있다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -90,7 +90,7 @@ test('#651 - 게시가 쓰이지 않는 환경이면 버튼이 비활성이고 �
 
 // @scenario permission=granted, publishable=production_enabled, outcome=success
 // @effects confirm_modal_then_toast_and_refetch
-test('#651 - 지금 다시 만들기 → 확인 모달 → POST 200 → 토스트 + 카드 재조회', async ({ page }) => {
+test('지금 다시 만들기 → 확인 모달 → POST 200 → 토스트 + 카드 재조회', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -136,7 +136,7 @@ test('#651 - 지금 다시 만들기 → 확인 모달 → POST 200 → 토스�
 
 // @scenario permission=denied, publishable=production_enabled, outcome=success
 // @effects republish_denied_without_settings_update_permission
-test('#651 - 읽기 권한만 있으면 상태는 보이지만 재게시 POST 는 403 이다', async ({ page }) => {
+test('읽기 권한만 있으면 상태는 보이지만 재게시 POST 는 403 이다', async ({ page }) => {
   const token = issueScopedToken('core.settings.read');
   await authenticatePage(page, token);
 

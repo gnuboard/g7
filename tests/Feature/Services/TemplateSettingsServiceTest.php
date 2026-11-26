@@ -20,7 +20,7 @@ use Tests\Helpers\CreatesTemplateSettingsFixtures;
 use Tests\TestCase;
 
 /**
- * 템플릿 환경설정 서비스 테스트 (#434)
+ * 템플릿 환경설정 서비스 테스트
  *
  * 모듈 설정과 같은 섹션 구조 — 섹션별 저장 파일, 섹션·키 2단 노출, 비밀값 암호화, 기본값 되돌리기.
  */

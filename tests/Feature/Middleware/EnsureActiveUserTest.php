@@ -13,7 +13,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 공통 회원 상태 관문 `EnsureActiveUser` (#798 K14 · P9)
+ * 공통 회원 상태 관문 `EnsureActiveUser`
  *
  * api 그룹 전체에 붙어 인증 미들웨어 뒤에서 돈다 — 확장(모듈·플러그인) 라우트가 회원 상태 검사를 따로 붙이지 않아도 비활성 회원을 막는다.
  * 인증 필수 라우트는 403, 선택 인증 라우트는 손님으로 낮춰 200, `check.user_status` 가 있는 라우트는 그 판정 1회, 본인인증 경로는 통과.

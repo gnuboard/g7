@@ -1,5 +1,5 @@
 /**
- * E2E: 토스페이먼츠 설정 — 주문서형 결제수단 체크박스 라벨 렌더 (#454)
+ * E2E: 토스페이먼츠 설정 — 주문서형 결제수단 체크박스 라벨 렌더
  *
  * @scenario-manifest tests/scenarios/tosspayments-settings-method-labels.yaml
  *
@@ -10,7 +10,7 @@
  *   따라서 "라벨 텍스트가 실제로 화면에 보이는가" 는 E2E 로 고정한다.
  *
  * 검증:
- *  1. 주문서형 결제 토글을 켜면 결제수단 12종(#933 애플페이·L.pay·SSG페이 추가)이 노출되고, 각 체크박스에 라벨 텍스트가 보인다
+ *  1. 주문서형 결제 토글을 켜면 결제수단 12종(애플페이·L.pay·SSG페이 추가)이 노출되고, 각 체크박스에 라벨 텍스트가 보인다
  *  2. 라벨 클릭으로 체크 상태가 토글된다 (Label 래핑이 input 과 연결됨)
  *  3. 체크 해제 → 저장 → 재진입 시 상태가 유지된다 (폼 자동바인딩 회귀 가드)
  */
@@ -83,7 +83,7 @@ async function gotoSettings(page: import('@playwright/test').Page): Promise<void
 
 // @scenario step=labels_rendered
 // @effects method_toggles_render_label_text
-test('@smoke #454 - 결제수단 12종 체크박스에 라벨 텍스트가 표시된다', async ({ page }) => {
+test('@smoke 결제수단 12종 체크박스에 라벨 텍스트가 표시된다', async ({ page }) => {
   const token = issueToken('core.plugins.update');
   await authenticatePage(page, token);
 
@@ -104,7 +104,7 @@ test('@smoke #454 - 결제수단 12종 체크박스에 라벨 텍스트가 표�
 
 // @scenario step=label_click
 // @effects label_click_toggles_method_checkbox
-test('#454 - 라벨을 클릭하면 체크 상태가 토글된다', async ({ page }) => {
+test('라벨을 클릭하면 체크 상태가 토글된다', async ({ page }) => {
   const token = issueToken('core.plugins.update');
   await authenticatePage(page, token);
 
@@ -124,7 +124,7 @@ test('#454 - 라벨을 클릭하면 체크 상태가 토글된다', async ({ pag
 
 // @scenario step=save_payload
 // @effects method_toggles_saved_as_boolean
-test('#454 - 결제수단 저장 페이로드가 boolean 으로 전송된다 (빈 문자열 회귀 가드)', async ({ page }) => {
+test('결제수단 저장 페이로드가 boolean 으로 전송된다 (빈 문자열 회귀 가드)', async ({ page }) => {
   const token = issueToken('core.plugins.update');
   await authenticatePage(page, token);
 
@@ -177,7 +177,7 @@ test('#454 - 결제수단 저장 페이로드가 boolean 으로 전송된다 (�
 
 // @scenario step=reload_persisted
 // @effects enabled_methods_persisted
-test('#454 - 결제수단 체크 해제 후 저장하면 재진입 시 유지된다', async ({ page }) => {
+test('결제수단 체크 해제 후 저장하면 재진입 시 유지된다', async ({ page }) => {
   const token = issueToken('core.plugins.update');
   await authenticatePage(page, token);
 

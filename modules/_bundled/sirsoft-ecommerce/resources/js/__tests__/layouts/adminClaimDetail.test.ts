@@ -37,12 +37,12 @@ import quantityModal from '../../../layouts/admin/partials/admin_ecommerce_claim
 import activityLog from '../../../layouts/admin/partials/admin_ecommerce_claim_detail/_partial_claim_activity_log.json';
 import adminRoutes from '../../../routes/admin.json';
 
-/** 확장 생성 CSS — 의미 클래스 사본(`ecommerce-btn` 등)의 실제 정의를 확인한다 (#399 R-1) */
+/** 확장 생성 CSS — 의미 클래스 사본(`ecommerce-btn` 등)의 실제 정의를 확인한다 */
 const EXT_CSS = fs.readFileSync(path.resolve(__dirname, '../../../css/g7-extension.generated.css'), 'utf8');
 
 /**
  * 꺼진 단추 모양 — 인라인 `disabled:opacity-50 disabled:cursor-not-allowed` 는 `ecommerce-btn` 과 함께 쓸 때
- * 뺐다(#399 R-1 P7, `.ecommerce-btn:disabled` 가 이미 준다). 그 정의를 생성 CSS 에서 확인한다.
+ * 뺐다(`.ecommerce-btn:disabled` 가 이미 준다). 그 정의를 생성 CSS 에서 확인한다.
  */
 function expectDisabledLook(className: unknown): void {
   const value = String(className ?? '');
@@ -352,7 +352,7 @@ describe('상세 셸 — 라우트·데이터소스·모달 (S9a)', () => {
     const link = byId(shell, 'cd_010_list_button');
     const action = (link.actions as Node[])[0];
 
-    // 링크다(#757 WP-L) — 주소는 href, 새 탭도 같은 조건이 되게 링크 자체가 쿼리를 합친다
+    // 링크다 — 주소는 href, 새 탭도 같은 조건이 되게 링크 자체가 쿼리를 합친다
     expect(link.name).toBe('A');
     expect(link.props.href).toBe('/admin/ecommerce/claims');
     expect(link.props.mergeQuery).toBe(true);
@@ -478,7 +478,7 @@ describe('배송 정보 — 회수·재발송 통합 (D17-② · D14)', () => {
 
     expect(blockIds).toEqual([
       undefined,
-      // 운송장 기록·정정 입구 안내 — 이 탭에는 입력칸이 없다(송장은 상품 행마다 — #599).
+      // 운송장 기록·정정 입구 안내 — 이 탭에는 입력칸이 없다(송장은 상품 행마다).
       'cs_001_edit_hint',
       'claim_collection_block',
       'claim_redelivery_divider',
@@ -527,7 +527,7 @@ describe('배송 정보 — 회수·재발송 통합 (D17-② · D14)', () => {
    * @effects claim_carrier_options_come_from_detail_response
    */
   it('택배사 셀렉트가 상세 응답의 목록을 읽는다', () => {
-    // 송장 입력은 상품 칸 선택 바 하나다 — 배송 정보 탭은 운송장별로 묶어 보여 주기만 한다(#599).
+    // 송장 입력은 상품 칸 선택 바 하나다 — 배송 정보 탭은 운송장별로 묶어 보여 주기만 한다.
     expect(byId(itemsSection, 'ci_007_carrier').props.options).toContain('.concat(claim?.data?.carriers ?? [])');
     expect(collect(shippingSection, (n) => n.name === 'Select' || n.name === 'Input')).toEqual([]);
   });
@@ -1219,7 +1219,7 @@ describe('환불 실행 — 취소 가능 금액과 실행 (D18·D19)', () => {
   /**
    * 계좌가 없으면 [환불하기] 가 잠긴다 — 계좌를 적거나 동의를 켜야 풀린다. (T2-D6)
    *
-   * 2026-09-22 #599 실측 — 이 창은 계좌를 **보여 주기만** 해서, 무통장으로 10,000원을
+   * 2026-09-22 실측 — 이 창은 계좌를 **보여 주기만** 해서, 무통장으로 10,000원을
    * 받은 주문의 환불을 계좌 세 칸이 빈 채로 실행할 수 있었다. 돈은 한 푼도 나가지 않았는데
    * 신청서만 `completed` 로 닫혔고, 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었다.
    *
@@ -1383,7 +1383,7 @@ describe('입력 컴포넌트의 change 이벤트 경로 (브라우저 실측 �
   /**
    * `Select`·`Input` 의 change 액션은 **`$event.target.value`** 로 값을 읽는다.
    *
-   * 브라우저 실측(#599 후속)이 찾은 결함이다. 신청서 상태 변경 바가 `{{$event.value}}` 로
+   * 브라우저 실측이 찾은 결함이다. 신청서 상태 변경 바가 `{{$event.value}}` 로
    * 읽고 있었는데, 합성 컴포넌트는 `{ target: { value } }` 를 emit 하므로 그 경로는 언제나
    * `undefined` 다. 그러면 `_local.claimBulkStatus` 가 영영 비고, 그 값을 보는 [일괄 적용]
    * 버튼은 **영구히 비활성**이다 — 운영자는 상태를 고를 수는 있는데 적용할 수 없다.
@@ -1606,7 +1606,7 @@ describe('입력 컴포넌트의 change 이벤트 경로 (브라우저 실측 �
   });
 });
 
-describe('#599 후속 — 막히는 입구 정리·반려 사유·탭 고정', () => {
+describe('막히는 입구 정리·반려 사유·탭 고정', () => {
   /**
    * 탭 막대는 헤더 묶음 **밖**에서 스크롤 영역 위에 붙는다 — 헤더 묶음 안에 두면 sticky 가
    * 부모 경계에 막혀 스크롤과 함께 사라지고, 긴 구역을 지나 탭으로 돌아가려면 끝까지 올려야 했다.
@@ -1670,7 +1670,7 @@ describe('#599 후속 — 막히는 입구 정리·반려 사유·탭 고정', (
   });
 });
 
-describe('#599 후속 — 회수중·발송중 송장 · 저장은 저장만', () => {
+describe('회수중·발송중 송장 · 저장은 저장만', () => {
   /**
    * 회수중·발송중을 고르면 상품 칸에 택배사·운송장 입력이 열리고, 고르는 순간 신청서에 저장된 송장으로
    * 미리 채워지며(회수중은 회수 송장, 발송중은 재발송 송장), [적용] → 수량 모달 → 실행까지 송장이 이어진다.
@@ -1706,12 +1706,12 @@ describe('#599 후속 — 회수중·발송중 송장 · 저장은 저장만', (
    * @effects claim_tracking_inputs_are_capped_at_the_column_length
    */
   it('배송 정보 카드 운송장 입력이 50자로 막힌다', () => {
-    // 운송장 입력은 상품 칸 선택 바 하나다(#599) — 그 칸이 DB 칸 길이(50)로 막힌다.
+    // 운송장 입력은 상품 칸 선택 바 하나다 — 그 칸이 DB 칸 길이(50)로 막힌다.
     expect(byId(itemsSection, 'ci_008_tracking_number').props.maxLength).toBe(50);
   });
 });
 
-describe('#599 상품 행 송장 — 진행 방식(선교환) 줄', () => {
+describe('상품 행 송장 — 진행 방식(선교환) 줄', () => {
   /**
    * 쇼핑몰 설정에서 선교환이 꺼져 있어도 [선교환으로 전환] 은 사라지지 않고 **꺼진 채** 선다 — 막힌 이유는
    * 버튼 옆 문구(`blocked_reason`)가 알린다. 버튼을 숨기면 운영자는 기능이 있는지조차 모른다(계획 §3-9).
@@ -1729,7 +1729,7 @@ describe('#599 상품 행 송장 — 진행 방식(선교환) 줄', () => {
   });
 });
 
-describe('#599 직권 접수 — 머리의 운영자 이름', () => {
+describe('직권 접수 — 머리의 운영자 이름', () => {
   /**
    * 판매자 접수 뱃지 곁에 접수한 운영자, 대리 철회된 건에는 철회한 운영자 이름이 선다(계획 §3-11). 이름은
    * 관리자 상세 응답에만 있으므로 화면은 그 필드가 있을 때만 그린다.

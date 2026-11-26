@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\TestCase;
 
 /**
- * 검수 서버(stage)의 확장 수명주기 CLI — 공유 DB 의 확장 상태를 바꾸는 명령은 안내 후 종료 1 (#888).
+ * 검수 서버(stage)의 확장 수명주기 CLI — 공유 DB 의 확장 상태를 바꾸는 명령은 안내 후 종료 1.
  *
  * 검수 서버는 운영 서버와 같은 DB 를 쓴다. 검수 서버에서 `template:activate` 를 실행하면 같은 종류의 운영 활성 템플릿이 꺼지고,
  * `module:uninstall --delete-data` 는 운영 테이블을 지운다. 명령 가드는 큐 명령 4개만 막고 있었다.

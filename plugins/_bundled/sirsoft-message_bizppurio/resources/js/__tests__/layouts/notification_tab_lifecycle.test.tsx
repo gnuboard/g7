@@ -1,11 +1,11 @@
-// e2e:allow 구조 단언 + 조건식 실평가 Vitest(#597) — 브라우저 흐름은
+// e2e:allow 구조 단언 + 조건식 실평가 Vitest — 브라우저 흐름은
 // tests/Playwright/specs/admin/template-lifecycle*.spec.ts 가 담당(발송 인프라 의존 축은 별도 계획).
 //
 // 노출 조건·저장 분기는 문자열 동일성이 아니라 `new Function` 실평가로 판정한다
 // (§14.2 T7) — 리터럴 비교는 조건을 잘못 고쳐도 기대값을 함께 고치면 green 이라 회귀를
 // 잡지 못한다.
 /**
- * 알림 설정 '비즈뿌리오' 통합 탭 — [편집] 모달 통합 UI 구조 검증 (#597, 제품 결정 2026-08-23)
+ * 알림 설정 '비즈뿌리오' 통합 탭 — [편집] 모달 통합 UI 구조 검증 (제품 결정 2026-08-23)
  *
  * @effects row_footer_shows_status_summary_only, approval_badge_two_tier, edit_modal_hosts_alimtalk_and_sms_sections,
  *          unified_save_chain_alimtalk_then_core_recipients, compose_modal_switches_conditional_fields_by_type,
@@ -629,7 +629,7 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
     });
 
     /** @effects unified_save_chain_alimtalk_then_core_recipients */
-    it('[저장 후 검수 신청]의 request 2노드는 검수자 전달 의견(bz_tpl_modal.request_comment)을 comment 로 싣는다 (#597 §18.7)', () => {
+    it('[저장 후 검수 신청]의 request 2노드는 검수자 전달 의견(bz_tpl_modal.request_comment)을 comment 로 싣는다', () => {
         const steps = actionsOf(actionsOf(requestBtn)[0]).slice(1);
         const reqs = steps.map((s) => callbacksOf(s, 'onSuccess')[0]);
         expect(reqs).toHaveLength(2);
@@ -658,7 +658,7 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
     });
 });
 
-describe('lifecycle UI — 검수자 전달 의견 입력란 (#597 §18.7, 제품 결정 2026-08-23)', () => {
+describe('lifecycle UI — 검수자 전달 의견 입력란 (제품 결정 2026-08-23)', () => {
     const editor = findById(sectionsRoot, 'bizppurio_tpl_editor') as AnyNode;
     const block = findById(editor, 'bizppurio_tpl_request_comment') as AnyNode;
 
@@ -862,7 +862,7 @@ describe('lifecycle UI — SMS 본문 다국어', () => {
     });
 });
 
-describe('compose form — 유형 전환·반복 입력 실평가 (#597 §14.2 T7 / §6.2)', () => {
+describe('compose form — 유형 전환·반복 입력 실평가', () => {
     const evalWithModal = (expr: string, modal: Record<string, unknown>): boolean =>
         // 권한 있는 관리자 기준 — 권한 잠금은 plugin-abilities-gate 테스트가 따로 본다
         evalBinding(expr, { _global: { bz_tpl_modal: modal, bz_tpl_upload: {} }, bizppurioTemplates: { data: { abilities: { can_manage_messaging: true } } } });

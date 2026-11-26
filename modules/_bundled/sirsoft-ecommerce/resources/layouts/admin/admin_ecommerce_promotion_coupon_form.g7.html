@@ -65,7 +65,7 @@
     </field>
     <fallback :data="null"/>
   </data-source>
-  <!-- 이 쿠폰의 발급 알림 종류(`coupon_issued.{id}`, #952). 알림 설정 목록에서는 숨긴 종류라 `include_hidden` 으로 받는다.
+  <!-- 이 쿠폰의 발급 알림 종류(`coupon_issued.{id}`). 알림 설정 목록에서는 숨긴 종류라 `include_hidden` 으로 받는다.
     이름은 쇼핑몰 설정 알림 화면과 같게 둔다 — 함께 include 한 편집·복원 창이 저장 뒤 이 이름으로 다시 받는다.
     알림 설정 읽기 권한이 없는 운영자는 받지 못하고, 그때는 카드가 비어 보일 뿐 폼은 그대로 쓴다. -->
   <data-source id="ecommerceNotificationDefinitions" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerceNotificationDefinitions" type="api" endpoint="/api/admin/notification-definitions" method="GET" if="{{!!route.id}}" :auto_fetch="true" auth_mode="required" loading_strategy="progressive">

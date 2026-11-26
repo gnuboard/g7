@@ -37,7 +37,7 @@ class PublishExtensionStaticCacheCommand extends Command
         }
 
         // root 로 실행 중이면 경고만 하고 **계속 진행**한다 — 명시적 명령은 운영자 책임이고, 중단 가드는
-        // 두지 않는다(#651 D3). 게시가 만드는 캐시 락 샤드·병합 번들이 root 소유로 남으면 이후 웹 요청의
+        // 두지 않는다. 게시가 만드는 캐시 락 샤드·병합 번들이 root 소유로 남으면 이후 웹 요청의
         // 캐시 쓰기가 Permission denied 로 죽으므로(전면 500 실사례) 웹 계정 실행 형태를 함께 적는다.
         if (StatusExtensionStaticCacheCommand::isRootProcess()) {
             $this->warn(__('extensions.commands.ext_static_publish.root_warning'));

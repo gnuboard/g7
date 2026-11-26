@@ -104,7 +104,7 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
     /**
      * 「플러그인 보기」(core.plugins.read)만 있는 운영자도 설정을 읽기 전용으로 받는다 — 저장 권한 판정은 false.
      *
-     * 화면은 코어 플러그인 설정 계약대로 `core.plugins.read` 로 열리는데(#434) 설정 조회가 `privacy.view` 만 받아,
+     * 화면은 코어 플러그인 설정 계약대로 `core.plugins.read` 로 열리는데 설정 조회가 `privacy.view` 만 받아,
      * 본문이 403 오류 화면으로 바뀌고 읽기 전용 화면이 뜨지 않았다. 저장은 계속 `privacy.update` 만.
      *
      * @scenario surface=admin_show

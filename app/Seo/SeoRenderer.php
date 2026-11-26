@@ -573,7 +573,7 @@ class SeoRenderer implements SeoRendererInterface
             'extraHeadTags' => '',
             'extraBodyEnd' => '',
             'generatorTag' => g7_meta_generator_tag(),
-            // 파비콘 (#434) — 렌더 중인 사용자 템플릿의 설정 기준(SPA 셸과 같은 우선순위). 필터 훅 앞에 두어 확장이 바꿀 수 있다.
+            // 파비콘 — 렌더 중인 사용자 템플릿의 설정 기준(SPA 셸과 같은 우선순위). 필터 훅 앞에 두어 확장이 바꿀 수 있다.
             'faviconTags' => g7_favicon_tags('user', $templateIdentifier),
         ];
 
@@ -919,7 +919,7 @@ class SeoRenderer implements SeoRendererInterface
             $global['plugins'] = [];
         }
 
-        // templateSettings: 활성 사용자 템플릿 공개 설정 (#434) — SPA 셸의 `_global.templateSettings` 와 같은 값
+        // templateSettings: 활성 사용자 템플릿 공개 설정 — SPA 셸의 `_global.templateSettings` 와 같은 값
         try {
             $global['templateSettings'] = app(\App\Services\TemplateSettingsService::class)->getActiveFrontendSettings('user');
         } catch (\Throwable $e) {

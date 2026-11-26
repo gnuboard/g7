@@ -10,7 +10,7 @@ use Tests\TestCase;
 /**
  * 코어 캐시·스토리지 글로벌 바인딩 무결성 회귀 가드.
  *
- * 이슈 #392 — 어떤 플러그인 ServiceProvider 도 `app(CacheInterface)` 글로벌 바인딩을
+ * 어떤 플러그인 ServiceProvider 도 `app(CacheInterface)` 글로벌 바인딩을
  * PluginCacheDriver 로 덮어쓰면 안 된다. 글로벌 바인딩이 덮어쓰여지면 코어
  * LayoutService 등의 `$this->cache->put('ext.cache_version', ...)` 가 플러그인
  * 도메인으로 누수되어 화면에 반영되지 않는 결함이 재발한다.
@@ -37,7 +37,7 @@ class PluginCacheBindingIsolationTest extends TestCase
             $cache,
             'app(CacheInterface) 는 항상 CoreCacheDriver 여야 한다. '
             .'PluginCacheDriver 가 반환되면 어떤 ServiceProvider 가 '
-            .'$this->app->singleton(CacheInterface::class, ...) 로 글로벌 바인딩을 덮어쓰고 있다 (이슈 #392).'
+            .'$this->app->singleton(CacheInterface::class, ...) 로 글로벌 바인딩을 덮어쓰고 있다.'
         );
     }
 

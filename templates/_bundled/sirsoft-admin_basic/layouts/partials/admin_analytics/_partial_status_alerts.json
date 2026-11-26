@@ -44,7 +44,7 @@
                             "text": "$t:admin.analytics.alerts.collection_disabled"
                         },
                         {
-                            "comment": "안내 버튼은 그 화면에 갈 수 있는 계정에게만 그린다 — 권한이 없으면 눌러도 「필요 권한」 페이지뿐이라\n        안내가 막다른 길이 된다(#682 S3 라운드 3). 문구는 남겨 사실은 계속 알린다.",
+                            "comment": "안내 버튼은 그 화면에 갈 수 있는 계정에게만 그린다 — 권한이 없으면 눌러도 「필요 권한」 페이지뿐이라\n        안내가 막다른 길이 된다. 문구는 남겨 사실은 계속 알린다.",
                             "id": "collection_disabled_link",
                             "type": "basic",
                             "name": "A",
@@ -66,7 +66,7 @@
             ]
         },
         {
-            "comment": "익명으로 내려간 사유가 실리면 띄운다 — 운영자가 고른 모드로 가두지 않는다.\n      `consent_plugin_blocks_cookies` 는 서버가 **`full` 모드에서만** 만든다(`AnalyticsConfig::anonymousFallbackReason`).\n      종전 게이트는 `mode === 'consent'` 를 함께 요구해 그 사유와 서로 배타적이었고, 그래서\n      「전체 수집 + GDPR 플러그인」 사이트는 실제로 익명 수집 중인데 12면 어디에도 안내가 뜨지 않았다\n      (#682 S3 라운드 8 실측: 설정 full · effective anonymous · 화면 안내 0건).",
+            "comment": "익명으로 내려간 사유가 실리면 띄운다 — 운영자가 고른 모드로 가두지 않는다.\n      `consent_plugin_blocks_cookies` 는 서버가 **`full` 모드에서만** 만든다(`AnalyticsConfig::anonymousFallbackReason`).\n      종전 게이트는 `mode === 'consent'` 를 함께 요구해 그 사유와 서로 배타적이었고, 그래서\n      「전체 수집 + GDPR 플러그인」 사이트는 실제로 익명 수집 중인데 12면 어디에도 안내가 뜨지 않았다\n      (설정 full · effective anonymous · 화면 안내 0건).",
             "id": "alert_consent_fallback",
             "type": "basic",
             "name": "Div",
@@ -103,7 +103,7 @@
             ]
         },
         {
-            "comment": "통계의 집계 경계는 사이트 표준시 자정에 잠겨 있고 시각 표기도 사이트 기준이다(설계 결정).\n      보는 사람의 시간대가 그와 다르면 「오늘」의 숫자와 자기 시계가 어긋나 보이므로 그 사실을\n      알린다. 같은 시간대면 군더더기라 띄우지 않는다(#682 S3 라운드 6).",
+            "comment": "통계의 집계 경계는 사이트 표준시 자정에 잠겨 있고 시각 표기도 사이트 기준이다(설계 결정).\n      보는 사람의 시간대가 그와 다르면 「오늘」의 숫자와 자기 시계가 어긋나 보이므로 그 사실을\n      알린다. 같은 시간대면 군더더기라 띄우지 않는다.",
             "id": "alert_site_timezone",
             "type": "basic",
             "name": "Div",

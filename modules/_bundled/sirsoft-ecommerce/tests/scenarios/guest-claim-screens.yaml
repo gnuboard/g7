@@ -1,4 +1,4 @@
-feature: 비회원 클레임 화면 — 주문상세 섹션 · 상세 · 작성/수정 (#599 S14)
+feature: 비회원 클레임 화면 — 주문상세 섹션 · 상세 · 작성/수정
 
 description: |
   회원 화면은 S11~S13 이 놓았고, 이 세션은 **같은 화면을 비회원에게 여는** 셸 2종과 guest 라우트,
@@ -56,7 +56,7 @@ exclusions:
   - { screen: order_section, entry: [without_token, expired_token], claim_type: [return, refund, cancel], reason: "같은 근거 — 토큰 처분은 목록 유형과 무관하다" }
 
 effects:
-  - guest_claim_detail_shows_follow_up_refunds   # #747 보완 5
+  - guest_claim_detail_shows_follow_up_refunds
   - guest_claim_detail_loads_order_after_claim_response
   - guest_claim_routes_allow_guest_and_use_claim_number
   - guest_claim_cards_keep_shared_values
@@ -83,7 +83,7 @@ effects:
   - guest_order_detail_sends_no_type_when_address_has_none
   - guest_order_claim_section_reuses_the_member_list_partial
   - guest_order_detail_offers_the_three_claim_entries
-  # 송장은 상품 행마다(#599) — 카드 배송조회 칸은 서버 요약(`tracking_summary`)의 첫 운송장 + 「외 N개」, 판매자 접수 라벨
+  # 송장은 상품 행마다 — 카드 배송조회 칸은 서버 요약(`tracking_summary`)의 첫 운송장 + 「외 N개」, 판매자 접수 라벨
   - guest_order_claim_section_shows_the_row_waybill_summary
   # ⑤ 요청 빈도 제한
   - guest_claim_routes_carry_a_request_rate_limit

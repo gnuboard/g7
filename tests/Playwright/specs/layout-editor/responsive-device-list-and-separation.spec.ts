@@ -17,7 +17,7 @@ import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth'
 import { selectRouteTreeLayout } from '../../fixtures/route-tree';
 import { waitForEditorScrollSettled } from '../../fixtures/layout-editor';
 
-// 편집기 첫 적재(편집 대상 템플릿 자산 IIFE·CSS 로드)가 30초를 넘기는 일이 잦아(#869 λ 실측) 시험 제한을 늘린다.
+// 편집기 첫 적재(편집 대상 템플릿 자산 IIFE·CSS 로드)가 30초를 넘기는 일이 잦아 시험 제한을 늘린다.
 test.describe.configure({ timeout: 90_000 });
 
 /** 편집기 admin_user_list 진입 + 캔버스 핸들 렌더까지 대기. */

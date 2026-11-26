@@ -1,5 +1,5 @@
 /// <reference lib="es2021.intl" />
-// 시각 표시의 fractionalSecondDigits 는 ES2021 Intl 옵션이라 코어 lib(ES2020)에 없다. 이 파일에서만 싣는다(#869).
+// 시각 표시의 fractionalSecondDigits 는 ES2021 Intl 옵션이라 코어 lib(ES2020)에 없다. 이 파일에서만 싣는다.
 /**
  * 변경 감지 탭 컴포넌트
  *

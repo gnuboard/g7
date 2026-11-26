@@ -13,7 +13,7 @@ use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
  * 사용자 화면에서 이 요청이 게시글을 수정·삭제할 수 있는지 판정합니다.
  *
  * 글 수정·삭제(`User\PostController`)와 기존 글에 첨부를 더하는 업로드(`User\AttachmentController::upload` 의 `post_id`)가
- * 같은 판정을 쓴다. 종전에는 업로드가 이 판정을 거치지 않아, 업로드 권한만 있으면 남의 글 번호로 파일을 붙일 수 있었다(#883).
+ * 같은 판정을 쓴다. 종전에는 업로드가 이 판정을 거치지 않아, 업로드 권한만 있으면 남의 글 번호로 파일을 붙일 수 있었다.
  *
  * 다음 중 하나면 통과한다.
  * - 게시판 관리 권한(admin.manage 또는 사용자 manager)

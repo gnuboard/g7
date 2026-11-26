@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 큐 워커는 부팅 때 읽은 모듈 설정을 들고 있다. 모듈 저장 공통 지점(g7_refresh_module_settings_config)이 설정
  * 버전을 올리면 워커는 다음 작업 시작 전에 비교해 다시 읽고, 작업마다 새로 만들어지는 설정 서비스(scoped)가 새 값을
- * 쓴다(#724).
+ * 쓴다.
  */
 class ModuleSettingsVersionBumpTest extends ModuleTestCase
 {

@@ -1,12 +1,12 @@
 /**
  * @file adminUserListFilterSection.test.tsx
- * @description 회원 목록 필터 조각 — 구조·렌더 테스트 (#705)
+ * @description 회원 목록 필터 조각 — 구조·렌더 테스트
  *
  * 회원관리 필터를 쿠폰·상품·주문과 같은 슬롯 기반(기본/상세 + 검색편집)으로 바꿨다. 합격선은
  * 참조 화면과의 1:1 구조 대조라서 다음을 고정한다.
  *
- * - 슬롯 아웃렛 2개(basic_filters·detail_filters)가 있고 둘 다 `filter-grid` 를 가진다(#408 간격 회귀)
- * - 필터 행 14개가 등록 영역에 있고 `slotOrder` 가 1..14 로 끊김 없이 이어진다(#490 에서 회원 항목 조건 둘이 뒤에 붙었다)
+ * - 슬롯 아웃렛 2개(basic_filters·detail_filters)가 있고 둘 다 `filter-grid` 를 가진다(간격 회귀)
+ * - 필터 행 14개가 등록 영역에 있고 `slotOrder` 가 1..14 로 끊김 없이 이어진다(회원 항목 조건 둘이 뒤에 붙었다)
  * - 초기 기본 행은 계정 상태·권한 그룹·가입일 3개다(D7) — 행마다 visibleFilters 로 슬롯이 갈린다
  * - 편집모드 토글 표현식이 참조 3화면과 문자 단위로 같다
  * - 확장점(admin_user_list_filters)이 상세 아웃렛 뒤에 있고 상세가 펼쳐질 때만 보인다
@@ -57,7 +57,7 @@ function slotKey(row: Node): string | null {
 const EXPECTED_KEYS = [
   'status', 'role', 'createdAt', 'lastLoginAt', 'adminScope', 'lockState',
   'dormantAt', 'statusChangedAt', 'language', 'country', 'emailVerified', 'identityVerified',
-  // #490 회원 항목 조건: 필수 항목 미입력, 닉네임 중복
+  // 회원 항목 조건: 필수 항목 미입력, 닉네임 중복
   'requiredMissing', 'nicknameDuplicate',
 ];
 
@@ -243,7 +243,7 @@ describe('회원 목록 필터 조각 — 구조', () => {
 
   // @scenario filter_axis=status, outcome=narrows
   // @effects filter_section_slot_structure
-  it('검색어 대상은 고정 7종이고 그 뒤에 운영자가 켠 추가 항목이 붙는다 (A1 — 화면·다국어·서버 일치, #490)', () => {
+  it('검색어 대상은 고정 7종이고 그 뒤에 운영자가 켠 추가 항목이 붙는다 (A1 — 화면·다국어·서버 일치)', () => {
     const select = collect(filterSection, (n) => n?.id === 'search_field_select')[0];
     // 선택지는 식 하나다(고정 7종 뒤에 응답의 member_fields.search_fields 를 펼친다) — 고정 값은 식의 리터럴에서 읽는다.
     const expression = String(select.props.options);
@@ -293,7 +293,7 @@ describe('회원 목록 필터 조각 — 구조', () => {
   // 날짜칸과 따로 복원돼 강조가 날짜와 어긋난다. 빠른기간 키는 init-local 의 filter 에서 파생한다.
   // @scenario filter_axis=created_at, outcome=narrows
   // @effects search_users_query_contract
-  it('빠른기간 선택값은 검색 URL 에 싣지 않는다 (#705 §5-3)', () => {
+  it('빠른기간 선택값은 검색 URL 에 싣지 않는다', () => {
     const quickKeys = Object.keys(initStateOf(userList as any).filter).filter((k) => /Quick$/.test(k));
     const query = (userList as any).named_actions.searchUsers.params.query;
 

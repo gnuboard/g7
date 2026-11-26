@@ -34,7 +34,7 @@ class PublicCouponController extends PublicBaseController
     ) {}
 
     /**
-     * 쿠폰존 — 받을 수 있는 쿠폰 목록 (비로그인 공개, #952)
+     * 쿠폰존 — 받을 수 있는 쿠폰 목록 (비로그인 공개)
      *
      * 회원용 `user/coupons/downloadable` 과 같은 쿠폰·같은 paginator 모양이다. 비로그인이면 받은 여부를 싣지 않고, 토큰을 실은
      * 로그인 회원이면 받은 여부(`is_downloaded`)를 싣는다 — 쿠폰존 화면은 이 한 주소만 부른다(로그인 확인 전에 주소가 갈리던 결함).

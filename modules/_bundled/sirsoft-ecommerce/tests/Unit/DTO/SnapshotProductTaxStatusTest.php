@@ -8,7 +8,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\PureTestCase;
 
 /**
- * 스냅샷 상품의 과세 종류 해석 — 손상·미지 값은 과세로 본다 (#612 W12)
+ * 스냅샷 상품의 과세 종류 해석 — 손상·미지 값은 과세로 본다
  *
  * 클레임 재계산은 주문 시점 상품 스냅샷으로 돈다. 스냅샷의 `tax_status` 가 손상됐거나(대소문자·공백·숫자·배열)
  * 이 버전이 모르는 값이면 `tryFrom` 이 null 을 돌려주는데, 그 null 을 그대로 두면 과세 판정(=== TAXABLE)이 거짓이

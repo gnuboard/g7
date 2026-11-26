@@ -471,7 +471,7 @@ class PostMutationApiTest extends BoardTestCase
     /**
      * 게시판 관리(manager) 권한자는 타인 회원 게시글을 수정할 수 있다
      *
-     * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 수정 200 (이슈 #413-20)
+     * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 수정 200 (20)
      */
     public function test_manager_can_update_other_member_post(): void
     {
@@ -501,7 +501,7 @@ class PostMutationApiTest extends BoardTestCase
     /**
      * 게시판 관리(manager) 권한자는 타인 회원 게시글을 삭제할 수 있다
      *
-     * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 삭제 200 (이슈 #413-20)
+     * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 삭제 200 (20)
      */
     public function test_manager_can_delete_other_member_post(): void
     {
@@ -757,7 +757,7 @@ class PostMutationApiTest extends BoardTestCase
     }
 
     /**
-     * 게시글 소프트삭제 시 살아있던 댓글이 cascade 로 함께 soft delete 된다 (#413-69-②)
+     * 게시글 소프트삭제 시 살아있던 댓글이 cascade 로 함께 soft delete 된다 (69-②)
      *
      * 그룹2 에서 동작이 변경됨: 게시글 삭제 시 하위 댓글을 보존하지 않고
      * trigger_type='cascade' 로 연쇄 soft delete 한다 (복원 시 cascade 분만 선별 부활).
@@ -781,7 +781,7 @@ class PostMutationApiTest extends BoardTestCase
     }
 
     /**
-     * 게시글 소프트삭제 시 살아있던 첨부가 cascade 로 함께 soft delete 된다 (#413-69-②)
+     * 게시글 소프트삭제 시 살아있던 첨부가 cascade 로 함께 soft delete 된다 (69-②)
      *
      * 그룹2 에서 동작이 변경됨: 게시글 삭제 시 첨부 레코드를 보존하지 않고
      * trigger_type='cascade' 로 연쇄 soft delete 한다 (복원 시 cascade 분만 선별 부활).

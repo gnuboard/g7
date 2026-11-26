@@ -239,7 +239,7 @@ class TwoFactorAuthTest extends TestCase
     /**
      * 「알림 채널 관리」에서 메일을 끄면 인증번호를 보내지 않는다 — 503, 발송 로그 skipped, 토큰 없음.
      *
-     * 7.1.0 전에는 본인인증 메일이 채널 토글을 무시하고 나갔다(#699). 이제 토글을 따르므로, 메일을 끈
+     * 7.1.0 전에는 본인인증 메일이 채널 토글을 무시하고 나갔다. 이제 토글을 따르므로, 메일을 끈
      * 사이트에서 TOTP 를 등록하지 않은 계정은 로그인할 수 없다(관리 화면이 끄기 전에 확인을 받는다).
      *
      * @scenario two_factor=on, controller=user, delivery=failed

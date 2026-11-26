@@ -8,7 +8,7 @@ use Tests\PureTestCase;
 /**
  * IdentityVerificationManager — purpose source 정보 보존 회귀 테스트.
  *
- * 회귀 사례 (#297):
+ * 회귀 사례:
  *   - 본인인증 정책 화면(코어/모듈)에서 "본인인증 목적" 을 일관되게 표기하려면
  *     `getAllPurposes()` 응답에서 각 purpose 가 어느 source(코어/모듈/플러그인)에 의해
  *     선언되었는지 식별 가능해야 한다.

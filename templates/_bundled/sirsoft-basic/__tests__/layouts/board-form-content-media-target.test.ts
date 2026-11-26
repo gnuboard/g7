@@ -1,6 +1,6 @@
 /**
  * @file board-form-content-media-target.test.ts
- * @description 사용자 글쓰기 — 편집기 업로드 계약을 표준 계약 엔드포인트에서 받는다 (#887)
+ * @description 사용자 글쓰기 — 편집기 업로드 계약을 표준 계약 엔드포인트에서 받는다
  *
  * 편집 화면이 「무엇을 올릴 수 있나」를 받는 길을 확장마다 `GET …/content-media/target` 으로 맞췄다. 사용자 글쓰기는
  * 데이터소스 `content_media_target`(게시판 사용자 계약 주소)을 받아 편집기 `mediaUpload` 에 임시 키를 더해 넘긴다. 올릴
@@ -71,7 +71,7 @@ const dataSources = (boardForm as Node).data_sources as Node[];
 const target = dataSources.find((d) => d.id === 'content_media_target');
 const editor = findNode(postForm, (n) => n.id === 'content_section' && n.type === 'extension_point');
 
-describe('사용자 글쓰기 — 편집기 업로드 계약 데이터소스 (#887)', () => {
+describe('사용자 글쓰기 — 편집기 업로드 계약 데이터소스', () => {
     // @scenario surface=user
     // @effects editor_waits_for_target_source
     it('게시판 표준 계약 엔드포인트를 선택 인증으로 받고, 실패는 조용히 넘겨 data: null 로 둔다', () => {

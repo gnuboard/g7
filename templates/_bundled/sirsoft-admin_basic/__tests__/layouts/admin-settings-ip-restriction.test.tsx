@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-ip-restriction.test.tsx
- * @description 환경설정 > 보안 — IP 접근 제한 카드와 규칙 편집 창 (#636 트랙 2, 디자인 D)
+ * @description 환경설정 > 보안 — IP 접근 제한 카드와 규칙 편집 창 (디자인 D)
  *
  * 합성 레이아웃이 아니라 **실제 배포 JSON 노드**를 렌더한다 — 카드는
  * `_tab_security_ip_restriction.json` 의 루트를, 폼 자동 바인딩은 `admin_settings.json` 의
@@ -152,7 +152,7 @@ function setupRegistry(): ComponentRegistry {
     Th: { component: TestTh, metadata: { name: 'Th', type: 'basic' } },
     Td: { component: TestTd, metadata: { name: 'Td', type: 'basic' } },
     Fragment: { component: TestFragment, metadata: { name: 'Fragment', type: 'layout' } },
-    // 진짜 Modal — 취소·적용 단추가 고정 하단(props.footer)에 있다(#869 P1)
+    // 진짜 Modal — 취소·적용 단추가 고정 하단(props.footer)에 있다
     Modal: { component: makeHarnessModal({ forceOpen: true }), metadata: { name: 'Modal', type: 'composite' } },
   };
 
@@ -262,7 +262,7 @@ async function renderCard(form: Json, proxy: Json = { status: 'ok', client_ip: C
     componentRegistry: setupRegistry(),
     translations: { admin: adminKo },
     initialState: { _local: { form }, _global: { settingsAbilities: SETTINGS_ABILITIES } },
-    // settings 는 폼(_local.form)을 채우는 소스 — 받은 뒤 상태를 재현한다(받는 중이면 안내를 그리지 않는다, #915)
+    // settings 는 폼(_local.form)을 채우는 소스 — 받은 뒤 상태를 재현한다(받는 중이면 안내를 그리지 않는다)
     initialData: { settings: { data: {} }, trustedProxy: { data: proxy }, _computed: computedFor(form) },
   });
   await testUtils.render();
@@ -535,7 +535,7 @@ describe('환경설정 보안 — IP 접근 제한 규칙 편집 창', () => {
   });
 
   /**
-   * 창을 진짜 Modal 로 렌더한다 — 취소·적용 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1).
+   * 창을 진짜 Modal 로 렌더한다 — 취소·적용 단추는 Modal 고정 하단(props.footer)에 있다.
    *
    * @param modalState `_global.ip_restriction_rule_form_modal`
    * @returns 레이아웃 테스트 유틸
@@ -727,9 +727,9 @@ describe('환경설정 보안 — IP 접근 제한 규칙 편집 창', () => {
 
   describe('[case:state-advanced-modal-footer-stale-context] 입력을 읽는 단추도 고정 하단에 둔다', () => {
     /**
-     * 취소·적용은 Modal 고정 하단(`props.footer`)에 있다(#869 P1 — 640px 이하에서 세로로 쌓인다).
+     * 취소·적용은 Modal 고정 하단(`props.footer`)에 있다(640px 이하에서 세로로 쌓인다).
      *
-     * 종전에는 고정 하단이 창을 연 시점의 전역 상태로 그려진다고 보고(#636 브라우저 실측) 본문 맨 아래 줄에
+     * 종전에는 고정 하단이 창을 연 시점의 전역 상태로 그려진다고 보고 본문 맨 아래 줄에
      * 두었다. 지금 Modal 은 고정 하단을 본문 자식과 같은 데이터 컨텍스트·상태 범위로 그린다 — 아래 「적용」
      * 시험들이 진짜 Modal 로 창을 그려 고정 하단의 적용 단추가 방금 친 패턴·IP 를 읽는지 잰다.
      *

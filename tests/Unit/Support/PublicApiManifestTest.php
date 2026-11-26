@@ -7,7 +7,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 확장 공개 PHP 표면 선언 정규화 (#916)
+ * 확장 공개 PHP 표면 선언 정규화 
  *
  * manifest `public_api` 는 다른 확장이 써도 되는 네임스페이스·클래스와 읽기 전용 Model 을 선언한다. 정적 룰
  * `extension-internal-symbol-reference` 와 관리자 확장 상세 「공개 API」 칸이 이 정규화 결과를 읽는다.

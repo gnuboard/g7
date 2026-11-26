@@ -138,7 +138,7 @@ class ArchiveRunController extends AdminBaseController
      *
      * 집계 경계는 사이트 자정에 잠겨 있고 저장만 UTC 다(`AnalyticsClock::dayRangeUtc`). 원본을
      * 그대로 내보내면 KST 사이트에서 기간이 「15:00 ~ 15:00」으로 보여, 같은 표의 다른 시각 열과
-     * 기준이 갈린다 — 운영자가 9시간 어긋난 구간을 읽는다(#682 S3 라운드 6, 설계 결정).
+     * 기준이 갈린다 — 운영자가 9시간 어긋난 구간을 읽는다(설계 결정).
      *
      * @param  AnalyticsArchiveRun  $run  실행 이력
      * @return array<string, mixed> 화면용 실행 이력

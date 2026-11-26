@@ -7,7 +7,7 @@ description: |
   유형 아이콘 영문 이름(「info icon」)을 단언하던 경고(Alert) 테스트도 선택자가 함께 바뀌어, 소유 매니페스트가 없던 그 파일들을
   컴포넌트 축으로 묶는다. 접근 이름 계약은 `icon-only-control-names.yaml` 이 따로 잠근다.
 
-  이름 속 스타일 토큰(#381): 해석기(parseIconName)가 FA5 단축형(fas·far·fab·fal·fad)과 FA6 장형(fa-solid …)을 한 번만
+  이름 속 스타일 토큰: 해석기(parseIconName)가 FA5 단축형(fas·far·fab·fal·fad)과 FA6 장형(fa-solid …)을 한 번만
   읽어, Icon·UnifiedIcon·IconSelect 가 `fas fa-x` 를 `fas fa-fas fa-x` 로 겹쳐 그리거나 `far`·`fab` 스타일을 잃지 않는다.
   관리자 레이아웃(템플릿·번들 모듈·번들 플러그인)의 스타일 토큰 붙은 아이콘 이름을 전수 스캔해 같은 규칙을 잰다.
   결제 브랜드 마크와 메뉴 아이콘이 함께 쓰는 SVG 화이트리스트 정제(svgSanitize)도 공통 아이콘 기반이라 여기서 잠근다.

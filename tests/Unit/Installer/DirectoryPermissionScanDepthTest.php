@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * 인스톨러 디렉토리 권한 재귀 스캔 깊이 제한 회귀 테스트.
  *
- * 배경 (dev-g7#445 후속):
+ * 배경:
  *   인스톨러 2단계(요구사항 검증)의 checkDirectoryPermissions 가 storage 를 재귀 스캔하는데,
  *   checkSubdirectoriesRecursive 가 깊이 제한 없이 무한 재귀하여 storage/framework/testing/
  *   하위에 누적된 수만 개 디렉토리를 전부 순회 → 2단계 응답이 8초 이상 지연되던 문제.

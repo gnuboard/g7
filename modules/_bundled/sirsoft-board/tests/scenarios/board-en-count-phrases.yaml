@@ -4,7 +4,7 @@ description: |
   「Settings applied to {{count}} boards.」 처럼 복수 명사를 박아 둔 영어 문구는 단수 갈래가 없으면 1 일 때
   「1 boards」 로 나왔다(7.1.0 전수 실측). 영어 개수 문구는 정한 규칙대로 1 이면 단수,
   그 밖은 복수로 쓰고 `(s)` 표기를 쓰지 않는다. 화면 문구는 같은 파일에 `키_one` 단수 갈래가 있어야 하고,
-  서버 문구는 `단수|복수` 로 쓴다(issue759 → develop-7.1.0 리베이스에서 base #754 의 `_one` 방식에 맞춰 기준을 바꿨다).
+  서버 문구는 `단수|복수` 로 쓴다(리베이스에서 기준 브랜치의 `_one` 방식에 맞춰 기준을 바꿨다).
 
 axes:
   phrase_kind: [frontend_count, backend_count]

@@ -1,6 +1,6 @@
 /**
  * @file TemplateApp.firstFetchSideEffects.test.ts
- * @description 화면 처리의 첫 받기와 미룬 blocking onSuccess 의 출시본 동작 잠금 (#869)
+ * @description 화면 처리의 첫 받기와 미룬 blocking onSuccess 의 출시본 동작 잠금
  *
  * 화면 처리(handleRouteChange)의 첫 받기는 화면 세대로만 걸러 그대로 실린다. 그 사이 쪽 넘김(쿼리 갱신)이나 수동 소스 다시 받기가
  * 나가도 첫 받기 값과 그에 딸린 일(initGlobal, 실시간 알림 구독 문맥)이 빠지지 않는다. 다른 레이아웃으로 옮기는 전환의 미룬 blocking
@@ -103,7 +103,7 @@ const LAYOUT = {
 
 const ROUTE = { path: '/admin/settings', layout: 'admin_settings', params: {}, query: { tab: 'language_packs' } };
 
-describe('TemplateApp 화면 처리 — 첫 받기와 미룬 blocking onSuccess (#869)', () => {
+describe('TemplateApp 화면 처리 — 첫 받기와 미룬 blocking onSuccess', () => {
   let app: TemplateApp;
   let fetchSpy: ReturnType<typeof vi.spyOn>;
 

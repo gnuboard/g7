@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      *
-     * 옵션마다 과세 종류(과세·면세·영세)를 지정할 수 있게 한다 (#612).
+     * 옵션마다 과세 종류(과세·면세·영세)를 지정할 수 있게 한다.
      * null 은 「상품 기본값을 따름」이다 — 기존 옵션은 모두 null 로 남아 지금처럼 상품 값을 따른다.
      */
     public function up(): void

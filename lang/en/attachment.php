@@ -80,7 +80,7 @@ return [
             'done' => 'Deleted :deleted of :scanned orphan attachments past retention (:days days). (:failed failed)',
         ],
     ],
-    // Content media (images, video and audio inserted into the editor body) — core contract (#883, 7.1.5)
+    // Content media (images, video and audio inserted into the editor body) — core contract (7.1.5)
     'content_media' => [
         'kind' => [
             'image' => 'Image',

@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 자산 URL 이중 모드 서빙 계약 테스트 (이슈 #486 단위 A).
+ * 자산 URL 이중 모드 서빙 계약 테스트 (단위 A).
  *
  * 라우트가 두 형태로 등록되었다는 것만으로는 부족하다 — 확장자 없는 형태가
  * 확장자 형태와 **같은 응답**을 주고 **같은 권한 가드**를 받아야 실제로 대체재가 된다.

@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 게시판 관리자·스텝 일괄 지정 (#708)
+ * 게시판 관리자·스텝 일괄 지정
  *
  * 한 회원을 게시판 N개의 관리자·스텝으로 지정하려면 게시판 폼을 N번 저장해야 했다. 환경설정의
  * 일괄 지정이 게시판마다 기존 명단 동기화(syncBoardRoleUsers)를 타는지, 관리자가 0명이 되는

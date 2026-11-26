@@ -50,8 +50,8 @@ class DriverRegistryServiceTest extends TestCase
      *
      * search 는 폴백 가드 편입(A5b)으로 추가되었다 — 이 목록에서 빠지면 검색엔진 플러그인
      * 제거 시 죽은 `scout.driver` 가 그대로 남아 공개 검색이 500 이 된다.
-     * image(이미지 처리 엔진, #869)도 같은 이유로 등재한다 — 플러그인 엔진이 빠지면 gd 로 되돌아가야 한다.
-     * file_delegation(웹서버 파일 위임, #878)은 드라이버 카드와 같은 선택 UX 라 등재한다 — 기본은 none.
+     * image(이미지 처리 엔진)도 같은 이유로 등재한다 — 플러그인 엔진이 빠지면 gd 로 되돌아가야 한다.
+     * file_delegation(웹서버 파일 위임)은 드라이버 카드와 같은 선택 UX 라 등재한다 — 기본은 none.
      *
      * @scenario engine_source=core
      *
@@ -72,7 +72,7 @@ class DriverRegistryServiceTest extends TestCase
     }
 
     /**
-     * 이미지 엔진 카테고리는 이 서버에서 쓸 수 없는 코어 엔진을 목록에서 뺍니다 (#869).
+     * 이미지 엔진 카테고리는 이 서버에서 쓸 수 없는 코어 엔진을 목록에서 뺍니다.
      *
      * 다른 카테고리는 쓸 수 없는 드라이버도 목록에 둔다(저장 때 사유와 함께 422). 이미지 엔진은 고를 이유가 없는
      * 선택지라 imagick 확장이 없는 서버(Windows 개발 서버)에서는 gd 만 보여야 한다.
@@ -99,7 +99,7 @@ class DriverRegistryServiceTest extends TestCase
     }
 
     /**
-     * 이미지 엔진 카테고리의 기본값, 설정 키, config 키가 주입 지점과 맞는지 검증합니다 (#869).
+     * 이미지 엔진 카테고리의 기본값, 설정 키, config 키가 주입 지점과 맞는지 검증합니다.
      *
      * config 키가 SettingsServiceProvider::applyDriverConfig() 가 기록하는 키(core.image.driver)와 다르면
      * 플러그인 엔진이 빠졌을 때의 폴백이 엉뚱한 키에 써져 실효가 없다.
@@ -220,7 +220,7 @@ class DriverRegistryServiceTest extends TestCase
         $this->assertArrayHasKey('search', $all);
         $this->assertArrayHasKey('image', $all);
         $this->assertArrayHasKey('file_delegation', $all);
-        // 비공개 첨부 저장소(#916)
+        // 비공개 첨부 저장소
         $this->assertArrayHasKey('private_attachment', $all);
         $this->assertSame(['default', 's3'], array_column($all['private_attachment'], 'id'));
         $this->assertCount(12, $all);

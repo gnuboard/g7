@@ -1,6 +1,6 @@
 /**
  * @file admin-role-form-password-expiry.test.ts
- * @description 역할 폼 「비밀번호 만료」(따름/적용/제외) 구조 회귀 테스트 (#736 D6·D10)
+ * @description 역할 폼 「비밀번호 만료」(따름/적용/제외) 구조 회귀 테스트
  *
  * 저장 본문은 칸을 명시 나열하므로 선택만 두고 본문에 빠뜨리면 화면에서 고른 값이 저장되지 않는다.
  * 등록 기본값(init-local·생성 init)은 「사이트 설정 따름」이다.
@@ -27,7 +27,7 @@ function flattenActions(actions: any): any[] {
 
 const nodes = flatten((roleForm as any).slots?.content ?? (roleForm as any).components);
 
-describe('역할 폼 — 비밀번호 만료 (#736)', () => {
+describe('역할 폼 — 비밀번호 만료', () => {
   /**
    * @scenario role_policy=apply
    * @effects role_expiry_policy_saved

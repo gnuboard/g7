@@ -110,7 +110,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const inlineRootRef = useRef<HTMLDivElement>(null);
   const inlineTriggerRef = useRef<HTMLButtonElement>(null);
 
-  // 언어 전환은 같은 화면을 새로 마운트한다 — 고를 때 단추에 있던 포커스를 새 단추로 돌린다(#869 브라우저 실측)
+  // 언어 전환은 같은 화면을 새로 마운트한다 — 고를 때 단추에 있던 포커스를 새 단추로 돌린다
   useLocaleSwitchFocusReturn(
     `language-selector:${id ?? 'default'}:${inline ? 'inline' : 'menu'}`,
     inline ? inlineRootRef : menuRef,
@@ -149,7 +149,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
    */
   const openMenu = (where: 'first' | 'last' = 'first') => {
     // 전환 중에는 열지 않는다 — 곧 화면 전체가 다시 그려져 연 목록과 그 안의 포커스가 사라진다. 단추는 잠그지 않고(aria-busy)
-    // 포커스를 그대로 둔다. 다시 그린 뒤 열면 선택지로 들어간다(#869 8차 7부)
+    // 포커스를 그대로 둔다. 다시 그린 뒤 열면 선택지로 들어간다(8차 7부)
     if (isChanging) return;
     const selected = availableLocales.indexOf(currentLocale);
     const index = selected >= 0 ? selected : (where === 'last' ? availableLocales.length - 1 : 0);
@@ -240,7 +240,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     if (root?.contains(document.activeElement)) {
       (inline ? inlineTriggerRef.current : triggerRef.current)?.focus();
     }
-    // 목록은 고른 즉시 닫는다 — 저장 요청이 끝난 뒤에 닫으면, 그 사이 단추를 누른 것이 닫는 토글이 되어 목록이 엇갈렸다(#869 8차 7부)
+    // 목록은 고른 즉시 닫는다 — 저장 요청이 끝난 뒤에 닫으면, 그 사이 단추를 누른 것이 닫는 토글이 되어 목록이 엇갈렸다(8차 7부)
     setShowMenu(false);
 
     try {

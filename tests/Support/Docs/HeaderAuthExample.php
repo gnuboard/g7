@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /**
- * 공개 문서 예제 — 헤더 인증 확장 (docs/backend/authentication.md 「예제: 헤더 인증 확장」, #798 D24)
+ * 공개 문서 예제 — 헤더 인증 확장 (docs/backend/authentication.md 「예제: 헤더 인증 확장」)
  *
  * 사내 인증 프록시가 본인을 확인한 뒤 `X-Remote-User` 헤더에 이메일을 실어 보내는 사이트를 가정한다. 이 클래스는 문서의 예제
  * 코드를 그대로 옮긴 것이고 `Tests\Feature\Docs\HeaderAuthExampleTest` 가 왕복을 돌린다 — 문서를 고치면 여기도 같이 고친다.

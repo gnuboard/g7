@@ -37,7 +37,7 @@
     </fallback>
     <!-- 조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를
          띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을
-         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2). -->
+         열 때마다 전역 오류 토스트가 뜬다. -->
     <error-handling>
       <on-code code="403">
         <suppress/>
@@ -153,8 +153,8 @@
       </div>
       <empty-state data-type="composite" data-ref="dimensions_empty" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).length > 0}}" iconName="puzzle-piece" title="$t:admin.analytics.actions.dimensions_empty_title" description="$t:admin.analytics.actions.dimensions_empty_description" class="py-10"/>
       <empty-state data-type="composite" data-ref="dimensions_none" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !query.dimension &amp;&amp; analytics_registered !== undefined &amp;&amp; (analytics_registered?.data?.dimensions ?? []).length === 0}}" iconName="puzzle-piece" title="$t:admin.analytics.actions.dimensions_none_title" description="$t:admin.analytics.actions.dimensions_none_description" class="py-10"/>
-      <!-- 개인정보로 표시된 분류 기준은 집계하지 않는다(#682 S4 라운드 4) — 표가 늘 비어 「수집 진단」으로
-           보내면 수집 고장으로 읽힌다. 고르면 표 대신 이유를 보인다(#682 S4 라운드 8). -->
+      <!-- 개인정보로 표시된 분류 기준은 집계하지 않는다 — 표가 늘 비어 「수집 진단」으로
+           보내면 수집 고장으로 읽힌다. 고르면 표 대신 이유를 보인다. -->
       <empty-state data-type="composite" data-ref="dimensions_pii" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !!query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).some(d =&gt; d.key === query.dimension &amp;&amp; d.pii)}}" iconName="user-shield" title="$t:admin.analytics.actions.dimension_pii_title" description="$t:admin.analytics.actions.dimension_pii_description" class="py-10"/>
       <div data-ref="report_grid_wrap" data-if="{{(query.tab || 'search') !== 'dimensions' || (analytics_registered !== undefined &amp;&amp; !!query.dimension &amp;&amp; !(analytics_registered?.data?.dimensions ?? []).some(d =&gt; d.key === query.dimension &amp;&amp; d.pii))}}">
         <include src="partials/admin_analytics/_partial_report_grid.g7.html"/>

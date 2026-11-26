@@ -253,7 +253,7 @@ class LayoutExtensionRepositoryTest extends TestCase
     }
 
     /**
-     * 출처의 지워진 행만, 조각 키로 걸러 조회한다 — 어느 행을 되살릴지는 서비스가 정한다(#725).
+     * 출처의 지워진 행만, 조각 키로 걸러 조회한다 — 어느 행을 되살릴지는 서비스가 정한다.
      *
      * @return void 반환값 없음
      *

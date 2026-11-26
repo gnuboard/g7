@@ -400,7 +400,7 @@ trait BundledExtensionUpdatePrompt
      */
     private function spawnBundledUpdates(array $manifest): ?array
     {
-        // 가용성 판정은 SSoT 한 곳이 소유한다 (#609 D34 이관 완료) — 판정이 틀리면
+        // 가용성 판정은 SSoT 한 곳이 소유한다 — 판정이 틀리면
         // in-process 폴백으로 넘어가지 못하고 그 자리에서 `Error` 로 죽는다.
         if (! ExecutionEnvironment::hasFunction('proc_open')) {
             return null;
@@ -488,7 +488,7 @@ trait BundledExtensionUpdatePrompt
      *
      * 자식(`core:execute-bundled-updates`)은 대상이 0건이어도 정상 종료 경로에서 결과 줄(`[BUNDLED-RESULT]`)을 늘 출력한다.
      * 그러니 결과 줄이 없으면 종료 코드와 무관하게 결과를 알 수 없는 것이고, 실패 1건으로 센다 — 0/0 으로 두면 부모가
-     * 성공으로 끝내 자동화 스크립트가 실패를 알 수 없다(비정상 종료 #144, 정상 종료인데 결과 없음 #888).
+     * 성공으로 끝내 자동화 스크립트가 실패를 알 수 없다(비정상 종료 #144, 정상 종료인데 결과 없음).
      *
      * @param  array<string, mixed>|null  $resultPayload  결과 줄에서 읽은 페이로드 (없으면 null)
      * @param  int  $exitCode  자식 종료 코드

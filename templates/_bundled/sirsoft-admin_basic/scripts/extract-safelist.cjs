@@ -152,7 +152,7 @@ for (const file of files) {
  */
 
 // semantic.css 에 @source inline() 자동 삽입 — 레이아웃 스캔 앵커(`@source "../../layouts/**/*.json"`)가 이 파일에 있다.
-// main.css 는 `@import` 만 앞에 두는 파일이라 거기에 끼우면 뒤의 `@import` 가 전부 무시된다(#434 분리 때 실측).
+// main.css 는 `@import` 만 앞에 두는 파일이라 거기에 끼우면 뒤의 `@import` 가 전부 무시된다(분리 때 실측).
 const mainCssPath = path.join(__dirname, '../src/styles/semantic.css');
 let mainCss = fs.readFileSync(mainCssPath, 'utf-8');
 

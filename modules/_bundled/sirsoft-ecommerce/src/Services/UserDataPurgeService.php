@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\TempOrderRepositoryInterfac
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterface;
 
 /**
- * 회원 완전 삭제 시 이커머스 회원 소유 데이터 정리 서비스 (#888)
+ * 회원 완전 삭제 시 이커머스 회원 소유 데이터 정리 서비스
  *
  * 회원 행이 지워지기 전에(코어 `core.user.before_delete`, 같은 트랜잭션) 회원에게 묶인 행을 명시적으로 지운다.
  * DB 외래키의 연쇄 삭제는 안전망으로만 남긴다 — 그것에 기대면 훅·파일·로그가 빠지고, 쿠폰 발급 수량처럼

@@ -4,7 +4,7 @@ import { resolve, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * 본인인증 시작 요청이 대상·정책을 잃지 않는다 (#699 브라우저 실측 중 발견)
+ * 본인인증 시작 요청이 대상·정책을 잃지 않는다 (브라우저 실측 중 발견)
  *
  * 1) 비밀번호 찾기·재설정 화면은 비로그인 화면이라 로그인 세션에서 인증 대상을 얻을 수 없다. 이 화면의 API 호출이
  *    `identity_target` 을 선언하지 않아, 비밀번호 재설정 정책을 켜면 428 뒤 challenge 요청이 대상 없이 나가

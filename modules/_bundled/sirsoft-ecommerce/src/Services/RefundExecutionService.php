@@ -52,7 +52,7 @@ class RefundExecutionService
     protected ?array $pgSettlement = null;
 
     /**
-     * 클레임 환불이 주문 헤더에 동기화할 수 있는 컬럼 (S3-D17 · #599 validate P2 #8)
+     * 클레임 환불이 주문 헤더에 동기화할 수 있는 컬럼
      *
      * **세금 분류 + 현금성 금액만** 담는다. `total_paid_amount`·`total_amount` 가 섞여 들어오면
      * 잔여 한도(`total_paid_amount - total_refunded_amount`)가 같은 금액을 두 번 차감한다
@@ -291,7 +291,7 @@ class RefundExecutionService
      */
     protected function taxColumnUpdates(Order $order, AdjustmentResult $result): array
     {
-        // 쓰기 직전에 **화이트리스트로 거른다**(#599 validate P2 #8). 종전에는 「호출부가 이미
+        // 쓰기 직전에 **화이트리스트로 거른다**(validate P2 #8). 종전에는 「호출부가 이미
         // 골라 실었다」를 믿고 `orderUpdates` 를 통째로 썼는데, 그 전제가 깨지면(재계산 결과를
         // 그대로 넘기는 새 호출부) `total_paid_amount` 가 재계산값으로 덮여 잔여 한도가 두 번
         // 깎인다 — 오류 없이 다음 환불이 0 원이 된다. 목록은 `TAX_SYNC_COLUMNS` 하나가 정본이다.
@@ -327,7 +327,7 @@ class RefundExecutionService
      * 환불 수단을 결정합니다.
      *
      * 확장 결제수단(간편결제 등)도 카탈로그 선언을 통해 올바른 환불수단으로 해석된다.
-     * enum match 로 두면 확장 ID 가 default → BANK 로 떨어져 카드 취소가 누락된다(#475).
+     * enum match 로 두면 확장 ID 가 default → BANK 로 떨어져 카드 취소가 누락된다.
      * 취소와 클레임이 같은 규칙으로 환불 수단을 정하도록 이 서비스가 SSoT 다.
      *
      * @param  Order  $order  주문
@@ -536,7 +536,7 @@ class RefundExecutionService
             // 신규 옵션 단가)가 있으면 그것을, 없으면 행의 저장 단가를 쓴다. 종전에는 소계는 저장
             // 단가로, 취소액은 회계 단가 × **재계산이 본 수량**으로 따로 세어, 저가 교환 후속 행이나
             // 누적 재계산(반품 2회차)에서 한 행 안의 단가·소계·환불액이 서로 다른 값을 말했다
-            // (#599 validate P2 minor).
+            // (validate P2 minor).
             $adjustedQuantity = (int) ($adjustedItem['cancel_quantity'] ?? 0);
             $unitPrice = $adjustedItem !== null && $adjustedQuantity > 0 && isset($adjustedItem['cancel_amount'])
                 ? (float) $adjustedItem['cancel_amount'] / $adjustedQuantity
@@ -573,7 +573,7 @@ class RefundExecutionService
      * base 통화 누적(cancelled_amount)과 결제 통화 누적(mc_cancelled_amount)은 별개다.
      * base ≠ 결제 통화일 때 PG 실환불·누적은 결제 통화로 정합되어야 한다.
      *
-     * 취소 부가세(cancelled_vat_amount)도 같은 자리에서 누적한다(#612 ④) — 이 취소·환불로 주문 부가세가
+     * 취소 부가세(cancelled_vat_amount)도 같은 자리에서 누적한다 — 이 취소·환불로 주문 부가세가
      * 줄어든 만큼(재계산 전 − 후)이다. 종전에는 쓰는 곳이 없어 부분환불 뒤에도 결제행 부가세 내역이
      * 승인 당시 값 그대로였다. 승인 부가세(`vat_amount`)는 증빙 기준이라 바꾸지 않고, 누적은 그 값을 넘지 않는다.
      *

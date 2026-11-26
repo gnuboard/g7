@@ -7,7 +7,7 @@ use Illuminate\Routing\RouteCollection;
 use Illuminate\Support\Facades\Route;
 
 /**
- * 본문 미디어 서빙 라우트 레지스트리 — 미디어 출처 허용 패턴을 실제 서빙 라우트에서 만든다 (#887)
+ * 본문 미디어 서빙 라우트 레지스트리 — 미디어 출처 허용 패턴을 실제 서빙 라우트에서 만든다
  *
  * 확장(모듈·플러그인)의 본문 미디어 어댑터가 부팅 때 자기 서빙 라우트 이름(`api.modules.{id}.….show`·`api.plugins.{id}.….show`)을
  * 등록하면, `patterns()` 가 라우터에서 그 라우트의 URI 와 파라미터 제약(`where`)을 읽어 같은 출처 상대 주소 정규식으로 바꾼다.

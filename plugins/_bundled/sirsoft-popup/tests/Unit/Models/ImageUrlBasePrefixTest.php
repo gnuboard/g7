@@ -69,7 +69,7 @@ class ImageUrlBasePrefixTest extends PluginTestCase
         $public = PublicPopupPresenter::present($popup, 'ko');
         $this->assertSame('/g7'.$api.'pc', $public['image']['pc']['url']);
         $this->assertSame('/g7'.$api.'m', $public['image']['mobile']['url']);
-        // 행 disk 가 없으면(옛 행·직접 URL 불가) 직접 주소는 null 이고 원본 주소는 API 그대로다 (#878)
+        // 행 disk 가 없으면(옛 행·직접 URL 불가) 직접 주소는 null 이고 원본 주소는 API 그대로다
         $this->assertNull($resource['direct_url']);
         $this->assertSame($resource['url'], $resource['download_url']);
         $this->assertSame($resource['url'], $resource['preview_url']);
@@ -78,7 +78,7 @@ class ImageUrlBasePrefixTest extends PluginTestCase
 
     /**
      * 공개 자산 디스크(직접 URL) 행의 직접 주소에는 사이트 마운트 접두사가 붙지 않는다 — 드라이버가 만든 절대 주소다.
-     * 썸네일 기준 주소(`url`)는 그대로 접두사를 갖는다 (#878).
+     * 썸네일 기준 주소(`url`)는 그대로 접두사를 갖는다.
      *
      * @scenario surface=download_url
      *

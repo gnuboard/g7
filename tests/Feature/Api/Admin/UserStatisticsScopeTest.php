@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
- * 회원 목록 통계의 권한 스코프 회귀 테스트 (#705 D11)
+ * 회원 목록 통계의 권한 스코프 회귀 테스트
  *
  * 목록 응답은 `data`(행)와 `statistics`(숫자)를 함께 싣는다. self 스코프 운영자에게 목록이
  * 본인 1건인데 통계가 전체 회원 수면, 숨긴 것을 숫자로 흘린다. 스코프는 앞선 보안 수정으로 이미

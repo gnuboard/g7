@@ -531,7 +531,7 @@ class PluginUpdateTest extends TestCase
     public function test_check_modified_layouts_returns_result_from_service(): void
     {
         $mockService = Mockery::mock(PluginService::class);
-        // 컨트롤러가 미존재 식별자를 404 로 구분하려 존재 확인을 먼저 한다 (#495).
+        // 컨트롤러가 미존재 식별자를 404 로 구분하려 존재 확인을 먼저 한다.
         // 이 스텁이 없으면 mock 이 BadMethodCallException 을 던져 500 이 된다.
         $mockService->shouldReceive('getPluginInfo')
             ->with('test-plugin')
@@ -584,7 +584,7 @@ class PluginUpdateTest extends TestCase
     }
 
     /**
-     * keep 업데이트에서 운영자가 고친 화면이 있으면 성공 문구 끝에 레이아웃 요약이 붙고 data.layout_sync 에 상세가 실린다 (#727 D2).
+     * keep 업데이트에서 운영자가 고친 화면이 있으면 성공 문구 끝에 레이아웃 요약이 붙고 data.layout_sync 에 상세가 실린다.
      *
      * @effects update_api_message_summarizes_layout_sync
      *
@@ -678,7 +678,7 @@ class PluginUpdateTest extends TestCase
     }
 
     /**
-     * 비교 기준을 못 찾은 화면(`kept_no_base`)이 있으면 요약 뒤에 「기준 없음」 안내가 붙고 data.layout_sync 에 그 행이 실린다 (#727 §5.8).
+     * 비교 기준을 못 찾은 화면(`kept_no_base`)이 있으면 요약 뒤에 「기준 없음」 안내가 붙고 data.layout_sync 에 그 행이 실린다.
      *
      * @effects update_api_message_summarizes_layout_sync, missing_base_keeps_operator_layout_untouched
      *
@@ -709,7 +709,7 @@ class PluginUpdateTest extends TestCase
     }
 
     /**
-     * overwrite 업데이트는 덮어쓴 행을 보고하지 않으므로(modified_count 0) 성공 문구에 레이아웃 요약이 붙지 않는다 (#727 §5.8).
+     * overwrite 업데이트는 덮어쓴 행을 보고하지 않으므로(modified_count 0) 성공 문구에 레이아웃 요약이 붙지 않는다.
      *
      * @effects update_api_message_summarizes_layout_sync, overwrite_replaces_operator_layout
      *

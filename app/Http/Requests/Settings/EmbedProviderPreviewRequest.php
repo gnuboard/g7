@@ -6,7 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * 「서비스 추가」 창의 예시 주소 확인 요청 (#883 5단계)
+ * 「서비스 추가」 창의 예시 주소 확인 요청
  *
  * 저장 전 입력값(주소 형식·플레이어 주소·id 글자 규칙)과 예시 주소를 받아, 저장 때와 같은 컴파일 규칙으로 꺼낸 id 와 만들어질
  * 플레이어 주소를 돌려준다. 서버에는 아무것도 저장하지 않는다.

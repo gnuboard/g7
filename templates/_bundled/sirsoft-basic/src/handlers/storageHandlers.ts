@@ -94,7 +94,7 @@ function getCurrentUser(): any {
 const CART_KEY_PATTERN = /^ck_[a-zA-Z0-9]{32}$/;
 
 /**
- * 저장된 장바구니 키를 읽는다 — 서버 형식에 맞지 않으면(망가진 키) 지우고 없는 것으로 본다 (#869 ρ 8부 L1).
+ * 저장된 장바구니 키를 읽는다 — 서버 형식에 맞지 않으면(망가진 키) 지우고 없는 것으로 본다 (8부 L1).
  * 종전에는 망가진 키를 그대로 실어 목록 조회가 방문 내내 형식 오류 400 을 받았다. 없는 것으로 보면 새로 발급받는다.
  *
  * @returns 쓸 수 있는 키, 없으면 null
@@ -141,7 +141,7 @@ async function issueAndStoreCartKey(): Promise<string | null> {
   return issued;
 }
 
-/** 번들이 실릴 때 시작한 장바구니 키 발급 — initCartKey 가 한 번 가져가면 비운다 (#879) */
+/** 번들이 실릴 때 시작한 장바구니 키 발급 — initCartKey 가 한 번 가져가면 비운다 */
 let pendingIssue: Promise<string | null> | null = null;
 
 /**
@@ -161,7 +161,7 @@ function isEcommerceActiveInShell(): boolean {
 }
 
 /**
- * 장바구니 키 발급을 미리 시작한다 — 템플릿 번들이 실릴 때 한 번 부른다 (#879).
+ * 장바구니 키 발급을 미리 시작한다 — 템플릿 번들이 실릴 때 한 번 부른다.
  *
  * 종전에는 레이아웃을 받은 뒤 init_actions 의 `initCartKey` 에서야 발급 요청이 나가, 첫 화면 전 PHP 왕복이 레이아웃 → 키로
  * 줄줄이 이어졌다. 저장된 키가 없고 쇼핑몰 모듈이 켜져 있으면 여기서 요청을 시작해 레이아웃 요청과 겹치게 한다. 렌더 전에
@@ -202,7 +202,7 @@ export async function initCartKeyHandler(
   pendingIssue = null;
 
   // 로그인/비로그인 사용자 모두 cartKey 필요 (API 헤더에 포함)
-  // localStorage에서 기존 cartKey 확인 — 형식이 망가진 저장 키는 버리고 새로 발급받는다 (#869 ρ 8부 L1)
+  // localStorage에서 기존 cartKey 확인 — 형식이 망가진 저장 키는 버리고 새로 발급받는다 (8부 L1)
   let cartKey: string | null = readStoredCartKey();
 
   // 없으면 미리 시작한 발급을, 그것도 없거나 실패했으면 백엔드 API를 통해 새로 발급 — 응답이 올 때까지 기다린다
@@ -261,7 +261,7 @@ export function clearCartKeyHandler(
 }
 
 /**
- * 장바구니 키가 필요한 동작 앞에서 키를 갖춘다 (#869 ρ J2).
+ * 장바구니 키가 필요한 동작 앞에서 키를 갖춘다.
  *
  * 저장된 키가 있으면 그것을 싣고, 없으면(init 의 발급이 실패한 경우) 새로 요청해 응답을 기다린다. 레이아웃은 담기, 바로 구매처럼 키가
  * 필요한 동작의 sequence 맨 앞에 둔다. 받지 못하면 null 로 끝나고 동작은 종전처럼 서버 응답대로 처리된다.

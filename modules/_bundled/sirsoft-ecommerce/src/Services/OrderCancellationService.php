@@ -420,7 +420,7 @@ class OrderCancellationService
         } catch (OrderClaimException $e) {
             // 키·치환 파라미터를 그대로 옮긴다(`validateNotLockedByClaim()` 과 같은 형태). 종전에는
             // 이미 번역된 문장을 키 자리에 넣어, 키로 응답을 조립하는 면이 키 대신 문장을 받고
-            // 치환 파라미터(:type·:status 등)는 잃었다(#599 validate P2 #4).
+            // 치환 파라미터(:type·:status 등)는 잃었다(validate P2 #4).
             throw new OrderCancellationException($e->getMessage(), $e->getMessageKey(), $e->getMessageParams());
         }
     }
@@ -514,7 +514,7 @@ class OrderCancellationService
     }
 
     // ───────────────────────────────────────────────
-    // 취소신청서 기록 — 주문 장부 확정의 단일 지점 (#599 후속 §4-3 · D3)
+    // 취소신청서 기록 — 주문 장부 확정의 단일 지점
     // ───────────────────────────────────────────────
 
     /**
@@ -606,7 +606,7 @@ class OrderCancellationService
      * 상품 상태를 `returned`·`exchanged` 로 **유지**한다 — 반품된 상품을 "취소됨" 으로
      * 적으면 반품 탭과 취소 탭이 같은 상품에 대해 다른 사실을 말한다.
      *
-     * ## 잔여 한도 축을 두 번 깎지 않는다 (#599 후속 §12-B)
+     * ## 잔여 한도 축을 두 번 깎지 않는다 (B)
      *
      * `OrderAdjustmentService` 의 잔여 환불 한도는 `total_paid_amount − total_refunded_amount`
      * 다(`OrderAdjustmentService.php:105`). 환불이 집행된 경로는 `RefundExecutionService`
@@ -772,7 +772,7 @@ class OrderCancellationService
             ? 'sirsoft-ecommerce.order.after_cancel'
             : 'sirsoft-ecommerce.order.after_partial_cancel';
 
-        // 4번째 인자 `OrderCancel` 은 부분 취소 알림(#952)이 취소 상품·환불액을 싣는 데 쓴다 — 앞 세 인자는 그대로다
+        // 4번째 인자 `OrderCancel` 은 부분 취소 알림이 취소 상품·환불액을 싣는 데 쓴다 — 앞 세 인자는 그대로다
         HookManager::doAction(
             $hookName,
             $order->fresh(),
@@ -1215,7 +1215,7 @@ class OrderCancellationService
     /**
      * 주문 합계를 재계산 결과에 따라 갱신합니다.
      *
-     * **주문 합계를 재계산하는 지점은 이 메서드 하나다**(#599 후속 §4-3). 취소 발이든
+     * **주문 합계를 재계산하는 지점은 이 메서드 하나다**. 취소 발이든
      * 환불완료 발이든 `recordCancellation()` 을 거쳐 여기로 모이므로 같은 취소가 두 번
      * 반영되지 않는다.
      *

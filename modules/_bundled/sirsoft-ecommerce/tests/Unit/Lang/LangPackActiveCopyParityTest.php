@@ -7,7 +7,7 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
 /**
- * 언어팩 `_bundled` 원본의 키가 **활성 사본에도 있는가** (S2-D12 회귀 · #599 통합실측 세션2)
+ * 언어팩 `_bundled` 원본의 키가 **활성 사본에도 있는가** (S2-D12 회귀)
  *
  * **증상**: 일본어 사용자의 주문 이력에 날짜 줄이 이렇게 떴다.
  *

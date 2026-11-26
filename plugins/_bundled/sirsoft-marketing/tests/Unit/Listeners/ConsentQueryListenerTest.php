@@ -9,7 +9,7 @@ use Plugins\Sirsoft\Marketing\Services\MarketingConsentService;
 use Plugins\Sirsoft\Marketing\Tests\PluginTestCase;
 
 /**
- * 수신동의 조회 필터 (1.1.5, #952 P6)
+ * 수신동의 조회 필터 (1.1.5)
  *
  * 다른 확장(커머스 광고성 쿠폰 알림)이 `sirsoft-marketing.consent.is_consented` 로 동의 여부를 묻는다.
  */

@@ -218,7 +218,7 @@ class PageAttachment extends Model
     public const SIGNED_PREVIEW_TTL_MINUTES = 30;
 
     /**
-     * 본문 미디어(편집기 본문에 넣은 이미지·동영상·오디오) 컬렉션 (#883).
+     * 본문 미디어(편집기 본문에 넣은 이미지·동영상·오디오) 컬렉션.
      * 첨부 목록·첨부 개수 상한에 들지 않고, 일반 첨부 업로드로는 쓸 수 없다.
      */
     public const COLLECTION_CONTENT_MEDIA = 'content_media';

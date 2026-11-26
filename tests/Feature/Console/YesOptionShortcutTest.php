@@ -16,7 +16,7 @@ use Symfony\Component\Console\Input\ArgvInput;
 use Tests\TestCase;
 
 /**
- * `--yes`(`-y`) 를 받는 명령과 `language-pack:update` 의 `--yes` 를 잰다 (#918).
+ * `--yes`(`-y`) 를 받는 명령과 `language-pack:update` 의 `--yes` 를 잰다.
  *
  * - `--yes` 를 선언한 명령은 모두 `-y` 축약도 받는다. 종전에는 `--yes` 만 선언해 `-y` 로 부르면 Symfony 가
  *   「The "-y" option does not exist.」 로 종료 코드 1 을 냈다.

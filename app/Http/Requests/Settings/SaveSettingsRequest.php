@@ -115,13 +115,13 @@ class SaveSettingsRequest extends FormRequest
      */
     private const SECURITY_INTEGER_FIELDS = [
         // 같은 탭의 기존 숫자 칸 — 빠지면 화면에서 고친 값이 문자열 '45' 로 저장되고, 토큰 유지시간 '0'(무한대)은
-        // 「0 은 허용」 조건(정수 비교)을 못 넘어 422 가 된다(#736 전수 실측 O-2).
+        // 「0 은 허용」 조건(정수 비교)을 못 넘어 422 가 된다(전수 실측 O-2).
         'auth_token_lifetime',
         'max_login_attempts',
         'login_lockout_time',
         'password_reset_rate_limit_per_minute',
         'register_rate_limit_per_minute',
-        // 기존 키지만 비밀번호 정책 카드의 같은 숫자 칸이다 — 빠지면 이 칸만 문자열 '10' 으로 저장된다(#736 S2 실측).
+        // 기존 키지만 비밀번호 정책 카드의 같은 숫자 칸이다 — 빠지면 이 칸만 문자열 '10' 으로 저장된다.
         'password_min_length',
         'password_repeated_chars_length',
         'password_sequential_chars_length',
@@ -176,7 +176,7 @@ class SaveSettingsRequest extends FormRequest
             ]);
         }
 
-        // 사이트 파비콘(#434)도 동일하게 첨부 객체 배열 → 정수 ID 배열로 정규화
+        // 사이트 파비콘도 동일하게 첨부 객체 배열 → 정수 ID 배열로 정규화
         $siteFavicon = $this->input('general.site_favicon');
 
         if (is_array($siteFavicon)) {
@@ -224,7 +224,7 @@ class SaveSettingsRequest extends FormRequest
     }
 
     /**
-     * 웹서버 파일 위임 접두사(`drivers.file_delegation_accel_prefix`)를 다듬습니다 (#878).
+     * 웹서버 파일 위임 접두사(`drivers.file_delegation_accel_prefix`)를 다듬습니다.
      *
      * 앞뒤 공백을 떼고 끝에 `/` 가 없으면 붙인다 — 운영자가 `/_g7_sendfile` 처럼 적어도 매핑(`X-Accel-Mapping`)과
      * nginx `location` 이 같은 모양이 되게 한다. 문자열이 아닌 값·빈 값은 검증 규칙이 판정한다.
@@ -745,7 +745,7 @@ class SaveSettingsRequest extends FormRequest
             'content' => ['sometimes', 'array'],
             'member' => ['sometimes', 'array'],
 
-            // 회원 (#490) — 닉네임 정책. 표시 이름 설정은 종류, 영역 등록소로 검증한다(MemberDisplayNameSettings).
+            // 회원 — 닉네임 정책. 표시 이름 설정은 종류, 영역 등록소로 검증한다(MemberDisplayNameSettings).
             'member.nickname_unique' => ['nullable', 'boolean'],
             'member.nickname_banned_words' => ['nullable', 'array', 'max:500'],
             'member.nickname_banned_words.*' => ['string', 'max:50', 'distinct'],
@@ -759,7 +759,7 @@ class SaveSettingsRequest extends FormRequest
             // 저장하지 않는 지시 값 — 켜면 닉네임 항목의 「기존 회원에게도 입력 요구」를 함께 켠다(로그인 시 닉네임 입력 요구).
             'member.nickname_require_existing_members' => ['nullable', 'boolean'],
 
-            // 본문 콘텐츠 (#883) — 허용 후보·외부 영상 서비스·운영자 추가 태그·미디어 주소 유효 시간
+            // 본문 콘텐츠 — 허용 후보·외부 영상 서비스·운영자 추가 태그·미디어 주소 유효 시간
             'content.allow_figure_caption' => ['nullable', 'boolean'],
             'content.allow_uploaded_video' => ['nullable', 'boolean'],
             'content.allow_uploaded_audio' => ['nullable', 'boolean'],
@@ -783,14 +783,14 @@ class SaveSettingsRequest extends FormRequest
             // 일반 설정
             'general.site_name' => $this->getTabRules($tab, 'general', 'string|max:100'),
             'general.site_url' => $this->getTabRules($tab, 'general', 'url|max:255'),
-            // 사용자 화면 URL (#792) — 비우면 사이트 URL. 외부 화면(Next.js 등) 주소. http·https 만(javascript:·ftp: 거부)
+            // 사용자 화면 URL — 비우면 사이트 URL. 외부 화면(Next.js 등) 주소. http·https 만(javascript:·ftp: 거부)
             'general.user_screen_url' => ['nullable', 'string', 'url:http,https', 'max:255'],
             'general.site_description' => ['nullable', 'string', 'max:500'],
             'general.admin_email' => $this->getTabRules($tab, 'general', 'email|max:255'),
             'general.timezone' => $this->getTabRules($tab, 'general', ['timezone']),
             'general.language' => $this->getTabRules($tab, 'general', [Rule::in(config('app.supported_locales', ['ko', 'en']))]),
             'general.currency' => ['nullable', 'string', 'max:10'],
-            // 자산 URL 방식 — 정적 최적화 서버 대응 (이슈 #486).
+            // 자산 URL 방식 — 정적 최적화 서버 대응.
             // 임의 문자열이 들어오면 AssetUrl::mode() 가 기본값으로 폴백하지만,
             // 저장 단계에서 막아 설정 파일에 뜻 모를 값이 남지 않게 한다.
             // 허용값은 단건 저장(UpdateSettingRequest)과 같은 표(EnumeratedSettingValues)를 쓴다.
@@ -798,7 +798,7 @@ class SaveSettingsRequest extends FormRequest
             // 운영 화면 오른쪽 아래 「레이아웃 편집」 단추 표시 여부 (7.2.0). 끄면 편집 권한이 있어도 단추가 보이지 않는다
             'general.layout_edit_button_enabled' => ['nullable', 'boolean'],
 
-            // 실행 모드 — 웹 요청 안의 커맨드 실행 방식 (#609).
+            // 실행 모드 — 웹 요청 안의 커맨드 실행 방식.
             'system.execution_mode' => ['nullable', 'string', EnumeratedSettingValues::ruleFor('system.execution_mode')],
 
             // 예약 작업(웹 크론) — 허용값은 단건 저장과 같은 표를 쓴다.
@@ -817,7 +817,7 @@ class SaveSettingsRequest extends FormRequest
             'system.cron_visit_fallback' => ['nullable', 'boolean'],
             'general.site_logo' => ['nullable', 'array'],
             'general.site_logo.*' => ['integer', Rule::exists(Attachment::class, 'id')],
-            // 사이트 파비콘(#434) — 1개, 그 컬렉션(site_favicon)에 실재하는 첨부만(로고·템플릿 파비콘 첨부를 끌어오지 못하게)
+            // 사이트 파비콘 — 1개, 그 컬렉션(site_favicon)에 실재하는 첨부만(로고·템플릿 파비콘 첨부를 끌어오지 못하게)
             'general.site_favicon' => ['nullable', 'array', 'max:1'],
             'general.site_favicon.*' => ['integer', Rule::exists(Attachment::class, 'id')->where('collection', FaviconPolicy::CORE_COLLECTION)],
 
@@ -847,7 +847,7 @@ class SaveSettingsRequest extends FormRequest
             // 고아 첨부 정리 — 사용자 파일을 파기하므로 보존기간 하한을 서버가 강제한다.
             'upload.orphan_cleanup_enabled' => ['nullable', 'boolean'],
             'upload.orphan_retention_days' => ['nullable', 'integer', 'min:'.config('core.settings_limits.upload_orphan_retention_days_min', 1), 'max:'.config('core.settings_limits.upload_orphan_retention_days_max', 3650)],
-            // 이미지 썸네일 (#869) — 규격 표는 행마다 검증해 오류 키가 `upload.thumbnail_presets.{i}.name` 처럼
+            // 이미지 썸네일 — 규격 표는 행마다 검증해 오류 키가 `upload.thumbnail_presets.{i}.name` 처럼
             // 칸 하나를 가리키게 한다(화면이 그 칸 아래 인라인으로 띄운다). og 행은 크기를 SEO 탭이 소유하고
             // 저장하지 않으므로(ThumbnailPresetSettings::mergeForSave) 크기 검증에서 뺀다. SEO 탭은 8000px 까지 받는다.
             // 행 수 상한은 표 전체(고정 5행, og, 확장 규격 포함) 기준이다.
@@ -947,7 +947,7 @@ class SaveSettingsRequest extends FormRequest
                 'max:'.config('core.settings_limits.security_password_min_length_max', 64),
             ],
             'security.require_password_special_char' => ['nullable', 'boolean'],
-            // 비밀번호 작성·재사용·만료 정책 (#736). 신규 키라 미전송(기존 클라이언트)을 허용한다 —
+            // 비밀번호 작성·재사용·만료 정책. 신규 키라 미전송(기존 클라이언트)을 허용한다 —
             // getTabRules(required 화)를 쓰지 않아 다른 필드만 고친 부분 저장이 깨지지 않는다.
             // `password_expiry_started_at` 은 규칙을 두지 않는다 — 서버 전용 값이라 요청으로는 저장되지
             // 않고(validated() 에서 빠진다), 꺼짐→켜짐 전이 때 RecordPasswordExpiryStartListener 가 기록한다.
@@ -966,7 +966,7 @@ class SaveSettingsRequest extends FormRequest
             'security.password_expiry_action' => ['nullable', 'string', Rule::in(PasswordExpiryAction::values())],
             'security.password_expiry_remind_days' => $this->securityIntegerRules('password_expiry_remind_days'),
             'security.password_expiry_batch_size' => $this->securityIntegerRules('password_expiry_batch_size'),
-            // 활동 로그(접속기록) 보관 기간 — 하한 365 는 법정 최소(#736 D14). 파기 서비스도 같은 바닥을 다시 건다.
+            // 활동 로그(접속기록) 보관 기간 — 하한 365 는 법정 최소. 파기 서비스도 같은 바닥을 다시 건다.
             'security.activity_log_retention_days' => $this->securityIntegerRules('activity_log_retention_days'),
             'security.two_factor_auth' => ['nullable', 'boolean'],
             // 적용 범위. 미전송(기존 클라이언트)은 기본값 'all' 유지 — 레거시 저장값
@@ -1047,7 +1047,7 @@ class SaveSettingsRequest extends FormRequest
             'advanced.pagination_max_page' => ['nullable', 'integer', 'min:'.config('core.settings_limits.advanced_pagination_max_page_min', 0), 'max:'.config('core.settings_limits.advanced_pagination_max_page_max', 100000)],
 
             // 드라이버 설정 (drivers 탭)
-            // 스토리지 드라이버 — 코어(local/s3) + 플러그인 훅 등록 드라이버. 카탈로그가 동적이라 정적 Rule::in 대신 레지스트리로 판정한다(#916 A4)
+            // 스토리지 드라이버 — 코어(local/s3) + 플러그인 훅 등록 드라이버. 카탈로그가 동적이라 정적 Rule::in 대신 레지스트리로 판정한다
             'drivers.storage_driver' => $this->getTabRules($tab, 'drivers', [$this->getDriverCatalogRule('storage', 'validation.settings.storage_driver_invalid'), $this->getDriverUsabilityRule('storage')]),
             'drivers.s3_bucket' => ['nullable', 'string', 'max:255'],
             'drivers.s3_region' => ['nullable', 'string', 'max:64', self::S3_REGION_FORMAT],
@@ -1088,7 +1088,7 @@ class SaveSettingsRequest extends FormRequest
             'drivers.websocket_server_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_websocket_server_port_min', 1), 'max:'.config('core.settings_limits.drivers_websocket_server_port_max', 65535)],
             'drivers.websocket_server_scheme' => ['nullable', Rule::in(self::SUPPORTED_WEBSOCKET_SCHEMES)],
             'drivers.search_engine_driver' => ['nullable', Rule::in($this->getSupportedSearchEngineDrivers())],
-            // 이미지 처리 엔진 (#869) — 코어 엔진(gd, imagick)은 이 서버에서 쓸 수 있는지, 플러그인 엔진은 카탈로그에 있는지 본다.
+            // 이미지 처리 엔진 — 코어 엔진(gd, imagick)은 이 서버에서 쓸 수 있는지, 플러그인 엔진은 카탈로그에 있는지 본다.
             // 화면 목록은 쓸 수 없는 코어 엔진을 이미 빼지만(DriverRegistryService::buildCoreDrivers) 직접 호출은 여기서 막는다.
             'drivers.image_driver' => ['nullable', 'string', 'max:100', $this->getImageDriverCatalogRule(), $this->getDriverUsabilityRule('image')],
             'drivers.log_driver' => $this->getTabRules($tab, 'drivers', [$this->getDriverCatalogRule('log', 'validation.settings.log_driver_invalid', self::SUPPORTED_LOG_DRIVERS)]),
@@ -1097,9 +1097,9 @@ class SaveSettingsRequest extends FormRequest
             // 공개 자산 디스크 — 코어 3종(none/public/s3) + 플러그인 훅 등록 디스크.
             // 카탈로그가 동적(플러그인 훅)이라 정적 Rule::in 불가 → 레지스트리 조회 closure
             'drivers.public_asset_disk' => $this->getPublicAssetDiskRules(),
-            // 비공개 첨부 저장소 (#916) — 코어(default/s3) + 플러그인 훅 등록 디스크. 공개 자산과 같은 디스크도 저장은 허용하고 응답 warnings 로 알린다(D5)
+            // 비공개 첨부 저장소  — 코어(default/s3) + 플러그인 훅 등록 디스크. 공개 자산과 같은 디스크도 저장은 허용하고 응답 warnings 로 알린다(D5)
             'drivers.private_attachment_disk' => ['nullable', 'string', 'max:100', $this->getDriverCatalogRule('private_attachment', 'validation.settings.private_attachment_disk_invalid'), $this->getDriverUsabilityRule('storage')],
-            // 웹서버 파일 위임 (#878) — 코어 3종(none/x-sendfile/x-accel-redirect). nginx 는 internal 위치 접두사가 필요하다.
+            // 웹서버 파일 위임 — 코어 3종(none/x-sendfile/x-accel-redirect). nginx 는 internal 위치 접두사가 필요하다.
             // 접두사는 prepareForValidation 에서 앞뒤 공백을 떼고 끝 `/` 를 붙인 뒤 형식을 본다.
             'drivers.file_delegation' => ['nullable', 'string', 'max:50', $this->getFileDelegationRule()],
             'drivers.file_delegation_accel_prefix' => ['nullable', 'string', 'max:255', 'required_if:drivers.file_delegation,'.FileDelegation::MODE_X_ACCEL_REDIRECT, 'regex:'.FileDelegation::ACCEL_PREFIX_PATTERN],
@@ -1370,7 +1370,7 @@ class SaveSettingsRequest extends FormRequest
      * 값이 드라이버 카탈로그(코어 + 플러그인 훅 등록)에 있는지 검사하는 규칙을 반환합니다.
      *
      * 선택지의 단일 출처는 `DriverRegistryService` 다 — 화면 셀렉트가 그 목록을 그대로 그린다. 정적 목록으로 막으면
-     * 플러그인이 등록한 드라이버를 화면에서 골라도 저장이 422 로 끝난다(#916 A4).
+     * 플러그인이 등록한 드라이버를 화면에서 골라도 저장이 422 로 끝난다.
      *
      * `$coreValues` 는 카탈로그에 없지만 예전부터 저장을 받던 코어 값이다(캐시 `memcached` 등) — 이미 그 값을 쓰는 사이트의
      * 저장이 막히지 않게 계속 받는다.
@@ -1424,7 +1424,7 @@ class SaveSettingsRequest extends FormRequest
     }
 
     /**
-     * 웹서버 파일 위임 방식이 카탈로그(none/x-sendfile/x-accel-redirect)에 있는지 검사하는 규칙을 반환합니다 (#878).
+     * 웹서버 파일 위임 방식이 카탈로그(none/x-sendfile/x-accel-redirect)에 있는지 검사하는 규칙을 반환합니다.
      *
      * 선택지의 단일 출처는 `DriverRegistryService` 다 — 화면 셀렉트가 그 목록을 그대로 그린다.
      *
@@ -2073,7 +2073,7 @@ class SaveSettingsRequest extends FormRequest
             'security.login_lockout_time.integer' => __('validation.settings.login_lockout_time_integer'),
             'security.login_lockout_time.min' => __('validation.settings.login_lockout_time_min'),
             'security.login_lockout_time.max' => __('validation.settings.login_lockout_time_max'),
-            // 비밀번호 정책 (#736) — 경계 숫자는 규칙의 :min/:max 가 채운다
+            // 비밀번호 정책 — 경계 숫자는 규칙의 :min/:max 가 채운다
             'security.password_require_char_types.boolean' => __('validation.settings.password_policy_boolean'),
             'security.password_block_identifier.boolean' => __('validation.settings.password_policy_boolean'),
             'security.password_block_repeated_chars.boolean' => __('validation.settings.password_policy_boolean'),
@@ -2357,7 +2357,7 @@ class SaveSettingsRequest extends FormRequest
             'privacy.search_history_scopes.*.scope' => __('validation.attributes.privacy_search_history_scope'),
             'privacy.search_history_scopes.*.max_count' => __('validation.attributes.privacy_search_history_max_count'),
             'privacy.search_history_scopes.*.retention_days' => __('validation.attributes.privacy_search_history_retention_days'),
-            // 본문 콘텐츠 필드 (#883)
+            // 본문 콘텐츠 필드
             'content' => __('validation.attributes.content_settings'),
             'content.allow_figure_caption' => __('validation.attributes.content_allow_figure_caption'),
             'content.allow_uploaded_video' => __('validation.attributes.content_allow_uploaded_video'),
@@ -2402,7 +2402,7 @@ class SaveSettingsRequest extends FormRequest
             'seo.og_image_default.*' => __('validation.attributes.og_image_default'),
             'advanced.outbound_proxy_bypass.*' => __('validation.attributes.outbound_proxy_bypass'),
             'advanced.trusted_proxies.*' => __('validation.attributes.trusted_proxies'),
-            // 시스템 탭(#609) — 라벨 문구는 lang 의 점 표기 키(`validation.attributes` 안 `'system.execution_mode'` 등)에 있다.
+            // 시스템 탭 — 라벨 문구는 lang 의 점 표기 키(`validation.attributes` 안 `'system.execution_mode'` 등)에 있다.
             // 규칙 키와 같은 이름으로 여기서도 이어 둔다(라벨 누락 검사가 이 표를 단일 근거로 본다).
             'system.execution_mode' => $this->dottedAttributeLabel('system.execution_mode'),
             'system.cron_mode' => $this->dottedAttributeLabel('system.cron_mode'),

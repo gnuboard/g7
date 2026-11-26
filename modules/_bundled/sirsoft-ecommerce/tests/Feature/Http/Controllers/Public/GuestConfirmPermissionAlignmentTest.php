@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 비회원 구매확정의 권한 정합 회귀 테스트 (#703)
+ * 비회원 구매확정의 권한 정합 회귀 테스트
  *
  * 회귀 배경: 비회원 주문 상세의 구매확정 버튼(can_confirm)은 guest 역할의 「구매확정」 권한을 보는데,
  * 비회원 구매확정 API 는 권한 검사 없이 열려 있었다. 운영자가 권한을 거두면 버튼은 사라져도 요청을 직접

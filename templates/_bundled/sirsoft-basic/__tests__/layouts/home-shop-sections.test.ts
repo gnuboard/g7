@@ -1,5 +1,5 @@
 /**
- * 홈 상품 섹션 — 쇼핑몰만 켠 사이트의 첫 화면 (#822 D16)
+ * 홈 상품 섹션 — 쇼핑몰만 켠 사이트의 첫 화면
  *
  * @description
  * 게시판을 끈 사이트는 홈의 통계·최근 글·인기 게시판·게시판 요약이 모두 빠져 환영 카드만 남는다. 쇼핑몰이 켜져 있으면
@@ -17,7 +17,7 @@ type Node = Record<string, any>;
 
 const LAYOUT_ROOT = path.resolve(__dirname, '../../layouts');
 const SHOP = "_global.activeModules?.includes('sirsoft-ecommerce') ?? true";
-// 템플릿 설정(#434) — 홈 상품 개수(`home.product_count`, 기본 8)와 상품 섹션 표시(`home.show_shop_sections`, 기본 켜짐)
+// 템플릿 설정 — 홈 상품 개수(`home.product_count`, 기본 8)와 상품 섹션 표시(`home.show_shop_sections`, 기본 켜짐)
 const PRODUCT_COUNT = '{{_global.templateSettings?.home?.product_count ?? 8}}';
 const SHOW_SHOP = '_global.templateSettings?.home?.show_shop_sections ?? true';
 
@@ -37,7 +37,7 @@ function nodes(tree: unknown, out: Node[] = []): Node[] {
     return out;
 }
 
-describe('홈 상품 섹션 (#822 D16)', () => {
+describe('홈 상품 섹션', () => {
     const home = load('home');
     const shopIndex = load('shop/index');
 

@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 완료 처리의 「적립 차감」 예고는 **아직 적립 전인 상품**에만 뜬다 (#599 T2-D13 파생)
+ * 완료 처리의 「적립 차감」 예고는 **아직 적립 전인 상품**에만 뜬다 (D13 파생)
  *
  * T2-D13 으로 이미 적립이 나간 상품은 반품·교환을 완료해도 되돌리지 않게 됐다(운영 결정
  * 2026-09-23). 그런데 완료 모달의 요약(「적립 차감」)과 상세 정산 카드(「적립 예정 · 완료 시

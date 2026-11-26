@@ -1,6 +1,6 @@
 // e2e:allow 편집기 속성 창 단위(RTL) — 라이브 확인은 이력 문서 Chrome MCP 매트릭스 T5-b(편집기 `_user_base` 푸터·헤더)
 /**
- * I18nTextField.templateSettings.test.tsx — 템플릿 설정에 연결된 다국어 글자 칸 (#434)
+ * I18nTextField.templateSettings.test.tsx — 템플릿 설정에 연결된 다국어 글자 칸
  *
  * 템플릿 설정(`_global.templateSettings`)은 그 템플릿의 「설정」 화면이 유일한 주인이다. 편집기 글자 칸이
  * 일반 「바인딩됨(코드 편집)」 배지를 보이거나(복잡식) [데이터 바꾸기] 피커를 열면(단일 경로식) 운영자가
@@ -85,8 +85,8 @@ const t = (k: string, p?: Record<string, string | number>) =>
 
 afterEach(() => cleanup());
 
-describe('I18nTextField — 템플릿 설정 연결 (#434)', () => {
-  // 템플릿 설정에 연결된 글자 칸(#434) — 복잡식(푸터 저작권)·단일 경로식 모두 트리·[데이터 바꾸기] 없이 주인 안내만.
+describe('I18nTextField — 템플릿 설정 연결', () => {
+  // 템플릿 설정에 연결된 글자 칸 — 복잡식(푸터 저작권)·단일 경로식 모두 트리·[데이터 바꾸기] 없이 주인 안내만.
   // @scenario case=editor_bound_value
   // @effects template_settings_bound_text_shows_owner_notice
   it('C.템플릿 설정 바인딩 → 주인 안내(코드 편집 배지·트리·데이터 피커 없음)', () => {

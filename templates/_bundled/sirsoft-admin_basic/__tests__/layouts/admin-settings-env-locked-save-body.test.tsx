@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-env-locked-save-body.test.tsx
- * @description 환경설정 저장 본문에서 `.env` 로 잠긴 칸을 뺀다 (#869 ζ)
+ * @description 환경설정 저장 본문에서 `.env` 로 잠긴 칸을 뺀다
  *
  * `.env` 가 값을 정하는 칸은 화면에서 잠기지만(`_computed.envLocked['{탭}.{키}'] === true`) 저장 본문에는 그 값이
  * 그대로 실렸다 — 서버가 빼서 결과는 같았지만, 사용자가 바꿀 수 없는 값을 매번 보내고 서버의 거름에만 기댔다.
@@ -52,7 +52,7 @@ function evaluateBody(tab: string, form: Json, envLocked: Json | null): Json {
   } as any) as Json;
 }
 
-describe('환경설정 저장 본문 — .env 잠긴 칸 (#869 ζ)', () => {
+describe('환경설정 저장 본문 — .env 잠긴 칸', () => {
   /**
    * @scenario case=upload_locked
    * @effects save_body_omits_env_locked_keys

@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ContentMediaOwnerType;
 use Modules\Sirsoft\Ecommerce\Services\ContentMediaService;
 
 /**
- * 이커머스 본문 미디어 업로드 요청 검증 (#883 4단계)
+ * 이커머스 본문 미디어 업로드 요청 검증
  *
  * 소유 종류(상품 설명·공통 정보)와 임시 키는 필수다. 파일은 본문 미디어 정책으로 검증한다(내용 판정).
  */

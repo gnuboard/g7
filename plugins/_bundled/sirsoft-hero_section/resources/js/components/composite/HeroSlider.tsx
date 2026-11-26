@@ -17,7 +17,7 @@ export interface HeroImage {
   /** 공개 이미지 주소 (공개 API — 썸네일 `?size=`·같은 출처 자리의 기준) */
   url: string;
 
-  /** 원본 직접 주소 (공개 자산 디스크 행만, 아니면 null) — 원본 한 장(`src`·srcset 원본 후보)에만 쓴다 (#878) */
+  /** 원본 직접 주소 (공개 자산 디스크 행만, 아니면 null) — 원본 한 장(`src`·srcset 원본 후보)에만 쓴다 */
   direct_url?: string | null;
 
   /** 가로 픽셀 */
@@ -1127,7 +1127,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
   const main = mobileScreen ? (mobile ?? pc) : pc;
   const media = mediaOf(banner);
   // PC·모바일 이미지는 기기별로 따로 올린 각자의 원본이라 srcset 도 고른 이미지의 가로로 만든다(코어 썸네일 `?size=`, 대상이 아니면 없음)
-  // 축소 후보는 공개 API 주소(`?size=`), 마지막 원본 후보와 src 는 원본 직접 주소(있으면 — 공개 자산 디스크, #878)
+  // 축소 후보는 공개 API 주소(`?size=`), 마지막 원본 후보와 src 는 원본 직접 주소(있으면 — 공개 자산 디스크)
   const mainSrc = main ? mediaSrc(main) : undefined;
   const mainSrcSet = main ? responsiveSrcset(main.url, main.width, mainSrc) : undefined;
   // srcset 이 있으면 상자를 잰 뒤에만 주소를 붙인다 — 재기 전 sizes(100vw)로 큰 후보를 받기 시작했다가 잰 값으로 다시 받지 않게

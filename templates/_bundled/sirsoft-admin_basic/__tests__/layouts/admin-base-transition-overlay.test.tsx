@@ -2,7 +2,7 @@
  * @file admin-base-transition-overlay.test.tsx
  * @description 어드민 베이스 레이아웃의 transition_overlay 설정 및 폼 컨테이너 blur 제거 회귀 테스트
  *
- * 이슈 #245 — 어드민 환경설정 진입 시 데이터 로드 전 폼 조작으로 인한 저장 실패 방지를 위해
+ * 어드민 환경설정 진입 시 데이터 로드 전 폼 조작으로 인한 저장 실패 방지를 위해
  * 베이스 레이아웃에 spinner 오버레이를 도입하고, 컨테이너 레벨의 전체 페이지 blur 처리를 제거한다.
  */
 
@@ -50,7 +50,7 @@ function rootNodes(layout: any): LayoutNode | LayoutNode[] {
     return layout as LayoutNode;
 }
 
-describe('어드민 베이스 transition_overlay (이슈 #245)', () => {
+describe('어드민 베이스 transition_overlay', () => {
     // @scenario subject=base, contract=overlay_declared
     // @effects admin_base_declares_spinner_overlay
     it('_admin_base.json 에 spinner 오버레이가 활성화되어 있어야 한다', () => {
@@ -74,10 +74,10 @@ describe('어드민 베이스 transition_overlay (이슈 #245)', () => {
     });
 });
 
-describe('어드민 베이스 사이드바 프로필 영역 (이슈 #384)', () => {
+describe('어드민 베이스 사이드바 프로필 영역', () => {
     /**
-     * #384 가 막으려는 것은 "사이드바 하단 **프로필/계정 UI**" 이지 sidebar_footer
-     * 컨테이너 자체가 아니다. #450 이 같은 컨테이너에 "사이트 보기" 크로스 이동 링크를
+     * 이 시험이 막으려는 것은 "사이드바 하단 **프로필/계정 UI**" 이지 sidebar_footer
+     * 컨테이너 자체가 아니다. 이후 같은 컨테이너에 "사이트 보기" 크로스 이동 링크를
      * 재도입했으므로, 컨테이너 id 부재로 단언하면 그 정상 기능에 걸린다.
      * 의도대로 계정 UI 부재를 단언한다.
      */
@@ -105,7 +105,7 @@ describe('어드민 베이스 사이드바 프로필 영역 (이슈 #384)', () =
     });
 
     /**
-     * #450 크로스 이동 링크는 사이드바 하단에 유지되어야 한다 (제거 회귀 차단).
+     * 「사이트 보기」 크로스 이동 링크는 사이드바 하단에 유지되어야 한다 (제거 회귀 차단).
      */
     // @scenario subject=base, contract=sidebar_composition
     it('사이드바 하단 "사이트 보기" 크로스 이동 링크는 유지한다', () => {
@@ -117,9 +117,9 @@ describe('어드민 베이스 사이드바 프로필 영역 (이슈 #384)', () =
     });
 
     /**
-     * #384/#399 가 지운 것은 **프로필 영역**이지 사이드바 푸터 자체가 아니다.
+     * 앞선 정리에서 지운 것은 **프로필 영역**이지 사이드바 푸터 자체가 아니다.
      *
-     * #450 이 같은 자리에 "사이트 보기" 크로스 이동 링크를 다시 넣었고, 종전 단언은 `sidebar_footer`
+     * 이후 같은 자리에 "사이트 보기" 크로스 이동 링크를 다시 넣었고, 종전 단언은 `sidebar_footer`
      * 노드의 부재까지 요구하고 있어 그 시점부터 stale 이었다(레이아웃이 정본, 단언이 과잉).
      */
     // @scenario subject=base, contract=sidebar_composition
@@ -144,7 +144,7 @@ describe('어드민 베이스 사이드바 프로필 영역 (이슈 #384)', () =
     });
 });
 
-describe('목록 페이지 페이지네이션 transition_overlay_target 가드 (이슈 #245)', () => {
+describe('목록 페이지 페이지네이션 transition_overlay_target 가드', () => {
     /**
      * DataGrid 사용 + `params.query.page` 를 가진 navigate handler 가 있는 페이지에서,
      * 해당 navigate 가 모두 `transition_overlay_target` 으로 DataGrid ID 를 명시해야 한다.
@@ -238,7 +238,7 @@ describe('목록 페이지 페이지네이션 transition_overlay_target 가드 (
     }
 });
 
-describe('transition_overlay_target 은 replace:true 와 함께여야 한다 (이슈 #245)', () => {
+describe('transition_overlay_target 은 replace:true 와 함께여야 한다', () => {
     /**
      * 엔진은 `params.replace === true` 인 navigate 만 `G7Core.updateQueryParams(path, { transitionOverlayTarget })`
      * 를 태운다(`ActionDispatcher.handleNavigate`). replace 가 없으면 React Router 경로로 빠져
@@ -284,7 +284,7 @@ describe('transition_overlay_target 은 replace:true 와 함께여야 한다 (�
     }
 });
 
-describe('채널 서브 탭 transition_overlay_target 가드 (이슈 #245, engine-v1.36.0)', () => {
+describe('채널 서브 탭 transition_overlay_target 가드 (engine-v1.36.0)', () => {
     /**
      * 환경설정 알림 탭 안의 채널 서브 탭 클릭 시 채널 콘텐츠 영역에만 spinner 가
      * 표시되도록 하는 navigate.params.transition_overlay_target 옵션의 회귀 가드.
@@ -302,7 +302,7 @@ describe('채널 서브 탭 transition_overlay_target 가드 (이슈 #245, engin
     ];
 
     /**
-     * navigate 액션을 그 액션을 단 노드(owner)와 함께 모은다 — 링크로 바뀐 탭(#757)은 주소·쿼리를 navigate 가 아니라
+     * navigate 액션을 그 액션을 단 노드(owner)와 함께 모은다 — 링크로 바뀐 탭은 주소·쿼리를 navigate 가 아니라
      * 감싼 A 의 href 에 둔다(path 없는 navigate 는 클릭한 링크의 href 로 간다).
      */
     function collectNavigateHandlers(node: any, out: { nav: any; owner: any }[] = [], owner: any = null): { nav: any; owner: any }[] {
@@ -345,7 +345,7 @@ describe('채널 서브 탭 transition_overlay_target 가드 (이슈 #245, engin
     }
 });
 
-describe('admin_settings 탭 콘텐츠 영역 spinner (이슈 #245)', () => {
+describe('admin_settings 탭 콘텐츠 영역 spinner', () => {
     /**
      * 환경설정 탭 클릭 시 탭 콘텐츠 영역(settings_tab_content)에만 spinner 가 표시되어야 한다.
      * 사용자 마이페이지(target: mypage_tab_content)와 동일 패턴.
@@ -377,7 +377,7 @@ describe('admin_settings 탭 콘텐츠 영역 spinner (이슈 #245)', () => {
         const settingsContent = findById((adminSettings as any).slots?.content ?? [], 'settings_content');
         const tabContent = findById(settingsContent!.children, 'settings_tab_content');
         const partials = (tabContent!.children ?? []).filter((c: any) => c.partial?.includes('partials/admin_settings/_tab_'));
-        // tab_navigation 은 #399 Phase 1.3 에서 sticky 래퍼(sticky_header) 안으로 이동했으므로
+        // tab_navigation 은 sticky 래퍼(sticky_header) 안으로 옮겨졌으므로
         // slots.content[0] 의 직접 자식이 아니다. 재귀 findById 로 중첩 깊이와 무관하게 탐색한다.
         const tabNav = findById((adminSettings as any).slots?.content ?? [], 'tab_navigation');
         // 탭 목록의 출처는 `props.tabs` 배열에서 `defines.settingsTabs` 로 옮겨졌다 — 권한으로
@@ -394,7 +394,7 @@ describe('admin_settings 탭 콘텐츠 영역 spinner (이슈 #245)', () => {
     });
 });
 
-describe('어드민 자식 레이아웃 wait_for 일괄 가드 (이슈 #245, engine-v1.30.0+)', () => {
+describe('어드민 자식 레이아웃 wait_for 일괄 가드 (engine-v1.30.0+)', () => {
     /**
      * _admin_base 를 extends 하는 모든 어드민 페이지에 대해:
      *  1. progressive 데이터소스가 1개 이상 존재하면 transition_overlay.wait_for 명시 필수
@@ -471,7 +471,7 @@ describe('어드민 자식 레이아웃 wait_for 일괄 가드 (이슈 #245, eng
     }
 });
 
-describe('어드민 자식 레이아웃 베이스 상속 (이슈 #245)', () => {
+describe('어드민 자식 레이아웃 베이스 상속', () => {
     /**
      * 베이스의 transition_overlay 가 자식 레이아웃에 자동 전파되는지 보장하기 위해,
      * 어드민 폼/디테일 레이아웃이 _admin_base 를 extends 하는지 검증한다.
@@ -494,14 +494,14 @@ describe('어드민 자식 레이아웃 베이스 상속 (이슈 #245)', () => {
     }
 });
 
-describe('어드민 폼 컨테이너 전체 페이지 blur 제거 (이슈 #245)', () => {
+describe('어드민 폼 컨테이너 전체 페이지 blur 제거', () => {
     const cases: Array<{ name: string; layout: any; containerId: string }> = [
         { name: 'admin_settings#settings_content', layout: adminSettings, containerId: 'settings_content' },
         { name: 'admin_user_form#user_form_content', layout: adminUserForm, containerId: 'user_form_content' },
         { name: 'admin_user_detail#user_detail_content', layout: adminUserDetail, containerId: 'user_detail_content' },
         { name: 'admin_role_form#role_form', layout: adminRoleForm, containerId: 'role_form' },
         { name: 'admin_template_layout_edit#main_grid', layout: adminTemplateLayoutEdit, containerId: 'main_grid' },
-        // 옛 `mobile_file_selector` 는 `<file-tree-picker>` 로 합쳐졌다(#476) — 같은 표면의 새 이름이다.
+        // 옛 `mobile_file_selector` 는 `<file-tree-picker>` 로 합쳐졌다 — 같은 표면의 새 이름이다.
         { name: 'admin_template_layout_edit#file_tree_picker', layout: adminTemplateLayoutEdit, containerId: 'file_tree_picker' },
         { name: 'admin_menu_list/_panel_form#menu_form', layout: adminMenuPanelForm, containerId: 'menu_form' },
     ];

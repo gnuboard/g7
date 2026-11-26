@@ -1,4 +1,4 @@
-feature: 비즈뿌리오 발송 파이프라인 — DB 승인 스냅샷 소스 전환 (#597)
+feature: 비즈뿌리오 발송 파이프라인 — DB 승인 스냅샷 소스 전환
 
 description: |
   알림톡 발송 본문·요소의 출처를 카카오 실시간 조회에서 bizppurio_templates 의
@@ -29,7 +29,7 @@ exclusions:
   - { sms_only: on, recipient: guest, reason: "동일 — sms_only 스킵도 수신자 해석 이전 지점이다" }
 
 effects:
-  # 언어별 알림 변수 (#798 — GenericNotification::getDataFor)
+  # 언어별 알림 변수 (GenericNotification::getDataFor)
   - alimtalk_resolves_localized_variables_for_recipient   # {ko,en} 값 변수를 승인 스냅샷·대체 SMS 본문에서 수신자 언어로 치환
   # 알림톡 게이트
   - alimtalk_skipped_when_row_missing

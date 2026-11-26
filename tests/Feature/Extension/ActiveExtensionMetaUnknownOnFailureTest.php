@@ -9,7 +9,7 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * 활성 확장 목록 수집 실패는 「모름」(null)이다 — 「모두 꺼짐」(빈 배열)이 아니다 (#822)
+ * 활성 확장 목록 수집 실패는 「모름」(null)이다 — 「모두 꺼짐」(빈 배열)이 아니다
  *
  * 브라우저는 `G7Config.activeModules` 가 배열일 때만 `_global.activeModules` 를 싣는다. 수집 실패를 빈 배열로 내면
  * `{{_global.activeModules?.includes('id') ?? true}}` 가드가 모든 모듈 화면을 숨기지만, 검색봇 화면(SeoRenderer)은

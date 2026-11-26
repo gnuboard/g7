@@ -1,11 +1,11 @@
 // e2e:allow 레이아웃 정적 구조(이름 속성·감싼 Label·곁 라벨) 단언 전용 — 브라우저 축은 admin-control-names.spec.ts 와 라이브 크롤 재측정이 덮는다(시나리오 control-accessible-names.yaml).
 /**
  * @file adminControlNames.test.ts
- * @description 이커머스 레이아웃·확장 조각의 입력칸이 화면 낭독기에서 이름을 갖는지 (#757)
+ * @description 이커머스 레이아웃·확장 조각의 입력칸이 화면 낭독기에서 이름을 갖는지
  *
  * 관리자 화면 입력칸 일부가 이름 없이 「편집 가능 텍스트」·「체크박스」·「스위치」로만 읽히거나(제목이 표식 없는
  * span·표 열 머리라 관리자 템플릿의 곁 라벨 잇기가 닿지 않음), 목록형 선택칸이 고른 값 글자(「최신순」)만 이름으로
- * 읽혔다(#747 측정 270칸 + 전수 조사). 사용자 화면에 주입되는 조각은 사용자 템플릿에 곁 라벨 잇기가 없어
+ * 읽혔다(측정 270칸 + 전수 조사). 사용자 화면에 주입되는 조각은 사용자 템플릿에 곁 라벨 잇기가 없어
  * 레이아웃이 직접 이름을 달아야 한다.
  *
  * 판정은 관리자 템플릿의 곁 라벨 잇기 규칙을 레이아웃 JSON 트리에 옮긴 것이다 — 칸이 ① 자기 이름(aria-label·ariaLabel·
@@ -403,7 +403,7 @@ function scan(): {
 const result = scan();
 const list = (pred: (h: Hit) => boolean): string[] => result.hits.filter(pred).map((h) => `${h.category} ${h.control}`);
 
-describe('이커머스 입력칸 이름 (#757)', () => {
+describe('이커머스 입력칸 이름', () => {
     // @scenario surface=admin_layout
     // @effects controls_have_accessible_name
     it('모집단이 레이아웃·확장 조각 전체에서 파생된다', () => {

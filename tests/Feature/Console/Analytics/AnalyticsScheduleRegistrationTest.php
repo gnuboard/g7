@@ -206,7 +206,7 @@ class AnalyticsScheduleRegistrationTest extends TestCase
     public function test_conditional_schedules_do_not_run_when_their_feature_is_off(): void
     {
         // 조건을 **이 테스트가 만든다**. 개발자 `.env` 의 `REVERB_APP_KEY` 를 그대로 읽으면,
-        // 웹소켓을 켜 둔 사람의 컴퓨터에서만 빨개져 정작 재려던 것을 못 잰다(#682 S3 라운드 9).
+        // 웹소켓을 켜 둔 사람의 컴퓨터에서만 빨개져 정작 재려던 것을 못 잰다.
         config([
             'broadcasting.connections.reverb.key' => '',
             'g7_settings.core.analytics.block_cloud_ip_ranges' => false,

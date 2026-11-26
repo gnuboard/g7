@@ -45,7 +45,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * 결제사 플러그인 결제 공개 계약 (#916)
+ * 결제사 플러그인 결제 공개 계약 
  *
  * 계약 구현은 기존 이커머스 서비스에 위임만 하고(동작 같음), 재결제 복구만 정상 전이로 바뀐다.
  * 복구 meta 는 결제사 현행 코드로 녹화한 값(tests/Fixtures/payment-retry-restore)과 DB 원문이 같아야 한다.
@@ -383,7 +383,7 @@ class PaymentGatewayBridgeTest extends ModuleTestCase
 
     /**
      * 결제사가 등록 항목의 legacy_ids 로 선언한 옛 식별자로 남은 결제 행은 그 결제사의 쓰기를 받는다 — 식별자를 바꾸기 전(nicepay)에 만든
-     * 입금대기 행의 입금 통보·환불이 ProviderMismatch 로 막히던 경로(#916). 선언하지 않은 결제사는 그대로 막힌다.
+     * 입금대기 행의 입금 통보·환불이 ProviderMismatch 로 막히던 경로. 선언하지 않은 결제사는 그대로 막힌다.
      *
      * @scenario case=provider_mismatch_and_not_found
      *

@@ -12,7 +12,7 @@ use Plugins\Sirsoft\MessageBizppurio\Http\Requests\Concerns\ValidatesTemplateCon
 use Plugins\Sirsoft\MessageBizppurio\Models\BizppurioTemplate;
 
 /**
- * 비즈뿌리오 알림 템플릿 생성 검증 (#597 §3.2).
+ * 비즈뿌리오 알림 템플릿 생성 검증.
  *
  * 알림 1건당 1행(unique)이며, 대상 알림 정의가 실제로 존재해야 한다. content(카카오
  * 등록 페이로드)는 선택 — SMS 단독 알림은 알림톡 content 없이 생성할 수 있고,

@@ -165,7 +165,7 @@ class CoreNotificationDataListener implements HookListenerInterface
     }
 
     /**
-     * 비밀번호 만료 사전 안내 알림 데이터를 추출합니다 (#736).
+     * 비밀번호 만료 사전 안내 알림 데이터를 추출합니다.
      *
      * 변경 화면 주소는 수신자에 따라 다르다 — 관리자는 마이페이지가 아니라 관리자 회원 수정 화면에서
      * 자기 비밀번호를 바꾼다. 날짜는 배치가 수신자 시간대로 계산해 넘긴 값을 그대로 쓴다.
@@ -204,7 +204,7 @@ class CoreNotificationDataListener implements HookListenerInterface
     }
 
     /**
-     * 비밀번호 만료 알림 데이터를 추출합니다 (#736).
+     * 비밀번호 만료 알림 데이터를 추출합니다.
      *
      * 다음 로그인 때 변경 단계가 나오므로 로그인 화면으로 안내한다 — 관리자는 관리자 로그인 화면.
      *

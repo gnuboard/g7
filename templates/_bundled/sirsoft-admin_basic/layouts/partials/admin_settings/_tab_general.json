@@ -308,7 +308,7 @@
                                     "text": "{{_local.errors?.['general.admin_email']?.[0] ?? ''}}"
                                 },
                                 {
-                                    "comment": "이 주소의 쓰임새 — 알림 템플릿 받는 사람 「사이트 관리자 이메일」 규칙이 여기로 메일을 보낸다(#888).",
+                                    "comment": "이 주소의 쓰임새 — 알림 템플릿 받는 사람 「사이트 관리자 이메일」 규칙이 여기로 메일을 보낸다.",
                                     "id": "admin_email_desc",
                                     "type": "basic",
                                     "name": "P",
@@ -341,7 +341,7 @@
                                     "text": "$t:admin.settings.general.site_logo_desc"
                                 },
                                 {
-                                    "comment": "첨부 업로더 확장점(#916) — 업로더 플러그인이 mode=\"replace\" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),\n               콜백은 기본 업로더의 이벤트 처리와 같은 동작이다($args[0] → $event). 기본 업로더는 <default> 안에 그대로 둔다.",
+                                    "comment": "첨부 업로더 확장점 — 업로더 플러그인이 mode=\"replace\" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),\n               콜백은 기본 업로더의 이벤트 처리와 같은 동작이다($args[0] → $event). 기본 업로더는 <default> 안에 그대로 둔다.",
                                     "id": "site_logo_uploader_slot",
                                     "type": "extension_point",
                                     "name": "attachment_uploader",
@@ -536,7 +536,7 @@
                             ]
                         },
                         {
-                            "comment": "파비콘(#434) — 로고와 같은 지연 업로드(저장 버튼이 `upload:site_favicon` 신호를 보낸다). 1개만 두므로\n             완료 시 폼 값을 **교체**한다. ico·svg 를 받는 파비콘 전용 형식 목록을 쓰고, 이미지 압축은 두지 않는다\n             (ico·svg 를 다른 형식으로 바꾸지 않게). 허용 형식·크기는 서버가 파비콘 컬렉션에만 따로 정한다.",
+                            "comment": "파비콘 — 로고와 같은 지연 업로드(저장 버튼이 `upload:site_favicon` 신호를 보낸다). 1개만 두므로\n             완료 시 폼 값을 **교체**한다. ico·svg 를 받는 파비콘 전용 형식 목록을 쓰고, 이미지 압축은 두지 않는다\n             (ico·svg 를 다른 형식으로 바꾸지 않게). 허용 형식·크기는 서버가 파비콘 컬렉션에만 따로 정한다.",
                             "id": "field_site_favicon",
                             "type": "basic",
                             "name": "Div",
@@ -558,7 +558,7 @@
                                     "text": "$t:admin.settings.general.site_favicon_desc"
                                 },
                                 {
-                                    "comment": "첨부 업로더 확장점(#916) — 업로더 플러그인이 mode=\"replace\" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),\n               콜백은 기본 업로더의 이벤트 처리와 같은 동작이다($args[0] → $event). 기본 업로더는 <default> 안에 그대로 둔다.",
+                                    "comment": "첨부 업로더 확장점 — 업로더 플러그인이 mode=\"replace\" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),\n               콜백은 기본 업로더의 이벤트 처리와 같은 동작이다($args[0] → $event). 기본 업로더는 <default> 안에 그대로 둔다.",
                                     "id": "site_favicon_uploader_slot",
                                     "type": "extension_point",
                                     "name": "attachment_uploader",
@@ -782,7 +782,7 @@
                                             "if": "{{!!settings?.data?._meta?.favicon?.user?.settings_route}}",
                                             "actions": [
                                                 {
-                                                    "comment": "다른 화면 이동은 실제 주소를 가진 링크로 둔다(#757 WP-L) — 클릭은 SPA 이동, 이탈 경고는 그대로 받는다.\n                     audit:allow layout-list-context-navigate-merge-query 템플릿 설정 화면으로 이동(#434) — 목적지는 활성 템플릿마다 다른 설정 화면이라 환경설정 탭 쿼리를 이어 갈 이유가 없다.",
+                                                    "comment": "다른 화면 이동은 실제 주소를 가진 링크로 둔다 — 클릭은 SPA 이동, 이탈 경고는 그대로 받는다.\n                     audit:allow layout-list-context-navigate-merge-query 템플릿 설정 화면으로 이동 — 목적지는 활성 템플릿마다 다른 설정 화면이라 환경설정 탭 쿼리를 이어 갈 이유가 없다.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
@@ -827,7 +827,7 @@
                                             "if": "{{!!settings?.data?._meta?.favicon?.admin?.settings_route}}",
                                             "actions": [
                                                 {
-                                                    "comment": "다른 화면 이동은 실제 주소를 가진 링크로 둔다(#757 WP-L) — 클릭은 SPA 이동, 이탈 경고는 그대로 받는다.\n                     audit:allow layout-list-context-navigate-merge-query 템플릿 설정 화면으로 이동(#434) — 목적지는 활성 템플릿마다 다른 설정 화면이라 환경설정 탭 쿼리를 이어 갈 이유가 없다.",
+                                                    "comment": "다른 화면 이동은 실제 주소를 가진 링크로 둔다 — 클릭은 SPA 이동, 이탈 경고는 그대로 받는다.\n                     audit:allow layout-list-context-navigate-merge-query 템플릿 설정 화면으로 이동 — 목적지는 활성 템플릿마다 다른 설정 화면이라 환경설정 탭 쿼리를 이어 갈 이유가 없다.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {

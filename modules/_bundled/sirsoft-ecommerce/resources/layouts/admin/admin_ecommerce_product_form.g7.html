@@ -31,7 +31,7 @@
       <field name="errorCode" :value="403"/>
     </field>
   </data-source>
-  <!-- 편집기 본문 미디어 업로드 계약 (#883) — 받는 종류가 없거나 권한이 없으면 null 이라 편집기는 종전대로 동작한다 -->
+  <!-- 편집기 본문 미디어 업로드 계약 — 받는 종류가 없거나 권한이 없으면 null 이라 편집기는 종전대로 동작한다 -->
   <data-source id="contentMediaTarget" label_key="$t:sirsoft-ecommerce.editor.data_source.contentMediaTarget" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/content-media/target" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <params owner_type="product"/>
     <fallback :data="null"/>
@@ -476,7 +476,7 @@
                 <set-state target="local" :isSaving="true" :errors="null"/>
                 <emit-event event="upload:product_images"/>
                 <set-state target="local" uploadFailedCount="{{[].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"/>
-                <!-- 업로드가 하나라도 실패하면 저장하지 않는다 — 실패한 파일 없이 저장된 줄 알게 된다(#869 브라우저 실측). 실패 문구는 업로더가 파일마다 이미 알린다. -->
+                <!-- 업로드가 하나라도 실패하면 저장하지 않는다 — 실패한 파일 없이 저장된 줄 알게 된다. 실패 문구는 업로더가 파일마다 이미 알린다. -->
                 <set-state if="{{(_local.uploadFailedCount ?? 0) > 0}}" target="local" :isSaving="false"/>
                 <toast if="{{(_local.uploadFailedCount ?? 0) > 0}}" type="error" message="$t:attachment.upload_failed_save_stopped"/>
                 <set-state if="{{!!route.itemCode &amp;&amp; Array.isArray(_local._eventResult?.data?.allFiles)}}" target="local" form.images="{{_local._eventResult?.data?.allFiles ?? (_local.form?.images ?? [])}}"/>

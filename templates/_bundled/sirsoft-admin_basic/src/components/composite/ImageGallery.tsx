@@ -241,7 +241,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   const currentIndexRef = useRef(startIndex);
 
   // 닫힌 채 마운트된 뒤 열리면 startIndex 만 바뀐다(useState 초기값은 재평가되지 않음).
-  // Lightbox 는 열리는 렌더의 index 만 읽으므로 effect 가 아니라 열림 전환 렌더 중에 맞춘다(#821).
+  // Lightbox 는 열리는 렌더의 index 만 읽으므로 effect 가 아니라 열림 전환 렌더 중에 맞춘다.
   const [wasOpen, setWasOpen] = useState(isOpen);
   if (isOpen !== wasOpen) {
     setWasOpen(isOpen);

@@ -135,7 +135,7 @@ class LayoutPreviewService
             );
         }
 
-        // 저장 원문을 다시 읽어 값 자리의 빈 객체 `{}` 를 보존한다 — 공개 서빙과 같은 기준 (#758)
+        // 저장 원문을 다시 읽어 값 자리의 빈 객체 `{}` 를 보존한다 — 공개 서빙과 같은 기준
         $layoutData = LayoutEmptyObjects::decode($preview->getAttributes()['content'] ?? null, $preview->content ?? []);
 
         // extends 상속 병합
@@ -168,7 +168,7 @@ class LayoutPreviewService
 
         // 편집 중인 확장 content 를 임시 적용
         if ($preview->extension_id) {
-            // 원문 그대로 넘긴다 — 확장 모델 캐스트가 다시 `{}` 로 인코딩해야 적용 단계가 빈 객체를 보존한다 (#758)
+            // 원문 그대로 넘긴다 — 확장 모델 캐스트가 다시 `{}` 로 인코딩해야 적용 단계가 빈 객체를 보존한다
             $this->layoutExtensionService->setPreviewContentOverride(
                 $preview->extension_id,
                 LayoutEmptyObjects::rawPreserving($preview)

@@ -48,7 +48,7 @@
               <span class="text-muted">$t:shop.cart.tax_free_amount</span>
               <span class="text-gray-600 dark:text-gray-400">{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.tax_free_amount_formatted ?? '-'}}</span>
             </div>
-            <!-- 영세 금액 — 과세 금액에 포함된 세율 0% 몫(부가세 없음), 있을 때만 (#612) -->
+            <!-- 영세 금액 — 과세 금액에 포함된 세율 0% 몫(부가세 없음), 있을 때만 -->
             <div data-if="{{(cartItems.data.calculation?.summary?.zero_rated_amount ?? 0) > 0}}" class="flex justify-between text-xs">
               <span class="text-muted">$t:shop.cart.zero_rated_amount</span>
               <span class="text-gray-600 dark:text-gray-400">{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.zero_rated_amount_formatted ?? '-'}}</span>

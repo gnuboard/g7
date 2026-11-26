@@ -326,7 +326,7 @@ class InstallerStateIntegrityTest extends TestCase
     /**
      * 파손 원문은 로그에 싣지 않는다 — 길이·digest 만.
      *
-     * 비밀은 상태 파일에 없어야 하지만(이슈 #465) 레거시 상태 파일이 남아 있을 수 있다. 종전에는
+     * 비밀은 상태 파일에 없어야 하지만 레거시 상태 파일이 남아 있을 수 있다. 종전에는
      * 파싱 실패 메시지가 원문 200 바이트를 무마스킹으로 진행 기록과 PHP 오류 로그에 실었다.
      *
      * @scenario state_file=corrupt

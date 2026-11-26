@@ -1,4 +1,4 @@
-feature: 관리자 템플릿 Button — variant·size 를 적으면 의미 클래스가 붙는다 (#399 F12, 7.2.1)
+feature: 관리자 템플릿 Button — variant·size 를 적으면 의미 클래스가 붙는다 (7.2.1)
 
 description: |
   Button 은 `variant`·`size` prop 을 받기만 하고 클래스를 붙이지 않아, 계약(components.json)대로 variant 를 써도
@@ -18,7 +18,7 @@ effects:
   - button_variant_adds_semantic_classes_only_when_given   # variant 를 적었을 때만 btn btn-{variant}
   - button_size_maps_to_btn_size_classes                   # sm → btn-sm, lg → btn-lg, md·생략 → 없음
   - caller_class_name_wins_over_internal_classes           # 호출처 className 이 같은 축 내부 클래스를 이긴다
-  # 버튼 기본 계약 (Button.test.tsx, IconButton.test.tsx — #399 선행 마킹 정리)
+  # 버튼 기본 계약 (Button.test.tsx, IconButton.test.tsx — 선행 마킹 정리)
   - button_renders_children                                # variant, size 를 적든 안 적든 자식 문구를 그린다
   - button_click_calls_on_click                            # 클릭이 onClick 을 한 번 부른다(Button, IconButton)
   - disabled_button_ignores_click                          # disabled 면 클릭이 onClick 에 닿지 않는다(Button, IconButton)

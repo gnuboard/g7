@@ -29,7 +29,7 @@ function findFirst(node: any, predicate: (n: any) => boolean): any | null {
   if (predicate(node)) return node;
   const kids = [
     ...asArray(node?.children),
-    ...asArray(node?.props?.footer), // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
+    ...asArray(node?.props?.footer), // 고정 하단 (바닥 단추가 Modal 고정 하단으로 옮김)
     ...(node.columns ?? []),
     ...(node.cellChildren ?? []),
     ...(node.expandChildren ?? []),
@@ -52,7 +52,7 @@ function findAll(node: any, predicate: (n: any) => boolean): any[] {
   if (predicate(node)) out.push(node);
   const kids = [
     ...asArray(node?.children),
-    ...asArray(node?.props?.footer), // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
+    ...asArray(node?.props?.footer), // 고정 하단 (바닥 단추가 Modal 고정 하단으로 옮김)
     ...(node.columns ?? []),
     ...(node.cellChildren ?? []),
     ...(node.expandChildren ?? []),
@@ -227,7 +227,7 @@ describe('마일리지 내역 메인 레이아웃', () => {
    */
   it('콘텐츠/헤더가 admin 공통 유틸 클래스(p-6/화면 머리/화면 제목/page-description)를 사용한다', () => {
     const content = mainLayout.slots.content[0];
-    // 본문 상자는 확장 자기 의미 클래스를 쓰고, 그 정의가 p-6(24px) 여백을 준다 (#399)
+    // 본문 상자는 확장 자기 의미 클래스를 쓰고, 그 정의가 p-6(24px) 여백을 준다
     expect(content.props.className.split(/\s+/)).toContain('ecommerce-admin-page-content');
     expect(EXT_CSS).toMatch(/\.ecommerce-admin-page-content\s*\{[^}]*padding:\s*calc\(\.25rem \* 6\)/);
     expect(content.props.className).not.toContain('sm:p-6 lg:p-8');
@@ -574,7 +574,7 @@ describe('DataGrid (_transactions_table.json)', () => {
     const json = jsonOf(orderCol);
     expect(json).toContain('/admin/ecommerce/orders/');
     expect(json).toContain('mileage_transactions.cell.none');
-    // 새 창 열기는 실제 주소의 새 창 링크다(#757 결정 — 「이미 새 창」도 링크로). 주소가 href 에 있어
+    // 새 창 열기는 실제 주소의 새 창 링크다(「이미 새 창」도 링크로). 주소가 href 에 있어
     // 가운데 클릭·새 탭·주소 복사가 모두 같은 곳을 가리킨다. 클릭 액션(openWindow)은 두지 않는다.
     const link = findFirst(orderCol, (n) => n.name === 'A' && n.if && String(n.if).includes('row.order_number'));
     expect(link).toBeTruthy();
@@ -1013,7 +1013,7 @@ describe('수동 지급/차감 모달 (_modal_manual_transaction.json)', () => {
 
 describe('유효기간 연장 모달 (_modal_extend_expiry.json)', () => {
   /**
-   * 회귀(#703): 회원을 하나로 지정하면 여러 회원의 적립건을 골랐을 때 나머지 회원 적립건이 조용히 빠진다.
+   * 회귀: 회원을 하나로 지정하면 여러 회원의 적립건을 골랐을 때 나머지 회원 적립건이 조용히 빠진다.
    *
    * @scenario selection=multiple_members, user_id_param=omitted
    *
@@ -1056,7 +1056,7 @@ describe('유효기간 연장 모달 (_modal_extend_expiry.json)', () => {
 
 describe('일괄 연장 진입 (메인 레이아웃)', () => {
   /**
-   * 회귀(#703): 첫 선택 행의 회원만 담으면 다른 회원의 적립건이 연장에서 빠진다 — 적립건 묶음만 담는다.
+   * 회귀: 첫 선택 행의 회원만 담으면 다른 회원의 적립건이 연장에서 빠진다 — 적립건 묶음만 담는다.
    *
    * @scenario selection=multiple_members, user_id_param=omitted
    *

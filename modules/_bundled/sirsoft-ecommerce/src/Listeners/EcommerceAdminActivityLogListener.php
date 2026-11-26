@@ -99,7 +99,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.extra_fee_template.after_bulk_toggle_active' => ['method' => 'handleExtraFeeAfterBulkToggleActive', 'priority' => 20],
             'sirsoft-ecommerce.extra_fee_template.after_bulk_create' => ['method' => 'handleExtraFeeAfterBulkCreate', 'priority' => 20],
 
-            // ─── 회원 소유 데이터 (#524 §4.1) ───
+            // ─── 회원 소유 데이터 ───
             'sirsoft-ecommerce.wishlist.after_bulk_delete' => ['method' => 'handleWishlistAfterBulkDelete', 'priority' => 20],
             'sirsoft-ecommerce.cart.after_bulk_delete' => ['method' => 'handleCartAfterBulkDelete', 'priority' => 20],
             'sirsoft-ecommerce.user_address.after_bulk_delete' => ['method' => 'handleUserAddressAfterBulkDelete', 'priority' => 20],
@@ -134,7 +134,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.settings.after_save' => ['method' => 'handleSettingsAfterSave', 'priority' => 20],
 
             // 클레임 사유 카탈로그 — 상세 REST 경로와 설정 탭 저장(syncReasons) 양쪽이 같은 훅을 쏜다.
-            // 카탈로그 변경이 「설정 저장」 한 줄 뒤에 숨으면 사라진 사유를 되짚을 수 없다(#599 S0-D2).
+            // 카탈로그 변경이 「설정 저장」 한 줄 뒤에 숨으면 사라진 사유를 되짚을 수 없다.
             'sirsoft-ecommerce.claim_reason.after_create' => ['method' => 'handleClaimReasonAfterCreate', 'priority' => 20],
             'sirsoft-ecommerce.claim_reason.after_update' => ['method' => 'handleClaimReasonAfterUpdate', 'priority' => 20],
             'sirsoft-ecommerce.claim_reason.after_delete' => ['method' => 'handleClaimReasonAfterDelete', 'priority' => 20],

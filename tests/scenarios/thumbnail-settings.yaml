@@ -1,4 +1,4 @@
-feature: 이미지 썸네일 설정 백엔드 — 이미지 엔진 드라이버 카테고리, 업로드 탭 썸네일 설정 검증·저장·조회, SEO 캐시 (#869)
+feature: 이미지 썸네일 설정 백엔드 — 이미지 엔진 드라이버 카테고리, 업로드 탭 썸네일 설정 검증·저장·조회, SEO 캐시
 
 description: |
   드라이버 탭 「이미지 처리」(drivers.image_driver → core.image.driver)는 드라이버 레지스트리의 `image` 카테고리다.

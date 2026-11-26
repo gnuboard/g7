@@ -82,7 +82,7 @@ describe('VisitorCounter', () => {
   // @effects counter_labels_are_announced_with_values
   it('숫자마다 라벨이 붙어 읽힌다 — 묶음은 이름 있는 group 이고 라벨·값은 dt/dd 다', () => {
     // span 두 개로는 스크린리더가 「오늘」과 「1,284」를 잇지 못하고 숫자 넷을 맥락 없이 읽는다
-    // (#682 S3 라운드 3 — §6.5 접근성 의무).
+    // (§6.5 접근성 의무).
     const { container } = render(
       <VisitorCounter today={1284} yesterday={1146} max={3910} total={214551} labels={{ title: '방문자 수', today: '오늘' }} />,
     );

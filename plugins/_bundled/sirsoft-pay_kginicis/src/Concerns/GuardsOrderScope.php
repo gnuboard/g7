@@ -19,7 +19,7 @@ use Modules\Sirsoft\Ecommerce\Contracts\Payment\OrderAccess;
  * 거부는 예외가 아니라 403 응답으로 돌려준다 — 컨트롤러의 넓은 `catch (\Exception)` 에 삼켜져 500 으로
  * 위장되지 않게 하기 위해서다. 주문이 없으면 판정하지 않는다(부재 응답은 각 경로의 기존 계약을 따른다).
  *
- * 판정은 이커머스 공개 계약 {@see OrderAccess} 가 한다(#916). 호스트 요건: 생성자에서
+ * 판정은 이커머스 공개 계약 {@see OrderAccess} 가 한다. 호스트 요건: 생성자에서
  * `PaymentGatewayBridge`(또는 `OrderAccess`)를 `$bridge` 로 주입받는다.
  */
 trait GuardsOrderScope

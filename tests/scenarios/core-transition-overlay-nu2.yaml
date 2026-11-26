@@ -5,7 +5,7 @@ description: |
   fixed 덮개를, target 이 있으면 <head> 에 ::after 규칙을 주입한다. 스타일(opaque, blur, fade)과 다크 모드에 따라
   배경이 달라지고, skeleton 은 필요한 설정이 없으면 opaque 로 폴백한다. spinner 는 target, fallback_target, #app 순으로
   대상을 찾아 그 안에 컨테이너를 넣고, 모두 없으면 opaque 덮개로 폴백한다. 시험은 실제 TemplateApp 의
-  showTransitionOverlay 와 hideTransitionOverlay 를 부른다(#869: 종전에는 시험 안 사본만 검사했다).
+  showTransitionOverlay 와 hideTransitionOverlay 를 부른다(종전에는 시험 안 사본만 검사했다).
   기본 스피너의 모양은 코어 정적 CSS(g7-core.css)의 클래스로 준다(엄격한 스타일 정책에서 style 속성이 막히므로, #163).
   다크 모드면 수식 클래스 .g7-spinner-overlay--dark 가 배경 기본값을 gray-900 으로 바꾼다 — CSS 변수(--g7-overlay-bg,
   --g7-spinner-color)는 여전히 덮어쓰기 자리로 남고, 정의하지 않으면 클래스의 기본값(밝은 화면 gray-50, 다크 gray-900)이 쓰인다.

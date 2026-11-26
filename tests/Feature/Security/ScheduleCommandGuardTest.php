@@ -1040,7 +1040,7 @@ class ScheduleCommandGuardTest extends TestCase
             'queue:failed' => ['queue:failed'],
             'storage:link' => ['storage:link'],
             // KVE-2026-1897 회귀 가드: 언어팩 설치 명령은 예약 실행 허용목록 밖이므로 저장 시점에 거부된다
-            // (커밋 #527 이 denylist→allowlist 로 전환한 뒤의 기대 동작을 고정).
+            // (denylist→allowlist 로 전환한 뒤의 기대 동작을 고정).
             'language-pack:install — 확장 관리 명령' => ['language-pack:install g7-core-ja'],
             'language-pack:uninstall — 확장 관리 명령' => ['language-pack:uninstall g7-core-ja'],
         ];

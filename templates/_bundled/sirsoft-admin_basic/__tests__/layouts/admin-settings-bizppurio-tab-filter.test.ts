@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-bizppurio-tab-filter.test.ts
- * @description 알림 정의 탭 — 확장 채널 통합 탭 필터/라벨 규칙 회귀 테스트 (#597)
+ * @description 알림 정의 탭 — 확장 채널 통합 탭 필터/라벨 규칙 회귀 테스트
  *
  * 배경: 비즈뿌리오 플러그인이 sms·alimtalk 개별 탭을 숨기고(hidden_tab) '비즈뿌리오' 통합
  * 탭 하나로 노출하는 구조로 전환됐다. 탭 필터 표현식은 세 규칙을 모두 담아야 한다:
@@ -106,7 +106,7 @@ function findChannelTabIteration(node: unknown): Record<string, any> | null {
     return walk(container);
 }
 
-describe('알림 정의 탭 필터 — 확장 채널 통합 탭 규칙 (#597)', () => {
+describe('알림 정의 탭 필터 — 확장 채널 통합 탭 규칙', () => {
     const tabNode = findChannelTabIteration(readLayout(ADMIN_BASIC_TAB));
     const source: string = tabNode?.iteration?.source ?? '';
 
@@ -141,7 +141,7 @@ describe.each([
     ['admin_basic', ADMIN_BASIC_TAB],
     ['board', BOARD_TAB],
     ['ecommerce', ECOMMERCE_TAB],
-])('알림 정의 탭 필터 — 조합 실평가 [%s] (#597 §14.2 T8)', (_face, layoutPath) => {
+])('알림 정의 탭 필터 — 조합 실평가 [%s]', (_face, layoutPath) => {
     // 문자열 단언은 표현식 오타(예: !== 를 === 로)를 잡지 못한다. 레이아웃 파일에서 추출한
     // 표현식 원문을 그대로 실행해 저장값 조합별 노출 결과를 판정한다.
     //
@@ -224,7 +224,7 @@ describe.each([
     });
 });
 
-describe('알림 정의 탭 필터 — 3면 패리티 (#597)', () => {
+describe('알림 정의 탭 필터 — 3면 패리티', () => {
     /**
      * partial 에서 탭 필터 표현식과 라벨 표현식을 추출합니다.
      *

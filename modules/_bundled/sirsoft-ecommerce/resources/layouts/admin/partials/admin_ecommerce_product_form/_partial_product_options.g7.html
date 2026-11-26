@@ -153,7 +153,7 @@
                     <div class="ecommerce:flex ecommerce:flex-col">
                       <select class="{{ _local.errors?.['options.' + optIdx + '.tax_status'] ? 'ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-red-500 ecommerce:dark:border-red-500 ecommerce:rounded-lg ecommerce:text-sm ecommerce:focus:ring-2 ecommerce:focus:ring-red-500 ecommerce:focus:outline-none' : 'ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:rounded-lg ecommerce:text-sm ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:focus:outline-none' }}" value="{{opt.tax_status ?? ''}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.tax_status')}}" disabled="{{_computed.isReadOnly}}">
                         <on type="change">
-                          <!-- 이 옵션의 과세 종류 — 비워 두면(기본값 따름) 판매정보의 과세 여부를 따른다. 영세는 세율 0%, 결제사에는 면세로 넘긴다 (#612, 넓은 화면 표) -->
+                          <!-- 이 옵션의 과세 종류 — 비워 두면(기본값 따름) 판매정보의 과세 여부를 따른다. 영세는 세율 0%, 결제사에는 면세로 넘긴다 (넓은 화면 표) -->
                           <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="tax_status" value="{{$event.target.value}}"/>
                         </on>
                         <options>
@@ -321,7 +321,7 @@
                 <label class="ecommerce-form-label ecommerce:text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.tax_status</label>
                 <select class="{{ _local.errors?.['options.' + optIdx + '.tax_status'] ? 'ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-red-500 ecommerce:dark:border-red-500 ecommerce:rounded-lg ecommerce:text-sm ecommerce:focus:ring-2 ecommerce:focus:ring-red-500 ecommerce:focus:outline-none' : 'ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:rounded-lg ecommerce:text-sm ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:focus:outline-none' }}" value="{{opt.tax_status ?? ''}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.tax_status')}}" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
-                    <!-- 이 옵션의 과세 종류 — 비워 두면(기본값 따름) 판매정보의 과세 여부를 따른다. 영세는 세율 0%, 결제사에는 면세로 넘긴다 (#612, 좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
+                    <!-- 이 옵션의 과세 종류 — 비워 두면(기본값 따름) 판매정보의 과세 여부를 따른다. 영세는 세율 0%, 결제사에는 면세로 넘긴다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="tax_status" value="{{$event.target.value}}"/>
                   </on>
                   <options>

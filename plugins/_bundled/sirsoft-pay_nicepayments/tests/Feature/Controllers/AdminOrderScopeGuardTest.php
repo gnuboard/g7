@@ -167,7 +167,7 @@ class AdminOrderScopeGuardTest extends PluginTestCase
         $this->assertSame([], $routeViolations, json_encode($routeViolations, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
         $pluginPaths = array_merge(...array_column(OrderScopeLedgerListener::entries(), 'paths'));
-        // 범위 판정은 이커머스 공개 결제 계약(OrderAccess)이 코어 PermissionHelper 로 한다(#916) — 강제 지점이
+        // 범위 판정은 이커머스 공개 결제 계약(OrderAccess)이 코어 PermissionHelper 로 한다 — 강제 지점이
         // 그 계약의 범위 판정 메서드를 부르면 판정 흔적으로 본다.
         $contractScopeCalls = [
             '$this->paymentGateway->isOrderWithinScope(',

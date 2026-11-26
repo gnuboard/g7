@@ -115,7 +115,7 @@ class IdentityPolicy extends Model
 
     /**
      * hook scope 정책 target 목록 캐시 키 — Repository::listHookTargets 가 같은 태그로 등록한다.
-     * 동적 hook 구독 동기화가 부팅마다 읽으므로 캐시하고, 정책이 바뀌면 route scope 인덱스와 함께 지운다(#860).
+     * 동적 hook 구독 동기화가 부팅마다 읽으므로 캐시하고, 정책이 바뀌면 route scope 인덱스와 함께 지운다.
      */
     public const HOOK_TARGETS_CACHE_KEY = 'identity_policies.hook_targets';
 

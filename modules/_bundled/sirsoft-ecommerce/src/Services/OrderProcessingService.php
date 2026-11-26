@@ -503,7 +503,7 @@ class OrderProcessingService
      * 채택하면 스냅샷 환율에 코드가 없어 체크아웃이 차단된다. 저장된 선호 값 자체는 지우지
      * 않는다 — 그 통화가 다시 등록되면 자동으로 복원되는 것이 올바른 동작이다.
      *
-     * 기본 통화(default_currency)를 폴백으로 쓴다. 체크아웃 표시와 주문 생성 검증의 결제수단 통화 제한(#639 D17)이
+     * 기본 통화(default_currency)를 폴백으로 쓴다. 체크아웃 표시와 주문 생성 검증의 결제수단 통화 제한이
      * 주문 생성과 같은 통화로 판정하도록 공개한다.
      *
      * @return string 결정된 통화 코드
@@ -695,7 +695,7 @@ class OrderProcessingService
             // 부가세는 주문 생성 시점에 기록한다. 기존에는 부분취소 재계산에서만 갱신되어
             // 부분취소를 겪은 주문만 값이 정상화되고 나머지는 영구 0 이었다.
             'total_vat_amount' => $this->resolveVatAmount($calculationResult),
-            // 영세 금액(과세표준에 포함, 부가세 0) — 결제사·현금영수증에 면세로 넘길 몫을 빼내는 근거 (#612)
+            // 영세 금액(과세표준에 포함, 부가세 0) — 결제사·현금영수증에 면세로 넘길 몫을 빼내는 근거
             'total_zero_rated_amount' => $summary->zeroRatedAmount ?? 0,
             'total_points_used_amount' => $summary->pointsUsed ?? 0,
             'total_deposit_used_amount' => 0,
@@ -911,7 +911,7 @@ class OrderProcessingService
                 'subtotal_tax_amount' => $item->taxableAmount ?? 0,
                 'subtotal_tax_free_amount' => $item->taxFreeAmount ?? 0,
                 // 계산이 확정한 과세 종류 — 금액 분류와 같은 근거여야 배지와 장부가 어긋나지 않는다.
-                // 영세 도입(#612) 전에 만든 임시주문은 값이 없어 지금 옵션·상품 설정으로 정한다.
+                // 영세 도입 전에 만든 임시주문은 값이 없어 지금 옵션·상품 설정으로 정한다.
                 'tax_status' => $item->taxStatus
                     ?? $productOption?->getEffectiveTaxStatus()->value
                     ?? ($product?->tax_status?->value ?? ProductTaxStatus::TAXABLE->value),
@@ -1573,7 +1573,7 @@ class OrderProcessingService
      * 계산 단계에서 옵션별 세율로 산출한 합계를 그대로 사용합니다 — 여기서 다시 단일 세율로
      * 계산하면 세율이 섞인 주문에서 주문과 결제 값이 어긋납니다. 계산 결과가 0 이면 0 이 맞다
      * (영세·세율 0 상품만 든 주문). 예전에는 0 을 「값 없음」으로 보고 과세표준/11 을 다시 채워
-     * 그런 주문의 부가세가 10% 로 기록됐다(#612 S1).
+     * 그런 주문의 부가세가 10% 로 기록됐다.
      *
      * 부가세 합산 도입 이전에 만들어진 임시주문이 도입 이후에 결제되면 계산 결과에 부가세 키 자체가
      * 없다(`Summary::$vatAmountKnown = false`). 이 경우에 한해 영세분을 뺀 과세표준에 기본 세율을
@@ -1978,7 +1978,7 @@ class OrderProcessingService
                 'payment_meta' => $paymentData['payment_meta'] ?? null,
                 'payment_device' => $paymentData['payment_device'] ?? null,
                 // 결제사 계약(PaymentGatewayBridge)이 넘길 때만 — 결제사 id 인수와 에스크로 여부를 같은 트랜잭션에서 쓴다.
-                // 넘기지 않는 기존 호출자는 null 이라 걸러져 동작이 같다(#916).
+                // 넘기지 않는 기존 호출자는 null 이라 걸러져 동작이 같다.
                 'pg_provider' => $paymentData['pg_provider'] ?? null,
                 'is_escrow' => $paymentData['is_escrow'] ?? null,
             ], fn ($v) => $v !== null));
@@ -3271,7 +3271,7 @@ class OrderProcessingService
     }
 
     /**
-     * 재결제 복구를 막아야 하는 이력이 있는지 확인합니다 (#916, D34).
+     * 재결제 복구를 막아야 하는 이력이 있는지 확인합니다.
      *
      * 결제 완료 이력(주문·결제 행 결제 시각)과 부분 취소 이력(결제 행 누적 취소액, 통화별 누적 취소액, 주문 상품 취소 수량)을 본다.
      * 결제 행 취소 이력(`cancel_history`)은 보지 않는다 — 결제창 닫힘이 USER_CANCEL 한 줄을 남기므로 그것으로 막으면 정상 복구가 모두 막힌다.
@@ -3298,7 +3298,7 @@ class OrderProcessingService
     }
 
     /**
-     * 결제사가 재시도 가능하다고 판정한 실패 주문을 결제 대기로 되돌립니다 (#916, D34).
+     * 결제사가 재시도 가능하다고 판정한 실패 주문을 결제 대기로 되돌립니다.
      *
      * 호출자가 주문 → 결제 행 순으로 잠근 트랜잭션 안에서 부른다. 주문 meta 와 결제 meta 쓰기는 결제사가 지금까지 직접 하던
      * 알고리즘을 순서까지 옮긴 것이라 결과가 같다(특성화 녹화로 대조). 달라진 점은 결제 실패 처리가 취소로 바꾼 주문 상품을
@@ -3410,7 +3410,7 @@ class OrderProcessingService
     }
 
     /**
-     * 재결제 복구 뒤 훅을 발화합니다(커밋 뒤 호출) — 상품 상태 동기화, 주문 상태 전이, 재결제 복구 (#916).
+     * 재결제 복구 뒤 훅을 발화합니다(커밋 뒤 호출) — 상품 상태 동기화, 주문 상태 전이, 재결제 복구 .
      *
      * @param  Order  $order  복구된 주문
      * @param  string  $provider  결제사 id

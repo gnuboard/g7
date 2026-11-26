@@ -163,7 +163,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
         if ($collection !== null) {
             $query->where('collection', $collection);
         } else {
-            // 전체 조회는 첨부 목록이다 — 본문 미디어(예약 컬렉션)는 본문의 일부라 넣지 않는다 (#883)
+            // 전체 조회는 첨부 목록이다 — 본문 미디어(예약 컬렉션)는 본문의 일부라 넣지 않는다
             $query->whereNotIn('collection', Attachment::RESERVED_COLLECTIONS);
         }
 
@@ -315,7 +315,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     public function getByTempKey(string $slug, string $tempKey, ?string $collection = null): Collection
     {
         // 임시 업로드 레코드: board_id=0, 이 게시판의 임시 경로(`{slug}/temp/…`)만 — 다른 게시판에서 같은 임시 키로 올린
-        // 첨부가 이 게시판 글에 이어지고 파일까지 옮겨지던 빈틈을 막는다(#883)
+        // 첨부가 이 게시판 글에 이어지고 파일까지 옮겨지던 빈틈을 막는다
         $query = Attachment::query()
             ->where(fn ($scope) => $this->whereBoardTemp($scope, $slug))
             ->where('temp_key', $tempKey)
@@ -342,7 +342,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     {
         $board = Board::where('slug', $slug)->first();
 
-        // 이 게시판의 임시 파일(board_id=0, `{slug}/temp/…`)을 실제 board_id + post_id로 업데이트 (#883)
+        // 이 게시판의 임시 파일(board_id=0, `{slug}/temp/…`)을 실제 board_id + post_id로 업데이트
         return Attachment::query()
             ->where(fn ($scope) => $this->whereBoardTemp($scope, $slug))
             ->where('temp_key', $tempKey)
@@ -374,7 +374,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
         $board = Board::where('slug', $slug)->first();
 
         // 이 게시판의 임시 업로드(board_id=0, `{slug}/temp/…`)만 실제 board_id로 이동하며 게시글에 연결 —
-        // 다른 게시판 임시 첨부 번호를 보내 잇던 빈틈을 막는다(#883)
+        // 다른 게시판 임시 첨부 번호를 보내 잇던 빈틈을 막는다
         return Attachment::query()
             ->where(fn ($scope) => $this->whereBoardTemp($scope, $slug))
             ->whereIn('id', $ids)
@@ -394,7 +394,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
      * 공통: 이 게시판의 임시 첨부(board_id=0, 글 미연결, `{slug}/temp/…`).
      * - 회원: 본인이 올린 것(`created_by` = 본인)
      * - 비회원: 비회원이 올린 것(`created_by` 없음) **그리고** 임시 키가 요청의 임시 키와 같은 것 — 첨부 번호는 순번이라
-     *   추측할 수 있으므로, 비회원끼리는 번호만으로 남의 임시 첨부를 가져가지 못하게 임시 키 소지를 함께 본다(#883).
+     *   추측할 수 있으므로, 비회원끼리는 번호만으로 남의 임시 첨부를 가져가지 못하게 임시 키 소지를 함께 본다.
      *   임시 키가 비면 아무것도 잇지 않는다.
      *
      * @param  string  $slug  게시판 슬러그
@@ -472,7 +472,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     /**
      * 주어진 ID 중 다른 사람이 올린 임시 첨부(아직 글에 이어지지 않은 것)의 ID 를 돌려줍니다.
      *
-     * @deprecated 7.1.5 게시판·임시 키를 함께 보는 findLinkableTempAttachmentIds() 를 쓴다(#883). 이 판정은 비회원끼리
+     * @deprecated 7.1.5 게시판·임시 키를 함께 보는 findLinkableTempAttachmentIds() 를 쓴다. 이 판정은 비회원끼리
      *             번호만으로 남의 임시 첨부를 잇는 것과 다른 게시판 임시 첨부를 잇는 것을 막지 못한다.
      *
      * 첨부 번호는 순번이라 추측할 수 있다 — 임시 키처럼 비밀이 아니므로, 번호로 잇는 경로는

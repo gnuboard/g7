@@ -9,7 +9,7 @@ use Plugins\Sirsoft\PayKginicis\Listeners\RestrictPaymentMethodsForCurrencyListe
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 /**
- * 결제 통화별 KG 이니시스 결제수단 제한 — 쇼핑몰 서버 훅에 답한다 (#639 ⑤, 결정 D17)
+ * 결제 통화별 KG 이니시스 결제수단 제한 — 쇼핑몰 서버 훅에 답한다
  *
  * 예전 브라우저 제한기(`checkoutJpyPaymentMethodRestrictor`)와 같은 규칙이어야 한다: 엔화는 운영자가 제한을 켰을 때만
  * `card`·PayPay·편의점 외를 빼고, 엔화가 아니면 일본 전용 수단을 늘 뺀다. 다른 플러그인 id 는 건드리지 않는다.

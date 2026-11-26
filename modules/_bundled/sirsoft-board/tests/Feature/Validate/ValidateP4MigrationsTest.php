@@ -6,7 +6,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use Tests\Support\RecordingSchemaBuilder;
 
 /**
- * 게시판 마이그레이션 재실행 가드 검증 (#599 validate P4)
+ * 게시판 마이그레이션 재실행 가드 검증
  *
  * 재실행 가드는 "앞선 실행이 중간에 멈춘 상태" 에서만 드러나는데, 그 상태를 공유 테스트 DB 에
  * 만들면 DDL 이 암묵 커밋되어 테이블이 망가진다. 그래서 스키마 호출을 {@see RecordingSchemaBuilder}

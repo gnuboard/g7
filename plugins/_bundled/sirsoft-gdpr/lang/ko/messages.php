@@ -285,14 +285,14 @@ return [
             'consented' => '동의',
             'revoked' => '철회',
             'rejected_label' => '거부',
-            // 이슈 #430 — 각 동의 항목 상태별 표시 동사. Resource(status_label)가 status 로 골라 내려준다.
+            // 각 동의 항목 상태별 표시 동사. Resource(status_label)가 status 로 골라 내려준다.
             'status' => [
                 'granted' => '동의',
                 'consented' => '동의',
                 'revoked' => '철회',
                 'rejected' => '거부',
             ],
-            // 이슈 #430 (버튼 재설계) — 상태 배지 문구. Resource(status_badge_label).
+            // 버튼 재설계 — 상태 배지 문구. Resource(status_badge_label).
             'badge' => [
                 'required' => '항상 적용',
                 'consented' => '동의함',

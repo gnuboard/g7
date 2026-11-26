@@ -221,7 +221,7 @@ $completionExtra = '<p class="result-version">'
     .'<strong>'.htmlspecialchars($coreVersion).'</strong>'
     .'</p>';
 
-// .env 권한 권장 강화 안내 — 0600 이 아니면 조건부 노출 (#371)
+// .env 권한 권장 강화 안내 — 0600 이 아니면 조건부 노출
 // finalize-env.php 는 chmod 시도를 수행하지 않으므로 인스톨러 안내 단계의 권한
 // (예: 0664 + chgrp www-data) 이 그대로 유지됨. 운영자가 추가로 0600 적용을
 // 원할 수 있도록 현재 권한이 0600 미만 (그룹/기타 비트가 있음) 이면 명령 예시 노출.

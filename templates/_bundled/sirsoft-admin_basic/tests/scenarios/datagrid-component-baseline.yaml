@@ -13,7 +13,7 @@ axes:
     - sort                           # 머리 클릭 정렬 디스패치·화살표·정렬 불가 열·controlled/uncontrolled 순서·런타임 controllable-state 경로
     - row_click                      # 행 클릭이 그 행 데이터로 onRowClick 을 부른다
     - pagination                     # 클라이언트 페이지네이션 단추와 이동
-    - server_pagination_sort_guard   # 서버 페이지네이션 + onSortChange 미배선이면 머리 정렬을 막고, 배선·클라이언트 목록은 유지 (#492 D-18)
+    - server_pagination_sort_guard   # 서버 페이지네이션 + onSortChange 미배선이면 머리 정렬을 막고, 배선·클라이언트 목록은 유지
     - sub_row                        # 서브 행 렌더·조건·colSpan·조건 판정의 엔진 위임
     - column_reset                   # SPA 이동으로 columns 가 바뀌면 visibleColumns 를 리셋(외부 제어 시 유지)
     - mobile_sub_row                 # 모바일 카드 뷰의 서브 행

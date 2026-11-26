@@ -8,7 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 /**
- * 이미지형 알림톡 템플릿 이미지 업로드 검증 (#597 §3.2 · 부록 A-7).
+ * 이미지형 알림톡 템플릿 이미지 업로드 검증 (부록 A-7).
  *
  * kapi 이미지 업로드 제약(jpg/png · ≤500KB · 가로 ≥500px · 가로:세로 2:1)을 프록시
  * 단계에서 사전 검증한다 — kapi 왕복 없이 즉시 인라인 오류를 돌려준다. 비율은 Laravel

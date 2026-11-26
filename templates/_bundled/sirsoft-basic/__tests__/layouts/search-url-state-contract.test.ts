@@ -4,7 +4,7 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * 통합검색 화면 상태의 SSoT 계약 (#519)
+ * 통합검색 화면 상태의 SSoT 계약
  *
  * 탭·게시판필터·정렬·페이지·커서를 전역 상태(`_global.search*`)에만 두면 주소가 바뀌지
  * 않는다. 그러면 새로고침·뒤로가기에서 전부 초기값으로 돌아가고, 보고 있던 결과를 주소로

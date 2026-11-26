@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * 템플릿 환경설정·파비콘 테스트 공통 픽스처 (#434)
+ * 템플릿 환경설정·파비콘 테스트 공통 픽스처
  *
  * 실제 번들 템플릿을 설치하지 않는다 — `templates/qa434-*` 임시 디렉토리에 선언 파일·설정 화면을 두고 DB 행만 만든다.
  * 테스트가 만든 디렉토리·설정 파일은 {@see cleanUpTemplateSettingsFixtures()} 가 지운다(사용하는 테스트의 tearDown 에서 부른다).

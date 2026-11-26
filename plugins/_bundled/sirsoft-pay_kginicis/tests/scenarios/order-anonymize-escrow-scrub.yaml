@@ -1,4 +1,4 @@
-feature: 주문 익명화 시 에스크로 배송 등록 수령인 사본 파기 (이슈 #636)
+feature: 주문 익명화 시 에스크로 배송 등록 수령인 사본 파기
 
 description: |
   이커머스 보유기간 익명화가 주문 한 건마다 발행하는 `sirsoft-ecommerce.order.after_anonymize` 를

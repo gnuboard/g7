@@ -1,6 +1,6 @@
 /**
  * @file G7CoreGlobals.stateSubscribeRealApp.test.ts
- * @description `G7Core.state.subscribe` 가 실제 TemplateApp 위에서 해제 함수를 돌려주는지 잠근다 (#639).
+ * @description `G7Core.state.subscribe` 가 실제 TemplateApp 위에서 해제 함수를 돌려주는지 잠근다.
  *
  * 기존 `G7CoreGlobals.test.ts` 는 `onGlobalStateChange: vi.fn(() => () => {})` 모의를 써서, 코어가
  * 해제 함수를 돌려주지 않는 결함을 보지 못했다. 템플릿 컴포넌트(AdminSidebar·ProductCard)와
@@ -57,7 +57,7 @@ function makeDependencies(): G7CoreDependencies {
     };
 }
 
-describe('[case:state-global-subscribe-returns-void] G7Core.state.subscribe — 실제 TemplateApp (#639)', () => {
+describe('[case:state-global-subscribe-returns-void] G7Core.state.subscribe — 실제 TemplateApp', () => {
     let app: TemplateApp;
 
     beforeEach(() => {

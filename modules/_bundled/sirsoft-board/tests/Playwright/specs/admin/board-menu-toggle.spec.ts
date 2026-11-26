@@ -1,5 +1,5 @@
 /**
- * 게시판 생성/수정 폼 — "관리자 메뉴에 표시" 토글 (이슈 #413 item 15-(1)).
+ * 게시판 생성/수정 폼 — "관리자 메뉴에 표시" 토글 (item 15-(1)).
  *
  * 생성 폼에서 토글을 켜고 저장하면 좌측 관리자 메뉴(/admin/board/{slug})에 게시판이
  * 등록되고, 수정 폼에서 토글을 끄고 저장하면 메뉴에서 제거된다. 토글은 생성/수정 공용이며
@@ -23,7 +23,7 @@ import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 
 const CREATE_URL = '/admin/boards/create';
 
-test.describe.skip('게시판 생성/수정 — 관리자 메뉴 표시 토글 (#413)', () => {
+test.describe.skip('게시판 생성/수정 — 관리자 메뉴 표시 토글', () => {
   // @scenario mode=create, toggle=on
   // @effects create_with_toggle_on_registers_menu
   test('생성 폼에서 토글 ON 후 저장하면 좌측 관리자 메뉴에 게시판이 표시된다', async ({

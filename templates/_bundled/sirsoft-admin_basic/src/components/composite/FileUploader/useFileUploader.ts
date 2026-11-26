@@ -364,7 +364,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
         setPendingFiles((prev) => [...prev, pendingFile]);
 
         // 이미지인 경우 압축 처리 — 움직이는 GIF·WebP·APNG 는 건너뛰고 원본을 올린다. 압축기는 첫 프레임만 다시
-        // 인코딩해 정지 그림이 올라갔다(#869 P4). 움직임은 MIME 이 아니라 파일 바이트로 가린다.
+        // 인코딩해 정지 그림이 올라갔다. 움직임은 MIME 이 아니라 파일 바이트로 가린다.
         if (file.type.startsWith('image/') && compressionOptions && (await detectAnimatedImageFormat(file)) === null) {
           setPendingFiles((prev) =>
             prev.map((f) => (f.id === pendingFile.id ? { ...f, status: 'compressing' } : f))
@@ -373,7 +373,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
           try {
             const compressedBlob = await compressImage(file);
             // 압축본이 원본보다 작을 때만 쓴다 — 줄인 PNG 가 원본보다 커지는 일이 있었다(2400→2000px, 22,273→28,823바이트,
-            // #869 브라우저 실측). 크거나 같으면 원본을 올린다.
+            // 브라우저 실측). 크거나 같으면 원본을 올린다.
             const useCompressed = compressedBlob.size < file.size;
             setPendingFiles((prev) =>
               prev.map((f) =>
@@ -461,7 +461,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   );
 
   // 모든 파일 업로드
-  // 마지막 업로드에서 실패한 파일 수 — 업로드 신호 리스너가 결과에 실어, 저장 흐름이 실패를 보고 멈춘다(#869 브라우저 실측).
+  // 마지막 업로드에서 실패한 파일 수 — 업로드 신호 리스너가 결과에 실어, 저장 흐름이 실패를 보고 멈춘다.
   // 실패 문구는 onUploadError 가 이미 알린다.
   const lastUploadFailedRef = useRef<number>(0);
 

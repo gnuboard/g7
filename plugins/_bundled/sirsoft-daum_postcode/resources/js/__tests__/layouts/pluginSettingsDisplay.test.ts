@@ -6,7 +6,7 @@
  * 회귀 배경:
  * - 표시 방식 선택지가 번역 키(`fields.display_mode.popup`·`layer` — 1.2.0 부터 기기별 `display_mode_pc`·`display_mode_mobile`)를 두고도 값 원문
  *   `popup`·`layer` 를 그대로 보여 주었다.
- * - 관리자 템플릿 의미 클래스 도입(#408) 때 치환이 한 칸 밀려, 입력 칸 줄에 오류 글자색
+ * - 관리자 템플릿 의미 클래스 도입 때 치환이 한 칸 밀려, 입력 칸 줄에 오류 글자색
  *   클래스(`text-error-soft`)가, 오류 목록 줄에 3열 그리드 클래스(`grid-3col-responsive`)가 붙었다.
  */
 

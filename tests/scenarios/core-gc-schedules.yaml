@@ -47,7 +47,7 @@ axes:
     - activity_logs
     - notification_logs
     - ecommerce_temp_orders
-    # 개인정보 보유기간·휴면 (#636 S4) — 이 매니페스트가 재는 것은 **예약 등록·허용목록·
+    # 개인정보 보유기간·휴면 — 이 매니페스트가 재는 것은 **예약 등록·허용목록·
     # 대시보드 노출**이다. 도메인 동작(무엇을 어떻게 지우는가)은 전용 매니페스트
     # privacy-retention.yaml · dormant-account.yaml 이 소유한다.
     - privacy_withdrawn_users

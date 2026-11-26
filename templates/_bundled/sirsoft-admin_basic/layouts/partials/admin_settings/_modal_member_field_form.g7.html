@@ -1,4 +1,4 @@
-<!-- 회원 항목 추가·수정·보기 겸용 창(#490). 가입 항목 표의 「항목 추가」와 각 행의 [설정]·[수정]·[보기]가 연다.
+<!-- 회원 항목 추가·수정·보기 겸용 창. 가입 항목 표의 「항목 추가」와 각 행의 [설정]·[수정]·[보기]가 연다.
   상태는 전역 한 객체(`_global.member_field_form_modal`)에 모은다. 여는 쪽이 매번 통째로 만들어 넣고, 닫을 때 통째로 비운다.
 
   **추가는 두 단계다(U2).** 먼저 유형 타일을 고르고(`step === 'type'`) 「다음」으로 내용을 적는다(`step === 'form'`). 저장하기 전에는
@@ -582,7 +582,7 @@
         </div>
         <div data-ref="member_field_type_extension" data-if="{{(_global.member_field_form_modal?.isNew === true || _global.member_field_form_modal?.form?.is_custom === true) &amp;&amp; (_global.member_field_form_modal?.form?.type ?? '') !== '' &amp;&amp; !['text', 'textarea', 'number', 'boolean', 'date', 'datetime', 'date_range', 'choice', 'multi_choice', 'phone', 'email', 'url', 'address', 'file', 'image'].includes((_global.member_field_form_modal?.form?.type ?? ''))}}" class="space-y-3">
           <h4 class="text-primary text-sm font-semibold">$t:admin.settings.member.fields.form.section.type_options</h4>
-          <!-- 확장이 제공한 유형의 옵션 자리(#490). 유형을 더한 확장이 이 확장점에 자기 옵션 조각을 넣는다. 조각은 `field`(창의 항목 값)와
+          <!-- 확장이 제공한 유형의 옵션 자리. 유형을 더한 확장이 이 확장점에 자기 옵션 조각을 넣는다. 조각은 `field`(창의 항목 값)와
                `disabled` 를 받고, 자기 유형일 때만 그린다. 값은 `_global.member_field_form_modal.form.constraints.*` 에 담는다. -->
           <extension-point name="member_field_type_options" data-ref="member_field_type_options_slot" field="{{_global.member_field_form_modal?.form}}" disabled="{{(_global.member_field_form_modal?.readOnly === true || _global.member_field_form_modal?.isSaving === true)}}" class="space-y-3"/>
         </div>

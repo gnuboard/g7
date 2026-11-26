@@ -114,7 +114,7 @@ class PrivacyManualRunService
     {
         $key = $runner->key();
 
-        // 처리 결과의 효력이 토글에 묶인 대상은 꺼진 채 처리하면 안내와 동작이 어긋난다(#736).
+        // 처리 결과의 효력이 토글에 묶인 대상은 꺼진 채 처리하면 안내와 동작이 어긋난다.
         if ($runner instanceof PrivacyManualRunRequiresEnabledInterface && ! $this->safeEnabled($runner)) {
             throw new PrivacyManualRunDisabledException($key);
         }
@@ -246,7 +246,7 @@ class PrivacyManualRunService
      * 예외에서 기록에 남길 실패 사유를 고릅니다.
      *
      * 실패 사유는 카드·상태 API·활동 로그에 그대로 보인다 — 운영 모드에서 DB·PHP 내부 예외의 원문(SQL·DB 호스트·
-     * 서버 경로)은 일반 문구의 번역 키로 바꾸고 원문은 서버 로그에 남긴다(#736 H 영역 실측). 확장이 일부러 던진
+     * 서버 경로)은 일반 문구의 번역 키로 바꾸고 원문은 서버 로그에 남긴다(H 영역 실측). 확장이 일부러 던진
      * 사용자용 사유와 디버그 모드의 원문은 그대로 남긴다.
      *
      * @param  Throwable  $e  처리 중 잡은 예외

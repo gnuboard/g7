@@ -7,9 +7,9 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductCommonInfo;
 
 /**
- * 이커머스 본문 미디어 소유 종류 (#883 4단계)
+ * 이커머스 본문 미디어 소유 종류
  *
- * 본문 미디어는 이 모듈의 범용 첨부 표(`ecommerce_attachments`, collection = content_media)에 둔다(#887). 소유 종류는 그 표의
+ * 본문 미디어는 이 모듈의 범용 첨부 표(`ecommerce_attachments`, collection = content_media)에 둔다. 소유 종류는 그 표의
  * `attachmentable_type`(소유 모델의 morph 값)으로 저장되고, 저장 전 임시 행도 소유 종류를 갖는다(`attachmentable_id` 만 null).
  */
 enum ContentMediaOwnerType: string

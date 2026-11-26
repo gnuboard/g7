@@ -9,7 +9,7 @@ import { resolveActionFailureMessage } from '../ActionDispatcher';
  * 운영자는 무슨 일이 일어났는지 알 수 없고 다국어도 적용되지 않는다.
  *
  * 확장 업데이트 모달에서 통신이 끊겼을 때 실제로 이 문구가 노출되는 것을 브라우저 실측으로
- * 확인했다(#492 검색 인덱스 실측 세션).
+ * 확인했다(검색 인덱스 실측 세션).
  *
  * @since engine-v1.54.6
  */

@@ -1,5 +1,5 @@
 /**
- * 비밀글 답변 열람 — 원글 비밀번호가 답변까지 여는지 (#789 제보 A).
+ * 비밀글 답변 열람 — 원글 비밀번호가 답변까지 여는지.
  *
  * 실브라우저로 네 갈래를 잰다:
  *   ① 비회원이 원글 비밀번호를 맞힌 뒤 답변 링크(전체 이동)로 가도 관리자 비밀 답변이 열린다
@@ -197,7 +197,7 @@ async function storedToken(page: Page): Promise<{ token: string | null; expiresA
   return page.evaluate(([t, e]) => ({ token: sessionStorage.getItem(t), expiresAt: sessionStorage.getItem(e) }), [TOKEN_KEY, EXPIRES_KEY]);
 }
 
-test.describe('비밀글 답변 열람 — 원글 비밀번호 (#789)', () => {
+test.describe('비밀글 답변 열람 — 원글 비밀번호', () => {
   // @scenario case=guest_root_password_opens_reply_after_full_navigation
   // @effects verify_password_response_opens_descendant_reply, secret_view_token_persisted_in_session_storage, full_navigation_restores_token_header
   test('비회원이 원글 비밀번호를 맞히면 답변 링크로 이동해도 답변 본문이 보인다', async ({ page, thread }) => {

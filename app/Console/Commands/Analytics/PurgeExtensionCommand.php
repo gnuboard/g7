@@ -17,7 +17,7 @@ use Illuminate\Console\Command;
  * 지우거나, 제거 때의 정리가 실패(진단 화면 실행 이력 「실패」)한 뒤 다시 돌릴 때 씁니다.
  * 되돌릴 수 없으므로 --confirm 을 반드시 붙여야 하고, 지우기 전에 터미널에서 한 번 더 묻습니다.
  * 그 확인에 답할 수 없는 실행(cron, CI, 원격 명령, --no-interaction)은 지우지 않고 실패로 끝납니다.
- * 확인 없이 지워야 하면 --yes 를 함께 붙입니다(7.1.6 과 같은 형태, #918).
+ * 확인 없이 지워야 하면 --yes 를 함께 붙입니다(7.1.6 과 같은 형태).
  *
  * @example php artisan analytics:purge-extension module sirsoft-ecommerce --confirm
  */

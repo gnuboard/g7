@@ -4,7 +4,7 @@ import { CodeWorkspace } from '../CodeWorkspace';
 import { isPlainLeftClick as engineIsPlainLeftClick } from '@core/template-engine/navigationLinks';
 
 /**
- * CodeWorkspace — SPA 이탈 가드와 링크 새 탭 열기 (D5 · #757 링크 단계)
+ * CodeWorkspace — SPA 이탈 가드와 링크 새 탭 열기
  *
  * 미저장 편집이 있을 때 `data-leave-guard` 요소를 누르면 되묻는다. 그러나 링크를 Ctrl·Meta·Shift 로 누르거나
  * `target="_blank"` 링크를 누르면 새 탭·새 창에서 열리고 이 화면은 그대로다 — 물을 일도, 막을 일도 없다.

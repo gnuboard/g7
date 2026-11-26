@@ -107,7 +107,7 @@ class SettingsService
         app(ExtensionSettingsMirror::class)->refreshCore();
 
         // 다른 상주 프로세스(큐 워커)가 바뀐 것을 알 수 있도록 설정 버전을 올린다 — 워커는 작업 시작 전에
-        // 비교해 다시 읽는다(#724).
+        // 비교해 다시 읽는다.
         SettingsVersion::bump();
     }
 
@@ -217,13 +217,13 @@ class SettingsService
         // 첨부파일 정보 추가 (general 카테고리에)
         $settings['general']['site_logo'] = $this->getSiteLogoAttachment();
 
-        // 사이트 파비콘 첨부 정보 (#434 — site_logo 와 동형, 저장값이 없던 옛 설치는 빈 배열)
+        // 사이트 파비콘 첨부 정보 (site_logo 와 동형, 저장값이 없던 옛 설치는 빈 배열)
         $settings['general']['site_favicon'] = $this->getAttachmentListSetting('general.site_favicon');
 
         // 사이트 기본 OG 이미지 첨부 정보 (seo 카테고리에 — site_logo 와 동형)
         $settings['seo']['og_image_default'] = $this->getAttachmentListSetting('seo.og_image_default');
 
-        // 화면용 계산 값(frontend_schema 의 computed 필드)을 공개 설정과 같은 계산으로 싣는다(#887).
+        // 화면용 계산 값(frontend_schema 의 computed 필드)을 공개 설정과 같은 계산으로 싣는다.
         // 저장 응답도 이 경로로 다시 조회하므로, 화면이 저장 응답으로 전역 설정을 병합하면 같은 탭에서도 저장 뒤 계산 값을 쓴다.
         $settings = $this->appendComputedFields($settings, $schema);
 
@@ -266,7 +266,7 @@ class SettingsService
     }
 
     /**
-     * 화면용 계산 값을 관리자 설정 묶음에 덧붙입니다 (#887).
+     * 화면용 계산 값을 관리자 설정 묶음에 덧붙입니다.
      *
      * 대상은 `frontend_schema` 의 `computed: true` 필드 전부이고, 계산은 공개 설정(formatCategorySettings)과 같은
      * computeFieldValue() 를 씁니다 — 계산 필드가 늘어도 스키마와 그 변환 한 곳만 고치면 관리자 응답도 따라옵니다.
@@ -329,7 +329,7 @@ class SettingsService
     }
 
     /**
-     * 저장 본문에서 계산 필드를 뺍니다 (#887).
+     * 저장 본문에서 계산 필드를 뺍니다.
      *
      * 관리자 응답이 계산 값을 함께 싣고 화면은 응답으로 만든 탭 값 전체를 저장 본문에 되돌려 보내므로, 걸러내지 않으면
      * 계산 값이 원본 설정처럼 저장소에 굳습니다. 그 탭에 합쳐지는 범주(`frontend_name`·`merge_into`)의 계산 필드도 뺍니다.
@@ -417,7 +417,7 @@ class SettingsService
     }
 
     /**
-     * 환경설정 > 드라이버 「비공개 첨부 저장소」 카드가 읽는 메타를 만듭니다 (#916).
+     * 환경설정 > 드라이버 「비공개 첨부 저장소」 카드가 읽는 메타를 만듭니다 .
      *
      * - `pins`: `.env` 로 비공개 원본 디스크를 고정해 관리자 선택을 따르지 않는 주체(코어 `ATTACHMENT_DISK`, 확장별 env).
      * - `orphaned`: 저장된 선택이 이 서버에 정의되지 않은 디스크(디스크를 등록한 플러그인이 꺼짐)라 「기본」으로 동작 중인지.
@@ -457,7 +457,7 @@ class SettingsService
     }
 
     /**
-     * 저장은 허용하지만 운영자에게 알려야 할 저장소 조합 경고를 만듭니다 (#916 D5).
+     * 저장은 허용하지만 운영자에게 알려야 할 저장소 조합 경고를 만듭니다.
      *
      * 비공개 첨부 저장소를 공개 자산 디스크와 같은 디스크로 고르면 같은 버킷의 공개 정책이 비공개 원본에도 걸릴 수 있다 —
      * 서버 서빙 경로가 권한을 확인해도 버킷 주소로 직접 읽힐 수 있다.
@@ -767,14 +767,14 @@ class SettingsService
             'thumbnail_presets' => app(ThumbnailPresetRegistry::class)->forFrontend(),
             // `size` 를 붙여도 되는 서빙 경로 — 기능이 꺼져 있으면 빈 목록(프론트는 아무 주소도 바꾸지 않는다).
             'thumbnail_url_patterns' => (bool) ($sourceValue ?? true) ? ThumbnailUrl::patterns() : [],
-            // 본문 콘텐츠 규칙 — 표시기·편집기용 계산값(허용 태그·속성·미디어 출처·외부 영상 컴파일 정규식, #883)
+            // 본문 콘텐츠 규칙 — 표시기·편집기용 계산값(허용 태그·속성·미디어 출처·외부 영상 컴파일 정규식)
             'content_render_policy' => ContentHtmlPolicy::fromSettings($settings)->toFrontendArray(),
             default => $sourceValue,
         };
     }
 
     /**
-     * 외부 영상 서비스 예시 주소 확인 — 저장 전 입력값으로 꺼낸 id 와 만들어질 플레이어 주소 (#883).
+     * 외부 영상 서비스 예시 주소 확인 — 저장 전 입력값으로 꺼낸 id 와 만들어질 플레이어 주소.
      *
      * 저장하지 않는다. 형식이 틀리면 필드별 문구를 함께 돌려 창이 저장 전에 알린다(저장 때와 같은 검증·컴파일 규칙).
      *
@@ -791,7 +791,7 @@ class SettingsService
     }
 
     /**
-     * 확장이 제공한 외부 영상 서비스의 켜기 선택지 — 「본문 콘텐츠」 탭이 그린다 (#883).
+     * 확장이 제공한 외부 영상 서비스의 켜기 선택지 — 「본문 콘텐츠」 탭이 그린다.
      *
      * @return array<int, array{key: string, extension: string, id: string, name: string}> 선택지
      */
@@ -943,7 +943,7 @@ class SettingsService
     }
 
     /**
-     * 파비콘 첨부 ID 배열에서 첫 유효 첨부의 파비콘 경로를 반환합니다 (#434).
+     * 파비콘 첨부 ID 배열에서 첫 유효 첨부의 파비콘 경로를 반환합니다.
      *
      * 이미지 판정(`is_image`)은 ico·svg 를 이미지로 보지 않으므로 파비콘은 파비콘 컬렉션·MIME 목록으로 따로 고른다.
      * 경로도 일반 다운로드가 아니라 파비콘 전용 경로(`/api/favicon/{hash}`)다.
@@ -991,7 +991,7 @@ class SettingsService
             // frontend_key를 원본 키로 역변환
             $tabSettings = $this->reverseFrontendKeys($tabSettings);
 
-            // 응답에 실려 나간 화면용 계산 값이 되돌아와도 저장하지 않는다(#887)
+            // 응답에 실려 나간 화면용 계산 값이 되돌아와도 저장하지 않는다
             $tabSettings = $this->rejectComputedForSave($tab, $tabSettings);
 
             // `.env` 가 소유권을 가져간 키는 저장 대상에서 제거한다. 화면의 disabled 는
@@ -1025,7 +1025,7 @@ class SettingsService
                 $tabSettings['site_logo'] = $this->resolveSiteLogoIds($tabSettings['site_logo']);
             }
 
-            // 사이트 파비콘(#434)도 site_logo 와 동형 — 제출하지 않은 저장은 기존값 유지, 뺀 첨부는 저장 성공 후 파기
+            // 사이트 파비콘도 site_logo 와 동형 — 제출하지 않은 저장은 기존값 유지, 뺀 첨부는 저장 성공 후 파기
             $removedFaviconIds = [];
 
             if ($tab === 'general' && is_array($tabSettings['site_favicon'] ?? null)) {
@@ -1059,7 +1059,7 @@ class SettingsService
             // 기존 설정과 병합 (탭별로 일부 필드만 전송되어도 기존 설정 유지)
             $existingSettings = $this->configRepository->getCategory($tab);
 
-            // 이미지 썸네일 규격 표(#869) — 저장소는 카테고리 1단계만 병합해 목록을 통째로 바꾸므로, 화면이 보낸 표를
+            // 이미지 썸네일 규격 표 — 저장소는 카테고리 1단계만 병합해 목록을 통째로 바꾸므로, 화면이 보낸 표를
             // 그대로 두면 고정 슬롯이 빠지거나 꺼진 확장의 수정값이 사라진다. 저장 목록으로 바꿔 넣는다.
             if ($tab === 'upload') {
                 $tabSettings = $this->prepareUploadThumbnailSettings($tabSettings, $existingSettings);
@@ -1075,7 +1075,7 @@ class SettingsService
             }
             $mergedSettings = array_merge($existingSettings, $tabSettings);
 
-            // 자산 URL 방식이 바뀌는지 저장 **전에** 판정한다 (이슈 #486).
+            // 자산 URL 방식이 바뀌는지 저장 **전에** 판정한다.
             // 저장 후에는 이전 값을 알 수 없어 변경 여부를 판별할 수 없다.
             $assetUrlModeChanged = $tab === 'general'
                 && array_key_exists('asset_url_mode', $tabSettings)
@@ -1146,7 +1146,7 @@ class SettingsService
     }
 
     /**
-     * 업로드 탭 저장분의 썸네일 값을 저장 형태로 바꿉니다 (#869).
+     * 업로드 탭 저장분의 썸네일 값을 저장 형태로 바꿉니다.
      *
      *  - 응답 전용 값(`thumbnail_presets_rows`, `thumbnail_presets_public`, `thumbnail_url_patterns`)은 저장하지 않는다.
      *    화면은 응답으로 받은 업로드 탭 객체를 통째로 되돌려 보내므로, 거르지 않으면 계산 결과가 upload.json 에 쌓이고
@@ -1196,7 +1196,7 @@ class SettingsService
     }
 
     /**
-     * 저장한 썸네일 설정과 이미지 엔진 선택을 이 프로세스의 config 에도 반영합니다 (#869).
+     * 저장한 썸네일 설정과 이미지 엔진 선택을 이 프로세스의 config 에도 반영합니다.
      *
      * `SettingsServiceProvider` 의 주입(applyUploadConfig, applyDriverConfig)은 다음 부팅에서야 일어난다.
      * 그런데 저장 응답(`SettingsController::store`)이 같은 요청 안에서 규격 표(`presentRows`)와 엔진 유무를 다시 만들므로,
@@ -1591,7 +1591,7 @@ class SettingsService
         HookManager::doAction('core.settings.before_set', $key, $value);
 
         try {
-            // 자산 URL 방식이 바뀌는지 저장 **전에** 판정한다 (이슈 #486 동형).
+            // 자산 URL 방식이 바뀌는지 저장 **전에** 판정한다 (동형).
             // 저장 후에는 이전 값을 알 수 없어 변경 여부를 판별할 수 없다.
             $assetUrlModeChanged = $key === 'general.asset_url_mode'
                 && $this->configRepository->get($key) !== $value;
@@ -1702,7 +1702,7 @@ class SettingsService
      * 병합 번들 CSS 는 내부 `url()` 참조가 그 시점의 자산 URL **형태**(확장자 / `?file=`)로
      * 본문에 구워진다(`ExtensionBundleService` 의 `AssetCssUrlRewriter`). 디스크 번들과 정적
      * 게시본은 캐시 버전으로 키드되어 있어, 버전이 오르지 않으면 모드를 바꿔도 옛 형태의
-     * URL 이 남고 그 참조(글꼴·이미지)가 서버에서 404 가 된다(#651 F5). bump 단일 지점이
+     * URL 이 남고 그 참조(글꼴·이미지)가 서버에서 404 가 된다. bump 단일 지점이
      * 번들 재병합과 정적 재게시를 함께 예약한다.
      *
      * @return void 반환값 없음
@@ -1862,7 +1862,7 @@ class SettingsService
      *
      * 확장이 필터 훅 `core.settings.filter_system_info_sections` 로 더한 카드(`extra_sections`)도 캐시 밖에서 매 요청
      * 새로 모읍니다 — 확장 정보는 캐시 수명과 무관하게 최신이어야 합니다. 검증·리스너 예외 격리는
-     * {@see SystemInfoSectionService} 가 맡습니다 (#888).
+     * {@see SystemInfoSectionService} 가 맡습니다.
      *
      * @return array 시스템 정보 배열
      */
@@ -2000,7 +2000,7 @@ class SettingsService
             Artisan::call('view:clear');
 
             // 라우트·config 는 지우는 대신 다시 구워 바꿔 끼운다 — 비운 채 두면 이후 모든 요청이 재파싱하고,
-            // 지우는 순간 들어온 요청은 500(`routes-v7.php: No such file`)을 받았다(#882).
+            // 지우는 순간 들어온 요청은 500(`routes-v7.php: No such file`)을 받았다.
             RouteCacheHelper::rebuild();
             ConfigCacheHelper::rebuild();
 
@@ -2020,7 +2020,7 @@ class SettingsService
         try {
             // config·라우트 캐시는 두 헬퍼로 굽는다 — 새 Application 을 부팅하는 명령을 보존 래퍼(withPreservedContainer)로
             // 감싸고(후속 `app()->terminating()` 예약 보존), 임시 파일에 다 구운 뒤 바꿔 끼운다. 명령을 직접 부르면 명령이
-            // 먼저 지운 뒤 다시 써서 그 사이 들어온 요청이 500 을 받았다(#882).
+            // 먼저 지운 뒤 다시 써서 그 사이 들어온 요청이 500 을 받았다.
             ConfigCacheHelper::rebuild();
             RouteCacheHelper::rebuild();
             Artisan::call('view:cache');

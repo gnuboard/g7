@@ -11,7 +11,7 @@ use App\Support\EmptyMapChildren;
 use App\Support\RuntimeRole;
 
 /**
- * 프론트엔드 공개 설정 조립 — G7 셸(`window.G7Config`)과 공개 설정 API 가 **같은 함수**로 만든다 (#792 D8).
+ * 프론트엔드 공개 설정 조립 — G7 셸(`window.G7Config`)과 공개 설정 API 가 **같은 함수**로 만든다.
  *
  * 셸에 실리는 설정(코어 공개 설정·모듈/플러그인 공개 설정·앱 설정·로케일·실시간 알림 접속정보)을 외부 화면
  * (Next.js·HTML+jQuery·Blade)도 `GET /api/frontend-config`(사용자)·`GET /api/admin/frontend-config`(관리자)로
@@ -90,7 +90,7 @@ class FrontendConfigService
             $modules = [];
         }
 
-        // 활성 템플릿 공개 설정(#434) — 이 범위(사용자·관리자)의 활성 템플릿 하나의 frontend_schema 노출값
+        // 활성 템플릿 공개 설정 — 이 범위(사용자·관리자)의 활성 템플릿 하나의 frontend_schema 노출값
         try {
             $templateSettings = $this->templateSettingsService->getActiveFrontendSettings($scope);
         } catch (\Throwable $e) {
@@ -108,7 +108,7 @@ class FrontendConfigService
         $appConfig['auth'] = $this->loginEntryConfig();
 
         // 실행 역할(live|stage) — 셸(`G7Config.appConfig`)로도 실어 관리자 화면이 `_global.appConfig.runtime_role` 로
-        // 검수 서버 띠·수명주기 버튼 잠금을 그린다(#888). 설정 값이 아니라 서버 환경값이라 요청마다 읽는다.
+        // 검수 서버 띠·수명주기 버튼 잠금을 그린다. 설정 값이 아니라 서버 환경값이라 요청마다 읽는다.
         $appConfig['runtime_role'] = RuntimeRole::current();
 
         return [

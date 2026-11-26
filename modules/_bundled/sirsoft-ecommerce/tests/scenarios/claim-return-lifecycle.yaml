@@ -1,7 +1,7 @@
 feature: claim_return_lifecycle
 
 description: |
-  반품 신청서의 수량 분할과 청구, 그리고 완료 뒤의 환불 접수 (#599 S15a)
+  반품 신청서의 수량 분할과 청구, 그리고 완료 뒤의 환불 접수
 
   교환과 나뉘는 지점만 다룬다 — 반품에는 재발송 구간이 없어 배송비가 편도이고, 돌려줄 것은
   옵션 차액이 아니라 **상품 대금 자체**다. 그래서 교환에는 없는 두 축이 생긴다: 한 상품의
@@ -75,7 +75,7 @@ effects:
   - return_guest_flag_reads_the_order_owner
   - return_preview_matches_the_requested_amounts
   - return_preview_reports_the_refund_before_the_fee_is_deducted
-  # #599 후속 D13 — 환불완료 시 취소신청서가 생긴다
+  # 환불완료 시 취소신청서가 생긴다
   - return_refund_completion_records_a_cancellation
   - return_refund_option_rows_announce_their_creation   # 그 취소신청서의 옵션 행도 함께 선언된다
   # 환불 접수 시점 (D26) — 축이 잰 칸 위에서 이어지는 규칙
@@ -94,7 +94,7 @@ sub_flows:
       옮긴다. 상품 단위 전이는 전 항목이 같은 상태일 때만 헤더를 옮긴다.
     effects:
       - return_transition_follows_the_status_gate
-      - return_completion_can_come_while_collecting   # 회수중인 물건도 완료(선환불)할 수 있다 (#599 후속)
+      - return_completion_can_come_while_collecting   # 회수중인 물건도 완료(선환불)할 수 있다
       - tracking_save_does_not_move_the_status        # 송장 저장은 저장만 — 회수중은 전이가 송장을 싣는다
       - return_completion_is_not_reachable_by_a_plain_transition
       - return_on_hold_and_approval_times_are_stamped
@@ -154,7 +154,7 @@ sub_flows:
   #    쓰던 이름이 「소유 매니페스트에 없다」로 잡혔다. 실제로 테스트가 쓰는 것은 위
   #    `effects:` 로 올렸고(2026-09-23), 여기에는 **아직 어느 테스트도 검증하지 않는** 것만
   #    남긴다 — 올리면 그 자리에서 미검증으로 잡히므로, 테스트가 생길 때 함께 올린다.
-  #    (#599 후속 D13 활동로그 축 — 반품 완료 → 환불 → 취소신청서)
+  #    (후속 D13 활동로그 축 — 반품 완료 → 환불 → 취소신청서)
   - returned_items_keep_the_returned_status           # 상품 상태는 `returned` 를 유지한다
   - return_originated_refund_fires_the_requested_hook # 반품 발 환불신청서도 접수 훅을 쏜다 (B9)
   - return_originated_refund_is_not_buyer_editable    # 구매자 [수정]/[철회] 가 서지 않는다 (F3)

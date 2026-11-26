@@ -1,5 +1,5 @@
 /**
- * buildDropSlots — 디바이스 분기 컨테이너(`{노드}.responsive.{key}`)의 드롭 칸 (#869 λ 실측 C2)
+ * buildDropSlots — 디바이스 분기 컨테이너(`{노드}.responsive.{key}`)의 드롭 칸
  *
  * 결함: 모바일 보기에서 분기 안 자식을 끌면 같은 분기 안에 드롭 칸이 생기지 않았다. 분기 자식 path 는
  * `X.responsive.portable.children.N` 이라 부모 컨테이너가 `X.responsive.portable` 인데, 그 path 를 단 DOM 요소는

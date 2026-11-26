@@ -1,4 +1,4 @@
-# 시나리오 매니페스트 — 사용자 FileUploader 의 업로더 계약 주소 해석 (#916 ③)
+# 시나리오 매니페스트 — 사용자 FileUploader 의 업로더 계약 주소 해석
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 
 feature: user_file_uploader_endpoints

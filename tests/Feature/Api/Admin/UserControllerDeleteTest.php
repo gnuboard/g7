@@ -249,8 +249,8 @@ class UserControllerDeleteTest extends TestCase
      * 회귀 — 삭제 실패 시 응답 message 에 `:error` placeholder 가 그대로 남지 않고,
      * 동시에 예외 원문(내부 사정)이 사용자 응답에 실리지 않아야 한다.
      *
-     * 이력: #415 는 토스트에 `사용자 삭제에 실패했습니다: :error` 가 그대로 노출되던 것을
-     * 고치면서 구체 사유를 message 에 실었다. 이후 보안 정정(#577)이 그 방향을 뒤집어,
+     * 이력: 예전 수정은 토스트에 `사용자 삭제에 실패했습니다: :error` 가 그대로 노출되던 것을
+     * 고치면서 구체 사유를 message 에 실었다. 이후 보안 정정이 그 방향을 뒤집어,
      * UserService::deleteUser 는 원본 예외를 로그로만 남기고 응답에는 일반 안내만 싣는다.
      * 두 요구는 양립한다 — placeholder 가 남지 않으면서 원문도 새지 않으면 된다.
      *
@@ -283,11 +283,11 @@ class UserControllerDeleteTest extends TestCase
         $message = (string) $response->json('message');
         $body = (string) $response->getContent();
 
-        // 핵심 1: placeholder 가 그대로 노출되면 안 된다 (#415 회귀 방지)
+        // 핵심 1: placeholder 가 그대로 노출되면 안 된다 (회귀 방지)
         $this->assertStringNotContainsString(':error', $message, 'message 에 미치환 :error 가 남으면 안 된다');
         $this->assertStringNotContainsString(':error', $body, '응답 어디에도 미치환 :error 가 남으면 안 된다');
 
-        // 핵심 2: 예외 원문(내부 사정)이 응답에 실리면 안 된다 (#577 보안 정정)
+        // 핵심 2: 예외 원문(내부 사정)이 응답에 실리면 안 된다 (보안 정정)
         $this->assertStringNotContainsString(
             $reason,
             $body,

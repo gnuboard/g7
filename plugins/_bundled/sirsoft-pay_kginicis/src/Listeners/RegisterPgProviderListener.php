@@ -75,7 +75,7 @@ class RegisterPgProviderListener implements HookListenerInterface
             'supported_methods' => ['card', 'bank', 'vbank', 'phone'],
             // 코어의 provider-agnostic 결제 진입 dispatch — 주문 응답의 pg_payment_handler 로
             // 내려가 템플릿이 그대로 호출한다. 미선언 시 프론트가 응답을 변조해 결제창을
-            // 직접 띄우는 우회가 필요해진다(#475).
+            // 직접 띄우는 우회가 필요해진다.
             'payment_handler' => 'sirsoft-pay_kginicis.requestPayment',
         ];
 
@@ -111,7 +111,7 @@ class RegisterPgProviderListener implements HookListenerInterface
             // 브라우저 현재 주소가 아니라 사이트 주소로 만든 절대 URL 을 내려 준다.
             // 브라우저가 G7Core.api 로 직접 부르는 주소(signature·close_report·cbt_checkout_token·cbt_hash_data·
             // mobile_signature)는 API 라우트(src/routes/api.php)다 — 절대 URL 에는 ApiClient 가 /api 를 붙이지
-            // 않으므로 /api 를 포함해 내려 준다(#639).
+            // 않으므로 /api 를 포함해 내려 준다.
             'callback_urls' => [
                 'signature' => SiteUrl::absolute('/api/plugins/sirsoft-pay_kginicis/payment/signature'),
                 'close_report' => SiteUrl::absolute('/api/plugins/sirsoft-pay_kginicis/payment/close-report'),

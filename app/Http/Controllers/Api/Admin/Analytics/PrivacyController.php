@@ -75,7 +75,7 @@ class PrivacyController extends AdminBaseController
             // 익명 모드 안내는 이 화면이 **자기 권한 API** 에서 읽어야 한다. 조회 권한(diagnostics)에서
             // 읽으면 개인정보 권한만 가진 담당자에게 403 이 나고, 삼킨 뒤 남은 fallback 이 「full」로
             // 굳어 안내가 영영 뜨지 않는다 — 0건을 받고도 「기록 없음」인지 「IP 를 저장하지 않음」인지
-            // 구분 못 해 GDPR 요청에 잘못 답할 수 있다(#682 S3 라운드 5, 설계 결정 방식).
+            // 구분 못 해 GDPR 요청에 잘못 답할 수 있다(설계 결정 방식).
             // 형제 경로(`VisitorController::index`·`show`)가 이미 같은 키를 같은 뜻으로 싣는다.
             'mode' => $config->privacyMode->value,
             // 형제 경로(`VisitorController::show`)와 같은 뜻으로 싣는다 — 이 표도 주소를 그리므로

@@ -622,7 +622,7 @@ describe('페이지 헤더', () => {
     // @scenario section=page_header
     // @effects page_header_rendered
     it('배송정책 등록 링크가 create 페이지로 이동한다', () => {
-        // 새 탭으로도 열리도록 링크(A href)다 — 보통 클릭은 path 없는 navigate 가 href 로 이동(#757 2단계)
+        // 새 탭으로도 열리도록 링크(A href)다 — 보통 클릭은 path 없는 navigate 가 href 로 이동
         const links = allNodes.filter((n: any) => n.name === 'A');
         const createLink = links.find((a: any) => {
             const children = flattenAll(a);
@@ -800,7 +800,7 @@ describe('다국어 키 경로 무결성', () => {
 
         allKeys.forEach(key => {
             // admin / enums / editor(데이터소스 라벨) 네임스페이스 허용.
-            // 관리자 템플릿 공용 키(common.sort_order·common.per_page·common.row_cell 등 — 칸 이름 규칙 #757)도 허용
+            // 관리자 템플릿 공용 키(common.sort_order·common.per_page·common.row_cell 등 — 칸 이름 규칙)도 허용
             // 코어 공용 오류 문구(다시 받기 실패 토스트 — engine-v1.82.0 오류 처리기 문맥)도 허용
             expect(key).toMatch(/^\$t:(sirsoft-ecommerce\.(admin|enums|editor)|common|core\.errors)\./);
         });

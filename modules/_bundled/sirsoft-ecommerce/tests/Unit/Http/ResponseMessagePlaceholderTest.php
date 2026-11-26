@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Http;
 use Tests\PureTestCase;
 
 /**
- * 응답 메시지 플레이스홀더 치환 테스트 (S2-D1 회귀 · #599 통합실측 세션2)
+ * 응답 메시지 플레이스홀더 치환 테스트 (S2-D1 회귀)
  *
  * `ResponseHelper::moduleSuccess()`·`moduleError()` 는 치환값을 **마지막 인자**
  * (`$messageParams`)로 받는다. 세 번째 인자는 데이터 페이로드다. 그래서
@@ -242,7 +242,7 @@ class ResponseMessagePlaceholderTest extends PureTestCase
      * 위의 `CALL_SITES` 표는 **실측으로 찾은 11곳**이다. 표는 그때 있던 것만 잠근다 —
      * 내일 누군가 새 일괄 API 를 추가하며 `$messageParams` 를 빼면 표에 없으니
      * **조용히 통과한다.** 결함이 재발해도 초록인 가드는 가드가 아니다
-     * (#599 세션2 계획서준수검증 결함3).
+     * (세션2 계획서준수검증 결함3).
      *
      * 그래서 이 테스트는 표를 읽지 않는다. `modules/_bundled/sirsoft-ecommerce/src/lang/ko/messages.php` 를 훑어 `:이름` 을 가진
      * 키를 전부 모으고, `src/Http/Controllers/` 전체에서 그 키의 호출을 찾아 같은 규칙으로

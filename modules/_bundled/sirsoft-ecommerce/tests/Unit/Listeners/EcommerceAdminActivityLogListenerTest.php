@@ -61,7 +61,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     // ═══════════════════════════════════════════
 
     /**
-     * 구독 훅이 회원 데이터 일괄 삭제 훅 4개(#524)를 포함해 모두 45개이고, 도메인별 after_* 훅은 구독하되 before_* 훅은 구독하지 않는지 확인한다.
+     * 구독 훅이 회원 데이터 일괄 삭제 훅 4개를 포함해 모두 45개이고, 도메인별 after_* 훅은 구독하되 before_* 훅은 구독하지 않는지 확인한다.
      *
      * @scenario domain=subscription
      *
@@ -75,7 +75,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
 
         // Brand(4) + UserPreference(2) + Label(4) + CommonInfo(3) + NoticeTemplate(5) + ExtraFee(7)
         // + ShippingPolicy(2) + Carrier(4) + Image(3) + Option(3) + Review(3) + Settings(1)
-        // + 회원 데이터 일괄 삭제(4: 찜·장바구니·배송지·상품 문의, #524)
+        // + 회원 데이터 일괄 삭제(4: 찜·장바구니·배송지·상품 문의)
         // + 클레임 사유(4: 생성·수정·삭제·사용 여부 전환) = 49
         $this->assertCount(49, $hooks);
         foreach (['wishlist', 'cart', 'user_address', 'product_inquiry'] as $domain) {

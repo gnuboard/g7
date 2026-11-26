@@ -9,7 +9,7 @@ use Tests\Concerns\BuildsZipFixtures;
 use Tests\TestCase;
 
 /**
- * 풀지 않고 zip 을 이름으로 읽는 공용 색인(`ZipEntryIndex`) 단위 테스트 (#971).
+ * 풀지 않고 zip 을 이름으로 읽는 공용 색인(`ZipEntryIndex`) 단위 테스트.
  *
  * 코어의 「풀지 않고 읽기」 네 곳(번들 인벤토리·PHP 확장 사전 점검·개발자 예약 자리 사전 점검·예약 자리 판정)이
  * 같은 규칙을 따로 갖던 것을 모았다 — 역슬래시 이름 정규화, 원본 인덱스로 읽기, `__MACOSX/` 제외, 감싼 폴더 판정.

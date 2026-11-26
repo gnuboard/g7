@@ -11,7 +11,7 @@ description: |
     허용목록이 코드 상수이면, 새 확장이 저장 키를 도입할 때마다 GDPR 플러그인도 함께 고쳐야
     한다. 제3자 확장 개발자에게는 그 방법이 없고, 운영자는 자기 사이트에서 무엇이 필수로
     분류되어 있는지 보지도 바꾸지도 못한다. 누락은 예외도 로그도 남기지 않고 "설정이 저장되지
-    않는다" 는 증상만 남긴다 (dev-g7#640 에서 15건 / 6계열이 그 상태였다).
+    않는다" 는 증상만 남긴다 (15건 / 6계열이 그 상태였다).
 
   구조:
     [출하 기본 카탈로그] plugin.php 상수
@@ -144,7 +144,7 @@ effects:
   - layout_provided_chips_read_response_not_form_state
   - layout_card_not_gated_behind_banner_toggle
   - layout_i18n_keys_exist_in_ko_and_en
-  # 2026-11-09 #869 κ2: 일괄 표식을 시험별로 가르며 드러난, 카드 시험이 실제로 재는 명제
+  # 2026-11-09: 일괄 표식을 시험별로 가르며 드러난, 카드 시험이 실제로 재는 명제
   - layout_necessary_storage_card_with_guidance_box   # 필수 저장 항목 카드와 그 안내 박스가 있다
   - layout_taginput_reads_scope_value_and_catalog_suggestions   # 스코프 카드의 TagInput 이 그 스코프 폼 값과 출하 카탈로그 추천 목록을 읽는다
 

@@ -76,7 +76,7 @@ interface MileageBalanceRepositoryInterface
     public function deleteForUser(int $userId): int;
 
     /**
-     * 사용 가능 잔액 조건에 맞는 회원 ID 서브쿼리를 만듭니다 (회원 목록 확장 필터용, #705).
+     * 사용 가능 잔액 조건에 맞는 회원 ID 서브쿼리를 만듭니다 (회원 목록 확장 필터용).
      *
      * 캐시 행이 있는 회원만 대상이다 — 행이 없는 회원은 잔액 0 으로 보므로, 호출자가
      * 하한(>0)에는 `whereIn`, 상한 초과 배제에는 `whereNotIn` 으로 이 서브쿼리를 쓴다.

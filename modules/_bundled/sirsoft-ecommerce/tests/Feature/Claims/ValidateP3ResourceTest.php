@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 응답 리소스·공용 산식 결함 수정 검증 (#599 validate P3 — 06 #8·minor)
+ * 응답 리소스·공용 산식 결함 수정 검증 (06 #8·minor)
  *
  * 검증 축:
  * - 옵션 리소스의 클레임 점유 수량을 부모가 한 번에 구해 주입한다(옵션당 3쿼리 → 0).

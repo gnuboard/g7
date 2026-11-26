@@ -10,7 +10,7 @@ use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 
 /**
- * 마이페이지 쿠폰함 발급 건 리소스 (#952)
+ * 마이페이지 쿠폰함 발급 건 리소스
  *
  * 관리자 발급 내역 리소스에 회원 화면 카드가 그리는 쿠폰 정보(`coupon` 블록)와 남은 일수를 더한다. 쿠폰이 삭제됐으면
  * `coupon` 은 null 이다. 적용 대상 상품·분류 이름은 3개까지만 싣고 나머지는 개수로 낸다(「외 N」).

@@ -1,7 +1,7 @@
 feature: upgrade_720_remove_maintenance_mode_setting
 
 description: |
-  읽히지 않던 일반 설정 `general.maintenance_mode` 를 없앤다(#888). 점검 모드는 `php artisan down` / `php artisan up` 이 맡는다.
+  읽히지 않던 일반 설정 `general.maintenance_mode` 를 없앤다. 점검 모드는 `php artisan down` / `php artisan up` 이 맡는다.
   기본값(`config/settings/defaults.json`)·저장 검증(`SaveSettingsRequest`)·환경변수 대응표(`EnvPriority`)에 키가 없어야 하고,
   7.2.0 데이터 스텝 `10_RemoveMaintenanceModeSetting` 이 저장 파일(`general.json`)에 남은 키만 지운다. 다른 키는 그대로 두고,
   파일이 없거나 깨졌거나 키가 없으면 쓰지 않는다. 두 번째 실행은 아무것도 바꾸지 않는다(멱등).

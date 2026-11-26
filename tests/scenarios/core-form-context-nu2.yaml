@@ -3,7 +3,7 @@ feature: 폼 컨텍스트(FormContext) 유틸리티 단위 검사
 description: |
   FormContext 유틸리티는 폼 자동 바인딩의 dataKey 를 전역(_global), 격리(_isolated), 지역(_local, 접두 없음)
   스코프로 나누고, 중첩 경로 값을 읽고 쓰며, 스코프에 맞는 상태 갱신 경로로 보낸다. 이 매니페스트는 그 단위
-  시험 파일을 영역별로 소유한다(#869 표식 소급).
+  시험 파일을 영역별로 소유한다(표식 소급).
 
 axes:
   area: [parse_data_key, nested_value, update_scope, read_scope, auto_binding]

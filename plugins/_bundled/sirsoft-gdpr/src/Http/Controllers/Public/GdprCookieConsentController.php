@@ -47,7 +47,7 @@ class GdprCookieConsentController extends PublicBaseController
     {
         $consents = (array) $request->validated('consents');
         $source = (string) $request->validated('source');
-        // 명시적 거부 신호 (이슈 #430) — 'reject' 이면 선택형 미동의 항목을 is_rejected=true 로 저장.
+        // 명시적 거부 신호 — 'reject' 이면 선택형 미동의 항목을 is_rejected=true 로 저장.
         $isRejection = $request->validated('intent') === 'reject';
 
         $userId = $request->user()?->id;
@@ -63,7 +63,7 @@ class GdprCookieConsentController extends PublicBaseController
 
         $this->consentService->updateConsents($userId, $sessionId, $consents, $source, $isRejection);
 
-        // 거부(intent=reject)와 일반 동의 저장의 응답 메시지를 구분 (이슈 #430) —
+        // 거부(intent=reject)와 일반 동의 저장의 응답 메시지를 구분 —
         // 거부인데 "동의가 저장되었습니다" 로 응답하던 오표기 정정. 프론트 토스트도 동일 키 사용.
         $messageKey = $isRejection
             ? 'sirsoft-gdpr::messages.consent.rejected_saved'

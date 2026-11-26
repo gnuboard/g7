@@ -13,7 +13,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * 확장 재활성화는 붙을 자리가 있는 활성 템플릿의 행만 되살린다 (#725 W7 · 결정 D4).
+ * 확장 재활성화는 붙을 자리가 있는 활성 템플릿의 행만 되살린다.
  *
  * 종전 복원(`restoreBySource`)은 출처의 soft delete 행을 템플릿을 가리지 않고 전부 되살렸다. 그래서 대상 부재로
  * 일부러 숨겨 둔 오등록 행(관리자 조각 ↔ 사용자 템플릿)이 재활성화마다 되살았다가 뒤따르는 등록에 다시 숨겨졌고

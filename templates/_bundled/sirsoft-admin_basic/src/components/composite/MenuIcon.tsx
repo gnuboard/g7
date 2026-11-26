@@ -101,7 +101,7 @@ function renderClassIcon(value: string, className: string, id?: string, editorAt
 }
 
 /**
- * 관리자 메뉴 아이콘 렌더러 — FA 클래스 · 이미지 · 인라인 SVG (#381).
+ * 관리자 메뉴 아이콘 렌더러 — FA 클래스 · 이미지 · 인라인 SVG.
  *
  * 사이드바·메뉴 관리 목록·상세·편집 미리보기가 같은 규칙으로 그린다. 이미지는 `<img>`(깨지면 fallback),
  * SVG 는 화이트리스트 정제 후 인라인으로 그려 글자색(currentColor)을 따른다.

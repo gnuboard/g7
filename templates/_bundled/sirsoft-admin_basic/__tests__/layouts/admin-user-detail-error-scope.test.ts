@@ -1,6 +1,6 @@
 /**
  * @file admin-user-detail-error-scope.test.ts
- * @description 회원 상세 — 403·404 화면 전환을 회원 조회에만 묶는다 (#736 S2 결정)
+ * @description 회원 상세 — 403·404 화면 전환을 회원 조회에만 묶는다
  *
  * 레이아웃 단위 `errorHandling` 은 상속한 화면 틀(`_admin_base`)의 데이터 소스(알림·메뉴 등)에도 걸린다. 회원 읽기
  * 권한만 있는 관리자는 알림(`core.notifications.read`)·메뉴(`core.menus.read`) 조회가 403 이라, 볼 수 있는 회원 상세가

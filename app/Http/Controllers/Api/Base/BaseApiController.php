@@ -137,7 +137,7 @@ abstract class BaseApiController extends Controller
             return $response;
         }
 
-        // 객체(stdClass)로 풀어 고친다 — 연관 배열로 풀면 빈 객체 `{}` 가 다시 쓸 때 `[]` 로 바뀐다(#758 같은 결함군, #822)
+        // 객체(stdClass)로 풀어 고친다 — 연관 배열로 풀면 빈 객체 `{}` 가 다시 쓸 때 `[]` 로 바뀐다(같은 결함군)
         $payload = $response->getData();
         if (! is_object($payload)) {
             return $response;

@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-password-expiry.test.tsx
- * @description 환경설정 > 보안 「비밀번호 정책」·「비밀번호 만료」 카드와 직권 실행 창 구조 회귀 테스트 (#736)
+ * @description 환경설정 > 보안 「비밀번호 정책」·「비밀번호 만료」 카드와 직권 실행 창 구조 회귀 테스트
  *
  * - 조건부 칸은 토글이 켜졌을 때만 보이고, 저장값이 boolean 이 아닐 수 있어 느슨하게 참 판정한다.
  * - 대상 행은 만료가 꺼져 있어도 보이고, 「대상 보기」는 명단 권한(`can_view_targets`)만 보고 그린다(0명이어도).
@@ -23,7 +23,7 @@ function flatten(node: any): Node[] {
   if (!node || typeof node !== 'object') return [];
   if (Array.isArray(node)) return node.flatMap(flatten);
   const children = Array.isArray(node.children) ? node.children.flatMap(flatten) : [];
-  // Modal 고정 하단(props.footer)의 단추도 걷는다(#869 P1 — 바닥 단추를 footer 로 옮김)
+  // Modal 고정 하단(props.footer)의 단추도 걷는다(바닥 단추를 footer 로 옮김)
   const footer = Array.isArray(node.props?.footer) ? node.props.footer.flatMap(flatten) : [];
   return [node, ...children, ...footer];
 }

@@ -1,6 +1,6 @@
 /**
  * @file mypageTotpCard.test.ts
- * @description 마이페이지 내 정보 보안 카드에 끼우는 2단계 인증 칸 (1.1.1, #952)
+ * @description 마이페이지 내 정보 보안 카드에 끼우는 2단계 인증 칸 (1.1.1)
  *
  * - 기본 템플릿 보안 카드(`profile_security_card`) 끝에 끼운다 — 템플릿을 고치지 않는다
  * - 내 등록 상태를 받고, 실패해도 미등록으로 그린다
@@ -35,7 +35,7 @@ function evaluate(expression: string, scope: Record<string, any>): any {
   return new Function(...names, `return (${body});`)(...names.map((n) => scope[n]));
 }
 
-describe('마이페이지 2단계 인증 칸 (#952)', () => {
+describe('마이페이지 2단계 인증 칸', () => {
   // @scenario case=mypage_totp_card_injection
   // @effects totp_card_injected_into_security_card
   it('내 정보 화면의 보안 카드 끝에 끼우고, 내 등록 상태를 받는다(실패하면 미등록)', () => {

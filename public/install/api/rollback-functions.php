@@ -422,7 +422,7 @@ function installerSeedRollbackTargetTables(array $existingTables, string $prefix
  */
 function executeSeedTruncate(array $config, bool $force = false, ?string $logPrefix = null, bool $seedCompleted = false): array
 {
-    // state.config 에는 DB 비밀번호가 기록되지 않으므로(이슈 #465) runtime.php 에서 복원한다.
+    // state.config 에는 DB 비밀번호가 기록되지 않으므로 runtime.php 에서 복원한다.
     // 호출자(rollbackDbSeed / forceRollbackDbSeed) 가 state['config'] 를 그대로 넘기므로
     // 각 호출자 대신 함수 진입부 1곳에서 처리한다. 롤백은 env_update 이후에만 발생하여
     // runtime.php 가 항상 존재하며, 부재 시 헬퍼가 원본 config 를 그대로 반환한다.

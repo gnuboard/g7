@@ -18,7 +18,7 @@
         </select>
       </div>
     </div>
-    <!-- 현금영수증 설정 (W-5 / #454). 발급 프로바이더는 결제 PG 와 독립 선택한다(KG 로 결제하면서 영수증만 토스로 발급하는 구성 허용 — D5). 배송비 과세 방식은 3택(D3). 신설 블록이므로 responsive.portable 로 작성한다(§6-0). -->
+    <!-- 현금영수증 설정 (W-5). 발급 프로바이더는 결제 PG 와 독립 선택한다(KG 로 결제하면서 영수증만 토스로 발급하는 구성 허용 — D5). 배송비 과세 방식은 3택(D3). 신설 블록이므로 responsive.portable 로 작성한다(§6-0). -->
     <div data-ref="cash_receipt_card" class="ecommerce-admin-card">
       <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.title</h3>
       <div class="ecommerce-card-description">$t:sirsoft-ecommerce.admin.settings.order_settings.cash_receipt.description</div>
@@ -209,7 +209,7 @@
       </div>
       <span data-if="{{_local.errors?.['order_settings.stock_restore_on_cancel']}}" class="ecommerce-form-error-xs ecommerce:mt-1">{{_local.errors?.['order_settings.stock_restore_on_cancel']?.[0] ?? ''}}</span>
     </div>
-    <!-- 주문서 항목(#490) — 이 구획만 즉시 저장이다(스위치를 누르면 바로 나간다). 위 카드들과 달리 하단 [저장]을 따르지 않는다. -->
+    <!-- 주문서 항목 — 이 구획만 즉시 저장이다(스위치를 누르면 바로 나간다). 위 카드들과 달리 하단 [저장]을 따르지 않는다. -->
     <include src="_checkout_fields_table.g7.html"/>
   </div>
 </partial>

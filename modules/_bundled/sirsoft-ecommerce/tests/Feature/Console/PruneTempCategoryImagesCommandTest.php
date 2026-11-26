@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 미연결 임시 카테고리 이미지 정리 커맨드 테스트 (#876)
+ * 미연결 임시 카테고리 이미지 정리 커맨드 테스트
  *
  * 새 카테고리 폼에서 올리고 저장하지 않고 닫은 업로드(`temp_key` 있음, `category_id` 없음)만
  * 대상이어야 합니다 — 저장된 카테고리의 이미지가 섞이면 노출 중인 카테고리 배너가 사라집니다.

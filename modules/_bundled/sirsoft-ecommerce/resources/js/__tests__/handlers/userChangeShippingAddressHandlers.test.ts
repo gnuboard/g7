@@ -222,7 +222,7 @@ describe('changeShippingAddressHandler', () => {
     });
 
     /**
-     * 회귀(#703): 저장된 배송지 탭에서 아무것도 고르지 않고 적용하면 address_id:null 이 나가 422 가 났다.
+     * 회귀: 저장된 배송지 탭에서 아무것도 고르지 않고 적용하면 address_id:null 이 나가 422 가 났다.
      *
      * @scenario change_mode=saved, selection=none
      *

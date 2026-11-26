@@ -97,20 +97,20 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         //    귀속 실측: 전부 develop 계보 커밋(`2b38e15aa`·`03b48f76a`·`6217f4d78` 등)이 도입했고
         //    5차 병합이 새로 들인 마킹 테스트는 0건이고 6차와 7차 병합도 0건, 8차 병합에서 4건이 들어왔다(아래 별도 묶음). 소유 트랙이 매니페스트를 세우면 그 즉시
         //    "여기서도 빼라" 가 red 이므로, 이 목록은 늘지 않게만 잠그는 자리다.
-        //    #745 가 게시판 매니페스트(`board-comment-on-post-state`·`board-upgrade-steps`)에 등재해
+        //    게시판 매니페스트(`board-comment-on-post-state`·`board-upgrade-steps`)에 등재해
         //    `CommentPostStateTest`·`PlaintextPostPasswordRehashTest`·`PostListViewCountIndexUpgradeTest` 3행을 해소했다.
-        //    #860 이 긴 검색어 500 수정 회귀를 게시판 매니페스트에 등재해 `PostSearchKeywordSanitizationTest` 1행을 해소했다.
+        //    긴 검색어 500 수정 회귀를 게시판 매니페스트에 등재해 `PostSearchKeywordSanitizationTest` 1행을 해소했다.
         'modules/_bundled/sirsoft-board/tests/Feature/NoticeResultCapTest.php' => '게시판 트랙 소유 (공지 조회의 결과 상한 준수).',
         'modules/_bundled/sirsoft-board/tests/Feature/PostNumberBoundedTotalRegressionTest.php' => '게시판 트랙 소유 (총 건수 절사 시 글번호 표기).',
         // ── develop 8차 병합 유입분(7.0.10 · KVE-2026 보안 6묶음). 같은 형태 — develop 라인이 마킹은 달고
-        //    매니페스트는 두지 않았다. 귀속 실측: 커밋 `07fd45e6b`(#645) 도입, 이 트랙 변경 0.
-        //    #789 가 게시판 매니페스트(`board-secret-thread-visibility`·`board-secret-content-bypass-paths`)에 등재해
+        //    매니페스트는 두지 않았다. 귀속 실측: 커밋 `07fd45e6b` 도입, 이 트랙 변경 0.
+        //    게시판 매니페스트(`board-secret-thread-visibility`·`board-secret-content-bypass-paths`)에 등재해
         //    `SecretPostChildWriteGateTest`·`PostSecretVerifyPasswordTest` 2행을 해소했다.
         //    issue609 가 PG 매니페스트(nhnkcp·nicepayments 의 `security-callback-defense`)와 코어 `installer-security-hardening`
         //    에 등재해(develop-7.2.0 병합 2026-10-31 합류) `PreventsReplayCallbackTest` 2행·`CliInjectionDefenseTest`·
         //    `AuthTokenDedupeKeyTest`·`InstallerStep3EnvValueGuardTest` 5행을 해소했다.
-        //    #862 가 코어 매니페스트(`has-row-number-bounded-total`)에 등재해 `HasRowNumberBoundedTotalTest` 1행을 해소했다.
-        //    #857 이 KG이니시스 매니페스트(`security-callback-defense`)에 등재해 `VbankNotifyReplayTest` 1행을 해소했다.
+        //    코어 매니페스트(`has-row-number-bounded-total`)에 등재해 `HasRowNumberBoundedTotalTest` 1행을 해소했다.
+        //    KG이니시스 매니페스트(`security-callback-defense`)에 등재해 `VbankNotifyReplayTest` 1행을 해소했다.
         'modules/_bundled/sirsoft-board/tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
         'modules/_bundled/sirsoft-board/tests/Unit/Repositories/UserCommentedActivityDeferredJoinTest.php' => '목록 지연 조인 트랙 소유 (그룹 쿼리 총 건수·컬럼 프루닝).',
         'modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductListPayloadSizeBenchmarkTest.php' => '목록 응답 축소 트랙 소유 (페이로드 바이트·쿼리 수).',
@@ -121,7 +121,7 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-page/tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
         'plugins/_bundled/sirsoft-gdpr/tests/Feature/GdprConsentAtomicityTest.php' => 'GDPR 트랙 소유 (동의 철회·삭제의 원자성).',
         'plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Support/BackendMessageKeyResolutionTest.php' => 'PG 트랙 소유 (백엔드 메시지 키의 로케일 해석).',
-        //    #888 이 본인인증 두 플러그인 매니페스트(`record-cleanup`)에 등재해 `CleanInicisRecordAtomicityTest`·
+        //    본인인증 두 플러그인 매니페스트(`record-cleanup`)에 등재해 `CleanInicisRecordAtomicityTest`·
         //    `CleanKcpRecordAtomicityTest` 2행을 해소했다(develop-7.2.0 리베이스 2026-11-17 에서 반영).
         'plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/PluginCacheContextualBindingTest.php' => '확장 캐시 바인딩 트랙 소유 (플러그인 컨텍스추얼 바인딩).',
         'tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',

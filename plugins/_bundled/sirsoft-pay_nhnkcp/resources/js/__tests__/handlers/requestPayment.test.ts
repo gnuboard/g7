@@ -1,4 +1,4 @@
-// e2e:allow #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
+// e2e:allow 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
 /**
  * requestPayment 핸들러 테스트
  *
@@ -266,7 +266,7 @@ describe('requestPaymentHandler', () => {
 
     /**
      * 구버전 이커머스는 면세 합계만 싣고 과세 합계·부가세를 싣지 않았다 — 그때 부가세가 0 으로 가
-     * 과세분 전액이 공급가액으로 등록됐다(#820). 과세 합계를 받지 못하면 기본 세율(10%)로 나눈다.
+     * 과세분 전액이 공급가액으로 등록됐다. 과세 합계를 받지 못하면 기본 세율(10%)로 나눈다.
      */
     // @scenario area=tax_split
     // @effects tax_split_falls_back_to_default_vat_rate
@@ -429,7 +429,7 @@ describe('클레임 추가결제', () => {
     // @scenario area=claim_window
     // @effects claim_payment_skips_order_retry_prep
     it('클레임 결제는 주문 전용 재시도 준비(/payment/retry)를 부르지 않는다', async () => {
-        // 결제창 단계에서 끊긴 실패는 클레임 결제라 신청서 핸들러가 받도록 던진다(#855) — 여기서는 재시도 준비 여부만 본다.
+        // 결제창 단계에서 끊긴 실패는 클레임 결제라 신청서 핸들러가 받도록 던진다 — 여기서는 재시도 준비 여부만 본다.
         await expect(requestPaymentHandler({ params: { pgPaymentData: CLAIM_PAYMENT } })).rejects.toThrow();
 
         const urls = apiPost.mock.calls.map((c) => String(c[0]));

@@ -1,4 +1,4 @@
-# 시나리오 매니페스트 — 패키지 무결성(서명 검증·신뢰 키·릴리스 전용 다운로드) (#916 ④, 공개 #83 후속)
+# 시나리오 매니페스트 — 패키지 무결성(서명 검증·신뢰 키·릴리스 전용 다운로드)
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 
 feature: package_integrity
@@ -25,7 +25,7 @@ description: |
   `extension-update-concurrency.yaml` 이 소유한다.
 
 axes:
-  case: [core_cli_signed_builtin, core_cli_unsigned, core_web_fetch_verified, core_web_start_unsigned, install_zip_signed_verified, install_zip_unsigned_confirm, install_zip_block_switch, install_zip_invalid_untrusted, install_github_signature, keygen_sign_roundtrip, trust_key_command_add_list_remove, trust_key_command_rejects, update_github_signed_asset, update_github_unsigned, update_github_missing_or_mismatch, update_zip_signature, update_command_unsigned_noninteractive, language_pack_upload_signature, language_pack_vendor_scope, language_pack_url_signature, language_pack_github_signature, verifier_vendor_key_verified, verifier_tamper_and_mismatch, verifier_trust_scope, verifier_builtin_key_status, verifier_sodium_missing, unsigned_policy, cross_language_vector, trust_key_api_crud, trust_key_api_validation, trust_key_api_passwordless_admin, trust_key_api_forbidden, block_unsigned_setting_saved, github_release_only, github_release_assets, github_private_asset_download, builtin_key_diagnostics, builtin_key_shape_guard, install_legacy_screen_compat, integrity_attribute_labels]
+  case: [core_cli_signed_builtin, core_cli_unsigned, core_web_fetch_verified, core_web_start_unsigned, install_zip_signed_verified, install_zip_unsigned_confirm, install_zip_block_switch, install_zip_invalid_untrusted, install_github_signature, keygen_sign_roundtrip, trust_key_command_add_list_remove, trust_key_command_rejects, update_github_signed_asset, update_github_unsigned, update_github_missing_or_mismatch, update_zip_signature, update_command_unsigned_noninteractive, language_pack_upload_signature, language_pack_vendor_scope, language_pack_url_signature, language_pack_github_signature, verifier_vendor_key_verified, verifier_tamper_and_mismatch, verifier_trust_scope, verifier_builtin_key_status, verifier_sodium_missing, unsigned_policy, cross_language_vector, trust_key_api_crud, trust_key_api_validation, trust_key_api_passwordless_admin, trust_key_api_forbidden, block_unsigned_setting_saved, github_release_only, github_release_assets, github_private_asset_download, github_signed_asset_new_name, builtin_key_diagnostics, builtin_key_shape_guard, install_legacy_screen_compat, integrity_attribute_labels]
 
 effects:
   # 코어 업데이트
@@ -45,7 +45,7 @@ effects:
   - github_update_missing_release_or_version_mismatch_rejected         # 태그 릴리스가 없거나 버전이 다르면 거부한다
   - zip_update_auto_detects_sidecar_signature                          # ZIP 업데이트는 옆 .sig.json 을 자동 인식하고 --signature 옵션을 받는다
   - noninteractive_unsigned_update_exits_1_and_force_does_not_bypass   # 비대화형 미서명 업데이트는 exit 1, --force 는 승인을 대신하지 않는다
-  - yes_option_does_not_answer_unsigned_confirmation                   # --yes(-y) 는 진행 확인에만 답한다 — 비대화형 미서명은 exit 1, 대화형은 -y 가 있어도 묻는다 (#918)
+  - yes_option_does_not_answer_unsigned_confirmation                   # --yes(-y) 는 진행 확인에만 답한다 — 비대화형 미서명은 exit 1, 대화형은 -y 가 있어도 묻는다
   - console_unsigned_refusal_has_no_screen_wording                     # 명령줄 미서명 거절 문장에 화면 단추 안내(「미서명으로 계속」을 눌러)가 섞이지 않는다
   # 외부 언어팩
   - language_pack_upload_signature_verified_or_confirmed               # 업로드는 signature 파일이 있으면 검증, 없으면 확인을 묻는다
@@ -73,6 +73,7 @@ effects:
   - language_pack_github_release_not_found_is_422                       # 언어팩 GitHub 설치도 릴리스가 없으면 500 이 아니라 422 와 사유로 답한다
   - release_assets_listed_and_signed_pair_found                        # 릴리스 응답에 assets 가 실리고 ZIP·서명 짝을 찾는다
   - private_release_asset_downloaded_with_octet_stream_and_token       # 비공개 저장소 자산은 octet-stream 과 토큰으로 받는다
+  - release_signature_new_name_preferred_and_legacy_name_still_read  # 릴리스 서명 파일은 {base}.sig.json 우선, 옛 {base}.zip.sig.json 도 읽는다(7.2.0 호환)
   # 내장 신뢰 키 진단 (계획서 §8)
   - about_shows_package_integrity_section_with_empty_builtin_warning   # about 에 패키지 무결성 구획이 나오고 내장 키가 비면 경고한다
   - core_check_updates_warns_when_no_usable_builtin_key                # 코어 업데이트 확인은 쓸 수 있는 내장 키가 없을 때만 경고한다

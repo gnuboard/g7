@@ -1,12 +1,12 @@
-# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험 주석(@scenario)에서 모은 입력 변종이고, 회귀 가드는 effects 다 — 모든 effect 가 test_files 의 @effects 로 귀속된다(#798 A1).
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험 주석(@scenario)에서 모은 입력 변종이고, 회귀 가드는 effects 다 — 모든 effect 가 test_files 의 @effects 로 귀속된다.
 
-feature: "로그인 인계 코드의 브라우저 묶기 (#798 K2 · P5)"
+feature: "로그인 인계 코드의 브라우저 묶기"
 
 description: |
-  로그인 인계 코드의 브라우저 묶기 (#798 K2 · P5)
+  로그인 인계 코드의 브라우저 묶기
   인계 코드는 발급한 브라우저의 묶음 쿠키(`g7_login_bind`)가 있어야만 교환된다 — 공격자가 자기 신원으로 받은 코드를 피해자
   브라우저에 넣어 로그인시키는 로그인 CSRF 를 막는다. 쿠키가 다르거나 없으면 코드를 소비하고 같은 422 로 답한다.
-  무묶음 로그인 인계 발급 명령 `auth:handoff-issue` (#798 K2)
+  무묶음 로그인 인계 발급 명령 `auth:handoff-issue`
   실측·시험용으로 브라우저에 묶지 않은 코드를 만든다 — 묶음 쿠키 없이 교환되고, 운영 환경에서는 거절한다.
 
 axes:

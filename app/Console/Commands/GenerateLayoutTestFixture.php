@@ -95,7 +95,7 @@ class GenerateLayoutTestFixture extends Command
         $basePath = dirname($source['path']);
         $dataSources = $layoutData['data_sources'] ?? [];
 
-        // `.json` 문서의 깨진 조각 참조는 설치와 같이 빈 자리로 관용한다(#712) — 종전에는 이 명령만 관용 플래그를
+        // `.json` 문서의 깨진 조각 참조는 설치와 같이 빈 자리로 관용한다 — 종전에는 이 명령만 관용 플래그를
         // 넘기지 않아, 설치는 통과하는 JSON 레이아웃의 fixture 를 만들 수 없었다.
         // 관용 경고가 어느 레이아웃의 참조인지 말하도록 검증 중 레이아웃 파일을 알린다 — 설치 검증은 넘기는데
         // 이 명령만 넘기지 않아 경고가 「JSON 레이아웃  에서 조각 …」(이름 빈칸)으로 찍혔다(7.1.1 출시 전).

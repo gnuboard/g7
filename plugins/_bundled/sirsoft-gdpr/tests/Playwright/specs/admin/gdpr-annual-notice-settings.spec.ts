@@ -162,7 +162,7 @@ test('이번 주기 대상 회원 수가 보이고 「대상 보기」 창이 �
     await expect(rows.first()).toBeVisible({ timeout: 20_000 });
     await expect(rows.first().locator('a').first()).toHaveAttribute('href', /^\/admin\/users\//);
 
-    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다(#869 P1)
+    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다
     await page.getByRole('dialog').locator('.modal-footer-bar button').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   } finally {

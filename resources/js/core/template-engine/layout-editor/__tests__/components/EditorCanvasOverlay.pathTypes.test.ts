@@ -1,5 +1,5 @@
 /**
- * 편집기 path 타입 정합 — 타입 오류(tsc)로 드러난 실제 값 모양 차이 잠금 (#869 이월 0)
+ * 편집기 path 타입 정합 — 타입 오류(tsc)로 드러난 실제 값 모양 차이 잠금 (이월 0)
  *
  * - `adaptInsertChild`: 인플레이스 오버레이 계약 `onInsertChild(node, parentPath: string, index)` 의 문자열 path 를
  *   코어 삽입(ComponentPath)으로 바꾼다. 종전에는 문자열을 그대로 넘겨 배열로 다뤘다(TS2769).

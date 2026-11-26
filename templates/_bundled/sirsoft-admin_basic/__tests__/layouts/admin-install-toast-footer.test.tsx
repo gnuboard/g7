@@ -1,6 +1,6 @@
 /**
  * @file admin-install-toast-footer.test.tsx
- * @description 설치·업데이트 창 고정 하단(props.footer) 단추의 성공 토스트가 응답 값을 번역 인자로 채운다 (#916)
+ * @description 설치·업데이트 창 고정 하단(props.footer) 단추의 성공 토스트가 응답 값을 번역 인자로 채운다 
  *
  * 브라우저 실측에서 서명 ZIP 설치 성공 토스트가 「패키지 서명을 확인했습니다 (서명자: ).」로 서명자 자리가 비었다.
  * 응답에는 `data.integrity_key_id` 가 있었고, 토스트 핸들러가 받은 문구는 이미 번역된 글자였다. 설치 단추는 Modal 의
@@ -99,7 +99,7 @@ const CASES = [
   { name: '언어팩 설치', file: 'partials/admin_language_pack_list/_modal_install.json', modalId: 'language_pack_install_modal', globals: { languagePackInstallTab: 'file_upload', languagePackUploadFile: new File(['zip'], 'ja.zip') }, install: adminKo.language_packs.actions.install },
 ] as const;
 
-describe('설치 창 고정 하단 단추의 성공 토스트 — 응답 값 번역 인자 (#916)', () => {
+describe('설치 창 고정 하단 단추의 성공 토스트 — 응답 값 번역 인자 ', () => {
   let testUtils: ReturnType<typeof createLayoutTest> | null = null;
 
   afterEach(() => {

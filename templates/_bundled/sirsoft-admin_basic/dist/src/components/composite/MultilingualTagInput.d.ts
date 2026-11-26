@@ -53,7 +53,7 @@ export interface MultilingualTagInputProps {
     id?: string;
     /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
     editorAttrs?: EditorAttrs;
-    /** 입력칸 접근 가능한 이름 — 없으면 곁 라벨, 그것도 없으면 placeholder(#757) */
+    /** 입력칸 접근 가능한 이름 — 없으면 곁 라벨, 그것도 없으면 placeholder */
     'aria-label'?: string;
     /** 입력칸 이름이 될 요소 id */
     'aria-labelledby'?: string;

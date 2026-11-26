@@ -1,6 +1,6 @@
 /**
  * @file admin-board-cross-navigation.test.tsx
- * @description 관리자 게시판 ↔ 유저 게시판 상호 이동 크로스링크 검증 (이슈 #450)
+ * @description 관리자 게시판 ↔ 유저 게시판 상호 이동 크로스링크 검증
  *
  * 검증 방식: 레이아웃 JSON 트리 직접 분석 (DOM 비의존).
  * 검증 목적:
@@ -40,7 +40,7 @@ function findById(node: LayoutNode | LayoutNode[] | undefined, id: string): Layo
     return null;
 }
 
-describe('이슈 #450 — 관리자 게시판 → 유저 게시판 크로스링크', () => {
+describe('관리자 게시판 → 유저 게시판 크로스링크', () => {
     describe('admin_board_posts_index.json (게시물 리스트)', () => {
         const link = findById(postsIndex as LayoutNode, 'view_user_page_link');
 

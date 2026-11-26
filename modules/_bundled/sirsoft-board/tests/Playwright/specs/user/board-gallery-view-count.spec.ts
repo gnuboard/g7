@@ -1,5 +1,5 @@
 /**
- * 갤러리형 목록 — "조회수 표시" 토글(show_view_count) 사용자 페이지 반영 (이슈 #413 item 19-4b).
+ * 갤러리형 목록 — "조회수 표시" 토글(show_view_count) 사용자 페이지 반영 (item 19-4b).
  *
  * 관리자가 게시판 기본 탭에서 "조회수 표시"를 OFF 로 저장하면 사용자 갤러리형 목록의
  * 조회수(눈 아이콘 + 숫자)가 사라지고, ON(또는 미설정)이면 표시된다. basic/card 형은
@@ -25,7 +25,7 @@ import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 const GALLERY_SLUG = 'gallery';
 const GALLERY_URL = `/board/${GALLERY_SLUG}`;
 
-test.describe.skip('갤러리형 목록 — 조회수 표시 토글 (#413)', () => {
+test.describe.skip('갤러리형 목록 — 조회수 표시 토글', () => {
   // @scenario show_view_count=true, board_type=gallery
   // @effects gallery_shows_view_count_when_true
   test('조회수 표시 ON 이면 갤러리 목록에 조회수가 노출된다', async ({ page }) => {

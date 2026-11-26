@@ -12,7 +12,7 @@
  * - 삭제 버튼 스피너/disabled 상태 (규정: modal-usage.md 위험 작업 버튼 로딩 상태)
  * - 취소 버튼도 삭제 중 비활성화
  * - onError 시 isDeleting 복원
- * - 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+ * - 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다
  */
 
 import { describe, it, expect } from 'vitest';
@@ -91,7 +91,7 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
       expect(deleteModal).toBeDefined();
 
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다
       const footerDiv = { children: deleteModal.props.footer };
       const buttons = footerDiv.children;
 
@@ -109,7 +109,7 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다
       const footerDiv = { children: deleteModal.props.footer };
       const deleteButton = footerDiv.children[1]; // 삭제 버튼
 
@@ -119,7 +119,7 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       );
       expect(spinnerIcon).toBeDefined();
       expect(spinnerIcon.if).toBe('{{_global.isDeleting}}');
-      // .spinner-sm 시맨틱 자산이 w-4 h-4 + animate-spin 흡수 (#408)
+      // .spinner-sm 시맨틱 자산이 w-4 h-4 + animate-spin 흡수
       expect(spinnerIcon.props.className).toContain('spinner-sm');
 
       // 텍스트 삼항 연산자
@@ -138,7 +138,7 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다
       const footerDiv = { children: deleteModal.props.footer };
       const deleteButton = footerDiv.children[1];
 
@@ -157,7 +157,7 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다
       const footerDiv = { children: deleteModal.props.footer };
       const deleteButton = footerDiv.children[1];
 
@@ -187,7 +187,7 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다
       const footerDiv = { children: deleteModal.props.footer };
       const deleteButton = footerDiv.children[1];
 
@@ -212,7 +212,7 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다
       const footerDiv = { children: deleteModal.props.footer };
       const deleteButton = footerDiv.children[1];
 
@@ -238,7 +238,7 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다
       const footerDiv = { children: deleteModal.props.footer };
       const cancelButton = footerDiv.children[0];
 
@@ -256,7 +256,7 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다
       const footerDiv = { children: deleteModal.props.footer };
       const deleteButton = footerDiv.children[1];
 

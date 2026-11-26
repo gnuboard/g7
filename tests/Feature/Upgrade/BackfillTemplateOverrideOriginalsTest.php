@@ -13,7 +13,7 @@ use Tests\Support\Concerns\BuildsLayoutMergeFixtures;
 use Tests\TestCase;
 
 /**
- * 7.1.0 데이터 마이그레이션 — 7.0.x 가 원본 없이 등록한 템플릿 오버라이드 행에 병합 기준을 채운다 (#727 C-1).
+ * 7.1.0 데이터 마이그레이션 — 7.0.x 가 원본 없이 등록한 템플릿 오버라이드 행에 병합 기준을 채운다.
  *
  * 7.0.x 의 오버라이드 등록은 `layouts/overrides/{모듈}/` 파일을 원본 해시·원본 본문 없이 저장했다. 7.1.0 은 그런 행을
  * 운영자가 편집기로 만든 화면으로 보므로, keep 갱신이 영영 `kept_name_collision` 으로 비켜 가 새 판이 들어오지 않았다.

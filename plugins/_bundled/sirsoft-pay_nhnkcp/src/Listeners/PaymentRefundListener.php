@@ -121,7 +121,7 @@ class PaymentRefundListener implements HookListenerInterface
      */
     private function buildPartialTaxFields(Order $order, int $cancelAmt): array
     {
-        // 승인 때와 같은 분류 — 면세 = 면세 + 영세, 과세 = 영세를 뺀 과세 합계(이커머스 1.3.3, #612).
+        // 승인 때와 같은 분류 — 면세 = 면세 + 영세, 과세 = 영세를 뺀 과세 합계(이커머스 1.3.3).
         // 세 값은 이커머스 계약이 훅이 넘긴 주문(그 값 그대로)으로 계산한다.
         $taxSplit = $this->payments->pgTaxSplit($order);
         $taxFree = (int) round($taxSplit->taxFree);
@@ -303,7 +303,7 @@ class PaymentRefundListener implements HookListenerInterface
                 'handled' => true,
                 'error_code' => 'PG_API_ERROR',
                 // 이 사유는 쇼핑몰이 「PG 환불 처리에 실패했습니다. (…)」 안내에 끼워 회원·비회원·관리자 응답으로 낸다 —
-                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다(#858).
+                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다.
                 'error_message' => $this->refundFailureReason($e),
                 'transaction_id' => null,
             ];

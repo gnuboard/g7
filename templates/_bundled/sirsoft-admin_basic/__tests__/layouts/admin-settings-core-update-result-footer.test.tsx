@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-core-update-result-footer.test.tsx
- * @description 코어 새 버전 확인 결과 창 — 단추가 고정 하단에 있고, 새 버전이 없으면 빈 바닥 줄이 남지 않는다 (#869 C1)
+ * @description 코어 새 버전 확인 결과 창 — 단추가 고정 하단에 있고, 새 버전이 없으면 빈 바닥 줄이 남지 않는다
  *
  * 변경 이력 보기와 업데이트 단추는 「업데이트 있음」 갈래 안 본문 줄에 있어 640px 이하에서 쌓이지 않았다. 단추를 Modal 고정
  * 하단으로 옮기고 같은 조건(`$parent._local.coreUpdateInfo.update_available`)을 단추에 달았다. 새 버전이 없으면 단추가 모두
@@ -45,7 +45,7 @@ function setupRegistry(): ComponentRegistry {
   return registry;
 }
 
-describe('코어 새 버전 확인 결과 창 — 고정 하단 (#869 C1)', () => {
+describe('코어 새 버전 확인 결과 창 — 고정 하단', () => {
   let testUtils: ReturnType<typeof createLayoutTest> | null = null;
 
   afterEach(() => {

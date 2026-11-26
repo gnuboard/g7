@@ -5,7 +5,7 @@ description: |
   window.G7Core.TemplateEngine 으로도 노출한다. 초기화 옵션 검증과 실패 시 롤백, 렌더 입력 검증과 컨텍스트 구성,
   렌더 전 업데이트 큐, startTransition 래핑, 로컬 초기값 슬롯 병합, 파괴 뒤 상태 초기화를 본다. 컴포넌트 로드는
   TemplateApp 이 routes.json 과 병렬로 하므로 엔진 초기화는 컴포넌트를 로드하지 않는다. 이 매니페스트는 그 단위
-  시험 파일을 영역별로 소유한다(#869 표식 소급, 건너뛰던 5건은 현재 계약으로 살림).
+  시험 파일을 영역별로 소유한다(표식 소급, 건너뛰던 5건은 현재 계약으로 살림).
 
 axes:
   area: [init, render, update, destroy, get_state, global_exposure, error_handling, lifecycle, local_init]

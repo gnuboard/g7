@@ -13,7 +13,7 @@ use Tests\TestCase;
  * PSR-4·진입 classmap 은 건너뛴다. 그런데 시험 안에서 `reregisterRuntimeAutoload()` 가 실제
  * `bootstrap/cache/autoload-extensions.php` 로 돌면 `src_classmap`(설치본 경로)이 주 Composer 로더의
  * classmap 에 들어가 PSR-4 보다 먼저 이기고, 설치본 `vendor/autoload.php` 의 로더들이 맨 앞에 붙는다.
- * 그 뒤 처음 로드되는 확장 클래스는 개발 사이트의 낡은 설치본에서 읽혀 거짓 결과가 난다(#798).
+ * 그 뒤 처음 로드되는 확장 클래스는 개발 사이트의 낡은 설치본에서 읽혀 거짓 결과가 난다.
  *
  * 실제 캐시 파일은 개발 환경에만 있어 없으면 건너뛴다(같은 판정을 하는 `ExtensionSourceClassmapTest` 선례).
  */

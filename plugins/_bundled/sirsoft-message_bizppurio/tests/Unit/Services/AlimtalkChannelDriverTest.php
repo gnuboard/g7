@@ -25,7 +25,7 @@ use Plugins\Sirsoft\MessageBizppurio\Services\MessagePayloadBuilder;
 use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
- * AlimtalkChannelDriver — 승인 스냅샷 게이트·변수치환·대체발송·Job 위임 검증 (#597 §3.5).
+ * AlimtalkChannelDriver — 승인 스냅샷 게이트·변수치환·대체발송·Job 위임 검증.
  *
  * 알림톡 본문·요소의 출처는 bizppurio_templates 의 approved_content(승인 스냅샷)다.
  * 게이트 = alimtalk_enabled + is_active + status=approved + approved_content 존재.
@@ -59,7 +59,7 @@ class AlimtalkChannelDriverTest extends PluginTestCase
         $row->status = $status;
         $row->approved_content = $approved ?? ['templateContent' => '#{name}님 주문이 완료되었습니다.'];
         $row->fallback_sms_enabled = $fallback;
-        // sms_body 는 로케일 맵이다(#597 §14.3). 문자열은 ko 본문으로 취급한다.
+        // sms_body 는 로케일 맵이다. 문자열은 ko 본문으로 취급한다.
         $row->sms_body = is_string($smsBody) ? ['ko' => $smsBody] : $smsBody;
         $row->is_active = $isActive;
 
@@ -557,7 +557,7 @@ class AlimtalkChannelDriverTest extends PluginTestCase
             }
         };
 
-        // 대체 SMS 본문 소스는 코어 템플릿이 아니라 행의 sms_body(#{var} 치환)다 (#597 §3.5).
+        // 대체 SMS 본문 소스는 코어 템플릿이 아니라 행의 sms_body(#{var} 치환)다.
         $this->makeDriver(
             $this->templateRow(fallback: true, smsBody: '[샵] #{name} 님 주문 완료'),
             $builder,
@@ -600,7 +600,7 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
-     * 대체 SMS 도 수신자 로케일로 렌더된다 (#597 §14.3).
+     * 대체 SMS 도 수신자 로케일로 렌더된다.
      *
      * 같은 알림의 SMS 단독 발송(SmsChannelDriver)과 대체발송이 서로 다른 언어로 나가면
      * 안 된다 — 두 경로가 같은 sms_body 맵을 같은 규칙으로 읽는지 고정한다.
@@ -634,7 +634,7 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
-     * 알림 변수가 언어별 값(`{ko: …, en: …}`)이면 승인 스냅샷 본문을 수신자 언어의 값으로 치환한다 (#798).
+     * 알림 변수가 언어별 값(`{ko: …, en: …}`)이면 승인 스냅샷 본문을 수신자 언어의 값으로 치환한다.
      *
      * getData() 를 그대로 읽으면 배열이라 치환되지 않고 `#{idp_label}` 이 본문에 남는다.
      *
@@ -660,7 +660,7 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
-     * 대체발송 SMS 본문도 언어별 변수를 수신자 언어의 값으로 치환한다 (#798).
+     * 대체발송 SMS 본문도 언어별 변수를 수신자 언어의 값으로 치환한다.
      *
      * @effects alimtalk_resolves_localized_variables_for_recipient, fallback_on_merges_resend_recontent_from_sms_body
      *

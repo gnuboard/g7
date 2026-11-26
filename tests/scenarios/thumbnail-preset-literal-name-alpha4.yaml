@@ -1,5 +1,5 @@
 # 썸네일 규격 이름 — 파이프 리터럴 낱말(true, false, null, undefined) 예약
-# #869 이월 0 회차(α4): 규격 이름이 이 네 낱말이면 레이아웃 thumb('true') 가 규격 대신 원본을 내던 문제의 회귀 시험을 소유한다.
+# 규격 이름이 이 네 낱말이면 레이아웃 thumb('true') 가 규격 대신 원본을 내던 문제의 회귀 시험을 소유한다.
 # 축 layer 는 시험이 재는 층이다(파이프 해석, 레지스트리, 저장 요청).
 feature: thumbnail_preset_literal_name_alpha4
 

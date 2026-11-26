@@ -84,7 +84,7 @@ trait FiltersFrontendSchema
 
             // fields 키가 정의되지 않았으면 카테고리 전체 포함 (하위 호환)
             if ($fields === null) {
-                // 카테고리 값은 화면이 이름표로 읽는 맵이다 — 비어 있으면 `[]` 가 아니라 `{}` 로 내보낸다 (#758)
+                // 카테고리 값은 화면이 이름표로 읽는 맵이다 — 비어 있으면 `[]` 가 아니라 `{}` 로 내보낸다
                 $filtered[$category] = $categorySettings === [] ? new \stdClass : $categorySettings;
 
                 continue;

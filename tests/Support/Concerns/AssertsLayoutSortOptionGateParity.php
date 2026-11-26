@@ -5,7 +5,7 @@ namespace Tests\Support\Concerns;
 use ReflectionClass;
 
 /**
- * 화면 정렬 옵션 ↔ 게이트 허용 집합 회귀 가드 (#492 D-19).
+ * 화면 정렬 옵션 ↔ 게이트 허용 집합 회귀 가드.
  *
  * 정렬 제한은 세 계층으로 겹쳐 있다.
  *

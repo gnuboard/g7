@@ -108,7 +108,7 @@ return [
         'password_change_postpone' => 'Password Change Postponed',
         'password_expiry_logout' => 'Signed Out on Password Expiry',
 
-        // Role change from the user create/edit form (user.roles_update, #736) — a compound distinct from bulk_roles
+        // Role change from the user create/edit form (user.roles_update) — a compound distinct from bulk_roles
         'roles_update' => 'Roles Changed',
 
         // Privacy manual run (privacy.manual_run_*) — compound words that do not collide with common segments
@@ -418,7 +418,7 @@ return [
         'archive_requested' => 'Analytics archiving run manually (:run_type)',
         'extension_purged' => 'Extension analytics data cleaned up (:identifier)',
     ],
-    // 확장 업데이트 레이아웃 병합 결과의 변경 내역 라벨 (#727)
+    // 확장 업데이트 레이아웃 병합 결과의 변경 내역 라벨
     'layout_sync' => [
         'operator_modified' => 'Operator-modified',
     ],

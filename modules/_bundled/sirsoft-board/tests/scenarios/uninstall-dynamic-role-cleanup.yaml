@@ -7,7 +7,7 @@ description: |
     - chunk_beyond_offset   — 역할이 첫 청크(1000건)를 넘어도 키셋 순회(chunkById)로 전건을 지운다.
     - pivot_detach          — OFFSET 순회가 건너뛰던 뒤쪽 역할의 권한 연결도 뗀다.
     - menu_links_without_fk — 역할의 메뉴 연결(role_menus)·메뉴 권한(menu_permissions)을 DB 외래키 연쇄 없이
-                              명시적으로 지운다(#888).
+                              명시적으로 지운다.
     - other_extension_kept  — 다른 확장이 소유한 역할은 지우지 않는다.
 
 axes:

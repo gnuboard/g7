@@ -1,5 +1,5 @@
 /**
- * 이미지 썸네일 컴포넌트 적용 (#869 3단계) — sirsoft-basic
+ * 이미지 썸네일 컴포넌트 적용 — sirsoft-basic
  *
  * 2000px 원본이 24px 아바타·64px 썸네일 칸·300px 상품 카드에 그대로 내려가던 것을 막는다. 판정은 코어
  * `G7Core.thumbnail`(같은 출처 + 등록된 서빙 경로) 한 곳이고, 이 시험은 실제 코어 구현(`@core/support/thumbnailUrl`)을

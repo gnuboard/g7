@@ -300,7 +300,7 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
     }
 
     /**
-     * 사용 가능 잔액 조건에 맞는 회원 ID 서브쿼리를 만듭니다 (회원 목록 확장 필터용, #705).
+     * 사용 가능 잔액 조건에 맞는 회원 ID 서브쿼리를 만듭니다 (회원 목록 확장 필터용).
      *
      * `(user_id, currency)` 유일 키가 있어 회원당 한 행이다 — 서브쿼리가 회원을 중복해 내지 않는다.
      *

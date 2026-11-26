@@ -109,7 +109,7 @@ export const IconButton: React.FC<IconButtonProps> = ({
     lg: 'w-6 h-6',
   };
 
-  // 변형별 스타일 — 관리자 버튼 의미 클래스와 같은 색을 쓴다(#399 F14: primary 가 파랑이라 검정 주 버튼과 어긋났다).
+  // 변형별 스타일 — 관리자 버튼 의미 클래스와 같은 색을 쓴다(primary 가 파랑이라 검정 주 버튼과 어긋났다).
   // 기본 클래스에 `border`(두께)가 있으므로 테두리가 없는 모양은 border-transparent 를 함께 준다.
   // outline 은 종전 토큰 그대로다(번들 사용 6곳이 모두 outline — 모양 변화 없음).
   const variantClasses = {

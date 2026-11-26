@@ -23,7 +23,7 @@ import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth'
 import { selectRouteTreeLayout } from '../../fixtures/route-tree';
 import { waitForEditorScrollSettled } from '../../fixtures/layout-editor';
 
-// 편집기 첫 적재(편집 대상 템플릿 자산 IIFE·CSS 로드)가 30초를 넘기는 일이 잦아(#869 λ 실측) 시험 제한을 늘린다.
+// 편집기 첫 적재(편집 대상 템플릿 자산 IIFE·CSS 로드)가 30초를 넘기는 일이 잦아 시험 제한을 늘린다.
 test.describe.configure({ timeout: 90_000 });
 
 /** 편집기 admin_user_list 진입 + 모바일 보기 전환 + 분기 핸들 렌더까지 대기. */
@@ -60,7 +60,7 @@ async function openAdminUserListMobile(page: Page): Promise<void> {
 /**
  * 핸들을 화면 가운데로 즉시 스크롤하고 그 중심 좌표를 잰다.
  *
- * 홈 레이아웃이 길어져 대상 핸들이 첫 화면 밖(아래)에 놓이는 일이 생겼고(#869 λ 실측 C1), 화면 밖 좌표의
+ * 홈 레이아웃이 길어져 대상 핸들이 첫 화면 밖(아래)에 놓이는 일이 생겼고, 화면 밖 좌표의
  * trusted mouse down 은 아무것도 누르지 않아 드래그가 시작되지 않았다. 선택 뒤 문서가 움직이는 경우도 있어
  * 드래그 직전에 다시 잰다.
  */
@@ -172,7 +172,7 @@ test.describe('@layout-editor responsive 분기 드래그/슬롯', () => {
       const branchChildren = handles.filter((p) => /\.responsive\.[^.]+\.children\.\d+$/.test(p));
       const containerOf = (p: string) => p.replace(/\.children\.\d+$/, '');
       // 화면 본문(#user_list_content) 안 분기만 고른다. 공통 레이아웃(_admin_base) 헤더 단추에도 portable 분기가
-      // 생겨 첫 묶음이 그쪽으로 잡혔는데, 공통 레이아웃 노드는 화면 편집에서 잠겨 끌어 놓을 칸이 없다(#869 λ C2).
+      // 생겨 첫 묶음이 그쪽으로 잡혔는데, 공통 레이아웃 노드는 화면 편집에서 잠겨 끌어 놓을 칸이 없다.
       const inRouteBody = (p: string): boolean => {
         const owner = document.querySelector(`[data-editor-path="${p.replace(/\.responsive\.[^.]+\.children\.\d+$/, '')}"]`);
         return !!owner?.closest('#user_list_content');

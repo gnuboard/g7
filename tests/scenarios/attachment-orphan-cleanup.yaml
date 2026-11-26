@@ -14,7 +14,7 @@ description: |
   않는다. 그래서 설정에 실린 ID 를 보호 목록으로 삼으며, 그 해석은 정리 서비스 자신이
   수행한다 — 호출자가 넘기는 값으로 두면 인자를 빠뜨린 호출 하나가 운영 중인 로고를 파기한다.
 
-  보호 목록은 설정 선언에서 파생한다(#434) — 코어 defaults.json frontend_schema 의 `transform: attachments` 키 전부
+  보호 목록은 설정 선언에서 파생한다 — 코어 defaults.json frontend_schema 의 `transform: attachments` 키 전부
   (로고·기본 공유 이미지·파비콘)와 템플릿 설정 저장 파일 전부(템플릿을 지웠어도 남은 설정 포함). 종전에는 로고 한 줄을
   손으로 적어 기본 공유 이미지가 빠졌다.
 

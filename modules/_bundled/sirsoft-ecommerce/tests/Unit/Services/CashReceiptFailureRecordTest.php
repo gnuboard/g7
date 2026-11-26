@@ -126,7 +126,7 @@ class CashReceiptFailureRecordTest extends ModuleTestCase
 
     /**
      * 프로바이더 예외 원문은 운영 모드에서 이력 사유에 남기지 않는다 — 이력 사유는 관리자 주문 상세와 구매자 응답에
-     * 그대로 보이므로 번역된 실패 문구를 남기고 원문은 서버 로그에만 둔다(#858).
+     * 그대로 보이므로 번역된 실패 문구를 남기고 원문은 서버 로그에만 둔다.
      *
      * @scenario item=b1_issue_exception
      *
@@ -151,7 +151,7 @@ class CashReceiptFailureRecordTest extends ModuleTestCase
     }
 
     /**
-     * 취소 프로바이더 예외도 운영 모드에서는 취소 실패 문구를 남긴다(#858).
+     * 취소 프로바이더 예외도 운영 모드에서는 취소 실패 문구를 남긴다.
      *
      * @scenario item=b2_cancel_exception
      *

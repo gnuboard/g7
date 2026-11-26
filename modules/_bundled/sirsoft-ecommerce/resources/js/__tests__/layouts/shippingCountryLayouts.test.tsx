@@ -335,7 +335,7 @@ describe('체크아웃 국가 Select 데이터소스 경로 회귀', () => {
 
   /**
    * 기본값은 주문서 진입 때 헤더 선호 국가(preferredShippingCountry)로 시드한 _local.checkout.country_code 를
-   * 읽는다 — 셀렉트·주소 양식·배송비 조회가 같은 값을 보게 한 #703 수정 이후의 경로.
+   * 읽는다 — 셀렉트·주소 양식·배송비 조회가 같은 값을 보게 한 수정 이후의 경로.
    *
    * @effects checkout_default_synced_with_header
    */
@@ -517,7 +517,7 @@ describe('D10 (defect #3) — 마이페이지 주소록 모달 국가 Select + �
 });
 
 /**
- * 배송국가명 다국어 표시 회귀 (#459)
+ * 배송국가명 다국어 표시 회귀
  *
  * 두 가지 회귀를 동시에 차단한다.
  *
@@ -532,7 +532,7 @@ describe('D10 (defect #3) — 마이페이지 주소록 모달 국가 Select + �
  *    (`sirsoft-ecommerce::settings.countries.{code}.name`)를 넘겨야 언어팩 보강이 적용된다.
  *    이미 마이그레이션된 _shipping_country_table/_cards 와 동일한 계약이다(catalogLangPackFallback.test).
  */
-describe('#459 — 배송국가명 다국어 표시 ($localized + fallbackKey)', () => {
+describe('배송국가명 다국어 표시 ($localized + fallbackKey)', () => {
   /** 국가 lang key 접두사 — 저장본에 로케일 키가 없을 때 언어팩으로 보강되는 경로 */
   const COUNTRY_LANG_PREFIX = 'sirsoft-ecommerce::settings.countries.';
 
@@ -623,13 +623,13 @@ describe('#459 — 배송국가명 다국어 표시 ($localized + fallbackKey)',
 });
 
 /**
- * 배송국가 추가 폼 다국어 입력 회귀 (#459)
+ * 배송국가 추가 폼 다국어 입력 회귀
  *
  * 운영자가 직접 추가한 국가는 언어팩에 lang key 가 없으므로 보강 대상이 아니다. 따라서 활성 언어팩
  * 전체(`$locales`)에 대해 이름을 입력할 수 있어야 하며, ko/en 두 칸 하드코딩이면 ja 등 나머지
  * 로케일에는 영원히 이름을 넣을 수 없다. 백엔드 검증은 이미 로케일 무제한(`name.*`)이다.
  */
-describe('#459 — 배송국가 추가 폼 다국어 입력 ($locales 순회)', () => {
+describe('배송국가 추가 폼 다국어 입력 ($locales 순회)', () => {
   const json = read('resources/layouts/admin/partials/admin_ecommerce_settings/_tab_shipping.json');
   const raw = serialize('resources/layouts/admin/partials/admin_ecommerce_settings/_tab_shipping.json');
 

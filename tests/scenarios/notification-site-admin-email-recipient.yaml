@@ -1,7 +1,7 @@
 feature: notification_site_admin_email_recipient
 
 description: |
-  알림 템플릿 수신자 규칙 `site_admin_email`(#888) — 환경설정 > 일반의 관리자 이메일(`general.admin_email`) 한 곳을
+  알림 템플릿 수신자 규칙 `site_admin_email` — 환경설정 > 일반의 관리자 이메일(`general.admin_email`) 한 곳을
   비회원 수신자(`GuestNotifiable`, 메일만)로 만든다. 인라인 해석(`resolve`)과 분할 발송용 참조 해석(`resolveRefs`)이
   같은 수신자를 낸다. 값이 비었거나 형식이 틀리면 0명이고 `Log::warning` 을 남긴다. 수신자는 회원이 아니라
   `NotificationRecipientCapability::can()` 이 늘 거짓이다(관리자 화면 주소를 싣지 않는다).

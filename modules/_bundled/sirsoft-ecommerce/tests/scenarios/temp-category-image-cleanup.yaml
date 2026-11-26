@@ -1,4 +1,4 @@
-feature: 임시 카테고리 이미지 정리 (Temp Category Image Cleanup, #876)
+feature: 임시 카테고리 이미지 정리 (Temp Category Image Cleanup)
 
 description: |
   새 카테고리 폼에서 이미지를 올리고 저장하지 않고 닫으면 `temp_key` 만 남고 `category_id` 가 빈

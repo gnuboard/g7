@@ -15,7 +15,7 @@ export function setPaymentMethodHandler(action: any): void {
     const paymentMethod = action.params?.paymentMethod;
     if (!paymentMethod) return;
 
-    // 애플페이는 iOS 기기에서만 결제된다 — iOS 가 아니면 고르지 못하게 안내만 띄운다(NHN KCP 와 같은 선택 단계 확인, #933).
+    // 애플페이는 iOS 기기에서만 결제된다 — iOS 가 아니면 고르지 못하게 안내만 띄운다(NHN KCP 와 같은 선택 단계 확인).
     if (isNicepayApplePayMethod(paymentMethod) && !isIosMobileDevice()) {
         (window as any).G7Core?.toast?.error?.(applePayUnsupportedMessage());
         return;
@@ -23,6 +23,6 @@ export function setPaymentMethodHandler(action: any): void {
 
     // 확장 결제수단은 1급 시민 — 선택한 수단 ID 를 그대로 서버에 보낸다.
     // (과거에는 서버 검증이 확장 ID 를 422 로 막아 'card' 로 정규화한 serverPaymentMethod 를
-    //  함께 저장했으나, 소비처가 없는 죽은 코드였고 위장 자체가 결함의 원인이었다 — #475)
+    //  함께 저장했으나, 소비처가 없는 죽은 코드였고 위장 자체가 결함의 원인이었다)
     (window as any).G7Core?.state?.setLocal?.({ paymentMethod });
 }

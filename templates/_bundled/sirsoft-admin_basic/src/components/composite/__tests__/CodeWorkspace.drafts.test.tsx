@@ -29,7 +29,7 @@ vi.mock('@monaco-editor/react', () => ({
 
 const NAMESPACE = 'g7le.codeEditor.test';
 const SERVER_A = '<layout name="a"/>';
-/** 초안은 관리자 회원마다 갈린다(#639 ⑩) — 저장 키에 로그인 회원 uuid 가 들어간다 */
+/** 초안은 관리자 회원마다 갈린다 — 저장 키에 로그인 회원 uuid 가 들어간다 */
 const MEMBER_UUID = 'admin-test';
 const DRAFTS_KEY = `${NAMESPACE}.${MEMBER_UUID}.drafts`;
 

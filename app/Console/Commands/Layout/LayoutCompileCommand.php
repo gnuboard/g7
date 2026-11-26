@@ -101,7 +101,7 @@ class LayoutCompileCommand extends Command
         foreach ($files as $file) {
             $registry = $this->resolveRegistry($file);
 
-            // 빈 객체 `{}` 를 보존해 읽는다 — 연관 배열 디코드는 산출 `.g7.html` 에 `[]` 를 써 넣는다 (#758)
+            // 빈 객체 `{}` 를 보존해 읽는다 — 연관 배열 디코드는 산출 `.g7.html` 에 `[]` 를 써 넣는다
             $json = EmptyMap::decodePreserving(File::get($file));
 
             if (! is_array($json)) {
@@ -238,7 +238,7 @@ class LayoutCompileCommand extends Command
         foreach ($files as $file) {
             $registry = $this->resolveRegistry($file);
 
-            // 빈 객체 `{}` 를 보존해 읽는다 — 연관 배열 디코드는 산출 `.g7.html` 에 `[]` 를 써 넣는다 (#758)
+            // 빈 객체 `{}` 를 보존해 읽는다 — 연관 배열 디코드는 산출 `.g7.html` 에 `[]` 를 써 넣는다
             $json = EmptyMap::decodePreserving(File::get($file));
 
             if (! is_array($json)) {

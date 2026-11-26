@@ -326,7 +326,7 @@ class ExtensionStaticCacheServiceTest extends TestCase
     }
 
     /**
-     * 게시된 custom 파일 집합 == `CustomAssets::publishableFiles()` 집합 (#651 F7 패리티).
+     * 게시된 custom 파일 집합 == `CustomAssets::publishableFiles()` 집합 (패리티).
      *
      * 변경 감지가 이 열거자로 서명을 만들므로, 게시가 다른 집합을 복사하면 "감지됐는데 게시본에
      * 없다" 또는 "게시본에 있는데 바꿔도 감지되지 않는다" 가 된다. 두 소비자가 같은 열거자를

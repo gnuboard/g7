@@ -8,7 +8,7 @@ use App\Support\LayoutMarkup\LayoutPartialOrigin;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 레이아웃 정규화 비교기 단위 테스트 (#727 §5.4).
+ * 레이아웃 정규화 비교기 단위 테스트.
  *
  * 편집기 왕복 게이트와 같은 정규화를 쓰는지 — 표기만 다른 두 판은 같고, 리스트 순서처럼 의미가 다른 차이는
  * 다르다고 판정하는지 고정한다.

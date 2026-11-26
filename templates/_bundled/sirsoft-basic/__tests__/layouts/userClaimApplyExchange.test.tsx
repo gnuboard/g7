@@ -1,6 +1,6 @@
 /**
  * @file userClaimApplyExchange.test.tsx
- * @description 유저 클레임 신청서 작성 화면 구조 회귀 테스트 (#599 S11)
+ * @description 유저 클레임 신청서 작성 화면 구조 회귀 테스트
  *
  * 이 화면에서 조용히 깨지는 지점만 고정한다.
  *
@@ -171,7 +171,7 @@ describe('apply.json — 작성 셸', () => {
    * @effects claim_edit_shell_sets_api_base_on_the_order_response
    */
   it('order.onSuccess 는 claimApiBase 도 세운다 (수정 진입은 initLocal 이 서지 않아 미리보기가 한 번도 호출되지 않았다)', () => {
-    // 회귀(2026-09-11 브라우저 실측, #599 후속): 수정 진입의 첫 주문 호출은 orders/0 → 404 라
+    // 회귀(2026-09-11 브라우저 실측): 수정 진입의 첫 주문 호출은 orders/0 → 404 라
     // initLocal 의 claimApiBase 가 서지 않고, 번호로 다시 부른 성공 응답에는 initLocal 이 재적용되지
     // 않는다. 그래서 수정 화면은 사유·재발송지를 바꿔도 claims/preview 를 부르지 않았고(D14 사문),
     // 주문금액 비교도 "계산됩니다" 자리표시에 머물렀다.
@@ -359,7 +359,7 @@ describe('_apply_reason.json — 사유', () => {
   });
 
   /**
-   * 용량 상한도 컴포지트에 넘긴다. (#599 실측)
+   * 용량 상한도 컴포지트에 넘긴다.
    *
    * 넘기지 않던 동안에는 용량을 넘은 파일이 컴포지트 목록에 `big.jpg 8.52 MB` ·
    * `1/5개 첨부됨` 으로 **첨부된 것처럼 남았다** — 핸들러가 걸러 실제로 올라가지는 않지만,
@@ -447,7 +447,7 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
     expect(successPath).toContain("'?type='");
     expect(successPath).not.toContain('/mypage/');
     expect(successPath).not.toContain('/mypage/orders/');
-    // 접수 결과는 **언제나 환불신청서**다(#599 후속 D2) — 분기로 탭을 가르지 않는다.
+    // 접수 결과는 **언제나 환불신청서**다 — 분기로 탭을 가르지 않는다.
     // 정본은 서버 응답의 신청서 유형이며, 핸들러(`resolveClaimSuccessPath`)가 그 값으로
     // 이 주소의 `type` 을 덮어쓴다. 예전에는 주문 **전체** 기준 값으로 추측해, 분기가 섞인
     // 주문에서 접수한 탭과 이동한 탭이 갈렸다(F8).
@@ -688,7 +688,7 @@ describe('_modal_change_product.json — 교환상품 변경 모달 (D29)', () =
   });
 
   /**
-   * 고른 조합을 지금 살 수 없으면 **그 이유를 말한다**. (#599 실측)
+   * 고른 조합을 지금 살 수 없으면 **그 이유를 말한다**.
    *
    * 옵션 찾기(`findMatchingOption`)는 판매중지 옵션을 건너뛴다. 그래서 블랙/M 이 판매중지면
    * 두 그룹을 다 골라도 찾은 옵션이 없고, 종전에는 가격 줄도 안내도 없이 [적용]만 잠겼다 —
@@ -772,14 +772,14 @@ describe('mypage/orders/show.json — 클레임 신청 진입', () => {
    * @scenario claim_type=exchange, entry=detail
    * @effects order_detail_old_cancel_button_removed
    */
-  it('옛 주문 취소 모달은 더 이상 싣지 않는다 (#599 후속 — 취소는 클레임 진입이 받는다)', () => {
+  it('옛 주문 취소 모달은 더 이상 싣지 않는다 (취소는 클레임 진입이 받는다)', () => {
     const modals: any[] = orderShow.modals ?? [];
     expect(modals.some((m) => typeof m.partial === 'string' && m.partial.includes('_modal_cancel.json'))).toBe(false);
     expect(orderShow.initLocal.useClaimActions).toBeUndefined();
   });
 });
 
-describe('_apply_summary.json / _apply_comparison.json — 주문금액 비교 섹션 구조 (#599 후속)', () => {
+describe('_apply_summary.json / _apply_comparison.json — 주문금액 비교 섹션 구조', () => {
   const summary = load('partials/mypage/claims/_apply_summary.json');
   const comparison = load('partials/mypage/claims/_apply_comparison.json');
 
@@ -851,7 +851,7 @@ describe('_items.json — 공유 partial (회원/비회원)', () => {
    * @scenario claim_type=exchange, entry=detail
    * @effects order_detail_old_cancel_button_removed
    */
-  it('옛 [주문 취소] 버튼은 남아 있지 않다 — initUserCancelItems 핸들러 참조 0 (#599 후속)', () => {
+  it('옛 [주문 취소] 버튼은 남아 있지 않다 — initUserCancelItems 핸들러 참조 0', () => {
     const raw = JSON.stringify(orderItems);
     expect(raw).not.toContain('initUserCancelItems');
     expect(raw).not.toContain('useClaimActions');
@@ -866,7 +866,7 @@ describe('_items.json — 공유 partial (회원/비회원)', () => {
    *
    * @effects order_detail_claim_entry_buttons_gated_by_claimable_types
    */
-  it('체크박스는 신청 가능 여부로 **잠기고**, 칸은 언제나 선다 (#599 후속 U-3)', () => {
+  it('체크박스는 신청 가능 여부로 **잠기고**, 칸은 언제나 선다', () => {
     // 종전 계약은 「신청 가능한 유형이 있는 상품에서만 **보인다**」 였다. 그러면 같은 목록 안에서
     // 그 줄만 상품 이미지가 왼쪽으로 밀려 줄 머리가 어긋나고, 신청 버튼이 왜 안 켜지는지도
     // 화면에 드러나지 않는다 — 2026-09-21 요구사항이 「칸은 표시하되 disabled 로 간격을 맞춰라,

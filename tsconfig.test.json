@@ -1,5 +1,5 @@
 {
-  // 시험 전용 타입 검사 설정 (#869).
+  // 시험 전용 타입 검사 설정.
   // 시험 파일과 시험 고정물만 담고, 시험이 쓰는 Node 타입(node:fs, __dirname 등)과 Vitest 전역을 여기에만 준다.
   // 브라우저 코드는 tsconfig.app.json 이 Node 타입 없이 검사한다. 시험이 불러오는 브라우저 코드는 이 설정에서도 함께 검사된다.
   // 템플릿은 원본(_bundled)만 담는다. 활성 디렉터리(templates/{id})는 설치 사본이라 빼며, vitest.config.ts 의 exclude 와 같은 기준이다.
@@ -25,7 +25,7 @@
     "templates/_bundled/**/src/**/*.spec.ts",
     "templates/_bundled/**/src/**/*.spec.tsx",
     "templates/_bundled/**/src/test-setup.ts",
-    // 전역 window 선언. 시험 파일이 import 하지 않아도 실리도록 따로 적는다(#869)
+    // 전역 window 선언. 시험 파일이 import 하지 않아도 실리도록 따로 적는다
     "resources/js/core/global-g7core.d.ts"
   ],
   "exclude": ["node_modules", "resources/js/build-defines.d.ts"]

@@ -1,5 +1,5 @@
 /**
- * usePreviewBodyScrollIsolation — 편집 대상 템플릿의 `html { scroll-behavior: smooth }` 격리 (#869 λ C1·C4)
+ * usePreviewBodyScrollIsolation — 편집 대상 템플릿의 `html { scroll-behavior: smooth }` 격리
  *
  * 결함: 편집기 미리보기는 같은 문서라 편집 대상 템플릿 CSS(sirsoft-basic `main.css` 152행
  * `html { scroll-behavior: smooth }`)가 편집기 문서에도 걸린다. 그러면 편집기의 문서 스크롤이 모두

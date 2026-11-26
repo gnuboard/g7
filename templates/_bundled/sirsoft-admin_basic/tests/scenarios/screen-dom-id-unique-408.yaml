@@ -1,4 +1,4 @@
-feature: 코어 환경설정 화면 DOM id 유일성 — 본인인증 탭 정책 구획 머리 id (#408)
+feature: 코어 환경설정 화면 DOM id 유일성 — 본인인증 탭 정책 구획 머리 id
 
 description: |
   HTML id 는 한 문서에 하나여야 한다. 코어 환경설정 「본인인증」 탭의 정책 구획 조각 머리 노드가 `page_header` 였는데,

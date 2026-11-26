@@ -967,7 +967,7 @@ describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
 });
 
 // image 위젯 값 형태 매니페스트(tests/scenarios/layout-editor-image-widget-value-shape.yaml) pairwise 조합 중
-// 이 엔진 단위가 재는 네 칸. 종전에는 파일 머리에 시험 없이 떠 있었다(#869). consumer=none 은 이미지 소비 sink
+// 이 엔진 단위가 재는 네 칸. 종전에는 파일 머리에 시험 없이 떠 있었다. consumer=none 은 이미지 소비 sink
 // 가 없는 임의 prop, storage_scope=template_layouts 는 편집기가 쓰는 저장 자리다(엔진 변환은 자리와 무관).
 describe('image 위젯 값 형태 — 저장값이 있는 슬롯과 해제', () => {
   // @scenario apply_type=cssVar, consumer=none, storage_scope=template_layouts, stored_shape=object, widget_output=image_object

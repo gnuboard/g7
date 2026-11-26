@@ -4,7 +4,7 @@
  * 라우트마다 권한을 적어 두는 것만으로는 교차가 성립하지 않는다. 화면은 자기 권한으로 열리고 나서
  * **다른 권한의 API** 를 부를 수 있고, 그러면 그 권한이 없는 운영자에게는 화면이 열린 채로 403 이 난다.
  * 실제로 개인정보 열람 전용·설정 전용 계정에서 상단 경고 소스와 저장소·알림 정의 소스가 그랬다
- * (#682 S3 라운드 2). E2E 는 언제나 조회 권한을 함께 발급해 이 조합을 한 번도 만들지 않았다.
+ *. E2E 는 언제나 조회 권한을 함께 발급해 이 조합을 한 번도 만들지 않았다.
  *
  * 그래서 두 모집단을 저장소에서 파생해 교차한다.
  *  - 화면 → 권한: `routes.json` 의 통계 라우트.
@@ -167,7 +167,7 @@ function navigateTargets(node: Record<string, any>): string[] {
     if (value.handler === 'navigate' && typeof value?.params?.path === 'string') {
       found.push(value.params.path);
     } else if (value.handler === 'navigate' && node.name === 'A' && typeof node.props?.href === 'string') {
-      // 링크(#757) — path 없는 navigate 는 클릭한 A 의 href 로 간다
+      // 링크 — path 없는 navigate 는 클릭한 A 의 href 로 간다
       found.push(node.props.href);
     }
     Object.entries(value).forEach(([key, child]) => {
@@ -226,7 +226,7 @@ function unwrap(expression: string): string {
 /**
  * 가드 식을 계산값까지 풀어 **실제로 평가**한다 — 권한 문자열이 식 어딘가에 적혀 있는지(부분문자열)가
  * 아니라, 그 권한을 가진 계정과 못 가진 계정에서 참·거짓이 갈리는지를 본다. 부분문자열로 재면
- * `!…some(p => … === 'x')` 처럼 뒤집힌 가드도 통과한다(#682 S3 R5-D8).
+ * `!…some(p => … === 'x')` 처럼 뒤집힌 가드도 통과한다.
  *
  * @returns 평가값, 식이 평가기에서 실패하면 `'error'`
  */
@@ -271,7 +271,7 @@ describe('방문자 통계 화면 — 권한 교차 전수', () => {
     expect(permissions.size).toBeGreaterThanOrEqual(14);
     expect(api.filter((entry) => entry.pattern.includes('/analytics')).length).toBeGreaterThanOrEqual(20);
     // 화면 목록과 라우트 목록이 서로를 덮는지 — 한쪽만 늘어도 red 다. 종전에는 「라우트 ⊆ 화면」 한 방향만
-    // 재서, 라우트 없는 새 화면은 아래 세 케이스가 `permissions.get()` 이 비어 조용히 건너뛰었다(#682 S3 R15-D1).
+    // 재서, 라우트 없는 새 화면은 아래 세 케이스가 `permissions.get()` 이 비어 조용히 건너뛰었다.
     expect([...permissions.keys()].filter((screen) => !screens.includes(screen)), '레이아웃 없는 라우트').toEqual([]);
     expect(screens.filter((screen) => !permissions.has(screen)), '라우트(권한)가 없는 통계 화면').toEqual([]);
   });
@@ -376,7 +376,7 @@ describe('방문자 통계 화면 — 권한 교차 전수', () => {
   // @effects cross_permission_fallback_never_reads_as_a_fact
   it('교차 소스의 값을 글자로 그리는 자리는 권한을 확인한 가지 안에만 있다 — 삼킨 403 의 fallback 을 사실처럼 그리지 않는다', () => {
     // 403 을 삼킨 소스에는 fallback(0·빈 배열)이 남는다. 그 값을 그대로 글자로 그리면 권한이 없는 운영자에게
-    // 「0행」이 사실로 읽힌다 — 되돌릴 수 없는 전체 삭제 창이 그랬다(#682 S3 라운드 15, 라운드 2 저장소 표와 같은 부류).
+    // 「0행」이 사실로 읽힌다 — 되돌릴 수 없는 전체 삭제 창이 그랬다(라운드 2 저장소 표와 같은 부류).
     // 창·조각까지 조상 사슬을 따라가며, 그 글자 자신이나 조상의 조건이 소스의 권한을 확인하는지 본다.
     // 조건이 소스 값 자체를 보면(예: `backlogged === true`) fallback 이 그 가지를 닫으므로 통과로 친다.
     const offenders: string[] = [];
@@ -423,7 +423,7 @@ describe('방문자 통계 화면 — 권한 교차 전수', () => {
   // @effects report_page_size_follows_the_setting
   it('설정이 한 쪽 행 수를 정하는 엔드포인트를 부르는 소스는 per_page 에 숫자를 박지 않는다 — 박으면 설정이 화면에 안 닿는다', () => {
     // 서버는 `per_page` 가 없을 때 설정 「상세 TOP N」을 쓴다. 화면이 `query.per_page || 25` 를 늘 보내
-    // 설정을 50 으로 바꿔도 리포트 7소스가 25행이었다 — 기본값이 25 로 같아 증상이 가려졌다(#682 S3 라운드 15).
+    // 설정을 50 으로 바꿔도 리포트 7소스가 25행이었다 — 기본값이 25 로 같아 증상이 가려졌다.
     // 그 엔드포인트는 컨트롤러에서 파생한다: 설정값을 기본으로 읽는 메서드와, 그 메서드에 위임하는 메서드.
     const controller = fs.readFileSync(
       path.join(REPO_ROOT, 'app/Http/Controllers/Api/Admin/Analytics/ReportController.php'),
@@ -464,7 +464,7 @@ describe('방문자 통계 화면 — 권한 교차 전수', () => {
   // @effects every_analytics_source_handles_403
   it('모든 화면의 모든 api 소스가 403 을 처리한다 — 화면마다 권한 오류 화면은 하나 이상, 나머지는 삼킨다', () => {
     // 개별 화면 테스트가 403 을 재는 화면은 8/14 였고, 주 소스만 봤다 — 보조 소스 4개(개요 실시간·진단
-    // 이력·실패 로그·설정 opt-out)는 처리 없이 전역 토스트로 떨어졌다(#682 S3 R3-D7·R5-D6·R9-D2·R13-D1).
+    // 이력·실패 로그·설정 opt-out)는 처리 없이 전역 토스트로 떨어졌다.
     // 모집단을 화면 트리(조각 포함)에서 파생해, 소스마다 403 이 권한 오류 화면(주 소스) 또는 삼킴(보조
     // 소스)인지 본다. 권한 오류 화면이 하나도 없는 화면은 권한 없는 계정에게 빈 화면만 남긴다.
     const unhandled: string[] = [];
@@ -492,7 +492,7 @@ describe('방문자 통계 화면 — 권한 교차 전수', () => {
   // @effects permission_guards_read_only_fields_the_auth_response_sends
   it('권한 가드가 읽는 current_user 필드는 관리자 인증 응답이 실제로 싣는 필드다 — 없는 필드의 분기는 죽은 가지다', () => {
     // 진단·대시보드는 `is_super_admin`, 나머지는 `is_super` 를 봤는데 `/api/admin/auth/user`
-    // (`UserResource::toArray`)는 둘 다 싣지 않는다 — 두 철자 모두 늘 undefined 인 가지였다(#682 S3 R2-E2·R3-E1·R12-D6).
+    // (`UserResource::toArray`)는 둘 다 싣지 않는다 — 두 철자 모두 늘 undefined 인 가지였다.
     // 모집단은 레이아웃 전수와 응답 리소스에서 판다 — 서버가 필드를 더하면 그 필드는 자동으로 허용된다.
     const fields = adminAuthUserFields();
     expect(fields.length, '관리자 인증 응답의 필드').toBeGreaterThan(10);

@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Validator;
  *  - **컴포넌트 존재 검사** — 검사용 레지스트리가 주어졌을 때만(편집기·템플릿 자신의 레이아웃) 산출 name 이
  *    그 템플릿에 있는지 본다. 설치 경로에는 레지스트리가 없다 — JSON 과 같이 컴포넌트 존재는 런타임이 판정한다.
  *    편집기는 **저장본에 이미 있던** 미등록 템플릿 컴포넌트를 그 개수까지 허용한다(`CompileContext::$toleratedComponents`
- *    — 7.0 이 무차별 등록한 조각 행을 저장할 수 있게, #712). 그보다 늘어난 것은 사용자가 새로 쓴 것이라 오류다.
+ *    — 7.0 이 무차별 등록한 조각 행을 저장할 수 있게). 그보다 늘어난 것은 사용자가 새로 쓴 것이라 오류다.
  *    확장 컴포넌트(`식별자.이름`)는 여기서 세우지 않는다 — 설치된 확장 목록에 없으면 lint 경고
  *    (`extension_component_not_installed`)로 알리고 저장은 허용한다(2026-09-28 결정).
  *
@@ -88,7 +88,7 @@ final class LayoutValidator
         // 명시 차단한 뒤 `/api/(admin|auth|public)/` 화이트리스트와 path traversal 까지 건다.
         // 즉 두 문자열 경로의 `NoExternalUrls` 는 더 강한 규칙에 흡수된 중복 선언이다(S11 이전부터).
 
-        // ④ 컴포넌트 존재 그물 — 저장본에 이미 있던 미등록 컴포넌트는 그 개수까지 허용 (편집기 전용, #712)
+        // ④ 컴포넌트 존재 그물 — 저장본에 이미 있던 미등록 컴포넌트는 그 개수까지 허용 (편집기 전용)
         if ($registry !== null) {
             $this->assertComponentsExist($view['components'], $registry, $path, $context->toleratedComponents);
         }
@@ -210,7 +210,7 @@ final class LayoutValidator
     }
 
     /**
-     * 문서(저장본)에 들어 있는 미등록 템플릿 컴포넌트를 이름별로 셉니다 (#712).
+     * 문서(저장본)에 들어 있는 미등록 템플릿 컴포넌트를 이름별로 셉니다.
      *
      * 편집기가 저장본을 기준선으로 삼을 때 쓴다 — 저장·변환·열기 재컴파일은 이 개수까지 같은 이름을 허용한다.
      * 순회 규칙은 {@see assertComponentsExist()} 와 같다(같은 함수를 쓴다).

@@ -3,7 +3,7 @@
 namespace App\Support\ContentMedia;
 
 /**
- * 본문 미디어 업로드 계약 객체 — 화면(확장 레이아웃)이 편집기에 넘기는 `mediaUpload` 값 (#883 4단계, D4)
+ * 본문 미디어 업로드 계약 객체 — 화면(확장 레이아웃)이 편집기에 넘기는 `mediaUpload` 값
  *
  * 형식은 클라이언트 `ContentMediaUploadTarget`(`resources/js/core/contentMedia/types.ts`, `version: 1`)과 같다. 편집기 플러그인은
  * 이 값을 읽기만 한다 — 어느 편집기든 같은 계약으로 업로드한다(CKEditor 에 의존하지 않는다).

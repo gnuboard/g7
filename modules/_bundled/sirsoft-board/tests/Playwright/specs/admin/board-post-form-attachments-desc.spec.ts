@@ -8,7 +8,7 @@
  * 안내는 `form_meta.data.board.max_file_count/max_file_size` 를 파라미터로 받아야 한다.
  * 단위(Vitest admin-board-post-form-attachments-desc) 는 안내 노드만 떼어 렌더하므로,
  * 실제 폼에서 form_meta 데이터소스가 도착한 뒤의 치환 결과는 브라우저로만 확인 가능하다
- * (위지윅 발행 회귀 #238 교훈).
+ * (위지윅 발행 회귀의 교훈).
  *
  * @scenario board-post-form-attachments-desc
  * 효과 요약(마커 아님 — 평문): 안내가 게시판 설정 숫자로 렌더, raw 플레이스홀더 부재,

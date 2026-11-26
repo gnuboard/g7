@@ -419,7 +419,7 @@ describe('SafeExpressionEvaluator', () => {
         // @effects whitelisted_globals_stay_callable
         it('encodeURIComponent — 주소 조각을 안전하게 싣는다', () => {
             // 검색어가 든 내려받기 주소를 레이아웃이 조립할 때 쓴다. 허용 목록에 없으면 호출이
-            // 「non-function」으로 실패해 주소가 통째로 비었다(방문자 통계 CSV, 이슈 #682 §8 M3).
+            // 「non-function」으로 실패해 주소가 통째로 비었다(방문자 통계 CSV).
             expect(evalx("'&q=' + encodeURIComponent(q)", { q: 'a b&c/<테스트>' })).toBe('&q=a%20b%26c%2F%3C%ED%85%8C%EC%8A%A4%ED%8A%B8%3E');
         });
     });

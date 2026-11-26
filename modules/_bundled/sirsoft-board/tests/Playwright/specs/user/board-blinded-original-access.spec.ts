@@ -1,5 +1,5 @@
 /**
- * 블라인드 게시글/댓글 '원글 보기' 원문 접근 차단 — 사용자 페이지 (이슈 #413 item 34-2).
+ * 블라인드 게시글/댓글 '원글 보기' 원문 접근 차단 — 사용자 페이지 (item 34-2).
  *
  * 블라인드 처리된 게시글·댓글의 원문은 게시판 관리자(manager/admin.manage) 또는 작성자
  * 본인만 열람할 수 있다. 백엔드(PostResource/CommentResource)가 권한 없는 사용자에게
@@ -27,7 +27,7 @@ import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 const BOARD_SLUG = 'notice';
 const BLINDED_POST_URL = `/board/${BOARD_SLUG}/1`;
 
-test.describe.skip('블라인드 원문 접근 차단 — 사용자 페이지 (#413)', () => {
+test.describe.skip('블라인드 원문 접근 차단 — 사용자 페이지', () => {
   // (status=blinded, target=post — 축은 viewer 뿐: 매니페스트 결정)
   // @scenario viewer=guest
   // @effects blinded_content_null_for_guest

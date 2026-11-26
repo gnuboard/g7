@@ -3,9 +3,9 @@
  *
  * close-report 는 주문을 실패·취소로 바꾸므로 서버가 주문 소유자만 받아 준다(KVE-2026-2434). 회원 Bearer 와 401
  * 처리는 G7Core.api 가 맡고, 비회원은 공개 상태 계약 `_global.guestOrderToken` 을 헤더로 싣는다. 종전에는 G7Core.api 가
- * 없을 때 원시 fetch 로 직접 보내며 저장소 토큰을 손수 실었다(#639).
+ * 없을 때 원시 fetch 로 직접 보내며 저장소 토큰을 손수 실었다.
  *
- * 보고 주소는 이 플러그인의 API 상대 경로다 — client-config 의 close_report_url 은 #704 이후 사이트 절대 주소의 웹 경로
+ * 보고 주소는 이 플러그인의 API 상대 경로다 — client-config 의 close_report_url 은 이제 사이트 절대 주소의 웹 경로
  * (`/plugins/...`)라 그 주소로는 API 라우트에 닿지 않았다.
  *
  * 시나리오: plugins/_bundled/sirsoft-pay_nicepayments/tests/scenarios/public-core-api-only.yaml

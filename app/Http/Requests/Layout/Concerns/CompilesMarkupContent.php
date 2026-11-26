@@ -43,7 +43,7 @@ trait CompilesMarkupContent
      * 컴파일 문맥 — `[템플릿 식별자, source_kind, identifier, 표시용 파일명, 저장본?]`. 템플릿을 찾지 못하면 첫 원소가 null.
      *
      * 다섯째 원소(선택)는 편집 중인 행의 저장본이다. 주면 그 안에 이미 있던 미등록 템플릿 컴포넌트를 그 개수까지
-     * 허용한다(7.0 이 무차별 등록한 행을 저장할 수 있게, #712). 새 파일 만들기는 저장본이 없으므로 주지 않는다.
+     * 허용한다(7.0 이 무차별 등록한 행을 저장할 수 있게). 새 파일 만들기는 저장본이 없으므로 주지 않는다.
      *
      * @return array{0: string|null, 1: string|null, 2: string|null, 3: string, 4?: array<string, mixed>|null} 컴파일 문맥 튜플
      */

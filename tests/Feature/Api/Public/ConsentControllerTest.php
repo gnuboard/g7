@@ -10,7 +10,7 @@ use Tests\Concerns\FakesConsentProviders;
 use Tests\TestCase;
 
 /**
- * 공개 동의 스냅샷 API `GET /api/consent` (#639, 결정 D4·D5)
+ * 공개 동의 스냅샷 API `GET /api/consent`
  *
  * 브라우저의 코어 동의 런타임이 이 응답으로 `_global.consent` 를 채운다. 다른 확장이 읽는 공개
  * 계약이므로 응답 키는 정확히 5개이고, 회원 번호·게스트 식별자·제공자 내부 값은 싣지 않는다.

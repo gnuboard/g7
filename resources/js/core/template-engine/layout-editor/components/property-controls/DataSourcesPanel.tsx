@@ -498,7 +498,7 @@ function DsErrorActionEditor({
 
   const setHandler = (h: string): void => {
     // 「설정 안 함」은 키 제거 — 빈 동작({})을 남기면 런타임이 그 코드를 「처리됨」으로 보아 onError 와
-    // 상위 기본 처리를 가린다(#869).
+    // 상위 기본 처리를 가린다.
     if (h === '') { onClear(); return; }
     const r = normalized.find((x) => x.id === h);
     onPatch(r ? buildAction(r, {}) : { handler: h });

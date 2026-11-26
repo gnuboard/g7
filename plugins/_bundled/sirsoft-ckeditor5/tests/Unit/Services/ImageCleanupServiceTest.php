@@ -100,7 +100,7 @@ class ImageCleanupServiceTest extends PluginTestCase
      */
     private function seedReference(string $content): void
     {
-        // 코어 참조 소스(알림 템플릿 본문). 옛 mail_templates 는 7.1.0 신규 설치에 없다(#699).
+        // 코어 참조 소스(알림 템플릿 본문). 옛 mail_templates 는 7.1.0 신규 설치에 없다.
         $definitionId = DB::table('notification_definitions')->insertGetId([
             'type' => 'cleanup-test-'.uniqid(),
             'hook_prefix' => 'core.test',

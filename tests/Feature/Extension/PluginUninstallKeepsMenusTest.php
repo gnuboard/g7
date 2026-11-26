@@ -9,7 +9,7 @@ use ReflectionMethod;
 use Tests\TestCase;
 
 /**
- * 플러그인 제거가 「데이터도 함께 삭제」와 무관하게 메뉴를 지우던 결함 (#888).
+ * 플러그인 제거가 「데이터도 함께 삭제」와 무관하게 메뉴를 지우던 결함.
  *
  * 메뉴·채널 템플릿 같은 데이터 정리는 코어가 `deleteData` 일 때만 한다 — 메뉴는 `PluginManager::uninstallPlugin()` 의
  * `deleteData` 갈래가 `cleanupStaleMenus()`(하위 트리·운영자 자식 보존·기록)로, 플러그인이 더한 데이터는 `uninstallData()` 로.

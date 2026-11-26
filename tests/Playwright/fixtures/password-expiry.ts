@@ -1,5 +1,5 @@
 /**
- * Playwright 비밀번호 만료 fixture (코어 영역, #736).
+ * Playwright 비밀번호 만료 fixture (코어 영역).
  *
  * 비밀번호 변경 단계·만료 대상은 **회원의 변경일·사이트 보안 설정**에 달려 있어 브라우저만으로 만들 수 없다.
  * `php artisan playwright:seed-password-expiry`(S1)로 다음을 가역적으로 준비한다.

@@ -141,12 +141,12 @@
  */
 @layer base {
   /* 화면 위에 붙은 사이트 헤더(sticky top-0)만큼 스크롤 기준선을 내린다 — 키보드 초점 이동·앵커 이동이 대상을 헤더 밑에 두지 않게
-     (WCAG 2.4.11, #855). 높이는 support/headerOverlay.ts 가 보이는 헤더를 재서 알린다(헤더가 없는 화면은 0). */
+     (WCAG 2.4.11). 높이는 support/headerOverlay.ts 가 보이는 헤더를 재서 알린다(헤더가 없는 화면은 0). */
   html {
     scroll-padding-top: var(--g7-sticky-header-height, 0px);
   }
 
-  /* 본문 HtmlContent 가 확대 가능으로 표시한 이미지(`data-g7-zoom`, role="button")는 확대 커서를 준다(#869 κ) */
+  /* 본문 HtmlContent 가 확대 가능으로 표시한 이미지(`data-g7-zoom`, role="button")는 확대 커서를 준다 */
   [data-g7-zoom] {
     cursor: zoom-in;
   }
@@ -268,7 +268,7 @@
   }
 
   /*
-   * 버튼 기본 스타일 (#399 — 레이아웃 인라인 버튼을 의미 클래스로 모은다)
+   * 버튼 기본 스타일 (레이아웃 인라인 버튼을 의미 클래스로 모은다)
    * 여백(px-4 py-2)은 가장 많이 쓰던 모양이다. 레이아웃이 다른 여백 유틸리티를 주면 utilities 층이 이긴다.
    * 포커스 링은 키보드 포커스(focus-visible)에서만 보인다 — 마우스 클릭으로는 링이 남지 않는다.
    */
@@ -286,7 +286,7 @@
     @apply px-6 py-3 text-base;
   }
 
-  /* 주 버튼 — 검정(다크 흰색). 사이트 대부분의 저장·확인 버튼 모양이다(#399 D13) */
+  /* 주 버튼 — 검정(다크 흰색). 사이트 대부분의 저장·확인 버튼 모양이다 */
   .btn-primary {
     @apply bg-gray-900 text-white hover:bg-gray-800;
     @apply dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100;
@@ -416,7 +416,7 @@ html[data-header-overlay-active="light"] .g7-site-header {
   --g7-header-hover: rgba(17, 24, 39, 0.08);
 }
 
-/* 배경을 가진 요소는 겹침 글자색 대상에서 뺀다 — 배경을 의미 클래스(.btn-primary 등)로 준 버튼도 같다(#399 F17, 종전에는 `bg-` 이름만 보았다) */
+/* 배경을 가진 요소는 겹침 글자색 대상에서 뺀다 — 배경을 의미 클래스(.btn-primary 등)로 준 버튼도 같다(종전에는 `bg-` 이름만 보았다) */
 html[data-header-overlay-active] .g7-site-header :is(a, button, span, svg, i):not([class^="bg-"], [class*=" bg-"], .btn-primary, .btn-accent, .btn-secondary, .btn-danger, .btn-success, .card, .card-plain):not(.g7-site-header :is([class^="bg-"], [class*=" bg-"], .btn-primary, .btn-accent, .btn-secondary, .btn-danger, .btn-success, .card, .card-plain) *):not(form *) {
   color: var(--g7-header-ink) !important;
 }
@@ -429,7 +429,7 @@ html[data-header-overlay-active="dark"] .g7-site-header :is(a, button):not([clas
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
-/* 포인트 색 (#434) — 템플릿 설정 표준 키 `branding.accent` 를 코어가 `<html data-g7-accent>` 로 싣는다.
+/* 포인트 색 — 템플릿 설정 표준 키 `branding.accent` 를 코어가 `<html data-g7-accent>` 로 싣는다.
  * 이 템플릿은 강조색으로 파랑(blue) 한 벌을 쓰므로(버튼·링크·안내 상자) 파랑 변수 묶음만 고른 색으로 바꾼다 —
  * 레이아웃·컴포넌트의 `*-blue-*` 클래스는 그대로다(Tailwind v4 는 `bg-blue-600` 을 `var(--color-blue-600)` 로 굽는다).
  * 층 없는 규칙이라 테마 층(`@layer theme`)의 기본값보다 우선한다. 파랑(기본)은 덮지 않는다. */

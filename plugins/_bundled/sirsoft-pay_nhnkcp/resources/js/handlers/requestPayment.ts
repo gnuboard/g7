@@ -1,4 +1,4 @@
-// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다). 복합과세 분할(#820)은 Vitest 금액 단언으로 잠근다 — 복합과세 협의 사이트코드가 없어 KCP 매출 구분은 실측 불가. / #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
+// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다). 복합과세 분할은 Vitest 금액 단언으로 잠근다 — 복합과세 협의 사이트코드가 없어 KCP 매출 구분은 실측 불가. / 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {
@@ -23,7 +23,7 @@ interface PgPaymentData {
     currency?: string;
     /**
      * 서버가 저장한 결제수단 ID — 확장 수단이면 확장 ID 그대로(예: 'nhnkcp_naverpay').
-     * 확장 결제수단이 1급 시민이 되면서 서버가 원본 수단을 알고 내려준다(#475).
+     * 확장 결제수단이 1급 시민이 되면서 서버가 원본 수단을 알고 내려준다.
      */
     payment_method?: string;
     customer_name?: string;
@@ -65,7 +65,7 @@ function claimCancelReturnUrl(pgPaymentData: PgPaymentData): string | null {
  *
  * 주문 결제는 주문서의 결제 오류 모달(`nhnkcp_payment_error_modal`)에 문구를 띄우고 주문서의 진행 표시를 내린다.
  * 클레임 추가결제는 신청서 화면에서 열려 그 모달이 없다 — 모달을 열면 안내 없이 「결제 진행 중…」에 멈췄다. 그래서 문구를 담아
- * 던지고, 이커머스 신청서 핸들러가 `G7Core.dispatch` 결과로 받아 진행 표시를 내리고 문구를 보여 준다(#855). 상태 코드 없는
+ * 던지고, 이커머스 신청서 핸들러가 `G7Core.dispatch` 결과로 받아 진행 표시를 내리고 문구를 보여 준다. 상태 코드 없는
  * 오류라 템플릿의 상태 코드별 오류 처리(403 토스트 등)는 타지 않는다.
  *
  * @param G7Core 코어 전역
@@ -207,7 +207,7 @@ export function buildKcpTaxFields(pgPaymentData: PgPaymentData): Record<string, 
 
     const taxablePaymentAmt = Math.max(0, paymentAmount - taxFreeAmt);
     // 과세 합계를 받지 못하면(구버전 서버) 기본 세율로 나눈다 — 종전에는 이때 부가세가 0 으로 가
-    // 과세분 전액이 공급가액(comm_tax_mny)으로 등록됐다(#820).
+    // 과세분 전액이 공급가액(comm_tax_mny)으로 등록됐다.
     const hasOrderTax = pgPaymentData.tax_amount !== undefined && pgPaymentData.tax_amount !== null;
     const taxTotalAmt = Math.max(0, Math.round(Number(pgPaymentData.tax_amount ?? 0)));
     const originalVatAmt = Math.max(0, Math.round(Number(pgPaymentData.vat_amount ?? 0)));
@@ -469,7 +469,7 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
             console.error('[sirsoft-pay_nhnkcp] Failed to fetch client config', configJson);
 
             // 주문 결제는 종전대로 콘솔에만 남긴다. 클레임 추가결제는 빈 문구로 던져 신청서가 진행 표시를 내리고
-            // 「결제를 시작하지 못했습니다.」로 대신 안내하게 한다 — 그냥 돌아가면 성공으로 읽혀 「결제 진행 중…」에 멈춘다(#855, 토스·나이스와 같은 처리).
+            // 「결제를 시작하지 못했습니다.」로 대신 안내하게 한다 — 그냥 돌아가면 성공으로 읽혀 「결제 진행 중…」에 멈춘다(토스·나이스와 같은 처리).
             if (claimCancelReturnUrl(pgPaymentData)) {
                 throw new Error('');
             }
@@ -560,7 +560,7 @@ async function handleMobilePayment(
         ret_url: callbackUrl,
         currency: normalizeCurrency(pgPaymentData.currency),
     }, {
-        // 비회원 주문은 주문 생성 때 받은 조회 토큰으로 주문 소유를 증명한다(결제창 닫힘 보고와 같은 방식, #883).
+        // 비회원 주문은 주문 생성 때 받은 조회 토큰으로 주문 소유를 증명한다(결제창 닫힘 보고와 같은 방식).
         // 회원은 헤더가 비어 있고 Bearer 로 판정된다.
         headers: guestOwnershipHeaders(),
     });

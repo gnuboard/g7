@@ -10,7 +10,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\TestCase;
 
 /**
- * 확장 업데이트 커맨드의 레이아웃 처리 결과 출력(#727 D2 — CLI 는 표) 단위 테스트.
+ * 확장 업데이트 커맨드의 레이아웃 처리 결과 출력(CLI 는 표) 단위 테스트.
  */
 class RendersLayoutSyncResultTest extends TestCase
 {

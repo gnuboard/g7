@@ -186,7 +186,7 @@ export const Grid: React.FC<GridProps> = ({
   };
   classes.push(flowMap[flow]);
 
-  // 클릭을 받으면 손 모양 커서 — 눌러 쓰는 요소는 손 모양 커서를 준다(#869 κ). 레이아웃 className 이 뒤에 와서 다른 커서를 주면 그 값이 남는다
+  // 클릭을 받으면 손 모양 커서 — 눌러 쓰는 요소는 손 모양 커서를 준다. 레이아웃 className 이 뒤에 와서 다른 커서를 주면 그 값이 남는다
   if (onClick) {
     classes.push('cursor-pointer', FOCUS_VISIBLE_RING);
   }

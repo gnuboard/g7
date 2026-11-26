@@ -155,7 +155,7 @@ describe('코어 환경설정 — 미저장 변경이 있을 때 탭 전환 확�
     expect(flatten(search.actions).some((a) => a.handler === 'setState' && 'identityPolicySearch' in (a.params ?? {}))).toBe(true);
 
     // 필터, 검색, 초기화, 쪽 넘김은 모두 이 설정 화면 경로로 옮긴다(다른 경로면 다른 레이아웃으로 넘어간다)
-    // 쪽 넘김 이전·다음은 링크(#757) — 주소는 A 의 href, navigate 는 path 없이 그 href 로 간다
+    // 쪽 넘김 이전·다음은 링크 — 주소는 A 의 href, navigate 는 path 없이 그 href 로 간다
     const navigates = collect(identityTab, (n) => n.handler === 'navigate');
     expect(navigates.length).toBeGreaterThan(0);
     const pageLinks = collect(identityTab, (n) => n.name === 'A' && (n.actions ?? []).some((a: any) => a.handler === 'navigate'));
@@ -193,7 +193,7 @@ describe('코어 환경설정 — 미저장 변경이 있을 때 탭 전환 확�
   // @scenario case=member_fields_table_not_form_state
   // @effects member_fields_table_keeps_settings_form_clean
   it('회원 탭 가입 항목 표의 스위치, 순서, 행 단추는 설정 폼과 「변경 있음」을 건드리지 않는다(즉시 저장이라 확인 창이 오탐으로 뜨지 않게)', () => {
-    // 표의 조작은 누르는 즉시 항목 API 로 저장한다(#490 D1). 설정 폼에 묶이면 하단 「저장」과 탭 전환 확인 창이 이 표 때문에 켜진다
+    // 표의 조작은 누르는 즉시 항목 API 로 저장한다. 설정 폼에 묶이면 하단 「저장」과 탭 전환 확인 창이 이 표 때문에 켜진다
     for (const partial of [memberFieldsTable, memberFieldsCards]) {
       // 자동 바인딩되는 칸(name)이 없다 — 스위치는 name 없이 명시 요청으로 저장한다
       expect(collect(partial, (n) => typeof n.name === 'string' && n.name !== 'Icon' && typeof n.props?.name === 'string')).toEqual([]);

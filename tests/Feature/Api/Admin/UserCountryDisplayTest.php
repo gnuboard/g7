@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
- * 국가 표시 복원 회귀 테스트 (#705 D12)
+ * 국가 표시 복원 회귀 테스트
  *
  * 2026-03-31 에 숨겼던 국가 항목을 회원 상세·수정 폼·마이페이지에서 되살렸다. 화면은
  * `country_name ?? country` 를 읽는데 목록 응답만 국가 이름을 싣고 상세·프로필 응답은 코드만

@@ -11,7 +11,7 @@ return [
         'dormant' => 'Dormant',
     ],
 
-    // Password policy (#736) — read by Enum label()
+    // Password policy — read by Enum label()
     'password_expiry_policy' => [
         'inherit' => 'Follow role and site settings',
         'apply' => 'Apply',
@@ -205,7 +205,7 @@ return [
         'search_keyword_required' => 'Please enter a keyword to search.',
         'exclude_user_id_uuid' => 'Exclude user ID must be a valid UUID.',
         'exclude_user_id_exists' => 'The specified user does not exist.',
-        // User list filters (#705)
+        // User list filters
         'list_status_array' => 'The account status condition must be a list.',
         'list_status_invalid' => 'Invalid account status.',
         'list_role_ids_array' => 'The role condition must be a list.',
@@ -219,7 +219,7 @@ return [
         'list_ext_filters_invalid' => 'Invalid extension filter format.',
         'list_ext_filters_max' => 'Up to 20 extension filter conditions are allowed.',
     ],
-    // Validation attribute names for the user list filters — read by UserListRequest::attributes() (#705)
+    // Validation attribute names for the user list filters — read by UserListRequest::attributes()
     'list_filter_attributes' => [
         'status' => 'account status',
         'role_ids' => 'role',

@@ -1940,7 +1940,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     }
 
     /**
-     * 자동 전이 대상 상태에 **미결제 2종**을 지정할 수 있다. (#599 후속 D10)
+     * 자동 전이 대상 상태에 **미결제 2종**을 지정할 수 있다.
      *
      * 이 축은 `order_settings.cancellable_statuses` 의 별칭이다. `Order::isCancellable()` 은
      * 미결제를 목록과 무관하게 **항상** 허용하므로 주문 단위 취소 판정은 달라지지 않는다 —
@@ -1972,7 +1972,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     }
 
     /**
-     * 기본값에 미결제 2종이 들어 있다. (#599 후속 D10)
+     * 기본값에 미결제 2종이 들어 있다.
      *
      * @scenario reason_type=refund
      *

@@ -1,6 +1,6 @@
 /**
  * @file mypageOrderPaymentPanel.test.tsx
- * @description 유저 주문상세 결제 패널의 확장 앵커 검증 (#454 S3).
+ * @description 유저 주문상세 결제 패널의 확장 앵커 검증.
  *
  * 두 가지를 고정한다:
  *  1. 루트 Div 의 id = "order_payment_info_panel"
@@ -11,7 +11,7 @@
  *  2. 말단 extension_point 2종
  *     - "mypage_order_cash_receipt_slot" — 이커머스 모듈이 현금영수증 카드를 주입하는 자리.
  *     - "mypage_order_payment_provider_slot" — 결제 플러그인 4종이 가상계좌 입금 안내·영수증·
- *       부가세 내역을 주입하는 자리(2026-09-01 #599 S13 신설). 이 카드는 주문 상세만의 것이
+ *       부가세 내역을 주입하는 자리(2026-09-01 신설). 이 카드는 주문 상세만의 것이
  *       아니라 클레임 신청서 상세도 그대로 재사용하므로, 레이아웃 이름(target_layout)을
  *       겨냥하면 그 한 화면에서만 뜨고 나머지 화면은 카드는 나오는데 이 블록만 빠진 채
  *       열린다 — 오류도 경고도 남지 않는다. 슬롯은 partial 을 따라간다.
@@ -158,7 +158,7 @@ describe('유저 주문상세 결제 패널 — 확장 앵커', () => {
   });
 
   /**
-   * 결제 방법 행은 간편결제 표시 이름(「카카오페이 (토스페이먼츠)」)을 먼저, 없으면 기본 결제수단 이름을 보인다 (#933 S5).
+   * 결제 방법 행은 간편결제 표시 이름(「카카오페이 (토스페이먼츠)」)을 먼저, 없으면 기본 결제수단 이름을 보인다.
    * 관리자 주문 목록·상세와 같은 값(payment_method_display_label)이다.
    *
    * @scenario payment_plugin=tosspayments

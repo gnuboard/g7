@@ -217,7 +217,7 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
      *
      * request IP 를 실제 IP 로 세팅한 상태에서 NULL 이 나와야 한다. Listener 가 request()->ip() 를
      * 재도입하면 이 테스트가 request IP('203.0.113.99')를 잡아 fail 한다. 자리표시값 '0.0.0.0' 을
-     * 되살려도 fail 한다 — board_posts.ip_address 가 nullable 이 된 뒤(이슈 #636) 그 값은 보유기간
+     * 되살려도 fail 한다 — board_posts.ip_address 가 nullable 이 된 뒤 그 값은 보유기간
      * 파기가 개인정보가 남은 행으로 세는 가짜 IP 다.
      *
      * 축이 아닌 sub_flow (`listener_ip_boundary`) 소속이라 효과만 마킹한다.
@@ -459,7 +459,7 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
     }
 
     /**
-     * getByIds: 공개 문의에 달린 비밀 답변은 외부인에게 본문이 가려진다 (#789 전수조사)
+     * getByIds: 공개 문의에 달린 비밀 답변은 외부인에게 본문이 가려진다
      *
      * 문의가 공개면 답변을 게이트 없이 그대로 실어, 비밀 답변 원문이 상품 문의 목록으로 누구에게나 나갔다.
      *

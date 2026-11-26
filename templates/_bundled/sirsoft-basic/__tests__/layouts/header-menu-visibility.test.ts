@@ -1,5 +1,5 @@
 /**
- * 헤더 메뉴 계산값 `siteMenu` — 보이기 조건·꺼진 항목·꺼진 모듈 거르기 (#434)
+ * 헤더 메뉴 계산값 `siteMenu` — 보이기 조건·꺼진 항목·꺼진 모듈 거르기
  *
  * `_user_base` 의 계산값 하나를 헤더·모바일 서랍·봇 화면이 함께 쓴다. 식을 문자열로 대조하지 않고 **실제 바인딩 엔진**으로
  * 평가해, 회원·비회원·역할·꺼짐·모듈 꺼짐·빈 상위 메뉴의 결과를 잠근다(식 방언이 바뀌어 평가가 깨져도 잡히게).
@@ -26,7 +26,7 @@ const ids = (items: Array<{ id: string; children?: Array<{ id: string }> }>) => 
 // 인증 응답(`UserResource::toAuthArray`) 모양 — 회원 식별은 uuid 이고 id 는 싣지 않는다
 const MEMBER = { uuid: 'u-434', name: '회원', roles: [{ id: 2, identifier: 'user', name: '일반' }, { id: 9, identifier: 'vip', name: 'VIP' }] };
 
-describe('siteMenu 계산값 — 보이기 조건 (#434)', () => {
+describe('siteMenu 계산값 — 보이기 조건', () => {
   // @scenario case=header_menu
   // @effects header_menu_visibility_filtered
   it('메뉴 값이 없으면 기본 메뉴(홈·인기글·쇼핑·게시판 전체)', () => {
@@ -93,7 +93,7 @@ describe('siteMenu 계산값 — 보이기 조건 (#434)', () => {
   });
 });
 
-describe('봇 화면 메뉴 링크 (#434)', () => {
+describe('봇 화면 메뉴 링크', () => {
   const header = (function find(nodes: any[]): any {
     for (const node of nodes ?? []) {
       if (node?.name === 'Header') return node;
@@ -125,7 +125,7 @@ describe('봇 화면 메뉴 링크 (#434)', () => {
 
   // @scenario case=header_menu
   // @effects header_menu_seo_links
-  it('자동 항목 「쿠폰존」도 쇼핑 주소 아래 쿠폰존 링크로 펴진다 (#952)', () => {
+  it('자동 항목 「쿠폰존」도 쇼핑 주소 아래 쿠폰존 링크로 펴진다', () => {
     const seoExpr = String(header.props.seoMenuLinks).replace(/^\{\{/, '').replace(/\}\}$/, '');
     const links = dataBindingEngine.evaluateExpression(seoExpr, {
       _computed: { siteMenu: [{ id: 'coupons', kind: 'coupons', label: { ko: '이달의 쿠폰' }, children: [] }] },

@@ -80,7 +80,7 @@ final class MarkupCompileContextResolver
      * @param  array<int, string>  $moduleIdentifiers  설치된 모듈 식별자
      * @param  array<int, string>  $pluginIdentifiers  설치된 플러그인 식별자
      * @param  array<int, string>  $templateIdentifiers  설치된 템플릿 식별자 — 템플릿이 공급한 설정 화면 부품 매니페스트
-     *                                                    (`components.settings.json`, 확장 매니페스트 형식)를 읽는다 (#434)
+     *                                                    (`components.settings.json`, 확장 매니페스트 형식)를 읽는다
      * @return array<int, ComponentManifest> 읽은 확장 매니페스트
      */
     public function extensionManifests(array $moduleIdentifiers, array $pluginIdentifiers, array $templateIdentifiers = []): array
@@ -276,7 +276,7 @@ final class MarkupCompileContextResolver
      * @param  string  $templateId  대상 템플릿 식별자
      * @param  string|null  $sourceKind  소유 소스 종류 (`template`·`module`·`plugin`·null)
      * @param  string|null  $identifier  소유 확장·템플릿 식별자
-     * @param  array<string, int>  $toleratedComponents  저장본에 이미 있던 미등록 템플릿 컴포넌트 이름 → 허용 개수 (편집기 전용, #712)
+     * @param  array<string, int>  $toleratedComponents  저장본에 이미 있던 미등록 템플릿 컴포넌트 이름 → 허용 개수 (편집기 전용)
      * @return CompileContext 컴파일 문맥
      */
     public function contextForInstalled(string $templateId, ?string $sourceKind, ?string $identifier, array $toleratedComponents = []): CompileContext

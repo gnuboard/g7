@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Tests\TestCase;
 
 /**
- * 웹서버 파일 위임(#878) — `BaseApiController::fileResponse()` 가 내는 `DelegatedFileResponse` 의 계약 (DB 미사용).
+ * 웹서버 파일 위임 — `BaseApiController::fileResponse()` 가 내는 `DelegatedFileResponse` 의 계약 (DB 미사용).
  *
  * 위임은 운영자 설정(`core.file_serving.delegation`)으로만 켜진다. 요청 헤더 `X-Sendfile-Type`·`X-Accel-Mapping` 은
  * 위조할 수 있으므로 보지 않는다. 켜져 있으면 본문 대신 위임 헤더를 세우고, ETag·304·Cache-Control·nosniff·

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
- * 7.1.0 업그레이드 스텝 08 — 옛 메일 표 드랍 테스트 (#699 B1)
+ * 7.1.0 업그레이드 스텝 08 — 옛 메일 표 드랍 테스트
  *
  * 7.0.0-beta.2 부터 쓰이지 않는 mail_templates·mail_send_logs 를 안전할 때만 지운다. 옛 표는 7.1.0
  * 신규 설치에 없으므로 테스트가 직접 만들고, DDL 의 암묵 커밋 때문에 tearDown 에서 직접 정리한다.

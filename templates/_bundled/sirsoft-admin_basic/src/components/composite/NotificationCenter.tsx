@@ -34,7 +34,7 @@ export interface NotificationItem {
   read?: boolean;
   iconName?: IconName;
   /**
-   * 알림의 이동 주소(응답 `url`) — 있으면 알림 본문을 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다(#757).
+   * 알림의 이동 주소(응답 `url`) — 있으면 알림 본문을 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다.
    * 보통 클릭은 종전처럼 알림 클릭 콜백(이동·읽음 처리), 수정키 클릭은 브라우저 기본 동작. 바깥 주소는 새 탭으로 연다.
    */
   url?: string | null;
@@ -333,7 +333,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   }, [showNotifications, dropdownAlign, notifications.length]);
 
   return (
-    // 판 안 어디에서든 Esc 로 닫고(닫을 때의 읽음 처리는 종전과 같다) 종 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혔다(#869)
+    // 판 안 어디에서든 Esc 로 닫고(닫을 때의 읽음 처리는 종전과 같다) 종 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혔다
     <Div ref={notificationRef} className={`relative ${className}`} id={id} {...editorAttrs} onKeyDown={escapeToClose(showNotifications, handleClose, bellRef)}>
       <Button
         ref={bellRef}
@@ -487,7 +487,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                           {body}
                         </A>
                       ) : (
-                        // 링크가 없는 알림은 본문 칸이 키보드 단추다 — 링크 알림의 <a> 와 같은 자리라 삭제 단추와 겹치지 않는다(#869 키보드 접근).
+                        // 링크가 없는 알림은 본문 칸이 키보드 단추다 — 링크 알림의 <a> 와 같은 자리라 삭제 단추와 겹치지 않는다(키보드 접근).
                         // 마우스 클릭은 줄(바깥 Div)이 받으므로 여기는 키보드만 더한다
                         <Div className={`flex items-start gap-3 flex-1 min-w-0 rounded ${FOCUS_VISIBLE_RING}`} {...keyboardActivationProps(activate)}>
                           {body}

@@ -31,7 +31,6 @@ use Modules\Sirsoft\Ecommerce\Support\PaymentMethodFilterClause;
  *
  * scoped 로 등록되어 요청(큐 작업) 내 카탈로그 조회를 1회로 캐시한다.
  *
- * @see https://github.com/gnuboard/dev-g7/issues/475
  */
 class PaymentMethodResolver
 {
@@ -110,7 +109,7 @@ class PaymentMethodResolver
      *
      * 미등록 확장 ID 의 기본값이 true 인 이유: 플러그인이 등록하는 결제수단은
      * 대부분 PG 결제창을 거친다. false 로 오판하면 결제 실패 주문에 관리자 알림이
-     * 발송되고 TempOrder 가 삭제되어 재결제가 막히는(이슈 #475) 실패 모드가 된다.
+     * 발송되고 TempOrder 가 삭제되어 재결제가 막히는 실패 모드가 된다.
      * 반대 방향의 오판(PG 불필요 수단을 PG 로 봄)은 `determinePgProvider()` 가
      * 'none'/'manual'/'internal' 을 반환해 걸러내므로 안전하다.
      *
@@ -414,7 +413,7 @@ class PaymentMethodResolver
     }
 
     /**
-     * 관리자 주문 목록 결제수단 필터의 선택 id 를 결제 행 조건 묶음으로 바꿉니다. (#933 S6·D8)
+     * 관리자 주문 목록 결제수단 필터의 선택 id 를 결제 행 조건 묶음으로 바꿉니다.
      *
      * PG 별칭(카탈로그에 있고 `core_payment_method` 가 id 와 다르며 `pg_provider` 가 있는 항목, 예: `toss_kakaopay`)은 주문 생성 때
      * 코어 값으로 저장되므로 `payment_method IN (별칭)` 으로는 찾을 수 없다. 선택 id 별 조건(여러 id 는 OR):
@@ -471,7 +470,7 @@ class PaymentMethodResolver
     }
 
     /**
-     * 목록·내보내기 필터 배열에 결제수단 조건 묶음(`_payment_method_clauses`)을 채웁니다. (#933 S6)
+     * 목록·내보내기 필터 배열에 결제수단 조건 묶음(`_payment_method_clauses`)을 채웁니다.
      *
      * 들어온 `_payment_method_clauses` 는 먼저 버린다 — 요청 인자·필터 훅으로 바깥에서 조건을 주입할 수 없다.
      * `payment_method` 가 있을 때만 채우고, 없으면 저장소가 결제수단 조건을 걸지 않는다.

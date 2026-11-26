@@ -85,7 +85,7 @@ class PublicBannerPresenter
      * 이미지 한 장의 공개 정보를 만듭니다.
      *
      * `url` 은 공개 API 주소로 썸네일(`?size=`)·같은 출처가 필요한 자리의 기준이다. `direct_url` 은 행 disk 가 직접 주소를
-     * 내면(공개 자산 디스크) 그 주소, 아니면 null 이다 — 화면은 원본 한 장(`<img src>`·srcset 의 원본 후보)에만 쓴다(#878).
+     * 내면(공개 자산 디스크) 그 주소, 아니면 null 이다 — 화면은 원본 한 장(`<img src>`·srcset 의 원본 후보)에만 쓴다.
      *
      * @param  BannerImage|null  $image  이미지
      * @return array{url: string, direct_url: string|null, width: int|null, height: int|null}|null 공개 이미지 (없으면 null)
@@ -102,7 +102,7 @@ class PublicBannerPresenter
     /**
      * 공개 영상 정보를 만듭니다.
      *
-     * `direct_url` 이 있으면 화면은 그 주소로 재생한다 — 범위 요청(Range)을 PHP 가 아니라 웹서버·CDN 이 받는다(#878).
+     * `direct_url` 이 있으면 화면은 그 주소로 재생한다 — 범위 요청(Range)을 PHP 가 아니라 웹서버·CDN 이 받는다.
      *
      * @param  BannerImage|null  $video  영상
      * @return array{url: string, direct_url: string|null, mime: string}|null 영상 정보

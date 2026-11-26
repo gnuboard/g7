@@ -77,7 +77,7 @@ class ProductWishlistRepository implements ProductWishlistRepositoryInterface
             // 목록에서 아예 제외해 "빈 셀 0" 을 성립시킨다 (찜 행 자체는 보존).
             //
             // 「숨김」 상품도 같은 이유로 목록에서 뺀다 — 운영자가 사용자 표면에서 내린 상품인데
-            // 찜 목록에는 정상 카드로 남아 클릭까지 되던 결함(#524 §4.3)의 처치다.
+            // 찜 목록에는 정상 카드로 남아 클릭까지 되던 결함의 처치다.
             // 품절·판매중지(sales_status)는 카드 오버레이가 이미 표시하므로 그대로 남긴다.
             ->whereHas('product', fn ($q) => $q->visible())
             // 대표 이미지는 로드된 컬렉션에서 고른다. 미로드 시 `getThumbnailUrl()` 이 행마다

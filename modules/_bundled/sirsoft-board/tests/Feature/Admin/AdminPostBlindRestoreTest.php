@@ -205,7 +205,7 @@ class AdminPostBlindRestoreTest extends BoardTestCase
     }
 
     /**
-     * 블라인드 사유 1000자 → 통과 (200) (#413-71-2)
+     * 블라인드 사유 1000자 → 통과 (200) (71-2)
      *
      * @scenario bulk_action=blind, permission=manage, row_state=published
      *
@@ -224,7 +224,7 @@ class AdminPostBlindRestoreTest extends BoardTestCase
     }
 
     /**
-     * 블라인드 사유 1001자 → 검증 실패 (422) (#413-71-2)
+     * 블라인드 사유 1001자 → 검증 실패 (422) (71-2)
      *
      * @scenario bulk_action=blind, permission=manage, row_state=published
      *

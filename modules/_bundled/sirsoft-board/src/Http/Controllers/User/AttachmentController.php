@@ -261,17 +261,17 @@ class AttachmentController extends PublicBaseController
 
             // 기존 글에 붙이는 업로드는 그 글을 고칠 수 있는 사람만 — 같은 게시판 글인지 보고(아니면 404),
             // 글 수정과 같은 판정을 한다(아니면 403). 종전에는 업로드 권한만 보아 남의 글·다른 게시판 글 번호로
-            // 파일을 붙일 수 있었다(#883). 비회원 글의 검증 토큰은 저장(PUT)에서 다시 쓰므로 소비하지 않는다.
+            // 파일을 붙일 수 있었다. 비회원 글의 검증 토큰은 저장(PUT)에서 다시 쓰므로 소비하지 않는다.
             if ($postId !== null) {
                 $post = $this->postService->getPost($slug, $postId, 'user');
 
                 if (! $this->postModifyGate->allows($post, $request, consume: false)) {
-                    // 만료 토큰 회원이면 세션 만료(401) — 비회원으로 통과해 본인 확인이 실패했을 뿐이다 (#883 후속)
+                    // 만료 토큰 회원이면 세션 만료(401) — 비회원으로 통과해 본인 확인이 실패했을 뿐이다
                     return $this->ownershipDenied($request, 'sirsoft-board::messages.posts.modify_permission_denied');
                 }
             }
 
-            // 비회원 임시 업로드는 소유 쿠키를 발급(있으면 재사용)해 그 해시를 첨부에 남긴다 — 연결 전 삭제·순서 판정용 (#883)
+            // 비회원 임시 업로드는 소유 쿠키를 발급(있으면 재사용)해 그 해시를 첨부에 남긴다 — 연결 전 삭제·순서 판정용
             $guestToken = (Auth::id() === null && $postId === null) ? $this->guestOwnerCookie->issue($request) : null;
 
             // 첨부파일 업로드 (Service에서 처리)
@@ -300,7 +300,7 @@ class AttachmentController extends PublicBaseController
                         'order' => $attachment->order,
                         'created_at' => $attachment->created_at,
                         // 올린 본인에게만 주는 임시 키 — 키 없이 올렸으면 서버가 만든 키다. 비회원은 첨부 번호로 이을 때
-                        // 이 키를 함께 보내야 한다(번호만으로는 잇지 않는다, #883). 글에 바로 붙인 업로드는 null.
+                        // 이 키를 함께 보내야 한다(번호만으로는 잇지 않는다). 글에 바로 붙인 업로드는 null.
                         'temp_key' => $attachment->temp_key,
                     ],
                 ],
@@ -347,7 +347,7 @@ class AttachmentController extends PublicBaseController
 
             // FileUploader가 [{id, order}] 형태로 전송 → [ID => order] 매핑으로 변환
             $orders = collect($validated['order'])->pluck('order', 'id')->all();
-            // 비회원은 업로드 때 받은 소유 쿠키로 자기 임시 첨부의 순서를 바꾼다 (#883)
+            // 비회원은 업로드 때 받은 소유 쿠키로 자기 임시 첨부의 순서를 바꾼다
             $result = $this->attachmentService->reorder($slug, $orders, 'user', $this->guestOwnerCookie->resolveToken($request));
 
             if (! $result) {
@@ -389,7 +389,7 @@ class AttachmentController extends PublicBaseController
                 return $this->notFound('sirsoft-board::messages.attachment.not_found');
             }
 
-            // 권한 확인 (Service에서 처리) — 비회원은 업로드 때 받은 소유 쿠키로 연결 전 자기 임시 첨부만 (#883)
+            // 권한 확인 (Service에서 처리) — 비회원은 업로드 때 받은 소유 쿠키로 연결 전 자기 임시 첨부만
             $guestToken = $this->guestOwnerCookie->resolveToken($request);
             if (! $this->attachmentService->canDelete($attachment, Auth::id(), $guestToken)) {
                 return $this->forbidden('sirsoft-board::messages.attachment.delete_forbidden');

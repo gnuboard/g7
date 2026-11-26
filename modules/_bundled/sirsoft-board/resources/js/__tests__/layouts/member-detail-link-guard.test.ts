@@ -1,5 +1,5 @@
 /**
- * 회원 상세 링크 — 주소가 없으면 링크를 그리지 않는다 (#757 2단계 후속, M1 실측)
+ * 회원 상세 링크 — 주소가 없으면 링크를 그리지 않는다
  *
  * @description
  * 관리자 게시판 화면의 작성자·회원 자리는 `/admin/users/{uuid}` 링크(또는 메뉴 항목)다. 작성자 응답은
@@ -78,7 +78,7 @@ function collect(): Site[] {
 
 const SITES = collect();
 
-describe('회원 상세 링크 — 주소가 없으면 링크를 그리지 않는다 (#757)', () => {
+describe('회원 상세 링크 — 주소가 없으면 링크를 그리지 않는다', () => {
     // @scenario guard=member_link
     // @effects member_link_requires_uuid
     it('모집단이 비지 않았다(작성자 링크 1 · 작성자 메뉴 5 · 신고자 메뉴 1 · 행 메뉴 2 이상)', () => {

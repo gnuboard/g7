@@ -1,7 +1,7 @@
 // e2e:allow Vitest 컴포넌트 렌더 테스트(받는 중 prop → 실제 Header 출력). 새로고침 타이밍은 브라우저 실측(Playwright 응답 지연)으로 별도 검증.
 /**
  * @file HeaderUserLoading.test.tsx
- * @description Header — 로그인 사용자 정보를 받는 동안 사용자 메뉴 자리에 빈 자리를 그린다(#915).
+ * @description Header — 로그인 사용자 정보를 받는 동안 사용자 메뉴 자리에 빈 자리를 그린다.
  *
  * 회원이 새로고침하면 사용자 정보(_global.currentUser)를 받기 전 헤더가 먼저 그려진다. 받는 중을 비회원으로
  * 읽으면 회원에게 「로그인·회원가입」이 잠깐 보였다가 이름으로 바뀌고, 그 사이 오른쪽 묶음 폭이 바뀌어 검색창이

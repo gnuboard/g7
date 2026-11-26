@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
- * 운영자가 입력하는 링크 주소 검증 (#434 템플릿 설정 `link` 칸)
+ * 운영자가 입력하는 링크 주소 검증 (템플릿 설정 `link` 칸)
  *
  * 받는 것: 사이트 안 경로(`/` 로 시작, `//` 로 시작하는 프로토콜 상대 주소 제외) 또는 `http`·`https` 주소.
  * 거부: `javascript:`·`data:` 등 다른 스킴, 공백·제어 문자, 2048자 초과. 빈 문자열은 `required` 가 판정한다.

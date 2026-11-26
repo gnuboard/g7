@@ -185,7 +185,7 @@ class OrderFactory extends Factory
             'order_status' => OrderStatusEnum::CANCELLED,
             'total_cancelled_amount' => $attributes['total_amount'],
             // 실제 취소 경로(OrderCancellationService::updateOrderTotals)는 취소 시각을 항상 남긴다.
-            // 비우면 종결 시각으로 이 값을 읽는 보유기간 판정(이슈 #636)이 레거시 폴백으로만 재진다.
+            // 비우면 종결 시각으로 이 값을 읽는 보유기간 판정이 레거시 폴백으로만 재진다.
             'cancelled_at' => now(),
         ]);
     }

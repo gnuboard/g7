@@ -1,4 +1,4 @@
-feature: 사용자 화면 토큰 갱신 주소를 실제 라우트로 맞춘다 (#883 후속, engine-v1.89.0 Fixed)
+feature: 사용자 화면 토큰 갱신 주소를 실제 라우트로 맞춘다 (engine-v1.89.0 Fixed)
 
 description: |
   AuthManager 사용자 설정의 갱신 주소가 `/auth/refresh` 라 `POST /api/auth/refresh`(없는 라우트) 로 가 늘 404 였다.

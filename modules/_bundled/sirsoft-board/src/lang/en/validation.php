@@ -324,7 +324,7 @@ return [
             'temp_key' => 'temporary key',
             'post_id' => 'post number',
         ],
-        // Content media policy sub-fields (#883) — :kind is the core media kind name (Image, Video, Audio)
+        // Content media policy sub-fields — :kind is the core media kind name (Image, Video, Audio)
         'content_media_policy' => [
             'policy' => 'Content Media Policy',
             'max_per_document' => 'Max Content Media per Document',
@@ -824,7 +824,7 @@ return [
             'in' => 'Invalid status.',
         ],
     ],
-    // 개인정보 보유기간 설정 필드 라벨 (이슈 #636) — StoreBoardSettingsRequest::attributes() 가 키별로 읽는다
+    // 개인정보 보유기간 설정 필드 라벨 — StoreBoardSettingsRequest::attributes() 가 키별로 읽는다
     'privacy_retention_attributes' => [
         'enabled' => 'Automatic Privacy Retention Processing',
         'ip_retention_days' => 'Author IP Retention Period',

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
- * 비공개 첨부 저장소 디스크 해석기 (#916)
+ * 비공개 첨부 저장소 디스크 해석기 
  *
  * 우선순위 — 코어 첨부: ATTACHMENT_DISK env 명시 > 선택 > 종전 규칙(attachment.disk). 확장: 선택 > 확장 기본 디스크.
  * 「기본」·빈 값·정의되지 않은 디스크(꺼진 플러그인)는 선택 없음으로 본다.

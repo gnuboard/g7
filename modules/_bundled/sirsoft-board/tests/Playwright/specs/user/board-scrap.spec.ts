@@ -1,5 +1,5 @@
 /**
- * 게시글 스크랩 사용자 흐름 (#524 WP-A).
+ * 게시글 스크랩 사용자 흐름.
  *
  * 실브라우저로 네 갈래를 잰다:
  *   ① 마이페이지 목록이 세 상태의 행(정상 · 스크랩 중지 · 삭제글)을 구분해 그린다
@@ -81,7 +81,7 @@ async function openScrapTab(page: Page, token: string): Promise<void> {
   await expect(pcRows(page).first()).toBeVisible();
 }
 
-test.describe('게시글 스크랩 사용자 흐름 (#524)', () => {
+test.describe('게시글 스크랩 사용자 흐름', () => {
   // @scenario action=mypage_list,actor=owner,board_setting=use_scrap_off,post_state=alive,post_scope=same_board
   // @effects mypage_list_marks_scrap_disabled_row, mypage_list_marks_deleted_board_row
   test('목록이 세 상태의 행을 구분해 그린다', async ({ page, scrapSeed }) => {

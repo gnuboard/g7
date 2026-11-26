@@ -8,7 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * 템플릿 설정 기본값 되돌리기 요청 검증 (#434)
+ * 템플릿 설정 기본값 되돌리기 요청 검증
  *
  * `section` 을 주면 그 섹션만, 없으면 전체를 되돌린다. 섹션은 그 템플릿 선언의 섹션이어야 한다.
  */

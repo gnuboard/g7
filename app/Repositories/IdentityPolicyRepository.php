@@ -204,7 +204,7 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
 
         $deleted = (int) $query->delete();
 
-        // 대량 삭제는 모델 deleted 이벤트를 내지 않는다 — route scope 인덱스·hook target 캐시를 직접 지운다(#860)
+        // 대량 삭제는 모델 deleted 이벤트를 내지 않는다 — route scope 인덱스·hook target 캐시를 직접 지운다
         if ($deleted > 0) {
             IdentityPolicy::flushRouteScopeCache();
         }
@@ -389,7 +389,7 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
      * scope='hook' 정책의 target 목록(중복 제거)을 반환합니다.
      *
      * 동적 hook 구독 동기화(`EnforceIdentityPolicyListener::syncDynamicHookSubscriptions()`)가 부팅마다 부르므로
-     * 설치 완료 사이트에서는 캐시한다(#860). 정책이 바뀌면 `IdentityPolicy::flushRouteScopeCache()` 가 route scope
+     * 설치 완료 사이트에서는 캐시한다. 정책이 바뀌면 `IdentityPolicy::flushRouteScopeCache()` 가 route scope
      * 인덱스와 함께 지운다 — 모델 저장·삭제 이벤트와 이벤트 없는 대량 삭제(`cleanupStale()`) 모두.
      *
      * 마이그레이션 전이거나 DB 미연결 환경에서는 빈 배열을 반환해 부팅을 보호하며, 조회 실패의 빈 배열은

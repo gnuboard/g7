@@ -78,7 +78,7 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
      *   hook target 은 이 메서드가 단독 소유한다. 매 요청 부팅 후반(모듈/플러그인 로드 완료 뒤)과
      *   정책 sync·토글·확장 설치 시점에 호출되어 현재 target 목록으로 구독을 재동기화한다.
      *   target 목록은 `IdentityPolicyRepository::listHookTargets()` 가 캐시하고 정책이 바뀌면 지우므로
-     *   평상시 부팅은 DB 를 다시 조회하지 않는다(#860). 훅 발화 경로에는 추가 비용이 없다.
+     *   평상시 부팅은 DB 를 다시 조회하지 않는다. 훅 발화 경로에는 추가 비용이 없다.
      *
      * 멱등성: 이전에 이 메서드가 등록한 콜백을 removeAction 으로 먼저 제거한 뒤 현재 target 으로
      * 다시 등록한다. 정적 추적($dynamicCallbacks)이 HookManager 실제 상태와 항상 일치하므로,
@@ -406,7 +406,7 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
      *  2. (모델, 입력 배열) 짝 — 모델에 이미 채운 변경(`getDirty()`)이 있으면 그것을 쓰고, 비어 있으면
      *     입력값과 저장된 값을 비교해 실제로 바뀌는 항목만 센다. `before_update` 류 훅은 (아직 값을 채우지 않은
      *     모델, 저장할 데이터) 로 발화해 `getDirty()` 가 늘 비어 있다 — `getDirty()` 만 보던 판정은 회원 정보
-     *     수정에서 늘 빈 목록이 되어 연락처 변경 정책이 발화하지 않았다(#699·#736 D21).
+     *     수정에서 늘 빈 목록이 되어 연락처 변경 정책이 발화하지 않았다.
      *  3. 그 외 객체의 `getDirty()` — 모델을 채운 뒤 발행하는 훅.
      *
      * @param  array<int, mixed>  $args  훅 인자

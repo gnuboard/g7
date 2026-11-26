@@ -24,8 +24,8 @@ class PageResource extends BaseApiResource
             'id' => $this->id,
             'slug' => $this->slug,
             'title' => $this->title,
-            // 미발행 페이지 본문 미디어는 서명 주소로(관리자 화면의 <img>·<video> 는 인증 헤더가 없다), 발행 페이지는 정식 주소 (#883)
-            // 서명은 이 페이지가 소유한 해시만 — 다른 페이지 소유 해시는 원본 페이지의 게이트를 따른다 (#887)
+            // 미발행 페이지 본문 미디어는 서명 주소로(관리자 화면의 <img>·<video> 는 인증 헤더가 없다), 발행 페이지는 정식 주소
+            // 서명은 이 페이지가 소유한 해시만 — 다른 페이지 소유 해시는 원본 페이지의 게이트를 따른다
             'content' => app(PageContentMediaService::class)->presentContent($this->content, (bool) $this->published, (int) $this->id),
             'content_mode' => $this->content_mode ?? 'html',
             'published' => $this->published,

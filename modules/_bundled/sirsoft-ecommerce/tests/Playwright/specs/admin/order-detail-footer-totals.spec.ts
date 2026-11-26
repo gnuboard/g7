@@ -15,7 +15,7 @@
  *    적립=`ecommerce:text-center`+`ecommerce:font-medium`, 배송비=`ecommerce:whitespace-nowrap`
  *    (비 `text-center`). 색 클래스는 훅으로 쓰지 않는다 — DataGrid 가 합계행 칸에 직접 넣는
  *    `text-gray-900` 이 같은 칸의 색을 이겨(종전 `text-blue-600`·`text-label` 도 화면에 나타난 적이
- *    없다) #816 에서 레이아웃 색 클래스를 걷었다. `개`/`P` 접미사는 레이아웃에 리터럴로 박힌
+ *    없다) 레이아웃 색 클래스를 걷었다. `개`/`P` 접미사는 레이아웃에 리터럴로 박힌
  *    로케일 무관 문자라 단언에 써도 된다.
  *  - tfoot 의 선행 빈 셀(expandable/selectable) 유무에 좌우되지 않도록 인덱스 단언 금지.
  */

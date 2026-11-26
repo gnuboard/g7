@@ -3,7 +3,7 @@
 #   유형별 매트릭스(상태 어휘·귀책·청구 축)는 admin-claim-list-filter-section 과 각 유형의
 #   lifecycle 매니페스트가 이미 소유하고 있어, 여기서 조합마다 @scenario 를 또 달면 같은 축을
 #   두 곳에서 세게 된다. effects·test_files 축은 면제하지 않는다.
-feature: 관리자 클레임 컨트롤러 API 계약 (#599 — 목록 게이트 · 상세 · 상태 전이 · 일괄 · 송장 · 첨부)
+feature: 관리자 클레임 컨트롤러 API 계약 (목록 게이트 · 상세 · 상태 전이 · 일괄 · 송장 · 첨부)
 
 description: |
   `Admin\ClaimController` 는 운영자 화면 하나가 아니라 **네 유형(교환·반품·환불·취소)을 한
@@ -88,14 +88,14 @@ effects:
   - option_bulk_transitions_items_and_syncs_the_header
   - option_bulk_completed_completes_the_selected_items
   - option_bulk_rejects_items_of_another_claim_with_422
-  # ⑦ 송장 — 택배사와 번호는 쌍이다. 저장은 저장만 한다(#599 후속 운영 결정)
+  # ⑦ 송장 — 택배사와 번호는 쌍이다. 저장은 저장만 한다(후속 운영 결정)
   - collection_tracking_saves_without_moving_the_status
   - redelivery_tracking_saves_without_moving_the_status
   - collection_tracking_rejects_an_incomplete_pair
   # ⑧ 첨부
   - admin_uploads_and_clears_claim_attachments
   - image_upload_is_404_for_a_missing_claim
-  # ⑨ 신청서 칸 선택지 게이트 · 완료 가능 수 · 반려 사유 (#599 후속 운영 결정)
+  # ⑨ 신청서 칸 선택지 게이트 · 완료 가능 수 · 반려 사유 (후속 운영 결정)
   - claim_header_options_exclude_logistics_and_completion
   - claim_header_payment_pending_only_when_money_is_owed
   - claim_header_hides_approval_blocked_by_outstanding_payment
@@ -104,7 +104,7 @@ effects:
   - claim_rejection_requires_reason_on_every_entry
   - claim_item_rejection_reason_reaches_the_claim
   - claim_bulk_rejection_stores_reason_on_every_claim
-  # ⑩ 회수중·발송중 송장 필수 · 건너뛰기 · 완료 앞당기기 (#599 후속 운영 결정)
+  # ⑩ 회수중·발송중 송장 필수 · 건너뛰기 · 완료 앞당기기 (후속 운영 결정)
   - claim_item_logistics_transition_requires_tracking
   - claim_header_logistics_transition_requires_tracking
   - claim_bulk_logistics_transition_requires_tracking_per_claim
@@ -131,5 +131,5 @@ notes: |
   effects 합집합으로 판정하므로, 넷 중 아무 데나 밀어 넣으면 그 매니페스트의 서술과 effects 가
   어긋나 다음 사람이 「이 효과가 왜 여기 있나」를 되짚게 된다(2026-09-22 실측: 미선언 35건).
 
-  브라우저 축은 #599 세션 A·B 의 실측이 덮는다 — 이 파일은 API 계약 층이고, 같은 동작을
+  브라우저 축은 화면 실측이 덮는다 — 이 파일은 API 계약 층이고, 같은 동작을
   화면으로 다시 재는 것은 Playwright spec 과 계획서 인계 로그가 맡는다.

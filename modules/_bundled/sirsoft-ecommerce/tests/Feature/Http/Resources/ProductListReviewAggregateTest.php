@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 목록 응답의 리뷰 통계 정확도 회귀 테스트 (#519)
+ * 목록 응답의 리뷰 통계 정확도 회귀 테스트
  *
  * 평점·리뷰 수는 상품 표에 저장된 값이 아니라 조회 시 조인으로 붙는 집계다. 그래서 집계를
  * 붙이지 않은 조회 경로에서는 그 속성이 **아예 없는** 상태로 온다.

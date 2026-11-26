@@ -4,10 +4,10 @@
  * @description 비즈뿌리오 환경설정 화면의 의미 클래스가 제자리에 붙어 있는지
  *
  * 회귀 배경: 설정 화면을 KG이니시스 본인인증 화면처럼 고칠 때(1.0.0 개발 중) 그 화면에 남아 있던
- * 관리자 템플릿 의미 클래스 치환 밀림(#408)을 함께 옮겨 와, 저장 오류 상자의 제목이 옅은 오류 클래스
+ * 관리자 템플릿 의미 클래스 치환 밀림을 함께 옮겨 와, 저장 오류 상자의 제목이 옅은 오류 클래스
  * (`text-error-soft`)로 목록 줄과 같은 굵기·색이 됐다.
  * 원래 매핑: 섹션 제목 = `section-heading-md`, 오류 제목 = `text-error-strong`, 오류 목록 줄 = `text-error-soft`
- * (7.1.0 전수 실측 #408 클래스 밀림 후속).
+ * (7.1.0 전수 실측에서 드러난 클래스 밀림).
  *
  * @scenario-manifest tests/scenarios/plugin-settings-semantic-classes.yaml
  */

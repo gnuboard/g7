@@ -1,7 +1,7 @@
 /**
  * _localInit → 전역 `_local` 동기화가 **쓰기 시점의 canonical 상태**를 base 로 병합하는지 검증
  *
- * 회귀 배경 (#492 D-20)
+ * 회귀 배경
  *
  * 목록 화면은 URL query 로 필터/정렬을 표현하고, 라우트 진입 시 `init_actions` 가 그 query 를
  * `_local` 에 시드해 필터 컨트롤을 복원한다. 그런데 `_localInit`(데이터소스 initLocal) 동기화가

@@ -75,7 +75,7 @@ describe('ActionDispatcher.reloadExtensions (engine-v1.19.0)', () => {
   /**
    * 확장을 켠 직후 그 확장의 JS·CSS 를 다시 붙이는 일은 보조 작업이다 — 실패해도(곧바로 다시 꺼짐·라우트 캐시를 다시 굽는
    * 사이의 404·500 등) 켜기 자체는 끝났으므로 로그만 남긴다. 종전에는 위임을 executeAction 으로 해서, 바깥 try/catch 가
-   * 삼키기 전에 기본 오류 처리가 내부 문구 「Failed to execute action: reloadPluginHandlers」를 토스트로 띄웠다(#882 실측).
+   * 삼키기 전에 기본 오류 처리가 내부 문구 「Failed to execute action: reloadPluginHandlers」를 토스트로 띄웠다.
    *
    * @scenario case=card_toggle_pending
    * @effects extension_asset_reload_failure_is_silent

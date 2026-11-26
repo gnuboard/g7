@@ -11,7 +11,7 @@ use Modules\Sirsoft\Board\Support\BoardScreenUrl;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 게시판 화면 주소 래퍼(BoardScreenUrl) 테스트 (#792 WP-U3 F1-5·F1-6)
+ * 게시판 화면 주소 래퍼(BoardScreenUrl) 테스트
  *
  * 회원이 여는 주소(알림·검색·사이트맵)는 코어 화면 주소 헬퍼의 「사용자 화면 URL」·주소 필터를 따르고, 관리자 링크는
  * 사이트 주소, SEO 캐시용 기본 경로는 필터를 거치지 않는지 잠근다.

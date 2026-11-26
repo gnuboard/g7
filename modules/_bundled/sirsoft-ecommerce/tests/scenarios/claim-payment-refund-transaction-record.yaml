@@ -1,5 +1,5 @@
 # e2e:allow 화면 변경 없음 — 결제 건 raw_response 에 환급 거래 기록만 쌓인다(대사 근거).
-feature: 클레임 추가결제 PG 환급의 결제사 거래 ID 기록 (P-D11) — #747 C8
+feature: 클레임 추가결제 PG 환급의 결제사 거래 ID 기록 (P-D11)
 
 description: |
   클레임 추가결제를 PG 로 환급하면 결과의 transaction_id 를 버려, 결제사 취소 내역과 대사할 근거가 없었다.

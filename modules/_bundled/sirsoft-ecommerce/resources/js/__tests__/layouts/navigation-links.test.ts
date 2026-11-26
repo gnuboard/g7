@@ -1,7 +1,7 @@
 // e2e:allow 레이아웃 정적 구조(A·href·pageHref) 단언 전용 — 브라우저 축(Ctrl·가운데 클릭 새 탭)은 관리자 템플릿 admin-navigation-links.spec.ts 와 M1 링크 행 실측이 덮는다(시나리오 navigation-links.yaml).
 /**
  * @file navigation-links.test.ts
- * @description 이커머스 관리자 화면의 「다른 화면으로 옮기는」 자리가 링크(`<a href>`)인지 (#757 WP-L)
+ * @description 이커머스 관리자 화면의 「다른 화면으로 옮기는」 자리가 링크(`<a href>`)인지
  *
  * 화면 이동이 단추·span 에 `navigate` 액션을 붙인 구조라 렌더 시점에 주소가 없어 가운데 클릭·Ctrl+클릭·우클릭
  * 「새 탭에서 열기」 가 되지 않았다. 운영자는 여러 관리 화면을 동시에 열어 두고 일한다(2026-10-14). 이동은
@@ -300,7 +300,7 @@ function hasSelectionLinkInside(n: any, a: any): boolean {
  * 쓰이지 않게 된 항목은 시험이 알린다(아래 「제외 목록이 낡지 않았다」).
  */
 const EXCLUDE: { file: string; reason: string; match: (n: any, a: any) => boolean }[] = [
-    // 저장 안 한 변경 확인 창의 「떠나기」는 이동을 직접 하지 않고 탭 전환 이벤트만 보낸다(#753 — 이동은
+    // 저장 안 한 변경 확인 창의 「떠나기」는 이동을 직접 하지 않고 탭 전환 이벤트만 보낸다(이동은
     // 탭 본문 틀의 이벤트 받기가 한다). 판정식이 잡을 칸이 없어져 제외 항목을 두지 않는다.
     {
         file: 'layouts/admin/partials/admin_ecommerce_settings/_tab_identity_policies.json',
@@ -511,7 +511,7 @@ function scan(): Judged {
 const result = scan();
 const lines = (xs: Finding[]): string[] => xs.map((x) => x.what);
 
-describe('이커머스 화면 이동은 링크 (#757 WP-L)', () => {
+describe('이커머스 화면 이동은 링크', () => {
     // @scenario surface=admin_layout
     // @effects screen_moves_are_links
     it('모집단이 레이아웃·확장 조각 전체에서 파생된다', () => {

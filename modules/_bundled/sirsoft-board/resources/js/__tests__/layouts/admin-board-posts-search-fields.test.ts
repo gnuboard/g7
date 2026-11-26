@@ -1,6 +1,6 @@
 /**
  * @file admin-board-posts-search-fields.test.ts
- * @description 관리자 게시글 목록 검색 구분 (#524 WP-B) — 제목·내용을 따로 고를 수 있어야 한다.
+ * @description 관리자 게시글 목록 검색 구분 — 제목·내용을 따로 고를 수 있어야 한다.
  *
  * 고치기 전에는 검색 대상이 「전체 / 작성자」뿐이었다. 전체는 제목과 내용을 함께 훑으므로,
  * 「제목에 그 말이 든 글만」을 찾을 방법이 없었다 — 본문에 흔한 낱말이 들어간 글이 전부 걸려
@@ -20,7 +20,7 @@ const enLang = require('../../../lang/partial/en/admin/posts.json');
 const searchSelects = flattenNodes(layout)
     .filter((n: any) => asArray(n?.props?.options).some((o: any) => o.value === 'title_content'));
 
-describe('관리자 게시글 목록 — 검색 구분 (#524 WP-B)', () => {
+describe('관리자 게시글 목록 — 검색 구분', () => {
     // @scenario surface=admin_post_list, search_field=title_content
     // @effects admin_post_search_field_offers_five_targets
     it('검색 대상이 전체·제목+내용·제목·내용·작성자 다섯이다', () => {

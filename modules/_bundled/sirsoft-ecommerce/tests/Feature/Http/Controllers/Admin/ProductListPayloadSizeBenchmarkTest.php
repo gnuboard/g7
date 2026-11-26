@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 관리자 상품목록 응답 크기·쿼리 수 계측 (#518 / 공개 #76)
+ * 관리자 상품목록 응답 크기·쿼리 수 계측 (공개 #76)
  *
  * 계획서가 요구한 지표를 같은 데이터셋(상품 100건 × 옵션 20건)에서 잰다. 종전 동작은
  * `?with_options=1` 하위호환 경로가 그대로 재현하므로, 코드를 되돌리지 않고도 전/후를
@@ -120,7 +120,7 @@ class ProductListPayloadSizeBenchmarkTest extends ModuleTestCase
         $reduction = 100 - (int) round($after['bytes'] / $before['bytes'] * 100);
 
         fwrite(STDERR, sprintf(
-            "\n[#518 성능 지표] 상품 %d건 × 옵션 %d건 (per_page=100)\n".
+            "\n[성능 지표] 상품 %d건 × 옵션 %d건 (per_page=100)\n".
             "  옵션 포함(종전): %s bytes / 쿼리 %d회\n".
             "  옵션 제외(현행): %s bytes / 쿼리 %d회\n".
             "  응답 감소율: %d%%\n".

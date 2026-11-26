@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
- * 메뉴 아이콘 서비스(MenuIconService) 계약 테스트 (#381).
+ * 메뉴 아이콘 서비스(MenuIconService) 계약 테스트.
  *
  * 업로드 분기(SVG 는 파일 없이 코드, 래스터는 첨부), 저장 변환(첨부 hash 를 DB 에서 다시 읽음·확장 이미지는 현재값),
  * 첨부 사용 가능 판정(컬렉션·출처·MIME·업로더·바인딩)을 서비스 단위로 잠근다.
@@ -154,7 +154,7 @@ class MenuIconServiceTest extends TestCase
     }
 
     /**
-     * 회귀(#381 validate-plan 5차 2회차 ④): 일반 첨부 올리기(collection 을 menu_icons 로 지정)로 올린 1MB 넘는 이미지도
+     * 회귀(plan 5차 2회차 ④): 일반 첨부 올리기(collection 을 menu_icons 로 지정)로 올린 1MB 넘는 이미지도
      * 다른 조건이 맞으면 메뉴 아이콘으로 쓸 수 있어, 아이콘 업로드의 1MB 상한을 우회했다. 쓸 수 있는 첨부에도 같은 상한을 건다.
      *
      * @scenario icon_type=image_attachment, entry=api_update
@@ -175,7 +175,7 @@ class MenuIconServiceTest extends TestCase
     }
 
     /**
-     * 회귀(#381 validate-plan 6차 E-6a): 업로드 용량 오류 문구의 한도가 숫자(1024)로 고정돼, 공용 한도 상수를 바꾸면 규칙은
+     * 회귀(plan 6차 E-6a): 업로드 용량 오류 문구의 한도가 숫자(1024)로 고정돼, 공용 한도 상수를 바꾸면 규칙은
      * 바뀌는데 문구는 옛 숫자로 남았다. 문구의 한도도 규칙과 같은 상수에서 나온다.
      *
      * @scenario icon_type=image_attachment, entry=upload

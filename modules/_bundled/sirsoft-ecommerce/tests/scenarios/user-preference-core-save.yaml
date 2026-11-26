@@ -42,7 +42,7 @@ effects:
   - field_error_shown_under_field               # 코어 저장 요청의 필드 오류를 그 칸 아래에 표시
   - field_options_follow_selectable_currencies  # 칸 옵션 = 선택 가능 통화(기본 또는 환율 설정)
   - profile_save_syncs_global_preference        # 프로필 저장 성공 시 전역 선호 통화·배송국가 갱신
-  - core_template_has_no_hardcoded_ecommerce_preference  # 사용자 템플릿의 내 정보 보기, 수정 화면에 박힌 통화 칸, 배송국가 칸과 이커머스 모듈 전역 참조가 없다(확장별 카드가 항목 계약으로 그린다, #490)
+  - core_template_has_no_hardcoded_ecommerce_preference  # 사용자 템플릿의 내 정보 보기, 수정 화면에 박힌 통화 칸, 배송국가 칸과 이커머스 모듈 전역 참조가 없다(확장별 카드가 항목 계약으로 그린다)
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/UserPreferenceCoreSaveTest.php

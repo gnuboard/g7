@@ -10,7 +10,7 @@
  * 이 파일은 TemplateApp 이 실제로 부르는 메서드를 거쳐 "엔진이 이 싱크에서 안전 평가기를
  * 실제로 쓰는지" 를 고정한다.
  *
- * #869: 종전에는 아무도 부르지 않는 private 메서드(`evaluateScriptCondition`,
+ * 종전에는 아무도 부르지 않는 private 메서드(`evaluateScriptCondition`,
  * `evaluateComputedExpression`)를 직접 불렀다. 그 사이 실제 스크립트 로드 경로는 존재하지 않는
  * `this.bindingEngine` 을 평가기에 넘겨, `{{...}}` 조건이 붙은 레이아웃 스크립트가 조건과 무관하게
  * 한 번도 로드되지 않았는데 이 시험은 통과했다. 그래서 실제 경로를 부르도록 바꿨다.

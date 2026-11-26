@@ -10,7 +10,7 @@ description: |
     - 봇 렌더: `?locale=ja` 를 유효 로케일로 받는다. 미지원 로케일(fr)은 거부하지 않고 기본으로 접는다.
     - 캐시: 같은 URL 이라도 로케일마다 캐시 키가 다르다.
 
-  (#609 부채 정리 — 소유 매니페스트가 없던 tests/Feature/Seo/JaLocaleSeoIntegrationTest.php 의 원장)
+  (부채 정리 — 소유 매니페스트가 없던 tests/Feature/Seo/JaLocaleSeoIntegrationTest.php 의 원장)
 
 axes:
   surface: [sitemap_xml, seo_middleware, seo_cache_key]   # 동적 로케일을 소비하는 SEO 지점

@@ -5,7 +5,7 @@ namespace App\Support;
 use App\Extension\HookManager;
 
 /**
- * 서버가 만드는 **사람이 여는 화면 주소** 헬퍼 (#792 D4·D13·D14).
+ * 서버가 만드는 **사람이 여는 화면 주소** 헬퍼.
  *
  * 비밀번호 재설정·알림 메일 링크·결제 뒤 돌아가는 주소처럼 서버가 화면 주소를 만들 때 쓴다. 호출자가 키와 G7
  * 기본 경로를 함께 넘기고(`ScreenUrl::path('auth.reset_password', '/reset-password')`), 개발자는 필터 훅

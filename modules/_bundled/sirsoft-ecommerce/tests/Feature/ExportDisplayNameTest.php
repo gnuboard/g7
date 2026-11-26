@@ -21,7 +21,7 @@ use Modules\Sirsoft\Ecommerce\Services\ExportService;
 use Modules\Sirsoft\Ecommerce\Tests\ExportTestCase;
 
 /**
- * 데이터 내보내기의 회원 이름 (#490 9단계, P22)
+ * 데이터 내보내기의 회원 이름
  *
  * | 자리 | 이름 |
  * | --- | --- |

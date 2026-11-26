@@ -5,7 +5,7 @@ namespace App\Support\Files;
 use Illuminate\Http\UploadedFile;
 
 /**
- * 업로드 파일 내용 판정의 단일 입구 — 내용 MIME 과 내용 추론 확장자 (#887)
+ * 업로드 파일 내용 판정의 단일 입구 — 내용 MIME 과 내용 추론 확장자
  *
  * 업로드 검증 두 규칙이 같은 곳에서 파일 내용을 읽게 한다.
  *

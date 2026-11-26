@@ -3,7 +3,7 @@
  * @file board-report-modal-fail-keeps-open.test.tsx
  * @description 사용자 게시판 [신고] 창 — 제출이 실패해도 창과 입력한 사유가 남고, 서버 검증 오류가 칸 아래에 보인다 (7.1.1)
  *
- * 종전에는 제출 실패(409·403·422) 때 창을 닫고 토스트만 남겼다(#413-60 의 「모달 닫고 토스트」). 그래서 422(검증 오류)로 실패하면
+ * 종전에는 제출 실패(409·403·422) 때 창을 닫고 토스트만 남겼다(60 의 「모달 닫고 토스트」). 그래서 422(검증 오류)로 실패하면
  * 적어 둔 사유가 창과 함께 사라져 다시 써야 했다 — 같은 기능의 관리자 창은 실패해도 창과 값을 유지한다. 관리자 창과 같게
  * 실패 시 창을 유지하고 오류 토스트를 띄우며, 422 의 칸별 오류(`error.errors`)를 칸 아래에 보인다. 성공 시 닫힘·처음 열기 빈 값·
  * 취소 뒤 초기화는 그대로다.
@@ -38,7 +38,7 @@ const POST = { data: { id: 5, board: { report_types: [{ value: 'spam', label: '�
 function makeRegistry(): MockComponentRegistry {
     const registry = createMockComponentRegistryWithBasics();
     registry.register('basic', 'Icon', ({ className }: { className?: string }) => React.createElement('i', { className, 'aria-hidden': 'true' }));
-    // 실물과 같이 고정 하단(footer)도 그린다 — 신고 창 단추가 고정 하단으로 옮겨 갔다(#869)
+    // 실물과 같이 고정 하단(footer)도 그린다 — 신고 창 단추가 고정 하단으로 옮겨 갔다
     registry.register('composite', 'Modal', (props: any) =>
         React.createElement('section', { role: 'dialog', 'aria-label': props.title }, props.children, renderModalFooterStandIn(props)));
     registry.register('composite', 'Avatar', () => null);

@@ -13,7 +13,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 반응 API Feature 테스트.
  *
  * 등록/전환/해제, reaction_counts 증감 정합성(전환 포함), use_reaction off·비활성 유형
- * 차단, 본인 글 차단, 비로그인 차단을 종단 검증한다 (이슈 #525 §10 테스트 범위).
+ * 차단, 본인 글 차단, 비로그인 차단을 종단 검증한다 (§10 테스트 범위).
  *
  * @scenario case=guest_react_blocked
  */

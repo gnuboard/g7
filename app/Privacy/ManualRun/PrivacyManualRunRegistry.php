@@ -70,7 +70,7 @@ class PrivacyManualRunRegistry
             $runners[$runner->key()] = $runner;
         }
 
-        // 비밀번호 만료 2단계 (#736) — 보안 탭의 「지금 실행」. 개인정보 조치와 같은 접수·진행 장치를 쓴다.
+        // 비밀번호 만료 2단계 — 보안 탭의 「지금 실행」. 개인정보 조치와 같은 접수·진행 장치를 쓴다.
         foreach (PasswordExpiryService::STAGES as $stage) {
             $runner = new PasswordExpiryStageRunner($stage, $this->passwordExpiryService);
             $runners[$runner->key()] = $runner;

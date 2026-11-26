@@ -1,5 +1,5 @@
 /**
- * 눌러 쓰는 비단추 요소의 손 모양 커서 (#869 κ)
+ * 눌러 쓰는 비단추 요소의 손 모양 커서
  *
  * Tailwind v4 는 커서를 주지 않는다. 클릭을 받는 Flex·Grid, 눌러 쓰는 카드(`card-clickable`), 본문 확대 이미지
  * (`data-g7-zoom`)가 화살표 커서였다. 부품이 클릭을 받을 때 `cursor-pointer` 를 더하고, 의미 클래스와 바탕 규칙이 커서를 준다.
@@ -13,12 +13,12 @@ import { render } from '@testing-library/react';
 import { Flex } from '../layout/Flex';
 import { Grid } from '../layout/Grid';
 
-// 바탕 규칙(`@layer base`, 확대 이미지 커서)은 main.css, 의미 클래스(눌러 쓰는 카드 등)는 semantic.css 에 있다(#434 분리).
+// 바탕 규칙(`@layer base`, 확대 이미지 커서)은 main.css, 의미 클래스(눌러 쓰는 카드 등)는 semantic.css 에 있다(분리).
 const css = ['main.css', 'semantic.css']
   .map((name) => fs.readFileSync(path.resolve(__dirname, '../../styles', name), 'utf8'))
   .join('\n');
 
-describe('눌러 쓰는 요소의 커서 (#869 κ)', () => {
+describe('눌러 쓰는 요소의 커서', () => {
   // @scenario element=flex
   // @effects clickable_element_shows_pointer_cursor
   it('Flex 는 클릭을 받을 때만 cursor-pointer 를 더한다', () => {

@@ -266,7 +266,7 @@ describe('관리자 기간 입력칸 이름', () => {
     it.each([
         [
             'admin/partials/admin_ecommerce_product_form/_partial_product_options.json',
-            // 반복 행 안이라 「{옵션명 또는 N번째 행} 마일리지 적립값·적립 단위」 로 행을 품는다(#757, 수정 후 브라우저 실측)
+            // 반복 행 안이라 「{옵션명 또는 N번째 행} 마일리지 적립값·적립 단위」 로 행을 품는다(수정 후 브라우저 실측)
             [
                 ['Input', '$t:common.row_cell|row={{$localized(opt.option_name) || $t(\'common.row_n\', {n: optIdx + 1})}}|column={{$t(\'sirsoft-ecommerce.admin.product.options.mileage_value_label\')}}'],
                 ['Select', '$t:common.row_cell|row={{$localized(opt.option_name) || $t(\'common.row_n\', {n: optIdx + 1})}}|column={{$t(\'sirsoft-ecommerce.admin.product.options.mileage_type_label\')}}'],

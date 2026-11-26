@@ -111,7 +111,7 @@ class ScheduleNotificationDataListener implements HookListenerInterface
             // 메일 본문이 길어지지 않게 자른다 — 전체 출력은 실행 이력에 있다.
             'error' => mb_substr($message, 0, 500),
             'failed_at' => $failedAt,
-            // 운영자가 여는 화면 주소 — 화면 키를 거쳐 주소 필터(core.screen_url.filter_path)를 받는다(#792 계약).
+            // 운영자가 여는 화면 주소 — 화면 키를 거쳐 주소 필터(core.screen_url.filter_path)를 받는다(계약).
             'schedule_url' => ScreenUrl::absoluteForLinks(
                 'admin.schedules',
                 '/admin/schedules?search_field=identifier&search_keyword={name}',

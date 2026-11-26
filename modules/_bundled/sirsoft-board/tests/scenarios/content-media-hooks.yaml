@@ -1,4 +1,4 @@
-feature: 게시판 본문 미디어 — 코어 공용 훅 `core.content_media.*` 발화 (#887)
+feature: 게시판 본문 미디어 — 코어 공용 훅 `core.content_media.*` 발화
 
 description: |
   게시판 본문 미디어의 업로드·영구 삭제는 코어 골격(`AbstractContentMediaService`)이 돌리므로 공용 훅이 발화한다. 업로드는

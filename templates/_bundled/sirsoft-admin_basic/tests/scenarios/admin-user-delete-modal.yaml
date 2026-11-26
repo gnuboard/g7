@@ -4,7 +4,7 @@ description: |
   회원 목록의 삭제 확인 창은 지울 대상을 `_global.modal_data` 로 받아 연 뒤(openModal 의 params 로 넘기지 않는다)
   그 uuid 로 DELETE 를 보낸다. 지우는 동안(`_global.isDeleting`) 삭제와 취소 단추가 모두 잠기고 삭제 단추에 진행 표시와
   문구 전환이 붙는다. 성공하면 창을 닫고 목록을 다시 부르고 알린다. 실패하면 잠금을 풀고 서버 문구(`error.message`)로
-  알린다. 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1 — 640px 이하에서 세로로 쌓인다).
+  알린다. 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(640px 이하에서 세로로 쌓인다).
 
 # axis 의미:
 #   area — 시험이 보는 계약 묶음. data_handoff 대상 전달, loading_state 지우는 중 잠금, result_handlers 성공·실패 처리,

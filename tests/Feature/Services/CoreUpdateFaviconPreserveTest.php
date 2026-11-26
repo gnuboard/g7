@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 코어 업데이트의 운영자 public/favicon.ico 보존 판정 테스트 (#434 D7)
+ * 코어 업데이트의 운영자 public/favicon.ico 보존 판정 테스트
  *
  * 이름 기준 업데이트 제외(`G7_UPDATE_EXCLUDES`)에 `favicon.ico` 를 넣으면 번들 아이콘(`public/assets/core/favicon/favicon.ico`)
  * 갱신까지 막히므로, 경로 하나(`public/favicon.ico`)만 건너뛴다. 비어 있는 파일(7.1 이하 기본값)과 배포본과 같은 파일은

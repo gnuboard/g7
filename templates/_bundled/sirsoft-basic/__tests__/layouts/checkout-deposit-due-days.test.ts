@@ -1,5 +1,5 @@
 /**
- * 주문서 입금 기한 안내 — 서버 SSoT 바인딩 계약 테스트 (#493 E1)
+ * 주문서 입금 기한 안내 — 서버 SSoT 바인딩 계약 테스트
  *
  * 배경: 입금 기한은 결제수단과 무관하게 관리자 환경설정의 미입금 자동취소 기한
  *   (`order_settings.auto_cancel_days`) 하나만 사용한다. 서버는 가상계좌·무통장입금
@@ -73,7 +73,7 @@ const NOTICES: Array<[string, string]> = [
     ['무통장입금', 'dbank_due_notice'],
 ];
 
-describe('주문서 입금 기한 안내 — 서버 SSoT 바인딩 (#493 E1)', () => {
+describe('주문서 입금 기한 안내 — 서버 SSoT 바인딩', () => {
     it.each(NOTICES)('%s 안내가 auto_cancel_days 를 참조한다', (_label, translationKey) => {
         expect(extractDaysExpression(translationKey)).toContain(SSOT_KEY);
     });

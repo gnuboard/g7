@@ -1,4 +1,4 @@
-feature: 페이지 작성 화면 첨부 업로더 — 서버 공개 한도 그대로 넘기기 (#599 validate P7)
+feature: 페이지 작성 화면 첨부 업로더 — 서버 공개 한도 그대로 넘기기
 
 description: |
   서버 publicLimits() 가 개수 상한 없음(max_count=null)을 알려도 레이아웃 `?? 5` 가 5개 상한으로 바꿨고,
@@ -18,4 +18,4 @@ test_files:
   - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/adminPageAttachmentUploaderProps.test.ts
 
 notes: |
-  e2e_browser=not_applicable — props 표현식 수정. 브라우저 실측은 #599 통합 단계에서 한다.
+  e2e_browser=not_applicable — props 표현식 수정. 브라우저 실측은 통합 단계에서 한다.

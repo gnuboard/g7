@@ -80,7 +80,7 @@ class PageController extends AdminBaseController
                 201
             );
         } catch (ContentMediaLimitExceededException $e) {
-            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다 (#883)
+            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다
             return $this->error($e->getMessageKey(), 422, ['code' => 'content_media_limit_exceeded', 'content' => [$e->getMessage()]], $e->getMessageParams());
         } catch (AttachmentLimitExceededException $e) {
             // 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
@@ -139,7 +139,7 @@ class PageController extends AdminBaseController
                 new PageResource($page)
             );
         } catch (ContentMediaLimitExceededException $e) {
-            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다 (#883)
+            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다
             return $this->error($e->getMessageKey(), 422, ['code' => 'content_media_limit_exceeded', 'content' => [$e->getMessage()]], $e->getMessageParams());
         } catch (AttachmentLimitExceededException $e) {
             // 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
@@ -327,7 +327,7 @@ class PageController extends AdminBaseController
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
         } catch (ContentMediaLimitExceededException $e) {
-            // 복원 본문도 저장처럼 본문 미디어를 동기화한다 — 복제할 것까지 세어 문서당 최대를 넘으면 복원 전체가 되돌아간다 (#887)
+            // 복원 본문도 저장처럼 본문 미디어를 동기화한다 — 복제할 것까지 세어 문서당 최대를 넘으면 복원 전체가 되돌아간다
             return $this->error($e->getMessageKey(), 422, ['code' => 'content_media_limit_exceeded', 'content' => [$e->getMessage()]], $e->getMessageParams());
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.page.restore_failed', 500, $e->getMessage());

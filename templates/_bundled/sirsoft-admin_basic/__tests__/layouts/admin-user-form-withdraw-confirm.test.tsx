@@ -65,7 +65,7 @@ const TestButton: React.FC<any> = ({ children, onClick, disabled, className }) =
 );
 const TestIcon: React.FC<any> = ({ name }) => <i data-icon={name} />;
 const TestFragment: React.FC<any> = ({ children }) => <>{children}</>;
-// 진짜 Modal — 확인·취소 단추가 고정 하단(props.footer)에 있어 Modal 이 그 자리를 그려야 보인다(#869 P1)
+// 진짜 Modal — 확인·취소 단추가 고정 하단(props.footer)에 있어 Modal 이 그 자리를 그려야 보인다
 const TestModal = makeHarnessModal({ testId: () => 'withdraw-confirm-dialog' });
 
 function setupRegistry(): ComponentRegistry {

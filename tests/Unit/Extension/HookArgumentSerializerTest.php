@@ -148,7 +148,7 @@ class HookArgumentSerializerTest extends TestCase
     /**
      * Backed Enum (string) 이 직렬화/역직렬화되는지 검증합니다.
      *
-     * 회귀 차단 (이슈 #204):
+     * 회귀 차단:
      * 큐 디스패치된 hook listener 가 enum 인자를 받을 때 deserialize 가 null 로 떨어져
      * TypeError 발생 (예: OrderActivityLogListener::handleOrderOptionAfterStatusChange 의
      * OrderStatusEnum 인자). HookArgumentSerializer 가 BackedEnum 을 처리하지 않는 사각지대.
@@ -216,7 +216,7 @@ class HookArgumentSerializerTest extends TestCase
     /**
      * Hard delete 된 모델도 deserialize 시 attributes 스냅샷으로 in-memory 복원되는지 검증.
      *
-     * 회귀 차단 (이슈 #204):
+     * 회귀 차단:
      * Order/Product 등 hard-delete 후 after_delete 훅이 큐 워커에서 dispatch 될 때
      * find($id) 가 null 반환 → listener TypeError. SoftDeletes 처리(40d98e2a7) 의 사각지대.
      * 직렬화 시 attributes 도 함께 저장하고, find() 가 null 이면 attributes 로 모델 재생성.

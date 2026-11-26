@@ -1,5 +1,5 @@
 /**
- * #810 후속 — 문구 자리·머리글·등장 효과와 메뉴 겹침.
+ * 문구 자리·머리글·등장 효과와 메뉴 겹침.
  * @scenario-manifest tests/scenarios/text-layout-overlay.yaml
  *
  * 사이트 화면: 공개 API 응답을 `page.route` 로 바꿔(운영 배너·위치 설정은 건드리지 않는다) 메뉴 겹치기·문구 자리·효과를 켜고,

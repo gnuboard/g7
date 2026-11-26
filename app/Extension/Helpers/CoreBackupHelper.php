@@ -775,7 +775,7 @@ class CoreBackupHelper
         $protectedSet = self::normalizeProtectedSet($protectedPaths);
         $allowedTargetSet = self::normalizeProtectedSet($targets);
         $excludeSet = array_values(array_filter(array_map('trim', $excludes)));
-        // custom 예약 자리(#792)는 적용 목록·신규 파일 manifest 어디에도 들어가지 않는다
+        // custom 예약 자리는 적용 목록·신규 파일 manifest 어디에도 들어가지 않는다
         $skipSet = self::normalizeSkipPaths(UpdateReservedPaths::mergeInto($skipPaths));
 
         $targets = array_values($targets);
@@ -1211,8 +1211,8 @@ class CoreBackupHelper
      *
      * 배경: `protected_paths` 의 확장 부모(`modules`/`plugins`/`templates`/`lang-packs`)는
      * "자동 발견 폴백" 이 활성 서브디렉토리(`modules/sirsoft-*`)를 통째로 삭제하는
-     * 회귀(#347) 를 막기 위한 방어인데, 정상 증분 흐름에서는 `_bundled` 갱신까지
-     * 함께 막아 코어 업데이트로 번들 확장 파일이 반영되지 않는 결함(#452 / 공개 #64)을
+     * 회귀 를 막기 위한 방어인데, 정상 증분 흐름에서는 `_bundled` 갱신까지
+     * 함께 막아 코어 업데이트로 번들 확장 파일이 반영되지 않는 결함(공개 #64)을
      * 유발했다. targets 에 명시된 경로가 protected 보다 더 구체적(하위)이면 예외 처리한다.
      *
      * @param  string  $relative  검사할 상대 경로

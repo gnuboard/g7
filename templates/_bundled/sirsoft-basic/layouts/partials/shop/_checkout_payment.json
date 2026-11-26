@@ -1,5 +1,5 @@
 {
-    "comment": "주문서의 결제수단 칸 — 목록을 여기 적지 않고 운영자가 켜 둔 카탈로그(`paymentSettings`)를 그대로 편다.\n     그래서 결제수단이 늘어도 이 조각은 손대지 않는다. 이름·아이콘·브랜드 마크도 카탈로그가 준 값이다.\n     고른 뒤 추가 입력이 필요한 수단(가상계좌·무통장)만 그 아래에 자기 칸을 편다.\n     칸 id(checkout_payment_method_section)와 버튼의 data-payment-method(결제수단 id)는 PG 플러그인과의 약속이다.\n     결제 통화에서 고를 수 없는 수단(예: 엔화 결제의 일부 PG 수단)은 서버가 체크아웃 응답 `allowed_payment_methods` 로 알려 주고\n     주문서 계산값 `selectablePaymentMethods` 가 그 목록으로 거른다(#639 D17) — 예전처럼 플러그인이 그려진 버튼을 찾아 숨기지 않는다. 주문 생성 검증도 같은 판정이다.",
+    "comment": "주문서의 결제수단 칸 — 목록을 여기 적지 않고 운영자가 켜 둔 카탈로그(`paymentSettings`)를 그대로 편다.\n     그래서 결제수단이 늘어도 이 조각은 손대지 않는다. 이름·아이콘·브랜드 마크도 카탈로그가 준 값이다.\n     고른 뒤 추가 입력이 필요한 수단(가상계좌·무통장)만 그 아래에 자기 칸을 편다.\n     칸 id(checkout_payment_method_section)와 버튼의 data-payment-method(결제수단 id)는 PG 플러그인과의 약속이다.\n     결제 통화에서 고를 수 없는 수단(예: 엔화 결제의 일부 PG 수단)은 서버가 체크아웃 응답 `allowed_payment_methods` 로 알려 주고\n     주문서 계산값 `selectablePaymentMethods` 가 그 목록으로 거른다 — 예전처럼 플러그인이 그려진 버튼을 찾아 숨기지 않는다. 주문 생성 검증도 같은 판정이다.",
     "meta": {
         "is_partial": true,
         "_e2e_allow": "e2e:allow S4-D14 — 결제수단 칸·빈 목록 안내의 목록식을 고객 선택 가능 계산값으로 바꿨다. 대체 검증: Vitest 구조·식 평가(checkout-payment-method-selectable) + 전용 Chrome 실측(EXCL 창). 결제수단 설정을 바꾸는 전역 배타 상태가 필요해 공용 Playwright E2E 로 두지 않는다.",

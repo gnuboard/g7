@@ -14,7 +14,7 @@ description: |
       (aborted_message_generic)
 
   수정 이력:
-    - 이슈 #413 item 26: 부분 적용 방식 → 원자적(all-or-nothing) 롤백으로 전환
+    - 부분 적용 방식 → 원자적(all-or-nothing) 롤백으로 전환
     - BoardService.bulkApplySettings 를 DB::transaction 으로 래핑, 첫 실패에서 throw
     - BulkApplyAbortedException(forBoard/forColumns) 가 중단 지점 정보 캐리어
     - 응답: 성공 rolled_back=false / 롤백 rolled_back=true (둘 다 200)

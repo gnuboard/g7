@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 삭제된 게시글 첨부파일 접근 차단 테스트 (#413-50-4)
+ * 삭제된 게시글 첨부파일 접근 차단 테스트 (50-4)
  *
  * 첨부파일은 본문 권한(getFilteredContent)과 별개 경로라, 본문이 삭제 마스킹되어도
  * 첨부 목록/다운로드/미리보기는 글 상태를 검사하지 않아 그대로 노출되는 결함이 있었습니다.

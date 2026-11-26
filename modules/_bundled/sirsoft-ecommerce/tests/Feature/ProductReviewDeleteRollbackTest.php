@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 후기·후기 이미지 삭제의 롤백 — 파일은 커밋된 뒤에만 지운다 (#883 3단계)
+ * 후기·후기 이미지 삭제의 롤백 — 파일은 커밋된 뒤에만 지운다
  *
  * 종전에는 파일을 먼저 지우고 레코드를 지워, 같은 트랜잭션이 되돌아가면 레코드만 살아나 깨진 이미지가 남았다.
  * 후기 이미지 단건 삭제는 트랜잭션도 없었다.

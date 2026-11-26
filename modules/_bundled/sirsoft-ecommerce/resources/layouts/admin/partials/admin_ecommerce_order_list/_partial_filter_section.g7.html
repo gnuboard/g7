@@ -893,7 +893,7 @@ $t:sirsoft-ecommerce.admin.order.filter.claim.requested_at</span>
         {{preset.name}}
       </button>
     </div>
-    <!-- 검색 영역 - 검색 필드와 버튼 영역 분리. `flex flex-col` 은 기준 display 다 — 768px 이상 구간 값에도 `flex` 를 함께 적는다(구간 값은 className 을 통째로 바꾼다). 빼면 flex-row 가 방향만 정하고 요소는 block 으로 남아 검색행과 버튼행이 두 줄로 갈린다 (#408 시맨틱 치환 때 사라졌던 회귀, 2026-08-26 복원). -->
+    <!-- 검색 영역 - 검색 필드와 버튼 영역 분리. `flex flex-col` 은 기준 display 다 — 768px 이상 구간 값에도 `flex` 를 함께 적는다(구간 값은 className 을 통째로 바꾼다). 빼면 flex-row 가 방향만 정하고 요소는 block 으로 남아 검색행과 버튼행이 두 줄로 갈린다 (시맨틱 치환 때 사라졌던 회귀, 2026-08-26 복원). -->
     <div data-ref="search_row_wrapper" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-3">
       <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:items-center ecommerce:gap-3"/>
       <!-- F-001, F-002 검색 필드 + 검색어 입력 -->

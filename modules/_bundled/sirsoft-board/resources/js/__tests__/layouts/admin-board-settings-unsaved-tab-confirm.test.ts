@@ -154,7 +154,7 @@ describe('게시판 환경설정 — 미저장 변경이 있을 때 탭 전환 �
     // 필터, 검색, 초기화, 쪽 넘김은 모두 이 설정 화면 경로로 옮긴다(다른 경로면 다른 레이아웃으로 넘어간다)
     const navigates = collect(identityTab, (n) => n.handler === 'navigate');
     expect(navigates.length).toBeGreaterThan(0);
-    // 쪽 넘김은 링크(#757 D12) — path 없는 navigate 는 감싼 A 의 href 로 가므로 목적지는 href 로 본다
+    // 쪽 넘김은 링크 — path 없는 navigate 는 감싼 A 의 href 로 가므로 목적지는 href 로 본다
     for (const n of navigates) if (n.params?.path !== undefined) expect(n.params.path).toBe('/admin/boards/settings');
     const links = collect(identityTab, (n) => n.name === 'A');
     expect(links.length).toBeGreaterThan(0);

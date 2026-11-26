@@ -21,7 +21,7 @@ use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
- * 로그인 문맥 보존과 토큰 절대 상한 (#798 K7)
+ * 로그인 문맥 보존과 토큰 절대 상한
  *
  * 외부 인증이 로그인 문맥 `max_session_minutes` 로 세션 수명 상한을 주면 토큰 만료가 그 시각을 넘지 않는다 — 사용 중 연장(슬라이드)과
  * 갱신(refresh)도 넘지 못한다. 문맥(`max_session_minutes`, `external_ref`)은 2단계 인증을 거쳐도 유지되고, 로그인 완료 훅에

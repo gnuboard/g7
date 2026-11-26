@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\CouponAutoIssueService;
 
 /**
- * 첫구매 쿠폰 자동발급·회수 리스너 (#952)
+ * 첫구매 쿠폰 자동발급·회수 리스너
  *
  * 주문 상태가 바뀔 때마다 그 주문을 다시 판정한다. 목표 상태가 취소·반품완료면 회수, 그 밖이면 발급 판정이다.
  * 큐로 돈다(기본) — 판정은 언제나 지금의 DB 상태로 하므로 큐가 늦게 돌아도 취소된 주문에 쿠폰이 남지 않는다.

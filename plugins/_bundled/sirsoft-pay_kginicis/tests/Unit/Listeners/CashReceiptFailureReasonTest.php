@@ -14,7 +14,7 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 /**
- * 현금영수증 발급·취소 실패 사유의 원문 가림 (#858)
+ * 현금영수증 발급·취소 실패 사유의 원문 가림
  *
  * 리스너가 돌려준 실패 사유는 현금영수증 이력에 남아 관리자 주문 상세 결제 정보와 구매자 응답에 그대로 보인다.
  * KG이니시스가 돌려준 거절 사유(resultMsg)는 그대로 싣고, 통신 예외 원문(결제대행사 API 주소·cURL 문구)은

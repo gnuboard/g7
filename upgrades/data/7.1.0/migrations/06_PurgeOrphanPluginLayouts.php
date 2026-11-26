@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 삭제된 플러그인이 남긴 레이아웃 행을 지웁니다 (#712).
+ * 삭제된 플러그인이 남긴 레이아웃 행을 지웁니다.
  *
  * 7.0.x 의 플러그인 비활성화·재활성화·삭제는 레이아웃 정리에 모듈용 조회(`source_type = module` 조건)를 써서, 플러그인
  * 레이아웃(설정 화면 등)이 플러그인을 삭제한 뒤에도 `template_layouts` 에 그대로 남았습니다. 7.1.0 은 출처 타입을 갈라

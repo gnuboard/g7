@@ -50,7 +50,7 @@ class OrderPaymentTest extends ModuleTestCase
      */
     public function test_order_payment_method_is_stored_as_plain_string(): void
     {
-        // payment_method 는 enum 캐스트를 두지 않는다 (#475) — PG 플러그인이 등록하는
+        // payment_method 는 enum 캐스트를 두지 않는다 — PG 플러그인이 등록하는
         // 확장 결제수단(예: nhnkcp_naverpay)은 enum case 가 없어 캐스트가 ValueError 를 던지기 때문.
         // 능력 질의는 모델의 능력 메서드가 PaymentMethodResolver 에 위임해 답한다.
         $order = OrderFactory::new()->create();

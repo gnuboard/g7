@@ -24,11 +24,11 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * 사용자 게시판 본문 미디어 컨트롤러 — 편집기 본문 이미지·동영상·오디오 업로드와 서빙 (#883 4단계)
+ * 사용자 게시판 본문 미디어 컨트롤러 — 편집기 본문 이미지·동영상·오디오 업로드와 서빙
  *
  * 업로드는 그 게시판 `attachments.upload` 권한(비회원 포함)과 본문 미디어 정책으로 판정한다. 「파일 첨부 사용」은 보지 않는다(D26).
  * 서빙에는 권한 미들웨어가 없다 — `<img>`·`<video>` 요청에는 Bearer 가 실리지 않으므로, 서명·글 읽기 권한·콘텐츠 게이트를
- * 서비스(`findServable`)가 맡는다. 편집기 업로드 계약은 표준 엔드포인트 `GET boards/{slug}/content-media/target`(#887)이 낸다.
+ * 서비스(`findServable`)가 맡는다. 편집기 업로드 계약은 표준 엔드포인트 `GET boards/{slug}/content-media/target`이 낸다.
  */
 class ContentMediaController extends PublicBaseController
 {
@@ -53,7 +53,7 @@ class ContentMediaController extends PublicBaseController
     }
 
     /**
-     * 편집기 업로드 계약 — 표준 계약 엔드포인트 (#887).
+     * 편집기 업로드 계약 — 표준 계약 엔드포인트.
      *
      * 값은 그 게시판 본문 미디어 정책이고(코어는 동영상·오디오 업로드 허용 스위치로만 관여), 판정은 업로드와 같은
      * `attachments.upload` 권한이다. 글쓰기 폼 메타 `content_media` 는 같은 값을 계속 싣는다(호환).
@@ -117,7 +117,7 @@ class ContentMediaController extends PublicBaseController
         } catch (ContentMediaLimitExceededException $e) {
             return $this->error($e->getMessageKey(), 422, ['code' => 'content_media_limit_exceeded'], $e->getMessageParams());
         } catch (ValidationException $e) {
-            // 업로드 파일 필터(`core.content_media.filter_upload_file`)가 돌려준 파일이 정책에 맞지 않으면 422 (#887)
+            // 업로드 파일 필터(`core.content_media.filter_upload_file`)가 돌려준 파일이 정책에 맞지 않으면 422
             throw $e;
         } catch (ModelNotFoundException $e) {
             return $this->notFound('sirsoft-board::messages.errors.post_not_found');

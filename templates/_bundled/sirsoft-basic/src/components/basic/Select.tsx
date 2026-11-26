@@ -102,7 +102,7 @@ export const Select: React.FC<SelectProps> = ({
   const pendingFocusRef = useRef<'selected' | 'last' | null>(null);
 
   // 목록형 단추 이름 — 「{이름} {현재 값}」. 종전에는 aria-label·aria-labelledby 가 단추가 아니라 바깥 상자에
-  // 붙어 읽히지 않았고 고른 값만 단추 이름이 됐다(#757). 숨은 이름 span + 값 span 을 단추에 잇는다(관리자 템플릿과 같은 계약).
+  // 붙어 읽히지 않았고 고른 값만 단추 이름이 됐다. 숨은 이름 span + 값 span 을 단추에 잇는다(관리자 템플릿과 같은 계약).
   const domId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const nameId = `${domId}-name`;
   const valueId = `${domId}-value`;

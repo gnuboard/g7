@@ -19,11 +19,11 @@ use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 
 /**
- * 코어 동의 제공자 계약 구현 테스트 (#639) [case:analytics-consent-guest-session-id]
+ * 코어 동의 제공자 계약 구현 테스트 [case:analytics-consent-guest-session-id]
  *
  * 이 플러그인은 코어 동의 계약의 제공자로 등록되어, 코어·다른 확장의 「이 방문자가 무엇에 동의했나」에 답한다.
  * 게스트 동의는 서명된 `gdpr_session` 쿠키의 UUID 로 저장되므로, 같은 UUID 로 찾아야 배너에서 동의한 게스트가
- * 「동의 없음」이 되지 않는다(#682 §8 M1-T9). 코어는 이 플러그인을 모른다 — 필터로 등록되고 계약으로만 묻는다.
+ * 「동의 없음」이 되지 않는다. 코어는 이 플러그인을 모른다 — 필터로 등록되고 계약으로만 묻는다.
  */
 class GdprConsentProviderTest extends PluginTestCase
 {
@@ -105,7 +105,7 @@ class GdprConsentProviderTest extends PluginTestCase
     /**
      * 같은 테스트 안에서 의존 서비스를 바꿔 끼웠으므로 「다음 요청」처럼 요청 단위 상태를 비웁니다.
      *
-     * 동의 매니저는 등록 목록·선택 상태를, 제공자는 주입받은 서비스를 요청 동안 쥐고 있다(#860) — 실제 요청에는
+     * 동의 매니저는 등록 목록·선택 상태를, 제공자는 주입받은 서비스를 요청 동안 쥐고 있다 — 실제 요청에는
      * 요청 중에 서비스가 바뀌는 일이 없다.
      *
      * @return void 반환값 없음
@@ -236,7 +236,7 @@ class GdprConsentProviderTest extends PluginTestCase
      * 화면 요청(web 그룹)의 쿠키 암호화를 거친 뒤에도 게스트 동의 식별값이 살아 UUID 로 풀린다.
      *
      * 이 쿠키는 API 응답이 서명값 그대로 심는다. 암호화 대상이면 화면 요청에서 복호화에 실패해 null 이 되고,
-     * 동의한 게스트의 새로고침이 「미동의」로 제외됐다(#682 S3 라운드 13 브라우저 실측).
+     * 동의한 게스트의 새로고침이 「미동의」로 제외됐다.
      *
      * @scenario case=subject_key
      *

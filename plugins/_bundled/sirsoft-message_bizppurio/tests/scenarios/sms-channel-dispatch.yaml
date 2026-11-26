@@ -27,7 +27,7 @@ description: |
 
   ※ alimtalk 실발송·탭 UI·본문 시드는 Phase 5·6. 발송 이력 DB(bizppurio_dispatches) 영속화는 Phase 4.
 
-  ※ #597 이후 본문 SSoT 변경: sms 본문 출처는 코어 notification_templates(sms) 가 아니라
+  ※ 알림톡 템플릿 개편 이후 본문 SSoT 변경: sms 본문 출처는 코어 notification_templates(sms) 가 아니라
     bizppurio_templates.sms_body 이고, 발송 게이트는 (행 존재 && is_active && sms_body 비어있지 않음)
     이다. 알림톡 게이트·대체 SMS·SMS 단독을 포함한 현행 발송 규칙의 정본은
     bizppurio-dispatch.yaml 이며, 본 매니페스트는 채널 등록·준비도·전화번호 해석 축을 담당한다.
@@ -43,7 +43,7 @@ exclusions:
   - { readiness_state: missing_sender, channel: alimtalk, reason: "alimtalk readiness 는 자체 키(api_key/sender_key) 부족을 별도 판정 — sender 축은 sms 로 대표" }
 
 effects:
-  # 언어별 알림 변수 (#798 — GenericNotification::getDataFor)
+  # 언어별 알림 변수 (GenericNotification::getDataFor)
   - sms_body_resolves_localized_variables_for_recipient   # {ko,en} 값 변수를 수신자 언어로 치환
   # 채널 등록 (filter_available_channels)
   - sms_channel_exposed_in_available_channels

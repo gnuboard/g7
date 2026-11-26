@@ -84,7 +84,7 @@ class SafeArchiveExtractorTest extends TestCase
      * Mac Finder 압축이 붙이는 `__MACOSX/` 부속 항목은 풀지 않고, 나머지 항목은 그대로 푸는지 확인한다.
      *
      * 부속 폴더가 풀리면 해제 결과 최상위에 폴더가 둘이 되어, 「폴더 1개·파일 0개면 감싼 폴더」 규칙
-     * (`resolveExtractedRoot`)이 감싼 폴더를 벗기지 못한다 — `--zip` 업데이트가 「잘못된 패키지」가 된다(#971).
+     * (`resolveExtractedRoot`)이 감싼 폴더를 벗기지 못한다 — `--zip` 업데이트가 「잘못된 패키지」가 된다.
      *
      * @scenario entry=macosx_resource_fork, caller=safe_extractor
      *

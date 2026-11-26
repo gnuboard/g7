@@ -1,5 +1,5 @@
 /**
- * 쿠폰 등록 폼 — 자동발급 칸의 노출 전환 (#952 A·B)
+ * 쿠폰 등록 폼 — 자동발급 칸의 노출 전환
  *
  * 발급방법을 「자동」으로 고르면 자동 조건 칸과 「한 번만 발급」 안내가 나오고 회원당 한도 칸이 사라진다.
  * 조건을 첫구매로 고르면 발급 시점 선택이 나온다. 「다운로드」로 바꾸면 발급 알림 구획이 사라진다.
@@ -12,7 +12,7 @@ import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 
 const CREATE_URL = '/admin/ecommerce/promotion-coupon-create';
 
-test.describe('쿠폰 등록 폼 — 자동발급 (#952)', () => {
+test.describe('쿠폰 등록 폼 — 자동발급', () => {
   // @scenario case=admin_coupon_form_browser
   // @effects coupon_form_auto_condition_fields
   test('자동을 고르면 자동 조건·한 번만 안내가 나오고, 첫구매면 발급 시점, 다운로드면 알림 구획이 사라진다', async ({ page, couponManageToken }) => {

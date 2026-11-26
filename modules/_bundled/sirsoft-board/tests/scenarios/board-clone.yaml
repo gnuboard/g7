@@ -5,7 +5,7 @@ description: |
   board_step_ids, board_steps, permissions) 를 채워 반환한다. 이를 통해 복제 폼이
   관리자 명단과 권한을 원본 그대로 싣고 저장할 수 있다.
 
-  수정 이력 (이슈 #413 item 16):
+  수정 이력 (item 16):
     - 16-(1): copyBoard 가 toArray()(DB 컬럼만) 만 반환해 board_manager_ids 가 누락,
       복제 저장 시 StoreBoardRequest 의 required|array|min:1 에 걸려 422 발생 → 해소
     - 16-(2): permissions 미복사 + 역할 identifier 교차 게시판 누수 → 해소

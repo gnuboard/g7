@@ -36,7 +36,7 @@ class CouponIssueResource extends BaseApiResource
             'user_id' => $this->user?->uuid,
             'coupon_code' => $this->coupon_code,
 
-            // 발급 경로 (#952) — 경로 컬럼 이전 행은 코드 접두(DL/DR)로 추정한다
+            // 발급 경로 — 경로 컬럼 이전 행은 코드 접두(DL/DR)로 추정한다
             'issue_source' => $this->resource->resolveIssueSource()?->value,
             'issue_source_label' => $this->resource->resolveIssueSource()?->label(),
 

@@ -215,7 +215,7 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 #### setTheme
 
 테마 값은 액션 **top-level `target`** 으로 넘깁니다. 핸들러는 `params` 를 읽지 않으므로
-`params.theme` 으로 넘기면 콘솔 경고 한 줄만 남기고 아무 것도 하지 않습니다 (dev-g7#640).
+`params.theme` 으로 넘기면 콘솔 경고 한 줄만 남기고 아무 것도 하지 않습니다.
 
 ```html
 <on type="click">

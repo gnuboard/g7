@@ -94,7 +94,7 @@ interface ReactionRepositoryInterface
     public function recalculateReactionCounts(string $targetType, int $targetId): array;
 
     /**
-     * 같은 종류의 여러 대상(게시글·댓글)의 반응 카운트(JSON)를 실제 행 기준으로 한꺼번에 재집계합니다 (#888).
+     * 같은 종류의 여러 대상(게시글·댓글)의 반응 카운트(JSON)를 실제 행 기준으로 한꺼번에 재집계합니다.
      *
      * recalculateReactionCounts() 와 같은 잠금·집계 규약(이전에 등장한 유형 키는 0 으로 유지, 수정 시각 미갱신)을
      * 따르되, 대상을 묶음으로 잠그고 묶음마다 GROUP BY 한 번으로 센다. 하드 삭제된 대상은 건너뛴다.
@@ -208,7 +208,7 @@ interface ReactionRepositoryInterface
     public function deleteManyByIdsAndUser(array $ids, int $userId): EloquentCollection;
 
     /**
-     * 회원의 반응을 대상 종류와 무관하게 모두 삭제합니다 (회원 삭제 정리, #888).
+     * 회원의 반응을 대상 종류와 무관하게 모두 삭제합니다 (회원 삭제 정리).
      *
      * 반환 컬렉션은 reaction_counts 를 다시 집계할 대상(게시글·댓글)을 고르는 근거다.
      *

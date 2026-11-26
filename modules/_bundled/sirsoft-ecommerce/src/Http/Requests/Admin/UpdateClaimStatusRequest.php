@@ -43,7 +43,7 @@ class UpdateClaimStatusRequest extends FormRequest
     {
         return [
             'status' => ['required', 'string', Rule::in($this->assignableStatuses())],
-            // 반려는 사유가 정본이다 — 없이 받으면 구매자 화면의 반려 사유가 빈 칸으로 남는다(#599 후속).
+            // 반려는 사유가 정본이다 — 없이 받으면 구매자 화면의 반려 사유가 빈 칸으로 남는다.
             'reject_reason' => ['nullable', 'required_if:status,rejected', 'string', 'max:2000'],
             'admin_memo' => ['nullable', 'string', 'max:2000'],
         ] + $this->transitionTrackingRules() + $this->completionRules();

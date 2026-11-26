@@ -399,7 +399,7 @@ describe('executeOrderBulkActionHandler - 422 서버 검증 메시지 노출 (�
         mockG7Core.api.patch.mockRejectedValueOnce(axiosError);
 
         // 실패를 다시 던져 확인 창의 `<fail>` 분기(창 유지)로 넘긴다 — 삼키면 성공 분기의 `<close-modal/>` 이 돌아
-        // 운영자가 고른 값이 사라진다(#747 C12 M4).
+        // 운영자가 고른 값이 사라진다.
         await expect(executeOrderBulkActionHandler(
             { handler: 'sirsoft-ecommerce.executeOrderBulkAction', params: {} } as any,
             mockContext

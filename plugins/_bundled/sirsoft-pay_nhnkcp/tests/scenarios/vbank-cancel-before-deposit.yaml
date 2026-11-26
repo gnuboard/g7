@@ -1,5 +1,5 @@
 # e2e:allow 화면 변경 없음(배너는 이커머스 관리자 화면 — 모듈 매니페스트 unpaid-vbank-cancel 이 맡는다).
-feature: NHN KCP — 입금 전 취소 가상계좌 발급 취소와 취소 후 입금 기록 (P-D1 · Q11) — #747 C7
+feature: NHN KCP — 입금 전 취소 가상계좌 발급 취소와 취소 후 입금 기록 (P-D1 · Q11)
 
 description: |
   이커머스가 입금 전 취소 커밋 뒤 sirsoft-ecommerce.payment.close_vbank 필터로 부르면 자기 결제의 가상계좌를 전체 취소(STSC,

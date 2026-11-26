@@ -7,7 +7,7 @@ use App\Extension\UpgradeContext;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 7.0.3 이하 인스톨러가 남긴 storage/installer-state.json 의 평문 비밀 정리 (이슈 #465).
+ * 7.0.3 이하 인스톨러가 남긴 storage/installer-state.json 의 평문 비밀 정리.
  *
  * 결함:
  *   설치 중 관리자 비밀번호(admin_password / admin_password_confirm) 와 DB 비밀번호가

@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 쇼핑 진열·판매 집계 색인 회귀 테스트 (#519 F5)
+ * 쇼핑 진열·판매 집계 색인 회귀 테스트
  *
  * 색인은 "만들었다" 가 아니라 "쿼리가 그것을 고른다" 가 목표다. 마이그레이션만 확인하면
  * 컬럼 순서가 어긋나 옵티마이저가 무시하는 색인을 정상으로 판정한다.

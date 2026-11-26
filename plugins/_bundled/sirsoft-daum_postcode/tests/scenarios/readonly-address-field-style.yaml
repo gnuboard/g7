@@ -1,4 +1,4 @@
-feature: 플러그인 sirsoft-daum_postcode 읽기 전용 주소 칸 표시 (#816)
+feature: 플러그인 sirsoft-daum_postcode 읽기 전용 주소 칸 표시
 
 description: |
   주소 검색으로만 채우는 우편번호·주소 칸(setFieldReadOnly 가 daumpostcode-readonly 를 단다)이

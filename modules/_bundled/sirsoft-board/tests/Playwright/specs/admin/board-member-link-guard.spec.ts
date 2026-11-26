@@ -1,5 +1,5 @@
 /**
- * 관리자 게시판 — 회원 상세 링크는 주소가 있을 때만 (#757 2단계 후속, M1 실측).
+ * 관리자 게시판 — 회원 상세 링크는 주소가 있을 때만.
  *
  * 회원 글인데 회원 계정이 남지 않으면 작성자 응답이 `is_guest: false · uuid: null` 이다. 작성자 자리가
  * `!is_guest` 만 보고 링크를 그리면 글자 없는 `href="/admin/users/"` 링크가 생긴다(M1 크롤: 게시글 목록 첫 행).
@@ -12,7 +12,7 @@ import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 /** 실측 대상 게시판 — 시드가 항상 만드는 자유게시판 */
 const POSTS_URL = '/admin/board/free';
 
-test.describe('관리자 게시판 — 회원 상세 링크 가드 (#757)', () => {
+test.describe('관리자 게시판 — 회원 상세 링크 가드', () => {
   // @scenario guard=member_link
   // @effects member_link_requires_uuid, member_name_shown_without_uuid
   test('게시글 목록에 주소 없는 회원 링크가 없고, 회원 링크는 모두 이름을 가진다', async ({

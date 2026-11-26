@@ -358,7 +358,7 @@ class ComposerPathValidationTest extends TestCase
     /**
      * 정상 입력은 계속 통과한다 (stat 미사용 — open_basedir 환경 회귀 가드).
      *
-     * 존재하지 않는 절대경로도 사전 거부되지 않고 exec 까지 도달해야 한다. `#361` 이
+     * 존재하지 않는 절대경로도 사전 거부되지 않고 exec 까지 도달해야 한다. 이전 수정이
      * `is_file()`/`is_executable()` 가드로 시놀로지 DSM 등에서 정상 경로를 false negative
      * 로 거부한 회귀를 되돌린 이력이 있다.
      *

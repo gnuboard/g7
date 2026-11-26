@@ -1,4 +1,4 @@
-feature: 템플릿 설정을 셸 HTML 에 미리 싣는다 — template.json expose 선언 (#879)
+feature: 템플릿 설정을 셸 HTML 에 미리 싣는다 — template.json expose 선언
 
 description: |
   첫 화면 전 PHP 왕복(`GET /api/templates/{id}/config`)을 없애려고, 서버가 활성 템플릿 template.json 의 최상위 `expose` 배열에

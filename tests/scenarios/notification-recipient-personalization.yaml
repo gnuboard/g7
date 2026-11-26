@@ -15,7 +15,7 @@ description: |
       사유가 `no_recipient_resolved` / `guest_email_empty` 로 갈린다.
     - `exclude_trigger_user` 는 **그 규칙이 뽑은 수신자에게만** 적용된다.
     - trigger_user_id 가 가리키는 계정이 사라졌으면(삭제 회원) 게스트 재료가 있어도 폴백하지
-      않는다 — 판정은 NotificationWithdrawnRecipientPolicy 한 곳이 소유한다(#599 validate).
+      않는다 — 판정은 NotificationWithdrawnRecipientPolicy 한 곳이 소유한다.
     - 정의 전수 계약: 본문·링크가 쓰는 변수 선언 · database 채널의 클릭 대상 ·
       audience(staff/customer) ↔ 수신자 규칙 정합 · 인정 어휘 4종.
 

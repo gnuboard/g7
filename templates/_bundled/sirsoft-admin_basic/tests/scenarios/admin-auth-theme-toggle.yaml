@@ -3,7 +3,7 @@ feature: 미인증 관리자 화면(로그인·비밀번호 찾기·비밀번호
 description: |
   세 화면의 테마 버튼이 `setTheme` 을 `params.theme` 로 호출했으나 템플릿 핸들러(`setThemeHandler`)는
   액션 top-level `target` 만 읽는다. 엔진에 상호 폴백이 없어 클릭이 콘솔 경고 한 줄만 남기고 아무 것도
-  하지 않았고, 예외도 실패한 요청도 없어 화면상 원인이 보이지 않았다 (dev-g7#640). 로그인 이후 화면은
+  하지 않았고, 예외도 실패한 요청도 없어 화면상 원인이 보이지 않았다. 로그인 이후 화면은
   핸들러를 경유하지 않는 ThemeToggle 컴포지트를 쓰므로 정상이었다.
 
   함께 드러난 두 번째 결함 — sirsoft-gdpr 스토리지 인터셉터가 functional 동의 전 `g7_color_scheme`

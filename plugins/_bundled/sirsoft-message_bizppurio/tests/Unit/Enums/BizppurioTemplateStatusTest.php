@@ -6,7 +6,7 @@ use Plugins\Sirsoft\MessageBizppurio\Enums\BizppurioTemplateStatus;
 use Tests\PureTestCase;
 
 /**
- * BizppurioTemplateStatus — kapi serviceStatus 환원 매핑과 상태 판정 헬퍼 검증 (#597 §3.4).
+ * BizppurioTemplateStatus — kapi serviceStatus 환원 매핑과 상태 판정 헬퍼 검증.
  */
 class BizppurioTemplateStatusTest extends PureTestCase
 {

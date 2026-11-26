@@ -14,11 +14,11 @@ use Illuminate\Support\Facades\Log;
  *
  * 코어 환경설정의 SEO 탭·일반 탭·「본문 콘텐츠」 탭 저장, 템플릿 설정 저장 시 전체 SEO 캐시를 삭제합니다.
  * SEO 설정(title suffix, cache TTL 등)과 일반 탭의 사이트 이름·로고·파비콘, 템플릿 파비콘은
- * 모든 봇 화면에 실리므로 전체 캐시를 무효화합니다(#434 — 종전에는 SEO 탭만 구독해 일반 탭 변경이
+ * 모든 봇 화면에 실리므로 전체 캐시를 무효화합니다(종전에는 SEO 탭만 구독해 일반 탭 변경이
  * 캐시 TTL 까지 봇 화면에 반영되지 않았다). 봇 화면은 본문 표시 규칙(캡션·외부 영상·추가 태그)으로 정화되므로
- * 「본문 콘텐츠」 탭의 규칙이 바뀌어도 캐시된 봇 화면을 비운다(#887).
+ * 「본문 콘텐츠」 탭의 규칙이 바뀌어도 캐시된 봇 화면을 비운다.
  *
- * 업로드 탭의 이미지 썸네일 설정(`thumbnail_*`, #869)이 실제로 바뀌어도 비운다. 봇 화면의 og:image 와 본문 이미지 주소에
+ * 업로드 탭의 이미지 썸네일 설정(`thumbnail_*`)이 실제로 바뀌어도 비운다. 봇 화면의 og:image 와 본문 이미지 주소에
  * 규격(`?size=`)이 구워지므로(SeoMetaResolver, ThumbnailUrl), 규격을 끄거나 기능을 끄면 캐시의 주소가 원본과 어긋난다.
  * 바뀌었는지는 저장 전 값(`core.settings.before_save` 에서 떠 둔 사본)과 비교해 정한다. 업로드 탭의 다른 칸만 바꾼
  * 저장으로 SEO 캐시 전체를 비우지 않기 위해서다. 확장 활성·비활성으로 규격과 서빙 경로 패턴이 바뀌는 경우는
@@ -26,13 +26,13 @@ use Illuminate\Support\Facades\Log;
  *
  * 비우기는 저장한 요청 안에서 한다(sync) — 큐로 가면 워커가 돌 때까지(워커가 없으면 TTL 까지) 봇이 옛 화면을
  * 받는다. 본문은 DB::afterCommit 으로 감싸 트랜잭션 안에서 발화하면 커밋 뒤에 비운다 — 커밋 전에 비우면
- * 다른 요청이 옛 데이터로 다시 채울 틈이 생긴다(#724). 트랜잭션 밖이면 즉시 비운다.
+ * 다른 요청이 옛 데이터로 다시 채울 틈이 생긴다. 트랜잭션 밖이면 즉시 비운다.
  */
 class SeoSettingsCacheListener implements HookListenerInterface
 {
     /**
      * 저장하면 봇 화면 캐시를 비워야 하는 코어 설정 카테고리 — seo(제목 접미·메타), general(사이트 이름·로고·파비콘),
-     * content(본문 표시 규칙 — 본문 콘텐츠, #887)
+     * content(본문 표시 규칙 — 본문 콘텐츠)
      *
      * @var array<int, string>
      */
@@ -66,7 +66,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
                 'priority' => 20,
                 'sync' => true,
             ],
-            // 템플릿 설정(파비콘 등)도 봇 화면 `<head>` 에 실린다 (#434)
+            // 템플릿 설정(파비콘 등)도 봇 화면 `<head>` 에 실린다
             'core.template_settings.after_save' => [
                 'method' => 'onTemplateSettingsSave',
                 'priority' => 20,
@@ -106,7 +106,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
      *
      * 봇 화면에 실리는 탭(SEO·일반·「본문 콘텐츠」)이 저장된 경우 전체 캐시를 삭제합니다. 업로드 탭은 썸네일 값이
      * 실제로 바뀐 경우에만 삭제합니다.
-     * 봇 화면은 본문 표시 규칙(캡션·외부 영상·추가 태그)으로 정화되므로 그 규칙이 바뀌면 캐시된 봇 화면도 비운다 (#887).
+     * 봇 화면은 본문 표시 규칙(캡션·외부 영상·추가 태그)으로 정화되므로 그 규칙이 바뀌면 캐시된 봇 화면도 비운다.
      *
      * @param  mixed  ...$args  훅 인자 ($tab, $mergedSettings, $result)
      * @return void 반환값 없음
@@ -214,7 +214,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
             $key = $args[0] ?? null;
             $result = $args[2] ?? false;
 
-            // 봇 화면에 실리는 카테고리(seo·general·content) 키, 그리고 업로드 탭 썸네일 키(#869)도 봇 화면의 이미지 주소를
+            // 봇 화면에 실리는 카테고리(seo·general·content) 키, 그리고 업로드 탭 썸네일 키도 봇 화면의 이미지 주소를
             // 바꾼다 — 클래스 설명 참조.
             $botVisible = is_string($key) && str_contains($key, '.')
                 && in_array(explode('.', $key)[0], self::BOT_VISIBLE_CATEGORIES, true);
@@ -232,7 +232,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
     }
 
     /**
-     * 템플릿 설정 저장 시 SEO 캐시를 무효화합니다 (#434).
+     * 템플릿 설정 저장 시 SEO 캐시를 무효화합니다.
      *
      * @param  mixed  ...$args  훅 인자 ($identifier, $mergedSettings, $result)
      * @return void 반환값 없음

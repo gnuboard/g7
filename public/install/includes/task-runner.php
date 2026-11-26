@@ -1315,7 +1315,7 @@ if (! function_exists('cleanupExistingTablesSSE')) {
             ];
         }
 
-        // state.config 에는 DB 비밀번호가 기록되지 않으므로(이슈 #465) runtime.php 에서
+        // state.config 에는 DB 비밀번호가 기록되지 않으므로 runtime.php 에서
         // 자격증명을 복원한다. db_cleanup 은 env_update 이후 실행되어 runtime 이 항상 존재.
         $config = hydrateDbSecretsFromRuntime($state['config'] ?? []);
 
@@ -1436,7 +1436,7 @@ if (! function_exists('runDatabaseSeedingSSE')) {
         $state = getInstallationState();
         $config = $state['config'] ?? [];
 
-        // 관리자 비밀번호는 runtime.php(0600) 가 SSoT (이슈 #465). state.config 폴백은
+        // 관리자 비밀번호는 runtime.php(0600) 가 SSoT. state.config 폴백은
         // 이 수정 이전에 시작된 설치(레거시 state) 를 위한 한시 경로.
         $adminPassword = readInstallerRuntime()['admin']['password'] ?? ($config['admin_password'] ?? '');
 
@@ -1489,7 +1489,7 @@ if (! function_exists('runDatabaseSeedingSSE')) {
 
 if (! function_exists('purgeAdminPasswordAfterSeeding')) {
     /**
-     * db_seed 성공 직후 관리자 비밀번호의 모든 잔존처를 제거한다 (이슈 #465).
+     * db_seed 성공 직후 관리자 비밀번호의 모든 잔존처를 제거한다.
      *
      * 시딩이 끝나면 관리자 계정이 DB 에 해시로 존재하므로 평문은 더 이상 필요 없다.
      * 노출 창을 최소화하기 위해 소비 즉시 삭제한다:
@@ -2153,7 +2153,7 @@ if (! function_exists('optimizeConfigCacheSSE')) {
 
 if (! function_exists('optimizeRouteCacheSSE')) {
     /**
-     * 설치 완료 직후 라우트 캐시를 최초 생성한다 (#599).
+     * 설치 완료 직후 라우트 캐시를 최초 생성한다.
      *
      * complete_flag 이후에 실행되어야 한다 — `RouteCacheHelper::rebuild()` 는
      * `installer_completed` 가 서기 전이면 `route:clear` 만 하고 재생성을 건너뛰므로
@@ -2325,7 +2325,7 @@ if (! function_exists('createSettingsJsonSSE')) {
             $defaults['system'] = is_array($defaults['system'] ?? null) ? $defaults['system'] : [];
             $defaults['system']['execution_mode'] = installerNormalizeExecutionMode($config['execution_mode'] ?? 'auto');
 
-            // 자산 URL 방식 (이슈 #486) — 설치 화면이 브라우저에서 프로브를 던져 판정한 결과.
+            // 자산 URL 방식 — 설치 화면이 브라우저에서 프로브를 던져 판정한 결과.
             // 정적 최적화 블록(`location ~* \.(js|css|json)$`)이 있는 서버는 확장자 붙은
             // 동적 응답이 PHP 에 도달하지 못하므로 확장자 없는 형태로 설치를 마쳐야 한다.
             // 미판정(구버전 설치 화면·프로브 실패)이면 defaults.json 의 기본값을 그대로 둔다.
@@ -2539,7 +2539,7 @@ if (! function_exists('setInstallationCompleteSSE')) {
             // 마무리 작업(설정·라우트 캐시 굽기·정적 게시)이 아직 남았다 — 작업 루프 끝에서 true 로 바꾼다.
             // 폴링 화면은 이 값이 true 가 될 때까지 완료 처리(finalize-env → 상태 파일 삭제)를 미룬다.
             $state['tasks_finished'] = false;
-            // 완료 시점 이중 방어 (이슈 #465) — Phase 1/2 가 정상 동작하면 no-op.
+            // 완료 시점 이중 방어 — Phase 1/2 가 정상 동작하면 no-op.
             // 레거시 state 로 시작된 설치가 이 코드로 완료되는 경우를 커버한다.
             $state = redactInstallationStateSecrets($state);
             saveInstallationState($state);

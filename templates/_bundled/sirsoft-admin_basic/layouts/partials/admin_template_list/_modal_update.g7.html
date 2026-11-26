@@ -1,7 +1,7 @@
 <!-- 템플릿 업데이트 창 — 모듈 업데이트 창과 같이 셋을 함께 다룬다.
   ⑴ 코어 비호환 경고(강행 체크 전까지 실행 버튼 잠금) ⑵ 변경 이력 ⑶ 화면별 처리 미리보기(공통 조각 — 처리 방식·화면별 결정).
-  ⑵⑶ 의 값은 이 창이 묻지 않고 **여는 쪽이 창을 연 뒤 받아 전역에 담아 준다** — 그동안 미리보기는 로딩을 보이고 실행 버튼은 잠긴다(#888).
-  패키지 무결성(#916): 새 판본이 미서명(409)·서명 불일치(422)로 거절되면 오류 상자 대신 공용 안내 조각이 사유를 그린다.
+  ⑵⑶ 의 값은 이 창이 묻지 않고 **여는 쪽이 창을 연 뒤 받아 전역에 담아 준다** — 그동안 미리보기는 로딩을 보이고 실행 버튼은 잠긴다.
+  패키지 무결성: 새 판본이 미서명(409)·서명 불일치(422)로 거절되면 오류 상자 대신 공용 안내 조각이 사유를 그린다.
   정책이 허용하면(`can_continue`) 실행 버튼이 「미서명으로 계속」으로 바뀌어 같은 본문에 `allow_unsigned=1` 만 더해 다시 보낸다.
   작업 잠금 409(같은 확장의 업데이트가 진행 중)는 종전대로 안내 토스트다 — 둘은 상태 코드가 아니라 응답 표지로 가른다. -->
 <partial description="템플릿 업데이트 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_update_modal">
@@ -126,7 +126,7 @@
         </a>
       </div>
       <!-- 레이아웃 처리 — 새 판으로 바꾸면 화면마다 어떻게 되는지 미리 보고(DB 는 바뀌지 않는다) 처리 방식·화면별 결정을 고른다.
-           기본은 수정 유지(keep). 이 업데이트로 지워질 선언 항목(운영자 수정본 표시)도 함께 보여 준다(#888). -->
+           기본은 수정 유지(keep). 이 업데이트로 지워질 선언 항목(운영자 수정본 표시)도 함께 보여 준다. -->
       <include src="partials/_shared/_layout_sync_preview.g7.html"/>
       <!-- 고급 설정 — 레이아웃 설치 소스(#144). 평소에는 자동(.g7.html 우선)이고, 새 형식 처리에 문제가 있을 때만
            원본 JSON 우선을 고른다. 값은 요청 본문 layout_source 로 보내고 서버는 그 요청 동안만 적용한다.
@@ -190,7 +190,7 @@
                 <set-state target="global" :isTemplateUpdating="false"/>
                 <!-- 서버 문구를 그대로 띄운다 — 업데이트할 것이 없었으면 「업데이트할 내용이 없습니다」가 온다 -->
                 <toast type="success" message="{{response?.message ?? '$t:admin.templates.update_success'}}"/>
-                <!-- 새 판본의 서명 결과(응답 integrity_status, #916) — 확인됐으면 서명자를, 서명 없이 올렸으면 그 사실을 알린다 -->
+                <!-- 새 판본의 서명 결과(응답 integrity_status) — 확인됐으면 서명자를, 서명 없이 올렸으면 그 사실을 알린다 -->
                 <toast if="{{response?.data?.integrity_status === 'verified'}}" type="success" message="$t:admin.package_integrity.result_verified|signer={{(response?.data?.integrity_key_id ?? '').split(':')[0]}}"/>
                 <toast if="{{response?.data?.integrity_status === 'unsigned' || response?.data?.integrity_status === 'unverifiable'}}" type="warning" message="$t:admin.package_integrity.result_unsigned"/>
                 <!-- 멈춘 업데이트를 정리하고 다시 업데이트했으면 확장은 비활성으로 남는다(정리 규칙) — 다시 켜라고 알린다 -->
@@ -209,7 +209,7 @@
                 <toast if="{{error.status === 409 &amp;&amp; !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" type="info" message="{{error.message}}"/>
                 <set-state if="{{error.status !== 409 &amp;&amp; !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" target="global" :isTemplateUpdating="false" templateUpdateError="{{error.message}}" :packageIntegrity="null" :packageIntegrityMessage="null"/>
                 <toast if="{{error.status !== 409 &amp;&amp; !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" type="error" message="{{error.message}}"/>
-                <!-- 패키지 무결성 거절(#916, 응답 표지로 가른다) — 오류 상자·토스트 대신 위쪽 공용 안내 조각이 사유를 그린다 -->
+                <!-- 패키지 무결성 거절 — 오류 상자·토스트 대신 위쪽 공용 안내 조각이 사유를 그린다 -->
                 <set-state if="{{!!(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" target="global" :isTemplateUpdating="false" :templateUpdateError="null" packageIntegrity="{{error.errors?.integrity ?? null}}" packageIntegrityMessage="{{error.message}}"/>
               </fail>
               <body layout_strategy="{{_global.layoutSyncStrategy ?? 'keep'}}" decisions="{{_global.layoutDecisions ?? {} }}" pending_token="{{_global.layoutUpdatePreview?.pending_token ?? null}}" force="{{_global.templateForceUpdate === true}}" layout_source="{{_global.templateLayoutSource ?? 'auto'}}" allow_unsigned="{{_global.packageIntegrity?.can_continue === true ? 1 : null}}" integrity_aware="1"/>

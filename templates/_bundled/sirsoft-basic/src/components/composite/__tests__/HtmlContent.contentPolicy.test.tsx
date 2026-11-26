@@ -1,5 +1,5 @@
 /**
- * HtmlContent — 코어 「본문 콘텐츠」 규칙(G7Core.contentPolicy) 적용 (#883 5단계)
+ * HtmlContent — 코어 「본문 콘텐츠」 규칙(G7Core.contentPolicy) 적용
  *
  * 규칙이 있으면 켜진 후보(그림 캡션·외부 영상)를 살리고 유튜브 oembed 를 샌드박스 iframe 으로 바꾼다. 사용자 iframe·script·
  * onerror 는 계속 지우고, 허용 밖 서비스는 링크로. prop 으로 덧붙인 금지는 규칙으로 풀리지 않는다. 규칙이 없으면 종전 정화.
@@ -81,12 +81,12 @@ describe('HtmlContent 본문 콘텐츠 규칙', () => {
         expect(out).not.toContain('<iframe');
         expect(out).not.toContain('youtube-nocookie.com');
         expect(out).not.toContain('<video');
-        // 외부 영상 삽입을 끄면 원래 주소 링크로 보인다 (#887)
+        // 외부 영상 삽입을 끄면 원래 주소 링크로 보인다
         expect(out).toContain('href="https://youtu.be/dQw4w9WgXcQ"');
     });
 
     /**
-     * 「그림 캡션」 끔(서버 `fromSettings(['allow_figure_caption' => false])->toFrontendArray()` 모양) — 캡션만 내용째 지우고 그림은 남긴다 (#887)
+     * 「그림 캡션」 끔(서버 `fromSettings(['allow_figure_caption' => false])->toFrontendArray()` 모양) — 캡션만 내용째 지우고 그림은 남긴다
      *
      * @scenario case=caption_off
      * @effects caption_off_image_kept
@@ -107,7 +107,7 @@ describe('HtmlContent 본문 콘텐츠 규칙', () => {
     });
 
     /**
-     * 「외부 영상 삽입」 끔(서버 `fromSettings(['allow_external_embed' => false])->toFrontendArray()` 모양) — 안내문대로 원래 주소 링크, 빈 상자 없음 (#887)
+     * 「외부 영상 삽입」 끔(서버 `fromSettings(['allow_external_embed' => false])->toFrontendArray()` 모양) — 안내문대로 원래 주소 링크, 빈 상자 없음
      *
      * @scenario case=embed_off
      * @effects embed_off_link

@@ -10,7 +10,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * `ConfigCacheHelper` 가 `config:cache` 뒤 전역 컨테이너 인스턴스를 되돌리는지 (#651 F2 실측 파생).
+ * `ConfigCacheHelper` 가 `config:cache` 뒤 전역 컨테이너 인스턴스를 되돌리는지 (실측 파생).
  *
  * `config:cache` 는 새 Application 을 부팅하고 그 생성자가 `Container::setInstance()` 를 호출한다.
  * 되돌리지 않으면 같은 프로세스의 후속 `app()->terminating()` 이 종료되지 않는 일회용 앱에 등록되어

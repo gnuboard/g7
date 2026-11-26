@@ -1,4 +1,4 @@
-feature: 상한에 걸린 총 건수에서의 목록 순번 처리 (#519)
+feature: 상한에 걸린 총 건수에서의 목록 순번 처리
 
 description: |
   HasRowNumber 트레이트의 내림차순 순번은 총 건수로 역산하므로, 총 건수가 상한에서 잘리면(TotalRelation::AtLeast)

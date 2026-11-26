@@ -233,7 +233,7 @@ class Issue162MeasureSeeder extends Seeder
     }
 
     /**
-     * 본문 미디어가 든 표본 글을 만듭니다(#883 4·5단계) — 비회원 비밀글(이미지 1·동영상 1), 회원 전용 읽기 글(동영상 1),
+     * 본문 미디어가 든 표본 글을 만듭니다(4·5단계) — 비회원 비밀글(이미지 1·동영상 1), 회원 전용 읽기 글(동영상 1),
      * 공개 동영상 글 A·B(SPA 전환 실측). 파일은 실제 업로드 경로(`PostContentMediaService::upload` → `syncWithContent`)로 붙인다.
      *
      * @return void 반환값 없음

@@ -3,7 +3,7 @@
  *
  * ActionDispatcher 에 결제 핸들러를 등록한다. 화면에 덧붙이는 표시(주문 완료·마이페이지 영수증, 관리자 주문 상세
  * 간편결제 이름)는 모두 레이아웃 조각(resources/extensions)이 그린다 — 종전의 화면 주입 스크립트(주소 정규식 +
- * history.pushState 덮어쓰기 + DOM 패치)는 #639 에서 걷어냈다.
+ * history.pushState 덮어쓰기 + DOM 패치)는 걷어냈다.
  */
 // 설정 화면 안내 글자색(접두 의미 클래스) — 빌드가 dist/css/plugin.css 로 뽑아낸다
 import '../css/main.css';

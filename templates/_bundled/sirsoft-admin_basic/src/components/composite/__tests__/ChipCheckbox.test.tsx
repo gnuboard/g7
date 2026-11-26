@@ -23,7 +23,7 @@ describe('ChipCheckbox', () => {
 
       const checkbox = container.querySelector('input[type="checkbox"]');
       expect(checkbox).toBeInTheDocument();
-      // display:none(hidden)이면 Tab 으로 닿지 않고 낭독기에도 없다(#757)
+      // display:none(hidden)이면 Tab 으로 닿지 않고 낭독기에도 없다
       expect(checkbox).toHaveClass('sr-only');
       expect(checkbox).not.toHaveClass('hidden');
     });

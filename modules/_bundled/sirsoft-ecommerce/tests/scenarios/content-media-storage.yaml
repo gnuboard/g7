@@ -1,4 +1,4 @@
-feature: 이커머스 본문 미디어 저장소 — 범용 첨부 표 ecommerce_attachments 의 보존 계약 (#887)
+feature: 이커머스 본문 미디어 저장소 — 범용 첨부 표 ecommerce_attachments 의 보존 계약
 
 description: |
   상품 설명·상품 공통 정보 본문 미디어의 저장소를 개발 중 전용 표 `ecommerce_content_media` 에서 게시판·페이지와 같은 모양의

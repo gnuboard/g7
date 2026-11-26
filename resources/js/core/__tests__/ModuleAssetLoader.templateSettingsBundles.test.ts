@@ -1,6 +1,6 @@
 // e2e:allow 묶음 하나의 적재 실패는 스크립트 요청 실패를 강제해야 재현되는 경로라 단위 시험(실물 ModuleAssetLoader)으로 잠근다 — 정상 적재는 tests/Playwright/specs/admin/template-settings-menu-editor.spec.ts 가 hello_admin 을 켠 상태로 덮는다
 /**
- * 템플릿 설정 화면 부품 묶음 적재 (#434 D28·D30)
+ * 템플릿 설정 화면 부품 묶음 적재
  *
  * 템플릿 설정 화면은 그 템플릿 자기 부품으로 그린다 — 서버가 관리자 화면에만 싣는 `G7Config.templateSettingsAssets`
  * 를 템플릿마다 묶음으로 싣고, 한 템플릿이 실패해도 다른 템플릿 묶음은 실린다.

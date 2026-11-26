@@ -12,7 +12,7 @@ use Tests\TestCase;
  *
  * 봇은 데스크톱 폭(1024px)으로 본다. 데스크톱에 맞는 구간의 classMerge 는 기본 className 에 충돌 교체형으로
  * 덧붙고(엔진 applyResponsiveClassMerge 와 같은 규칙), 구간 classMap 은 기본 classMap 을 대신한다. 종전에는
- * 두 키 모두 무시돼 봇 화면에서만 구간 클래스가 빠졌다(#399 F11).
+ * 두 키 모두 무시돼 봇 화면에서만 구간 클래스가 빠졌다.
  */
 class ComponentHtmlMapperResponsiveClassMergeTest extends TestCase
 {

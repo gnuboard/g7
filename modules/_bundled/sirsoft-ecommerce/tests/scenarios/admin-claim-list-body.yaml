@@ -1,4 +1,4 @@
-feature: 관리자 클레임 목록 본체와 완료 처리 모달 (#599 S8b — D26)
+feature: 관리자 클레임 목록 본체와 완료 처리 모달 (D26)
 
 description: |
   S8a 가 놓은 셸의 자리표시 노드 자리에 유형 서브탭 · 일괄 상태 변경 바 · DataGrid ·
@@ -50,7 +50,7 @@ exclusions:
   - { claim_type: cancel, completion_choice: file_later, reason: "동일" }
 
 effects:
-  - claim_list_refund_progress_badge_navigates_to_refund   # #747 보완 5
+  - claim_list_refund_progress_badge_navigates_to_refund
   # 기존 핸들러 검증의 목적도 개별 테스트에 역매핑한다.
   - bulk_confirmation_requires_selection_and_status
   - noncomplete_transition_uses_confirmation
@@ -134,7 +134,7 @@ effects:
   # 유형 축 선택 승계 · 체크 즉시 반영 (5차)
   - subtab_switch_clears_carried_selection
   - completion_modal_stock_toggle_reflects_immediately
-  # 역매핑 보강 (#599 validate P7 — 매핑 없이 남아 있던 구조 계약)
+  # 역매핑 보강 (매핑 없이 남아 있던 구조 계약)
   - subtab_badges_read_response_counts
   - list_body_state_declared_in_shell
   - status_labels_read_type_prefixed_enum_keys
@@ -149,11 +149,11 @@ effects:
   # i18n
   - new_labels_present_in_all_three_dictionaries
   - defer_translation_only_inside_repeat_context
-  # #599 후속 — 목록 일괄 반려 사유
+  # 목록 일괄 반려 사유
   - bulk_rejection_requires_reason_before_confirm
   - bulk_rejection_reason_travels_to_the_request
   - bulk_rejection_reason_is_wired_through_confirm
-  # #599 후속 — 목록 일괄 회수중·발송중은 신청서마다 송장
+  # 목록 일괄 회수중·발송중은 신청서마다 송장
   - bulk_logistics_builds_one_tracking_row_per_claim
   - bulk_logistics_sends_each_claims_own_tracking
   - bulk_logistics_tracking_is_wired_through_confirm
@@ -185,10 +185,10 @@ effects:
   - claim_amounts_prohibit_refund_fields_on_exchange
   - claim_amounts_prohibit_refund_fields_on_return
   - refund_amounts_reject_unknown_refund_method
-  # #599 후속 — 목록 행 뱃지(판매자 접수·선교환·회수 지연·환불 미접수)와 운송장 열 「외 N개」
+  # 목록 행 뱃지(판매자 접수·선교환·회수 지연·환불 미접수)와 운송장 열 「외 N개」
   - claim_list_row_badges_read_server_flags   # 재활성(전체·일부) 두 뱃지 포함 — Q29 (cancel-reactivation-badge.yaml)
   - claim_list_tracking_column_shows_first_waybill_and_more_count
-  # #747 S8 · Q10 — 선교환 「미회수로 완료」 는 상품 대금을 청구하지 않는다는 안내 (동작은 현행 유지)
+  # 선교환 「미회수로 완료」 는 상품 대금을 청구하지 않는다는 안내 (동작은 현행 유지)
   - advance_unreturned_completion_warns_no_charge
 
 test_files:
@@ -218,5 +218,5 @@ notes: |
   둘을 한 파일에서 다시 재현하면 같은 계약이 두 벌이 된다.
 
   일괄 전이 **바**에는 택배사·송장 입력을 두지 않는다 — 송장은 신청서마다 다르기 때문이다. 대신
-  회수중·발송중을 고르면 확인 창이 신청서마다 택배사·운송장 한 줄씩을 받는다(#599 후속 운영 결정,
+  회수중·발송중을 고르면 확인 창이 신청서마다 택배사·운송장 한 줄씩을 받는다(후속 운영 결정,
   `trackings[]`). 예전에는 이 경로로 송장 없이 회수중이 되어 고객 알림의 운송장 칸이 비어 나갔다.

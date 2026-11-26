@@ -8,7 +8,7 @@ use Plugins\Sirsoft\PayKginicis\Listeners\AdjustEcommercePaymentMethodsLayoutLis
 use Tests\PureTestCase;
 
 /**
- * 이커머스 결제수단 설정 레이아웃 보정 리스너 테스트 — 이슈 #475
+ * 이커머스 결제수단 설정 레이아웃 보정 리스너 테스트
  *
  * 과거에는 이 리스너가 코어 레이아웃의 "PG 불필요 결제수단" 하드코딩 배열을 문자열 치환해
  * 간편결제를 그 목록에 끼워 넣었다(= 관리자 화면에 "PG 불필요" 로 표시). 그러나 간편결제는
@@ -155,7 +155,7 @@ class AdjustEcommercePaymentMethodsLayoutListenerTest extends PureTestCase
     }
 
     /**
-     * 주입한 테스트모드 경고는 폭 분기를 엔진 responsive 로 한다 — Tailwind 폭 접두(`paykginicis:sm:` 등) 금지(#869).
+     * 주입한 테스트모드 경고는 폭 분기를 엔진 responsive 로 한다 — Tailwind 폭 접두(`paykginicis:sm:` 등) 금지.
      *
      * 모집단은 주입된 경고 노드 아래 모든 className(responsive 구간 포함)이다.
      *

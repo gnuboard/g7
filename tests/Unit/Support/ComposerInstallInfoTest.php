@@ -8,7 +8,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * vendor 개발용 설치 판정 SSoT 테스트 (dev-g7 #658).
+ * vendor 개발용 설치 판정 SSoT 테스트.
  *
  * 인스톨러(순수 PHP)와 코어 업데이트가 같은 vendor 를 두고 서로 다른 답을 내놓지 않도록
  * 판정을 이 클래스 하나가 소유한다. "판정 불가"(null)와 "개발용 아님"(false)을 구분하는 것이

@@ -107,7 +107,7 @@ class CancelPendingPaymentOrdersCommand extends Command
             $failCount = 0;
 
             foreach ($expiredOrders as $order) {
-                // `payment_method` 는 순수 string 이다(#475 — 확장 결제수단 ID 허용). enum 으로
+                // `payment_method` 는 순수 string 이다(확장 결제수단 ID 허용). enum 으로
                 // 보고 `?->value` 로 읽으면 "Attempt to read property on string" 경고와 함께
                 // 언제나 null 이 되어, 수단 표기가 전건 `unknown` 이고 아래 match 가 한 번도
                 // 맞지 않아 입금 기한 대신 주문 시각이 찍힌다(P17).

@@ -1,5 +1,5 @@
 /**
- * E2E: 환경설정 > 보안 — IP 접근 제한 카드와 차단 화면 (#636 트랙 2)
+ * E2E: 환경설정 > 보안 — IP 접근 제한 카드와 차단 화면
  *
  * 검증:
  *  1. 보안 탭에 접근 제한 카드가 번역문으로 마운트되고 현재 접속 IP 뱃지가 서버 진단값과 같다
@@ -134,7 +134,7 @@ test.afterAll(() => {
 
 // @scenario master_toggle=off, surface=admin_shell, admin_list=empty
 // @effects settings_card_mounts_with_current_ip
-test('@smoke #636 - 보안 탭에 IP 접근 제한 카드가 번역문·현재 접속 IP 와 함께 뜬다', async ({ page }) => {
+test('@smoke 보안 탭에 IP 접근 제한 카드가 번역문·현재 접속 IP 와 함께 뜬다', async ({ page }) => {
   const card = page.locator(CARD);
   const text = (await card.innerText()).trim();
 
@@ -154,7 +154,7 @@ test('@smoke #636 - 보안 탭에 IP 접근 제한 카드가 번역문·현재 �
 
 // @scenario master_toggle=on, surface=admin_shell, rule=blocks_client
 // @effects rule_modal_requires_pattern_then_ips, rule_modal_commits_once_to_parent_form, applied_rule_survives_save
-test('#636 - 규칙 편집 창이 빈 칸을 막고, 채운 규칙은 표에 서고 저장까지 살아남는다', async ({ page }) => {
+test('규칙 편집 창이 빈 칸을 막고, 채운 규칙은 표에 서고 저장까지 살아남는다', async ({ page }) => {
   await page.locator('#toggle_ip_restriction_enabled .toggle-switch-wrapper').first().click();
   await expect(page.locator('#ip_restriction_add_rule')).toBeEnabled({ timeout: 10_000 });
   await page.locator('#ip_restriction_add_rule').click();
@@ -203,7 +203,7 @@ test('#636 - 규칙 편집 창이 빈 칸을 막고, 채운 규칙은 표에 서
 
 // @scenario master_toggle=on, surface=admin_shell, admin_list=excludes_client
 // @effects self_lockout_by_admin_list_is_rejected, self_lockout_message_is_shown_in_place
-test('#636 - 지금 이 화면을 연 IP 를 뺀 허용 목록은 저장되지 않고 이유가 칸 아래에 뜬다', async ({ page }) => {
+test('지금 이 화면을 연 IP 를 뺀 허용 목록은 저장되지 않고 이유가 칸 아래에 뜬다', async ({ page }) => {
   await page.locator('#toggle_ip_restriction_enabled .toggle-switch-wrapper').first().click();
   // 토글이 켜져야 목록 칸이 열린다(꺼진 동안은 흐림 + 입력 잠금).
   await expect(page.locator('#ip_restriction_add_rule')).toBeEnabled({ timeout: 10_000 });
@@ -237,7 +237,7 @@ test('#636 - 지금 이 화면을 연 IP 를 뺀 허용 목록은 저장되지 �
 
 // @scenario master_toggle=on, surface=public_path, rule=blocks_client, ip_source=direct
 // @effects web_block_renders_403_page_with_client_ip, rule_blocks_outside_ip, blocked_json_request_answers_with_translated_403
-test('#636 - 막힌 경로는 403 화면(접속 IP·홈 링크)으로, API 는 403 JSON 으로 답한다', async ({ page }) => {
+test('막힌 경로는 403 화면(접속 IP·홈 링크)으로, API 는 403 JSON 으로 답한다', async ({ page }) => {
   const saved = await saveSecurity(page, {
     ...snapshot,
     ip_restriction_enabled: true,

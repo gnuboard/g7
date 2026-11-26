@@ -28,7 +28,7 @@ import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth'
 import { waitForEditorScrollSettled } from '../../fixtures/layout-editor';
 import { sandboxRouteParam } from '../../fixtures/seed-layout';
 
-// 편집기 첫 적재(편집 대상 템플릿 자산 IIFE·CSS 로드)가 30초를 넘기는 일이 잦아(#869 λ 실측) 시험 제한을 늘린다.
+// 편집기 첫 적재(편집 대상 템플릿 자산 IIFE·CSS 로드)가 30초를 넘기는 일이 잦아 시험 제한을 늘린다.
 test.describe.configure({ timeout: 90_000 });
 
 /** 편집기 home 진입 + 캔버스 준비(드래그 핸들 렌더)까지 대기. */
@@ -43,7 +43,7 @@ async function openEditor(page: Page): Promise<void> {
 /**
  * e2e 시드 화면(`/e2e-sandbox`) 편집기 진입 + 드래그 구조 노드의 path.
  *
- * 홈 레이아웃의 「통계 카드 W(display:contents) 와 Welcome 히어로가 있는 그리드 G」 구조는 사라졌다(#869 λ C1).
+ * 홈 레이아웃의 「통계 카드 W(display:contents) 와 Welcome 히어로가 있는 그리드 G」 구조는 사라졌다.
  * 그 구조를 시드 화면에 고정해 둔다(`tests/Playwright/fixtures/seed-layouts/user.e2e_sandbox.json`):
  * G(`e2e_sandbox_dnd_grid`) > [히어로(`…_hero`), W(`…_wrap`, display:contents) > [카드 A, 카드 B]],
  * 그리고 G 밖 다른 컨테이너(`e2e_sandbox_dnd_other`).
@@ -84,7 +84,7 @@ async function selectHandle(page: Page, handlePath: string): Promise<void> {
 /**
  * 핸들을 화면 가운데로 즉시 스크롤하고 그 중심 좌표를 잰다.
  *
- * 홈 레이아웃이 길어져 대상 핸들이 첫 화면 밖(아래)에 놓이는 일이 생겼고(#869 λ 실측 C1), 화면 밖 좌표의
+ * 홈 레이아웃이 길어져 대상 핸들이 첫 화면 밖(아래)에 놓이는 일이 생겼고, 화면 밖 좌표의
  * trusted mouse down 은 아무것도 누르지 않아 드래그가 시작되지 않았다. 선택 뒤 문서가 움직이는 경우도 있어
  * 드래그 직전에 다시 잰다.
  */
@@ -153,7 +153,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
     // 시드 화면 카드 A(높이 96px) — 홈에서 「통계 카드」 정규식이 잡던 노드는 이제 904×1409 큰 컨테이너라 커서가
-    // 그 중심에 있으면 고스트 좌상단이 커서에서 200px 넘게 떨어진다(#869 λ C1).
+    // 그 중심에 있으면 고스트 좌상단이 커서에서 200px 넘게 떨어진다.
     const sb = await openSandboxDnd(page);
     expect(sb.cardA, '시드 카드 A 의 path 를 찾아야 함').not.toBe('');
 
@@ -213,7 +213,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
   test('드롭 슬롯이 드래그 노드의 관련 레벨로 한정 — 자기 자손/래퍼 밖 break-out 슬롯 없음', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
-    // 시드 화면의 G > [히어로, W(contents) > [카드 A, 카드 B]] 구조(홈의 통계 카드 구조는 사라짐, #869 λ C1).
+    // 시드 화면의 G > [히어로, W(contents) > [카드 A, 카드 B]] 구조(홈의 통계 카드 구조는 사라짐).
     const sb = await openSandboxDnd(page);
     expect(sb.cardA, '시드 카드 A 의 path 를 찾아야 함').not.toBe('');
     const draggedPath = sb.cardA; // W 안 카드

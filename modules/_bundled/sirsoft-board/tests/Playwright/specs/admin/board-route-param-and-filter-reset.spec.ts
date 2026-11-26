@@ -202,7 +202,7 @@ test.describe('게시판 관리 화면 — 라우트 파라미터 · 필터 초�
     );
 
     // aria-label 은 번역되므로(`common.page_n`) 쓰지 않는다 — 클래스 + 숫자 텍스트로 잡는다.
-    // 쪽 번호는 pageHref 가 있어 링크(#757)다 — 단추로 되돌아가도 찾도록 둘 다 본다
+    // 쪽 번호는 pageHref 가 있어 링크다 — 단추로 되돌아가도 찾도록 둘 다 본다
     const secondPage = page.locator('.pagination :is(a, button)').filter({ hasText: /^2$/ }).first();
     await expect(secondPage).toBeVisible({ timeout: 15_000 });
     await secondPage.click();

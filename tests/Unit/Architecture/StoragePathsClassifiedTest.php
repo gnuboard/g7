@@ -10,7 +10,7 @@ use RecursiveIteratorIterator;
 use Tests\TestCase;
 
 /**
- * 코드가 쓰는 storage 경로가 모두 storage 경로 분류(`config/g7-storage.php`)에 들어 있는지 잠근다 (#888).
+ * 코드가 쓰는 storage 경로가 모두 storage 경로 분류(`config/g7-storage.php`)에 들어 있는지 잠근다.
  *
  * 분류는 백업 대상과 서버 간 공유 경로를 정하는 선언이라, 코드에 새 저장 경로가 생겼는데 목록에 없으면 그 경로는
  * 백업에서도 공유 설정에서도 조용히 빠진다. 그래서 코어·번들 확장 소스의 `storage_path(…)` 첫 인자에서 정적으로 읽히는

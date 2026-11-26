@@ -21,7 +21,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Tests\Support\Concerns\CapturesSentMail;
 
 /**
- * 주문 상세 「고객에게 메일 보내기」 알림 경유 테스트 (#699 A2)
+ * 주문 상세 「고객에게 메일 보내기」 알림 경유 테스트
  *
  * 7.1.0 전에는 `Mail::raw()` 로 알림 밖에서 보내 이커머스 메일 채널을 꺼도 나갔고 발송 로그가 남지
  * 않았다. 이제 알림 정의 `order_custom_email` 을 거친다 — 채널 토글·발송 로그·회원/비회원 수신자·
@@ -128,7 +128,7 @@ class OrderCustomEmailNotificationTest extends ModuleTestCase
     }
 
     /**
-     * 주문 안내 메일의 {site_url} 은 회원이 여는 화면 주소(「사용자 화면 URL」)입니다 (#792).
+     * 주문 안내 메일의 {site_url} 은 회원이 여는 화면 주소(「사용자 화면 URL」)입니다.
      *
      * @scenario surface=ecommerce_order_mail
      *

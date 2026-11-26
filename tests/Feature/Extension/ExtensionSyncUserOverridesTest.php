@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
- * 확장 동기화가 운영자 수정을 되돌리는 결함군 회귀 테스트 (#727 D5-①·③·⑤, W10·W11·W12).
+ * 확장 동기화가 운영자 수정을 되돌리는 결함군 회귀 테스트.
  *
  * 결함(수정 전):
  *  - 역할 이름·설명: 기록은 `name.ko`(다국어 dot-path)인데 판정은 `name` 정확 일치라 업데이트마다 되돌아갔다.
@@ -269,7 +269,7 @@ class ExtensionSyncUserOverridesTest extends TestCase
     }
 
     /**
-     * 운영자가 레거시 아이콘을 같은 뜻의 구조형으로 다시 저장해도 표식이 생기지 않아, 확장의 새 아이콘이 계속 들어온다 (#381).
+     * 운영자가 레거시 아이콘을 같은 뜻의 구조형으로 다시 저장해도 표식이 생기지 않아, 확장의 새 아이콘이 계속 들어온다.
      *
      * @scenario icon_type=legacy_string, entry=extension_sync
      *
@@ -290,7 +290,7 @@ class ExtensionSyncUserOverridesTest extends TestCase
     }
 
     /**
-     * 운영자가 업로드한 아이콘은 표식되고, 이후 확장 동기화가 선언 아이콘으로 덮지 않는다 (#381).
+     * 운영자가 업로드한 아이콘은 표식되고, 이후 확장 동기화가 선언 아이콘으로 덮지 않는다.
      *
      * @scenario surface=menu
      *

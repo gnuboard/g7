@@ -13,7 +13,7 @@
         "size": "md",
         "footer": [
             {
-                "comment": "변경 이력 보기와 업데이트 단추는 새 버전이 있을 때만 그린다. 둘 다 빠지면 Modal 이 빈 바닥 줄을 숨긴다(#869 C1)",
+                "comment": "변경 이력 보기와 업데이트 단추는 새 버전이 있을 때만 그린다. 둘 다 빠지면 Modal 이 빈 바닥 줄을 숨긴다",
                 "type": "basic",
                 "name": "Button",
                 "if": "{{$parent._local.coreUpdateInfo?.update_available}}",

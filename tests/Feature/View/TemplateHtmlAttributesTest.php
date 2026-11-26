@@ -10,7 +10,7 @@ use Tests\Helpers\CreatesTemplateSettingsFixtures;
 use Tests\TestCase;
 
 /**
- * 템플릿 표준 키 `<html>` 속성 렌더링 테스트 (#434 §12)
+ * 템플릿 표준 키 `<html>` 속성 렌더링 테스트
  *
  * 켜진 템플릿의 저장값 `branding.accent`·`branding.color_scheme_default` 를 사용자 셸(app)·관리자 셸(admin)·SEO 봇 화면(seo)의
  * `<html>` 에 `data-g7-accent`·`data-g7-color-scheme-default` 로 싣는다. 선언하지 않았거나 선택지 밖 값은 싣지 않는다.

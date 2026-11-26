@@ -12,7 +12,7 @@ use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Privacy\Concerns\PaginatesBoardTargets;
 
 /**
- * 게시판 작성 IP 보유기간 핸들러 (이슈 #636)
+ * 게시판 작성 IP 보유기간 핸들러
  *
  * 게시글·댓글의 작성 IP(`ip_address`)를 작성 후 N일이 지나면 NULL 로 지웁니다. 회원 글과
  * 비회원 글을 가리지 않습니다 — IP 는 접속기록이고, 안전성 확보조치 기준이 요구하는 보관

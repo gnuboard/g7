@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * Playwright·Chrome MCP 실측용 비밀번호 만료 픽스처 커맨드 (이슈 #736 S1).
+ * Playwright·Chrome MCP 실측용 비밀번호 만료 픽스처 커맨드.
  *
  * 만료 축은 **시간이 흘러야** 재현되는 상태다. 90일을 기다릴 수 없으므로 변경일·표지·연기를 직접
  * 심어 각 단계의 화면을 즉시 만든다. 보안 설정도 스냅샷으로 남겼다가 저장 경로(`SettingsService`)로

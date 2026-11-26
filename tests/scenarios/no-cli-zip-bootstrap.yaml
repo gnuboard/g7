@@ -22,7 +22,7 @@ description: |
   먼저 놓이면 모든 요청이 `public/` 으로 위임되어 이 파일 자신이 브라우저에서 사라지고,
   그 순간 재개가 불가능해진다.
 
-  압축 파일 모양(#971): GitHub 소스 ZIP 은 감싼 폴더의 **폴더 항목**(`g7-7.2.0/`)을 맨 앞에 두고, Mac 재압축은
+  압축 파일 모양: GitHub 소스 ZIP 은 감싼 폴더의 **폴더 항목**(`g7-7.2.0/`)을 맨 앞에 두고, Mac 재압축은
   `__MACOSX/` 부속 폴더를, Windows 압축 도구는 역슬래시 구분자를 쓴다. 셋 다 감싼 폴더를 벗겨 풀어야 한다.
   인증 규약: 맞는 번호로 인증한 요청은 그 뒤 판정이 실패해도 세션을 돌려준다 — 번호는 첫 인증에서 지워지므로,
   세션을 버리면 압축 파일만 바꿔 다시 시도할 길이 없다.
@@ -81,7 +81,7 @@ effects:
   - zip_bootstrap_defers_routing_root_files_to_final_request
   - zip_bootstrap_refresh_preserves_progress_and_session
   - zip_bootstrap_self_deletes_entry_archive_and_state
-  # 압축 파일 모양 (#971)
+  # 압축 파일 모양
   - zip_bootstrap_strips_wrapper_with_directory_entries
   - zip_bootstrap_backslash_directory_entries_become_directories
   - zip_bootstrap_skips_macosx_resource_forks

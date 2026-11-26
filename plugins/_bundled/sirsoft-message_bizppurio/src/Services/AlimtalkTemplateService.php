@@ -7,7 +7,7 @@ namespace Plugins\Sirsoft\MessageBizppurio\Services;
 use Plugins\Sirsoft\MessageBizppurio\Exceptions\BizppurioApiException;
 
 /**
- * 알림톡 작성 모달 참조 조회 서비스 (#597).
+ * 알림톡 작성 모달 참조 조회 서비스.
  *
  * 알림톡 템플릿 작성 모달이 소비하는 카테고리·발신프로필 kapi 조회를 위임한다.
  * 템플릿 목록/상세의 실시간 조회(구 Phase 5)는 DB 기반 라이프사이클

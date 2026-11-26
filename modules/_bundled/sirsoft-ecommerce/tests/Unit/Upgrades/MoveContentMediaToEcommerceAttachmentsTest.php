@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Psr\Log\AbstractLogger;
 
 /**
- * 1.3.4 업그레이드 데이터 단계 — 개발 중 전용 표의 본문 미디어를 범용 첨부 표 `ecommerce_attachments` 로 옮김 (#887)
+ * 1.3.4 업그레이드 데이터 단계 — 개발 중 전용 표의 본문 미디어를 범용 첨부 표 `ecommerce_attachments` 로 옮김
  *
  * 저장된 본문이 해시 주소로 참조하므로 해시를 그대로 옮기고, 파일은 옮기지 않으므로 디스크·카테고리 기준 경로를 그대로 적는다(서빙이
  * 같은 파일을 읽는다). 해시 충돌·알 수 없는 소유 종류가 있으면 전용 표를 지우지 않고, 새 표가 아직 없으면 보류한다. 모듈 마이그레이션
@@ -266,7 +266,7 @@ class MoveContentMediaToEcommerceAttachmentsTest extends ModuleTestCase
     }
 
     /**
-     * #883 의 전용 표 정의를 그대로 만듭니다.
+     * 이전 버전의 전용 표 정의를 그대로 만듭니다.
      *
      * @return void 반환값 없음
      */

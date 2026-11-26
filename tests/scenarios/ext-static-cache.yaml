@@ -129,7 +129,7 @@ effects:
   - admin_catch_all_shares_static_exclusion
   - prune_skips_active_serving_path
   - extension_copy_paths_inherit_directory_ownership
-  # #651 — 재게시 누락 3건·버전 수명·root 안내
+  # 재게시 누락 3건·버전 수명·root 안내
   - template_update_always_bumps_cache_version
   - template_update_failure_bumps_after_restore
   - asset_url_mode_change_bumps_extension_cache_version

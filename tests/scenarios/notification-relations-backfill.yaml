@@ -1,4 +1,4 @@
-feature: 알림 정의 relations 백필과 선언 전 저장 호환 (7.1.0 업그레이드, #599 validate)
+feature: 알림 정의 relations 백필과 선언 전 저장 호환 (7.1.0 업그레이드)
 
 description: |
   7.1.0 은 알림 템플릿의 「관련 사용자」 수신자(related_user.relation)를 정의가 선언한 키로만 받는다.

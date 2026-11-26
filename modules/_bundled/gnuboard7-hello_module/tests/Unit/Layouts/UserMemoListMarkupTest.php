@@ -9,7 +9,7 @@ use Tests\PureTestCase;
  *
  * 7.1.0 전수 실측(sirsoft-basic `/memos`, 1440px): 제목이 관리자 템플릿 전용 의미 클래스
  * (`text-page-heading`, `section-heading`)를 써서 사용자 템플릿에서는 정의가 없어 쪽 제목 16px,
- * 메모 제목 굵기 400 으로 나왔다(#408 치환이 사용자 화면까지 바꿨다. 0.1.0 은 `text-2xl font-bold`,
+ * 메모 제목 굵기 400 으로 나왔다(치환이 사용자 화면까지 바꿨다. 0.1.0 은 `text-2xl font-bold`,
  * `text-lg font-semibold`). 또 반복(`data-each`)이 `space-y-3` 묶음 쪽에 붙어 메모마다 묶음이 새로 생겨
  * 카드 사이 간격이 0px 이었다. Hello 사용자 템플릿을 켜면 메모 본문 `P` 가 「컴포넌트를 찾을 수 없습니다: P」
  * 콘솔 오류와 함께 빠졌다(그 템플릿의 기본 컴포넌트는 Div·Button·H1·H2·H3·A·Span·Img 8종). 사용자 화면은

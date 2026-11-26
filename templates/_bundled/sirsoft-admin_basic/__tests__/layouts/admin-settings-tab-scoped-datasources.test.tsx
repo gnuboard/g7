@@ -27,13 +27,13 @@ const TAB_SCOPED: Record<string, string[]> = {
   availableChannels: ['notification_definitions'],
   identityProviders: ['identity'],
   identityPurposes: ['identity', 'notification_definitions'],
-  // 본인인증 정책별 문구(#699) — 알림 설정 탭의 「정책별 문구 추가」 창이 쓴다. 운영자 정책 목록은 두 탭이 함께 쓴다.
+  // 본인인증 정책별 문구 — 알림 설정 탭의 「정책별 문구 추가」 창이 쓴다. 운영자 정책 목록은 두 탭이 함께 쓴다.
   identityPolicyDefinitions: ['notification_definitions'],
   adminIdentityPolicies: ['identity', 'notification_definitions'],
   policies: ['identity'],
   sitemap_status: ['seo'],
   staticCacheStatus: ['general'],
-  // 회원 탭(#490) — 항목 정의(가입 항목 표)와 닉네임 중복 검사 준비 상태는 회원 탭에서만 받는다.
+  // 회원 탭 — 항목 정의(가입 항목 표)와 닉네임 중복 검사 준비 상태는 회원 탭에서만 받는다.
   memberFieldDefs: ['member'],
   memberNicknameRecompute: ['member'],
 };

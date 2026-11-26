@@ -16,7 +16,7 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
 /**
  * 토스 플러그인 설정 서버측 검증.
  *
- * 배경(#454): vbank_valid_hours 는 토스 가상계좌 유효시간(1~2160시간, 최대 90일) 제약을 받는다.
+ * 배경: vbank_valid_hours 는 토스 가상계좌 유효시간(1~2160시간, 최대 90일) 제약을 받는다.
  * 설정 UI 는 input[max=2160] 으로 막지만 그것은 클라이언트 힌트일 뿐이고, 관리자 설정 저장 API 를
  * 직접 호출하면 범위 밖 값(예: 9999)이 그대로 저장되어 결제창 호출 시 토스가 거부한다.
  * KG 의 ValidateCbtSettingsListener 와 동일하게 core.plugin_settings.before_save 훅에서 검증한다.

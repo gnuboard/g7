@@ -13,7 +13,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * 환경설정 > 일반 「사용자 화면 URL」 저장 테스트 (#792 WP-U1 D13)
+ * 환경설정 > 일반 「사용자 화면 URL」 저장 테스트
  *
  * http·https 전체 주소만 받고(상대 경로·javascript:·ftp: 는 422), 끝 슬래시를 떼어 저장하며, 비우는 것을 허용하는지 잠근다.
  */

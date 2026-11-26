@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductWishlist;
 use Modules\Sirsoft\Ecommerce\Models\UserAddress;
 
 /**
- * Playwright E2E · 브라우저 실측용 회원 이커머스 데이터 시드 커맨드 (#524 WP-E · WP-C2).
+ * Playwright E2E · 브라우저 실측용 회원 이커머스 데이터 시드 커맨드.
  *
  * 관리자 목록 네 갈래(찜 · 장바구니 · 배송지 · 상품문의)와 「숨김 상품은 찜 목록에서 빠진다」를
  * 한 번에 세우려면, 회원 하나에 네 갈래 데이터가 있고 상품이 «정상 · 숨김 · 판매중지» 세 상태로

@@ -195,7 +195,7 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
 
             // 2. 확장 모델 조회 및 복원 직전 content 보관 (변경 요약 기준)
             $extension = LayoutExtension::findOrFail($extensionId);
-            // 원문 그대로 읽는다 — 캐스트는 `{}` 를 `[]` 로 만든다 (#758)
+            // 원문 그대로 읽는다 — 캐스트는 `{}` 를 `[]` 로 만든다
             $currentContent = LayoutEmptyObjects::rawPreserving($extension);
             $restoredContent = LayoutEmptyObjects::rawPreserving($versionToRestore);
 

@@ -83,7 +83,7 @@ function buildLayout(section: any, externals: any[]) {
   return {
     version: '1.0.0',
     layout_name: 'external_resources_section_test',
-    // 상세 응답 형태 — metadata 는 상세에만 있는 필드라 「없음」 안내가 상세를 받은 뒤에만 보이는 표지다(#915)
+    // 상세 응답 형태 — metadata 는 상세에만 있는 필드라 「없음」 안내가 상세를 받은 뒤에만 보이는 표지다
     initGlobal: { selectedTemplate: { externals, metadata: [] } },
     components: [section],
   };

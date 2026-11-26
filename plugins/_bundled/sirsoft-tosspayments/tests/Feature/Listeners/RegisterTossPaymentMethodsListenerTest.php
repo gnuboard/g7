@@ -226,7 +226,7 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
         // 가상계좌 → vbank, 간편결제 → card
         $this->assertSame('vbank', $byId['toss_virtual_account']['defaults']['core_payment_method']);
         $this->assertSame('card', $byId['toss_kakaopay']['defaults']['core_payment_method']);
-        // PG 는 토스로 고정된다 (#475 전환). 과거에는 null 이었고 그것이 관리자 화면의
+        // PG 는 토스로 고정된다. 과거에는 null 이었고 그것이 관리자 화면의
         // 빈 PG 셀렉트와 서버측 "PG 없는 결제수단" 오인의 원인이었다.
         $this->assertSame('tosspayments', $byId['toss_virtual_account']['defaults']['pg_provider']);
     }
@@ -248,9 +248,9 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
     }
 
     /**
-     * 모든 토스 결제수단은 PG 를 자기 자신으로 고정 선언해야 한다 (#475 전환 누락 회귀).
+     * 모든 토스 결제수단은 PG 를 자기 자신으로 고정 선언해야 한다 (전환 누락 회귀).
      *
-     * 배경: #475 가 확장 결제수단에 pg_locked/needs_pg/refund_method 선언을 도입할 때
+     * 배경: 확장 결제수단에 pg_locked/needs_pg/refund_method 선언을 도입할 때
      * 토스는 3일 먼저 들어와 있었음에도 전환 대상에서 빠졌다. 그 결과 pg_provider 가 null 인
      * 채로 needs_pg 만 참이 되어, 관리자 화면이 "PG 고정" 배지 대신 **선택지가 하나도 없는**
      * PG 셀렉트를 그렸다(토스 PG 는 toss_* id 를 supported_methods 로 선언하지 않는다).
@@ -399,7 +399,7 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
             'toss_samsungpay' => ['text' => 'S', 'class' => 'bg-blue-600 text-white'],
             'toss_payco' => ['text' => 'P', 'class' => 'bg-red-600 text-white'],
             'toss_tosspay' => ['text' => 'T', 'class' => 'bg-blue-700 text-white'],
-            // #933 — 나이스페이먼츠 applepay·lpay·ssgpay 와 같은 배지
+            // 나이스페이먼츠 applepay·lpay·ssgpay 와 같은 배지
             'toss_applepay' => ['text' => 'A', 'class' => 'bg-gray-900 text-white'],
             'toss_lpay' => ['text' => 'L', 'class' => 'bg-purple-600 text-white'],
             'toss_ssgpay' => ['text' => 'SSG', 'class' => 'bg-red-700 text-white'],
@@ -448,7 +448,7 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
     }
 
     /**
-     * 애플페이만 iOS 전용(`requires_ios: true`, 엔트리 최상위)을 선언하고 나머지 11종은 키가 없다 (#933).
+     * 애플페이만 iOS 전용(`requires_ios: true`, 엔트리 최상위)을 선언하고 나머지 11종은 키가 없다.
      *
      * 체크아웃은 `(!m.requires_ios || _global.appConfig?.isIos)` 로 거른다 — 나이스·KCP 애플페이와 같은 장치다.
      *
@@ -476,7 +476,7 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
     }
 
     /**
-     * 간편결제 8종은 결제 결과 간편결제사 이름을 `defaults.embedded_pg_provider` 로 선언하고, 카드·가상계좌·계좌이체·휴대폰은 키가 없다 (#933).
+     * 간편결제 8종은 결제 결과 간편결제사 이름을 `defaults.embedded_pg_provider` 로 선언하고, 카드·가상계좌·계좌이체·휴대폰은 키가 없다.
      *
      * 이커머스 관리자 주문 목록 결제수단 필터가 이 값으로 토스 간편결제 주문(결제수단 칸은 card)을 가른다.
      *

@@ -678,7 +678,7 @@ describe('DataBindingEngine', () => {
      * `$t` 는 engine-v1.38.2 에서 동일 함정을 `window.__templateApp.getConfig()` 회수로
      * 이미 해결했다. `$localized` 도 같은 회수 경로를 공유해야 한다.
      *
-     * 회귀 배경(#459): 헤더 배송국가 셀렉터가 `init_actions` 파생이라, 서버가 en/ja 이름을
+     * 회귀 배경: 헤더 배송국가 셀렉터가 `init_actions` 파생이라, 서버가 en/ja 이름을
      * 내려줘도 화면에는 늘 한국어 국가명이 표시됐다.
      */
     describe('$locale 미주입 시 window.__templateApp 로케일 회수 (ActionDispatcher 경로)', () => {

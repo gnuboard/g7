@@ -1,4 +1,4 @@
-feature: 레이아웃 코드 편집기 HTML(.g7.html) 기본화 (#476)
+feature: 레이아웃 코드 편집기 HTML(.g7.html) 기본화
 
 description: |
   관리자 레이아웃 코드 편집기의 정본을 JSON 에서 HTML(`.g7.html`)로 바꾼다. DB 는 JSON 만 유지하고
@@ -106,7 +106,7 @@ effects:
   - code_editor_applies_the_language_prop
   - code_editor_applies_the_theme_prop
   - code_editor_defaults_language_to_json
-  # `vs-dark` 하드코딩은 #476 코드 편집기 개편에서 `theme="auto"` 로 바뀌었다(D8) —
+  # `vs-dark` 하드코딩은 코드 편집기 개편에서 `theme="auto"` 로 바뀌었다 —
   # 명제가 뒤집혔으므로 이름째 교체한다. 라이트 모드에서 검은 편집기가 뜨던 결함의 잠금이다.
   - code_editor_follows_document_theme
   - code_editor_defaults_theme_to_document_theme # 기본 테마 prop 은 auto(문서 테마)
@@ -137,7 +137,7 @@ effects:
   - group_header_icon_distinguishes_plugin_from_module
   - override_extension_item_shows_the_override_badge
   # --- 모바일 셀렉터(`rich-select`) 6종은 이 매니페스트에서 내렸다 ---
-  # 그 선택기는 #476 코드 편집기 개편에서 **제거**되고 `<file-tree-picker mode="sheet">` 로
+  # 그 선택기는 코드 편집기 개편에서 **제거**되고 `<file-tree-picker mode="sheet">` 로
   # 대체됐다(계획서 Phase 4-3). 검색이 없어 144개를 스크롤해야 했던 것이 교체 사유다.
   # 없어진 위젯의 명제를 남겨 두면 영원히 미검증으로 뜨거나, 더 나쁘게는 누군가 그 위젯을
   # 되살리는 근거로 읽는다. 대체 표면의 약속은 `code-editor-file-tree.yaml` 이 소유한다.

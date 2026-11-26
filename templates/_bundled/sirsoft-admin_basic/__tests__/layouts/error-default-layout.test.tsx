@@ -1,6 +1,6 @@
 /**
  * @file error-default-layout.test.tsx
- * @description 코드별 오류 레이아웃이 없는 코드(400 등)가 공통 오류 화면(`errors/default`)으로 그려지고 받은 코드가 보이는지 (sirsoft-admin_basic 1.2.0, #869)
+ * @description 코드별 오류 레이아웃이 없는 코드(400 등)가 공통 오류 화면(`errors/default`)으로 그려지고 받은 코드가 보이는지 (sirsoft-admin_basic 1.2.0)
  *
  * 엔진은 오류 코드에 맞는 레이아웃이 없으면 `error_config.layouts.default` → 엔진 내장 오류 화면 순서로 대신 그린다(engine-v1.95.0).
  * 이 템플릿에 `default` 가 없으면 400·422·429·502·504 는 내장 화면이 사이드바와 머리글까지 `#app` 전체를 덮었다.

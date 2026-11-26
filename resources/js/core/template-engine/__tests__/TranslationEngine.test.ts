@@ -1,4 +1,4 @@
-// e2e:allow 테스트 전용 수정 — suffixed 헬퍼 일원화(#486)로 바뀐 쿼리 파라미터 순서를 순서 무관 단언으로 정정. 런타임 동작 무변경이며 대상 기능 E2E 는 tests/Playwright/specs/asset-url-mode.spec.ts 로 이미 커버됨.
+// e2e:allow 테스트 전용 수정 — suffixed 헬퍼 일원화로 바뀐 쿼리 파라미터 순서를 순서 무관 단언으로 정정. 런타임 동작 무변경이며 대상 기능 E2E 는 tests/Playwright/specs/asset-url-mode.spec.ts 로 이미 커버됨.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   TranslationEngine,
@@ -301,13 +301,13 @@ describe('TranslationEngine', () => {
      * 회귀: 인라인 $t:defer: prefix 가 다른 텍스트와 혼용될 때 (예:
      * "{{id}} — $t:defer:key|param=value") TRANSLATION_PATTERN 의 키 문자
      * 클래스 [a-zA-Z0-9._-] 이 콜론을 미포함하여 `$t:defer` 만 매칭되고
-     * 나머지 `:key|param=value` 가 raw 로 남던 문제 (이슈 #302).
+     * 나머지 `:key|param=value` 가 raw 로 남던 문제.
      *
      * 정상 동작: 인라인 $t:defer:key 형태도 일반 $t:key 와 동등하게 처리되어야 함.
      */
     // @scenario locale=ko, locale_value_presence=has_locale
     // @effects translation_engine_resolves_defer_prefixed_inline_keys
-    it('인라인 $t:defer: prefix 도 정상 번역 (#302)', () => {
+    it('인라인 $t:defer: prefix 도 정상 번역', () => {
       const result = engine.resolveTranslations(
         '머리글 — $t:defer:common.save',
         context
@@ -317,7 +317,7 @@ describe('TranslationEngine', () => {
 
     // @scenario locale=ko, locale_value_presence=has_locale
     // @effects translation_engine_resolves_defer_prefixed_inline_keys
-    it('인라인 $t:defer: prefix + 파라미터도 정상 번역 (#302)', () => {
+    it('인라인 $t:defer: prefix + 파라미터도 정상 번역', () => {
       const result = engine.resolveTranslations(
         'prefix: $t:defer:messages.greeting|name=홍길동',
         context
@@ -1468,7 +1468,7 @@ describe('TranslationEngine', () => {
       await engine.loadTranslations('template-1', 'ko', '/api', true);
 
       // bustCache가 true이면 타임스탬프 쿼리 파라미터도 추가됨.
-      // 두 파라미터의 순서는 기능상 무의미하다 — #486 에서 URL 조립이 suffixed 헬퍼로
+      // 두 파라미터의 순서는 기능상 무의미하다 — URL 조립이 suffixed 헬퍼로
       // 일원화되며 v=/_= 순서가 바뀌었다. 순서에 의존하지 말고 둘 다 존재하는지만 검증한다.
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringMatching(

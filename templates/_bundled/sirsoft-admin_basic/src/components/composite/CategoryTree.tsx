@@ -191,7 +191,7 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
             <Div
               className={`flex-shrink-0 w-5 h-5 flex items-center justify-center text-muted rounded ${FOCUS_VISIBLE_RING}`}
               onClick={() => handleToggle(node.id)}
-              // 키보드로도 펼치고 접는다 — 이름 칸은 같은 동작의 마우스 지름길이라 따로 Tab 을 받지 않는다(#869 키보드 접근)
+              // 키보드로도 펼치고 접는다 — 이름 칸은 같은 동작의 마우스 지름길이라 따로 Tab 을 받지 않는다(키보드 접근)
               {...keyboardActivationProps(() => handleToggle(node.id))}
               aria-expanded={isExpanded}
               aria-label={`${isExpanded ? tOr('common.collapse', 'Collapse') : tOr('common.expand', 'Expand')} ${displayName}`}
@@ -216,7 +216,7 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
               }}
               className="flex-shrink-0"
               data-testid={`checkbox-${node.id}`}
-              // 이름 — 종전에는 「체크박스」만 읽혔다(쿠폰·상품 분류 선택, #757)
+              // 이름 — 종전에는 「체크박스」만 읽혔다(쿠폰·상품 분류 선택)
               aria-label={tOr('common.select_item', `Select ${displayName}`, { name: displayName })}
             />
           )}

@@ -1,6 +1,6 @@
 /**
  * @file admin-template-list-dependency-names.test.ts
- * @description 템플릿 목록 카드의 의존성 이름이 항상 글자인지 고정한다 (#727 실측 중 발견 — React #31)
+ * @description 템플릿 목록 카드의 의존성 이름이 항상 글자인지 고정한다 (실측 중 발견 — React #31)
  *
  * 결함: 카드 목록 식이 의존성 이름을 `d.name ?? d` 로 만들어, 목록 API 가 이름을 비워(null) 주면 의존성 객체
  * `{identifier, name, type}` 통째가 카드에 글자로 들어가 React #31("Objects are not valid as a React child")로

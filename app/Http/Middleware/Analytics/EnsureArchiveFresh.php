@@ -52,7 +52,7 @@ class EnsureArchiveFresh
 
         try {
             // 객체로 푼다 — 연관 배열로 풀었다 다시 싸면 응답 안의 빈 맵 `{}`(행 `extra` 등)이
-            // 모두 빈 목록 `[]` 으로 바뀐다(#758, 7.1.1 출시 전).
+            // 모두 빈 목록 `[]` 으로 바뀐다(7.1.1 출시 전).
             $payload = $response->getData();
 
             if (! $payload instanceof stdClass || ($payload->success ?? false) !== true || ! ($payload->data ?? null) instanceof stdClass) {

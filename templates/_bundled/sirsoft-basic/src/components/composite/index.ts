@@ -60,7 +60,7 @@ export { SearchBar } from './SearchBar';
 export { RecentSearchCombobox } from './RecentSearchCombobox';
 export type { RecentSearchComboboxProps, RecentSearchItem } from './RecentSearchCombobox';
 export { Avatar } from './Avatar';
-// 방문자 카운터 — 홈 하단 오늘·어제·최대·전체 (#682)
+// 방문자 카운터 — 홈 하단 오늘·어제·최대·전체
 export { VisitorCounter } from './VisitorCounter';
 export type { VisitorCounterProps, VisitorCounterLabels } from './VisitorCounter';
 export { AvatarUploader } from './AvatarUploader';
@@ -132,7 +132,7 @@ export const compositeComponents = {
   // 최근 검색어 검색창 — 등록맵에 없으면 편집기 캔버스 번들에서 빠진다
   RecentSearchCombobox: () => import('./RecentSearchCombobox'),
   Avatar: () => import('./Avatar'),
-  // 방문자 카운터 (#682) — 등록맵에 없으면 편집기 캔버스 번들에서 빠진다
+  // 방문자 카운터 — 등록맵에 없으면 편집기 캔버스 번들에서 빠진다
   VisitorCounter: () => import('./VisitorCounter'),
   AvatarUploader: () => import('./AvatarUploader'),
   UserInfo: () => import('./UserInfo'),

@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\ReadsReturnRefundLink;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 회차별 환불신청서는 **자기 몫**만 담는다 (S-B-D7 · #599 빠른재실측 세션B)
+ * 회차별 환불신청서는 **자기 몫**만 담는다
  *
  * 형제 테스트 `ReturnedRowsExcludedFromRecalcTest` 는 재계산 기준선이 **누적**인지를 잠근다.
  * 그 누적은 쿠폰 탈락·배송비 재판정을 맞추려는 의도된 설계다(S2-D5). 이 테스트가 잠그는

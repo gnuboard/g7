@@ -34,14 +34,14 @@ effects:
   - unknown_method_id_keeps_legacy_contract # 카탈로그 밖 ID 판정은 종전대로 통과
   - runtime_only_flag_not_persisted       # _orphaned_pg 는 저장 파일에 박제되지 않음
   - boot_time_read_not_cached             # 부팅 중(훅 등록 전) 판정이 요청 전체에 남지 않음
-  - extension_method_survives_dead_pg_guard # 플러그인 등록 수단이 가드에 휩쓸리지 않음 (#475 계약 보존)
+  - extension_method_survives_dead_pg_guard # 플러그인 등록 수단이 가드에 휩쓸리지 않음 (계약 보존)
   - pg_locked_method_has_no_dead_pg_exemption # pg_locked 는 저장값 고정일 뿐 PG 사멸 면제가 아님
   - merge_quadrant_pinned                 # 카탈로그 등재 × 저장값 존재 4분면 — 고아 판정의 토대
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/PaymentSettingsOrphanedPgProviderTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Requests/CreateOrderDeadPgGuardTest.php
-  # 확장 결제수단 1급화(#475) 스위트에 심은 죽은-PG 비회귀 pin — 그 스위트만 돌려도 걸리도록
+  # 확장 결제수단 1급화 스위트에 심은 죽은-PG 비회귀 pin — 그 스위트만 돌려도 걸리도록
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Payment/ExtensionPaymentMethodRegressionTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/SettingsCacheBootOrderTest.php
   # 카탈로그 × 저장값 4분면 (고아 판정이 딛는 병합 규칙)

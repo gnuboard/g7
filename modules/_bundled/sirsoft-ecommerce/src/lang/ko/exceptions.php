@@ -209,7 +209,7 @@ return [
     // 택배사 관련
     'shipping_carrier_not_found' => '택배사를 찾을 수 없습니다.',
     'shipping_carrier_in_use' => '주문에서 사용 중인 택배사는 삭제할 수 없습니다. (사용 횟수: :count건)',
-    // 내보내기(#787)
+    // 내보내기
     'export' => [
         'enqueue_failed' => '내보내기 작업을 큐에 넣지 못했습니다. 잠시 후 다시 시도하세요.',
         'requester_missing' => '요청한 운영자 계정을 찾을 수 없어 파일을 만들지 않았습니다.',
@@ -236,7 +236,7 @@ return [
     // 회원·주문 없이 등록하는 후기(다른 쇼핑몰 이관) 입력 오류
     'imported_review_invalid_field' => '이관 후기 입력값이 올바르지 않습니다: :field',
 
-    // 결제사 플러그인용 공개 결제 계약(Contracts\Payment) 예외 — 결제사 코드가 계약을 잘못 부를 때 나는 오류다(#916)
+    // 결제사 플러그인용 공개 결제 계약(Contracts\Payment) 예외 — 결제사 코드가 계약을 잘못 부를 때 나는 오류다
     'payment_contract' => [
         'order_not_found' => '주문을 찾을 수 없습니다: :order_number',
         'provider_mismatch' => '결제 행이 다른 결제사([:owner]) 것이라 [:caller] 가 바꿀 수 없습니다.',

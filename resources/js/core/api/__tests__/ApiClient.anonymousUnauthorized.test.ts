@@ -1,5 +1,5 @@
 /**
- * ApiClient 무토큰 401 테스트 (#883, engine-v1.88.2)
+ * ApiClient 무토큰 401 테스트 (engine-v1.88.2)
  *
  * 비회원이 권한 없는 기능(편집기 이미지 업로드·모바일 결제 승인키·클레임 신청)을 누르면 서버는 401 을 준다.
  * 종전 응답 인터셉터는 그 401 도 세션 만료로 보고 토큰 갱신 → 실패 → `onUnauthorized`(로그인 화면 이동,
@@ -64,7 +64,7 @@ function rejectedThroughRequestInterceptor(onRequest: (c: any) => any, url: stri
   return { config, response: { status: 401, data: { message: 'Unauthenticated.' } } };
 }
 
-describe('ApiClient — 토큰 없이 보낸 요청의 401 은 세션 만료가 아니다 (#883)', () => {
+describe('ApiClient — 토큰 없이 보낸 요청의 401 은 세션 만료가 아니다', () => {
   let refreshToken: ReturnType<typeof vi.fn>;
   let onUnauthorized: ReturnType<typeof vi.fn<() => void>>;
 

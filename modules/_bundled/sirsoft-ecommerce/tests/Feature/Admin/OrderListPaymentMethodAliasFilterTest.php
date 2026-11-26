@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 관리자 주문 목록 결제수단 필터 — PG 별칭 결제수단 (#933 S6·D8)
+ * 관리자 주문 목록 결제수단 필터 — PG 별칭 결제수단
  *
  * 토스 결제수단(`toss_*`)은 주문 생성 때 코어 값(`card`·`vbank`)으로 저장된다. 그래서 필터에서 `toss_kakaopay` 를 고르면
  * `payment_method IN ('toss_kakaopay')` 가 되어 0건이었고, 「신용카드」(`card`)에는 토스 간편결제 주문이 섞였다.

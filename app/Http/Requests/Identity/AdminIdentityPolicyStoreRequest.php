@@ -41,7 +41,7 @@ class AdminIdentityPolicyStoreRequest extends FormRequest
         $rules = [
             'key' => ['required', 'string', 'max:120', Rule::unique(IdentityPolicy::class, 'key')],
             'scope' => ['required', Rule::enum(IdentityPolicyScope::class)],
-            // 범위가 「사용자 지정」이면 활성 확장이 선언한 확장 지점 키만 (7.2.1, #952)
+            // 범위가 「사용자 지정」이면 활성 확장이 선언한 확장 지점 키만 (7.2.1)
             'target' => ['required', 'string', 'max:255', new RegisteredIdentityCheckpointRule(fn (): ?string => is_string($this->input('scope')) ? $this->input('scope') : null)],
             'purpose' => ['required', 'string', 'max:64', new RegisteredIdentityPurposeRule(true)],
             // 지정 수단 = 인정할 수단(정확히 일치, 7.1.6) — 등록돼 있고 그 목적을 지원하는 수단만 저장한다(KVE 동형 B8)

@@ -375,7 +375,7 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
     ],
     build: { handler: 'emitEvent', params: { event: '{{event}}', data: '{{data}}' } },
   },
-  // C21a 방문자 동의 상태 다시 읽기 (engine-v1.78.0, #639) — 동의 저장 성공 뒤에 둔다
+  // C21a 방문자 동의 상태 다시 읽기 (engine-v1.78.0) — 동의 저장 성공 뒤에 둔다
   refreshConsent: {
     label: `$t:${L}.refresh_consent.label`,
     params: [],

@@ -1,5 +1,5 @@
 /**
- * TabNavigation 막대와 단추의 줄바꿈 규칙 (#869, 설계 확정 2026-11-08 「두 줄은 두되 글자만 안 꺾임」)
+ * TabNavigation 막대와 단추의 줄바꿈 규칙 (설계 확정 2026-11-08 「두 줄은 두되 글자만 안 꺾임」)
  *
  * 탭이 많으면 막대는 단추째 다음 줄로 감기고(`flex-wrap`), 단추는 글자를 꺾지 않고 제 폭을 지킨다
  * (`whitespace-nowrap shrink-0`). 실제 줄 수와 단추 높이는 Playwright `settings-tab-labels-no-wrap.spec.ts` 가 1280 폭에서 잰다.
@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 
-// 의미 클래스는 semantic.css 에 있다(#434 분리 — main.css 는 불러오기와 바탕 규칙만 둔다).
+// 의미 클래스는 semantic.css 에 있다(분리 — main.css 는 불러오기와 바탕 규칙만 둔다).
 const css = fs.readFileSync(path.resolve(__dirname, '../../../styles/semantic.css'), 'utf8');
 const block = (name: string) => {
   const at = css.indexOf(`.${name} {`);

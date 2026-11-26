@@ -143,7 +143,7 @@ class BulkApplySettingsRequest extends FormRequest
             'override_values.max_file_size' => ['nullable', 'integer', "min:{$limits['max_file_size_min']}", "max:{$limits['max_file_size_max']}"],
             'override_values.max_file_count' => ['nullable', 'integer', "min:{$limits['max_file_count_min']}", "max:{$limits['max_file_count_max']}"],
             'override_values.new_display_hours' => ['nullable', 'integer', "min:{$limits['new_display_hours_min']}", "max:{$limits['new_display_hours_max']}"],
-            // 본문 미디어 정책 (#883) — 형식은 코어가 정한다
+            // 본문 미디어 정책 — 형식은 코어가 정한다
             ...ContentMediaPolicyRules::settingsRules('override_values.content_media_policy'),
         ];
     }
@@ -157,7 +157,7 @@ class BulkApplySettingsRequest extends FormRequest
     {
         $attributes = __('sirsoft-board::validation.attributes.bulk_apply');
 
-        // 본문 미디어 정책 하위 칸 (#883) — 게시판 생성·수정 요청과 같은 이름
+        // 본문 미디어 정책 하위 칸 — 게시판 생성·수정 요청과 같은 이름
         return (is_array($attributes) ? $attributes : [])
             + $this->contentMediaPolicyAttributes('override_values.content_media_policy');
     }
@@ -171,7 +171,7 @@ class BulkApplySettingsRequest extends FormRequest
     {
         $messages = __('sirsoft-board::validation.bulk_apply');
 
-        // 본문 미디어 정책 범위·확장자 문구 (#883) — 게시판 생성·수정 요청과 같은 코어 문구
+        // 본문 미디어 정책 범위·확장자 문구 — 게시판 생성·수정 요청과 같은 코어 문구
         return (is_array($messages) ? $messages : [])
             + ContentMediaPolicyRules::messages('override_values.content_media_policy');
     }

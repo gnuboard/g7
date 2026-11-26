@@ -12,7 +12,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * 페이지 본문 미디어 공개 서빙 컨트롤러 (#883 4단계)
+ * 페이지 본문 미디어 공개 서빙 컨트롤러
  *
  * 게이트는 「발행 또는 열람권 또는 서명」(기존 미리보기와 같음). 권한 미들웨어는 없다 — `<img>`·`<video>` 요청에는 Bearer 가 없다.
  */

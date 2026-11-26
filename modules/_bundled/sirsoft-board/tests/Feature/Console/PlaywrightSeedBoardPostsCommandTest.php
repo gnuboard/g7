@@ -13,7 +13,7 @@ use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * playwright:seed-board-posts — 사용자 화면 이동 링크 E2E 가 잴 「두 쪽인 공개 게시판」과 그 회원을 워커별로 세우고 지운다 (#757).
+ * playwright:seed-board-posts — 사용자 화면 이동 링크 E2E 가 잴 「두 쪽인 공개 게시판」과 그 회원을 워커별로 세우고 지운다.
  *
  * `user-navigation-links.spec.ts` 의 게시판 시험 셋(게시글 행 · 2쪽 번호 · 글쓰기)은 설치본의 기존 게시판에 기대 건너뛰었다.
  * 이 커맨드가 쪽당 2건 · 글 3건 게시판과 기본 `user` 역할 회원을 만든다. 브라우저가 보는 판정은 **글 목록 응답의

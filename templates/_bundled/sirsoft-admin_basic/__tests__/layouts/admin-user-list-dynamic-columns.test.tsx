@@ -1,6 +1,6 @@
 /**
  * @file admin-user-list-dynamic-columns.test.tsx
- * @description 회원 목록의 회원 항목 표면 (#490 6단계): 추가 항목 열, 「미입력」 열, 검색 대상, 회원 항목 조건 둘
+ * @description 회원 목록의 회원 항목 표면: 추가 항목 열, 「미입력」 열, 검색 대상, 회원 항목 조건 둘
  *
  * 서버 응답(`GET /api/admin/users`)의 `member_fields.columns`, `member_fields.search_fields`, 행의 `custom_fields`,
  * `pending_required_fields` 와 요청 인자 `required_missing`, `nickname_duplicate` 를 레이아웃이 어떻게 쓰는지 잠근다.

@@ -1,4 +1,4 @@
-# 시나리오 매니페스트 — 관리자 PG 연동 경로의 주문 권한 범위 재적용 (#789 전수조사)
+# 시나리오 매니페스트 — 관리자 PG 연동 경로의 주문 권한 범위 재적용
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 # audit:allow test-scenario-coverage[cross_product] reason: issue:#789 |
 #   이 플러그인에는 거래번호로 받는 관리자 경로가 없다(주문번호 경로·배지 목록·원장 감사만). route_shape 축은

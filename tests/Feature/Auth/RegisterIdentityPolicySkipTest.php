@@ -17,7 +17,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 확장 내부 가입의 본인인증 정책 생략과 동의 기록 선택 (#798 K12 · P6)
+ * 확장 내부 가입의 본인인증 정책 생략과 동의 기록 선택
  *
  * 회사 IdP 가 신원을 보증한 가입(SSO 자동 생성 등)은 사이트의 가입 본인인증 정책(가입 전 인증, 가입 후 인증 대기)을 따르지 않게
  * 고를 수 있다 — `register($data, ['identity_policy' => 'skip', 'identity_policy_reason' => …])`. 사유가 없으면 생략하지 않고,

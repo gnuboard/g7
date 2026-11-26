@@ -11,7 +11,7 @@ use Plugins\Sirsoft\MessageBizppurio\Concerns\GuardsKakaoRequests;
 use Plugins\Sirsoft\MessageBizppurio\Services\AlimtalkTemplateService;
 
 /**
- * 알림톡 작성 모달 참조 조회 컨트롤러 (#597).
+ * 알림톡 작성 모달 참조 조회 컨트롤러.
  *
  * 알림톡 템플릿 작성 모달의 발신프로필 셀렉트·카테고리 셀렉트가 소비하는 kapi 조회를
  * 위임한다. 템플릿 목록/상세의 실시간 조회 화면(구 Phase 5)은 DB 기반 라이프사이클

@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\TestCase;
 
 /**
- * `core:update` 가 업그레이드 스텝 핸드오프로 멈추면 종료 코드 75(재개 필요)로 끝난다 (#888).
+ * `core:update` 가 업그레이드 스텝 핸드오프로 멈추면 종료 코드 75(재개 필요)로 끝난다.
  *
  * 종전에는 정리·재개 안내를 낸 뒤 0 으로 끝나 `php artisan core:update --yes -n; echo $?` 같은 스크립트가 성공으로 읽고
  * 재개 명령을 건너뛰었다. 단독 `core:execute-upgrade-steps` 는 같은 상황에서 이미 75 를 돌려준다.

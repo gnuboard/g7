@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
 
 /**
- * 관리자 에스크로 배송 등록 실패 응답의 사유 선택 (#858)
+ * 관리자 에스크로 배송 등록 실패 응답의 사유 선택
  *
  * 결제대행사 거절 사유(ResultMsg)는 운영자에게 그대로 보이고, 통신 예외·HTTP 오류의 원문
  * (결제대행사 API 주소·cURL 문구)은 서버 로그에만 남고 응답에는 일반 문구가 실린다.

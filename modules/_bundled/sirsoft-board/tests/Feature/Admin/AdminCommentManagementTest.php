@@ -416,7 +416,7 @@ class AdminCommentManagementTest extends BoardTestCase
     }
 
     /**
-     * 댓글 블라인드 사유 1000자 → 통과 (200) (#413-71-2)
+     * 댓글 블라인드 사유 1000자 → 통과 (200) (71-2)
      *
      * @scenario action=blind, entitlement=entitled
      *
@@ -436,7 +436,7 @@ class AdminCommentManagementTest extends BoardTestCase
     }
 
     /**
-     * 댓글 블라인드 사유 1001자 → 검증 실패 (422) (#413-71-2)
+     * 댓글 블라인드 사유 1001자 → 검증 실패 (422) (71-2)
      *
      * @scenario action=blind, entitlement=entitled
      *

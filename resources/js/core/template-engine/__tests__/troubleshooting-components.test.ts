@@ -523,7 +523,7 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
     });
   });
 
-  describe('[사례 6] 부모 Div click + controlled checkbox 자식의 한 박자 지연 토글 (#304)', () => {
+  describe('[사례 6] 부모 Div click + controlled checkbox 자식의 한 박자 지연 토글', () => {
     /**
      * 증상: 체크박스를 직접 클릭하면 즉시 체크되지 않고, 다른 항목을 클릭한 시점에야 이전 클릭이 반영됨
      * 근본 원인: controlled checkbox + 부모 click 액션 + 자식 액션 없음 패턴은

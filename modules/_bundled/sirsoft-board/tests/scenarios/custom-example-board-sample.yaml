@@ -1,4 +1,4 @@
-feature: custom:example board 견본 화면 (#792 WP-S)
+feature: custom:example board 견본 화면
 
 description: |
   견본 컨트롤러는 InternalApiClient 로 게시판 공개 API 를 그 회원 자격으로 불러 Blade 로 그린다.

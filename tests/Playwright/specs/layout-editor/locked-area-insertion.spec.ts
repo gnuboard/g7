@@ -25,7 +25,7 @@ import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth'
  * 마이페이지 «내 정보» 편집기 진입 — 화면 소유 노드(`mypage_tab_content`)에 이커머스 「기본 배송지」 카드가 `target_layout`
  * 주입(append_child)으로 붙는다. 잠긴 조각 박스가 화면 소유 부모 아래에 있어 「형제로 삽입」을 잴 수 있다.
  *
- * 종전에는 가입 화면에 마케팅 플러그인이 주입하던 동의 조각을 썼는데, 회원 항목 설정(#490)으로 마케팅 동의가 코어 회원 항목
+ * 종전에는 가입 화면에 마케팅 플러그인이 주입하던 동의 조각을 썼는데, 회원 항목 설정으로 마케팅 동의가 코어 회원 항목
  * 조각이 그리는 칸이 되면서 그 주입 조각이 없어졌다.
  */
 async function openProfileEditor(page: Page): Promise<void> {

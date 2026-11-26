@@ -95,7 +95,7 @@ class OrderProcessingServiceTest extends ModuleTestCase
     /**
      * 마일리지 사용 정책을 무제한으로 완화합니다.
      *
-     * 주문 확정 시점에 사용 정책(min_use_amount / use_unit / max_use_*)이 강제되므로(#493 E1),
+     * 주문 확정 시점에 사용 정책(min_use_amount / use_unit / max_use_*)이 강제되므로,
      * 마일리지가 주제가 아닌 테스트는 배포 기본값(최소 1,000 / 상한 50,000)에 걸린다.
      * 이 테스트들의 관심사는 주문 메타·결제 상태이므로 정책을 열어 두고 본래 대상만 검증한다.
      * 정책 강제 자체는 MileageUsageLimitTest 가 다룬다.
@@ -388,7 +388,7 @@ class OrderProcessingServiceTest extends ModuleTestCase
      * 기본 계산 결과 DTO를 생성합니다.
      *
      * 실제 계산기처럼 부가세를 함께 싣는다(기본: 과세표준의 10% 내재분). 주문 생성은 계산된 부가세를 그대로
-     * 기록하므로 — 부가세 없이 과세표준만 주면 0 이 기록된다(#612: 0 을 과세표준/11 로 다시 채우던 폴백 제거).
+     * 기록하므로 — 부가세 없이 과세표준만 주면 0 이 기록된다(0 을 과세표준/11 로 다시 채우던 폴백 제거).
      *
      * @param  int  $finalAmount  최종 금액
      * @param  array  $overrides  오버라이드 옵션

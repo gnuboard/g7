@@ -55,7 +55,7 @@ class ProductOption extends Model
         'price_adjustment',
         'list_price',
         'selling_price',
-        // 과세 종류 — null 은 상품 기본값을 따른다 (#612)
+        // 과세 종류 — null 은 상품 기본값을 따른다
         'tax_status',
         'currency_code',
         'stock_quantity',

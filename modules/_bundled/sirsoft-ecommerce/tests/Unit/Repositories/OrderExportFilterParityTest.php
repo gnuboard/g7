@@ -90,7 +90,7 @@ class OrderExportFilterParityTest extends ModuleTestCase
             'end_date' => 'date_type',
             // 기간을 어느 하루 경계(보는 사람·사이트 표준시)로 자를지만 정한다 — 단독으로는 거르지 못하고 date_type 케이스의 분기다
             'date_basis' => 'date_type',
-            // 결제수단 선택(payment_method)을 서비스·내보내기 유형이 결제 행 조건으로 푼 내부 키(#933) — 요청 인자가 아니며
+            // 결제수단 선택(payment_method)을 서비스·내보내기 유형이 결제 행 조건으로 푼 내부 키 — 요청 인자가 아니며
             // 목록·내려받기가 같은 해석기(PaymentMethodResolver::expandOrderListPaymentFilter)로 만든다.
             // 그 파리티는 OrderListPaymentMethodAliasFilterTest::test_export_query_matches_list 가 잰다.
             '_payment_method_clauses' => 'payment_method',

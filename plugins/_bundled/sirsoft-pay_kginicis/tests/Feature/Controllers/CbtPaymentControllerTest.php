@@ -754,7 +754,7 @@ class CbtPaymentControllerTest extends PluginTestCase
     {
         $this->createPersistedPendingCbtCvsOrder('JP-ORDER-CVS-RECHECK-001', 100);
 
-        // 재확인은 상태를 바꾸는 조작이라 경로가 orders.update 를 요구한다(#764 서버 권한 정리)
+        // 재확인은 상태를 바꾸는 조작이라 경로가 orders.update 를 요구한다(서버 권한 정리)
         $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
         $this->actingAs($admin);
 
@@ -1562,7 +1562,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         $record = $meta[CbtReconciliationService::META_KEY] ?? [];
         $this->assertSame(CbtReconciliationService::STATUS_MANUAL_REFUND_REQUIRED, $record['status'] ?? null);
         $this->assertSame('CBT_TID_010', $record['tid'] ?? null);
-        // 관리자 주문 상세에 보이는 기록이라 통신 예외 원문은 싣지 않고 일반 문구만 남긴다(#858) — 원문은 서버 로그에만.
+        // 관리자 주문 상세에 보이는 기록이라 통신 예외 원문은 싣지 않고 일반 문구만 남긴다 — 원문은 서버 로그에만.
         // 결과가 app.debug 에 따라 갈리므로 운영과 같은 꺼짐 상태를 위에서 고정했다.
         $this->assertSame(__('sirsoft-pay_kginicis::messages.refund.pg_failed'), $record['refund_error'] ?? null);
         $this->assertStringNotContainsString('refund timeout', (string) ($record['refund_error'] ?? ''));
@@ -1593,7 +1593,7 @@ class CbtPaymentControllerTest extends PluginTestCase
             ],
         ]);
 
-        // 자동환불 재시도는 환불 실행이라 경로가 claims.execute-refund 를 요구한다(#764 서버 권한 정리)
+        // 자동환불 재시도는 환불 실행이라 경로가 claims.execute-refund 를 요구한다(서버 권한 정리)
         $admin = $this->createAdminUser(['sirsoft-ecommerce.claims.execute-refund']);
         $this->actingAs($admin);
 
@@ -1660,7 +1660,7 @@ class CbtPaymentControllerTest extends PluginTestCase
 
     /**
      * 수동 대사 기록은 관리자 주문 상세에 「사유」·「환불 오류」로 그대로 보인다 — 운영 모드에서는 DB 예외·통신 예외의
-     * 원문(SQL·결제대행사 API 주소)을 싣지 않고 일반 문구를 싣는다(#858).
+     * 원문(SQL·결제대행사 API 주소)을 싣지 않고 일반 문구를 싣는다.
      *
      * @return void 반환값 없음
      *
@@ -1684,7 +1684,7 @@ class CbtPaymentControllerTest extends PluginTestCase
     }
 
     /**
-     * 업무 예외 사유와 KG이니시스가 돌려준 거절 사유는 운영자가 조치에 쓰는 정보라 그대로 남긴다(#858).
+     * 업무 예외 사유와 KG이니시스가 돌려준 거절 사유는 운영자가 조치에 쓰는 정보라 그대로 남긴다.
      *
      * @return void 반환값 없음
      *
@@ -1752,7 +1752,7 @@ class CbtPaymentControllerTest extends PluginTestCase
     }
 
     /**
-     * 관리자 자동환불 재시도가 통신 오류로 실패하면 「환불 오류」·마지막 재시도 오류에 원문 대신 일반 문구를 남긴다(#858).
+     * 관리자 자동환불 재시도가 통신 오류로 실패하면 「환불 오류」·마지막 재시도 오류에 원문 대신 일반 문구를 남긴다.
      *
      * @return void 반환값 없음
      *

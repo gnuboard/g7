@@ -2,7 +2,7 @@ feature: 상품 상세 이미지 뷰어(메인 이미지, 썸네일, 확대 창 
 
 description: |
   ProductImageViewer 는 이미지가 없으면 placeholder 를, 있으면 메인 이미지를 보인다. 메인·썸네일 줄 주소는 preview_url
-  (썸네일 기준 API 주소, #878) → url(미사용 호환) → download_url 순이고, 확대 창 슬라이드·다운로드는 원본 download_url 이다. 이미지가 2개 이상일 때만 썸네일 목록을 보이고, 썸네일을 누르면 메인 이미지가 바뀌며,
+  (썸네일 기준 API 주소) → url(미사용 호환) → download_url 순이고, 확대 창 슬라이드·다운로드는 원본 download_url 이다. 이미지가 2개 이상일 때만 썸네일 목록을 보이고, 썸네일을 누르면 메인 이미지가 바뀌며,
   메인 이미지를 누르면 확대 창(ImageGallery)을 연다. 확대 창 시작 번호는 product-image-viewer-lightbox-start-index.yaml 이 맡는다.
 
 # axis 의미:
@@ -17,7 +17,7 @@ effects:
   - thumbnail_list_only_for_multiple_images       # 썸네일 목록은 이미지가 2개 이상일 때만 보인다
   - thumbnail_click_switches_main_image           # 썸네일을 누르면 메인 이미지가 그 사진으로 바뀐다
   - main_image_click_opens_lightbox               # 메인 이미지를 누르면 확대 창을 연다
-  - viewer_thumbnails_use_preview_url_and_gallery_uses_download_url  # 메인·썸네일 줄·확대 창 썸네일 줄은 preview_url(API)에 규격, 확대 창 슬라이드·다운로드는 download_url(원본, #878)
+  - viewer_thumbnails_use_preview_url_and_gallery_uses_download_url  # 메인·썸네일 줄·확대 창 썸네일 줄은 preview_url(API)에 규격, 확대 창 슬라이드·다운로드는 download_url(원본)
 
 test_files:
   - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/ProductImageViewer.test.tsx

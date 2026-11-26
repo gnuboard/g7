@@ -2,7 +2,7 @@ feature: 쿠폰 회원당 한도 칸 검증 (직접·다운로드 쿠폰)
 
 description: |
   회원당 한도(per_user_limit) 0(무제한)·양수 저장과 누락·null·음수 거절을 잰다.
-  자동발급 쿠폰은 한도를 0 으로 고정하므로(#952 §4.5) 이 시험은 직접발급 쿠폰으로 본다 — 자동발급 쪽은 coupon-auto-issue.yaml.
+  자동발급 쿠폰은 한도를 0 으로 고정하므로 이 시험은 직접발급 쿠폰으로 본다 — 자동발급 쪽은 coupon-auto-issue.yaml.
 
 axes:
   case:

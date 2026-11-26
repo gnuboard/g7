@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 쿠폰 발급방법·발급조건·첫구매 시점·발급 알림 검증 (#952 §4.5)
+ * 쿠폰 발급방법·발급조건·첫구매 시점·발급 알림 검증
  */
 class CouponAutoIssueValidationTest extends ModuleTestCase
 {
@@ -210,7 +210,7 @@ class CouponAutoIssueValidationTest extends ModuleTestCase
     }
 
     /**
-     * 쿠폰 수정 활동 로그는 응답에서 숨긴 칸(발급 시점·발급 알림)도 이전 값을 그대로 남긴다 — 이전 값이 null 로 기록되던 결함(#952 실측).
+     * 쿠폰 수정 활동 로그는 응답에서 숨긴 칸(발급 시점·발급 알림)도 이전 값을 그대로 남긴다 — 이전 값이 null 로 기록되던 결함.
      *
      * @scenario case=activity_log_old_values
      *

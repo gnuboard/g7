@@ -99,7 +99,7 @@ type NavAction = {
  */
 function collectNavActions(node: unknown): NavAction[] {
     const out: NavAction[] = [];
-    // 링크(`A`) 안의 path 없는 navigate 는 엔진이 그 링크의 href 로 옮긴다(#757 WP-L D12) — 시험도 같은 주소로 푼다
+    // 링크(`A`) 안의 path 없는 navigate 는 엔진이 그 링크의 href 로 옮긴다 — 시험도 같은 주소로 푼다
     const walk = (n: unknown, href?: string): void => {
         if (Array.isArray(n)) {
             n.forEach((x) => walk(x, href));
@@ -279,7 +279,7 @@ describe('#75 주문 목록 ↔ 상세 왕복 leg 고정', () => {
         expect(a, "주문 상세의 '목록' navigate 를 찾지 못했습니다.").toBeTruthy();
         expect(a?.params.mergeQuery).toBe(true);
 
-        // 새 탭·가운데 클릭으로 열어도 같은 목록 조건이어야 한다 — 링크 자체가 현재 쿼리를 href 에 합친다(#757 WP-L W8)
+        // 새 탭·가운데 클릭으로 열어도 같은 목록 조건이어야 한다 — 링크 자체가 현재 쿼리를 href 에 합친다
         let link: Record<string, any> | undefined;
         const find = (n: unknown): void => {
             if (link || !n || typeof n !== 'object') return;

@@ -141,7 +141,7 @@ export class Router {
    * 확정 화면의 주소를 같은 자리에서 곧바로 다시 쌓는다(`pushState`). 화면은 다시 그리지 않는다 (engine-v1.82.0)
    *
    * 이탈을 허락한 뒤 그 주소가 서버의 개발자 화면(routes/custom.php) 주소면 엔진이 그리지 않고 페이지를 다시
-   * 적재해 서버가 그리게 한다 (#792 W6, engine-v1.92.0). `navigate` 와 같은 순서(이탈 가드 → custom 판정)다.
+   * 적재해 서버가 그리게 한다 (engine-v1.92.0). `navigate` 와 같은 순서(이탈 가드 → custom 판정)다.
    * 패턴이 없으면 종전과 같다.
    */
   private handlePopState = (): void => {
@@ -600,7 +600,7 @@ export class Router {
    */
   private async executeNavigation(path: string): Promise<void> {
     // 서버의 개발자 화면(routes/custom.php) 주소는 엔진이 그리지 않는다 — 전체 페이지 이동으로 서버에 넘긴다
-    // (#792 W6, engine-v1.92.0). `pushState` 하지 않으므로 히스토리·대기열·라우트 이벤트에 아무 흔적도 남기지 않는다.
+    // (engine-v1.92.0). `pushState` 하지 않으므로 히스토리·대기열·라우트 이벤트에 아무 흔적도 남기지 않는다.
     if (isCustomRoutePath(path)) {
       logger.log(`navigate to custom route — full page load: ${path}`);
       this.pendingNavigation = null;

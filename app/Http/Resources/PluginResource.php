@@ -31,7 +31,7 @@ class PluginResource extends BaseApiResource
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
-            // 다른 확장에 공개하는 PHP 표면(manifest public_api) — 상세 「공개 API」 칸 (#916)
+            // 다른 확장에 공개하는 PHP 표면(manifest public_api) — 상세 「공개 API」 칸 
             'public_api' => $this->getValue('public_api'),
             // 이 플러그인을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
             'integrated_by' => $this->integratedBy('plugin'),
@@ -135,7 +135,7 @@ class PluginResource extends BaseApiResource
             'requires_core' => $this->getValue('requires_core'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
-            // 다른 확장에 공개하는 PHP 표면(manifest public_api) — 상세 「공개 API」 칸 (#916)
+            // 다른 확장에 공개하는 PHP 표면(manifest public_api) — 상세 「공개 API」 칸 
             'public_api' => $this->getValue('public_api'),
             // 이 플러그인을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
             'integrated_by' => $this->integratedBy('plugin'),

@@ -1,6 +1,6 @@
 <!-- 팝업 환경설정 화면 — 코어의 플러그인 설정 규약(경로·엔드포인트·저장 흐름)을 따른다. 여기서 정한 표시 방식(PC 위치·크기,
   모바일 형태, 배경, 자동 넘김, 닫기 옵션)은 모든 팝업에 똑같이 적용된다. 오른쪽(좁은 화면은 저장 단추 위) 미리보기는 사용자 레이어와 같은
-  컴포넌트를 표본 팝업으로 그린다. 업로드 최대 용량·공개 캐시 시간은 #810 과 같은 운영 값이다. -->
+  컴포넌트를 표본 팝업으로 그린다. 업로드 최대 용량·공개 캐시 시간은 히어로 섹션 배너 편집과 같은 운영 값이다. -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-popup.settings.title" description="$t:sirsoft-popup.settings.description"/>
   <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) — 저장 후 되돌아왔을 때 낡은 값이 남지 않게 -->
@@ -146,7 +146,7 @@
               <p class="g7pp-form-hint">$t:sirsoft-popup.settings.dismiss.hint</p>
             </div>
           </section>
-          <!-- 업로드·캐시 — 운영자가 서버 사정에 맞춰 바꾸는 값(#810 과 같은 안내) -->
+          <!-- 업로드·캐시 — 운영자가 서버 사정에 맞춰 바꾸는 값(히어로 섹션 배너 편집과 같은 안내) -->
           <section data-ref="operation_card" class="g7pp-admin-card">
             <h2 class="g7pp-card-title">$t:sirsoft-popup.settings.operation.title</h2>
             <div class="g7pp-row-stack">
@@ -166,7 +166,7 @@
               </div>
             </div>
           </section>
-          <!-- 저장소 — 팝업 이미지를 둘 공개 자산 디스크(#878). 선택지는 설정 응답에 서버가 붙인 카탈로그다(코어 설정 API 를 교차 조회하지 않는다) -->
+          <!-- 저장소 — 팝업 이미지를 둘 공개 자산 디스크. 선택지는 설정 응답에 서버가 붙인 카탈로그다(코어 설정 API 를 교차 조회하지 않는다) -->
           <section data-ref="storage_card" class="g7pp-admin-card">
             <h2 class="g7pp-card-title">$t:sirsoft-popup.settings.storage.title</h2>
             <div class="g7pp-row-stack">

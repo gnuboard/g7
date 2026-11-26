@@ -47,7 +47,7 @@
           <!-- 큐에 넘긴 뒤 이력 표를 다시 받는다 — 새 running 행이 보여야 진행률 폴링이 붙는다.
                재집계는 늘 워커가 맡으므로(`ArchiveRunController::store`) 응답이 돌아온 순간엔 아직 행이
                없을 수 있다. 그 공백 동안 진행률이 영영 안 붙는 것을 막으려고 유예 횟수를 세워 둔다 —
-               진단 화면이 이 값이 남아 있는 동안은 행이 없어도 2초 폴링을 건다(#682 S3 라운드 6). -->
+               진단 화면이 이 값이 남아 있는 동안은 행이 없어도 2초 폴링을 건다. -->
           <sequence>
             <set-state target="global" :analyticsReaggRunning="true"/>
             <api-call :auth_required="true" target="/api/admin/analytics/archive-runs" method="POST">

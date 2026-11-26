@@ -71,7 +71,7 @@ if (! function_exists('installer_begin_installation')) {
             }
         }
 
-        // admin_password 는 state.config 에 기록되지 않으므로(이슈 #465) 3중 출처로 판정한다:
+        // admin_password 는 state.config 에 기록되지 않으므로 3중 출처로 판정한다:
         // 입력(세션·터미널) → runtime.php admin 섹션(같은 소유자의 재시도·재개) → db_seed 완료(더는 불필요).
         $hasAdminPassword = ! empty($config['admin_password'])
             || ! empty(readInstallerRuntime()['admin']['password'] ?? '')
@@ -150,7 +150,7 @@ if (! function_exists('installer_begin_installation')) {
         // 롤백 기준선·실패 로그가 신규 설치 취급으로 소거된다. 진짜 근거는 이번 회전이 이미 한 일이다.
         $isRetry = installerIsRetryRun($state);
 
-        // 비밀 채널 일원화 (이슈 #465) — DB·관리자 비밀번호는 runtime.php(0600, finalize 시 삭제)로만 전달한다.
+        // 비밀 채널 일원화 — DB·관리자 비밀번호는 runtime.php(0600, finalize 시 삭제)로만 전달한다.
         // buildInstallerRuntimeFromState() 가 기존 runtime 의 비밀번호·APP_KEY·계획 키를 보존한다.
         $runtime = buildInstallerRuntimeFromState($config);
         if (! empty($config['admin_password'])) {
@@ -204,7 +204,7 @@ if (! function_exists('installer_begin_installation')) {
             $state[(string) $extraKey] = $extraValue;
         }
 
-        // existing_db_action 변경 시 db_cleanup 재실행 보장 (이슈 #319)
+        // existing_db_action 변경 시 db_cleanup 재실행 보장
         $state = applyExistingDbActionStateGuard($state, $existingDbAction);
         $state['existing_db_action'] = $existingDbAction;
         $state['drop_confirm'] = $dropConfirmRecord;

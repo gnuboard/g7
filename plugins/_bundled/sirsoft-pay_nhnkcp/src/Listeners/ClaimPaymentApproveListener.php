@@ -145,7 +145,7 @@ class ClaimPaymentApproveListener implements HookListenerInterface
         // 결제창 금액(good_mny)을 **승인 호출 전에** 청구액과 대조한다. 결제창을 연 사이 청구액이
         // 바뀌면(신청서 수정·관리자 재산정) 낡은 창의 금액이 들어온다 — 그대로 승인하면 모듈이 승인
         // **뒤**에 금액 불일치로 거절하고, 그 거절의 보상(취소)은 서버 콜백 경로에만 있어 클라이언트
-        // 승인 API 경로에서는 청구된 채 남는다(#599 validate 07 #8). 이 값은 브라우저가 보낸 것이라
+        // 승인 API 경로에서는 청구된 채 남는다(validate 07 #8). 이 값은 브라우저가 보낸 것이라
         // **거절 쪽으로만** 쓴다 — 통과 근거는 승인 요청의 ordr_mony 와 승인 뒤 KCP 응답 금액이다.
         $expectedAmount = $charge->minorUnitAmount;
         $callbackAmount = is_numeric($callback['good_mny'] ?? null) ? (int) $callback['good_mny'] : null;

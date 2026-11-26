@@ -61,7 +61,7 @@ const EXT_CSS = fs.readFileSync(path.resolve(__dirname, '../../../css/g7-extensi
 /**
  * className 이 주는 사방 패딩 단계(Tailwind 간격 숫자).
  * 유틸 토큰(`ecommerce:p-6`)이면 그 숫자, 의미 클래스 사본(`ecommerce-admin-page-content`)이면
- * 확장 생성 CSS 정의의 padding 배수를 읽는다(#399 — 본문 상자를 의미 클래스로 모음).
+ * 확장 생성 CSS 정의의 padding 배수를 읽는다(본문 상자를 의미 클래스로 모음).
  */
 const paddingStep = (className: string): string | null => {
   const tokens = className.split(/\s+/).filter(Boolean);

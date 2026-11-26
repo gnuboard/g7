@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
 
 /**
- * 쿠폰 만료 임박 알림 커맨드 (#952)
+ * 쿠폰 만료 임박 알림 커맨드
  *
  * 사용가능 상태이고 만료일이 사이트 오늘 ~ N일 안이며 아직 알리지 않은 발급 건을 회원별로 묶어 알림 훅
  * (`sirsoft-ecommerce.coupon.notify_expiring`)을 1회 발화하고, 발화한 건에 `expiry_notified_at` 을 기록한다(발급 건당 1회).

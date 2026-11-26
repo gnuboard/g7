@@ -10,7 +10,7 @@ use App\Contracts\Extension\HookListenerInterface;
  * 이커머스 결제수단 설정 화면에 나이스페이먼츠 테스트모드 경고를 주입한다.
  *
  * 간편결제의 PG 표시(PG 고정 배지)는 코어 레이아웃이 결제수단 카탈로그의 pg_locked /
- * needs_pg 를 읽어 직접 처리하므로 이 리스너가 관여하지 않는다(#475).
+ * needs_pg 를 읽어 직접 처리하므로 이 리스너가 관여하지 않는다.
  */
 class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterface
 {
@@ -55,7 +55,7 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
      * 과거에는 코어 레이아웃의 "PG 불필요 결제수단" 하드코딩 배열 표현식을 정규식으로 찾아
      * 간편결제를 그 목록에 덧붙여 PG 선택 셀렉트를 숨겼다. 그러나 간편결제는 "PG 불필요" 가
      * 아니라 "PG 고정" 이며, 이 표시 왜곡은 서버가 간편결제를 PG 없는 주문으로 오인하던
-     * 결함과 짝을 이뤘다(#475). 정규식 치환은 플러그인이 여럿 설치되면 서로의 결과 위에
+     * 결함과 짝을 이뤘다. 정규식 치환은 플러그인이 여럿 설치되면 서로의 결과 위에
      * 누적 적용되어 충돌할 위험도 있었다.
      *
      * 이제 결제수단 카탈로그가 `pg_locked` / `needs_pg` 를 내려주고 코어 레이아웃이 그 값으로
@@ -265,7 +265,7 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
             'props' => [
                 'className' => 'paynicepayments:flex paynicepayments:flex-col paynicepayments:gap-3',
             ],
-            // 폭 분기는 엔진 responsive 로 — Tailwind 폭 접두(`paynicepayments:sm:`)는 편집기 미리보기 기기 폭을 따르지 못한다(#869)
+            // 폭 분기는 엔진 responsive 로 — Tailwind 폭 접두(`paynicepayments:sm:`)는 편집기 미리보기 기기 폭을 따르지 못한다
             'responsive' => [
                 '640-' => [
                     'props' => [

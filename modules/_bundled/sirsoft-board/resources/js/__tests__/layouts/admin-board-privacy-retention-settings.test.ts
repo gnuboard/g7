@@ -1,5 +1,5 @@
 /**
- * 게시판 환경설정 — 개인정보 보유기간 섹션 계약 테스트 (이슈 #636 S5)
+ * 게시판 환경설정 — 개인정보 보유기간 섹션 계약 테스트
  *
  * @description
  * 보유기간 파기는 되돌릴 수 없으므로 기본 꺼짐이고, 두 축(작성 IP · 비회원 작성자 정보)을
@@ -273,7 +273,7 @@ function settingsLang(locale: string): any {
     return JSON.parse(fs.readFileSync(path.join(moduleRoot(), `resources/lang/partial/${locale}/admin/settings.json`), 'utf-8'));
 }
 
-describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 창 (#636 §1-E)', () => {
+describe('개인정보 조치 대상 — 건수 상시 노출 + 대상 목록 창 (E)', () => {
     const viewButtons = collectWithAncestors(privacyTab, (n) => /^view_.*targets$/.test(n.id ?? ''));
 
     /**
@@ -432,7 +432,7 @@ function manualRunLang(locale: string, key: string): any {
     return key.split('.').reduce((acc: any, part: string) => (acc == null ? undefined : acc[part]), lang);
 }
 
-describe('개인정보 조치 직권 실행 — 「지금 실행」 (#636 후속)', () => {
+describe('개인정보 조치 직권 실행 — 「지금 실행」', () => {
     const buttons: Array<[string, string]> = [['run_ip_retention', 'retention:sirsoft-board.ip'], ['run_guest_retention', 'retention:sirsoft-board.guest']];
     const runModal: any = runModalLayout;
 
@@ -512,7 +512,7 @@ describe('개인정보 조치 직권 실행 — 「지금 실행」 (#636 후속
      */
     it('확인 창은 코어 직권 실행 API 로 접수하고 이 확장의 문구(ko·en)만 쓴다', () => {
         const execute = manualRunNode(runModal, 'privacy_run_execute');
-        // 더블클릭 이중 접수 방지 — disabled 의 submitting 은 다시 그려진 뒤에야 걸린다(#736 H 실측: 게시판 확인 창 연타 2건 접수).
+        // 더블클릭 이중 접수 방지 — disabled 의 submitting 은 다시 그려진 뒤에야 걸린다(게시판 확인 창 연타 2건 접수).
         expect(execute.props?.lockRepeatClick).toBe(true);
         const call = actionsOf(actionsOf(execute).find((a: any) => a.type === 'click')).find((a: any) => a.handler === 'apiCall');
         expect(call.params.method).toBe('POST');

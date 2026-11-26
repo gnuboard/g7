@@ -1,6 +1,6 @@
 /**
  * @file admin-login-password-change-render.test.tsx
- * @description 관리자 로그인 비밀번호 변경 단계 **렌더링·흐름** 회귀 테스트 (#736, sirsoft-admin_basic)
+ * @description 관리자 로그인 비밀번호 변경 단계 **렌더링·흐름** 회귀 테스트 (sirsoft-admin_basic)
  *
  * 형제 파일 `admin-login-password-change-step.test.tsx` 는 레이아웃 JSON 구조를 단언한다. 이 파일은
  * 레이아웃을 실제로 렌더하고, 레이아웃이 선언한 로그인 액션을 **그대로 실행**해 코어(AuthManager → 핸들러
@@ -131,7 +131,7 @@ function toastMessages(t: ReturnType<typeof createLayoutTest>): string[] {
   return ((t.getState()._global?.toasts ?? []) as Array<{ message?: string }>).map((toast) => String(toast.message ?? ''));
 }
 
-describe('sirsoft-admin_basic 관리자 로그인 — 비밀번호 변경 단계 (#736)', () => {
+describe('sirsoft-admin_basic 관리자 로그인 — 비밀번호 변경 단계', () => {
   beforeEach(() => {
     setupRegistry();
     apiPost.mockReset();

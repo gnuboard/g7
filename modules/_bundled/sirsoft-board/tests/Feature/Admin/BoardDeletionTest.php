@@ -20,7 +20,7 @@ use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 게시판 영구 삭제 시 하위 데이터 정리 회귀 테스트 (#413-77)
+ * 게시판 영구 삭제 시 하위 데이터 정리 회귀 테스트 (77)
  *
  * - 게시글·댓글·첨부 DB 레코드: soft delete → force delete (완전 제거)
  * - 첨부 물리 파일: 저장 경로(slug 기준) 일치 삭제
@@ -119,7 +119,7 @@ class BoardDeletionTest extends ModuleTestCase
      * 게시판 삭제 시 첨부 물리 파일이 실제로 삭제되는지 검증합니다.
      *
      * 저장 경로는 slug 기준({slug}/...)인데 기존 삭제는 board_id 기준이라
-     * 파일이 남아 있던 버그(#413-77)의 회귀 테스트. 현행 코드에서는 파일이
+     * 파일이 남아 있던 버그(77)의 회귀 테스트. 현행 코드에서는 파일이
      * 남아 fail (red), slug 기반 삭제로 수정하면 green.
      *
      * @scenario child_type=attachment
@@ -287,7 +287,7 @@ class BoardDeletionTest extends ModuleTestCase
 
     /**
      * 외래키 검사를 끈 채 게시판을 삭제해도 게시판별 관리자·스텝 역할의 메뉴 연결(`role_menus`)·메뉴 권한
-     * (`menu_permissions`)이 고아로 남지 않는다 — 역할 삭제가 DB 외래키 연쇄에 기대지 않는다 (#888).
+     * (`menu_permissions`)이 고아로 남지 않는다 — 역할 삭제가 DB 외래키 연쇄에 기대지 않는다.
      *
      * @scenario child_type=board_role
      *

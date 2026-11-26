@@ -1383,7 +1383,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
       // 반복 목록 안의 노드면 iteration 조상의 인덱스/행 변수를 데이터 칩 후보로 보강한다.
       // id 등 식별자 칸에서 `{{$idx}}`/`{{row.id}}` 를 골라 항목별 고유 식별자를 만들 수 있게 한다.
       // 노드별로 달라지므로 전역 bindingCandidates 와 분리해 모달 단위로 합친다(전역 풀 불변).
-      // 분기·footer 세그먼트를 그대로 넘긴다 — 숫자만 남기면 다른 노드의 반복 변수를 모은다(#869).
+      // 분기·footer 세그먼트를 그대로 넘긴다 — 숫자만 남기면 다른 노드의 반복 변수를 모은다.
       const iterationVars = collectIterationVars(
         { children: liveDataRef.current.components },
         path,
@@ -2460,7 +2460,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
         selectedBox={insertionAnchorBox}
         points={insertion.points}
         onAddRequest={handleAddRequest}
-        // 캔버스 밖(창 밖·헤더 밑)으로 나가는 + 단추는 캔버스 안으로 접는다(#869 8차). 박스가 다시 재질 때
+        // 캔버스 밖(창 밖·헤더 밑)으로 나가는 + 단추는 캔버스 안으로 접는다. 박스가 다시 재질 때
         // (스크롤·크기·DOM 변경) 렌더되므로 그때 경계도 다시 잰다.
         bounds={resolveAffordanceBounds(frameEl)}
       />
@@ -2546,7 +2546,7 @@ export function lastNodeIndex(path: ComponentPath): number {
  * 인플레이스 오버레이 계약 `onInsertChild(newNode, parentPath: string, index)` 을 코어 삽입(`handleInsert`,
  * ComponentPath)에 잇는다. 오버레이는 DOM path 문자열(`0.children.2`, `0.props.footer` 등)을 넘기므로
  * `onRemoveChild` 와 같게 parseEditorPath 로 바꾼다. 종전에는 문자열을 그대로 넘겨 배열로 다뤘다(호출처는
- * 아직 없음 — 타입 불일치로 드러남, #869).
+ * 아직 없음 — 타입 불일치로 드러남).
  *
  * @param insert 코어 삽입 함수
  * @returns 오버레이 계약 모양의 삽입 함수

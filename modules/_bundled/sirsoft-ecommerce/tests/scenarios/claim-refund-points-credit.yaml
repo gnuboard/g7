@@ -3,7 +3,7 @@
 #   「돈의 도착」 매트릭스(claim-money-arrival-matrix.yaml · ClaimMoneyArrivalMatrixTest)가 잰다.
 #   여기 적은 테스트는 축마다 대표 조합과 실패·가드 경로를 메서드 하나씩 못박고, effects 축은
 #   면제하지 않는다 — 적은 effect 는 전부 실제 검증 메서드에 매핑한다.
-feature: 「마일리지로 환불」 현금분 지급 · 돈 부수효과 실패 중단 · PG 마지막 실행 (#747 C1)
+feature: 「마일리지로 환불」 현금분 지급 · 돈 부수효과 실패 중단 · PG 마지막 실행
 
 description: |
   관리자가 클레임 환불을 「마일리지로 환불」(refund_method=points)로 실행하면, 주문 때 쓴 마일리지를

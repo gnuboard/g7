@@ -133,7 +133,7 @@ node scripts/extension-css/convert-layout-classes.mjs <확장경로> [--dry-run]
 
 - preflight(tailwindcss 패키지의 preflight.css)는 싣지 않는다. 확장 CSS 가 페이지 전체 기본값을 바꾸면 안 되기 때문이다.
 - `@import` 는 CSS 규칙대로 다른 at-rule 보다 앞에 둔다.
-- `source(none)` 으로 자동 탐색을 끄고 `@source` 로 훑을 곳을 명시한다. `../../src` 는 PHP 가 내보내는 클래스 문자열을 훑기 위함이다. 시험 디렉터리(`../js/**/__tests__`)는 빼낸다 — 시험 문자열의 클래스(금지 폭 접두 `{접두}:md:` 포함)가 빌드 CSS 에 실렸다(#869).
+- `source(none)` 으로 자동 탐색을 끄고 `@source` 로 훑을 곳을 명시한다. `../../src` 는 PHP 가 내보내는 클래스 문자열을 훑기 위함이다. 시험 디렉터리(`../js/**/__tests__`)는 빼낸다 — 시험 문자열의 클래스(금지 폭 접두 `{접두}:md:` 포함)가 빌드 CSS 에 실렸다.
 - 산출에는 접두 클래스(`.<letters>\:flex`)·접두 테마 변수(`--<letters>-color-*`)·`--tw-*` 초기값(`@layer properties` 의 `*, ::before, ::after, ::backdrop` 블록)만 나온다.
 
 ### 보고서

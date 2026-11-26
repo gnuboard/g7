@@ -81,7 +81,7 @@ describe('환경설정 partial — 죽은 조각 0', () => {
      * @scenario partial_reach=included
      * @effects member_tab_partials_are_included
      */
-    it('회원 탭(#490) 조각 여덟(표시 이름 구획 포함)이 모두 있고 끌려온다', () => {
+    it('회원 탭 조각 여덟(표시 이름 구획 포함)이 모두 있고 끌려온다', () => {
         const included = includedPartials();
         const names = [
             '_tab_member',

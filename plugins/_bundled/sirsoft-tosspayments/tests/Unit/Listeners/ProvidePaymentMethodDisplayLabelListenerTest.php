@@ -12,7 +12,7 @@ use Plugins\Sirsoft\Tosspayments\Plugin;
 use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
 
 /**
- * 토스 간편결제 주문 결제수단 표시 라벨 리스너 테스트 (#933 S4)
+ * 토스 간편결제 주문 결제수단 표시 라벨 리스너 테스트
  *
  * 토스 간편결제 주문은 결제수단 칸이 코어 값 `card` 라 이커머스는 「신용카드」만 안다. 결제 결과의 간편결제사 이름
  * (`embedded_pg_provider`)으로 「카카오페이 (토스페이먼츠)」 를 채우고, 자기 결제가 아니거나 앞선 구독자가 채운 값은

@@ -1,6 +1,6 @@
 /**
  * @file mypage-activity.test.tsx
- * @description 마이페이지 활동 기록 (#952 E) — 코어 활동 기록 API(쪽·기간), 표·카드 두 모양, 빈 목록, 쪽 나누기.
+ * @description 마이페이지 활동 기록 — 코어 활동 기록 API(쪽·기간), 표·카드 두 모양, 빈 목록, 쪽 나누기.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -29,7 +29,7 @@ const refOf = (n: any) => String(n?.props?.['data-ref'] ?? n?.id ?? '');
 const page = load('mypage/activity.json');
 const list = load('partials/mypage/activity/_list.json');
 
-describe('마이페이지 활동 기록 (#952)', () => {
+describe('마이페이지 활동 기록', () => {
   // @scenario case=mypage_activity_data_source
   // @effects user_activity_log_paginated
   it('코어 활동 기록 API 를 쪽 번호와 기간 조건으로 부른다', () => {

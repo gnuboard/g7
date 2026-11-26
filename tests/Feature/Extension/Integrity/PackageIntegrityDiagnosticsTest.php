@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 내장 신뢰 키 진단 경고 (#916 ④, 계획서 §8)
+ * 내장 신뢰 키 진단 경고
  *
  * 운영 공개키가 아직 코어에 들어가지 않은 상태로 출시되면 공식 서명 패키지도 「신뢰하지 않는 키」가 된다. 그 상태를
  * `php artisan about` 의 「패키지 무결성」 구획과 `core:check-updates` 출력에서 알아볼 수 있어야 한다.

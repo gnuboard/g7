@@ -7,7 +7,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductWishlist;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 목록 조회 페이지네이션 게이트 회귀 테스트 (#492 6차)
+ * 목록 조회 페이지네이션 게이트 회귀 테스트
  *
  * 상한만 있고 하한이 없던 목록 엔드포인트에서 per_page=0 / 음수 / 비숫자가
  * 500 이 되거나 모델 기본값으로 조용히 바뀌었고, 과대값은 테이블 전량을 반환했다.
@@ -92,7 +92,7 @@ class ListPaginationGuardTest extends ModuleTestCase
      * 상품 문의 목록(공개): 쿼리 스트링의 불리언 표기 4종을 모두 받아들이는지 검증합니다.
      *
      * 쿼리는 언제나 문자열로 도착하므로 `boolean` 규칙만 두면 화면이 보내는
-     * `exclude_secret=false` 에서 목록 전체가 422 가 되고 문의 탭이 비어 보인다 (#492).
+     * `exclude_secret=false` 에서 목록 전체가 422 가 되고 문의 탭이 비어 보인다.
      *
      * @return void
      */

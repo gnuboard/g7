@@ -9,7 +9,7 @@ namespace Tests\Feature\Analytics\Api;
  * `_computed.periodFrom`·`periodTo` 로 서버 응답의 구간을 읽어 채운다. 그 경로가 응답과
  * 어긋나면 식이 조용히 브라우저 날짜 계산값으로 떨어져, 보는 사람의 시간대가 사이트와
  * 다를 때 달력이 서버가 실제로 조회한 구간과 하루 어긋난다 — 개요 한 면이 그랬다
- * (`data.from` 을 읽는데 응답은 `data.meta.from`, #682 S3 라운드 14).
+ * (`data.from` 을 읽는데 응답은 `data.meta.from`).
  *
  * 모집단은 손으로 적지 않는다 — 구운 관리자 레이아웃에서 그 식이 읽는 소스·경로를 뽑고,
  * 그 소스의 실제 API 를 불러 경로가 날짜로 풀리는지 잰다.

@@ -334,7 +334,7 @@ class LayoutHostCapabilityGateTest extends TestCase
     }
 
     /**
-     * 조각(partial)을 펼친 번들 화면 전수가 두 규칙을 통과하는지 검증합니다 — 편집기가 저장하는 모양 그대로다 (#727).
+     * 조각(partial)을 펼친 번들 화면 전수가 두 규칙을 통과하는지 검증합니다 — 편집기가 저장하는 모양 그대로다.
      *
      * 위 전수 검사는 파일을 한 장씩 읽어, 조각 파일은 `components` 밖의 컴포넌트 노드라 sink 검사를 받지 않았다.
      * 그래서 `_modal_manual_install` 입력창 안내 문구(https://github.com/…)처럼 조각 안에 든 값이 설치된 화면

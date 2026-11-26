@@ -18,7 +18,7 @@ use Plugins\Sirsoft\SocialLogin\Tests\PluginTestCase;
 use Tests\Helpers\MocksChannelReadiness;
 
 /**
- * 소셜 로그인 플러그인이 기록과 알림에 싣는 회원 이름 (#490)
+ * 소셜 로그인 플러그인이 기록과 알림에 싣는 회원 이름
  *
  * - 새로 남기는 활동 로그의 회원 이름(`user_name`)은 그 시점의 관리자 영역(`core:admin`) 표시 이름이다.
  * - 회원 본인에게 가는 알림의 받는 사람 이름(`name`)은 자리표시(`{recipient_name}`)이고, 코어가 받는 사람과 채널마다 푼다.

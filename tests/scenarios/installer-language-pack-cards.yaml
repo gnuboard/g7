@@ -4,7 +4,7 @@
 feature: 웹 인스톨러 Step 4 — 번들 언어팩 동반 선택 · 설치 UI
 
 description: |
-  관리자 화면의 install-preview cascade 모달(이슈 #263 후속)과 동일한 정책을
+  관리자 화면의 install-preview cascade 모달과 동일한 정책을
   웹 인스톨러(`public/install/`) Step 4 에 이식. 사용자가 코어/모듈/플러그인/
   템플릿을 선택할 때 번들 언어팩(`lang-packs/_bundled/*`)을 함께 선택해 설치
   마지막 단계에서 `php artisan language-pack:install --source=bundled` 로 일괄

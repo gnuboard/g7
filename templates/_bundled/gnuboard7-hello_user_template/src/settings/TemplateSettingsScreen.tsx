@@ -1,5 +1,5 @@
 /**
- * 템플릿 설정 화면 — 학습용 최소 예제 (#434 D28·D29)
+ * 템플릿 설정 화면 — 학습용 최소 예제
  *
  * 템플릿이 자기 설정 화면을 공급하는 가장 작은 모양이다. 코어가 관리자 화면에 이 템플릿 설정 묶음(`dist/settings/*`)을 싣고,
  * 이 템플릿 설정 화면 레이아웃(`settings/template_settings.g7.html`)이 이 부품을 `{템플릿id}.TemplateSettingsScreen` 으로 부른다.

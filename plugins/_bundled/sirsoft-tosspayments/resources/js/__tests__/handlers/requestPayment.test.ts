@@ -1,4 +1,4 @@
-// e2e:allow 정식 출시 시 제거된 번들 플러그인의 복원 — 신규 프론트 동작 없음 (결제창 진입은 PG 샌드박스 의존). 면세 금액 상한(#820)은 Vitest 단언 — 마일리지 초과 사용 면세 혼합 결제는 실계약 상점에서만 재현 / #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
+// e2e:allow 정식 출시 시 제거된 번들 플러그인의 복원 — 신규 프론트 동작 없음 (결제창 진입은 PG 샌드박스 의존). 면세 금액 상한은 Vitest 단언 — 마일리지 초과 사용 면세 혼합 결제는 실계약 상점에서만 재현 / 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
 /**
  * requestPayment 핸들러 테스트
  *
@@ -104,7 +104,7 @@ describe('requestPaymentHandler', () => {
 
     /**
      * 클레임 추가결제는 신청서 화면에서 열린다 — 그 화면에는 주문서 전용 오류 모달이 없어, 모달을 열면 안내 없이
-     * 「결제 진행 중…」에 멈췄다. 문구를 담아 던져 이커머스 신청서 핸들러가 dispatch 결과로 받게 한다 (#855).
+     * 「결제 진행 중…」에 멈췄다. 문구를 담아 던져 이커머스 신청서 핸들러가 dispatch 결과로 받게 한다.
      */
     // @scenario payment_method=toss_card
     // @effects claim_payment_entry_failure_is_handed_to_the_claim_screen
@@ -495,7 +495,7 @@ describe('requestPaymentHandler', () => {
         });
 
         /**
-         * 주문서 결제 액션은 `pgPaymentData` 만 넘기고, 서버는 코어 값 `card` 를 저장한다 (#933 A0).
+         * 주문서 결제 액션은 `pgPaymentData` 만 넘기고, 서버는 코어 값 `card` 를 저장한다.
          * 화면에서 고른 toss_* 간편결제를 보지 않으면 `card` 의 첫 항목 toss_card 로 풀려 카드 통합결제창이 열린다.
          */
         // @scenario payment_method=toss_kakaopay
@@ -543,7 +543,7 @@ describe('requestPaymentHandler', () => {
             expect('easyPay' in capturedPayload.card).toBe(false);
         });
 
-        describe('#933 추가 간편결제 3종 · 애플페이 결제 시점 iOS 확인', () => {
+        describe('추가 간편결제 3종 · 애플페이 결제 시점 iOS 확인', () => {
             const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
             const DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
 
@@ -689,7 +689,7 @@ describe('requestPaymentHandler', () => {
 
         /**
          * 면세 금액은 결제 금액 안에 있어야 한다(totalAmount = taxFreeAmount + suppliedAmount + vat).
-         * 이커머스 1.3.2 이하는 마일리지 차감 전 면세 합계를 실어, 마일리지를 과세분보다 많이 쓰면 결제 금액을 넘었다(#820).
+         * 이커머스 1.3.2 이하는 마일리지 차감 전 면세 합계를 실어, 마일리지를 과세분보다 많이 쓰면 결제 금액을 넘었다.
          */
         // @scenario payment_method=toss_card
         // @effects tax_free_amount_capped_by_payment_amount
@@ -886,7 +886,7 @@ describe('requestPaymentHandler', () => {
 /**
  * 결제수단 id 결정 순서 — 액션 인자 → (클레임이 아니면) 주문서 화면의 toss_* 선택 → 서버가 저장한 payment_method.
  *
- * 서버는 toss_* 를 코어 값(card·vbank)으로 바꿔 저장하므로 간편결제 종류는 화면 선택에만 남는다 (#933 A0).
+ * 서버는 toss_* 를 코어 값(card·vbank)으로 바꿔 저장하므로 간편결제 종류는 화면 선택에만 남는다.
  * 클레임 추가결제 화면의 상태는 주문서 선택이 아니므로 보지 않는다. 화면 값과 서버 값이 어긋나면 결제창 결정에서 서버가 이긴다.
  */
 describe('resolveSelectedMethodId', () => {

@@ -40,7 +40,7 @@ return new class extends Migration
             $table->ipAddress('ip_address')->nullable()->comment('요청 IP');
             $table->string('user_agent', 512)->nullable()->comment('요청 User-Agent');
 
-            // 인증 경로 — 이슈 #297 요구사항 8.3
+            // 인증 경로
             $table->string('origin_type', 20)
                 ->nullable()
                 ->index()

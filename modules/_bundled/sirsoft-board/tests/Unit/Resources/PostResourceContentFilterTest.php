@@ -314,7 +314,7 @@ class PostResourceContentFilterTest extends BoardTestCase
     }
 
     /**
-     * thread_password_available — 본문이 가려진 비밀 답변에 비회원·비밀번호 조상이 있을 때만 true (#789 §4.8).
+     * thread_password_available — 본문이 가려진 비밀 답변에 비회원·비밀번호 조상이 있을 때만 true.
      *
      * @scenario link=board-secret-thread-password
      *
@@ -344,7 +344,7 @@ class PostResourceContentFilterTest extends BoardTestCase
     }
 
     /**
-     * reply_locked_by_secret_ancestor — 하위 쓰기는 되지만 비밀 조상을 못 보면 true (#789 §3·§4.8).
+     * reply_locked_by_secret_ancestor — 하위 쓰기는 되지만 비밀 조상을 못 보면 true.
      *
      * @scenario link=board-secret-thread-visibility
      *

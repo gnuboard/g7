@@ -503,7 +503,7 @@ interface PostRepositoryInterface
     public function decrementScrapCount(int $postId): int;
 
     /**
-     * 게시글의 scrap_count 를 남아 있는 스크랩 행 수로 다시 계산해 갱신합니다 (#888).
+     * 게시글의 scrap_count 를 남아 있는 스크랩 행 수로 다시 계산해 갱신합니다.
      *
      * 여러 스크랩을 한꺼번에 지운 뒤(회원 삭제 정리 등) 증감 대신 실제 행 수에 맞춘다.
      * 소프트 삭제된 게시글도 대상이다 — 복원했을 때 숫자가 어긋나지 않게 한다. 글이 없으면 0 을 돌린다.
@@ -514,7 +514,7 @@ interface PostRepositoryInterface
     public function recalculateScrapCount(int $postId): int;
 
     /**
-     * 여러 게시글의 scrap_count 를 남아 있는 스크랩 행 수로 한꺼번에 다시 계산해 갱신합니다 (#888).
+     * 여러 게시글의 scrap_count 를 남아 있는 스크랩 행 수로 한꺼번에 다시 계산해 갱신합니다.
      *
      * recalculateScrapCount() 와 같은 규약(소프트 삭제된 글 포함, 수정 시각 미갱신)을 따르되, 묶음마다
      * GROUP BY 한 번으로 세고 같은 건수끼리 묶어 갱신한다. 없는 글은 갱신 대상이 없어 지나간다.

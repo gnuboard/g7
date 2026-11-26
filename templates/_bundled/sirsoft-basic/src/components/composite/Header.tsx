@@ -77,7 +77,7 @@ interface User {
 }
 
 /**
- * 헤더 메뉴 항목 — 템플릿 설정 `header.menu` (#434). 레이아웃 계산값 `siteMenu` 가 보이기 조건·꺼진 항목을 이미 걸러서 넘긴다.
+ * 헤더 메뉴 항목 — 템플릿 설정 `header.menu`. 레이아웃 계산값 `siteMenu` 가 보이기 조건·꺼진 항목을 이미 걸러서 넘긴다.
  *
  * `kind` 가 `link` 면 운영자가 적은 주소, 그 밖(`home`·`popular`·`shop`·`boards`)은 이 컴포넌트가 그 자리에 그리는 자동 항목이다.
  */
@@ -124,7 +124,7 @@ export const pickLocalizedLabel = (label: HeaderMenuItem['label'], locale: strin
 interface HeaderProps {
   /** 사이트 로고 URL */
   logo?: string;
-  /** 다크 모드 로고 URL — 있으면 어두운 화면에서 사이트 로고 대신 보인다(템플릿 설정 `branding.logo_dark`, #434) */
+  /** 다크 모드 로고 URL — 있으면 어두운 화면에서 사이트 로고 대신 보인다(템플릿 설정 `branding.logo_dark`) */
   logoDark?: string;
   /** 테마(라이트/다크) 단추를 보일지 — 기본 true (템플릿 설정 `header.show_theme_toggle`) */
   showThemeToggle?: boolean;
@@ -147,7 +147,7 @@ interface HeaderProps {
   /**
    * 로그인 사용자 정보를 받는 중인가 — true 면 사용자 메뉴 자리에 빈 자리(회색 원 + 이름 막대)를 그리고
    * 로그인·회원가입·주문조회·사용자 메뉴는 그리지 않는다(이름 길이에 따라 받은 뒤 폭이 조금 달라질 수 있다). 레이아웃이 `{{_global.currentUser === undefined}}` 로 넘긴다.
-   * 받는 중을 비회원으로 읽으면 회원이 새로고침할 때 「로그인·회원가입」이 잠깐 보였다가 바뀌고 검색창이 출렁였다(#915).
+   * 받는 중을 비회원으로 읽으면 회원이 새로고침할 때 「로그인·회원가입」이 잠깐 보였다가 바뀌고 검색창이 출렁였다.
    * 기본값 false — 편집기 미리보기·바인딩이 없는 옛 레이아웃은 지금처럼 그린다.
    */
   userLoading?: boolean;
@@ -172,7 +172,7 @@ interface HeaderProps {
   /**
    * 게시판 모듈이 켜져 있는가 — false 면 「인기글」 탭과 게시판 탭·더보기를 그리지 않는다.
    * 기본값 true: 레이아웃이 `_global.activeModules` 로 판정해 넘긴다. 값이 오지 않는 경우(루트 레이아웃을 keep 으로
-   * 업데이트해 새 바인딩이 없는 사이트)에는 지금처럼 보인다(#822).
+   * 업데이트해 새 바인딩이 없는 사이트)에는 지금처럼 보인다.
    */
   boardEnabled?: boolean;
   /** 쇼핑몰 모듈이 켜져 있는가 — false 면 장바구니 단추·「쇼핑」 탭·회원 메뉴의 주문내역·위시리스트·비회원 「주문조회」를 그리지 않는다. 기본값 true(위와 같은 이유) */
@@ -323,11 +323,11 @@ const Header: React.FC<HeaderProps> = ({
   // 목록을 가리키고, 열면 현재 언어 항목에 초점을 두며 ↓/↑/Home/End 로 옮기고 Enter 로 고른다. Esc 는 닫고 단추로.
   const langListboxId = `${useId()}-language-listbox`;
   const langTriggerRef = useRef<HTMLButtonElement>(null);
-  // 언어 전환이 끝날 때까지 참 — 그 사이에는 목록을 다시 열지 않는다(곧 화면 전체가 다시 그려져 연 목록이 사라진다, #869 8차 7부)
+  // 언어 전환이 끝날 때까지 참 — 그 사이에는 목록을 다시 열지 않는다(곧 화면 전체가 다시 그려져 연 목록이 사라진다)
   const [switchingLocale, setSwitchingLocale] = useState(false);
   const langOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const langPendingFocusRef = useRef<number | null>(null);
-  // 언어 전환은 같은 화면을 새로 마운트한다 — 고른 뒤 언어 단추에 있던 포커스를 새 헤더의 단추로 돌린다(#869 브라우저 실측)
+  // 언어 전환은 같은 화면을 새로 마운트한다 — 고른 뒤 언어 단추에 있던 포커스를 새 헤더의 단추로 돌린다
   useLocaleSwitchFocusReturn('site-header:language', langMenuRef, () => langTriggerRef.current);
 
   // 메뉴 겹침 — 화면 맨 위 배너가 `data-header-overlay` 로 알리면 헤더 높이를 알리고 맨 위에서만 투명하게 한다(모바일 툴바 포함, main.css)
@@ -382,7 +382,7 @@ const Header: React.FC<HeaderProps> = ({
     return currentPath.startsWith(`${base}/reviews`);
   };
 
-  // 쿠폰존 화면인지 (#952)
+  // 쿠폰존 화면인지
   const isCouponsActive = (): boolean => {
     const base = shopBase === '/' ? '' : shopBase;
     return currentPath.startsWith(`${base}/coupons`);
@@ -509,7 +509,7 @@ const Header: React.FC<HeaderProps> = ({
           </React.Fragment>
         ) : null;
       case 'coupons':
-        // 쿠폰존(#952) — 헤더 메뉴 편집기에서 운영자가 넣을 때만 보인다(기본 메뉴에는 없다). 쇼핑몰 모듈이 꺼져 있으면 숨긴다
+        // 쿠폰존 — 헤더 메뉴 편집기에서 운영자가 넣을 때만 보인다(기본 메뉴에는 없다). 쇼핑몰 모듈이 꺼져 있으면 숨긴다
         return shopEnabled ? (
           <LinkButton key={key} href={shopCouponsPath} onNavigate={() => { navigate(shopCouponsPath); close(); }} className={inDropdown ? dropdownItemClass(isCouponsActive()) : `flex items-center gap-1 ${getNavButtonClass(isCouponsActive())}`} data-testid="nav-coupons" aria-current={isCouponsActive() ? 'page' : undefined}>
             {autoLabel(item, 'nav.coupons')}
@@ -843,7 +843,7 @@ const Header: React.FC<HeaderProps> = ({
             <SlotContainer slotId="header_currency" id="header_currency_slot_desktop" className="flex items-center" />
 
             {/* 사용자 메뉴 — 사용자 정보를 받는 동안에는 회원 단추 모양의 빈 자리(아바타 sm 원 + 이름 막대 + 펼침 표시 자리 — 이름 길이에 따라 받은 뒤 폭이 조금 달라질 수 있다).
-                받는 중을 비회원으로 읽으면 회원에게 로그인·회원가입이 잠깐 보였다(#915) */}
+                받는 중을 비회원으로 읽으면 회원에게 로그인·회원가입이 잠깐 보였다 */}
             {userLoading ? (
               <Div role="status" aria-label={t('common.loading')} className="flex items-center gap-2 p-2" data-testid="header-user-skeleton">
                 <Span aria-hidden="true" data-skeleton="avatar" className="block w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />

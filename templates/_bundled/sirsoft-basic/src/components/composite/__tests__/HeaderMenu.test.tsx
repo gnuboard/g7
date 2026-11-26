@@ -1,6 +1,6 @@
 // e2e:allow Vitest 컴포넌트 렌더 테스트(메뉴 props → 실제 Header 렌더). 사용자 화면 반영은 Playwright E2E·브라우저 실측으로 별도 검증.
 /**
- * Header — 템플릿 설정 `header.menu` 렌더 (#434)
+ * Header — 템플릿 설정 `header.menu` 렌더
  *
  * - 메뉴 순서대로 탭을 그린다. 자동 항목(홈·인기글·쇼핑·게시판 전체)은 그 자리에서 펴고, 모듈이 꺼져 있으면 그리지 않는다.
  * - 하위 메뉴가 있는 링크는 펼침 단추 — 누르면 열리고(aria-expanded) Esc·바깥 누르기로 닫힌다. 상위 주소가 있으면 펼침 첫 줄.
@@ -33,7 +33,7 @@ afterEach(() => {
 const boards = Array.from({ length: 7 }, (_, i) => ({ id: i + 1, name: `게시판${i + 1}`, slug: `b${i + 1}` }));
 const link = (id: string, extra: Partial<HeaderMenuItem> = {}): HeaderMenuItem => ({ id, kind: 'link', label: { ko: id }, url: `/${id}`, ...extra });
 
-describe('Header 메뉴 (#434)', () => {
+describe('Header 메뉴', () => {
   // @scenario case=header_menu
   // @effects header_menu_renders_tree
   it('메뉴가 없으면 기본 메뉴 순서(홈 → 인기글 → 쇼핑·리뷰 → 게시판) — 쇼핑 항목이 7.1.6 의 리뷰 모아보기 탭을 바로 뒤에 함께 편다', () => {

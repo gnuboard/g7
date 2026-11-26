@@ -156,7 +156,7 @@ class LayoutFragmentSourceHelperTest extends TestCase
 
     /**
      * 디렉토리 수집은 조각 식별자(`fragment_key`)를 함께 돌려준다 — 같은 대상에 조각이 둘일 때
-     * 확장이 키 없이 등록하면 어느 행인지 가릴 수 없어 아무것도 하지 않기 때문이다(#476 C13).
+     * 확장이 키 없이 등록하면 어느 행인지 가릴 수 없어 아무것도 하지 않기 때문이다.
      *
      * 짝(`x.g7.html`·`x.json`)은 같은 논리 조각이라 같은 키다.
      *

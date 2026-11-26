@@ -1,5 +1,5 @@
 /**
- * TemplateApp.loadG7Config() — `_global.activeModules` / `_global.activePlugins` 노출 (engine-v1.84.0, #822)
+ * TemplateApp.loadG7Config() — `_global.activeModules` / `_global.activePlugins` 노출 (engine-v1.84.0)
  *
  * 서버가 G7Config.activeModules·activePlugins 로 싣는 메타 객체 배열에서 식별자만 뽑아 같은 이름의 전역 상태로 싣는다.
  * 레이아웃 가드 `{{_global.activeModules?.includes('id') ?? true}}` 가

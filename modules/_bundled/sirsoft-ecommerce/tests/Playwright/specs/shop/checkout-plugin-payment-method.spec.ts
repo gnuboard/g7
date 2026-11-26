@@ -1,5 +1,5 @@
 /**
- * 플러그인 결제수단(toss_* 등) 주문 생성 E2E (#454 S4).
+ * 플러그인 결제수단(toss_* 등) 주문 생성 E2E.
  *
  * 이 spec 이 지키는 계약은 하나다:
  *   "플러그인이 등록한 결제수단은 화면에서 독립 항목으로 보이지만,
@@ -550,7 +550,7 @@ test.describe('플러그인 결제수단 → 코어 결제수단 번역 (주문 
   });
 });
 
-test.describe('결제 통화별 결제수단 표시 (#639 D17)', () => {
+test.describe('결제 통화별 결제수단 표시', () => {
   test.beforeEach(async ({ page, noPermissionToken }) => {
     await authenticatePage(page, noPermissionToken);
     await page.addInitScript((locale) => localStorage.setItem('g7_locale', locale), CART_LOCALE);

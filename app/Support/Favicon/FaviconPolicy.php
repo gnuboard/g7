@@ -6,7 +6,7 @@ use App\Support\AssetUrl;
 use App\Support\Template\TemplateSettingCollections;
 
 /**
- * 파비콘 형식·컬렉션 규약 (#434)
+ * 파비콘 형식·컬렉션 규약
  *
  * 업로드 허용(확장자 교체)·서빙(MIME 화이트리스트)·우선순위 해석(유효 첨부 판정) 세 곳이
  * 같은 목록을 봐야 한다 — 한 곳만 넓히면 올릴 수는 있는데 탭에 안 뜨거나, 뜨는데 올릴 수 없는

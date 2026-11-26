@@ -39,7 +39,7 @@ class UpdateNotificationTemplateRequest extends FormRequest
                 : ['required', 'array', new LocaleRequiredTranslatable(maxLength: 65535)],
             'click_url' => ['nullable', 'string', 'max:500'],
             'recipients' => ['sometimes', 'nullable', 'array'],
-            // site_admin_email(#888): 환경설정 > 일반의 관리자 이메일 한 곳 — 값 칸이 없다.
+            // site_admin_email: 환경설정 > 일반의 관리자 이메일 한 곳 — 값 칸이 없다.
             'recipients.*.type' => ['required', 'string', 'in:trigger_user,related_user,role,specific_users,site_admin_email'],
             // 값의 모양은 타입이 정한다. `nullable` 하나만 두면 역할 칸에 객체가, 사용자 칸에
             // 문자열이 들어와도 그대로 저장되고 **발송 시점에 수신자 0명**으로만 드러난다 —

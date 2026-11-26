@@ -87,7 +87,7 @@ class ClaimTransitionVocabulary
 
             // 결제대기 행의 승인은 **결제 확정이 잇는 전이**다(`confirmPaid()` → paid → 승인).
             // 상품 행에서 직접 승인을 내면 운영자가 돈을 받기 전에 그 행을 승인하고, 헤더가
-            // `payment_pending → approved` 로 따라가 미수납 게이트를 우회한다(#599 validate P2 #1).
+            // `payment_pending → approved` 로 따라가 미수납 게이트를 우회한다(validate P2 #1).
             if ($excludePaymentPending && $current->value === self::PAYMENT_PENDING && $target->value === self::APPROVED) {
                 continue;
             }
@@ -108,7 +108,7 @@ class ClaimTransitionVocabulary
      * 회수·발송 단계는 상품이 실제로 움직이는 사실이라 상품 칸이 정본이고(헤더는 상품이 한
      * 상태로 모이면 따라간다), 완료는 재고 복구·환불신청서 선택이 딸려 [완료 처리] 가 유일한
      * 입구다. 예전에는 이 둘까지 신청서 칸에 서서, 회수도착 반품에서 「반품완료」 를 고르면
-     * 안내 토스트만 뜨고 아무 일도 일어나지 않았다(#599 후속).
+     * 안내 토스트만 뜨고 아무 일도 일어나지 않았다.
      *
      * 지금 상태에서 갈 수 있는지(`optionsFrom()`)까지만 판정한다 — 돈·상품 행에 걸린 게이트는
      * 신청서 인스턴스가 있어야 알 수 있으므로 `AdminClaimService::transitionOptionsFor()` 가 거른다.

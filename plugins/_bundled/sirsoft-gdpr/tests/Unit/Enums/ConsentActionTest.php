@@ -6,7 +6,7 @@ use Plugins\Sirsoft\Gdpr\Enums\ConsentAction;
 use Tests\PureTestCase;
 
 /**
- * ConsentAction Enum 단위 테스트 (이슈 #430 거부 행위 정의).
+ * ConsentAction Enum 단위 테스트 (거부 행위 정의).
  *
  * granted / revoked / rejected 3분기 판정 로직을 검증한다.
  */

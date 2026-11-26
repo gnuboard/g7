@@ -13,7 +13,7 @@ use App\Support\MenuIcon\MenuIconPresenter;
 use Tests\TestCase;
 
 /**
- * 메뉴 아이콘 응답 표현기(MenuIconPresenter) 단위 테스트 (#381).
+ * 메뉴 아이콘 응답 표현기(MenuIconPresenter) 단위 테스트.
  *
  * 저장값을 호환 문자열 `icon` + 구조형 `icon_spec` 로 바꾸고, 이미지 url 을 응답 시점에
  * 마운트 접두·첨부 해시·확장 자산 URL 로 만드는지 검증한다.
@@ -196,7 +196,7 @@ class MenuIconPresenterTest extends TestCase
     }
 
     /**
-     * 회귀(#381 validate-plan 5차 C-5a): 7.2.0 이하 API 로 저장된 JSON 모양 아이콘 문자열은 입력 검사를 거치지 않았다.
+     * 회귀(plan 5차 C-5a): 7.2.0 이하 API 로 저장된 JSON 모양 아이콘 문자열은 입력 검사를 거치지 않았다.
      * 저장값의 경로가 외부 주소·상위 경로 등 입력 규칙을 어기면 url 을 만들지 않는다(화면은 대체 아이콘) —
      * 같은 `//외부` 가 평문 문자열이면 이미 class 로 읽혀 막히던 것과 같은 규칙이다.
      *
@@ -227,7 +227,7 @@ class MenuIconPresenterTest extends TestCase
     }
 
     /**
-     * 회귀(#381 validate-plan 6차 D-6a): 7.2.0 이하 API 로 저장된 JSON 모양 SVG 문자열도 입력 검사를 거치지 않았다.
+     * 회귀(plan 6차 D-6a): 7.2.0 이하 API 로 저장된 JSON 모양 SVG 문자열도 입력 검사를 거치지 않았다.
      * 저장값이 SVG 검사를 통과하지 못하면 응답에 코드를 싣지 않는다(`value: null` — 화면은 대체 아이콘). 정제를 빠뜨린
      * 외부 관리자 템플릿이 그 코드를 그대로 그리지 않게 하는 서버 쪽 방어선이다(C-5a 의 이미지 주소와 같은 부류).
      *

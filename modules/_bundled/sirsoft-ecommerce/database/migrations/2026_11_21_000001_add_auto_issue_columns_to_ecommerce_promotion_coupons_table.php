@@ -14,7 +14,7 @@ return new class extends Migration
     private const TABLE = 'ecommerce_promotion_coupons';
 
     /**
-     * 쿠폰에 자동발급·발급 알림 설정 컬럼을 추가합니다. (#952)
+     * 쿠폰에 자동발급·발급 알림 설정 컬럼을 추가합니다.
      *
      * - `first_purchase_trigger_status`: 첫구매 쿠폰의 발급 시점(주문 상태). NULL 이면 구매확정으로 본다
      * - `notify_enabled`: 발급 알림 사용 — 켜면 이 쿠폰 전용 알림 종류 `coupon_issued.{id}` 를 만든다

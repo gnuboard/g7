@@ -73,7 +73,7 @@
       </button>
       <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reportSubmitting === true}}">
         <on type="click">
-          <!-- 신고 보내기 — 사유와 상세를 차례로 확인해 비어 있으면 그 자리에서 알리고 멈춘다. 성공하면 창을 닫고 글을 다시 받아 «신고됨» 표시가 새로고침 없이 바뀌게 하고, 실패(검증 오류·이미 신고함·권한 없음 등)하면 창과 적은 사유를 그대로 두고 오류 토스트를 띄우며, 서버의 칸별 오류는 칸 아래에 보인다 — 관리자 신고 창과 같은 동작이다(7.1.1. 종전 #413-60 의 「실패 시 창 닫기」 는 422 에 적은 사유까지 지웠다). -->
+          <!-- 신고 보내기 — 사유와 상세를 차례로 확인해 비어 있으면 그 자리에서 알리고 멈춘다. 성공하면 창을 닫고 글을 다시 받아 «신고됨» 표시가 새로고침 없이 바뀌게 하고, 실패(검증 오류·이미 신고함·권한 없음 등)하면 창과 적은 사유를 그대로 두고 오류 토스트를 띄우며, 서버의 칸별 오류는 칸 아래에 보인다 — 관리자 신고 창과 같은 동작이다(7.1.1. 종전의 「실패 시 창 닫기」 는 422 에 적은 사유까지 지웠다). -->
           <conditions if="{{_global.reportSubmitting !== true}}">
             <!-- 1. 신고 사유 미선택 시 toast -->
             <when if="{{!_global.reportForm?.reason_type}}">
@@ -102,13 +102,13 @@
                   </set-state>
                   <toast type="success" message="$t:board.post.report_submitted"/>
                   <close-modal/>
-                  <!-- 신고 성공 후 게시글 데이터 재조회 → is_already_reported 갱신 → 버튼이 즉시 '신고됨'으로 전환 (게시글/댓글 공통). 새로고침 없이 반영 (이슈 #413-60 증상2) -->
+                  <!-- 신고 성공 후 게시글 데이터 재조회 → is_already_reported 갱신 → 버튼이 즉시 '신고됨'으로 전환 (게시글/댓글 공통). 새로고침 없이 반영 (60 증상2) -->
                   <refetch-data-source dataSourceId="post"/>
                 </success>
                 <fail>
                   <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
                   <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
-                  <!-- 신고 실패(422 검증·409 중복·403) — 창을 닫지 않는다. 잠금을 풀고(#413-60 증상1 의 「진행 불가」 해소는 이 잠금 해제와 토스트가 맡는다)
+                  <!-- 신고 실패(422 검증·409 중복·403) — 창을 닫지 않는다. 잠금을 풀고(60 증상1 의 「진행 불가」 해소는 이 잠금 해제와 토스트가 맡는다)
                        서버 칸별 오류를 담는다(422 가 아니면 없음) -->
                   <set-state target="global" :reportSubmitting="false" reportErrors="{{error.errors ?? null}}"/>
                   <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="{{error.message}}"/>

@@ -11,7 +11,7 @@ import { resolve } from 'node:path';
  * 엔진 액션(`saveToLocalStorage`)이 대신 쓰므로 그 스캔에 잡히지 않는다.
  *
  * 등재가 빠지면 functional 미동의 사이트에서 보기 선택이 부팅 때마다 파기되어,
- * 바꿔도 새로고침하면 갤러리로 되돌아간다(#640 화면 테마와 같은 함정).
+ * 바꿔도 새로고침하면 갤러리로 되돌아간다(화면 테마와 같은 함정).
  * 오류를 남기지 않고 "설정이 안 먹는다" 는 증상으로만 나타나므로 여기서 잠근다.
  *
  * @scenario screen=plugins, view=list

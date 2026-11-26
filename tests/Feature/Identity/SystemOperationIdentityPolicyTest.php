@@ -15,7 +15,7 @@ use RuntimeException;
 use Tests\TestCase;
 
 /**
- * 시스템 작업 문맥과 본인인증 훅 정책 (#798 K19)
+ * 시스템 작업 문맥과 본인인증 훅 정책
  *
  * 운영자가 회원 수정 훅(`core.user.before_update`)에 본인인증 정책을 걸면, 행위자가 없는 시스템 경로(동기화·프로비저닝·예약 탈퇴)는
  * 대상 회원으로 판정돼 428 로 멈춘다. `SystemOperation::run()` 안에서는 정책을 건너뛰고, 문맥은 중첩과 예외 뒤에도 복원된다.

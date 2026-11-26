@@ -9,7 +9,7 @@ use Illuminate\Validation\Validator;
 use Plugins\Sirsoft\MessageBizppurio\Http\Requests\Concerns\ValidatesTemplateContent;
 
 /**
- * 비즈뿌리오 알림 템플릿 수정 검증 (#597 §3.2 — Store 와 대칭 매트릭스).
+ * 비즈뿌리오 알림 템플릿 수정 검증 (Store 와 대칭 매트릭스).
  *
  * notification_type 은 행 정체성이라 수정 대상이 아니다(전달돼도 무시 — validated 에
  * 포함되지 않는다). content 변경의 상태 가드(draft/rejected 만)는 서비스가 판정한다.

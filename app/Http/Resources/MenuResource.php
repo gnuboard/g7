@@ -21,7 +21,7 @@ class MenuResource extends BaseApiResource
             'name' => $this->getValue('name'),  // 다국어 객체 그대로 반환 (프론트엔드에서 $localized() 사용)
             'slug' => $this->getValue('slug'),
             'url' => $this->getValue('url'),
-            // icon 은 class 일 때만 문자열(외부 템플릿 호환), 구조형은 icon_spec (#381)
+            // icon 은 class 일 때만 문자열(외부 템플릿 호환), 구조형은 icon_spec
             ...$this->presentIcon($this->resource),
             'order' => $this->getValue('order'),
             'is_active' => $this->getValue('is_active', true),

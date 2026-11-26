@@ -627,7 +627,7 @@ class TemplateManagerOverrideTest extends TestCase
             'source_type' => LayoutSourceType::Template,
             'source_identifier' => 'test-admin',
             // 파일에서 등록된 오버라이드 행은 원본 해시를 표식으로 갖는다 (7.0.x 행은 마이그레이션이 채운다) —
-            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다 (#703).
+            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다.
             'original_content_hash' => hash('sha256', '{"slots":[]}'),
         ]);
 
@@ -726,7 +726,7 @@ class TemplateManagerOverrideTest extends TestCase
             'source_type' => LayoutSourceType::Template,
             'source_identifier' => 'test-admin',
             // 파일에서 등록된 오버라이드 행은 원본 해시를 표식으로 갖는다 (7.0.x 행은 마이그레이션이 채운다) —
-            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다 (#703).
+            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다.
             'original_content_hash' => hash('sha256', '{"slots":[]}'),
         ]);
 
@@ -737,7 +737,7 @@ class TemplateManagerOverrideTest extends TestCase
             'source_type' => LayoutSourceType::Template,
             'source_identifier' => 'test-admin',
             // 파일에서 등록된 오버라이드 행은 원본 해시를 표식으로 갖는다 (7.0.x 행은 마이그레이션이 채운다) —
-            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다 (#703).
+            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다.
             'original_content_hash' => hash('sha256', '{"slots":[]}'),
         ]);
 
@@ -787,7 +787,7 @@ class TemplateManagerOverrideTest extends TestCase
             'source_type' => LayoutSourceType::Template,
             'source_identifier' => 'test-admin',
             // 파일에서 등록된 오버라이드 행은 원본 해시를 표식으로 갖는다 (7.0.x 행은 마이그레이션이 채운다) —
-            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다 (#703).
+            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다.
             'original_content_hash' => hash('sha256', '{"slots":[]}'),
         ]);
 

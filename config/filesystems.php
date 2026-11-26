@@ -88,7 +88,7 @@ return [
             'report' => false,
         ],
 
-        // 템플릿 환경설정(`{id}/settings/setting.json`) — 템플릿은 PHP 인스턴스가 없어 코어가 이 디스크로 직접 읽고 쓴다(#434).
+        // 템플릿 환경설정(`{id}/settings/setting.json`) — 템플릿은 PHP 인스턴스가 없어 코어가 이 디스크로 직접 읽고 쓴다.
         // 템플릿 디렉토리 밖에 두므로 템플릿 업데이트·삭제가 운영자 설정을 지우지 않는다.
         'templates' => [
             'driver' => 'local-safe',

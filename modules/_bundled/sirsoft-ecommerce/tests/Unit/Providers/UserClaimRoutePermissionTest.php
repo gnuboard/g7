@@ -75,7 +75,7 @@ class UserClaimRoutePermissionTest extends ModuleTestCase
     {
         $routes = $this->claimRoutes();
 
-        // 13 → 14: 신청 수정(`user.claims.update`) 이 열렸다 (#599 후속 D13).
+        // 13 → 14: 신청 수정(`user.claims.update`) 이 열렸다.
         $this->assertCount(
             14,
             $routes,

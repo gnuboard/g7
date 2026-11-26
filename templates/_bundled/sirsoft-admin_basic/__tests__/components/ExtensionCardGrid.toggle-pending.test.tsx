@@ -1,6 +1,6 @@
 /**
  * @file ExtensionCardGrid.toggle-pending.test.tsx
- * @description 확장 목록 카드 스위치 — 서버 작업이 끝날 때까지 값을 바꾸지 않고, 그동안 잠근 채 손잡이 자리에 스피너 (#882)
+ * @description 확장 목록 카드 스위치 — 서버 작업이 끝날 때까지 값을 바꾸지 않고, 그동안 잠근 채 손잡이 자리에 스피너
  *
  * 종전에는 누르는 즉시 스위치가 뒤집히고 그 뒤에 서버 작업이 돌아, 실패·거절돼도 「켜졌다」고 읽혔다. 이제 누르면
  * 원래 값에 머물고(누른 카드만 잠금) 서버 값이 바뀌거나 재동기 신호(resyncKey — 실패·409·확인 창 열림)가 오면 진행 표시를 끈다.
@@ -43,7 +43,7 @@ function cards(pageChecked: boolean, resyncKey: number, onToggle = vi.fn(), hold
 
 const sw = (container: HTMLElement, name: string) => container.querySelector(`[role=switch][aria-label="${name}"]`) as HTMLElement;
 
-describe('확장 목록 카드 스위치 — 응답 전까지 값 유지 + 손잡이 스피너 (#882)', () => {
+describe('확장 목록 카드 스위치 — 응답 전까지 값 유지 + 손잡이 스피너', () => {
   /**
    * @scenario case=card_toggle_pending
    * @effects card_toggle_keeps_value_until_server_confirms
@@ -119,7 +119,7 @@ describe('확장 목록 카드 스위치 — 응답 전까지 값 유지 + 손�
   });
 
   /**
-   * 모듈·플러그인 목록은 켜기 뒤 화면 파일(JS·CSS)을 몇 초 더 받는다 — 그 사이 다시 끄면 받던 파일이 404 가 됐다(#882 결정:
+   * 모듈·플러그인 목록은 켜기 뒤 화면 파일(JS·CSS)을 몇 초 더 받는다 — 그 사이 다시 끄면 받던 파일이 404 가 됐다(
    * 파일까지 받은 뒤 해제). holdUntilResync 를 켠 목록은 서버 값이 바뀌어도 진행 표시를 두고, 화면이 후속 작업을 마친 뒤
    * 올리는 재동기 신호에서 끈다.
    *

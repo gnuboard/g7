@@ -183,8 +183,8 @@ class CouponIssueRepository implements CouponIssueRepositoryInterface
             // coupon 관계를 직렬화하지 않지만, 이 목록은 훅
             // `sirsoft-ecommerce.user_coupon.filter_list_result` 로 확장에 그대로 전달된다.
             // 제3자 확장이 쿠폰 원본 정의(쿠폰명·할인율·사용조건)를 읽고 있을 수 있어 현행 유지
-            // (프로젝트 결정 2026-08-04). 번들 템플릿의 마이페이지 쿠폰함(#952)이 쿠폰 블록을 그린다.
-            // 쿠폰함 카드(#952)가 적용 대상 이름(3개)과 사용 주문번호를 그린다
+            // (프로젝트 결정 2026-08-04). 번들 템플릿의 마이페이지 쿠폰함이 쿠폰 블록을 그린다.
+            // 쿠폰함 카드가 적용 대상 이름(3개)과 사용 주문번호를 그린다
             relations: ['coupon', 'coupon.includedProducts', 'coupon.includedCategories', 'order:id,order_number'],
             resultCap: PaginationLimits::resultCap('ecommerce.coupon_issues'),
         );

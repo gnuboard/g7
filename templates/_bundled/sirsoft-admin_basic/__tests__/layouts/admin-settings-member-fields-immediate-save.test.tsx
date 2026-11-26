@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-member-fields-immediate-save.test.tsx
- * @description 환경설정 「회원」 탭 가입 항목 표의 즉시 저장 배선(#490 D1, U1, U5, U6)
+ * @description 환경설정 「회원」 탭 가입 항목 표의 즉시 저장 배선
  *
  * 표의 스위치와 순서는 누르자마자 항목 API 로 나가고 `memberFieldDefs` 만 다시 받는다. 설정 폼(`_local.form`)과
  * 「변경 있음」(`hasChanges`)은 건드리지 않아야 한다 — 건드리면 화면 하단 「저장」과 탭 전환 확인 창이 이 표 때문에 켜진다.

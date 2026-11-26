@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * 4개 도메인의 활성 확장 디렉토리 자동 복구 (modules/plugins/templates/language_packs).
  *
- * beta.4 의 `applyDiscoveredTopLevelPaths` 회귀 (#347) 로 인해 손실된 활성 확장 디렉토리를
+ * beta.4 의 `applyDiscoveredTopLevelPaths` 회귀 로 인해 손실된 활성 확장 디렉토리를
  * `_bundled/{identifier}` 기준으로 자동 복구한다.
  *
  * 흐름:

@@ -1,4 +1,4 @@
-feature: 페이지 임시 첨부 연결의 파일 보상 — 롤백되면 임시 자리로 (#883 3단계)
+feature: 페이지 임시 첨부 연결의 파일 보상 — 롤백되면 임시 자리로
 
 description: |
   `PageAttachmentService::linkTempAttachmentsWithMove` 는 파일을 StorageTransaction::move 로 옮긴다 — 페이지 저장 트랜잭션이

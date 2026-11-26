@@ -1,6 +1,6 @@
 /**
  * @file Toggle.test.tsx
- * @description 템플릿 설정 화면 스위치(boolean 칸)의 안쪽 checkbox id 를 잠근다 (#408).
+ * @description 템플릿 설정 화면 스위치(boolean 칸)의 안쪽 checkbox id 를 잠근다.
  *
  * 종전에는 name 을 그대로 id 로 써서 같은 name 의 스위치가 여럿이면 화면에 같은 id 가 여러 개 생겼다.
  * 인스턴스마다 다른 useId 를 앞에 붙이고, name 에 섞인 공백·한글은 id 에서 걷어 낸다.

@@ -1,5 +1,5 @@
 /**
- * 비회원 클레임 화면 — 토큰 처분 · 주문상세 클레임 섹션 · 신청 진입 · 상세 (#599 S15b · §5-1-3)
+ * 비회원 클레임 화면 — 토큰 처분 · 주문상세 클레임 섹션 · 신청 진입 · 상세
  *
  * 비회원 화면은 회원 것과 **같은 partial** 을 쓰고 셸이 계약값과 주소만 바꾼다. 그래서 조용히
  * 깨지는 자리가 둘이다.
@@ -90,7 +90,7 @@ function guestClaimDetail(
     reason_label: '사이즈가 맞지 않음',
     items,
     images: [],
-    // 접수 시점 주문금액 비교(#599 후속) — 회원 상세와 같은 키·같은 partial 이 읽는다.
+    // 접수 시점 주문금액 비교 — 회원 상세와 같은 키·같은 partial 이 읽는다.
     calculation_comparison: FROZEN_COMPARISON,
   };
 }
@@ -290,7 +290,7 @@ test.describe('비회원 클레임 화면', () => {
     // 토큰이 탭(sessionStorage)에 묶여 새 창에 실리지 않으므로 같은 창에서 이동한다.
     await expect(page.locator('[id^="claim_list_number_button_"]')).toHaveCount(1);
     await expect(page.locator('a[target="_blank"]', { hasText: 'EX20260902-0900' })).toHaveCount(0);
-    // 푸터 [상세보기]는 링크로 그린다(#757 WP-L) — 단추·링크 어느 쪽으로도 서지 않아야 한다.
+    // 푸터 [상세보기]는 링크로 그린다 — 단추·링크 어느 쪽으로도 서지 않아야 한다.
     await expect(page.getByRole('link', { name: '상세보기' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: '상세보기' })).toHaveCount(0);
   });
@@ -477,7 +477,7 @@ test.describe('비회원 클레임 화면', () => {
 
   // @scenario screen=detail, entry=with_token, claim_type=exchange
   // @effects claim_detail_comparison_renders_from_frozen_snapshot
-  test('비회원 신청서 상세도 접수 시점 주문금액 비교표를 회원과 같은 partial 로 그린다 (#599 후속 P4)', async ({ page }) => {
+  test('비회원 신청서 상세도 접수 시점 주문금액 비교표를 회원과 같은 partial 로 그린다', async ({ page }) => {
     const base = await resolveShopBase(page);
     await grantFunctionalConsent(page);
     await seedGuestSession(page);

@@ -3,7 +3,7 @@
 #   못한다(저장소 기존 시나리오와 같은 한계). 축 조합은 PHPUnit 단위·Feature 테스트가
 #   커버하고 green 이다.
 
-feature: 방문자 통계 수집 기반 — 방문 묶기·액션 적재·제외 판정 (이슈 #682 S1)
+feature: 방문자 통계 수집 기반 — 방문 묶기·액션 적재·제외 판정
 
 description: |
   방문자가 사이트를 보는 동안 일어난 일을 방문과 액션으로 남긴다. 세 경로(브라우저
@@ -21,7 +21,7 @@ description: |
     - `app/Analytics/**` 순수 로직(제외 판정·방문자 식별·환경/유입 분류·URL 정규화).
     - `app/Services/Analytics/VisitService` 가 트랜잭션 안에서 방문을 잠그고 적재한다.
     - 공유 캐시(DB·Redis·Memcached)면 `VisitorStoreLock` 이 같은 방문자의 적재를 한 줄로 세우고
-      열린 방문은 기본키 행 잠금만 건다. 그 밖에는 범위 잠금 + 재시도(#841).
+      열린 방문은 기본키 행 잠금만 건다. 그 밖에는 범위 잠금 + 재시도.
     - 방문 묶기: 같은 방문자 키 + 마지막 활동이 창(기본 30분) 안.
     - 서버 폴백과 첫 비콘이 같은 페이지를 두 번 세지 않도록 60초 안의 행을 병합한다.
 
@@ -47,10 +47,10 @@ axes:
     - bot
     - consent
   # 훅 리스너가 큐를 타는가. 수집·검색 리스너는 `sync => true` 라 발화 자리에서 돌고
-  # (방문 1건이 잡 1개가 되지 않도록 — #682 S3 라운드 6), 활동 로그 같은 리스너는 큐로 간다.
+  # (방문 1건이 잡 1개가 되지 않도록), 활동 로그 같은 리스너는 큐로 간다.
   dispatch: [sync, queue]
   visit_state: [new, open, timed_out, max_actions]
-  # 같은 방문자의 적재를 방문자 키 잠금으로 한 줄로 세우는가 (#841) — 캐시 저장소가 정한다
+  # 같은 방문자의 적재를 방문자 키 잠금으로 한 줄로 세우는가 — 캐시 저장소가 정한다
   store_lock: [database, redis, file, array]
   lock_state: [free, held, store_error]
   transaction: [none, outer]
@@ -78,7 +78,7 @@ axes:
   query: [preserved_for_campaign, reordered]
   display: [strip_site_host, decode_for_display]
   url: [absolute, relative]
-  # 끝·연속 슬래시 주소의 정규형 판정 (#848) — 같은 화면이 두 행으로 갈리지 않는다
+  # 끝·연속 슬래시 주소의 정규형 판정 — 같은 화면이 두 행으로 갈리지 않는다
   path_shape: [trailing_slash, double_slash]
   hash: [stable, type_separated]
   cidr: [v4_inside, v4_outside, v6_inside, v6_outside, exact, all, non_byte_boundary, cross_family]
@@ -103,7 +103,7 @@ effects:
   - deadlocked_store_is_retried_into_the_same_visit
   - deadlock_retries_are_bounded_and_logged_once
   - deadlock_inside_outer_transaction_is_not_retried
-  # 방문자 키 잠금 (#841) — 공유 캐시(DB·Redis)면 같은 방문자의 적재를 한 줄로 세워 범위 잠금 교착을 없앤다
+  # 방문자 키 잠금 — 공유 캐시(DB·Redis)면 같은 방문자의 적재를 한 줄로 세워 범위 잠금 교착을 없앤다
   - shared_cache_store_serializes_same_visitor_stores
   - local_cache_store_keeps_range_lock_with_retry
   - lock_wait_timeout_falls_back_to_range_lock

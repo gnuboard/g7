@@ -33,7 +33,7 @@ class SyncOptionGroupsListener implements HookListenerInterface
     public static function getSubscribedHooks(): array
     {
         // sync: 옵션 그룹은 저장 응답과 바로 다시 연 화면에 보이는 파생 데이터다 — 큐로 가면 워커가 돌 때까지
-        // 옛 그룹이 보인다. 발화 지점이 트랜잭션 안이면 같은 트랜잭션에서 함께 커밋된다(#724).
+        // 옛 그룹이 보인다. 발화 지점이 트랜잭션 안이면 같은 트랜잭션에서 함께 커밋된다.
         return [
             // 옵션 동기화 완료 후 (생성/수정/삭제 포함)
             'sirsoft-ecommerce.product.after_options_sync' => [

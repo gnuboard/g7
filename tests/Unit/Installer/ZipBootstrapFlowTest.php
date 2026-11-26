@@ -29,7 +29,7 @@ use ZipArchive;
  * g7_payload·github_dir_entries·backslash_dir_entries·macosx·traversal·foreign / outcome extracted·refused·self_deleted
  *
  * ZIP 모양은 `BuildsZipFixtures` 로 실제 배포 도구 모양(GitHub 폴더 항목·Mac `__MACOSX`·Windows 역슬래시)을 만든다 —
- * 파일 항목만 넣던 픽스처가 GitHub 소스 ZIP 거부 결함을 놓쳤다(#971).
+ * 파일 항목만 넣던 픽스처가 GitHub 소스 ZIP 거부 결함을 놓쳤다.
  */
 class ZipBootstrapFlowTest extends TestCase
 {
@@ -848,7 +848,7 @@ class ZipBootstrapFlowTest extends TestCase
      * GitHub 소스 ZIP 처럼 감싼 폴더의 폴더 항목(`g7-9.9.9/`)이 맨 앞에 있어도 감싼 폴더를 벗겨 문서 루트에 푸는지 확인한다.
      *
      * 폴더 항목은 끝 `/` 를 떼면 `/` 가 없는 이름이 되어 「최상위에 파일이 있다」로 오판됐다. 그러면 감싼 폴더를
-     * 벗기지 못해 배포본 표식(`artisan`·`composer.json`·`public/index.php`)을 못 찾고 `not_a_g7_payload` 가 났다(#971).
+     * 벗기지 못해 배포본 표식(`artisan`·`composer.json`·`public/index.php`)을 못 찾고 `not_a_g7_payload` 가 났다.
      *
      * @scenario archive=github_dir_entries, token=valid, entry=fresh
      *
@@ -953,7 +953,7 @@ class ZipBootstrapFlowTest extends TestCase
      * 맞는 번호로 인증한 뒤 압축 판정이 실패해도 응답이 세션 키를 돌려주는지 확인한다.
      *
      * 번호는 첫 인증 성공에서 지워진다. 실패 응답이 세션을 싣지 않으면 화면은 지워진 번호를 다시 보내
-     * `invalid_token` 과 시도 차감을 받고, 복구는 새로고침(번호 재발급)뿐이었다(#971).
+     * `invalid_token` 과 시도 차감을 받고, 복구는 새로고침(번호 재발급)뿐이었다.
      *
      * @scenario archive=foreign, token=valid, entry=fresh
      *

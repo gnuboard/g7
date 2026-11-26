@@ -7,7 +7,7 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
- * 본문 허용 태그 「운영자 자유 추가」 검증 (#883 5단계, D19)
+ * 본문 허용 태그 「운영자 자유 추가」 검증
  *
  * 형식 `^[a-z][a-z0-9-]{0,31}$`. 스크립트·외부 문서 삽입·폼처럼 절대 허용하지 않는 태그(`ContentHtmlPolicy::REJECTED_CUSTOM_TAGS`)는
  * 저장을 거절하고 사유를 알린다. 그 밖(svg·math·details·canvas 등)은 허용하되 화면이 「보안 위험」 경고를 늘 보인다. 속성 정화

@@ -1,4 +1,4 @@
-feature: Modal 고정 하단(props.footer)과 본문 자식이 같은 데이터 문맥으로 그려진다 (#869 4라운드)
+feature: Modal 고정 하단(props.footer)과 본문 자식이 같은 데이터 문맥으로 그려진다
 
 description: |
   본문 자식은 엔진이 Modal 노드의 확장 데이터 컨텍스트로 그리고, 고정 하단은 Modal 이 __componentContext.parentDataContext 로
@@ -21,6 +21,6 @@ test_files:
 validation:
   note: |
     되돌림 확인: Modal 고정 하단을 종전처럼 빈 데이터 문맥(`__dataContext || {}`)으로 그리면 두 템플릿 모두 3건 red.
-    #869 8차 회귀: skipBindingKeys 로 하단을 원문 그대로 그리게 된 뒤 하단 식 안 `$t:` 가 번역 문맥 없이 풀려(엔진은 `__translationContext` 를 넘기지
+    skipBindingKeys 로 하단을 원문 그대로 그리게 된 뒤 하단 식 안 `$t:` 가 번역 문맥 없이 풀려(엔진은 `__translationContext` 를 넘기지
     않음) 단추가 「컴포넌트 로드 실패」 였다. 엔진이 부모 렌더 환경의 번역 문맥을 이어 준다. 종전 엔진에서 관리자 9건(하단 사이트 8, 짝 1)·사용자 2건 red.
 

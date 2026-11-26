@@ -1,6 +1,6 @@
 /**
  * @file userClaimListDetailContract.test.tsx
- * @description 클레임 신청내역 목록·상세·수정의 **구조 계약** (#599 S13)
+ * @description 클레임 신청내역 목록·상세·수정의 **구조 계약**
  *
  * 형제 파일 셋(`userClaimListRender` / `userClaimDetailRender` / `userClaimEditRender`)은 화면을
  * 실제로 그려 글자가 나오는지를 잰다. 이 파일은 그려서는 드러나지 않는 축을 레이아웃 JSON 의
@@ -268,7 +268,7 @@ describe('철회·수정 진입점 — 목록과 상세 두 곳에 있다', () =
     expect(editInit.params.claimApiBase).toBe('/api/modules/sirsoft-ecommerce/user/claims');
     expect(JSON.stringify(editInit.params)).not.toContain('_local');
 
-    // 승인 이후 신청서의 `/edit` 은 상세로 돌려보낸다(#599 T2-D7) — 돌아갈 주소는 셸이 준다.
+    // 승인 이후 신청서의 `/edit` 은 상세로 돌려보낸다 — 돌아갈 주소는 셸이 준다.
     // 핸들러가 조립하면 회원·비회원 주소 모양이 달라 한쪽이 404 가 된다(claimApiBase 와 같은 근거).
     expect(String(editInit.params.detailPath)).toContain("'/mypage/claims/'");
     expect(String(editInit.params.detailPath)).toContain('route.claim_number');
@@ -296,7 +296,7 @@ describe('철회·수정 진입점 — 목록과 상세 두 곳에 있다', () =
     const order = applyShell.data_sources.find((s: any) => s.id === 'order');
 
     expect(String(order.endpoint)).toContain('_local.claimEditOrderNumber');
-    // engine-v1.80.0 부터 데이터소스 오류 처리 안의 conditions 가 실행되고 route 를 읽는다(#753) — 확장 핸들러 우회를 걷어 냈다.
+    // engine-v1.80.0 부터 데이터소스 오류 처리 안의 conditions 가 실행되고 route 를 읽는다 — 확장 핸들러 우회를 걷어 냈다.
     const branch = order.errorHandling['404'];
     expect(branch.handler).toBe('conditions');
     expect(branch.conditions[0].if).toBe('{{!!route.claim_number}}');

@@ -161,7 +161,7 @@ final class InlineModuleExtensionAdapter implements CacheableExtensionInterface
      */
     public function getStorage(): StorageInterface
     {
-        // 정상 경로(AbstractModule::getStorageDisk())와 같은 디스크 — 드라이버 생성자 기본값 'local' 이면 문맥마다 다른 디스크에 쓴다(#916 A6)
+        // 정상 경로(AbstractModule::getStorageDisk())와 같은 디스크 — 드라이버 생성자 기본값 'local' 이면 문맥마다 다른 디스크에 쓴다
         return $this->storage ??= new ModuleStorageDriver($this->identifier, 'modules');
     }
 
@@ -175,7 +175,7 @@ final class InlineModuleExtensionAdapter implements CacheableExtensionInterface
      */
     public function getStorageFor(string $category): StorageInterface
     {
-        // 비공개 원본 바인딩 키는 정상 경로와 같은 비공개 첨부 저장소 규칙을 따른다(#916) — 확장별 env 고정은 인스턴스가 없어 판정하지 못한다
+        // 비공개 원본 바인딩 키는 정상 경로와 같은 비공개 첨부 저장소 규칙을 따른다 — 확장별 env 고정은 인스턴스가 없어 판정하지 못한다
         if ($category === AbstractModule::PRIVATE_ATTACHMENT_BINDING) {
             $disk = PrivateAttachmentDisk::forExtension('modules');
             $base = $this->getStorage();

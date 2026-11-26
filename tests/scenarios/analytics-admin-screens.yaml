@@ -3,7 +3,7 @@
 #   조합은 Vitest 레이아웃 계약 테스트·Playwright E2E 가 테스트별 @scenario 로 나눠 덮고, 상태 14종 × 뷰포트 × 로케일 실측은
 #   Chrome MCP 매트릭스(이력 문서)가 맡는다. effects·test_files 축은 면제하지 않는다.
 
-feature: 방문자 통계 관리자 화면·사용자 위젯 (이슈 #682 S3)
+feature: 방문자 통계 관리자 화면·사용자 위젯
 
 description: |
   집계된 숫자를 운영자가 실제로 보는 자리 — 관리자 화면 14장, 대시보드 카드, 홈 방문자 카운터.

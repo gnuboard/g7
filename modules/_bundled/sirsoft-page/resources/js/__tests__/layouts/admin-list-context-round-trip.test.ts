@@ -176,7 +176,7 @@ function findNavAction(json: unknown, destPath: string): NavAction {
     const direct = collectNavActions(json).find((a) => a.params.path === destPath);
     if (direct) return direct;
 
-    // 링크(#757)가 된 자리는 목적지가 링크의 href 이고 클릭은 경로 없는 navigate 다 — 엔진은 그 navigate 를
+    // 링크가 된 자리는 목적지가 링크의 href 이고 클릭은 경로 없는 navigate 다 — 엔진은 그 navigate 를
     // 클릭한 링크의 href 로 보내므로, 실행 재현을 위해 href 를 경로로 채운 액션을 돌려준다.
     let found: NavAction | undefined;
     const walk = (n: unknown): void => {

@@ -14,7 +14,7 @@ use Plugins\Sirsoft\PayKginicis\Listeners\ScrubEscrowRecipientOnOrderAnonymizeLi
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 /**
- * 에스크로 배송 등록 수령인 사본 파기 리스너 테스트 (이슈 #636)
+ * 에스크로 배송 등록 수령인 사본 파기 리스너 테스트
  *
  * 이커머스 보유기간 익명화가 발행하는 `sirsoft-ecommerce.order.after_anonymize` 를 실제 등록 경로로
  * 구독해, 이 플러그인이 결제 행 `payment_meta.escrow_delivery` 에 남긴 수령인 이름·주소를 지우는지

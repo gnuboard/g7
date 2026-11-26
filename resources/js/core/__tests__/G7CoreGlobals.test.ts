@@ -665,7 +665,7 @@ describe('G7CoreGlobals - modal API', () => {
   });
 
   // 실제 `TemplateApp.getGlobalState()` 는 `_global` 의 **내용물**을 바로 돌려준다(감싸는 `_global` 키 없음).
-  // 위 목은 `{ _global: {...} }` 로 감싸 실제와 달라, 화면에서는 isOpen 이 늘 false·getStack 이 늘 [] 였다(#712 실측).
+  // 위 목은 `{ _global: {...} }` 로 감싸 실제와 달라, 화면에서는 isOpen 이 늘 false·getStack 이 늘 [] 였다.
   // @scenario surface=ui
   // @effects modal_api_reports_open_state_and_stack
   it('실제 전역 상태 모양(_global 내용물)에서도 열린 창과 스택을 돌려준다', () => {

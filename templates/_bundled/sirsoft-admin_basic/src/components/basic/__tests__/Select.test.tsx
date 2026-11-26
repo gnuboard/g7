@@ -281,7 +281,7 @@ describe('Select 컴포넌트', () => {
     });
   });
 
-  // 디폴트 시맨틱 머지 회귀 테스트 (#369)
+  // 디폴트 시맨틱 머지 회귀 테스트
   // 호출처가 이미 'select' 토큰을 명시한 경우 중복 prepend ("select select ...") 를 방지한다.
   describe('디폴트 시맨틱 클래스 머지 (children 모드)', () => {
     // @scenario case=select_c20

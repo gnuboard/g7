@@ -10,7 +10,7 @@ description: |
     2) 정상 경계는 경로·쿼리가 바뀌어도 자식을 다시 마운트하지 않는다.
     3) 다시 그리기는 렌더 중에 하지 않는다. 커밋 뒤 받는 중이 아니면 곧바로, 받는 중이면 받기가 끝날 때(transitionManager 알림)
        전환 갱신으로 한 번 다시 그린다. 앞 화면 값으로 다시 그려 던지는 렌더는 0 이다(링크 이동의 같은 화면 이어 쓰기, 그 렌더 도중
-       응답이 모두 와 받는 중 표시가 꺼진 경우 포함 — 전환 렌더에서 던지면 React 회복 오류 #520).
+       응답이 모두 와 받는 중 표시가 꺼진 경우 포함 — 전환 렌더에서 던지면 React 회복 오류).
     4) 받기가 끝난 뒤 다시 실패하면 박스로 돌아가고 다음 경로·쿼리 변경 전까지 다시 시도하지 않는다(렌더 루프 없음).
     5) 값이 같은 새 `query` 객체(같은 탭 다시 누름)와 경로·쿼리가 그대로인 화면 갱신은 다시 시도하지 않는다.
 
@@ -23,7 +23,7 @@ effects:
   - recovered_component_shows_new_data      # 다시 그린 컴포넌트가 새 화면의 데이터를 그린다
   - healthy_boundary_not_remounted          # 정상 경계의 자식은 마운트 수·DOM 노드가 그대로다
   - error_box_kept_when_retry_fails         # 다시 그린 자식이 또 실패하면 박스로 돌아간다
-  - no_stale_data_retry                     # 경로·쿼리가 바뀐 뒤 앞 화면 값으로 다시 그려 던지지 않는다(전환 렌더 회복 오류 #520 방지)
+  - no_stale_data_retry                     # 경로·쿼리가 바뀐 뒤 앞 화면 값으로 다시 그려 던지지 않는다(전환 렌더 회복 오류 방지)
   - no_retry_without_route_change           # 같은 값의 쿼리 재적용·전역 상태 갱신은 다시 시도하지 않는다
   - no_render_loop                          # 렌더 루프(Maximum update depth) 없음
   - browser_position_tab_round_trip_resets_error_box  # 실제 화면(관리자 히어로섹션 위치 탭): 깨진 홈 → 쇼핑 탭 박스 0 → 홈 탭 박스 1, 탭 줄 같은 노드, pageerror 0

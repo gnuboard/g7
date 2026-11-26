@@ -302,7 +302,7 @@ class InitialStateInheritedSaveTest extends TestCase
     }
 
     /**
-     * JSON 객체 본문의 빈 문자열 초기값이 그대로 저장된다 (#758 — 요청 원문 재해석).
+     * JSON 객체 본문의 빈 문자열 초기값이 그대로 저장된다 (요청 원문 재해석).
      *
      * @scenario case=empty_string
      *
@@ -313,7 +313,7 @@ class InitialStateInheritedSaveTest extends TestCase
     #[Test]
     public function it_documents_empty_string_initial_value_is_kept_on_save(): void
     {
-        // 코어 동작 가드 — 저장 요청의 레이아웃 본문은 요청 원문에서 다시 읽는다(#758, 빈 객체 `{}` 보존).
+        // 코어 동작 가드 — 저장 요청의 레이아웃 본문은 요청 원문에서 다시 읽는다(빈 객체 `{}` 보존).
         // 그래서 JSON 객체 본문도 Laravel 글로벌 미들웨어 ConvertEmptyStringsToNull 의 변환을 거치지 않고
         // 빈 텍스트 초기값 `''` 이 그대로 저장된다. 위지윅 편집기의 저장(JSON 문자열 본문)은 원래부터 `''` 를
         // 지켰으므로 두 본문 형태가 같아졌다. 런타임 `_local` 주입에서 null 과 '' 는 동등(빈 값)하게

@@ -1378,7 +1378,7 @@ class PaymentCallbackController
         $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
         $url = ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]);
 
-        // 결제 뒤 사람이 돌아가는 화면 — 「사용자 화면 URL」(비면 사이트 주소)로 절대화한다(#792 W15)
+        // 결제 뒤 사람이 돌아가는 화면 — 「사용자 화면 URL」(비면 사이트 주소)로 절대화한다
         return ScreenUrl::toAbsolute($url);
     }
 

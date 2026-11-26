@@ -16,7 +16,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 「일반 회원가입 받지 않음」 `security.registration_enabled` (#798 K9 · D17 · W18 · W37)
+ * 「일반 회원가입 받지 않음」 `security.registration_enabled`
  *
  * 꺼지면 공개 가입 API 가 403 이다. 확장 내부 가입(서비스 직접 호출 — SSO 자동 생성·관리자 추가)은 계속된다. 확장 필터
  * `core.auth.self_registration_open` 이 닫을 수도 있다. 설정 일부 저장이 이 값을 바꾸지 않고, 프론트 설정에 노출된다.

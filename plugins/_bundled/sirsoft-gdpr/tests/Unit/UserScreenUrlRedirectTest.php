@@ -8,7 +8,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 use Plugins\Sirsoft\Gdpr\Support\PrivacyPolicyUrl;
 
 /**
- * GDPR — 처리방침 주소 (#792 WP-U5)
+ * GDPR — 처리방침 주소
  *
  * 메일용 처리방침 절대 주소와 옛 슬러그 경로가 화면 주소 헬퍼를 따르는지 잠근다.
  */

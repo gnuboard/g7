@@ -81,7 +81,7 @@ class LayoutResource extends BaseApiResource
     {
         $content = $this->getValue('content', []);
         $contentJson = is_array($content) ? json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}';
-        // 그대로 응답하는 보조 필드(components·data_sources·metadata)는 원문을 빈 객체 보존 디코드해 꺼낸다 (#758)
+        // 그대로 응답하는 보조 필드(components·data_sources·metadata)는 원문을 빈 객체 보존 디코드해 꺼낸다
         $preserved = $this->resource instanceof TemplateLayout ? LayoutEmptyObjects::rawPreserving($this->resource) : $content;
 
         // 편집기 JSON 탭이 처음 여는 본문 — 배열 캐스트를 거친 `$content` 는 `{}` 와 `[]` 를 같게 만들어

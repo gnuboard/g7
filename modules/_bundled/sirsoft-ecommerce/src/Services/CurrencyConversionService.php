@@ -75,7 +75,7 @@ class CurrencyConversionService
      * 거래 시점에 동결된 `currency_snapshot.base_currency` 가 정본이고, 없으면 상점 기본 통화로
      * 떨어진다. `orders.currency` 는 **결제 통화**라 폴백에 쓰지 않는다 — 결제 통화가 기본
      * 통화와 다른 주문에서 신청서의 기준 통화가 결제 통화로 적히면, 같은 주문을 관리자 화면
-     * (설정 기본 통화)과 신청서가 서로 다른 통화로 말한다(#599 validate P2 #14).
+     * (설정 기본 통화)과 신청서가 서로 다른 통화로 말한다(validate P2 #14).
      *
      * @param  Order|null  $order  주문
      * @return string 기준 통화 코드

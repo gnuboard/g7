@@ -12,7 +12,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 게시판 목록/검색 응답의 비밀글·블라인드 본문 요약(content_preview) 차단 테스트 (이슈 #413-37)
+ * 게시판 목록/검색 응답의 비밀글·블라인드 본문 요약(content_preview) 차단 테스트 (37)
  *
  * 게시판 내부 검색은 별도 엔드포인트가 아니라 목록 조회(index)에 search 필터를 얹은 것이다.
  * 비밀글(is_secret)·블라인드(status=blinded) 게시글은 목록/검색 응답에서 본문 요약이

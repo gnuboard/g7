@@ -1,4 +1,4 @@
-feature: 사용자 화면 이미지 자리의 썸네일 규격 적용 — 장바구니 항목, 게시판 카드형 목록, 상품 상세 (#869)
+feature: 사용자 화면 이미지 자리의 썸네일 규격 적용 — 장바구니 항목, 게시판 카드형 목록, 상품 상세
 
 description: |
   업로드 이미지는 2000px 원본이 64~80px 장바구니 칸이나 카드 목록에 그대로 내려갔다. 레이아웃의 `<img>` 가 표시 크기에
@@ -11,7 +11,7 @@ description: |
   - 상품 상세 리뷰 탭 80px 사진 칸: sm
   - 리뷰 확대 창의 큰 사진: 규격 없이 원본, 레이아웃 주석에 면제 사유(`thumb-exempt:`)
   - 상품 상세 메인 갤러리: ProductImageViewer 가 규격을 고르므로 레이아웃은 원 배열을 그대로 넘긴다
-  - 공개 자산 디스크(CDN) 행(#878): `download_url` 은 직접 주소라 규격이 붙지 않는다. 리뷰 탭 사진 칸·카테고리 배너(lg)는
+  - 공개 자산 디스크(CDN) 행: `download_url` 은 직접 주소라 규격이 붙지 않는다. 리뷰 탭 사진 칸·카테고리 배너(lg)는
     `preview_url`(항상 API 서빙 주소)을 먼저 쓰고, 그 필드가 없는 예전 응답은 `download_url` 로 돌아간다. 확대 창은 원본
   - 반응 아이콘(글·댓글·마이페이지 반응 목록): object-contain 으로 모양을 보이는 자리라 자르기 규격(xs)을 붙이지 않고
     면제 사유를 남긴다(정사각이 아닌 아이콘의 양 끝이 잘린다)
@@ -32,7 +32,7 @@ effects:
   - main_gallery_receives_unsized_images
   - reaction_icon_keeps_original_shape
   - collapsed_preview_hides_images_over_unlayered_rules
-  - direct_url_row_requests_thumbnail_through_preview_url   # 공개 자산 디스크(CDN) 행은 preview_url(API)에 규격을 건다(#878)
+  - direct_url_row_requests_thumbnail_through_preview_url   # 공개 자산 디스크(CDN) 행은 preview_url(API)에 규격을 건다
 
 test_files:
   - templates/_bundled/sirsoft-basic/__tests__/layouts/thumbnail-preset-layouts.test.tsx

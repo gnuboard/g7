@@ -848,7 +848,7 @@ return [
         'login_handoff' => [
             'code_required' => 'The sign-in handoff code is missing. Please sign in again.',
         ],
-        // Sign-in password change step (#736)
+        // Sign-in password change step
         'password_change' => [
             'challenge_required' => 'Password change step is missing. Please sign in again.',
             'challenge_invalid' => 'Password change step is not valid.',
@@ -944,7 +944,7 @@ return [
 
     // Settings validation messages
     'settings' => [
-        // 본문 콘텐츠 (#883)
+        // 본문 콘텐츠
         'embed_provider_invalid' => 'External video service #:index has an invalid format.',
         'embed_provider_too_many' => 'You can add up to :max external video services.',
         'embed_provider_id_duplicate' => 'Service #:index identifier (:id) duplicates a built-in service or another entry.',
@@ -1284,7 +1284,7 @@ return [
         'file_delegation_accel_prefix_required' => 'An internal location prefix is required when nginx (X-Accel-Redirect) is selected.',
         'file_delegation_accel_prefix_format' => 'The internal location prefix must start and end with / (e.g. /_g7_sendfile/) and may only contain letters, digits, ., _ and -.',
 
-        // Image processing engine, image thumbnails (#869)
+        // Image processing engine, image thumbnails
         'image_driver_invalid' => 'Please select a valid image processing engine.',
         'thumbnail_presets_array' => 'The thumbnail preset table is not in a valid format.',
         'thumbnail_presets_max' => 'You can have at most :max thumbnail presets (including built-in and extension presets).',
@@ -1332,7 +1332,7 @@ return [
         'privacy_dormant_notice_days_min' => 'The advance notice period must be at least 1 day.',
         'privacy_dormant_notice_days_max' => 'The advance notice period may not be greater than 365 days.',
         'privacy_dormant_notice_days_lt_dormant_days' => 'The advance notice period must be shorter than the dormancy period. If it is equal or longer, the notice and the transition happen on the same day, leaving no advance notice at all.',
-        // Password policy (#736)
+        // Password policy
         'password_policy_boolean' => 'The :attribute must be on or off.',
         'password_policy_integer' => 'The :attribute must be an integer.',
         'password_policy_min' => 'The :attribute must be at least :min.',
@@ -1449,10 +1449,10 @@ return [
     'summary_more_errors' => '(and :count more errors)',
 
     'attributes' => [
-        // 회원 활동 기록 기간 조회 (7.2.1, #952)
+        // 회원 활동 기록 기간 조회 (7.2.1)
         'date_from' => 'start date',
         'date_to' => 'end date',
-        // 환경설정 「본문 콘텐츠」 저장 항목 (#883)
+        // 환경설정 「본문 콘텐츠」 저장 항목
         'content_settings' => 'content settings',
         'content_allow_figure_caption' => 'allow image captions',
         'content_allow_uploaded_video' => 'allow video uploads',
@@ -1462,7 +1462,7 @@ return [
         'content_embed_custom_providers' => 'custom external video services',
         'content_custom_tags' => 'additional allowed tags',
         'content_media_url_ttl_minutes' => 'content media URL lifetime',
-        // 외부 영상 서비스 예시 주소 확인 (#883)
+        // 외부 영상 서비스 예시 주소 확인
         'embed_provider' => 'external video service',
         'embed_provider_url_patterns' => 'URL formats',
         'embed_provider_player_url' => 'player URL',
@@ -1765,7 +1765,7 @@ return [
         'private_attachment_disk' => 'private attachment storage',
         'file_delegation' => 'web server file delegation',
         'file_delegation_accel_prefix' => 'internal location prefix',
-        // Image processing engine, image thumbnails (#869)
+        // Image processing engine, image thumbnails
         'image_driver' => 'image processing engine',
         'thumbnail_enabled' => 'image thumbnails',
         'thumbnail_prune_enabled' => 'automatic thumbnail cleanup',

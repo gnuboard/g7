@@ -431,7 +431,7 @@ class OrderReturnService
             } catch (OrderClaimException $e) {
                 // 접수는 이미 커밋됐고 접수 훅도 나갔다. 자동 승인만 실패했으면(접수 직후 다른 요청이
                 // 상태를 바꾼 경우 등) 그 전이만 건너뛰고 접수를 마친다 — 예외를 그대로 올리면 신청서는
-                // 남아 있는데 고객은 실패 응답을 받는다(교환과 동형 — #599 validate P2 #20).
+                // 남아 있는데 고객은 실패 응답을 받는다(교환과 동형).
                 Log::info('[claim.return] 청구 0원 자동 승인 건너뜀 — 신청 상태로 접수', [
                     'return_number' => $orderReturn->return_number,
                     'reason' => $e->getMessageKey(),
@@ -457,7 +457,7 @@ class OrderReturnService
     protected function shouldAutoApproveZeroCharge(OrderReturn $return): bool
     {
         // 정수 절사로 비교하면 소수 통화의 0.5 청구가 0 으로 읽혀 청구가 남은 채 자동 승인된다
-        // (교환과 같은 float 비교 — #599 validate P2 #5).
+        // (교환과 같은 float 비교).
         if ((float) $return->total_charge_amount > 0) {
             return false;
         }
@@ -822,11 +822,11 @@ class OrderReturnService
 
         // 상품 단위 전이의 before 훅 — 잠금·쓰기 전이라 리스너가 던지면 어떤 행도 옮겨지지 않는다.
         // 상품 단위 전용 필터는 두지 않는다(교환과 같은 판단 — 대상·목표는 게이트가 잰 값). 자유 입력인
-        // 반려 사유만 아래에서 헤더 경로와 같은 `filter_status_change_data` 를 거친다(#599 후속).
+        // 반려 사유만 아래에서 헤더 경로와 같은 `filter_status_change_data` 를 거친다.
         HookManager::doAction('sirsoft-ecommerce.claim.return.before_option_status_change', $return, $specs, $target->value, $context);
 
         // 반려 사유는 신청서 한 칸(`reject_reason`)에 남는 자유 입력이라 헤더 경로와 **같은 필터**를 거친다
-        // (#599 후속 운영 결정) — 어느 칸에서 적었느냐에 따라 확장이 손댈 수 있는지가 갈리면 금칙어 필터 같은
+        // (후속 운영 결정) — 어느 칸에서 적었느냐에 따라 확장이 손댈 수 있는지가 갈리면 금칙어 필터 같은
         // 확장이 상품 칸으로 우회된다. 받아들이는 키도 같다(처리자·목표 상태는 되돌린다).
         if ($rejectReason !== '') {
             $filterInput = ['reject_reason' => $rejectReason] + $context;
@@ -848,7 +848,7 @@ class OrderReturnService
 
         // 신청서 행을 잠그고 **잠금 안에서** 상품 행을 다시 읽어 판정한다. 헤더 동기화도 같은
         // 트랜잭션 안에서 한다 — 상품 전이를 커밋한 뒤 잠금 없이 헤더를 옮기면 그 사이에 들어온
-        // 다른 전이와 헤더 판정이 겹친다(#599 validate P2 #19). 훅은 커밋 뒤에 나간다(#7).
+        // 다른 전이와 헤더 판정이 겹친다(validate P2 #19). 훅은 커밋 뒤에 나간다(#7).
         $fresh = DB::transaction(function () use ($return, $itemIds, $quantities, $target, $processedBy, $rejectReason, $context, &$succeeded, &$skipped, &$changes, &$split, &$headerBefore, &$headerAfter) {
             $locked = $this->returnRepository->findForUpdate((int) $return->getKey()) ?? $return;
             $headerBefore = $locked->return_status;
@@ -1527,7 +1527,7 @@ class OrderReturnService
             $order->load(['options', 'shippings', 'payment']);
 
             // 대상 필터·직전 상태·접수 여부를 **잠금 안에서 다시 읽은 값**으로 판정한다
-            // (#599 validate P2 #3). 호출부가 들고 온 모델로 거르면, 두 처리자가 각자 완료 전
+            // (validate P2 #3). 호출부가 들고 온 모델로 거르면, 두 처리자가 각자 완료 전
             // 상태를 읽은 뒤 차례로 들어올 때 둘 다 같은 상품을 대상으로 잡아 재고 복구·쿠폰
             // 복원·완료 훅이 두 번 돈다(재고 복구에는 멱등 가드가 없다). 주문 행 잠금이 두 완료를
             // 줄 세우므로, 뒤선 요청은 여기서 이미 끝난 상품을 보고 대상에서 뺀다.
@@ -1570,7 +1570,7 @@ class OrderReturnService
                 if ($orderOption) {
                     // 재고 플래그·적립 회수는 **실제로 반품완료가 된 행**에 적용한다. 부분 수량이면
                     // 완료분이 새 행으로 갈라져 나가고 원 행은 코스에 남으므로, 원 행에 적으면 아직
-                    // 재고를 점유한 행이 "복구됨" 으로 보인다(#599 validate P2 #4).
+                    // 재고를 점유한 행이 "복구됨" 으로 보인다(validate P2 #4).
                     $returnedOption = $this->markOrderOptionReturned($orderOption, (int) $item->return_quantity);
 
                     if ($options->shouldRestoreStock($item->id)) {
@@ -2169,7 +2169,7 @@ class OrderReturnService
      *
      * 접수 뒤의 재계산(완료·수동 접수·완료 미리보기·신청 수정의 동결 스냅샷)이 고객이 고른
      * 우선순위를 그대로 이어받게 한다. 예전에는 저장 컬럼이 없어 이 경로들이 PG 우선으로 고정돼,
-     * 마일리지 우선을 고른 신청서의 환불신청서가 PG 환불로 먼저 채워졌다(#599 validate P2-A 후속).
+     * 마일리지 우선을 고른 신청서의 환불신청서가 PG 환불로 먼저 채워졌다(A 후속).
      *
      * @param  OrderReturn  $claim  신청서
      * @return RefundPriorityEnum 환불 우선순위
@@ -2190,7 +2190,7 @@ class OrderReturnService
      *
      * 판정은 클레임 서비스 공용 헬퍼(`CurrencyConversionService::resolveOrderBaseCurrency()`)가
      * 소유한다 — 스냅샷 → 설정 기본 통화. 예전의 `orders.currency` 폴백은 **결제 통화**라 기본
-     * 통화와 다른 주문에서 신청서 통화가 틀렸다(#599 validate P2 #14).
+     * 통화와 다른 주문에서 신청서 통화가 틀렸다(validate P2 #14).
      *
      * @param  Order  $order  주문
      * @return string 기준통화 코드
@@ -2557,7 +2557,7 @@ class OrderReturnService
      *
      * 부분 수량이면 `changeStatusWithQuantity()` 가 완료분을 **새 행(split)** 으로 갈라 반품완료로
      * 옮기고 원 행은 잔여로 코스에 남긴다. 호출부는 재고 플래그·적립 회수를 그 새 행에 적용해야
-     * 한다(#599 validate P2 #4).
+     * 한다(validate P2 #4).
      *
      * @param  OrderOption  $orderOption  원 주문옵션
      * @param  int  $quantity  완료 수량
@@ -2830,7 +2830,7 @@ class OrderReturnService
      * 그 결과가 쿠폰이다. 순차 부분반품에서 상품을 전부 반품해도 재계산 소계가 원 주문
      * 그대로라 **쿠폰 조건이 한 번도 깨지지 않고**, `detectRestoredCoupons()` 의
      * `array_diff(원 스냅샷, 재계산 적용)` 이 항상 비어 복원 훅이 발화하지 않는다.
-     * 고객은 전액 환불받고도 쿠폰을 잃는다(#599 실측 — 주문 517 에서
+     * 고객은 전액 환불받고도 쿠폰을 잃는다(주문 517 에서
      * 6행 전건 반품·환불 5건 완료 후에도 쿠폰 3장이 끝까지 `used` 였다).
      *
      * **공용 경로를 고치지 않는 이유**: `buildRecalcInput()` 은 취소·환불·반품·교환이 모두
@@ -3238,7 +3238,7 @@ class OrderReturnService
         return DB::transaction(function () use ($return, $payload, $operator) {
             $locked = $this->returnRepository->findForUpdate($return->id) ?? $return;
 
-            // 수정 가능 여부는 **잠금 안에서 다시 읽은 상태**로 판정한다(#599 validate P2 #8).
+            // 수정 가능 여부는 **잠금 안에서 다시 읽은 상태**로 판정한다(validate P2 #8).
             // 호출부 모델로 판정하면 그 사이 승인된 신청서의 사유·청구가 수정된다.
             if (! $locked->return_status->isWithdrawable()) {
                 throw OrderClaimException::notEditable();

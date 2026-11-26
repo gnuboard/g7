@@ -47,7 +47,7 @@ class ExtensionSharedRecordsResolverTest extends TestCase
         $this->assertArrayNotHasKey('menus', $byTable->all());
         $this->assertSame(5, $byTable['notification_definitions']['count']);
         $this->assertSame(8, $byTable['identity_policies']['count']);
-        // 본인인증 메시지는 7.1.0 부터 알림 정의에 함께 집계된다 — 별도 표 항목이 없다(#699).
+        // 본인인증 메시지는 7.1.0 부터 알림 정의에 함께 집계된다 — 별도 표 항목이 없다.
         $this->assertArrayNotHasKey('identity_message_definitions', $byTable->all());
     }
 

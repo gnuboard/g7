@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * 메뉴 목록 정렬·검색 회귀 테스트 (#492 D-22 · D-23).
+ * 메뉴 목록 정렬·검색 회귀 테스트.
  *
  * 두 결함이 함께 있었다.
  *

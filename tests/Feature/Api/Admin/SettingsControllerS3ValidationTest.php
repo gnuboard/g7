@@ -13,7 +13,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * 드라이버 탭 S3 검증 테스트 (공개 #99 / 내부 #563, A4·A7)
+ * 드라이버 탭 S3 검증 테스트 (공개 #99)
  *
  * s3_region 형식 검증 완화(리전 하드코딩 제거), s3_endpoint/s3_use_path_style
  * 신규 키 검증, 드라이버 가용성 서버 게이트를 검증합니다.

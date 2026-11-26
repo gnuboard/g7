@@ -226,7 +226,7 @@
         </div>
       </div>
     </div>
-    <!-- 내보내기 파일 보관 기간(#787) — 생성 완료 후 N일이 지나면 파일을 지우고 작업을 「만료」로 바꾼다. 작업 기록과 다운로드 이력은 남는다.
+    <!-- 내보내기 파일 보관 기간 — 생성 완료 후 N일이 지나면 파일을 지우고 작업을 「만료」로 바꾼다. 작업 기록과 다운로드 이력은 남는다.
          범위는 config limits(1~30)가 단일 출처이고 서버 검증이 같은 값으로 422 를 낸다 -->
     <div data-ref="export_retention_card" class="ecommerce-admin-card">
       <h3 data-ref="export_retention_title" class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.settings.basic_info.export_retention.title</h3>
@@ -252,7 +252,7 @@
           </default>
         </extension-point>
       </div>
-      <!-- 문의 작성자 표시 이름(#490). 리뷰 설정 탭의 같은 칸과 배선이 같다(방식 + 고정일 때만 종류). 값은 폼(`form.display_name.inquiry`)에
+      <!-- 문의 작성자 표시 이름. 리뷰 설정 탭의 같은 칸과 배선이 같다(방식 + 고정일 때만 종류). 값은 폼(`form.display_name.inquiry`)에
            담겨 하단 [저장]으로 나가고, 종류 목록과 지금 적용되는 값은 설정 응답의 읽기 전용 `display_name_options` 에서 읽는다.
            서버가 그 키를 주지 않으면 그리지 않는다. -->
       <div data-ref="inquiry_display_name_field" data-if="{{!!_local.form?.display_name_options}}" class="ecommerce:mt-4 ecommerce:pt-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700">

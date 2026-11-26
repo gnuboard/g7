@@ -1,4 +1,4 @@
-// e2e:allow 시험 기대값만 #399 의 의미 클래스(화면 모양 같음)에 맞춘 단위 시험 수정 — 화면 변경 없음
+// e2e:allow 시험 기대값만 의미 클래스(화면 모양 같음)에 맞춘 단위 시험 수정 — 화면 변경 없음
 /**
  * @file pluginSettingsSticky.test.tsx
  * @description sirsoft-pay_nicepayments 플러그인 환경설정 화면 하단 저장 버튼 sticky 고정 테스트
@@ -91,7 +91,7 @@ describe('plugin_settings 하단 버튼 sticky 고정', () => {
     expect(rootClassName).toContain('p-4');
     // 화면 폭 분기는 엔진 responsive 로 쓴다 — 640~1023px 은 p-6, 1024px 이상은 p-8
     const responsive = (root?.responsive ?? {}) as Record<string, Record<string, unknown>>;
-    // 1.2.1(#399)부터 640~1023 구간은 같은 모양의 의미 클래스(p-6·min-h-screen·bg-gray-50·다크 gray-900)를 쓴다
+    // 1.2.1부터 640~1023 구간은 같은 모양의 의미 클래스(p-6·min-h-screen·bg-gray-50·다크 gray-900)를 쓴다
     const tabletClasses = classNameOf(responsive['640-1023']).split(' ');
     expect(tabletClasses.includes('paynicepayments:p-6') || tabletClasses.includes('pay-nicepayments-admin-page-content')).toBe(true);
     if (tabletClasses.includes('pay-nicepayments-admin-page-content')) {

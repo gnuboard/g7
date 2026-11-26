@@ -1,5 +1,5 @@
 /**
- * 관리자 게시판 목록 역할 페이로드 프루닝 — 목록이 역할·소속 회원 명단을 싣지 않는지 (#518 / 공개 #76).
+ * 관리자 게시판 목록 역할 페이로드 프루닝 — 목록이 역할·소속 회원 명단을 싣지 않는지 (공개 #76).
  *
  * 결함: 목록 Collection 이 행마다 `Role::whereIn()->with('users')` 를 돌려 N+1 을 만들고,
  *   매니저·스텝 역할에 소속된 **모든 사용자의 uuid·이름·이메일**을 응답에 실었다. 화면은
@@ -28,7 +28,7 @@ const ROLE_KEYS = [
   'board_step_ids',
 ];
 
-test.describe('관리자 게시판 목록 역할 페이로드 (#518)', () => {
+test.describe('관리자 게시판 목록 역할 페이로드', () => {
   // @scenario endpoint=admin_list
   // @effects admin_list_omits_role_member_payload
   test('목록 응답에 역할 배열과 역할 ID 목록이 없다', async ({ page, boardManageToken }) => {

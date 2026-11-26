@@ -30,7 +30,7 @@ effects:
   - action_with_own_handler_keeps_its_behaviour
   - modal_has_close_and_go_buttons_and_lives_in_base_layout
   - go_button_closes_modal_and_navigates_with_current_address
-  - go_button_closes_every_open_modal   # 다른 창 위에서 떠도 밑의 창까지 모두 닫고 이동(#490 D-A3, closeModal params.all)
+  - go_button_closes_every_open_modal   # 다른 창 위에서 떠도 밑의 창까지 모두 닫고 이동(closeModal params.all)
   - editor_has_state_samples_for_screen_and_modal
   - admin_template_has_no_guide_logic
 

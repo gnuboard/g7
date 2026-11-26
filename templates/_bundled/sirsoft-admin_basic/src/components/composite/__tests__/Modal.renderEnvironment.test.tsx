@@ -5,7 +5,7 @@
  * 미리보기에서 버튼 액션이 바인딩됐다. 받은 렌더 환경을 먼저 쓴다.
  *
  * 편집기 경로: 엔진이 `__componentContext.componentPath` 로 Modal 노드 경로를 실어 주면 footer 단추마다
- * `${경로}.props.footer.${i}` 를 넘겨 편집기가 고르게 한다(#869, 편집기 `EDITOR_PROP_SLOTS`). 경로가 없으면
+ * `${경로}.props.footer.${i}` 를 넘겨 편집기가 고르게 한다(편집기 `EDITOR_PROP_SLOTS`). 경로가 없으면
  * (편집기 밖) 넘기지 않고, titlePrefix/titleSuffix 는 편집기 문법에 없어 넘기지 않는다.
  */
 

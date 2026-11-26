@@ -18,7 +18,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 비밀번호 만료 처리 커맨드 테스트 (#736 D4·D5·D25·A7·A8)
+ * 비밀번호 만료 처리 커맨드 테스트
  *
  * `auth:process-password-expiry` 가 사전 안내 창·만료 경계를 지키고, 주기마다 한 번만 처리하며(표지),
  * '변경해야 로그인' 모드에서만 로그인을 해제하고, 상한·순서·dry-run·락을 지키는지 본다.

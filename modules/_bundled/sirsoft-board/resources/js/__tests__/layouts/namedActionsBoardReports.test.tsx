@@ -86,7 +86,7 @@ describe('게시판 신고현황 named_actions 검증', () => {
     });
 });
 
-describe('검색어 상태 스코프 정합 검증 (#413-72 회귀)', () => {
+describe('검색어 상태 스코프 정합 검증 (72 회귀)', () => {
     /**
      * 검색 입력(Select/Input)의 setState 쓰기 스코프가, 검색 실행 액션 및
      * value 바인딩의 읽기 스코프(_local)와 일치해야 한다.

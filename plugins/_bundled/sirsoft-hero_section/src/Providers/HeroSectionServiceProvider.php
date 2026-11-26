@@ -53,7 +53,7 @@ class HeroSectionServiceProvider extends BasePluginServiceProvider
     ];
 
     /**
-     * 카테고리별 스토리지를 주입받는 서비스 (클래스 ⇒ 카테고리) — #878
+     * 카테고리별 스토리지를 주입받는 서비스 (클래스 ⇒ 카테고리)
      *
      * 이미지 서비스는 `getStorageDiskFor('images')` 가 정한 디스크(공개 자산 디스크 설정 반영)를 주입받는다.
      * 주입 스토리지는 「지금 업로드가 갈 디스크」이고 `put()`·`getDisk()` 행 기록이 그 디스크를 따른다. 이미 올린

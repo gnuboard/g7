@@ -59,7 +59,7 @@
             ]
         },
         {
-            "comment": "가상계좌 안내는 이 조각만 그린다(#639 에서 주입 스크립트를 옮김). id(kcp-mp-vbank-row)는 영수증 행(kcp-mp-receipt-row)처럼 고정해 화면 점검이 블록 수를 셀 수 있게 한다.\n         취소된 주문엔 입금 계좌를 보이지 않는다(취소 뒤 입금을 부르지 않게). 자동 취소 경고는 입금 전에만.",
+            "comment": "가상계좌 안내는 이 조각만 그린다(주입 스크립트를 옮김). id(kcp-mp-vbank-row)는 영수증 행(kcp-mp-receipt-row)처럼 고정해 화면 점검이 블록 수를 셀 수 있게 한다.\n         취소된 주문엔 입금 계좌를 보이지 않는다(취소 뒤 입금을 부르지 않게). 자동 취소 경고는 입금 전에만.",
             "type": "basic",
             "name": "Div",
             "if": "{{order.data.payment?.pg_provider === 'nhnkcp' && order.data.payment?.vbank_name && order.data.payment?.payment_status !== 'cancelled' && order.data.order_status !== 'cancelled'}}",

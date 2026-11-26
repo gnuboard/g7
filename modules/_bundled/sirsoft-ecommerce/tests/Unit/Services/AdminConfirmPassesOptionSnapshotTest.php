@@ -8,7 +8,7 @@ use ReflectionClass;
 use Tests\PureTestCase;
 
 /**
- * 관리자 구매확정의 활동 로그 전/후 표 (S2-D7 · #599 통합실측 세션2)
+ * 관리자 구매확정의 활동 로그 전/후 표 (S2-D7)
  *
  * 구매확정은 두 경로로 일어난다. 둘 다 같은 훅
  * (`sirsoft-ecommerce.order-option.after_confirm`)을 발화하고,

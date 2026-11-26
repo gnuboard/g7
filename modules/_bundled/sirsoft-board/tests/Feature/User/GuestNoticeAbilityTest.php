@@ -12,7 +12,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 비회원 글쓰기 화면의 공지 옵션 노출 회귀 테스트 (#703)
+ * 비회원 글쓰기 화면의 공지 옵션 노출 회귀 테스트
  *
  * 회귀 배경: guest 역할에 공지 등록 권한(posts.write-notice)을 주면 글쓰기 화면이 비회원에게도 공지
  * 체크박스를 보였다. 그러나 서버는 비회원의 공지 지정을 항상 거부해(요청 검증·컨트롤러 판정 모두

@@ -6,7 +6,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use Modules\Sirsoft\Ecommerce\Privacy\OrderRetentionHandler;
 
 /**
- * 이커머스 개인정보 보유기간 기여 리스너 (이슈 #636)
+ * 이커머스 개인정보 보유기간 기여 리스너
  *
  * 코어가 소유한 두 개인정보 필터에 이커머스 몫을 더합니다.
  *

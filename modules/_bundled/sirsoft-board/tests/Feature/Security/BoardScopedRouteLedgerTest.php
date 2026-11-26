@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 게시판 스코프 강제 지점 원장 감사 + 래칫 (#789 §6.4)
+ * 게시판 스코프 강제 지점 원장 감사 + 래칫
  *
  * 스코프 메타(`resource_route_key`·`owner_key`)가 있는 권한을 거는 라우트가 그 모델을 바인딩하지 않으면
  * 미들웨어의 스코프 검사가 돌지 않는다. 그런 라우트는 원장(`BoardScopeLedgerListener`)에 등록하고,

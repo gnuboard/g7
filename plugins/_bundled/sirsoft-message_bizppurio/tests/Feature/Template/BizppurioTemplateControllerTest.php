@@ -15,7 +15,7 @@ use Plugins\Sirsoft\MessageBizppurio\Models\BizppurioTemplate;
 use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
- * 비즈뿌리오 알림 템플릿 라이프사이클 엔드포인트 테스트 (#597 §3.2).
+ * 비즈뿌리오 알림 템플릿 라이프사이클 엔드포인트 테스트.
  *
  * 목록/맵/상세/생성/수정/발송설정/검수신청/취소/동기화/삭제 전 경로의 권한 게이트·
  * FormRequest 매트릭스(유형별 조건부 필수)·상태 가드(422)·kapi 사유 표면화를 검증한다.
@@ -769,7 +769,7 @@ class BizppurioTemplateControllerTest extends PluginTestCase
     }
 
     /**
-     * 검수자 전달 의견(comment)은 선택 입력이며 kapi request 로만 전달된다 (#597 §18.7 — 제품 결정 2026-08-23).
+     * 검수자 전달 의견(comment)은 선택 입력이며 kapi request 로만 전달된다 (제품 결정 2026-08-23).
      *
      * 500자 초과는 FormRequest 가 kapi 호출 전에 422 로 끊고(행 상태 불변), 유효한 의견은
      * `template/request` 의 comment 로 원문 그대로 실린다.

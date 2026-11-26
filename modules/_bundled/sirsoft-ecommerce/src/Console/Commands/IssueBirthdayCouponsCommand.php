@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Services\BirthdayFieldResolver;
 use Modules\Sirsoft\Ecommerce\Services\CouponAutoIssueService;
 
 /**
- * 생일 쿠폰 발급 커맨드 (#952)
+ * 생일 쿠폰 발급 커맨드
  *
  * 쇼핑몰 환경설정 쿠폰 탭에서 지정한 「생일로 쓸 회원 항목」의 월·일이 오늘(사이트 시간대)인 활성 회원에게 생일 쿠폰을
  * 해마다 1회 발급한다. 2월 29일생은 평년이면 2월 28일에 받는다. 같은 날 다시 돌려도 발급 키(`birthday:YYYY`) 유니크로

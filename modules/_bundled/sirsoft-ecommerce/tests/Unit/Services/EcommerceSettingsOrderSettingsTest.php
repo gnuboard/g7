@@ -421,7 +421,7 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     /**
      * 플러그인 결제수단이 defaults.core_payment_method 를 선언하면 병합 결과에 보존되어야 한다.
      *
-     * 배경(#454): toss_* 등 플러그인 결제수단은 코어 PaymentMethodEnum 이 거부하므로, 프론트가
+     * 배경: toss_* 등 플러그인 결제수단은 코어 PaymentMethodEnum 이 거부하므로, 프론트가
      * 주문 생성 시 이 core 값을 payment_method 로 전송해야 한다. 병합이 이 필드를 떨구면
      * 프론트가 번역 근거를 잃어 원시 id 를 전송 → 422. _cached_* 처럼 provider-agnostic 하게 보존한다.
      *
@@ -512,7 +512,7 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     }
 
     /**
-     * 간편결제 별칭이 선언한 결제 결과 간편결제사 이름(defaults.embedded_pg_provider)이 병합 결과에 보존되어야 한다 (#933).
+     * 간편결제 별칭이 선언한 결제 결과 간편결제사 이름(defaults.embedded_pg_provider)이 병합 결과에 보존되어야 한다.
      *
      * 토스 간편결제는 결제수단 칸이 코어 값(card)으로 저장되므로, 관리자 주문 목록 결제수단 필터가 이 값으로만 간편결제 주문을 가른다.
      *
@@ -537,7 +537,7 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     }
 
     /**
-     * 저장(snapshot) 후에도 간편결제 별칭의 embedded_pg_provider 가 보존되어야 한다 (#933).
+     * 저장(snapshot) 후에도 간편결제 별칭의 embedded_pg_provider 가 보존되어야 한다.
      *
      * @scenario settings_source=saved, catalog_origin=plugin
      *
@@ -721,7 +721,7 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
                     '_cached_source' => 'plugin:sirsoft-tosspayments',
                 ],
             ],
-            // 무통장입금은 사용 중인 입금 계좌가 있어야 공개 목록에 남는다(#703) — 고아 판정과 무관한 전제
+            // 무통장입금은 사용 중인 입금 계좌가 있어야 공개 목록에 남는다 — 고아 판정과 무관한 전제
             'bank_accounts' => [
                 ['bank_code' => '004', 'account_number' => '123-456', 'account_holder' => '테스트상점', 'is_active' => true, 'is_default' => true],
             ],

@@ -207,7 +207,7 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
             'defaults' => [
                 // 간편결제는 나이스페이먼츠 결제창을 통해서만 처리되므로 PG 를 자기 자신으로 고정한다.
                 // null 로 두면 코어가 PG 없는 결제수단으로 오인해 결제 실패 주문에 관리자 알림이
-                // 발송되고 임시주문이 삭제되어 재결제가 막힌다(#475).
+                // 발송되고 임시주문이 삭제되어 재결제가 막힌다.
                 'pg_provider' => self::PG_PROVIDER_ID,
                 'pg_locked' => true,
                 'needs_pg' => true,

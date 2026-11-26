@@ -1,6 +1,6 @@
 /**
  * @file redirectToLoginWithReturn.test.ts
- * @description 비로그인 게시판/비밀글 진입 → /login?redirect=현재경로 핸들러 단위 검증 (이슈 #413 item 28)
+ * @description 비로그인 게시판/비밀글 진입 → /login?redirect=현재경로 핸들러 단위 검증 (item 28)
  *
  * 핸들러는 window.location(pathname+search)을 직접 읽어 redirect 를 보존하고,
  * G7Core.dispatch 로 navigate 를 발화한다. errorHandling context 에 route/query 가 없는
@@ -31,7 +31,7 @@ function mockLocation(pathname: string, search = ''): void {
   });
 }
 
-describe('redirectToLoginWithReturnHandler — /login?redirect=현재경로 (이슈 #413 item 28)', () => {
+describe('redirectToLoginWithReturnHandler — /login?redirect=현재경로 (item 28)', () => {
   let dispatchSpy: ReturnType<typeof vi.fn>;
   const originalLocation = window.location;
 
@@ -102,7 +102,7 @@ describe('redirectToLoginWithReturnHandler — /login?redirect=현재경로 (이
  * 짝 레이아웃 테스트(`board-401-error-handling.test.tsx` · `board-secret-post-login-redirect.test.tsx`)가
  * 고정하고, 이 블록은 **각 진입 지점의 실제 경로에서 redirect 보존이 성립하는지**를 조합 단위로 고정한다.
  */
-describe('진입 지점 × query 유무 cross product — redirect 보존 (이슈 #413 item 28)', () => {
+describe('진입 지점 × query 유무 cross product — redirect 보존 (item 28)', () => {
   let dispatchSpy: ReturnType<typeof vi.fn>;
   const originalLocation = window.location;
 

@@ -515,7 +515,7 @@ class LayoutPermissionFilterTest extends TestCase
     }
 
     /**
-     * 이름 붙은 defines(`<define name="…">` — 레이아웃이 `_defines.이름` 으로 읽는 형태)는 키를 잃지 않는다. 종전에는 필터가 결과를 목록으로 다시 쌓아(`$filtered[] = …`) 이름이 사라졌고, 화면의 `_defines.countryList` 가 undefined 가 되어 국가 선택지·계정 상태 체크박스가 비었다 (#705 브라우저 실측 회귀). 값이 데이터 목록·스칼라 맵인 define 은 필터 대상이 아니다.
+     * 이름 붙은 defines(`<define name="…">` — 레이아웃이 `_defines.이름` 으로 읽는 형태)는 키를 잃지 않는다. 종전에는 필터가 결과를 목록으로 다시 쌓아(`$filtered[] = …`) 이름이 사라졌고, 화면의 `_defines.countryList` 가 undefined 가 되어 국가 선택지·계정 상태 체크박스가 비었다. 값이 데이터 목록·스칼라 맵인 define 은 필터 대상이 아니다.
      *
      * @scenario case=define_filter
      *

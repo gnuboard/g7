@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * LanguagePackService::list() 의 드리프트 파생 상태(files_missing) 검증 (이슈 #496 결손 2).
+ * LanguagePackService::list() 의 드리프트 파생 상태(files_missing) 검증 (결손 2).
  *
  * DB 에 active 로 기록됐으나 설치본 디렉토리(lang-packs/{id})가 부재한 행은
  * 런타임에 조용히 base locale 로 폴백한다. list() 가 이를 files_missing=true 로 표면화해야 한다.

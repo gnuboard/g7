@@ -1,6 +1,6 @@
 /**
  * @file admin-template-layout-version-source.test.tsx
- * @description 레이아웃 편집 화면의 [버전 히스토리]·[확장 버전 히스토리] 창 — 판마다 어디서 왔는지 한 줄 (#888)
+ * @description 레이아웃 편집 화면의 [버전 히스토리]·[확장 버전 히스토리] 창 — 판마다 어디서 왔는지 한 줄
  *
  * 확장 업데이트·레이아웃 갱신·「새 판 적용」·업그레이드가 운영자 판을 덮기 직전에 남긴 판과, 병합 결과 판은
  * 서버가 `changes_summary.source`·`before_overwrite` 로 알려 준다. 창은 줄 수 아래에 그 출처를 한 줄로 보여 준다.
@@ -97,7 +97,7 @@ function cardLayout(win: Window): Json {
   };
 }
 
-describe('[버전 히스토리] 창 — 판의 출처 한 줄 (#888)', () => {
+describe('[버전 히스토리] 창 — 판의 출처 한 줄', () => {
   let testUtils: ReturnType<typeof createLayoutTest> | undefined;
 
   afterEach(() => {
@@ -193,7 +193,7 @@ describe('[버전 히스토리] 창 — 판의 출처 한 줄 (#888)', () => {
 
     /**
      * 사람 없이 동기화가 남긴 판(출처 있음)은 저장자를 「시스템」으로, 사람이 저장한 판은 그 이름으로 보인다.
-     * 출처도 이름도 없는 옛 판에는 저장자 줄이 없다 — 대체 글자(「admin」)를 지어내지 않는다 (#888).
+     * 출처도 이름도 없는 옛 판에는 저장자 줄이 없다 — 대체 글자(「admin」)를 지어내지 않는다.
      *
      * @scenario case=saved_by_system
      * @effects version_row_saved_by_system_for_sync_rows
@@ -226,7 +226,7 @@ describe('[버전 히스토리] 창 — 판의 출처 한 줄 (#888)', () => {
      */
     it('출처 줄은 밝은·어두운 글자색을 짝으로 갖는다', () => {
       const [line] = collect(win.modal, (n) => typeof n.props?.['data-testid'] === 'string' && n.props['data-testid'].startsWith(win.testIdPrefix));
-      // #399 R-1 — 인라인 짝 대신 의미 클래스(`text-muted`)를 쓰면 그 정의(semantic.css @apply)를 펼쳐 같은 짝을 확인한다
+      // 인라인 짝 대신 의미 클래스(`text-muted`)를 쓰면 그 정의(semantic.css @apply)를 펼쳐 같은 짝을 확인한다
       const classes = expandSemanticTokens(String(line?.props?.className ?? ''));
 
       expect(classes.some((c) => /^text-(gray|slate)-\d+$/.test(c))).toBe(true);

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 조각 식별자 `fragment_key` 컬럼을 추가합니다 (#476 C13).
+ * 조각 식별자 `fragment_key` 컬럼을 추가합니다.
  *
  * 종전 고유 조합 (template, type, target_name, source_type, source_identifier) 은 **같은 확장이 같은 대상에
  * 조각 둘**을 보내면 뒤가 앞을 덮었다 — `sirsoft-ecommerce` 의 `admin-user-currency-field` 가
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * 고유 키는 다음 마이그레이션(`2026_09_29_000001_add_override_target_key_to_template_layout_extensions_table`)이
  * 건다 — 템플릿 오버라이드의 대상 확장(`override_target`)까지 넣어야 7.0.x 의 오버라이드 행이 백필 뒤 충돌하지
- * 않는다(여기서 걸면 같은 확장점을 두 확장에 대해 오버라이드한 설치의 코어 업그레이드가 중단된다, #703).
+ * 않는다(여기서 걸면 같은 확장점을 두 확장에 대해 오버라이드한 설치의 코어 업그레이드가 중단된다).
  */
 return new class extends Migration
 {

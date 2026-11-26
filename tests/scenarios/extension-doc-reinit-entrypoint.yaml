@@ -1,4 +1,4 @@
-feature: 확장 문서 생성기의 재등록 진입점 판정 (#639 ④)
+feature: 확장 문서 생성기의 재등록 진입점 판정
 
 description: |
   로케일을 바꾸면 코어가 ActionDispatcher 를 새로 만들고 `window.__{확장}.initPlugin()` 으로 핸들러를

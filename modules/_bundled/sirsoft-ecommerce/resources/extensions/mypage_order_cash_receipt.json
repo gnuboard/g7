@@ -1,5 +1,5 @@
 {
-    "comment": "유저 주문상세 현금영수증 카드 (W-2 / #454). 템플릿 sirsoft-basic 의 partials/mypage/orders/_payment.json 말단 슬롯에 주입한다. 상태머신 5종: ①무통장 아님/프로바이더 미설정→미렌더 ②입금전→안내 ③입금완료+미발급→발급 버튼 ④발급완료→링크 ⑤재발급 실패→경고(유저에겐 수동 재발급 버튼을 주지 않는다 — 관리자 전용). 발급 POST 는 로드된 주문의 실제 id(order.data.id)를 쓴다.",
+    "comment": "유저 주문상세 현금영수증 카드 (W-2). 템플릿 sirsoft-basic 의 partials/mypage/orders/_payment.json 말단 슬롯에 주입한다. 상태머신 5종: ①무통장 아님/프로바이더 미설정→미렌더 ②입금전→안내 ③입금완료+미발급→발급 버튼 ④발급완료→링크 ⑤재발급 실패→경고(유저에겐 수동 재발급 버튼을 주지 않는다 — 관리자 전용). 발급 POST 는 로드된 주문의 실제 id(order.data.id)를 쓴다.",
     "extension_point": "mypage_order_cash_receipt_slot",
     "mode": "append",
     "priority": 100,

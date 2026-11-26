@@ -1,4 +1,4 @@
-feature: 게시판 권한 스코프 재적용 (#789 §6.2·§6.3 B2~B5·B7~B15·§6.4)
+feature: 게시판 권한 스코프 재적용
 
 description: |
   권한의 스코프 메타(resource_route_key·owner_key)는 라우트가 그 이름의 모델을 바인딩할 때만 미들웨어가

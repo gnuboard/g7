@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 설치 마무리 단계의 캐시 굽기 태스크 회귀 가드 (이슈 #599 후속).
+ * 설치 마무리 단계의 캐시 굽기 태스크 회귀 가드.
  *
  * 회귀: 설치 마무리 태스크 목록에 `config_cache`·`static_publish` 는 있는데
  * **`route_cache` 만 없었다.** 그래서 갓 설치한 사이트는 라우트 캐시가 **빈 채로**

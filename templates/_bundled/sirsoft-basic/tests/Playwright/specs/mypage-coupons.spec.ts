@@ -1,5 +1,5 @@
 /**
- * 마이페이지 쿠폰함 — 카드에 발급 경로·남은 날이 보이고, 빈 목록이면 쿠폰존 링크로 SPA 이동한다 (#952 C)
+ * 마이페이지 쿠폰함 — 카드에 발급 경로·남은 날이 보이고, 빈 목록이면 쿠폰존 링크로 SPA 이동한다
  *
  * 쿠폰함 응답은 page.route 로 고정한다. 서버 계약(쿠폰 블록·상태 필터)은 PHPUnit UserCouponBoxResponseTest.
  *
@@ -59,7 +59,7 @@ const issue = {
   },
 };
 
-test.describe('마이페이지 쿠폰함 (#952)', () => {
+test.describe('마이페이지 쿠폰함', () => {
   // @scenario case=mypage_coupons_browser
   // @effects coupon_box_card_block
   test('카드에 쿠폰명·발급 경로·남은 날이 보인다', async ({ page }) => {

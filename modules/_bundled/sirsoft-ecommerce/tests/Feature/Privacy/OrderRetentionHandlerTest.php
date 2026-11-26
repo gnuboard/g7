@@ -27,7 +27,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 이커머스 종결 주문 개인정보 보유기간 핸들러 테스트 (이슈 #636 S5)
+ * 이커머스 종결 주문 개인정보 보유기간 핸들러 테스트
  *
  * 「종결」 정의(구매확정·취소 + 진행 중 환불 없음, 종결 시각 = 상태 도달 시각과 환불 완료 시각 중
  * 늦은 것), 두 방식(익명화·삭제)의 결과, 미리보기 = 처리 건수, 재실행 멱등, 미종결 주문 제외를

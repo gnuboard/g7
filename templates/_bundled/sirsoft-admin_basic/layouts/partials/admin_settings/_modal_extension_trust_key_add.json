@@ -1,5 +1,5 @@
 {
-    "comment": "제작자 신뢰 키를 추가하는 창(#916, 보안 탭 「확장 신뢰 키」 카드의 [키 추가]가 연다).\n  공개키·서명자 이름·vendor 범위와 **본인 비밀번호**를 함께 받아 전용 API(POST /api/admin/extension-trust-keys)로 곧바로 저장한다 —\n  탭 하단 저장 버튼과 별개다. 키 ID 는 서버가 공개키로 계산하므로 여기서 받지 않는다.\n  비밀번호가 없는 관리자(외부 인증 가입)는 비밀번호 칸이 없고, 서버의 본인인증 요구(428)를 엔진이 받아 확인 창을 띄운 뒤 같은 요청을 다시 보낸다.\n  입력한 비밀번호(_global.trustKeyPassword)는 창을 닫으면 지운다 — 취소·성공은 직접 지우고, 창 머리 닫기·Esc·바깥 클릭은 본문 틀의\n  unmount 에서 지운다(비밀번호 재확인 창 `_modal_password_confirm` 과 같은 규칙). 실패하면 지우지 않아 고쳐 다시 보낼 수 있다.",
+    "comment": "제작자 신뢰 키를 추가하는 창.\n  공개키·서명자 이름·vendor 범위와 **본인 비밀번호**를 함께 받아 전용 API(POST /api/admin/extension-trust-keys)로 곧바로 저장한다 —\n  탭 하단 저장 버튼과 별개다. 키 ID 는 서버가 공개키로 계산하므로 여기서 받지 않는다.\n  비밀번호가 없는 관리자(외부 인증 가입)는 비밀번호 칸이 없고, 서버의 본인인증 요구(428)를 엔진이 받아 확인 창을 띄운 뒤 같은 요청을 다시 보낸다.\n  입력한 비밀번호(_global.trustKeyPassword)는 창을 닫으면 지운다 — 취소·성공은 직접 지우고, 창 머리 닫기·Esc·바깥 클릭은 본문 틀의\n  unmount 에서 지운다(비밀번호 재확인 창 `_modal_password_confirm` 과 같은 규칙). 실패하면 지우지 않아 고쳐 다시 보낼 수 있다.",
     "meta": {
         "is_partial": true,
         "editor_label": "$t:admin.modal_label.admin_settings.extension_trust_key_add_modal",

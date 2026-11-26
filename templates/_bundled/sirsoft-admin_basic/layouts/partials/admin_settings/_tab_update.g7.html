@@ -3,7 +3,7 @@
   상태는 넷이다: 대기(새 버전 확인·함께 할 일 고르기) → 진행 중(단계 목록·진행 막대) → 완료 → 실패(되돌림 결과).
   진행 상태는 서버 기록(`core_update_status`, 진행 중이면 `_global.coreUpdateStatus`)이 소유하고, 화면을 새로 열어도
   진행 중이면 자동으로 이어 받는다. 공용 저장 버튼은 이 탭에서 숨는다(저장할 설정이 없다).
-  패키지 무결성(#916): 새 버전 확인 결과에 최신 릴리스의 서명 자산 유무(`signature_available`)를 배지로 보인다(모르면 null 이라 그리지 않는다).
+  패키지 무결성: 새 버전 확인 결과에 최신 릴리스의 서명 자산 유무(`signature_available`)를 배지로 보인다(모르면 null 이라 그리지 않는다).
   착수가 미서명(409)·서명 불일치(422)로 거절되면 착수 핸들러가 거절 내용을 전역에 싣고 공용 안내 조각이 시작 버튼 위에 그린다.
   정책이 허용하면 시작 버튼이 「미서명으로 계속」이 되어 같은 선택에 `allow_unsigned` 만 더해 다시 착수한다. -->
 <partial description="환경설정 업데이트 탭 콘텐츠 (코어 업데이트 웹 동선 — W6 4상태)">
@@ -20,7 +20,7 @@
           <span class="text-label-subtle">$t:admin.settings.core_update.latest_version</span>
           <status-badge data-type="composite" status="success" label="{{_local.coreUpdateInfo?.latest_version ?? ''}}"/>
         </div>
-        <!-- 최신 릴리스의 서명 자산 유무(#916) — 서명이 없으면 착수 때 미서명 확인을 거친다는 것을 미리 알린다 -->
+        <!-- 최신 릴리스의 서명 자산 유무 — 서명이 없으면 착수 때 미서명 확인을 거친다는 것을 미리 알린다 -->
         <div data-ref="core_update_signature" data-if="{{_local.coreUpdateInfo?.update_available &amp;&amp; (_local.coreUpdateInfo?.signature_available === true || _local.coreUpdateInfo?.signature_available === false)}}" class="flex items-center gap-2">
           <span class="text-label-subtle">$t:admin.package_integrity.core_signature_label</span>
           <span data-if="{{_local.coreUpdateInfo?.signature_available === true}}" class="badge badge-green">$t:admin.package_integrity.core_signature_available</span>
@@ -116,7 +116,7 @@
       <include src="partials/_package_integrity_notice.g7.html"/>
       <div data-ref="core_update_start_row" data-if="{{!_computed.coreUpdateRun &amp;&amp; (_local.coreUpdateInfo?.update_available === true || (_local.coreUpdateZipFile ?? '') !== '')}}" class="flex justify-end">
         <!-- 업데이트 시작 — 위에서 고른 함께 할 일과 직접 올린 ZIP(고르지 않았으면 빈 값이고 배포처에서 받는다)을 핸들러에 넘긴다. 진행 여부는 핸들러가 _global.coreUpdateBusy 로 싣고 그동안 버튼이 잠긴다.
-             미서명 거절을 정책이 허용한 뒤의 클릭은 「미서명으로 계속」이다 — 같은 선택에 allow_unsigned 만 더한다(#916). -->
+             미서명 거절을 정책이 허용한 뒤의 클릭은 「미서명으로 계속」이다 — 같은 선택에 allow_unsigned 만 더한다. -->
         <button data-ref="core_update_start_button" type="button" class="btn btn-primary" disabled="{{_global.coreUpdateBusy === true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
           <on type="click">
             <action handler="startCoreUpdate" update_bundled_extensions="{{_local.coreUpdateBundled !== false}}" rebuild_search_index="{{_local.coreUpdateRebuildIndex === true}}" layout_strategy="{{_local.coreUpdateLayoutStrategy ?? 'overwrite'}}" zip_file="{{_local.coreUpdateZipFile ?? ''}}" allow_unsigned="{{_global.packageIntegrity?.can_continue === true}}"/>

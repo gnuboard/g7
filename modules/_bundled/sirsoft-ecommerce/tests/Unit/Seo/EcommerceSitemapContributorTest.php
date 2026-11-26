@@ -163,7 +163,7 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
         $this->assertSame('weekly', $categoryEntry['changefreq']);
         $this->assertSame(0.6, $categoryEntry['priority']);
 
-        // 상품 URL — lastmod 있음. 화면·검색과 같은 상품 코드 주소다(#792 W12 — 같은 상품을 두 주소로 색인하지 않는다)
+        // 상품 URL — lastmod 있음. 화면·검색과 같은 상품 코드 주소다(같은 상품을 두 주소로 색인하지 않는다)
         $productEntry = $urls->firstWhere('url', "/{$this->routePath}/products/{$product->product_code}");
         $this->assertNotNull($productEntry);
         $this->assertArrayHasKey('lastmod', $productEntry);

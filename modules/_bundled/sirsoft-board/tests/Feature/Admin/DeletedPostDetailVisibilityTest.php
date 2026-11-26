@@ -12,7 +12,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 삭제된 게시글 상세에서 cascade 하위 데이터 노출 검증 (#413-69-②)
+ * 삭제된 게시글 상세에서 cascade 하위 데이터 노출 검증 (69-②)
  *
  * 그룹2(연쇄 soft delete)는 DB 마킹까지만 검증했고, 조회/표시 계층에는
  * 다음 두 회귀가 있었다:

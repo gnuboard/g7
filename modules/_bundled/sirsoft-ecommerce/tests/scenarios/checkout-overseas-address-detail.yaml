@@ -1,4 +1,4 @@
-feature: 해외 배송 주문의 상세주소 필수 검증 (#703)
+feature: 해외 배송 주문의 상세주소 필수 검증
 
 description: |
   주문 생성 검증이 shipping.address_detail 을 국가와 무관하게 필수로 요구해, 상세주소 칸이 없는

@@ -1,4 +1,4 @@
-feature: 본인인증 hook 범위 정책 색인의 무효화와 장애 폴백 (#869)
+feature: 본인인증 hook 범위 정책 색인의 무효화와 장애 폴백
 
 description: |
   hook 범위 본인인증 리스너는 캐시된 색인(IdentityPolicyRepository::getHookScopeIndex)에 켜진 정책이 없는 훅을

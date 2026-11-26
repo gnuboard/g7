@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\RegistersTestCashReceiptProvider;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 현금영수증 — 영세 금액·부가세 분할 테스트 (#612)
+ * 현금영수증 — 영세 금액·부가세 분할 테스트
  *
  * 영세(세율 0%)는 쇼핑몰 장부에서 과세표준에 들지만, 국세청·결제사에는 부가세가 없는 금액이다.
  * 발급 면세액은 「면세 + 영세」이고(P2), 발급 페이로드의 부가세는 주문 부가세를 과세 몫(영세 제외)

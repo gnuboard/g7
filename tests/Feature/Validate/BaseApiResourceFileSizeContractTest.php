@@ -7,9 +7,9 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * BaseApiResource::formatFileSize() 의 형식 계약과 하위 호환 공지 (#599 validate 코어 minor)
+ * BaseApiResource::formatFileSize() 의 형식 계약과 하위 호환 공지 (validate 코어 minor)
  *
- * #599 가 레이아웃 리소스 세 곳의 private 변환을 부모의 공용 메서드로 합치면서
+ * 레이아웃 리소스 세 곳의 private 변환을 부모의 공용 메서드로 합치면서
  * `size_formatted` 자릿수가 소수 첫째 → 둘째 자리로, 상한 단위가 MB → GB 로 바뀌었다.
  * 응답 값이 달라지는 변경인데 개발 문서에 공지가 없었다.
  */

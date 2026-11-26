@@ -1,6 +1,6 @@
 /**
  * @file admin-login-password-change-step.test.tsx
- * @description 관리자 로그인 비밀번호 변경 단계 구조 회귀 테스트 (#736, sirsoft-admin_basic)
+ * @description 관리자 로그인 비밀번호 변경 단계 구조 회귀 테스트 (sirsoft-admin_basic)
  *
  * 비밀번호가 만료됐거나 관리자가 정해 준 비밀번호면 로그인·인증번호 확인 응답이 토큰 대신 변경 단계를 돌려준다.
  * 화면은 세 단계(자격증명 / 2단계 인증 / 비밀번호 변경)를 같은 카드에서 바꾸며, 블록 `if` 와 제출 액션 `if` 가
@@ -162,7 +162,7 @@ describe('sirsoft-admin_basic 관리자 로그인 — 비밀번호 변경 단계
   /**
    * 상태가 값을 소유하는 칸(새 비밀번호·확인·인증번호)은 자동바인딩을 끈다. 이 폼은 `data-key="loginForm"` 이라 켜 두면
    * 자동바인딩 값이 명시 `value` 보다 앞서, 「처음부터」·식별자 만료 뒤 단계를 다시 밟을 때 칸에는 이전 입력이 보이고
-   * 요청은 빈 값으로 나갔다(#736 S2 검증).
+   * 요청은 빈 값으로 나갔다(검증).
    *
    * @scenario reason=expired, can_postpone=false, response=password_change_required
    * @effects state_owned_inputs_skip_auto_binding

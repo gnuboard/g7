@@ -19,7 +19,7 @@ import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import { waitForEditorScrollSettled } from '../../fixtures/layout-editor';
 
-// 편집기 첫 적재(편집 대상 템플릿 자산 IIFE·CSS 로드)가 30초를 넘기는 일이 잦아(#869 λ 실측) 시험 제한을 늘린다.
+// 편집기 첫 적재(편집 대상 템플릿 자산 IIFE·CSS 로드)가 30초를 넘기는 일이 잦아 시험 제한을 늘린다.
 test.describe.configure({ timeout: 90_000 });
 
 /** 어포던스 밴드 z-index (overlayZIndex.OVERLAY_AFFORDANCE 와 동기). */
@@ -39,7 +39,7 @@ async function openEditor(page: Page): Promise<void> {
  */
 async function selectModerateElement(page: Page): Promise<string> {
   // 후보는 미리보기 frame 안 노드에서 크기로만 고른다(화면 안 여부는 보지 않는다). 종전에는 「지금 화면 안」 노드만
-  // 찾고 없으면 `els[5]` 로 떨어졌는데, 편집기를 열자마자 문서가 움직이면(미리보기 자동 포커스, #869 λ) 화면 안에
+  // 찾고 없으면 `els[5]` 로 떨어졌는데, 편집기를 열자마자 문서가 움직이면(미리보기 자동 포커스) 화면 안에
   // 조건 맞는 노드가 없어 크기 0 인 숨은 노드를 클릭해 선택이 되지 않았다(C4). 고른 뒤 화면 가운데로 즉시 스크롤한다 —
   // 오버레이 어포던스(박스 ±30px)가 화면 안에 들어오도록 크기 상한은 화면보다 작게 둔다.
   const path = await page.evaluate(() => {

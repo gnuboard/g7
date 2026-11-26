@@ -16,7 +16,7 @@
  *
  * 동의 상태 SSoT: 서버 DB. 브라우저에서는 코어 동의 런타임(`_global.consent`)이 보관하고,
  * 진입점(index.ts)이 부팅 때와 코어 이벤트 `consent:changed` 때 setCurrentConsent() 로
- * 캐시를 갱신해 rescan 한다(#639 — 이 모듈은 window 이벤트를 듣지 않는다).
+ * 캐시를 갱신해 rescan 한다(이 모듈은 window 이벤트를 듣지 않는다).
  *
  * @module sirsoft-gdpr/blocker
  */

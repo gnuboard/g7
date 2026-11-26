@@ -13,7 +13,7 @@ use Tests\PureTestCase;
 /**
  * 라이브 MID 프리픽스(LIVE_MID_PREFIX) 회귀 테스트.
  *
- * 배경 (#458):
+ * 배경:
  *   이니시스 정책 변경으로 라이브 가맹점 MID 프리픽스가 SRA → SRB 로 전환된다.
  *   프리픽스를 InicisIdentityProvider::LIVE_MID_PREFIX 클래스 상수 1곳으로 추출하여
  *   런타임 로직(buildLiveMid / isAvailable)이 상수를 참조하도록 했다. 본 테스트는

@@ -218,13 +218,13 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         ProductReviewImageService::class => 'images',
         // 아래 셋은 권한 게이트 뒤 서버가 내려주는 비공개 원본이라 공개 자산 디스크(CDN)에 올리지 않는다 — 직접 URL 은
         // 서버 서빙 경로의 권한 검사를 우회한다(`storage-driver.md` "보안 전제"). 관리자가 고른 「비공개 첨부 저장소」 디스크
-        // (「기본」이면 `modules`)를 따른다(#916). 저장 경로 카테고리는 서비스가 넘기는 값(`images`·`exports`)이 그대로 정하므로
+        // (「기본」이면 `modules`)를 따른다. 저장 경로 카테고리는 서비스가 넘기는 값(`images`·`exports`)이 그대로 정하므로
         // 기존 행의 경로는 바뀌지 않고, 기존 행은 행 disk 로 서빙·삭제한다.
         // 클레임 첨부 — 신청자 본인과 운영자만 볼 수 있다
         ClaimAttachmentService::class => AbstractModule::PRIVATE_ATTACHMENT_BINDING,
         // 내보내기 파일 — 개인정보가 담길 수 있어 권한을 다시 보는 일회용 주소로만 내보낸다
         ExportService::class => AbstractModule::PRIVATE_ATTACHMENT_BINDING,
-        // 본문 미디어 — 미공개 상품이면 서명·관리자 게이트가 걸린다(#883). 업로드·서빙·복제·정리·소유자 삭제가 모두 이 골격 서비스를 지난다(#887)
+        // 본문 미디어 — 미공개 상품이면 서명·관리자 게이트가 걸린다. 업로드·서빙·복제·정리·소유자 삭제가 모두 이 골격 서비스를 지난다
         EcommerceContentMediaService::class => AbstractModule::PRIVATE_ATTACHMENT_BINDING,
     ];
 
@@ -271,7 +271,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         OrderReturnRepositoryInterface::class => OrderReturnRepository::class,
         OrderReturnOptionRepositoryInterface::class => OrderReturnOptionRepository::class,
         OrderShippingRepositoryInterface::class => OrderShippingRepository::class,
-        // 결제사 플러그인 계약(PaymentGatewayBridge) 구현 전용 — 조회·잠금·갱신 (#916)
+        // 결제사 플러그인 계약(PaymentGatewayBridge) 구현 전용 — 조회·잠금·갱신 
         PaymentGatewayRepositoryInterface::class => PaymentGatewayRepository::class,
         ProductInquiryRepositoryInterface::class => ProductInquiryRepository::class,
         ProductRepositoryInterface::class => ProductRepository::class,
@@ -340,7 +340,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         parent::register();
 
         // 아래 4종은 요청·큐 작업 수명 동안 1회 캐시한다(scoped). 싱글톤이면 큐 워커가 재시작될 때까지
-        // 옛 값을 쓴다 — 워커는 작업마다 scoped 인스턴스만 비운다(#724, 코어 #599 선례).
+        // 옛 값을 쓴다 — 워커는 작업마다 scoped 인스턴스만 비운다(코어 선례).
 
         // CurrencyConversionService (요청·작업 내 통화 설정 캐시 유지)
         $this->app->scoped(CurrencyConversionService::class);
@@ -362,7 +362,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         $this->app->scoped(ExportTypeRegistry::class);
         $this->app->scoped(ExportFormatRegistry::class);
 
-        // 다른 확장에 공개하는 계약(module.json public_api) — 구현은 내부 서비스·저장소에 위임만 한다 (#916)
+        // 다른 확장에 공개하는 계약(module.json public_api) — 구현은 내부 서비스·저장소에 위임만 한다 
         $this->app->bind(ProductDirectory::class, EcommerceProductDirectory::class);
         $this->app->bind(CategoryDirectory::class, EcommerceCategoryDirectory::class);
         $this->app->bind(ExchangeRateGateway::class, EcommerceExchangeRateGateway::class);
@@ -392,12 +392,12 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         $this->registerClaimMorphMap();
 
         // 본문 미디어 서빙 라우트를 미디어 출처 허용 패턴 원천으로 등록한다 — 없으면 상품 설명·공통 정보의 업로드 동영상·오디오가
-        // 저장 정화·표시에서 지워진다. 모듈이 꺼져 라우트가 없으면 패턴 생성이 이 이름을 건너뛴다 (#887)
+        // 저장 정화·표시에서 지워진다. 모듈이 꺼져 라우트가 없으면 패턴 생성이 이 이름을 건너뛴다
         if (class_exists(ContentMediaRegistrar::class)) {
             ContentMediaRegistrar::register(EcommerceContentMediaStore::SERVE_ROUTE);
         }
 
-        // 요청·큐 처리에 끼어드는 부수효과는 활성일 때만 건다 (#730 게이트, #860)
+        // 요청·큐 처리에 끼어드는 부수효과는 활성일 때만 건다
         if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
             $this->registerRateLimiters();
             $this->registerQueueJobScopeReset();
@@ -413,7 +413,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         // 코어 ExtensionMiddlewareGate 가 요청 시점에 실행한다. (SP Kernel 직접 조작 제거)
 
         // Sitemap 기여자 등록 — 생성기를 처음 해석할 때(사이트맵 생성·SEO 화면) 붙는다. 이미 해석돼 있으면 바로
-        // 붙는다. 부팅마다 생성기·기여자·리포지토리를 만들지 않는다 (#860). 비활성이면 걸지 않는다(#730 게이트).
+        // 붙는다. 부팅마다 생성기·기여자·리포지토리를 만들지 않는다. 비활성이면 걸지 않는다.
         if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
             $this->callAfterResolving(SitemapGenerator::class, function (SitemapGenerator $generator): void {
                 try {
@@ -430,7 +430,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
      * 큐 작업이 시작될 때마다 요청 단위 static 캐시를 비웁니다.
      *
      * scoped 로 만들 수 없는 static 캐시(통화 설정·배송유형 코드)는 작업 시작마다 비운다 — 큐 워커는 프로세스가
-     * 끝날 때까지 static 을 들고 있어, 관리자가 통화·배송유형을 바꿔도 재시작 전까지 옛 값을 쓴다(#724).
+     * 끝날 때까지 static 을 들고 있어, 관리자가 통화·배송유형을 바꿔도 재시작 전까지 옛 값을 쓴다.
      * sync 연결 작업은 웹 요청 안에서 돌므로 그 요청의 캐시를 비우지 않는다.
      *
      * @return void 반환값 없음
@@ -470,7 +470,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
             'sirsoft-ecommerce.guest-claims' => 120,
             // 비회원 첨부 업로드 — 블록에서 유일한 파일 쓰기라 블록 상한 위에 좁은 상한을 겹친다
             'sirsoft-ecommerce.guest-claim-uploads' => 20,
-            // 비회원 쿠폰존 목록 — 로그인 없이 부르는 공개 목록이라 IP 단위로 센다 (#952)
+            // 비회원 쿠폰존 목록 — 로그인 없이 부르는 공개 목록이라 IP 단위로 센다
             'sirsoft-ecommerce.public-coupons' => 60,
         ];
 

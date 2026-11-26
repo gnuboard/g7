@@ -9,7 +9,7 @@ use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
 
 /**
- * 신고 정책 저장값에서 쓰이지 않는 알림 채널 키 2개를 지웁니다. (#952)
+ * 신고 정책 저장값에서 쓰이지 않는 알림 채널 키 2개를 지웁니다.
  *
  * 채널은 코어 알림 설정(알림 정의의 채널별 템플릿)이 정한다. 두 키는 화면도 읽는 코드도 없이 저장만 되던 잔재다.
  * idempotent: 키가 없으면 아무것도 하지 않는다. 파일이 없거나 읽을 수 없으면 건너뛴다.
@@ -68,7 +68,7 @@ class RemoveUnusedReportChannelKeys implements DataMigration
         }
 
         File::put($path, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-        // sudo 코어 업데이트 경로에서 root 로 실행되면 새로 쓴 파일이 root 소유로 남는다 — 부모 소유권 상속 (#651)
+        // sudo 코어 업데이트 경로에서 root 로 실행되면 새로 쓴 파일이 root 소유로 남는다 — 부모 소유권 상속
         FilePermissionHelper::inheritOwnershipFromParent($path);
 
         $context->logger->info('[board:1.3.1] 쓰이지 않는 신고 알림 채널 키 정리: '.implode(', ', $present));

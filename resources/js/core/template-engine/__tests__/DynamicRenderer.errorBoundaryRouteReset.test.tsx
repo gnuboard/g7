@@ -67,7 +67,7 @@ const Fragile = ({ broken, label, screen }: any) => {
     }, []);
     if (broken === true || broken === 'true') {
         // 화면(경로·쿼리)은 이미 다른 위치인데 앞 위치의 값으로 다시 그려 던진 렌더 — 전환(startTransition) 렌더에서 이렇게 던지고
-        // 새 응답이 그 사이 오면 React 가 루트를 동기로 다시 그려 회복 오류(#520)를 알린다
+        // 새 응답이 그 사이 오면 React 가 루트를 동기로 다시 그려 회복 오류를 알린다
         if (label !== undefined && screen !== undefined && String(label) !== String(screen)) {
             counters.staleThrows.push(`${label}@${screen}`);
         }

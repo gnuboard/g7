@@ -113,7 +113,7 @@ effects:
   - non_claim_notification_types_pass_through_untouched
   - a_claim_type_without_a_claim_argument_passes_through
   - refund_notification_amount_matches_what_the_screen_reports
-  - refund_notification_splits_cash_and_mileage   # 수단은 실제로 돈이 간 수단 — 현금·마일리지 줄 분리 (#747 S7)
+  - refund_notification_splits_cash_and_mileage   # 수단은 실제로 돈이 간 수단 — 현금·마일리지 줄 분리
   # 활동 로그 (Unit — ClaimActivityLogListenerTest)
   - request_writes_one_activity_row_with_the_claim_number
   - service_transition_writes_exactly_one_status_change_row
@@ -134,7 +134,7 @@ effects:
   - partial_payment_does_not_fire_the_completion_hook
 
 
-  # ── #599 후속 §7-1 — 전이 활동로그 전수 (D16) ───────────────────────────
+  # ── 전이 활동로그 전수 ───────────────────────────
   - every_claim_status_enum_exposes_a_label_key    # 라벨 키가 없으면 로그 잡이 죽고 그 전이만 사라진다
   - cancel_axis_activity_log_labels_exist          # 취소 축 라벨 3종 (R8 — 훅만 붙이면 문구가 빈다)
   - auto_advance_logs_every_refund_transition      # 자동 전이가 단계마다 남는다

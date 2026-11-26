@@ -1,5 +1,5 @@
 {
-    "comment": "주문 완료 화면의 결제 금액 요약에 KG이니시스 간편결제 이름과 영수증·결제확인서 보기를 덧붙이는 조각. 예전에는 주입 스크립트(orderCompleteReceiptInjector)가 화면 주소(/shop/orders/…/complete)를 글자로 맞춰 파란 버튼 옆에 버튼을 끼웠다 — 쇼핑몰 경로를 바꾼 설치본에서는 조용히 빠졌다(#639 에서 이 조각으로 옮김). 붙일 자리는 템플릿이 단 id(order_complete_payment_summary)로만 찾는다.",
+    "comment": "주문 완료 화면의 결제 금액 요약에 KG이니시스 간편결제 이름과 영수증·결제확인서 보기를 덧붙이는 조각. 예전에는 주입 스크립트(orderCompleteReceiptInjector)가 화면 주소(/shop/orders/…/complete)를 글자로 맞춰 파란 버튼 옆에 버튼을 끼웠다 — 쇼핑몰 경로를 바꾼 설치본에서는 조용히 빠졌다(이 조각으로 옮김). 붙일 자리는 템플릿이 단 id(order_complete_payment_summary)로만 찾는다.",
     "target_layout": "shop/order_complete",
     "injections": [
         {

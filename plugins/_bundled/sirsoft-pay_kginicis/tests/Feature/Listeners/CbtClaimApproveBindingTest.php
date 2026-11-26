@@ -17,7 +17,7 @@ use Plugins\Sirsoft\PayKginicis\Support\CbtClaimApproveToken;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 /**
- * CBT(엔화) 클레임 추가결제 승인이 sid 를 **이 결제 건**에 묶어 확인하는지 (#599 validate C1)
+ * CBT(엔화) 클레임 추가결제 승인이 sid 를 **이 결제 건**에 묶어 확인하는지
  *
  * CBT 승인 재료는 sid 하나다. 승인 응답에는 금액·주문번호가 없다(매뉴얼상 미사용 — 이력
  * 20260629). 그래서 싼 결제 건(CP-A)으로 연 결제창의 sid 를 비싼 결제 건(CP-B)의 승인에 실어

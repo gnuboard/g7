@@ -14,7 +14,7 @@ use Plugins\Sirsoft\Popup\Support\UploadLimit;
  * 표시 방식 조회 컨트롤러 — 목록 상단 요약·등록/수정 미리보기·권장 이미지 크기 안내용(팝업 조회 권한).
  *
  * 설정 저장은 코어 플러그인 설정 화면(`core.plugins.update`)이 한다. 그 권한이 없는 팝업 담당자도 지금 표시 방식을
- * 보고 미리볼 수 있게 읽기만 따로 둔다(#810 과 같은 이유).
+ * 보고 미리볼 수 있게 읽기만 따로 둔다(히어로 섹션 배너 편집과 같은 이유).
  */
 class DisplaySettingsController extends AdminBaseController
 {

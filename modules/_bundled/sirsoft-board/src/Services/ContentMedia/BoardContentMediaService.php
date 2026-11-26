@@ -10,7 +10,7 @@ use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 
 /**
- * 게시판 본문 미디어 골격 서비스 — 코어 골격에 게시판 어댑터와 모듈 저장소를 넘긴 얇은 클래스 (#887)
+ * 게시판 본문 미디어 골격 서비스 — 코어 골격에 게시판 어댑터와 모듈 저장소를 넘긴 얇은 클래스
  *
  * 업로드·저장 동기화(연결 → 복제 → 제거)·서명·서빙·정리 흐름과 공용 훅 `core.content_media.*` 발화는 코어
  * `AbstractContentMediaService` 가 한다. 게시판 호출자(서비스·리소스·컨트롤러)는 종전 시그니처를 지키는
@@ -62,7 +62,7 @@ class BoardContentMediaService extends AbstractContentMediaService
     }
 
     /**
-     * 게시판을 영구 삭제할 때 그 게시판의 본문 미디어 행(소프트 삭제분 포함)을 골격으로 영구 삭제합니다 (#887).
+     * 게시판을 영구 삭제할 때 그 게시판의 본문 미디어 행(소프트 삭제분 포함)을 골격으로 영구 삭제합니다.
      *
      * 행마다 `core.content_media.before_delete`(문맥 = 그 행이 속했던 글) → 파일 삭제(트랜잭션 안이면 커밋 뒤) → 행 삭제.
      * 게시판 삭제는 첨부 디렉터리를 통째로 지우므로 파일이 먼저 사라져 있어도 무해하다. 일반 첨부는 건드리지 않는다.
@@ -84,7 +84,7 @@ class BoardContentMediaService extends AbstractContentMediaService
     }
 
     /**
-     * 게시글을 영구 삭제할 때 그 글들의 본문 미디어 행(소프트 삭제분 포함)을 골격으로 영구 삭제합니다 (#887).
+     * 게시글을 영구 삭제할 때 그 글들의 본문 미디어 행(소프트 삭제분 포함)을 골격으로 영구 삭제합니다.
      *
      * 행마다 `core.content_media.before_delete` → 파일 삭제(트랜잭션 안이면 커밋 뒤) → 행 삭제. 일반 첨부는 건드리지 않는다.
      *

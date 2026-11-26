@@ -47,7 +47,7 @@ class GenericEntitySyncHelper
      *
      * **운영자가 직접 행을 만드는 표라면 운영자 행을 가를 범위 조건 없이 부르지 말 것** — 예: `['created_by' => null]`
      * (시더가 만든 행만). 조건 없이 부르면 언어팩을 켜고 끌 때(시더 재실행)마다 운영자가 만든 행이 흔적 없이 지워진다
-     * (#727 — 게시판 유형·클레임 사유·배송유형·택배사). 가를 표식이 없는 표는 호출하지 않는다.
+     * (게시판 유형·클레임 사유·배송유형·택배사). 가를 표식이 없는 표는 호출하지 않는다.
      *
      * @param  class-string<Model>  $modelClass  대상 모델 클래스
      * @param  array<string, mixed>  $scopeFilter  삭제 대상 한정 조건 (예: ['extension_identifier' => 'x', 'type' => 'refund']). 빈 배열이면 전체 테이블 대상.

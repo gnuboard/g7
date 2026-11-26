@@ -15,7 +15,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 비활성 확장의 boot 부수효과 게이트 (#860 W4, #730 결정)
+ * 비활성 확장의 boot 부수효과 게이트
  *
  * 비활성 확장도 provider 를 등록해 바인딩·번역은 쓸 수 있게 두되(설치 시더·관리 화면이 쓴다), 요청 처리에 끼어드는
  * boot 부수효과(레이트리미터·쿠키 예외·큐 훅 등)는 활성일 때만 건다. 상태를 알 수 없으면 지금처럼 건다.

@@ -12,7 +12,7 @@ use App\Models\TemplateLayout;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 확장 관리자(템플릿·모듈·플러그인)가 레이아웃 행 동기화기를 부르는 공통 부분 (#727).
+ * 확장 관리자(템플릿·모듈·플러그인)가 레이아웃 행 동기화기를 부르는 공통 부분.
  *
  * 행 쓰기 규칙 자체는 {@see LayoutRowSynchronizer} 한 곳에 있다. 여기는 관리자마다 반복되는 통계 집계와
  * 활성화 경로의 충돌 경고만 둔다.

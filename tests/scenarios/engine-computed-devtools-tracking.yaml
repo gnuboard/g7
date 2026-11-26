@@ -1,4 +1,4 @@
-feature: 렌더러의 computed DevTools 추적이 의존성 종류를 DevTools 계약 값으로 알린다 (#869)
+feature: 렌더러의 computed DevTools 추적이 의존성 종류를 DevTools 계약 값으로 알린다
 
 description: |
   렌더러가 computed 값과 재계산을 DevTools 에 알릴 때 의존성 종류를 계약(state, datasource, computed, expression)에 없는

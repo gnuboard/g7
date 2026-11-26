@@ -9,7 +9,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 브로드캐스트 채널 인가 콜백을 필요할 때 한 번만 등록합니다 (#860).
+ * 브로드캐스트 채널 인가 콜백을 필요할 때 한 번만 등록합니다.
  *
  * 채널 인가 콜백은 `/api/broadcasting/auth`(`api.broadcasting.auth`) 처리에서만 쓰인다. 부팅마다
  * `Broadcast::channel()` 을 부르면 그때마다 드라이버(reverb 면 Pusher·HTTP 클라이언트)가 만들어지므로,

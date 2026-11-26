@@ -14,7 +14,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * 손대지 않은 레이아웃·확장이 "사용자 수정" 으로 판정되지 않는지 검증합니다 (#703).
+ * 손대지 않은 레이아웃·확장이 "사용자 수정" 으로 판정되지 않는지 검증합니다.
  *
  * `.g7.html` 컴파일 산출은 빈 map 을 {@see EmptyMap} 표식으로 들고 있어 원본 해시를 계산할 때 `{}` 로
  * 직렬화된다. 그런데 DB 에서 읽은 content 는 `'array'` 캐스트를 거쳐 `{}` 가 `[]` 가 되므로, 현재 해시를

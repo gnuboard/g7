@@ -257,7 +257,7 @@
                                                     "text": "{{item.options ? Object.values(item.options).join(' / ') : ''}}"
                                                 },
                                                 {
-                                                    "comment": "옵션마다 과세 종류가 다를 때, 고른 옵션의 과세 종류(옵션 지정 ?? 상품 기본값)가 면세·영세면 표시한다. 모두 같으면 가격 옆에 보이므로 여기엔 붙이지 않는다 (#612)",
+                                                    "comment": "옵션마다 과세 종류가 다를 때, 고른 옵션의 과세 종류(옵션 지정 ?? 상품 기본값)가 면세·영세면 표시한다. 모두 같으면 가격 옆에 보이므로 여기엔 붙이지 않는다",
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "if": "{{['tax_free', 'zero_rated'].includes(((_global.quickOptionModal?.detail?.options ?? []).find(o => o.id === item.optionId)?.tax_status ?? _global.quickOptionModal?.detail?.tax_status)) && !(_global.quickOptionModal?.detail?.options ?? []).every(o => (o.tax_status ?? _global.quickOptionModal?.detail?.tax_status) === (_global.quickOptionModal?.detail?.options?.[0]?.tax_status ?? _global.quickOptionModal?.detail?.tax_status))}}",

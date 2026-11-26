@@ -622,7 +622,7 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
      */
     public function test_verify_password_response_includes_comments(): void
     {
-        // Given: 댓글 2개가 달린 비회원 비밀글 (댓글은 comments.read 보유자에게만 실린다 — #764 이후 게이트)
+        // Given: 댓글 2개가 달린 비회원 비밀글 (댓글은 comments.read 보유자에게만 실린다)
         $this->setGuestPermissions(['posts.read', 'posts.write', 'comments.read']);
         $postId = $this->createGuestSecretPost('test1234');
         $this->createTestComment($postId, ['content' => '첫 번째 댓글']);
@@ -783,7 +783,7 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
     }
 
     /**
-     * 비회원 원글 비밀번호를 맞히면 같은 응답의 답변 트리에 관리자 비밀 답변 본문이 실린다 (#789 제보 A).
+     * 비회원 원글 비밀번호를 맞히면 같은 응답의 답변 트리에 관리자 비밀 답변 본문이 실린다.
      *
      * 수정 전에는 원글만 password_verified 로 열리고, replies[] 의 비밀 답변은 「로그인 후 확인」이었다.
      * grant 를 댓글·답변 직렬화보다 먼저 걸어 같은 응답에서 하위가 열린다.

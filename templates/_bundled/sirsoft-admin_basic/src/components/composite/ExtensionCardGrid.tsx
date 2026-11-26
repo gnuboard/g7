@@ -71,7 +71,7 @@ export interface ExtensionCardItem {
     disabled?: boolean;
     title?: string;
     /**
-     * 주 단추가 옮겨 가는 주소(예: 활성 템플릿의 시각 편집기) — 있으면 `<a href>` 로 그린다(#757). 보통 클릭은 onPrimaryAction,
+     * 주 단추가 옮겨 가는 주소(예: 활성 템플릿의 시각 편집기) — 있으면 `<a href>` 로 그린다. 보통 클릭은 onPrimaryAction,
      * `target: '_blank'` 면 보통 클릭도 브라우저가 새 창으로 열고 onPrimaryAction 은 부르지 않는다(종전 openWindow 대체).
      * 설치처럼 옮기지 않는 단추는 비워 둔다.
      */
@@ -85,7 +85,7 @@ export interface ExtensionCardItem {
     disabled?: boolean;
     title?: string;
     /**
-     * 보조 단추가 옮겨 가는 주소(예: 레이아웃 편집) — 있으면 `<a href>` 로 그려 새 탭으로 열 수 있다(#757).
+     * 보조 단추가 옮겨 가는 주소(예: 레이아웃 편집) — 있으면 `<a href>` 로 그려 새 탭으로 열 수 있다.
      * 보통 클릭은 지금처럼 onSecondaryAction. 비활성이면 종전 단추다.
      */
     href?: string;
@@ -94,7 +94,7 @@ export interface ExtensionCardItem {
   };
   actions?: ActionMenuItem[];
   /**
-   * 카드 이동 주소 — 있으면 카드를 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다(#757).
+   * 카드 이동 주소 — 있으면 카드를 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다.
    * 보통 클릭은 종전처럼 onItemClick(없으면 SPA 이동), 수정키 클릭은 브라우저 기본 동작. 바깥 주소는 새 탭으로 연다.
    * 없으면 종전처럼 `role="button"` 카드다.
    */
@@ -125,7 +125,7 @@ export interface ExtensionCardGridProps {
   paginationInfoText?: string;
   onPageChange?: (page: number) => void;
   /**
-   * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/modules?page={page}`). 주면 내장 페이지 번호가 링크가 된다(#757).
+   * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/modules?page={page}`). 주면 내장 페이지 번호가 링크가 된다.
    */
   pageHref?: string;
   /** 페이지 주소에 현재 주소의 쿼리를 합친다 */
@@ -298,7 +298,7 @@ const BadgeRow: React.FC<{ item: ExtensionCardItem }> = ({ item }) => {
         <Span
           key={`${badge.label}-${i}`}
           title={badge.title}
-          // 설명(title)이 있는 배지는 카드 덮는 링크 위층에 둬 마우스를 올리면 설명이 뜨게 한다(#757)
+          // 설명(title)이 있는 배지는 카드 덮는 링크 위층에 둬 마우스를 올리면 설명이 뜨게 한다
           className={`px-1.5 py-0.5 text-[11px] leading-4 rounded whitespace-nowrap inline-flex items-center gap-1 ${
             badge.title ? 'relative z-10 ' : ''
           }${BADGE_TONE[badge.tone ?? 'neutral'] ?? BADGE_TONE.neutral}`}
@@ -440,11 +440,11 @@ const ControlRow: React.FC<{
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
 
   // 스위치는 서버 작업이 끝날 때까지 원래 값에 머물고, 그동안 잠긴 채 손잡이 자리에 스피너를 보인다 — 먼저 뒤집어
-  // 보이면 작업이 실패·거절돼도 「켜졌다」고 읽혔다(#882 결정). 서버 값이 바뀌거나(목록 다시 받기) 화면이 재동기
+  // 보이면 작업이 실패·거절돼도 「켜졌다」고 읽혔다. 서버 값이 바뀌거나(목록 다시 받기) 화면이 재동기
   // 신호(resyncKey — 실패·409·확인 창 열림)를 올리면 진행 표시를 끈다. 행 객체는 기준으로 쓸 수 없다 — 엔진이 렌더마다
   // 새 객체를 만들어 진행 표시가 곧바로 꺼진다. 누른 카드만 잠그고 다른 카드는 바로 누를 수 있다.
   // holdUntilResync 면 서버 값이 바뀌어도 두고 재동기 신호에서만 끈다 — 모듈·플러그인은 켜기 뒤 화면 파일(JS·CSS)을 더 받는데,
-  // 그 사이 다시 끄면 받던 파일이 404 가 됐다(#882 결정: 파일까지 받은 뒤 해제).
+  // 그 사이 다시 끄면 받던 파일이 404 가 됐다(파일까지 받은 뒤 해제).
   const serverChecked = item.toggle?.checked ?? false;
   const [pending, setPending] = useState(false);
   useEffect(() => {
@@ -453,7 +453,7 @@ const ControlRow: React.FC<{
 
   return (
     <Div
-      // 카드 덮는 링크(#757) 위층 — 제어 단추·스위치·메뉴는 링크 밖에 있고 그 위에서 클릭을 받는다
+      // 카드 덮는 링크 위층 — 제어 단추·스위치·메뉴는 링크 밖에 있고 그 위에서 클릭을 받는다
       className={`relative z-10 flex items-center gap-2 ${className}`}
       onClick={stop}
       onKeyDown={stop}
@@ -533,7 +533,7 @@ const CardLinkContext = createContext<{
  * 카드 껍데기 — 이동 주소(`item.href`)가 있으면 덮는 링크 카드, 없으면 종전처럼 `role="button"` 영역.
  *
  * 링크 카드는 껍데기가 `div` 그대로이고 이름 칸(CardName)이 `<a href>` 다. 링크의 `after:` 덮개가 카드 전체를 덮어
- * 카드 어디를 눌러도 링크이고, 제어부(단추·스위치·메뉴)는 덮개 위층(`relative z-10`)이라 링크 안에 들어가지 않는다(#757).
+ * 카드 어디를 눌러도 링크이고, 제어부(단추·스위치·메뉴)는 덮개 위층(`relative z-10`)이라 링크 안에 들어가지 않는다.
  * 보통 클릭만 지금처럼 `open`(onItemClick)을 부르고 기본 이동을 막는다. 수정키 클릭은 브라우저가 새 탭·새 창으로 연다.
  */
 const CardShell: React.FC<{

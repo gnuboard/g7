@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Feature\Coupon\AutoIssue\Concerns\CreatesAut
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 생일 쿠폰 발급 명령 (#952 P7·P12)
+ * 생일 쿠폰 발급 명령
  */
 class IssueBirthdayCouponsCommandTest extends ModuleTestCase
 {

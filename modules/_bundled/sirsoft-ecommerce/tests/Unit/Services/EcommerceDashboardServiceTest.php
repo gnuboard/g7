@@ -409,7 +409,7 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
     }
 
     /**
-     * #599 통합 실측 P15 ① · S0-D1 — 반품 칸이 0 에 고정돼 있었다.
+     * 반품 칸이 0 에 고정돼 있었다.
      *
      * (7.1.0 결정 2026-10-08 4차 뒤로 「오늘」 배지는 이 수량 기록이 아니라 주문 수를 바로 센다 — 이 테스트는 일 집계의
      * 상태별 수량 기록을 지킨다.) 취소 배지가 취소 옵션(cancelled)을 세는 것과 같은 규칙으로, 반품 배지는 반품완료 옵션(returned)을
@@ -529,7 +529,7 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 모듈을 활성으로 등록합니다 — 미답변 문의는 게시판 모듈(선택 연동)이 켜져 있을 때만 나온다(#822).
+     * 게시판 모듈을 활성으로 등록합니다 — 미답변 문의는 게시판 모듈(선택 연동)이 켜져 있을 때만 나온다.
      *
      * @return void 반환값 없음
      */

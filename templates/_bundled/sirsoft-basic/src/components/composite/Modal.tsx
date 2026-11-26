@@ -47,7 +47,7 @@ export interface ModalProps {
    * 본문 스크롤 밖 고정 하단에 그릴 컴포넌트 배열(확인·취소 단추). `.g7.html` 의 `<footer>`(`<prop-footer>`).
    *
    * 본문 자식과 같은 데이터 컨텍스트·상태 범위로 그린다 — 단추가 창을 연 뒤 입력한 값을 읽는다.
-   * 렌더 폭 640px 이하에서는 세로로 쌓고 폭을 채운다(관리자 템플릿 Modal 과 같은 계약, #869).
+   * 렌더 폭 640px 이하에서는 세로로 쌓고 폭을 채운다(관리자 템플릿 Modal 과 같은 계약).
    */
   footer?: any[];
   /** DynamicRenderer용 데이터 컨텍스트 (내부 사용) */
@@ -164,10 +164,10 @@ export const Modal: React.FC<ModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   // 제목 id 는 창마다 달라야 한다 — 고정 `modal-title` 이면 겹친 창의 이름이 문서에서 먼저 나온
-  // 아래 창 제목으로 읽혔다(#736 F 실측, 관리자 템플릿과 같은 구현).
+  // 아래 창 제목으로 읽혔다(관리자 템플릿과 같은 구현).
   const titleId = `modal-title-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
-  // ESC 키로 모달 닫기 — 맨 위 창 하나만 닫는다(#736 S2 — 열린 창마다 리스너가 있어 Esc 한 번에 전부 닫혔다).
+  // ESC 키로 모달 닫기 — 맨 위 창 하나만 닫는다(열린 창마다 리스너가 있어 Esc 한 번에 전부 닫혔다).
   // 순서는 열린 시점으로 정하므로 onClose·closeOnEscape 는 ref 로 읽어 다시 그려져도 순서가 바뀌지 않게 한다.
   const onCloseRef = useRef(onClose);
   const closeOnEscapeRef = useRef(closeOnEscape);
@@ -380,7 +380,7 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Footer — 본문 스크롤 영역 밖이라 내용이 길어도 단추가 항상 보인다.
             640 이하에서는 단추를 세로로 쌓고 폭을 채운다 — 폭 미디어가 없는 바탕(`modal-footer-bar`)에 렌더 폭으로 더한다.
-            단추가 각자 `if` 로 모두 빠지면 줄이 비므로 `empty:hidden` 으로 테두리와 여백까지 숨긴다(#869 C1) */}
+            단추가 각자 `if` 로 모두 빠지면 줄이 비므로 `empty:hidden` 으로 테두리와 여백까지 숨긴다 */}
         {footer && footer.length > 0 && (
           <Div className={renderWidth <= NARROW_FOOTER_MAX_WIDTH ? 'modal-footer-bar empty:hidden flex-col gap-2 [&_button]:w-full' : 'modal-footer-bar empty:hidden'}>
             {renderFooter(footer)}

@@ -217,7 +217,7 @@ class FrontendInventory
      * 문서에 드러나야 합니다.
      *
      * - 핸들러 등록은 `.registerHandler` 를 찾는다 — 호출(`registerHandler(`)만 찾으면 메서드를 변수로 떼어 별칭으로
-     *   부르는 확장(`const register = dispatcher.registerHandler; register.call(…)`)을 놓친다(#639 ④, TOTP).
+     *   부르는 확장(`const register = dispatcher.registerHandler; register.call(…)`)을 놓친다(TOTP).
      * - 재등록 전역은 `window.__{Name}` 이고, 템플릿은 `window.G7TemplateHandlers` 맵도 인정한다 — 코어가 로케일 전환 때
      *   그 맵을 다시 등록하므로 「미노출」 경고는 거짓이다.
      * - 초기화 함수는 `function initX(` 와 화살표·함수 표현식(`const initX = (…) =>`, `const initX = function`)을 모두 인정한다.

@@ -288,14 +288,14 @@
             <fail>
               <sequence>
                 <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"/>
-                <!-- 서버가 거절하면 값이 그대로 돌아와 스위치가 스스로 되돌아가지 못한다 — 재동기 신호를 올린다(#703). -->
+                <!-- 서버가 거절하면 값이 그대로 돌아와 스위치가 스스로 되돌아가지 못한다 — 재동기 신호를 올린다. -->
                 <set-state target="global" extensionToggleResync="{{(_global.extensionToggleResync ?? 0) + 1}}"/>
                 <refetch-data-source dataSourceId="language_packs"/>
               </sequence>
             </fail>
             <error-handling>
               <on-code code="409">
-                <!-- 창에서 고르기 전까지 스위치는 서버 값에 둔다 — 창을 닫아도 뒤집힌 채 남지 않는다(#703). -->
+                <!-- 창에서 고르기 전까지 스위치는 서버 값에 둔다 — 창을 닫아도 뒤집힌 채 남지 않는다. -->
                 <set-state target="global" extensionToggleResync="{{(_global.extensionToggleResync ?? 0) + 1}}"/>
                 <!-- 같은 확장에 다른 작업(설치·업데이트·활성화 등)이 진행 중이라 거절된 409(errors.operation_in_progress, 코어 7.1.5)는
                      칸 충돌 응답과 다르다 — 창을 열지 않고 서버 문구를 안내 토스트로 보인다(#161). -->

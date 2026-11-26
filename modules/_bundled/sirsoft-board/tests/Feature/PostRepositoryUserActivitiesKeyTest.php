@@ -8,7 +8,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * PostRepository 사용자 활동 응답 키 단수형 회귀 테스트 (이슈 #304 Phase 2)
+ * PostRepository 사용자 활동 응답 키 단수형 회귀 테스트
  *
  * 목적:
  * - PostResource 를 거치지 않고 raw 응답을 만드는 메서드도

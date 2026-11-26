@@ -130,7 +130,7 @@ class AdminUserSeeder extends Seeder
             'is_super' => true,  // 첫 관리자는 슈퍼 관리자로 설정
         ]);
 
-        // 비밀번호 만료 기준일 — 설치 시점이 첫 변경일이다(#736). 설치자가 직접 정한 비밀번호라 변경 요구는 걸지 않는다.
+        // 비밀번호 만료 기준일 — 설치 시점이 첫 변경일이다. 설치자가 직접 정한 비밀번호라 변경 요구는 걸지 않는다.
         app(PasswordChangeService::class)->initializeNewUser($user, PasswordChangeSource::Install);
     }
 }

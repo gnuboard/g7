@@ -1,6 +1,6 @@
 /**
  * @file admin-board-reaction-icon-thumbnail-exempt.test.ts
- * @description 관리자 게시판 화면의 반응 아이콘 — 썸네일 규격을 붙이지 않고 면제 사유를 남긴다 (#869 검토)
+ * @description 관리자 게시판 화면의 반응 아이콘 — 썸네일 규격을 붙이지 않고 면제 사유를 남긴다 (검토)
  *
  * 배경: 반응 아이콘(`reaction_type.icon_url`)은 20px 칸에 `object-contain` 으로 모양을 그대로 보인다. 이 자리에
  * `thumbPreset="xs"`(64×64 가운데 자르기)를 붙이면 정사각이 아닌 아이콘(가로로 긴 이모지 묶음 등)의 양 끝이
@@ -54,7 +54,7 @@ const LAYOUTS: Array<[string, unknown]> = [
   ['admin_board_settings/_tab_board_settings_basic', settingsBasic],
 ];
 
-describe('관리자 게시판 반응 아이콘 썸네일 면제 (#869 검토)', () => {
+describe('관리자 게시판 반응 아이콘 썸네일 면제 (검토)', () => {
   for (const [name, layout] of LAYOUTS) {
     // @scenario screen=admin_board_reaction_icons
     // @effects reaction_icon_keeps_original_shape

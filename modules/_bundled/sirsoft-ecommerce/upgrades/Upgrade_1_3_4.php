@@ -15,7 +15,7 @@ use App\Extension\AbstractUpgradeStep;
  *       옮기고 전용 표를 지움
  *
  * 03 번이 필요한 이유 — 상품 설명·공통 정보 본문 미디어 저장소를 출시 전에 게시판·페이지와 같은 모양의 범용 첨부 표
- * (`ecommerce_attachments`, collection = content_media)로 옮겼다(#887). 공개판에는 전용 표가 없어 no-op 이고, 이미 표를 만든 개발
+ * (`ecommerce_attachments`, collection = content_media)로 옮겼다. 공개판에는 전용 표가 없어 no-op 이고, 이미 표를 만든 개발
  * 설치본만 옮긴다. 저장된 본문의 주소(해시)와 파일 위치(디스크·카테고리 기준 경로)가 바뀌지 않게 그대로 옮기고, 옮기지 못한 행이
  * 있으면 전용 표를 남긴다.
  *

@@ -1,5 +1,5 @@
 /**
- * 회원 알림함 시드 fixture (#524 WP-F).
+ * 회원 알림함 시드 fixture.
  *
  * `playwright:seed-member-notification` 을 불러 회원 하나에 **읽음 1 · 안 읽음 2** 를 심는다.
  * 읽음 필터와 제목/본문 검색을 한 화면에서 보려면 두 상태가 섞여 있어야 하고, 제목 낱말과

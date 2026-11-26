@@ -1,5 +1,5 @@
 /**
- * 보안 설정 탭 — 비밀번호 정책 입력 계약 테스트 (#493 C4)
+ * 보안 설정 탭 — 비밀번호 정책 입력 계약 테스트
  *
  * @description
  * 비밀번호 최소 길이 입력의 경계값은 서버가 내려주는 `_meta.limits` 를 바인딩해야 한다.
@@ -12,7 +12,7 @@
  * 리터럴을 쓴 것과 결과가 같아지고, 이 계약이 막으려던 결함이 그대로 재현된다.
  * 그래서 세 지점(설정 파일 · 서버 규칙 · 화면 바인딩)이 같은 키·같은 값을 가리키는지 대조한다.
  *
- * #736 에서 비밀번호 칸들이 보안 설정 카드에서 「비밀번호 정책」·「비밀번호 만료」 조각(`_tab_security_password_policy`)으로
+ * 비밀번호 칸들이 보안 설정 카드에서 「비밀번호 정책」·「비밀번호 만료」 조각(`_tab_security_password_policy`)으로
  * 옮겨졌고(data-ref 유지), 같은 계약을 새 정수 칸 7개(반복·연속 글자 수, 재사용 개수, 만료 기간·안내일·연기일·상한)로 넓혔다.
  */
 
@@ -194,7 +194,7 @@ describe('보안 설정 — 비밀번호 정수 칸 한계값 3곳 정합', () =
  * @scenario entry_point=admin_update_user, min_length_setting=raised, special_char_setting=required
  * @effects admin_screen_min_length_bounds_follow_settings_limits
  */
-describe('보안 설정 — 비밀번호 칸 이동(#736 A14)', () => {
+describe('보안 설정 — 비밀번호 칸 이동', () => {
     /** @effects admin_screen_min_length_bounds_follow_settings_limits */
     it('보안 탭이 비밀번호 정책 조각을 접근 제한 카드 앞에 포함한다', () => {
         const json = JSON.stringify(tabSecurity);

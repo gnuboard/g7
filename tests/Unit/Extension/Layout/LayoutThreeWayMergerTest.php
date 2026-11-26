@@ -8,7 +8,7 @@ use App\Support\LayoutMarkup\LayoutPartialOrigin;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 레이아웃 3자 병합기 단위 테스트 (#727 §5.5 판정표 · §6.2).
+ * 레이아웃 3자 병합기 단위 테스트 (§5.5 판정표 · §6.2).
  *
  * 판정표의 행마다 조각 하나짜리 트리로 한 건 이상, 그리고 루트 키·data_sources 항목·중첩 조각·같은 조각
  * 반복·투영(옮김·맞바꿈)·고아 방지·인스턴스 수 변화·개수 규칙(W16)·표식 잔존을 고정한다.

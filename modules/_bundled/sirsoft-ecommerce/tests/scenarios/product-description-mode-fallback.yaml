@@ -1,4 +1,4 @@
-feature: 상품 설명 저장 정화 — 모드를 보내지 않은 수정은 저장된 모드를 따른다 (#887)
+feature: 상품 설명 저장 정화 — 모드를 보내지 않은 수정은 저장된 모드를 따른다
 
 description: |
   상품 설명 저장 정화(sanitizeDescription)는 요청의 description_mode 로 HTML 여부를 판정한다. 요청에 모드가 없으면

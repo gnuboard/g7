@@ -1128,7 +1128,7 @@ class OrderControllerTest extends ModuleTestCase
     public function test_send_email_success(): void
     {
         // Given: 메일 Fake 설정 및 주문 생성
-        // 주문 메일은 7.1.0 부터 알림 정의(order_custom_email)·메일 채널 준비 상태를 거친다(#699).
+        // 주문 메일은 7.1.0 부터 알림 정의(order_custom_email)·메일 채널 준비 상태를 거친다.
         Mail::fake();
         $this->enableMailChannelReadiness();
         (new \ReflectionMethod(ModuleManager::class, 'syncModuleNotificationDefinitions'))

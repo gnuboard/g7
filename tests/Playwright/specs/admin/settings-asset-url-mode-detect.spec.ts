@@ -1,5 +1,5 @@
 /**
- * E2E: 환경설정 > 일반 — 자산 URL 방식 "자동 감지" 버튼 (#486)
+ * E2E: 환경설정 > 일반 — 자산 URL 방식 "자동 감지" 버튼
  *
  * @scenario docroot-single-folder
  * 케이스(마커 아님 — 평문): admin_settings_asset_url_mode_detect
@@ -39,7 +39,7 @@ async function gotoGeneralTab(page: import('@playwright/test').Page): Promise<vo
 
 // @scenario tab=general, permitted=yes
 // @effects detect_button_styled
-test('#486 - 자동 감지 버튼이 관리자 다른 버튼과 동일한 btn 박스 스타일이다', async ({ page }) => {
+test('자동 감지 버튼이 관리자 다른 버튼과 동일한 btn 박스 스타일이다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -74,7 +74,7 @@ test('#486 - 자동 감지 버튼이 관리자 다른 버튼과 동일한 btn �
 // @effects detect_result_inline
 // @scenario asset_url_mode=extensionless, e2e_asset_url_recovery=admin_mode_detect
 // @effects admin_settings_detect_reports_mode_inline
-test('#486 - 감지 결과가 토스트가 아니라 필드 하단 인라인 안내로 뜬다', async ({ page }) => {
+test('감지 결과가 토스트가 아니라 필드 하단 인라인 안내로 뜬다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 

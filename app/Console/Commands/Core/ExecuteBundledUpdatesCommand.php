@@ -825,7 +825,7 @@ class ExecuteBundledUpdatesCommand extends Command
 
         $manifest = json_decode((string) File::get($path), true);
 
-        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 읽으면 식별자 자리에 0·1 이 들어간다(#822 D6)
+        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 읽으면 식별자 자리에 0·1 이 들어간다
         return is_array($manifest) ? ExtensionDependencyOrder::dependencyKeys($manifest['dependencies'] ?? []) : [];
     }
 }

@@ -319,7 +319,7 @@
   padding: clamp(16px, 5vw, 64px);
   display: flex;
   flex-direction: column;
-  /* 긴 문구는 줄이지 않고 구좌 안(.hs-slider__scroll)에서 스크롤로 모두 읽게 한다(#810 후속) */
+  /* 긴 문구는 줄이지 않고 구좌 안(.hs-slider__scroll)에서 스크롤로 모두 읽게 한다 */
   box-sizing: border-box;
   max-height: 100%;
   z-index: 2; /* 전체 링크(.hs-slider__link) 위 — 문구 스크롤·탭 진입이 링크와 섞이지 않게 */

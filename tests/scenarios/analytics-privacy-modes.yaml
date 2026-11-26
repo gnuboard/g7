@@ -3,7 +3,7 @@
 #   못한다(저장소 기존 시나리오와 같은 한계). 축 조합은 PHPUnit 단위·Feature 테스트가
 #   커버하고 green 이다.
 
-feature: 방문자 통계 개인정보 모드 — 저장 수준과 익명 폴백 (이슈 #682 S1)
+feature: 방문자 통계 개인정보 모드 — 저장 수준과 익명 폴백
 
 description: |
   방문자를 어디까지 식별해 저장할지 세 모드로 고르고, 마스킹·익명화·가명화 토글이
@@ -46,7 +46,7 @@ exclusions:
 effects:
   - full_mode_falls_back_to_anonymous_when_the_consent_plugin_blocks_cookies
   - consented_visitor_is_recorded_in_full_mode_when_the_consent_plugin_is_active
-  - consent_is_answered_through_the_consent_provider_contract   # 동의 판정은 범용 동의 제공자 계약으로 묻는다 (#639, 옛 분석 전용 필터·API 대체)
+  - consent_is_answered_through_the_consent_provider_contract   # 동의 판정은 범용 동의 제공자 계약으로 묻는다 (옛 분석 전용 필터·API 대체)
   - full_mode_stores_masked_ip_and_issues_cookie
   - full_mode_reports_returning_visitors
   - anonymous_mode_stores_no_ip
@@ -68,7 +68,7 @@ effects:
   - referrer_anonymization_keeps_domain_only
   - pseudonymized_user_id_is_replaced_by_a_hash
   - tightening_privacy_settings_offers_retroactive_anonymization
-  - tightening_without_retro_target_offers_nothing      # 강해졌어도 소급 요청이 성립하지 않으면(가릴 폭 0·해시 아님) 제안하지 않는다 (#703 실측)
+  - tightening_without_retro_target_offers_nothing      # 강해졌어도 소급 요청이 성립하지 않으면(가릴 폭 0·해시 아님) 제안하지 않는다
   - loosening_privacy_settings_offers_nothing
   - past_date_ip_hash_is_unavailable_once_the_salt_is_gone
   - failure_log_applies_the_same_ip_masking_rule

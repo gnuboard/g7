@@ -1,5 +1,5 @@
 /**
- * 펼친 목록 안 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 (#869 키보드 접근)
+ * 펼친 목록 안 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 (키보드 접근)
  *
  * 아이콘 선택(메뉴 편집 폼), 알림 판, 내 정보 메뉴, 테마 메뉴, 다국어 입력의 언어 추가 메뉴, 검색어 제안은 바깥 클릭으로만
  * 닫혀, 목록 안(검색칸, 항목)에서 Esc 를 눌러도 열린 채였다. 이제 Esc 로 닫고 여는 단추로 포커스를 돌린다(검색어 제안은
@@ -46,7 +46,7 @@ const expectContained = () => {
   expect(documentKeyDown.mock.calls.filter(([e]) => e.key === 'Escape')).toHaveLength(0);
 };
 
-describe('펼친 목록 안 Esc (#869)', () => {
+describe('펼친 목록 안 Esc', () => {
   // @scenario element=icon_select
   // @effects escape_inside_popup_closes_and_returns_focus
   it('아이콘 선택: 검색칸에서 Esc 로 닫고 여는 단추로 돌아간다', () => {

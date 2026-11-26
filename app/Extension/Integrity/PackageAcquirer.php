@@ -46,8 +46,13 @@ class PackageAcquirer
     public function verifyLocalZip(string $zipPath, PackageExpectation $expectation, PackageIntegrityOptions $options, bool $autoSidecar = true): PackageVerification
     {
         $signaturePath = $options->signaturePath;
-        if (($signaturePath === null || $signaturePath === '') && $autoSidecar && is_file($zipPath.PackageSignatureFormat::FILE_SUFFIX)) {
-            $signaturePath = $zipPath.PackageSignatureFormat::FILE_SUFFIX;
+        if (($signaturePath === null || $signaturePath === '') && $autoSidecar) {
+            foreach (PackageSignatureFormat::sidecarCandidates($zipPath) as $candidate) {
+                if (is_file($candidate)) {
+                    $signaturePath = $candidate;
+                    break;
+                }
+            }
         }
 
         $verification = $this->verifier->verify($zipPath, $this->readSignatureFile($signaturePath), $expectation);

@@ -1,4 +1,4 @@
-// e2e:allow #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
+// e2e:allow 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측과 Vitest 로 고정한다.
 /**
  * 클레임(교환/반품/취소·환불) 신청서 작성 핸들러 (회원 · 비회원 공용)
  *
@@ -359,7 +359,7 @@ export async function claimApplyOrderMissingHandler(
  *
  * 응답이 접수 때 고른 우선순위(`refund_priority`)를 실어 주면 그 값이 정본이다. 금액 분해로
  * 역산하면 PG 잔액이 모자라 마일리지로 넘친 **PG 우선** 신청서가 「마일리지 우선」 으로 뒤집힌다
- * (#599 validate 2026-09-23) — 두 우선순위가 같은 분해를 낳는 경우가 있어 분해만으로는 가를 수 없다.
+ * (validate 2026-09-23) — 두 우선순위가 같은 분해를 낳는 경우가 있어 분해만으로는 가를 수 없다.
  *
  * 그 필드가 없는 응답(구버전 서버)만 종전처럼 분해로 역산한다: 마일리지 환불액이 0 이면 PG 우선,
  * 마일리지가 먼저 소진됐다면 마일리지 우선.
@@ -391,7 +391,7 @@ function resolveRefundPriorityFromClaim(claim: any): string {
  * `claimEditSnapshot` 을 보고 작성 대신 수정 상태를 만든다.
  *
  * 승인 이후의 신청서(`is_editable: false`)는 수정 폼을 세우지 않는다 — 안내 토스트를 띄우고
- * `detailPath`(신청서 상세)로 돌려보낸다(#599 T2-D7 · 운영 결정 2026-09-23: 승인 이후 수정은
+ * `detailPath`(신청서 상세)로 돌려보낸다(운영 결정 2026-09-23: 승인 이후 수정은
  * 구매자는 못 하고 관리자만 한다). 서버도 같은 경우를 422(`claim_not_editable`)로 막지만,
  * 화면이 먼저 막지 않으면 구매자는 다 고쳐 쓴 뒤에야 거절을 받는다.
  *
@@ -558,7 +558,7 @@ export function buildClaimEditItems(claim: any, currency: string | null): ClaimA
             price_difference: Number(item.price_difference ?? 0),
             // 부호 없는 절대값으로 포맷한다 — 화면이 차액 방향(`+`/`-`)을 따로 붙인다. 서버의
             // `price_difference_formatted` 는 부호를 품으므로(`-5,000원`) 그대로 받으면 `--5,000원` 이
-            // 된다(#599 validate 2026-09-23). 작성 화면의 미리보기 경로도 같은 규칙이다.
+            // 된다(validate 2026-09-23). 작성 화면의 미리보기 경로도 같은 규칙이다.
             price_difference_formatted: formatAmountInCurrency(Math.abs(Number(item.price_difference ?? 0)), currency),
             // 단가 줄의 보조 통화는 **단가**에서 온다. 예전에는 여기에 `mc_price_difference` 를
             // 실어, 수정 화면의 `28,000원` 줄에 교환 차액인 `$-3.00` 이 붙었다(S3-D6 실측).
@@ -1025,7 +1025,7 @@ export function formatClaimEstimate(estimate: any, currencyCode: string | null):
         mc_additional_product_amount: toSecondaryCurrencyList(estimate?.mc_additional_product_amount, currencyCode),
         mc_refund_product_amount: toSecondaryCurrencyList(estimate?.mc_refund_product_amount, currencyCode),
         mc_deducted_shipping_fee: toSecondaryCurrencyList(estimate?.mc_deducted_shipping_fee, currencyCode),
-        // 주문금액 비교 섹션(#599 후속) — 환불 요약 4줄과 치환 근거 행. 스냅샷 행은 여기서 포맷하지
+        // 주문금액 비교 섹션 — 환불 요약 4줄과 치환 근거 행. 스냅샷 행은 여기서 포맷하지
         // 않는다(partial 이 서버 `formatted` 를 직독한다). 환불 총액·잔액은 서버 `refund_formatted.base.*`
         // 를 그대로 옮기고, 마일리지 환불분만 서버 포맷이 없어 같은 통화로 포맷한다(기준 통화 정수 — 환산 없음).
         refund_cash: estimate?.adjustment?.refund_formatted?.base?.refund_amount ?? fmt(estimate?.adjustment?.refund_amount),
@@ -1192,7 +1192,7 @@ export function initClaimApplyHandler(
     if (editSnapshot) {
         seedClaimEditState(G7Core, editSnapshot, claimable, claimType);
 
-        // #599 후속(1.2.0) — 수정 진입의 첫 미리보기. 작성 화면은 상품·사유를 고르는 순간 미리보기가
+        // 1.2.0 — 수정 진입의 첫 미리보기. 작성 화면은 상품·사유를 고르는 순간 미리보기가
         // 돌지만, 수정 화면은 상품·사유가 이미 채워져 들어오므로 구매자가 무언가 바꾸기 전에는 요약과
         // 주문금액 비교가 "계산됩니다" 자리표시에 머문다(2026-09-11 브라우저 실측). 기준 경로는 셸이
         // _local.claimApiBase 로 세운 값이다 — 레이아웃 onSuccess 파라미터의 `{{_local.…}}` 은 그 시점에
@@ -2001,7 +2001,7 @@ async function estimateClaimInternal(
         logger.error('[estimateClaim] 실패:', error);
 
         // 비회원 주문 조회 토큰이 없거나 만료된 무토큰 401 — 로그인 화면으로 옮겨지지 않는다(engine-v1.88.2).
-        // 「상품·수량을 확인하라」(4xx 화면 안내)가 아니라 주문 조회를 다시 하라고 알리고 입력은 그대로 둔다(#883).
+        // 「상품·수량을 확인하라」(4xx 화면 안내)가 아니라 주문 조회를 다시 하라고 알리고 입력은 그대로 둔다.
         if (isGuestOrderAuthFailure(error)) {
             writeLocal({ claimEstimate: null, claimEstimateFormatted: null, claimEstimateLoading: false, claimEstimateError: null });
             G7Core.toast?.error?.(guestClaimAuthRequiredMessage());
@@ -2141,7 +2141,7 @@ export async function submitClaimHandler(
 
     // 업로드를 기다리는 동안 로컬 상태가 바뀔 수 있다(구매자가 계속 입력한다). 본문은 **대기 뒤**
     // 다시 읽은 상태로 만든다 — 대기 앞 스냅샷(`local`)으로 만들면 화면에 보이는 값과 제출된 값이
-    // 갈린다(#599 validate 2026-09-23). 제출 자격 판정(위)은 대기 앞 값으로 이미 끝났다.
+    // 갈린다(validate 2026-09-23). 제출 자격 판정(위)은 대기 앞 값으로 이미 끝났다.
     const latest = G7Core.state.getLocal() ?? local;
 
     const body: Record<string, any> = {
@@ -2245,7 +2245,7 @@ export async function submitClaimHandler(
             );
 
             // 신청은 이미 접수됐다. 결제 플러그인이 결제창을 열기 전에 실패하면 그 문구를 알리고 신청서 상세로 보낸다 —
-            // 결제 건은 결제 대기라 상세의 [결제하기]로 다시 낼 수 있다. 머물면 작성 화면이 다시 접수를 받는다(#855).
+            // 결제 건은 결제 대기라 상세의 [결제하기]로 다시 낼 수 있다. 머물면 작성 화면이 다시 접수를 받는다.
             const pgFailure = claimPgDispatchFailureMessage(
                 pgResult,
                 t('sirsoft-ecommerce.user.claim.pay.failed', '결제를 시작하지 못했습니다.')
@@ -2285,7 +2285,7 @@ export async function submitClaimHandler(
     } catch (error: any) {
         logger.error('[submitClaim] 실패:', error);
 
-        // 비회원 주문 확인 실패(무토큰 401) — 신청서를 그대로 두고 주문 조회를 다시 하라고 알린다(#883).
+        // 비회원 주문 확인 실패(무토큰 401) — 신청서를 그대로 두고 주문 조회를 다시 하라고 알린다.
         if (isGuestOrderAuthFailure(error)) {
             G7Core.state.setLocal({ isSubmittingClaim: false });
             G7Core.toast?.error?.(guestClaimAuthRequiredMessage());
@@ -2482,7 +2482,7 @@ export async function saveClaimEditHandler(
                 claimPgDispatchAction(data.pg_payment_handler, data.pg_payment_data)
             );
 
-            // 수정은 이미 저장됐다. 차액 결제창을 열기 전에 실패하면 문구를 알리고 신청서 상세로 보낸다(#855).
+            // 수정은 이미 저장됐다. 차액 결제창을 열기 전에 실패하면 문구를 알리고 신청서 상세로 보낸다.
             const pgFailure = claimPgDispatchFailureMessage(
                 pgResult,
                 t('sirsoft-ecommerce.user.claim.pay.failed', '결제를 시작하지 못했습니다.')
@@ -2511,7 +2511,7 @@ export async function saveClaimEditHandler(
     } catch (error: any) {
         logger.error('[saveClaimEdit] 실패:', error);
 
-        // 비회원 주문 확인 실패(무토큰 401) — 수정 내용을 그대로 두고 주문 조회를 다시 하라고 알린다(#883).
+        // 비회원 주문 확인 실패(무토큰 401) — 수정 내용을 그대로 두고 주문 조회를 다시 하라고 알린다.
         if (isGuestOrderAuthFailure(error)) {
             G7Core.state.setLocal({ claimEditSaving: false });
             G7Core.toast?.error?.(guestClaimAuthRequiredMessage());

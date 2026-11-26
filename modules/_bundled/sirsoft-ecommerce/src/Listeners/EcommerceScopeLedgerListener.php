@@ -122,7 +122,7 @@ class EcommerceScopeLedgerListener implements HookListenerInterface
                 ),
                 'exempt' => $presetsExempt + [
                     self::R.'products.images.upload-temp' => '임시 업로드는 상품에 귀속되지 않은 temp_key 이미지라 상품 범위 대상이 없다',
-                    // 본문 미디어(#883) — 상품 id 를 받지 않는다. 상품 연결은 상품 저장(ProductService::create·update → syncDescriptionMedia) 때 일어나고 수정 범위는 그 저장 경로가 판정한다
+                    // 본문 미디어 — 상품 id 를 받지 않는다. 상품 연결은 상품 저장(ProductService::create·update → syncDescriptionMedia) 때 일어나고 수정 범위는 그 저장 경로가 판정한다
                     self::R.'content-media.target' => '편집기 업로드 계약(정책·엔드포인트)만 응답하고 상품 행을 읽거나 바꾸지 않는다',
                     self::R.'content-media.upload' => '본문 미디어 업로드는 owner_id 없는 temp_key 행으로만 저장돼 상품 범위 대상이 없다',
                 ],
@@ -375,7 +375,7 @@ class EcommerceScopeLedgerListener implements HookListenerInterface
                 ],
             ],
 
-            // ── 내보내기 (#787 — 주인은 요청자 requested_by) ──
+            // ── 내보내기 (주인은 요청자 requested_by) ──
             // 목록은 저장소가 조회 범위를 쿼리에 걸고, 일괄 삭제는 라우트 모델이 없어 서비스가 작업마다 삭제 범위를 다시 본다.
             // {export} 상세·이력·받기·삭제는 라우트 모델 바인딩으로 미들웨어가 보고, 다시 요청은 범위 없는 「요청」 권한이라
             // 컨트롤러가 조회 범위로 본다(ExportController::retry → ExportAccess::inScope).

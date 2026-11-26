@@ -760,7 +760,7 @@
                                                     "text": "—"
                                                 },
                                                 {
-                                                    "comment": "송장은 상품 행마다 있어(#599) 한 신청서에 운송장이 여럿일 수 있다 — 목록 한 줄에는 방향별 첫 운송장과 「외 N개」만 적고(서버 `tracking_summary`), 운송장별 조회 링크는 상세의 배송 카드가 맡는다.",
+                                                    "comment": "송장은 상품 행마다 있어 한 신청서에 운송장이 여럿일 수 있다 — 목록 한 줄에는 방향별 첫 운송장과 「외 N개」만 적고(서버 `tracking_summary`), 운송장별 조회 링크는 상세의 배송 카드가 맡는다.",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "if": "{{claim.claim_type === 'exchange' || claim.claim_type === 'return'}}",

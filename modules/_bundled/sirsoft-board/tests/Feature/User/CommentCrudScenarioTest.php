@@ -408,7 +408,7 @@ class CommentCrudScenarioTest extends BoardTestCase
     /**
      * 게시판 관리(manager) 권한자는 타인 댓글을 수정할 수 있다
      *
-     * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 댓글 수정 200 (이슈 #413-20)
+     * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 댓글 수정 200 (20)
      *
      * @effects manager_can_update_other_users_comment
      *
@@ -435,7 +435,7 @@ class CommentCrudScenarioTest extends BoardTestCase
     /**
      * 게시판 관리(manager) 권한자는 타인 댓글을 삭제할 수 있다
      *
-     * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 댓글 삭제 200 (이슈 #413-20)
+     * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 댓글 삭제 200 (20)
      *
      * @effects manager_can_delete_other_users_comment
      *
@@ -570,13 +570,13 @@ class CommentCrudScenarioTest extends BoardTestCase
     }
 
     // ==========================================
-    // 제한 키워드 차단 시나리오 (이슈 #413-24)
+    // 제한 키워드 차단 시나리오 (24)
     // ==========================================
 
     /**
      * 제한 키워드가 포함된 댓글은 생성할 수 없다
      *
-     * 회귀: 게시글은 차단되나 댓글 content 에 BlockedKeywordsRule 누락으로 통과하던 결함 (#413-24)
+     * 회귀: 게시글은 차단되나 댓글 content 에 BlockedKeywordsRule 누락으로 통과하던 결함 (24)
      *
      * @effects store_comment_blocks_matching_keyword
      *
@@ -627,7 +627,7 @@ class CommentCrudScenarioTest extends BoardTestCase
     /**
      * 제한 키워드가 포함되도록 댓글을 수정할 수 없다
      *
-     * 회귀: 댓글 수정 경로(UpdateCommentRequest)에도 키워드 검증 적용 (#413-24)
+     * 회귀: 댓글 수정 경로(UpdateCommentRequest)에도 키워드 검증 적용 (24)
      *
      * @effects update_comment_blocks_matching_keyword
      *

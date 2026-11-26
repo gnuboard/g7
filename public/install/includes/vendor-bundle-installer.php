@@ -739,7 +739,7 @@ function buildVendorBundlePermissionHint(string $path): string
 }
 
 /**
- * 개발자 전용 composer(`custom/`, 7.2.0 #792)의 vendor 를 맞춥니다.
+ * 개발자 전용 composer(`custom/`, 7.2.0)의 vendor 를 맞춥니다.
  *
  * custom/composer.json 이 있을 때만 동작한다. 설치본이 custom/composer.lock 과 맞으면(설치 표식
  * `vendor/.g7-custom-lock.sha256`) 건너뛴다. vendor 묶음 모드이거나 auto 인데 composer 를 쓸 수 없고

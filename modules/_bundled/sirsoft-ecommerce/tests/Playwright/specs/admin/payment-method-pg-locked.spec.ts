@@ -1,5 +1,5 @@
 /**
- * 주문설정 결제수단 — PG 고정(간편결제) 표시 회귀 (#475).
+ * 주문설정 결제수단 — PG 고정(간편결제) 표시 회귀.
  *
  * 배경: PG 플러그인이 등록하는 간편결제(네이버페이 등)는 특정 PG 전용 수단인데,
  * 과거에는 이를 코어의 "PG 불필요" 목록(`['point','deposit','free','dbank']`)에 정규식으로
@@ -104,7 +104,7 @@ test.describe('@sirsoft-ecommerce 주문설정 결제수단 — PG 고정 표시
     for (const method of locked) {
       expect(
         method.pg_provider,
-        `${method.id} 는 PG 고정 수단이므로 pg_provider 가 비어 있으면 안 된다 (저장된 null 이 정의값을 이기면 #475 재발)`,
+        `${method.id} 는 PG 고정 수단이므로 pg_provider 가 비어 있으면 안 된다 (저장된 null 이 정의값을 이기면 같은 결함 재발)`,
       ).toBeTruthy();
       expect(method.needs_pg, `${method.id} 는 PG 결제 수단이어야 한다`).toBe(true);
     }
@@ -118,7 +118,7 @@ test.describe('@sirsoft-ecommerce 주문설정 결제수단 — PG 고정 표시
       );
 
       // ① PG 고정 배지가 뜨고, 그 안에 PG 이름이 들어 있어야 한다.
-      //    ("PG 불필요" 로 표시되면 #475 회귀 — 배지 자체가 없으므로 아래 단언이 실패한다.)
+      //    ("PG 불필요" 로 표시되면 같은 결함의 회귀 — 배지 자체가 없으므로 아래 단언이 실패한다.)
       const badge = page.getByTestId(`pg-locked-badge-${method.id}`);
       await expect(
         badge,
@@ -138,7 +138,7 @@ test.describe('@sirsoft-ecommerce 주문설정 결제수단 — PG 고정 표시
       // ③ PG 고정과 "PG 불필요" 는 상호배타 — 둘 다 뜨면 표시가 모순된다.
       await expect(
         page.getByTestId(`pg-not-required-${method.id}`),
-        `${method.id} 가 "PG 불필요" 로 표시되면 #475 회귀`,
+        `${method.id} 가 "PG 불필요" 로 표시되면 회귀`,
       ).toHaveCount(0);
     }
   });

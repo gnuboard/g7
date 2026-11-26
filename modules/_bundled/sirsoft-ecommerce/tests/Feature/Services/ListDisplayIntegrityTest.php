@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 목록 표시 정합성 회귀 테스트 (#492 6차)
+ * 목록 표시 정합성 회귀 테스트
  *
  * 브라우저 실측에서 "행은 나오는데 칸이 비거나 상태가 틀린" 세 지점을 고정한다.
  * - 찜 목록에 소프트 삭제된 상품 행이 남아 카드 렌더가 실패했다

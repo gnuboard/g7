@@ -1,4 +1,4 @@
-# 시나리오 매니페스트 — 환경설정 > 드라이버 「비공개 첨부 저장소」 카드 (#916 ①)
+# 시나리오 매니페스트 — 환경설정 > 드라이버 「비공개 첨부 저장소」 카드
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 
 feature: admin_settings_private_attachment_card

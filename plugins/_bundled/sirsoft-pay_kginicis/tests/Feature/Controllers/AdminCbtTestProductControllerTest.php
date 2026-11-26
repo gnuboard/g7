@@ -86,7 +86,7 @@ class AdminCbtTestProductControllerTest extends PluginTestCase
     }
 
     /**
-     * 쇼핑몰 통화 설정에 엔화가 없으면 100엔 가격을 정할 수 없어 422 와 안내 문구로 멈춘다 — 일반 500 으로 끝나 원인을 알 수 없던 경로(#916).
+     * 쇼핑몰 통화 설정에 엔화가 없으면 100엔 가격을 정할 수 없어 422 와 안내 문구로 멈춘다 — 일반 500 으로 끝나 원인을 알 수 없던 경로.
      *
      * @scenario case=cbt_test_product_jpy_price
      *

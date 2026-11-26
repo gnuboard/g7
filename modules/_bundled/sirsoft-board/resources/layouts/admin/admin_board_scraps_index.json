@@ -487,7 +487,7 @@
                                                             "if": "{{!!row.member?.uuid}}",
                                                             "actions": [
                                                                 {
-                                                                    "comment": "반응 관리와 같다 — 「회원 정보 보기」는 항목 자체가 새 탭 링크(href + target=_blank, #757)라 갈래가 없고,\n                         「이 회원으로 검색」만 같은 창에서 회원 조건을 갈아끼운다(user_uuid — 목록이 이미 읽는 필터).",
+                                                                    "comment": "반응 관리와 같다 — 「회원 정보 보기」는 항목 자체가 새 탭 링크(href + target=_blank)라 갈래가 없고,\n                         「이 회원으로 검색」만 같은 창에서 회원 조건을 갈아끼운다(user_uuid — 목록이 이미 읽는 필터).",
                                                                     "event": "onItemClick",
                                                                     "handler": "switch",
                                                                     "cases": {
@@ -556,7 +556,7 @@
                                                     ]
                                                 },
                                                 {
-                                                    "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490)",
+                                                    "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다",
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "if": "{{!!row.member?.real_name}}",
@@ -699,7 +699,7 @@
                                                     "text": "{{row.author_name ?? ''}}"
                                                 },
                                                 {
-                                                    "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490)",
+                                                    "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다",
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "if": "{{!!row.author_real_name}}",

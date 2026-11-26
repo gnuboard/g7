@@ -11,7 +11,7 @@ use Modules\Sirsoft\Page\Http\Requests\UploadPageContentMediaRequest;
 use Modules\Sirsoft\Page\Services\PageContentMediaService;
 
 /**
- * 관리자 페이지 본문 미디어 컨트롤러 — 업로드·편집기 업로드 계약 (#883 4단계, #887 표준 계약 엔드포인트)
+ * 관리자 페이지 본문 미디어 컨트롤러 — 업로드·편집기 업로드 계약 (표준 계약 엔드포인트)
  *
  * 등록 화면과 수정 화면이 같이 쓰므로 라우트 권한은 등록·수정 어느 쪽이든(OR)이다. 서빙은 공개 경로
  * (`GET pages/content-media/{hash}`)가 맡는다.
@@ -29,7 +29,7 @@ class PageContentMediaController extends AdminBaseController
     }
 
     /**
-     * 편집기 본문 미디어 업로드 계약 — 표준 계약 엔드포인트 `GET admin/content-media/target` (#887).
+     * 편집기 본문 미디어 업로드 계약 — 표준 계약 엔드포인트 `GET admin/content-media/target`.
      *
      * 페이지 편집 화면이 `html_editor` 확장점의 `mediaUpload` 로 넘길 계약을 돌려준다. 값은 페이지 모듈 설정(`content_media`,
      * 비면 첨부 정책)이고, 받는 종류가 없으면 `data: null` 이다. 옛 길(`GET admin/attachments/settings` 의 `content_media`)도 같은

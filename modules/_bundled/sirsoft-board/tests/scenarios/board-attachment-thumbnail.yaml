@@ -1,4 +1,4 @@
-feature: 게시판 첨부 미리보기 이미지 썸네일 (#869) + 게시판 삭제의 행 disk 정리 (R1)
+feature: 게시판 첨부 미리보기 이미지 썸네일 + 게시판 삭제의 행 disk 정리 (R1)
 
 description: |
   첨부 미리보기(`…/attachment/{hash}/preview`)에 `?size={규격}`·`?w={숫자}` 를 붙이면 콘텐츠 상태

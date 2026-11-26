@@ -103,7 +103,7 @@ class VendorBundler
     }
 
     /**
-     * 개발자 전용 composer(`custom/`, #792)의 vendor 번들을 빌드합니다.
+     * 개발자 전용 composer(`custom/`)의 vendor 번들을 빌드합니다.
      *
      * 결과물: custom/vendor-bundle.zip + custom/vendor-bundle.json. composer 가 없는 서버는 이 묶음을
      * 올려 두면 설치·코어 업데이트가 풀어 준다.
@@ -525,7 +525,7 @@ class VendorBundler
         $descriptors = self::composerOutputDescriptors($outPath, $errPath);
 
         // `proc_open` 이 막힌 호스팅에서는 번들 생성 자체가 성립하지 않는다. 무가드로
-        // 부르면 `Error` 로 죽어 호출자가 사유를 담은 예외로 안내할 기회를 잃는다 (#609 D34).
+        // 부르면 `Error` 로 죽어 호출자가 사유를 담은 예외로 안내할 기회를 잃는다.
         if (! ExecutionEnvironment::hasFunction('proc_open')) {
             throw new VendorInstallException(
                 (string) __('vendor.composer_unavailable'),

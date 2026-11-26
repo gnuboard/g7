@@ -144,7 +144,7 @@ class CashReceiptService
         }
 
         // 과세 몫에 든 부가세 — 공급가액·부가세를 나눠 받는 프로바이더(KG이니시스)가 쓴다.
-        // 받지 않는 프로바이더(토스)는 무시한다. 세율이 섞이거나 영세가 든 주문에서 /11 고정 분할이 틀린다(#612 ②).
+        // 받지 않는 프로바이더(토스)는 무시한다. 세율이 섞이거나 영세가 든 주문에서 /11 고정 분할이 틀린다.
         $vatAmount = $this->calculateIssuableVatAmount($order, $target, strict: true);
 
         // 발급 슬롯 예약 — 겹친 요청은 여기서 갈린다(KVE-2026-3191). 예약에 실패하면 PG 를 부르지 않는다.
@@ -168,7 +168,7 @@ class CashReceiptService
             'identifier' => $identifier,
             'identifier_type' => ($identifierType ?? $this->inferIdentifierType($identifier))?->value,
             'amount' => $target['amount'],
-            // 면세 금액 = 면세 + 영세(#612 P2) — 영세는 부가세가 없으므로 PG 에는 면세로 넘긴다
+            // 면세 금액 = 면세 + 영세 — 영세는 부가세가 없으므로 PG 에는 면세로 넘긴다
             'tax_free_amount' => $target['tax_free_amount'],
             'vat_amount' => $vatAmount,
             'order_name' => $this->buildOrderName($order),
@@ -664,7 +664,7 @@ class CashReceiptService
      * "지금 이 주문이 얼마짜리인가"만 읽으면 된다.
      *
      * 면세액은 결제사·국세청에 「부가세 없는 금액」으로 넘길 몫이라 영세(세율 0%)를 포함한다
-     * (`Order::pgTaxFreeAmount()`, #612). 이력 행의 `tax_free_amount` 도 이 의미다.
+     * (`Order::pgTaxFreeAmount()`). 이력 행의 `tax_free_amount` 도 이 의미다.
      *
      * 현금성 금액(total_cash_equivalent_amount)은 무통장 주문의 실입금액이며,
      * 마일리지 사용분은 현금이 아니므로 제외되어 있다.
@@ -946,7 +946,7 @@ class CashReceiptService
      *
      * 사유는 현금영수증 이력에 남아 관리자 주문 상세 결제 정보와 구매자 응답에 그대로 보인다. 프로바이더 예외 원문에는
      * 결제대행사 API 주소·cURL 오류 문구나 서버 경로가 담길 수 있으므로 운영 모드에서는 번역된 실패 문구를 남기고
-     * 원문은 서버 로그에만 둔다. 디버그 모드는 코어 관례(SafeExceptionMessage)대로 원문을 둔다(#858).
+     * 원문은 서버 로그에만 둔다. 디버그 모드는 코어 관례(SafeExceptionMessage)대로 원문을 둔다.
      *
      * @param  \Throwable  $e  프로바이더 예외
      * @param  string  $failedKey  운영 모드에서 남길 실패 문구 키(`cash_receipt.errors.` 아래 — issue_failed·cancel_failed)

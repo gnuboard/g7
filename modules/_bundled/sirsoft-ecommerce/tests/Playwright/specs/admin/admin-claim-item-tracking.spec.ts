@@ -1,5 +1,5 @@
 /**
- * 관리자 클레임 상세 — 상품 행 송장 「송장만 저장」 흐름 (#599 상품 행 송장)
+ * 관리자 클레임 상세 — 상품 행 송장 「송장만 저장」 흐름 (상품 행 송장)
  *
  * 송장은 상품 행마다 있다. 브라우저로만 드러나는 축을 본다:
  *
@@ -375,7 +375,7 @@ function waybillGroup(page: import('@playwright/test').Page, direction: 'collect
   return page.locator(`[data-section-id="shipping_info"] [id^="${prefix}"]`, { hasText: trackingNumber });
 }
 
-test.describe('관리자 클레임 상세 — 운송장 단위 도착 · 구매자 운송장 · 선교환 (#599 §7-3)', () => {
+test.describe('관리자 클레임 상세 — 운송장 단위 도착 · 구매자 운송장 · 선교환', () => {
   /**
    * 셔츠 3개 중 2개 + 바지를 운송장 A, 셔츠 1개를 운송장 B 로 회수중에 둔다. 배송 정보 탭에서 A 묶음만
    * [도착 처리] 하면 A 의 두 행만 회수도착(도착 시각·회수 진행 collected)이고 B 는 회수중이다. 헤더는

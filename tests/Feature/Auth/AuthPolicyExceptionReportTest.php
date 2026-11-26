@@ -15,7 +15,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 정상 정책 거절 예외가 오류 로그에 보고되지 않는지 검증합니다 (#798 — F1 M5 T7 실측).
+ * 정상 정책 거절 예외가 오류 로그에 보고되지 않는지 검증합니다 (F1 M5 T7 실측).
  *
  * 비밀번호 인증 정책 거절(403 `auth.password_auth_disabled`)·외부 인증 추가 단계(409)·2단계 수단 없음(422)은
  * 사용자에게 안내로 답하는 정상 결과인데, 세 예외가 `RuntimeException` 이라 전역 렌더러가 응답을 만들어도

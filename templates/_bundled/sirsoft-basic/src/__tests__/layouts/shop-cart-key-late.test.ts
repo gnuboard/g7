@@ -1,6 +1,6 @@
 /**
  * @file shop-cart-key-late.test.ts
- * @description 장바구니 키가 없을 때 담기와 바로 구매의 요청 헤더 계약 (#869 λ 4부 16 관찰 3)
+ * @description 장바구니 키가 없을 때 담기와 바로 구매의 요청 헤더 계약 (4부 16 관찰 3)
  *
  * 담기와 바로 구매가 `X-Cart-Key: {{_global.cartKey}}` 를 직접 실어, 키가 없으면(발급 실패) 헤더 값이 글자 그대로 `null` 로 나갔다
  * (동작 headers 는 빈 값을 거르지 않는다). 바탕 레이아웃 globalHeaders 가 같은 경로에 키를 싣고 빈 값은 싣지 않으며, 요청 시점의 최신 전역
@@ -38,7 +38,7 @@ function collectNodes(obj: any, predicate: (node: any) => boolean, acc: any[] = 
     return acc;
 }
 
-describe('장바구니 키가 없을 때의 요청 헤더 (#869 λ 4부 16)', () => {
+describe('장바구니 키가 없을 때의 요청 헤더 (4부 16)', () => {
     // @scenario storage=cart_key
     // @effects no_literal_null_cart_key_header
     it('관찰 3 — 담기와 바로 구매는 X-Cart-Key 를 직접 싣지 않고, 바탕 레이아웃 globalHeaders 가 같은 경로에 싣는다', () => {

@@ -1,7 +1,7 @@
 feature: 게시판 반응(추천/비추천)
 
 description: |
-  이슈 #525 — 게시글에 반응(추천/비추천)을 남기는 기능. 로그인 회원이 게시글에 대해
+  게시글에 반응(추천/비추천)을 남기는 기능. 로그인 회원이 게시글에 대해
   게시판이 켠 반응 유형 중 하나를 선택해 남긴다. 공개 리액션이라 개수를 항상 노출하고,
   본인 글 셀프 반응 제한·로그인 필수 등 어뷰징 방지 조건이 붙는다.
 
@@ -48,7 +48,7 @@ axes:
     - react_pending_disables_button
     - secret_post_react_blocked
     - secret_post_react_allowed_with_permission
-    # 열람할 수 있으면 반응할 수 있다 — 비밀번호 확인자·스레드 경로 앵커 (#789 D6)
+    # 열람할 수 있으면 반응할 수 있다 — 비밀번호 확인자·스레드 경로 앵커
     - secret_post_react_by_viewer
     - reaction_area_hidden_on_inaccessible_secret_post
     - icon_image_priority_post_detail
@@ -107,7 +107,7 @@ effects:
   # 다국어 (확정 15)
   - reaction_type_name_localized
   - missing_locale_falls_back_to_default
-  # 아이콘 이미지 (이슈 #525 후속)
+  # 아이콘 이미지
   - reaction_type_exposes_icon_url
   # 활동 로그
   - react_logs_add_change_remove_activity

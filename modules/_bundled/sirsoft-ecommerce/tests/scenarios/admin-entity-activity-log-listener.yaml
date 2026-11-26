@@ -7,7 +7,7 @@ description: |
   before_* 훅을 구독하지 않는다. 일괄 작업은 항목마다 한 건씩 기록한다.
 
   기존 회귀 테스트(EcommerceAdminActivityLogListenerTest)를 사후 등재한 매니페스트다. 구독 훅 수는
-  #524 에서 회원 데이터 일괄 삭제 훅 4개(찜·장바구니·배송지·상품 문의)가 늘어 45개다.
+  회원 데이터 일괄 삭제 훅 4개(찜·장바구니·배송지·상품 문의)가 늘어 45개다.
 
 axis_notes:
   domain: |

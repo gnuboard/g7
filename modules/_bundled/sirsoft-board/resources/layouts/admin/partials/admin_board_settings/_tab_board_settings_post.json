@@ -615,7 +615,7 @@
                             "text": "$t:sirsoft-board.admin.settings.sections.guest_author_fields"
                         },
                         {
-                            "comment": "비회원 작성자 항목 기본값 — 새 게시판이 물려받는 사용, 필수(모듈 설정 basic_defaults.guest_author_fields). 게시판 수정 화면의 표와 같은 모양이다(#490).\n             행은 서버가 준 `form.guest_author_field_rows`(고정 항목 이름과 비밀번호 + 항목 엔진의 항목)이고,\n             스위치가 바꾸는 값은 `form.guest_author_fields[항목 키].{post|comment}.{enabled|required}`(불리언)이다.\n             행마다 `_v` 에 지금 값(폼 값 우선, 없으면 서버가 준 행 값)을 얹어 네 칸이 같은 값을 읽는다. 「사용」이 꺼지면 「필수」도 꺼진 것으로 본다.\n             이 표에서는 항목을 더하거나 지우지 않는다(다른 확장이 기여한 항목은 그 확장이, 추가 항목은 항목 관리 화면이 맡는다).\n             넓은 화면은 표, 좁은 화면은 항목별 카드로 같은 값을 그린다",
+                            "comment": "비회원 작성자 항목 기본값 — 새 게시판이 물려받는 사용, 필수(모듈 설정 basic_defaults.guest_author_fields). 게시판 수정 화면의 표와 같은 모양이다.\n             행은 서버가 준 `form.guest_author_field_rows`(고정 항목 이름과 비밀번호 + 항목 엔진의 항목)이고,\n             스위치가 바꾸는 값은 `form.guest_author_fields[항목 키].{post|comment}.{enabled|required}`(불리언)이다.\n             행마다 `_v` 에 지금 값(폼 값 우선, 없으면 서버가 준 행 값)을 얹어 네 칸이 같은 값을 읽는다. 「사용」이 꺼지면 「필수」도 꺼진 것으로 본다.\n             이 표에서는 항목을 더하거나 지우지 않는다(다른 확장이 기여한 항목은 그 확장이, 추가 항목은 항목 관리 화면이 맡는다).\n             넓은 화면은 표, 좁은 화면은 항목별 카드로 같은 값을 그린다",
                             "id": "default_guest_author_fields_field",
                             "type": "basic",
                             "name": "Div",

@@ -103,7 +103,7 @@ class StorageLeftoverPruneService
         'templates',
         'templates/_pending',
         // 초기 화면 정적 파일 게시 루트(`public/build/ext`)의 상위 — 인스톨러가 권한을 점검하는
-        // 대상이라 그 자리에도 쓰기 프로브가 남는다 (#651 이 인스톨러 목록에 들인 뒤 합류).
+        // 대상이라 그 자리에도 쓰기 프로브가 남는다 (인스톨러 목록에 들인 뒤 합류).
         'public/build',
         'lang-packs',
         'lang-packs/_pending',
@@ -402,7 +402,7 @@ class StorageLeftoverPruneService
      * 수백 MB 가 영구히 남는데, 이 서비스의 어느 대상군도 그 자리를 보지 않았다
      * (`core_pending` 은 같은 디렉토리의 **매니페스트 파일**만 접두사로 좁혀 본다).
      * 무CLI 웹 워커는 요청 시간 상한 안에서 도므로 그 실패 모드가 특히 흔하다
-     * (#609 G6 — G3 회차 6 이관).
+     * (G3 회차 6 이관).
      *
      * 나이 하한이 진행 중인 실행을 보호한다 — 기본 보존일(3일) 안의 디렉토리는 건드리지
      * 않으므로, 지금 내려받는 중인 페이로드가 지워질 수 없다.

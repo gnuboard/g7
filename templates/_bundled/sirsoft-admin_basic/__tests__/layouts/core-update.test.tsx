@@ -414,7 +414,7 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
     // @scenario surface=user_maintenance
     // @effects maintenance_page_structure
     it('홈으로 돌아가기 링크가 포함되어 있다', () => {
-      // 링크(#757) — 주소는 A 의 href, 보통 클릭은 path 없는 navigate 가 그 href 로 SPA 이동
+      // 링크 — 주소는 A 의 href, 보통 클릭은 path 없는 navigate 가 그 href 로 SPA 이동
       const link = findInTree(layout.slots.content, (n: any) => n.name === 'A');
       expect(link).toBeDefined();
       expect(link.props.href).toBe('/');
@@ -483,7 +483,7 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
     // @scenario surface=result_modal
     // @effects result_modal_links_to_update_tab
     it('업데이트 권한이 있으면 「업데이트 탭으로」 링크가 창을 닫고 업데이트 탭으로 옮긴다', () => {
-      // 같은 화면의 탭 이동이라 실제 주소를 가진 링크다(#757 — 새 탭·주소 복사). 누르면 동작이 이동을 맡는다.
+      // 같은 화면의 탭 이동이라 실제 주소를 가진 링크다(새 탭·주소 복사). 누르면 동작이 이동을 맡는다.
       const links = findAllInTree(modal.props?.footer ?? [], (n: any) => n.name === 'A');
       const goBtn = links.find((b: any) => (b.text ?? '') === '$t:admin.settings.info.go_to_update_tab');
       expect(goBtn).toBeDefined();
@@ -502,7 +502,7 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
     // @scenario surface=result_modal
     // @effects update_result_reflects_availability
     it('변경사항 보기 버튼에 changelog API 호출 액션이 있다 (closeModal 없이 직접 apiCall)', () => {
-      const buttons = findAllInTree([...modal.children, ...(modal.props?.footer ?? [])], (n: any) => n.name === 'Button') /* 단추는 고정 하단(props.footer)에 있다(#869 C1) */;
+      const buttons = findAllInTree([...modal.children, ...(modal.props?.footer ?? [])], (n: any) => n.name === 'Button') /* 단추는 고정 하단(props.footer)에 있다 */;
       // 라벨은 버튼의 `text` 이거나, 스피너와 나란히 선 Span 의 `text` 다 — 진행 표시를
       // 넣으면서 children 으로 내려갔다. 라벨의 자리로 버튼을 찾으면 표시를 넣을 때마다
       // 이 테스트가 깨지므로, 라벨이 어디에 있든 같은 버튼을 집는다.
@@ -541,7 +541,7 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
     // @scenario surface=result_modal
     // @effects update_result_reflects_availability
     it('업데이트 방법 버튼에 openModal 액션이 있다 (closeModal 없이 직접 openModal)', () => {
-      const buttons = findAllInTree([...modal.children, ...(modal.props?.footer ?? [])], (n: any) => n.name === 'Button') /* 단추는 고정 하단(props.footer)에 있다(#869 C1) */;
+      const buttons = findAllInTree([...modal.children, ...(modal.props?.footer ?? [])], (n: any) => n.name === 'Button') /* 단추는 고정 하단(props.footer)에 있다 */;
       const howToUpdateBtn = buttons.find((b: any) => b.text === '$t:admin.settings.info.how_to_update');
       expect(howToUpdateBtn).toBeDefined();
 
@@ -706,7 +706,7 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
 
     // @scenario surface=guide_modal
     // @effects guide_shows_command
-    it('경고 시맨틱 자산(alert-warning)이 있다 (#408)', () => {
+    it('경고 시맨틱 자산(alert-warning)이 있다', () => {
       const warningDiv = findInTree(modal.children, (n: any) =>
         n.props?.className?.includes('alert-warning')
       );

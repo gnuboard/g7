@@ -1,4 +1,4 @@
-feature: 페이지 첨부 — 첨부 업로더 확장점 기본 경로의 업로드 → 저장 → 재진입 (#916 ③)
+feature: 페이지 첨부 — 첨부 업로더 확장점 기본 경로의 업로드 → 저장 → 재진입
 
 description: |
   레이아웃의 FileUploader 를 `attachment_uploader` 확장점의 default 안으로 옮겼다. 대체 업로더가 없는 기본 경로에서

@@ -11,7 +11,7 @@ use Tests\Support\Concerns\BuildsLayoutMergeFixtures;
 use Tests\TestCase;
 
 /**
- * `extension:reset-files-from-bundled` 는 교체 직전 활성 폴더(이전 판)로 비어 있는 레이아웃 병합 기준을 채운다 (#888).
+ * `extension:reset-files-from-bundled` 는 교체 직전 활성 폴더(이전 판)로 비어 있는 레이아웃 병합 기준을 채운다.
  *
  * DB 를 함께 쓰는 검수 서버가 먼저 업데이트하면 그 서버의 업데이트 백업이 채운 기준은 검수 서버 표에만 남는다. 운영 서버 표의
  * 오래된 행(`original_content` 가 빈 행)은 keep 레이아웃 갱신에서 기준이 없어 새 판을 받지 못했다(`kept_no_base`). 이 서버의 활성

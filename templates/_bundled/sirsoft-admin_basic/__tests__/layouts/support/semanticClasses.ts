@@ -1,7 +1,7 @@
 /**
  * @file semanticClasses.ts
  * @description 관리자 템플릿 의미 클래스(`src/styles/semantic.css` 의 `.btn`, `.btn-primary`, `.text-muted`, `.form-error` 등)를
- * 그 정의(@apply 유틸)로 펼쳐 주는 시험 도우미 (#399 R-1).
+ * 그 정의(@apply 유틸)로 펼쳐 주는 시험 도우미.
  *
  * 레이아웃이 반복되던 Tailwind 묶음(예: `disabled:opacity-50 disabled:cursor-not-allowed`, `text-gray-500 dark:text-gray-400`)을
  * 의미 클래스(`btn`, `text-muted`)로 바꿨으므로, 모양을 지키던 시험은 클래스 이름만 보지 않고 그 이름이 템플릿 CSS 에서

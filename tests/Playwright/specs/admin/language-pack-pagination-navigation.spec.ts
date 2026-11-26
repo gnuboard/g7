@@ -20,7 +20,7 @@ const PAGE_URL = '/admin/settings?tab=language_packs&exclude_protected=0&per_pag
 
 // @scenario envelope_slot=pagination, surface=language_pack_list, consumer=pager_buttons, position=last
 // @effects page_numbers_visible, page_navigates, last_page_shows_real_remainder
-test('#677 후속 - 보호된 언어팩까지 펼치면 쪽 단추가 모두 그려지고 눌러서 이동한다', async ({ page }) => {
+test('보호된 언어팩까지 펼치면 쪽 단추가 모두 그려지고 눌러서 이동한다', async ({ page }) => {
   const token = issueToken('core.language_packs.manage');
   await authenticatePage(page, token);
 
@@ -42,7 +42,7 @@ test('#677 후속 - 보호된 언어팩까지 펼치면 쪽 단추가 모두 그
   await expect(nav).toBeVisible({ timeout: 30_000 });
 
   // 마지막 쪽 번호까지 단추가 있어야 한다 — 1번 하나만 남던 것이 이 결함이었다.
-  // 쪽 번호는 링크(<a href>, pageHref — #757)
+  // 쪽 번호는 링크(<a href>, pageHref)
   await expect(nav.getByRole('link', { name: `페이지 ${pagination.last_page}`, exact: true })).toBeVisible();
 
   // 눌러서 실제로 그 쪽으로 넘어가는지 — 주소와 아래 표시 줄 둘 다로 확인한다.

@@ -12,8 +12,8 @@ axes:
 
 effects:
   - cart_key_loaded_or_issued
-  - no_literal_null_cart_key_header                # 담기와 바로 구매는 키를 직접 싣지 않아, 키가 없으면 헤더를 싣지 않는다(globalHeaders 가 빈 값을 거름, #869)
-  - cart_key_issue_starts_at_bundle_load           # 저장 키가 없고 쇼핑몰이 켜져 있으면 번들이 실릴 때 발급을 시작하고, initCartKey 는 같은 결과를 끝까지 기다린다(#879)
+  - no_literal_null_cart_key_header                # 담기와 바로 구매는 키를 직접 싣지 않아, 키가 없으면 헤더를 싣지 않는다(globalHeaders 가 빈 값을 거름)
+  - cart_key_issue_starts_at_bundle_load           # 저장 키가 없고 쇼핑몰이 켜져 있으면 번들이 실릴 때 발급을 시작하고, initCartKey 는 같은 결과를 끝까지 기다린다
   - storage_value_round_trips
   - guest_order_token_restored_or_preserved
 

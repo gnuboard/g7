@@ -32,7 +32,7 @@ effects:
   - vendored_asset_survives_rebuild
   - vendored_asset_declared_path_exists_on_disk
   - vendored_asset_version_matches_declaration
-  # 동봉 글꼴(Pretendard)은 글자 묶음별 woff2 + unicode-range 로 나눠 화면에 쓰인 묶음만 받는다(#879)
+  # 동봉 글꼴(Pretendard)은 글자 묶음별 woff2 + unicode-range 로 나눠 화면에 쓰인 묶음만 받는다
   - vendored_font_split_by_unicode_range
   - vendored_editor_mounts_without_fallback
   # 본체 실패 때 코어 레이아웃 스크립트 안내와 겹치지 않고 플러그인 안내 한 건(임시 입력창 전환 문장)만 남는다.
@@ -69,7 +69,7 @@ effects:
   - stylesheet_failure_retries_then_surfaces
   - address_fields_editable_when_sdk_missing
   - notice_renders_without_host_component_on_standalone_layout
-  # AMD 로더는 URL 에 쿼리가 있으면 모듈 id 에 .js 를 붙이지 않는다 — 템플릿 자산 서빙이 같은 이름의 .js 를 찾아 준다(#712 후속)
+  # AMD 로더는 URL 에 쿼리가 있으면 모듈 id 에 .js 를 붙이지 않는다 — 템플릿 자산 서빙이 같은 이름의 .js 를 찾아 준다
   - amd_module_id_without_js_suffix_resolves_to_js_file
 
 test_files:

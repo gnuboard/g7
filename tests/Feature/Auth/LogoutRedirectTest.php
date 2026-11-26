@@ -12,7 +12,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 로그아웃 후 이동 `core.auth.logout_redirect_url` (#798 K6)
+ * 로그아웃 후 이동 `core.auth.logout_redirect_url`
  *
  * 로그아웃 응답이 `data.redirect_url` 을 싣는다 — 확장(예: IdP 로그아웃)이 같은 출처 경로를 주면 그 경로, 아니면 null. 필터는 토큰을 지우기
  * **전**에 불려 어느 토큰(세션)을 닫는지 안다.

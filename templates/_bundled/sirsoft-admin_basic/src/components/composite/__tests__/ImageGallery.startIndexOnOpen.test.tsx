@@ -1,7 +1,7 @@
 // e2e:allow 관리자 화면에는 닫힌 채 마운트된 ImageGallery 를 여는 경로가 아직 없다(FileUploader 는 열 때마다 key 로 새로 마운트).
-// 레이아웃 컴포넌트로 등록돼 있어 isOpen·startIndex 를 바인딩하면 같은 결함이 나므로 컴포넌트 단위로 잠근다(#821).
+// 레이아웃 컴포넌트로 등록돼 있어 isOpen·startIndex 를 바인딩하면 같은 결함이 나므로 컴포넌트 단위로 잠근다.
 /**
- * ImageGallery 열림 시 시작 사진 회귀 테스트 (#821)
+ * ImageGallery 열림 시 시작 사진 회귀 테스트
  *
  * 닫힌 채 마운트된 뒤 isOpen 이 true 로 바뀌면서 startIndex 가 함께 바뀌면, 현재 번호를
  * useState(startIndex) 초기값으로만 잡았을 때 확대 창이 항상 마운트 때 번호(0)로 열렸다.
@@ -42,7 +42,7 @@ const images = [1, 2, 3, 4, 5].map((n) => ({ src: `https://example.com/${n}.jpg`
 const counterText = () =>
   document.querySelector('.yarl__counter')?.textContent?.replace(/\s+/g, ' ').trim();
 
-describe('ImageGallery 열림 시 시작 사진 (#821)', () => {
+describe('ImageGallery 열림 시 시작 사진', () => {
   /**
    * @scenario case=open_after_mount
    * @effects lightbox_opens_at_start_index

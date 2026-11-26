@@ -147,7 +147,7 @@ class InstallerReinstallTest extends TestCase
         $this->assertTrue($run['result']['ok']);
         $this->assertFileExists($this->installerTempBase.'/storage/app/modules/sirsoft-board/settings/basic_defaults.json');
         $this->assertFileDoesNotExist($this->installerTempBase.'/storage/app/modules/sirsoft-board/attachments/a.png');
-        // 원본에서 만든 썸네일 파생본도 함께 지운다 (#869)
+        // 원본에서 만든 썸네일 파생본도 함께 지운다
         $this->assertFileDoesNotExist($this->installerTempBase.'/storage/app/thumbnails/attachments/2026/f.png/sm_0123abcd.png');
         $this->assertDirectoryExists($this->installerTempBase.'/storage/app/thumbnails', '디렉터리 자체는 남긴다');
     }

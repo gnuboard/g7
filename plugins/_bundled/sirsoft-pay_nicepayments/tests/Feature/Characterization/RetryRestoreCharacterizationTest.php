@@ -13,7 +13,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
 
 /**
- * 재결제 복구 특성화 대조 — SignData 경로가 이커머스 결제 계약(restoreForRetry)으로 옮긴 뒤에도 녹화값과 같다 (#916, 부록 A5-1)
+ * 재결제 복구 특성화 대조 — SignData 경로가 이커머스 결제 계약(restoreForRetry)으로 옮긴 뒤에도 녹화값과 같다
  *
  * 녹화 파일(`modules/_bundled/sirsoft-ecommerce/tests/Fixtures/payment-retry-restore/nicepayments-*.json`)은 계약 전환 전의
  * 이 플러그인 복구 코드(`PaymentCallbackController::restoreRetryableNicepayOrder`)를 그대로 돌려 남긴 DB 원문이다. 같은 사전

@@ -299,7 +299,7 @@ describe('storageHandlers', () => {
       expect(mockG7Core.state.set).toHaveBeenLastCalledWith({ cartKey: 'ck_retry' });
     });
 
-    // #869 ρ 8부 L1: 저장 키가 망가지면(서버 형식 ck_ + 영숫자 32자가 아님) 방문 내내 목록 조회가 형식 오류 400 을 받았다
+    // 저장 키가 망가지면(서버 형식 ck_ + 영숫자 32자가 아님) 방문 내내 목록 조회가 형식 오류 400 을 받았다
     // @scenario storage=cart_key
     // @effects cart_key_loaded_or_issued
     it('저장된 키가 서버 형식에 맞지 않으면 버리고 새로 발급받는다(initCartKey, ensureCartKey)', async () => {
@@ -393,7 +393,7 @@ describe('storageHandlers', () => {
     });
   });
 
-  describe('장바구니 키 미리 발급 — 번들이 실릴 때 발급 시작, initCartKey 는 같은 결과를 기다린다 (#879)', () => {
+  describe('장바구니 키 미리 발급 — 번들이 실릴 때 발급 시작, initCartKey 는 같은 결과를 기다린다', () => {
     const KEY = `ck_${'p'.repeat(32)}`;
     const ok = (key: string) => ({ ok: true, json: async () => ({ data: { cart_key: key } }) } as any);
     const shopOn = () => { (window as any).G7Config = { user: null, activeModules: [{ identifier: 'sirsoft-ecommerce' }] }; };

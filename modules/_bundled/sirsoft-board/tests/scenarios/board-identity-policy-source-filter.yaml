@@ -7,7 +7,7 @@ description: |
   전 출처 정책 관리는 코어 환경설정(/admin/settings?tab=identity)이 담당한다.
 
   수정 이력:
-    - 이슈 #413 item 11-1: 출처 필터가 항상 source_identifier=sirsoft-board 를 붙여 무력화되던 결함
+    - 출처 필터가 항상 source_identifier=sirsoft-board 를 붙여 무력화되던 결함
     - 데이터소스(boardIdentityPolicies) params 에서 source_type 제거 (source_identifier 고정은 유지)
     - filter_card 의 출처(source_type) Select 제거, scope/search 필터는 유지
     - 필터 리셋 버튼 if 조건에서 query.source_type 잔여 참조 제거
@@ -22,7 +22,7 @@ effects:
   - search_filter_remains_functional
   - empty_purpose_badge_card_removed
   - policy_list_renders_board_module_policies
-  # #609 docblock 정리 때 사후 등재 — 목적 배지 카드는 유지하고 모듈 식별자로 거른다(레이아웃 테스트 단언)
+  # docblock 정리 때 사후 등재 — 목적 배지 카드는 유지하고 모듈 식별자로 거른다(레이아웃 테스트 단언)
   - purpose_badge_card_kept_with_module_filter
 
 test_files:

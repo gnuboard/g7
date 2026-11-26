@@ -1,5 +1,5 @@
 /**
- * 플러그인 수동 설치 창 — 서명 없는 ZIP: 409 경고 패널 → 「미서명으로 계속」 → 같은 요청을 allow_unsigned=1 로 다시 보내 201 (#916 ④).
+ * 플러그인 수동 설치 창 — 서명 없는 ZIP: 409 경고 패널 → 「미서명으로 계속」 → 같은 요청을 allow_unsigned=1 로 다시 보내 201.
  *
  * 시험 패키지는 저장소 픽스처(`templates/_bundled/sirsoft-admin_basic/tests/Playwright/fixtures/unsigned-plugin-package.ts`)가 시험 때 만든다(서명 파일 없음). 설치한 시험 플러그인은
  * 끝에 지우고(`plugin:uninstall --force --delete-data`), 남은 설치 디렉터리와 `_pending` 사본도 지운다.

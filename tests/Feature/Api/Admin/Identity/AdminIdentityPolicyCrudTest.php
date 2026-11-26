@@ -906,7 +906,7 @@ class AdminIdentityPolicyCrudTest extends TestCase
     }
 
     /**
-     * 편집 창이 8칸 전부를 값 변경 없이 보내면 수정 표식이 생기지 않는다 (#727 D5-②).
+     * 편집 창이 8칸 전부를 값 변경 없이 보내면 수정 표식이 생기지 않는다.
      *
      * @scenario surface=identity_policy
      *
@@ -932,7 +932,7 @@ class AdminIdentityPolicyCrudTest extends TestCase
     }
 
     /**
-     * 유예 시간만 바꾸면 그 칸만 수정으로 기록된다 (#727 D5-②).
+     * 유예 시간만 바꾸면 그 칸만 수정으로 기록된다.
      *
      * @scenario surface=identity_policy
      *

@@ -56,7 +56,7 @@ export interface PaginationProps {
   hasMorePages?: boolean;
   /**
    * 페이지 주소 틀 — `{page}` 자리에 번호를 넣는다(예: `/board/free?page={page}`). 주면 번호·이전·다음·처음·끝이
-   * `<a href>` 가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다. 보통 클릭은 지금처럼 onPageChange(#757).
+   * `<a href>` 가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다. 보통 클릭은 지금처럼 onPageChange.
    */
   pageHref?: string;
   /** 페이지 주소에 현재 주소의 쿼리(검색·정렬 조건)를 합친다 — 새 탭도 같은 목록 조건으로 열린다 */
@@ -227,7 +227,7 @@ export const Pagination: React.FC<PaginationProps> = ({
 
   /**
    * 그리는 href 에 사이트 마운트 접두사를 붙인다 — 하위 폴더 설치(`/g7`)에서 가운데 클릭·「새 탭에서 열기」·링크 복사가
-   * 이 값을 그대로 열므로 접두사가 없으면 사이트 밖으로 간다(#609). 보통 클릭은 onPageChange 라 href 를 쓰지 않는다.
+   * 이 값을 그대로 열므로 접두사가 없으면 사이트 밖으로 간다. 보통 클릭은 onPageChange 라 href 를 쓰지 않는다.
    * `sitePath()` 는 멱등이고 쿼리만인 주소(`?page=2`)·바깥 주소는 그대로 돌려준다.
    */
   const sitePathOrUndefined = (href: string | undefined): string | undefined =>

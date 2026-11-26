@@ -49,7 +49,7 @@ function findNode(node: any, predicate: (n: any) => boolean): any {
     if (!node || typeof node !== 'object') return null;
     if (predicate(node)) return node;
 
-    // 업로더는 첨부 업로더 확장점(#916)의 default 안에 있다 — default 도 내려간다
+    // 업로더는 첨부 업로더 확장점의 default 안에 있다 — default 도 내려간다
     for (const child of [...(node.children ?? []), ...(node.default ?? [])]) {
         const found = findNode(child, predicate);
         if (found) return found;

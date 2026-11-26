@@ -4,7 +4,7 @@
  * @description 영수증 창 핸들러(sirsoft-pay_kginicis.openReceipt)
  *
  * 주문 화면 조각은 마운트 때 영수증 조회 API 응답을 화면 상태에 담아 두고, 버튼을 누르면 그 응답을 이 핸들러로
- * 넘긴다. 예전에는 주입 스크립트가 클릭마다 로그인 토큰을 저장소에서 읽어 직접 다시 조회했다(#639). 핸들러는
+ * 넘긴다. 예전에는 주입 스크립트가 클릭마다 로그인 토큰을 저장소에서 읽어 직접 다시 조회했다. 핸들러는
  * 조회하지 않고 창만 연다 — 외부 영수증 주소는 https 만, CBT 결제확인서는 응답 항목을 이스케이프해 그린다.
  *
  * 시나리오: plugins/_bundled/sirsoft-pay_kginicis/tests/scenarios/receipt-popup-handler.yaml

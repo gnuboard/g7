@@ -1,6 +1,6 @@
 /**
  * @file analyticsVisitors.test.tsx
- * @description 방문자 목록·상세 화면과 정보주체 삭제 창의 런타임 계약 (이슈 #682 S3)
+ * @description 방문자 목록·상세 화면과 정보주체 삭제 창의 런타임 계약
  *
  * 잠그는 것: 두 화면이 열람 권한(`core.analytics.privacy`)을 요구하는 것, 상세가 라우트 키로 조회하고 404 를 에러 화면으로
  * 돌리는 것, 익명 모드 안내, 삭제가 체크 게이트 창을 거치고 방문자 키를 싣는 것, 삭제 뒤 목록으로 돌아가는 것.
@@ -129,7 +129,7 @@ describe('정보주체 삭제 창', () => {
       if (Array.isArray(n)) { n.forEach(walk); return; }
       if (typeof n.text === 'string' && /^\$t:defer:[a-zA-Z0-9._]+\|/.test(n.text)) bare.push(n.text);
       // prop 자리(`props.text`)도 본다 — 「다른 경로라 정상 해소된다」던 옛 전제는 브라우저 실측이 뒤집었다
-      // (전환 배지 `props.text` 가 키를 그대로 노출, #682 S3 라운드 8). 모든 값 자리의 전수 가드는
+      // (전환 배지 `props.text` 가 키를 그대로 노출). 모든 값 자리의 전수 가드는
       // `analyticsStateBranches.test.ts` 가 통계 화면 전체로 잰다.
       for (const v of Object.values(n)) walk(v);
     };

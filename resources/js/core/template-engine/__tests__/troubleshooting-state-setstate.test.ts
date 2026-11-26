@@ -1394,11 +1394,11 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
   // - globalState._local + __g7PendingLocalState: 직렬화 가능 상태. setLocal(render:false), G7Core API,
   //   그리고 자동바인딩의 동기 캐시 미러로 사용.
   //
-  // 알려진 한계 (이슈 #282 SSOT 재설계 대상):
+  // 알려진 한계 (SSOT 재설계 대상):
   // 자동바인딩의 performStateUpdate 가 __g7PendingLocalState 를 stale baseState 기반 update 전체로
   // 덮어쓰므로, render:false 경로로 globalState 에 쓰여있던 값이 pending 에서 사라질 수 있음.
   // 사용처(apiCall body 직렬화)에서 두 저장소를 통합 읽기로 보강하는 것이 현재 유일한 우회 방법.
-  describe('[사례 6] 이중 저장소 동작 명세 (이슈 #282 SSOT 재설계 대상)', () => {
+  describe('[사례 6] 이중 저장소 동작 명세 (SSOT 재설계 대상)', () => {
     let mockTemplateApp: any;
     let globalState: Record<string, any>;
 
@@ -4767,7 +4767,7 @@ describe('[사례 12] _localInit + 자식 useEffect setState가 API 데이터를
 });
 
 /**
- * [사례 32] 이슈 #282 - 이중 저장소 동기화 + 자동바인딩 경로 자동 승격 + selfManaged opt-out (engine-v1.43.0)
+ * [사례 32] 이중 저장소 동기화 + 자동바인딩 경로 자동 승격 + selfManaged opt-out (engine-v1.43.0)
  *
  * 게시판 WYSIWYG 글쓰기 저장 시 "제목은 필수입니다" 422 문제의 구조적 해결.
  *
@@ -4779,9 +4779,9 @@ describe('[사례 12] _localInit + 자식 useEffect setState가 API 데이터를
  * - A-4: CKEditor5 syncToForm에 selfManaged:true 명시로 자동 승격 제외 (성능 보존)
  *
  * 본 describe 블록은 엔진 내부 신규 구조의 contract test.
- * 이슈 #282 실제 재현(게시판 WYSIWYG 저장 422)은 브라우저 검증으로 증명.
+ * 실제 재현(게시판 WYSIWYG 저장 422)은 브라우저 검증으로 증명.
  */
-describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (engine-v1.43.0)', () => {
+describe('[사례 32] 이중 저장소 동기화 + 자동 승격 (engine-v1.43.0)', () => {
   /**
    * flattenLeafPaths 헬퍼 contract
    *
@@ -5812,7 +5812,7 @@ describe('[사례 40] 리사이즈 후 저장 시 편집기 본문이 저장소 
 
   /** @effects setstate_local_preserves_canonical_keys_when_pending_is_null */
   it('10. merge shallow 핀(F3): payload 밖 키를 live B 값으로 보존한다', async () => {
-    // 모집단: admin_ecommerce_{order,product}_list 필터 (#421 회귀 핀 대상)
+    // 모집단: admin_ecommerce_{order,product}_list 필터 (회귀 핀 대상)
     globalState._local = { filters: { status: 'paid' }, search: '주문번호', page: 3 };
     componentState = { filters: { status: 'paid' } };
 

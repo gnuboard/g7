@@ -217,7 +217,7 @@
               <label class="form-label">$t:admin.roles.form.description</label>
               <multilingual-input data-type="composite" name="description_raw" placeholder="$t:admin.roles.form.description_placeholder" :maxLength="500" inputType="textarea" :rows="3" layout="tabs" error="{{_global.formErrors?.description || _global.formErrors?.description_raw}}"/>
             </div>
-            <!-- 비밀번호 만료(#736) — 이 역할을 가진 회원에게 사이트 적용 범위와 다르게 만료를 적용하거나 뺀다. 우선순위는
+            <!-- 비밀번호 만료 — 이 역할을 가진 회원에게 사이트 적용 범위와 다르게 만료를 적용하거나 뺀다. 우선순위는
                  회원 개별 > 역할 > 사이트 범위이고, 한 회원의 역할끼리 부딪치면 「적용」이 이긴다(보안 우선). -->
             <div data-ref="password_expiry_policy_field">
               <label class="form-label">$t:admin.roles.form.password_expiry</label>

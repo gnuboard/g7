@@ -106,7 +106,7 @@ class EcommerceSitemapContributor extends AbstractSitemapContributor
         if ((bool) g7_module_settings('sirsoft-ecommerce', 'seo.seo_product_detail', true)) {
             foreach ($this->productRepository->streamVisibleForSitemap() as $product) {
                 yield [
-                    // 화면·검색과 같은 상품 코드 주소(#792 W12) — 같은 상품이 두 주소로 색인되지 않게 한다
+                    // 화면·검색과 같은 상품 코드 주소 — 같은 상품이 두 주소로 색인되지 않게 한다
                     'url' => EcommerceScreenUrl::product((string) $product->product_code),
                     'lastmod' => $product->updated_at?->toW3cString(),
                     'changefreq' => SitemapChangeFreq::Weekly->value,

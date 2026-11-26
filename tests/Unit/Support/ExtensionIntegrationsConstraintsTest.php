@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 /**
- * 선택 연동 선언(`integrations`)의 버전 제약 정규화 (#822 P8·D5)
+ * 선택 연동 선언(`integrations`)의 버전 제약 정규화
  *
  * 7.1.4 부터 `integrations` 는 `dependencies` 와 같은 수준의 스펙이다 — 객체형 `{"modules": {"sirsoft-board": ">=1.2.1"}}`
  * 으로 버전 제약을 선언한다. 목록형은 「버전 무관(*)」으로 계속 받고, 값이 버전식이 아닌 옛 설명형 문자열도

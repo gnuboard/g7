@@ -454,13 +454,13 @@ describe('NotificationCenter', () => {
       );
 
       // 첫 번째 알림 클릭
-      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      // 링크 없는 알림의 본문 칸도 단추라(키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
       await user.click(screen.getAllByRole('button')[0]);
       await user.click(screen.getByText('New Comment').closest('[data-notification-id]') as HTMLElement);
       expect(onNotificationClick).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
 
       // 드롭다운 다시 열기
-      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      // 링크 없는 알림의 본문 칸도 단추라(키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
       await user.click(screen.getAllByRole('button')[0]);
 
       // 두 번째 알림 클릭
@@ -477,7 +477,7 @@ describe('NotificationCenter', () => {
       const { rerender } = render(<NotificationCenter notifications={[]} />);
 
       // 빈 상태 확인
-      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      // 링크 없는 알림의 본문 칸도 단추라(키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
       await user.click(screen.getAllByRole('button')[0]);
       expect(screen.getByText('No notifications')).toBeInTheDocument();
 
@@ -496,7 +496,7 @@ describe('NotificationCenter', () => {
       const user = userEvent.setup();
       const { container } = render(<NotificationCenter notifications={mockNotifications} />);
 
-      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      // 링크 없는 알림의 본문 칸도 단추라(키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
       await user.click(screen.getAllByRole('button')[0]);
 
       // 드롭다운이 오른쪽 정렬되어 있는지 확인
@@ -510,7 +510,7 @@ describe('NotificationCenter', () => {
       const user = userEvent.setup();
       const { container } = render(<NotificationCenter notifications={mockNotifications} />);
 
-      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      // 링크 없는 알림의 본문 칸도 단추라(키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
       await user.click(screen.getAllByRole('button')[0]);
 
       // 최대 높이 클래스 확인
@@ -586,7 +586,7 @@ describe('NotificationCenter', () => {
         />,
       );
 
-      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      // 링크 없는 알림의 본문 칸도 단추라(키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
       await user.click(screen.getAllByRole('button')[0]);
 
       fireIntersection();
@@ -610,7 +610,7 @@ describe('NotificationCenter', () => {
         />,
       );
 
-      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      // 링크 없는 알림의 본문 칸도 단추라(키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
       await user.click(screen.getAllByRole('button')[0]);
       fireIntersection();
 
@@ -631,7 +631,7 @@ describe('NotificationCenter', () => {
         />,
       );
 
-      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      // 링크 없는 알림의 본문 칸도 단추라(키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
       await user.click(screen.getAllByRole('button')[0]);
       fireIntersection();
 
@@ -652,7 +652,7 @@ describe('NotificationCenter', () => {
         />,
       );
 
-      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      // 링크 없는 알림의 본문 칸도 단추라(키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
       await user.click(screen.getAllByRole('button')[0]);
       fireIntersection();
       expect(onLoadMore).toHaveBeenCalledTimes(1);
@@ -731,7 +731,7 @@ describe('NotificationCenter', () => {
       );
 
       // 레이어 닫기
-      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      // 링크 없는 알림의 본문 칸도 단추라(키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
       await user.click(screen.getAllByRole('button')[0]);
 
       expect(onClose).not.toHaveBeenCalled();
@@ -754,7 +754,7 @@ describe('NotificationCenter', () => {
     it('드롭다운에 max-w-[calc(100vw-1rem)] 클래스가 적용된다', async () => {
       const user = userEvent.setup();
       const { container } = render(<NotificationCenter notifications={mockNotifications} />);
-      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      // 링크 없는 알림의 본문 칸도 단추라(키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
       await user.click(screen.getAllByRole('button')[0]);
 
       const dropdown = container.querySelector('.absolute.w-80');
@@ -782,7 +782,7 @@ describe('NotificationCenter', () => {
       const { container } = render(
         <NotificationCenter notifications={mockNotifications} dropdownAlign="left" />,
       );
-      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      // 링크 없는 알림의 본문 칸도 단추라(키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
       await user.click(screen.getAllByRole('button')[0]);
 
       const dropdown = container.querySelector<HTMLElement>('.absolute.w-80');
@@ -810,7 +810,7 @@ describe('NotificationCenter', () => {
       const { container } = render(
         <NotificationCenter notifications={mockNotifications} dropdownAlign="right" />,
       );
-      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      // 링크 없는 알림의 본문 칸도 단추라(키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
       await user.click(screen.getAllByRole('button')[0]);
 
       const dropdown = container.querySelector<HTMLElement>('.absolute.w-80');
@@ -838,7 +838,7 @@ describe('NotificationCenter', () => {
       const { container } = render(
         <NotificationCenter notifications={mockNotifications} dropdownAlign="right" />,
       );
-      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      // 링크 없는 알림의 본문 칸도 단추라(키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
       await user.click(screen.getAllByRole('button')[0]);
 
       const dropdown = container.querySelector<HTMLElement>('.absolute.w-80');

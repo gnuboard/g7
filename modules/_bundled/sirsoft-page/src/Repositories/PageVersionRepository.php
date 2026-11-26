@@ -86,7 +86,7 @@ class PageVersionRepository implements PageVersionRepositoryInterface
     }
 
     /**
-     * 페이지의 어느 버전 본문이든 이 본문 미디어 해시를 참조하는지 확인합니다 (#887).
+     * 페이지의 어느 버전 본문이든 이 본문 미디어 해시를 참조하는지 확인합니다.
      *
      * @param  int  $pageId  페이지 ID
      * @param  string  $hash  본문 미디어 해시 (12자 영숫자)
@@ -105,7 +105,7 @@ class PageVersionRepository implements PageVersionRepositoryInterface
     }
 
     /**
-     * 페이지의 버전 이력을 모두 영구 삭제합니다 (페이지 삭제 정리, #888).
+     * 페이지의 버전 이력을 모두 영구 삭제합니다 (페이지 삭제 정리).
      *
      * @param  int  $pageId  페이지 ID
      * @return int 삭제된 버전 수

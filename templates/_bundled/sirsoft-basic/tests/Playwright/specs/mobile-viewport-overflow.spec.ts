@@ -19,7 +19,7 @@
  * - 언어=템플릿 소유(_global.mobileLanguageOpen), 통화=주입 조각 소유(_local.showCurrencyDropdown).
  *
  * 단위 테스트(Vitest)는 레이아웃 JSON 구조만 본다. 실제 브라우저 폭·줄 수·가시성은
- * 여기서만 검증된다 (위지윅 발행 회귀 #238 교훈).
+ * 여기서만 검증된다 (위지윅 발행 회귀의 교훈).
  */
 import { test, expect, type Page } from '@playwright/test';
 

@@ -48,7 +48,7 @@ class ManagedCurrencyResolver
     }
 
     /**
-     * 쇼핑몰 통화 설정을 계산기가 읽는 배열 모양으로 읽습니다(공개 계약 경유, #916).
+     * 쇼핑몰 통화 설정을 계산기가 읽는 배열 모양으로 읽습니다(공개 계약 경유).
      *
      * @return array{default_currency: string, rate_provider: string|null, currencies: array<int, array<string, mixed>>} 통화 설정
      */

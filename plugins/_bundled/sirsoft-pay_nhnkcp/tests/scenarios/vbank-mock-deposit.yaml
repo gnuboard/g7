@@ -5,7 +5,7 @@ description: |
   답하고, 조건(테스트 모드·본인 또는 관리자·입금 대기 가상계좌)이 맞지 않으면 404 가 아니라 data.available=false 를 준다.
   도구의 제목·입력 이름·버튼·관리자 안내는 번역 키로 그린다(일본어는 언어팩). 도구는 결제 정보 카드 슬롯 조각
   (user_order_show)이 데이터 소스(nhnkcp_mock_deposit, 로그인 전용·주소에 주문번호가 있는 주문 상세에서만)로 그린다 —
-  주입 스크립트는 지웠다(#639). 다른 결제대행사 주문에는 정보가 와도 그리지 않는다.
+  주입 스크립트는 지웠다. 다른 결제대행사 주문에는 정보가 와도 그리지 않는다.
 
 axes:
   case: [owner_test_mode, owner_live_mode, other_member_test_mode, block_available, block_unavailable, guest_order_show]

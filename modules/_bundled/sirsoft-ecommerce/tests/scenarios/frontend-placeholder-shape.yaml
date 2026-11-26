@@ -3,7 +3,7 @@ feature: 이커머스 모듈 화면 문구는 서버식 자리표시자를 쓰�
 description: |
   화면 번역 엔진은 `{key}`·`{{key}}` 만 치환한다. 배송정책 API 시험 결과(`api_test_extracted|fee=`, `api_test_response|status=`)는
   `:fee`·`:status` 가 글자 그대로 보였다. 설정 저장 안내(`save_pending_form`)는 레이아웃이 `.replace()` 로 직접 바꾸므로
-  레이아웃의 바꿀 자리표시자와 문구를 함께 `{forms}` 로 맞춘다(#798).
+  레이아웃의 바꿀 자리표시자와 문구를 함께 `{forms}` 로 맞춘다.
 
 axes:
   source: ["bundled|ja_pack", layout_replace]

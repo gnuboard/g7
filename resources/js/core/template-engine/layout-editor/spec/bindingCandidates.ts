@@ -211,7 +211,7 @@ export function collectIterationVars(
   const out: BindingIterationVar[] = [];
   let node: IterationNodeShape | undefined = root;
   // 다음 number 세그먼트가 인덱싱할 배열 — 디바이스 분기(`responsive.{키}.children`)·컴포넌트 배열 prop(`props.footer`)
-  // 세그먼트는 노드를 내리지 않고 이 배열만 바꾼다(layoutTreeUtils `findNodeByPath` 와 같은 규칙, #869).
+  // 세그먼트는 노드를 내리지 않고 이 배열만 바꾼다(layoutTreeUtils `findNodeByPath` 와 같은 규칙).
   // 종전에는 호출자가 숫자 세그먼트만 남겨 넘겨 분기·footer 안 노드에서 엉뚱한 노드의 반복 변수를 모았다.
   let childArray: IterationNodeShape[] = Array.isArray(root.children) ? (root.children as IterationNodeShape[]) : [];
   for (const seg of path) {

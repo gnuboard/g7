@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Support;
 use App\Extension\HookManager;
 
 /**
- * 광고성 알림의 채널별 마케팅 수신동의 판정 (#952)
+ * 광고성 알림의 채널별 마케팅 수신동의 판정
  *
  * 마케팅 플러그인을 직접 참조하지 않고 그 플러그인의 조회 필터(`sirsoft-marketing.consent.is_consented`)에 묻는다.
  * 플러그인이 없거나 꺼져 있으면 구독자가 없어 null 이 돌아오고, 그것을 미동의로 본다(보내지 않는 쪽이 안전하다).

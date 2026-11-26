@@ -98,7 +98,7 @@ class ProductReviewController extends AuthBaseController
     }
 
     /**
-     * 내 리뷰 목록 (마이페이지 내 리뷰, #952)
+     * 내 리뷰 목록 (마이페이지 내 리뷰)
      *
      * @param  UserReviewListRequest  $request  목록 요청
      * @return JsonResponse 리뷰 목록 (data + pagination)

@@ -14,7 +14,7 @@ return [
     'two_factor_resend_cooldown' => 'A code was just sent. You can request another one in :seconds seconds.',
     'password_reconfirm_throttled' => 'Too many failed password confirmations. Please try again in :seconds seconds.',
     'two_factor_delivery_failed' => 'Could not send the verification code. Please contact the administrator.',
-    // Password change step (#736) — password and two-factor passed, but sign-in finishes only after changing the password
+    // Password change step — password and two-factor passed, but sign-in finishes only after changing the password
     'password_change_required' => 'Your password has expired. Please set a new password.',
     'password_change_required_admin_assigned' => 'This password was set by an administrator. Please set a new password.',
     'password_change_success' => 'Your password has been changed and you are signed in.',

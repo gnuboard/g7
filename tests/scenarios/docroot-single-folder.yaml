@@ -401,7 +401,7 @@ effects:
   - exposure_positive_control_detects_broken_delegation
   # 앞 검증 라운드에 선언한 「대조로 후보를 고른다」 효과는 뒤 회차의 제품 결정으로
   # 뒤집혔다 — 지금은 언제나 첫 후보를 쓰고 대조는 게이트로만 선다(installer.js resolveProjectRoot 주석).
-  # 이름을 현재 동작으로 바꿨다(#869 κ3, 머리말 전용이던 효과를 그 동작을 재는 시험으로 옮기며).
+  # 이름을 현재 동작으로 바꿨다(머리말 전용이던 효과를 그 동작을 재는 시험으로 옮기며).
   - exposure_project_root_is_not_switched_by_the_control
   - exposure_probe_treats_marker_less_200_as_undetermined
   - exposure_missing_env_example_is_reported_as_unmeasured
@@ -449,7 +449,7 @@ effects:
   - exposure_unknown_detail_names_its_actual_cause
   - exposure_manual_criteria_judges_by_content_not_status
   - exposure_absent_control_is_shown_as_the_comparison_address
-  # #869 κ3 표식 바로잡기 — exposure_probe=unknown 과 판정 대기 효과로 거짓 커버하던 시험이 실제로 재는 동작
+  # 표식 바로잡기 — exposure_probe=unknown 과 판정 대기 효과로 거짓 커버하던 시험이 실제로 재는 동작
   - exposure_probe_base_is_the_project_root_not_the_app_root   # 기준 URL 의 install, public 꼬리를 표기와 무관하게 벗겨 프로젝트 루트에 대고 잰다
   - exposure_server_guide_points_at_the_servers_own_protection_file   # 노출 카드의 보호 설정 안내가 서버 종류별 조치를 지목하고, 모르는 값은 범용 안내로 떨어진다
   # 아래 effects 는 테스트 docblock 에 마커가 달려

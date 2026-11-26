@@ -1,4 +1,4 @@
-feature: 회원 목록의 회원 항목 표면 — 추가 항목 열, 「미입력」 열, 검색 대상, 회원 항목 조건 (sirsoft-admin_basic, #490 6단계)
+feature: 회원 목록의 회원 항목 표면 — 추가 항목 열, 「미입력」 열, 검색 대상, 회원 항목 조건 (sirsoft-admin_basic)
 
 description: |
   운영자가 환경설정에서 「회원 목록 열」로 켠 추가 항목은 목록 응답 member_fields.columns 로 오고, 레이아웃 computed
@@ -8,7 +8,7 @@ description: |
   선택기가 「이미 본 동적 열」을 저장 키 옆에 남겨 처음 보는 열만 켜고, 사용자가 끈 열은 다시 켜지 않는다.
   「미입력」 열은 비어 있는 필수 항목 개수 배지(올리면 항목 이름), 검색 대상은 고정 7종 뒤에 member_fields.search_fields,
   회원 항목 조건 둘(required_missing, nickname_duplicate)은 값 1 인 평면 주소 인자다.
-  「보이는 이름」 열(#490 8단계)은 사이트 기본 자리에서 보이는 이름(display_name)을 그리는 정적 열이고 닉네임 앞에 서며 기본은 꺼져 있다.
+  「보이는 이름」 열은 사이트 기본 자리에서 보이는 이름(display_name)을 그리는 정적 열이고 닉네임 앞에 서며 기본은 꺼져 있다.
 
 axes:
   case:

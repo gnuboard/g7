@@ -175,7 +175,7 @@ if (! function_exists('installer_finalize_env')) {
             }
 
             // .env 단일 쓰기 — file_put_contents 는 close 시점에 mtime 1회만 갱신하므로 artisan serve 의
-            // mtime 워처가 다중 재시작을 일으키지 않는다. 기존 inode 권한을 바꾸지 않는다(chmod 시도 안 함 — #371).
+            // mtime 워처가 다중 재시작을 일으키지 않는다. 기존 inode 권한을 바꾸지 않는다(chmod 시도 안 함).
             //
             // 부분 쓰기(디스크 full·quota)는 `false` 가 아니라 **쓴 바이트 수**를 돌려준다. 그것을
             // 성공으로 통과시키면 잘린 `.env` 가 「머지 완료」로 보고되고, 바로 아래에서 유일한
@@ -260,7 +260,7 @@ if (! function_exists('installer_finalize_env')) {
                         : substr($rebuild['output'], 0, 500),
                 ]));
 
-            // state.json 삭제 — 남는 모든 경로에서는 비밀 필드를 제거해 재저장한다 (이슈 #465).
+            // state.json 삭제 — 남는 모든 경로에서는 비밀 필드를 제거해 재저장한다.
             // .env 머지가 이미 성공한 뒤라 state.config 가 더는 필요하지 않다.
             // 경로 리터럴을 두 곳에 두면 STATE_PATH 를 먼저 정의하는 진입점(테스트 하네스)이나
             // 배치가 달라졌을 때 finalize 만 조용히 다른 파일을 지운다 — session.php 가 앞서

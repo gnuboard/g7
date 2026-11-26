@@ -1,5 +1,5 @@
 /**
- * 배송설정 배송국가 — 다국어 표시/입력 회귀 (#459).
+ * 배송설정 배송국가 — 다국어 표시/입력 회귀.
  *
  * 배경: 배송국가명이 UI 로케일과 무관하게 항상 한국어로 렌더됐다. 원인은 두 겹이었다.
  *  1) 레이아웃이 `name[_global.locale]` 로 직접 색인 — 로케일 키 부재 시 폴백 없음.
@@ -74,7 +74,7 @@ async function formSeeded(page: Page): Promise<boolean> {
  *
  * 상태(available_countries)만 기다리면 DOM 이 아직 비어 있어 body 텍스트가 `""` 다.
  *
- * 재진입 1회 허용 — 사전 결함(#459 검수 중 발견): settings 데이터소스의 `initLocal: "form"`
+ * 재진입 1회 허용 — 사전 결함(검수 중 발견): settings 데이터소스의 `initLocal: "form"`
  * 시드가 간헐적으로 유실돼 `_local.form` 이 비고 표가 "No shipping countries" 로 렌더된다.
  * 이때 `_global.modules[...]` 와 데이터소스에는 국가가 정상 적재돼 있다(= 로딩 실패가 아님).
  * 이 spec 의 대상은 다국어 표시이므로, 시드 유실 시 1회 재진입해 본 검증을 이어간다.

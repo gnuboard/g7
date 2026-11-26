@@ -250,7 +250,7 @@ class ClaimStatusNotificationListener implements HookListenerInterface
     /**
      * 환불 신청 접수 훅을 알림 훅으로 옮깁니다.
      *
-     * ## 자동 전이로 이어지는 접수는 알리지 않는다 (#599 후속 §4-2)
+     * ## 자동 전이로 이어지는 접수는 알리지 않는다
      *
      * 접수 직후 자동 전이가 승인·완료까지 밟는 건은 그 **마지막 상태에서 1건**만 보낸다.
      * 여기서 억제하지 않으면 한 번의 취소로 접수 + 마지막 상태 2통이 나간다.
@@ -274,7 +274,7 @@ class ClaimStatusNotificationListener implements HookListenerInterface
     /**
      * 클레임 상태전이를 알림 훅으로 매핑 발화합니다.
      *
-     * ## 자동 전이의 중간 단계는 알리지 않는다 (#599 후속 §4-2)
+     * ## 자동 전이의 중간 단계는 알리지 않는다
      *
      * 자동 전이(`OrderRefundRequestService::autoAdvance()`)는 한 번의 취소로
      * `접수 → 승인 → 완료` 세 단계를 실제로 밟는다 — 그래야 활동로그가 단계별로 남는다

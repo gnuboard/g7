@@ -8,7 +8,7 @@
  * installer-state.php 를 require 하여 addLog() 함수를 사용 가능하게 한다.
  * index.php 및 일부 API 엔드포인트가 본 파일을 installer-state.php 보다 먼저
  * require 하기 때문에, 본 파일 안에서 addLog 호출이 필요한 경우를 위해
- * 명시적으로 의존성을 선언한다 (이슈 #371).
+ * 명시적으로 의존성을 선언한다.
  *
  * execution-mode.php 는 두 가지 판정의 SSoT 라서 함께 로드한다 (13차):
  *  - `installerIniSet()` — `ini_set` 이 막힌 호스팅에서 이 파일이 첫 줄부터 죽지 않게 한다.

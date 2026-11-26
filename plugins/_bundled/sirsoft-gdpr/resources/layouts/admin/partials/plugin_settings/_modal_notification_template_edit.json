@@ -19,7 +19,7 @@
                 "if": "{{!((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                 "responsive": {
                     "-640": {
-                        "comment": "왼쪽 단추는 오른쪽 묶음과 떨어뜨린다. 640px 이하에서는 Modal 이 세로로 쌓으므로 여백을 빼고 폭을 채운다(#869)",
+                        "comment": "왼쪽 단추는 오른쪽 묶음과 떨어뜨린다. 640px 이하에서는 Modal 이 세로로 쌓으므로 여백을 빼고 폭을 채운다",
                         "props": {
                             "className": "gdpr-text-body gdpr:px-4 gdpr:py-2 gdpr:rounded-md gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:transition-colors"
                         }
@@ -936,7 +936,7 @@
                                                             ]
                                                         },
                                                         {
-                                                            "comment": "사이트 관리자 이메일(#888) — 값 칸이 없다. 환경설정 > 일반의 관리자 이메일 한 곳으로 메일만 가므로 그 사실과 빈 값의 결과를 밝힌다(코어 편집 창과 같은 규칙).",
+                                                            "comment": "사이트 관리자 이메일 — 값 칸이 없다. 환경설정 > 일반의 관리자 이메일 한 곳으로 메일만 가므로 그 사실과 빈 값의 결과를 밝힌다(코어 편집 창과 같은 규칙).",
                                                             "id": "rcpt_site_admin_email_hint_{{rcptIdx}}",
                                                             "type": "basic",
                                                             "name": "P",

@@ -16,7 +16,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 브로드캐스트 채널 인가 콜백의 지연 등록 (#860 W12)
+ * 브로드캐스트 채널 인가 콜백의 지연 등록
  *
  * 채널 인가 콜백은 `/api/broadcasting/auth` 처리 때만 쓰인다. 부팅마다 `Broadcast::channel()` 로 드라이버
  * (reverb 면 Pusher 클라이언트)를 만들던 것을, 인가 라우트가 `Broadcast::auth()` 직전에 한 번 등록하도록 바꾼다.

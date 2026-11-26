@@ -5,7 +5,7 @@ namespace Tests\Unit\LanguagePack;
 use Tests\TestCase;
 
 /**
- * ja 언어팩의 휴면 용어 단일성 (이슈 #636 S4, 2026-09-22)
+ * ja 언어팩의 휴면 용어 단일성 (2026-09-22)
  *
  * ko 는 「휴면」, en 은 「dormant」 한 낱말로 일관된데 ja 만 「休眠」과 「休止」로 갈려 있었다.
  * 같은 팩(`g7-core-ja`) 안에서도 로그인 차단 문구는 「休眠状態のアカウント」인데 상태 라벨은

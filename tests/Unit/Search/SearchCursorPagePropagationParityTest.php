@@ -6,7 +6,7 @@ use App\Search\SearchPagePolicy;
 use Tests\TestCase;
 
 /**
- * 커서 판정에 페이지 번호가 도달하는지 검사하는 패리티 테스트 (#519)
+ * 커서 판정에 페이지 번호가 도달하는지 검사하는 패리티 테스트
  *
  * {@see SearchPagePolicy::usesCursor()} 는 커서가 없을 때 `page <= 1` 인지로
  * "시작점" 과 "깊은 페이지 딥링크" 를 가른다. 그래서 호출자가 페이지 번호를 넘기지 않으면

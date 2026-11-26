@@ -24,7 +24,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * 봇 화면의 `_global.activeModules` / `_global.activePlugins` 와 레이아웃 가드 식 평가 (#822, engine-v1.84.0)
+ * 봇 화면의 `_global.activeModules` / `_global.activePlugins` 와 레이아웃 가드 식 평가 (engine-v1.84.0)
  *
  * 사용자 화면(브라우저)은 G7Config.activeModules·activePlugins 에서 식별자를 뽑아 `_global` 에 싣고, 템플릿은
  * `{{_global.activeModules?.includes('id') ?? true}}` 한 모양으로 「모듈이 켜져 있나」를 판정한다. 봇 화면도 같은

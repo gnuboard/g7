@@ -341,7 +341,7 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
   });
   // 안내 — 문구 넘침(지금 기기 실측)과 글자 대비(사진 평균색 + 문구 배경으로 어림). 문구·글자색을 바꾸거나 저장을 막지 않는다.
   const [overflow, setOverflow] = useState<Overflow>(false);
-  // 색 추출은 캔버스로 픽셀을 읽으므로 같은 출처 주소(`url`, 공개 API)를 쓴다 — 직접 주소(`direct_url`, CDN)는 캔버스를 오염시킨다 (#878)
+  // 색 추출은 캔버스로 픽셀을 읽으므로 같은 출처 주소(`url`, 공개 API)를 쓴다 — 직접 주소(`direct_url`, CDN)는 캔버스를 오염시킨다
   const imageUrl = draft ? (device === 'mobile' ? draft.images?.mobile?.url ?? draft.images?.pc?.url : draft.images?.pc?.url) : undefined;
   const [imageColor, setImageColor] = useState<Rgb | null>(null);
   useEffect(() => {

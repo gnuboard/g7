@@ -1,5 +1,5 @@
 /**
- * 상품 상세 확대 창 — 고른 썸네일의 사진에서 열린다 (#821).
+ * 상품 상세 확대 창 — 고른 썸네일의 사진에서 열린다.
  * 템플릿 sirsoft-basic (유저 화면 `/shop/products/{상품 코드}` 의 상품 이미지 뷰어, 비회원).
  *
  * 결함: 썸네일로 큰 사진을 바꾼 뒤 큰 사진을 누르면 확대 창(라이트박스)이 고른 사진이 아니라 늘 첫 사진(「1 / N」)으로
@@ -79,7 +79,7 @@ async function openAt(page: Page, n: number): Promise<void> {
   await expect(counter(page)).toBeVisible();
 }
 
-test.describe('상품 상세 확대 창 시작 사진 (#821)', () => {
+test.describe('상품 상세 확대 창 시작 사진', () => {
   let product: { code: string; count: number } | null = null;
 
   test.beforeEach(async ({ page, request }) => {

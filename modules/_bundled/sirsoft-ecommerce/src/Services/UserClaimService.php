@@ -217,7 +217,7 @@ class UserClaimService
      * 거래 시점에 동결된 스냅샷이 정본이고, 없으면 상점 기본 통화로 떨어진다. 판정은 클레임
      * 서비스 공용 헬퍼(`CurrencyConversionService::resolveOrderBaseCurrency()`) 하나가 소유한다 —
      * 예전에는 서비스마다 폴백이 달라(결제 통화·`KRW` 리터럴) 같은 주문을 응답마다 다른 통화로
-     * 적었다(#599 validate P2 #14).
+     * 적었다(validate P2 #14).
      *
      * @param  Order  $order  주문
      * @return string 기준 통화 코드
@@ -957,7 +957,7 @@ class UserClaimService
      *
      * 이미 결제한 청구를 **환불금 차감**으로 바꾸면 같은 청구를 두 번 받는다 — 결제로 한 번,
      * 완료 시 환불금에서 한 번. 차감 방식은 결제행을 보지 않으므로 전환 뒤의 정산
-     * (`settleChargeDifference()`)도 기납부분을 돌려주지 않는다(#599 validate P2 #13).
+     * (`settleChargeDifference()`)도 기납부분을 돌려주지 않는다(validate P2 #13).
      * 이미 차감 방식인 신청서의 재지정(no-op)은 막지 않는다.
      *
      * @param  OrderExchange|OrderReturn  $claim  신청서
@@ -1095,7 +1095,7 @@ class UserClaimService
             'payment_entry' => $pending ? $this->paymentService->buildPaymentPayload($pending) : null,
             // 대기 건의 수단은 접수 때 확정되지만 그 뒤에 낼 수 없게 될 수 있다 — 마일리지 잔액
             // 부족, 운영자가 그 수단을 내림. 그때 화면이 다른 수단을 고를 수 있어야 사용자가
-            // 신청서를 철회하지 않고 빠져나간다(#599 실측). 대기 건이 없으면 고를
+            // 신청서를 철회하지 않고 빠져나간다. 대기 건이 없으면 고를
             // 것도 없으므로 빈 배열이다.
             'available_payment_methods' => $availableMethods,
             'available_payment_method_labels' => $this->paymentMethodLabels($availableMethods),
@@ -1137,7 +1137,7 @@ class UserClaimService
      * 환불 우선순위 입력을 Enum 으로 해석합니다. (없으면 PG 우선)
      *
      * `Enum::from()` 은 알 수 없는 값에 `ValueError` 를 던져 500 이 된다 — 입력 오류는
-     * 도메인 예외(4xx)로 거절한다(#599 validate P2 #10).
+     * 도메인 예외(4xx)로 거절한다(validate P2 #10).
      *
      * @param  mixed  $value  입력값 (Enum · 문자열 · null)
      * @return RefundPriorityEnum 환불 우선순위
@@ -1161,7 +1161,7 @@ class UserClaimService
      * 청구 방식 입력을 Enum 으로 해석합니다. (없으면 null)
      *
      * 교환·반품 서비스의 `normalizeChargeMethod()` 와 같은 거절(`claim_charge_method_not_allowed`)을
-     * 낸다 — 미리보기와 접수가 같은 입력에 다른 오류를 내지 않게 한다(#599 validate P2 #10).
+     * 낸다 — 미리보기와 접수가 같은 입력에 다른 오류를 내지 않게 한다(validate P2 #10).
      *
      * @param  mixed  $value  입력값 (Enum · 문자열 · null)
      * @return ClaimChargeMethodEnum|null 청구 방식

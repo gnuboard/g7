@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 배열 캐스트 칸을 모델 저장으로 바꿀 때 「표기만 다른 값」 을 수정으로 기록하지 않는다 (#699 실측 결함).
+ * 배열 캐스트 칸을 모델 저장으로 바꿀 때 「표기만 다른 값」 을 수정으로 기록하지 않는다 (실측 결함).
  *
  * `Model::save()` 는 바뀐 칸을 **직렬화한 값**(배열 → JSON 문자열)으로 쿼리 빌더에 넘긴다. 그 빌더
  * (`UserOverridesAwareBuilder`)가 다시 수정 여부를 계산하는데, 원래 값(null)과 문자열 `'[]'` 을 비교해 「바뀌었다」 로

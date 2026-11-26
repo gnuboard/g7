@@ -15,7 +15,7 @@ use Plugins\Sirsoft\PayNhnkcp\Services\KcpSoapService;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
 /**
- * 비회원 주문의 모바일 결제 승인키 — 주문 조회 토큰으로 주인을 확인한다 (#883)
+ * 비회원 주문의 모바일 결제 승인키 — 주문 조회 토큰으로 주인을 확인한다
  *
  * 승인키 라우트가 `auth:sanctum` 이고 컨트롤러가 `user_id === 로그인 회원` 만 허용해, 비회원 주문은 모바일에서 KCP 로
  * 결제할 수 없었다. 이제 라우트는 `optional.sanctum` 이고, 비회원 주문은 주문 생성 때 받은 조회 토큰

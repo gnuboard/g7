@@ -22,7 +22,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * ReactionService 검증.
  *
  * 등록/전환/해제, reaction_counts 증감 정합성(전환 포함), use_reaction off,
- * 비활성 유형, 본인 글 차단, 스코프 검증을 검증한다 (이슈 #525 §10 테스트 범위).
+ * 비활성 유형, 본인 글 차단, 스코프 검증을 검증한다 (§10 테스트 범위).
  */
 class ReactionServiceTest extends BoardTestCase
 {
@@ -317,7 +317,7 @@ class ReactionServiceTest extends BoardTestCase
     }
 
     /**
-     * 비밀글 반응은 SecretContentGate::canView 로 판정된다 — 본문을 못 보는 회원은 secretDenied (#789 D6).
+     * 비밀글 반응은 SecretContentGate::canView 로 판정된다 — 본문을 못 보는 회원은 secretDenied.
      *
      * @scenario case=secret_post_react_blocked
      *
@@ -341,7 +341,7 @@ class ReactionServiceTest extends BoardTestCase
     }
 
     /**
-     * 경로 규칙 앵커(비밀 답변 작성자)는 조상 비밀글을 볼 수 있으므로 반응할 수 있다 (#789 D1·D6).
+     * 경로 규칙 앵커(비밀 답변 작성자)는 조상 비밀글을 볼 수 있으므로 반응할 수 있다.
      *
      * 수정 전에는 반응만 비밀글 조회 권한·게시판 관리자로 따로 판정해 거부됐다.
      *

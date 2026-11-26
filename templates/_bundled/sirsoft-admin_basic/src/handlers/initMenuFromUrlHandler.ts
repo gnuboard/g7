@@ -216,7 +216,7 @@ export async function initMenuFromUrlHandler(
         name: hydratedMenu.name,
         slug: hydratedMenu.slug,
         url: hydratedMenu.url,
-        // 아이콘은 구조형(icon_spec)으로 편집한다 — 폼 저장 본문도 icon_spec 을 싣는다(#381)
+        // 아이콘은 구조형(icon_spec)으로 편집한다 — 폼 저장 본문도 icon_spec 을 싣는다
         icon_spec: hydratedMenu.icon_spec ?? null,
         parent_id: hydratedMenu.parent_id,
         extension_type: hydratedMenu.extension_type,

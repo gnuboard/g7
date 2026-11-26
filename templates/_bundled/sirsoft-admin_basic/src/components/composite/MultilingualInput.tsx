@@ -115,7 +115,7 @@ export interface MultilingualInputProps {
   editorAttrs?: EditorAttrs;
   /**
    * 입력칸 접근 가능한 이름. 켜진 언어가 둘 이상이면 각 칸이 「{이름} ({언어명})」으로 읽힌다.
-   * 없으면 바깥 상자 곁의 라벨(`form-label` 등) 글자를 이름으로 삼는다 — 그때도 언어명을 붙인다(#757).
+   * 없으면 바깥 상자 곁의 라벨(`form-label` 등) 글자를 이름으로 삼는다 — 그때도 언어명을 붙인다.
    */
   ariaLabel?: string;
   /** ariaLabel 과 같은 뜻 — 레이아웃이 `aria-label` 로 줘도 된다 */
@@ -382,7 +382,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
     return locale?.nativeName || locale?.name || getLocaleDisplayName(localeCode);
   }, [actualAvailableLocales]);
 
-  // 입력칸 이름 — 언어가 둘 이상 켜져 있으면 언어명을 붙인다(D7). 종전에는 이름 prop 이 없어 placeholder 로만 읽혔다(#757)
+  // 입력칸 이름 — 언어가 둘 이상 켜져 있으면 언어명을 붙인다(D7). 종전에는 이름 prop 이 없어 placeholder 로만 읽혔다
   const fieldName = useCallback((localeCode: string): string | undefined => {
     if (!nameBase) return undefined;
     if (actualAvailableLocales.length < 2) return nameBase;
@@ -424,7 +424,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
     if (addableLocales.length === 0) return null;
 
     return (
-      // 메뉴 안에서 Esc 로 닫고 「언어 추가」 단추로 돌아간다 — 종전에는 메뉴를 닫을 길이 단추 다시 누르기뿐이었다(#869)
+      // 메뉴 안에서 Esc 로 닫고 「언어 추가」 단추로 돌아간다 — 종전에는 메뉴를 닫을 길이 단추 다시 누르기뿐이었다
       <Div className="relative" onKeyDown={escapeToClose(showAddMenu, () => setShowAddMenu(false), addMenuTriggerRef)}>
         <Button
           ref={addMenuTriggerRef}

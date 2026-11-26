@@ -185,7 +185,7 @@ return [
     ],
 
     'commands' => [
-        // extension:trust-key, extension:keygen, extension:sign 명령 출력 (#916)
+        // extension:trust-key, extension:keygen, extension:sign 명령 출력 
         'trust_key' => [
             'invalid_action' => '동작은 add·remove·list 중 하나여야 합니다.',
             'public_key_missing' => 'add 에는 공개키(base64) 인자가 필요합니다.',
@@ -614,7 +614,7 @@ return [
             'manifest_icon_missing' => '설정 파일의 icon 이 가리키는 파일이 없습니다.',
         ],
     ],
-    // 확장 업데이트·활성화의 레이아웃 3자 병합 결과 (#727)
+    // 확장 업데이트·활성화의 레이아웃 3자 병합 결과
     'declarative_deletion' => [
         'type' => [
             'notification_definition' => '알림 정의',

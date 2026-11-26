@@ -16,7 +16,7 @@ use Tests\TestCase;
  * - admin.blade.php 가 서빙됨
  * - G7 설정 데이터 블록(`<script type="application/json" id="g7-config">`)에 activeModules / activePlugins 키가 실림
  * - 기존 modules / plugins 키도 보존됨(비파괴적 보강)
- * - strict CSP 대응(#850) 이후 window.G7Config 대입은 g7-shell-boot.js 가 이 블록을 읽어 한다 —
+ * - strict CSP 대응 이후 window.G7Config 대입은 g7-shell-boot.js 가 이 블록을 읽어 한다 —
  *   페이지 HTML 에는 인라인 대입문이 없으므로 데이터 블록을 JSON 으로 읽어 키를 확인한다
  * - 비활성 템플릿도 부팅 응답 정상 반환(편집은 가능)
  *

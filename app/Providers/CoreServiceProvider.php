@@ -469,7 +469,7 @@ class CoreServiceProvider extends ServiceProvider
         // 알림 수신자별 발송 기록 — 재시도·재예약 시 이미 보낸 수신자 건너뛰기 (#139)
         $this->app->bind(NotificationDeliveryRepositoryInterface::class, NotificationDeliveryRepository::class);
         $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
-        // 회원 알림함(관리자 전 회원 조회)은 사용자 스코프 저장소와 목적이 달라 별도 계약이다 (#524 §4.1)
+        // 회원 알림함(관리자 전 회원 조회)은 사용자 스코프 저장소와 목적이 달라 별도 계약이다
         $this->app->bind(MemberNotificationRepositoryInterface::class, MemberNotificationRepository::class);
         $this->app->bind(NotificationTemplateRepositoryInterface::class, NotificationTemplateRepository::class);
 
@@ -508,7 +508,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->scoped(FieldSetRegistry::class);
         $this->app->scoped(FieldTypeRegistry::class);
         $this->app->scoped(FieldRegistry::class);
-        // 본인인증 「사용자 지정」 확장 지점 — 활성 확장 선언을 요청 단위로 한 번만 모은다 (7.2.1, #952)
+        // 본인인증 「사용자 지정」 확장 지점 — 활성 확장 선언을 요청 단위로 한 번만 모은다 (7.2.1)
         $this->app->scoped(IdentityCheckpointRegistry::class);
 
         // 표시 이름 — 종류와 영역 등록소는 확장 활성 상태를, 계산기와 값 메모는 요청 안에서 읽어 둔 값을 가지므로 요청 단위다.
@@ -531,7 +531,7 @@ class CoreServiceProvider extends ServiceProvider
             return $manager;
         });
 
-        // 동의 제공자 매니저 — 확장은 `core.consent.registered_providers` 필터로 제공자를 등록한다 (#639)
+        // 동의 제공자 매니저 — 확장은 `core.consent.registered_providers` 필터로 제공자를 등록한다
         $this->app->scoped(ConsentManager::class);
 
         // 외부 자격 증명 검증자 레지스트리 — 확장은 `core.auth.registered_credential_verifiers` 필터로 검증자를 등록한다 (7.2.0)
@@ -544,7 +544,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(UniqueIdServiceInterface::class, UniqueIdService::class);
 
         // AttachmentService용 CoreStorageDriver 바인딩 — 코어 첨부는 비공개 원본이라 관리자가 고른
-        // 「비공개 첨부 저장소」를 따른다(#916). ATTACHMENT_DISK env 명시가 우선, 「기본」이면 종전 규칙.
+        // 「비공개 첨부 저장소」를 따른다. ATTACHMENT_DISK env 명시가 우선, 「기본」이면 종전 규칙.
         $this->app->when(AttachmentService::class)
             ->needs(StorageInterface::class)
             ->give(function () {
@@ -552,7 +552,7 @@ class CoreServiceProvider extends ServiceProvider
             });
 
         // TemplateLayoutAttachmentService용 CoreStorageDriver 바인딩 — 레이아웃 배경 이미지는 공개 화면 자산이라
-        // 비공개 첨부 저장소를 따르지 않는다(공개 자산 디스크 → 꺼져 있으면 종전 디스크, #916 D29)
+        // 비공개 첨부 저장소를 따르지 않는다(공개 자산 디스크 → 꺼져 있으면 종전 디스크)
         $this->app->when(TemplateLayoutAttachmentService::class)
             ->needs(StorageInterface::class)
             ->give(function () {
@@ -566,12 +566,12 @@ class CoreServiceProvider extends ServiceProvider
         });
 
         // 확장 선언 미들웨어 self-gate 인덱스 — 요청 내 인덱스 1회 빌드. scoped 라서 인덱스·해석 메모가
-        // 요청·큐 잡이 끝나면 버려진다(프로세스 수명이면 워커가 옛 인덱스를 붙잡는다, #860)
+        // 요청·큐 잡이 끝나면 버려진다(프로세스 수명이면 워커가 옛 인덱스를 붙잡는다)
         $this->app->scoped(ExtensionMiddlewareRegistryInterface::class, ExtensionMiddlewareRegistry::class);
 
         // 알림 수신자 권한 판정 (수신자 수만큼 같은 권한을 재조회하지 않도록 요청·잡 수명 메모 → scoped).
         // singleton 이면 큐 워커가 재시작될 때까지 메모가 남아, 권한을 뺏긴 사람도 관리자 링크를 계속
-        // 받는다. scoped 는 요청과 큐 잡이 끝날 때마다 비워진다(#599 validate).
+        // 받는다. scoped 는 요청과 큐 잡이 끝날 때마다 비워진다.
         $this->app->scoped(NotificationRecipientCapability::class);
     }
 
@@ -588,11 +588,11 @@ class CoreServiceProvider extends ServiceProvider
         // 선택 연동 역맵 — 목록 행마다 「연동 중인 확장」을 실을 때 켜진 확장 조회를 요청·작업당 한 번으로 줄인다(7.1.4)
         $this->app->scoped(IntegrationReverseIndex::class);
 
-        // 활성·설치 확장 목록 메모 — 부팅 경로가 요청마다 수십 번 읽는 목록을 저장소 조회 한 번으로 줄인다(#860)
+        // 활성·설치 확장 목록 메모 — 부팅 경로가 요청마다 수십 번 읽는 목록을 저장소 조회 한 번으로 줄인다
         $this->app->scoped(ExtensionStatusMemo::class);
 
         // 플러그인 설정 서비스 — 요청 단위로 하나. 소비자마다 새로 만들면 같은 요청에서 설정 파일을 여러 번 읽고,
-        // 한 소비자가 저장한 값을 먼저 읽어 둔 다른 소비자가 모른다. scoped 라 큐 잡마다 새로 읽는다(#860)
+        // 한 소비자가 저장한 값을 먼저 읽어 둔 다른 소비자가 모른다. scoped 라 큐 잡마다 새로 읽는다
         $this->app->scoped(PluginSettingsService::class);
 
         // 확장 매니저 등록 (모듈/플러그인 공통 기능)
@@ -664,7 +664,7 @@ class CoreServiceProvider extends ServiceProvider
         // 트랜잭션 파일 보상 저널 (StorageTransaction) — 한 요청·잡 안의 트랜잭션 항목을 공유해야 롤백 때 되돌린다
         $this->app->singleton(StorageTransactionJournal::class);
 
-        // 본문 미디어 서빙 라우트 레지스트리 — 확장 어댑터가 부팅 때 서빙 라우트 이름을 등록하고, 미디어 출처 허용 패턴이 이를 읽는다(#887).
+        // 본문 미디어 서빙 라우트 레지스트리 — 확장 어댑터가 부팅 때 서빙 라우트 이름을 등록하고, 미디어 출처 허용 패턴이 이를 읽는다.
         // 등록은 부팅 때 한 번이라 프로세스 수명(singleton)이어야 큐 워커·다음 요청에서도 남는다
         $this->app->singleton(MediaSourceRoutes::class);
     }
@@ -1069,7 +1069,7 @@ class CoreServiceProvider extends ServiceProvider
     {
         try {
             $driverRegistry = $this->app->make(DriverRegistryService::class);
-            // 코어 설정 저장소 싱글톤이 같은 구현이면 그것을 쓴다 — 새로 만들면 설정 파일을 다시 읽는다(#860).
+            // 코어 설정 저장소 싱글톤이 같은 구현이면 그것을 쓴다 — 새로 만들면 설정 파일을 다시 읽는다.
             // 구현 클래스를 직접 바인딩해 둔 경우(교체·시험)는 그 바인딩을 따른다.
             $configRepository = $this->app->bound(JsonConfigRepository::class)
                 ? $this->app->make(JsonConfigRepository::class)
@@ -1100,7 +1100,7 @@ class CoreServiceProvider extends ServiceProvider
                 $available = $driverRegistry->isDriverAvailable($category, $selectedDriver);
 
                 // 디스크 카테고리는 쓰는 시점에 해석한다 — 플러그인 디스크는 booted 에서 정의돼 지금은 카탈로그에 없을 수 있다.
-                // 여기서 기본값으로 덮으면 저장된 선택이 모든 요청에서 사라진다(#916 A7). 고아 디스크는 해석기가 거른다.
+                // 여기서 기본값으로 덮으면 저장된 선택이 모든 요청에서 사라진다. 고아 디스크는 해석기가 거른다.
                 if (! $available && $driverRegistry->isRuntimeResolved($category)) {
                     continue;
                 }

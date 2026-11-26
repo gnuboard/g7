@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 /**
- * 수신자 규칙 `site_admin_email` — 환경설정 > 일반의 관리자 이메일로 보내기 (#888)
+ * 수신자 규칙 `site_admin_email` — 환경설정 > 일반의 관리자 이메일로 보내기
  *
  * 관리자 이메일(`general.admin_email`)은 저장만 되고 어디서도 쓰이지 않았다. 알림 템플릿의 받는 사람에
  * 「사이트 관리자 이메일」을 고르면 그 주소 한 곳이 비회원 수신자(메일만)가 되어야 한다. 값이 비었거나 형식이

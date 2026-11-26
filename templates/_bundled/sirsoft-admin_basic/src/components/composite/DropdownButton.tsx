@@ -60,7 +60,7 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
   /** 메뉴를 띄운 때의 트리거 위치 — 스크롤로 트리거가 실제로 움직였는지 가르는 기준 */
   const anchorRectRef = useRef<{ top: number; left: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  // 키보드로 연 메뉴가 열린 뒤 포커스를 옮길 끝 — 마우스로 열면 비어 있어 포커스를 옮기지 않는다(#869 8차 8부)
+  // 키보드로 연 메뉴가 열린 뒤 포커스를 옮길 끝 — 마우스로 열면 비어 있어 포커스를 옮기지 않는다(8차 8부)
   const pendingEdgeRef = useRef<'first' | 'last' | null>(null);
   const menuId = `dropdown-button-menu-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
@@ -103,7 +103,7 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
     }
   }, [isOpen, updateMenuPosition]);
 
-  // 스크롤/리사이즈 시 메뉴 닫기 — 스크롤은 트리거가 실제로 움직였을 때만(ActionMenu 와 같은 규칙, #757).
+  // 스크롤/리사이즈 시 메뉴 닫기 — 스크롤은 트리거가 실제로 움직였을 때만(ActionMenu 와 같은 규칙).
   // 단추를 보이게 한 스크롤의 scroll 이벤트는 메뉴를 연 뒤에 늦게 와 첫 클릭에 곧바로 닫히게 했다.
   useEffect(() => {
     if (!isOpen) return;
@@ -160,7 +160,7 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
             top: menuPosition.top,
             left: menuPosition.left,
           }}
-          // 항목을 고르거나 Esc 로 닫으면 여는 단추로 포커스를 돌린다 — 메뉴가 사라져 body 로 빠지지 않게(#869 키보드 접근).
+          // 항목을 고르거나 Esc 로 닫으면 여는 단추로 포커스를 돌린다 — 메뉴가 사라져 body 로 빠지지 않게(키보드 접근).
           // 항목이 창을 열면 창이 이 단추를 「연 자리」로 기억했다가 닫힐 때 돌려준다
           onClick={() => {
             setIsOpen(false);
@@ -168,7 +168,7 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
           }}
           id={menuId}
           role="menu"
-          // 화살표, Home, End, Enter, Space, Esc, Tab — ActionMenu 와 같은 메뉴 단추 규칙(#869 8차 8부)
+          // 화살표, Home, End, Enter, Space, Esc, Tab — ActionMenu 와 같은 메뉴 단추 규칙(8차 8부)
           onKeyDown={menuKeyDown(menuRef, triggerRef, () => setIsOpen(false))}
         >
           {children}
@@ -183,7 +183,7 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
       <Button
         ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
-        // Modal 이 펼친 메뉴로 알아보게 한다 — 메뉴 안 Esc 는 메뉴 몫이다(#869)
+        // Modal 이 펼친 메뉴로 알아보게 한다 — 메뉴 안 Esc 는 메뉴 몫이다
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={isOpen ? menuId : undefined}

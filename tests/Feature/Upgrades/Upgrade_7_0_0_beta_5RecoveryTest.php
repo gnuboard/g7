@@ -16,7 +16,7 @@ use Tests\TestCase;
  *   - 핫픽스 4종이 upgrades/data/7.0.0-beta.5/migrations/ 안에 격리됨
  *   - 본 테스트는 각 Migration 클래스의 run() 을 직접 호출하여 회귀 가드 유지
  *
- * 회귀 시나리오 (#347): beta.4 의 `applyDiscoveredTopLevelPaths` 결함으로 활성 확장
+ * 회귀 시나리오: beta.4 의 `applyDiscoveredTopLevelPaths` 결함으로 활성 확장
  * 디렉토리(`modules/{id}`, `plugins/{id}`, `templates/{id}`, `lang-packs/{id}`) 가
  * 손실된 환경에서, beta.5 step 이 DB active row 와 `_bundled/{id}` 를 매칭하여 자동 복원.
  */

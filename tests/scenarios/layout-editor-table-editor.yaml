@@ -96,7 +96,7 @@ effects:
   - plain_cell_blur_creates_custom_key_replaces_text_token
   # 라이브(E2E)
   - live_add_row_col_merge_save_persists_to_user_page
-  # 연산 × span 문맥 매트릭스(#869 π1 — 떠 있던 조합을 재는 시험)
+  # 연산 × span 문맥 매트릭스(떠 있던 조합을 재는 시험)
   - grid_add_row_under_colspan_fills_col_count
   - grid_add_row_below_rowspan_keeps_span
   - grid_remove_row_drops_that_row

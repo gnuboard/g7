@@ -1,4 +1,4 @@
-feature: ImageGallery 확대 창 — 열 때 고른 사진에서 시작 (#821)
+feature: ImageGallery 확대 창 — 열 때 고른 사진에서 시작
 
 description: |
   ImageGallery 가 닫힌 채 마운트된 뒤 isOpen 이 true 로 바뀌면서 startIndex 가 함께 바뀔 때,

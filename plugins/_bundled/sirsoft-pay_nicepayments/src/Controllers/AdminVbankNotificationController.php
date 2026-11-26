@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 
-// audit:allow api-doc-coverage reason: 주문과 결제 조회를 이커머스 공개 결제 계약으로 옮기고 응답을 ResponseHelper 로 만든다 — success, data(notifications, summary) 모양은 같고 성공 응답에 message 가 더해진다 (#916)
+// audit:allow api-doc-coverage reason: 주문과 결제 조회를 이커머스 공개 결제 계약으로 옮기고 응답을 ResponseHelper 로 만든다 — success, data(notifications, summary) 모양은 같고 성공 응답에 message 가 더해진다 
 
 use App\Helpers\ResponseHelper;
 use Illuminate\Http\JsonResponse;

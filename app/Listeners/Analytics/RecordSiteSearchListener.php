@@ -18,7 +18,7 @@ use App\Services\Analytics\VisitService;
  *
  * **이 리스너는 큐를 타지 않습니다**(`sync => true`) — 형제인 수집 리스너와 같은 사유로,
  * 검색 1회가 잡 1개가 되면 얻는 것 없이 `jobs` 테이블만 부풉니다
- * (#682 S3 라운드 6, 설계 결정 「큐는 꼭 필요한 부분에만」).
+ * (설계 결정 「큐는 꼭 필요한 부분에만」).
  */
 class RecordSiteSearchListener implements HookListenerInterface
 {

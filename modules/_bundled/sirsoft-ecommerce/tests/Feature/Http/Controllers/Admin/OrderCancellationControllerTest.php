@@ -365,7 +365,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 자동 전이를 켜면 PG 환불 훅이 성공을 돌려주는 주문의 취소가 한 요청으로 끝난다. (#599 후속 D7)
+     * 자동 전이를 켜면 PG 환불 훅이 성공을 돌려주는 주문의 취소가 한 요청으로 끝난다.
      *
      * @return void 반환값 없음
      *
@@ -409,7 +409,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
     }
 
     /**
-     * 확장 결제수단(간편결제) 주문을 취소하면 PG 환불 훅이 실제로 진입해야 한다 (#475).
+     * 확장 결제수단(간편결제) 주문을 취소하면 PG 환불 훅이 실제로 진입해야 한다.
      *
      * 취소 서비스는 `$order->payment->needsPgProvider()` 가 true 일 때만 PG 환불
      * 훅(`payment.refund`)에 진입한다(OrderCancellationService:279-281). 확장 ID 는
@@ -499,12 +499,12 @@ class OrderCancellationControllerTest extends ModuleTestCase
             1,
             $refundHook['count'],
             '확장 결제수단(간편결제) 취소 시 PG 환불 훅이 진입해야 한다 '
-            .'(미진입 시 카드 취소가 누락되는 #475 안전 결함 재발)'
+            .'(미진입 시 카드 취소가 누락되는 안전 결함 재발)'
         );
     }
 
     /**
-     * 자동 전이를 켜면 취소가 한 요청으로 끝난다 — 개별 PG 리스너 없이 기본 리스너만으로도 성공한다. (#599 후속 D7)
+     * 자동 전이를 켜면 취소가 한 요청으로 끝난다 — 개별 PG 리스너 없이 기본 리스너만으로도 성공한다.
      *
      * @return void 반환값 없음
      *
@@ -1229,7 +1229,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
     }
 
     /**
-     * 자동 전이를 끄면 **환불신청서만 만들고 주문은 아직 취소되지 않는다**. (#599 후속 D7)
+     * 자동 전이를 끄면 **환불신청서만 만들고 주문은 아직 취소되지 않는다**.
      *
      * 관리자 [주문취소]는 환불신청서를 만들 뿐이고, 금액확인 → 승인 → 환불완료는 운영자가
      * 하나씩 밟는 것이 기본 운영이다. 취소신청서는 그 환불이 완료되는 순간에 생기므로 이

@@ -1,5 +1,5 @@
 /**
- * 게시판 환경설정 — 숫자 필드 범위 힌트 동적 바인딩 회귀 테스트 (이슈 #413)
+ * 게시판 환경설정 — 숫자 필드 범위 힌트 동적 바인딩 회귀 테스트
  *
  * 배경: 환경설정 "게시판 설정" 탭의 숫자 입력 필드는 description 에 허용 범위를
  *   `({{min}}~{{max}})` 형태로 표시한다. 범위 값은 `config('sirsoft-board.limits')` 를
@@ -52,7 +52,7 @@ const fields: Array<[string, unknown, string]> = [
     ['max_file_count', tabAttachment, 'max_file_count'],
 ];
 
-describe('게시판 환경설정 — 범위 힌트 동적 바인딩 가드 (#413)', () => {
+describe('게시판 환경설정 — 범위 힌트 동적 바인딩 가드', () => {
     it.each(fields)(
         '%s — description text 가 _local.form._meta.limits 파라미터를 포함함',
         (field, layout, limitsKey) => {
@@ -163,7 +163,7 @@ const policyFields: Array<[string, unknown, string]> = [
     ['spam_security.view_count_cache_ttl', tabSpamSecurity, 'view_count_cache_ttl'],
 ];
 
-describe('게시판 환경설정 — 신고 정책 · 스팸 보안 탭 경계값 (#493 B4)', () => {
+describe('게시판 환경설정 — 신고 정책 · 스팸 보안 탭 경계값', () => {
     const limits = configuredLimits();
 
     it.each(policyFields)('%s — min/max 가 한계값 설정을 읽는다', (field, layout, limitsKey) => {
@@ -207,7 +207,7 @@ function settingsRequestSource(): string {
     );
 }
 
-describe('게시판 환경설정 — 서버 저장 규칙 정합 (#493 B4)', () => {
+describe('게시판 환경설정 — 서버 저장 규칙 정합', () => {
     const limits = configuredLimits();
     const requestSource = settingsRequestSource();
 

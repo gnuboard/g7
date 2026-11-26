@@ -228,7 +228,7 @@ class ProfileController extends AuthBaseController
     /**
      * 사용자의 활동 기록을 조회합니다.
      *
-     * 7.2.1(#952) 부터 쪽·기간 필터를 받고 회원 본인의 활동(`log_type=user`)만 싣는다. 응답은 종전의 `data.activities[]` 에
+     * 7.2.1 부터 쪽·기간 필터를 받고 회원 본인의 활동(`log_type=user`)만 싣는다. 응답은 종전의 `data.activities[]` 에
      * `data.pagination` 이 더해진다. 인자 없이 부르면 1쪽 50건이다.
      *
      * @param  UserActivityLogRequest  $request  조회 요청 (page·per_page·date_from·date_to)

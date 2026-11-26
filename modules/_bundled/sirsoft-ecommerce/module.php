@@ -118,7 +118,7 @@ class Module extends AbstractModule
     }
 
     /**
-     * 회원 혜택(#952)의 공개 훅 계약 — 쿠폰 자동발급·발급 알림·만료 임박 알림, 마일리지 적립·차감 알림, 리뷰 답글, 주문 취소의 취소 기록 인자.
+     * 회원 혜택의 공개 훅 계약 — 쿠폰 자동발급·발급 알림·만료 임박 알림, 마일리지 적립·차감 알림, 리뷰 답글, 주문 취소의 취소 기록 인자.
      *
      * @return array 회원 혜택 훅 정의
      */
@@ -171,7 +171,7 @@ class Module extends AbstractModule
     }
 
     /**
-     * 내보내기(#787)의 공개 훅 계약 — 작업 수명 주기 액션, 유형·형식·필드 확장 필터, 요청 검증 규칙 필터.
+     * 내보내기의 공개 훅 계약 — 작업 수명 주기 액션, 유형·형식·필드 확장 필터, 요청 검증 규칙 필터.
      *
      * @return array<int, array<string, mixed>> 훅 정의
      */
@@ -1310,7 +1310,7 @@ class Module extends AbstractModule
                     ],
                 ],
 
-                // 찜 관리 권한 (#524 §4.1 — 회원 소유 데이터 관리자 표면)
+                // 찜 관리 권한 (회원 소유 데이터 관리자 표면)
                 [
                     'identifier' => 'wishlists',
                     'resource_route_key' => 'wishlist',
@@ -1350,7 +1350,7 @@ class Module extends AbstractModule
                         ],
                     ],
                 ],
-                // 장바구니 관리 권한 (#524 §4.1 — 회원 소유 데이터 관리자 표면)
+                // 장바구니 관리 권한 (회원 소유 데이터 관리자 표면)
                 [
                     'identifier' => 'carts',
                     'resource_route_key' => 'cart',
@@ -1390,7 +1390,7 @@ class Module extends AbstractModule
                         ],
                     ],
                 ],
-                // 회원 배송지 관리 권한 (#524 §4.1 — 회원 소유 데이터 관리자 표면)
+                // 회원 배송지 관리 권한 (회원 소유 데이터 관리자 표면)
                 [
                     'identifier' => 'user-addresses',
                     'resource_route_key' => 'user-address',
@@ -1471,7 +1471,7 @@ class Module extends AbstractModule
                     ],
                 ],
 
-                // 내보내기 권한 (#787) — 목록 화면의 내보내기 요청과 내보내기 관리 화면.
+                // 내보내기 권한 — 목록 화면의 내보내기 요청과 내보내기 관리 화면.
                 // 데이터 범위는 그 유형의 조회 권한(주문=orders.read …)이 정하고, 이 카테고리는 작업(파일)에 대한 권한이다.
                 // 작업 범위는 코어 표준 권한 범위다 — 주인은 요청자(requested_by)이고, 역할 관리에서 권한마다 본인만/소유 역할/전체를
                 // 고른다(Support\ExportAccess). 기본은 admin 전체, 이커머스 관리자 본인만(요청한 내보내기만 조회·다운로드·삭제).
@@ -1617,7 +1617,7 @@ class Module extends AbstractModule
     public function getStorageDiskFor(string $category): string
     {
         if (! in_array($category, self::PUBLIC_ASSET_CATEGORIES, true)) {
-            // 공개 자산이 아닌 키는 부모 규칙(비공개 첨부 저장소 바인딩 등, #916)을 거친다
+            // 공개 자산이 아닌 키는 부모 규칙(비공개 첨부 저장소 바인딩 등)을 거친다
             return parent::getStorageDiskFor($category);
         }
 
@@ -1758,7 +1758,7 @@ class Module extends AbstractModule
             $this->inquiryReceivedDefinition(),
             $this->inquiryRepliedDefinition(),
             $this->mileageExpiringSoonDefinition(),
-            // #952 — 쿠폰 만료 임박·마일리지 적립/차감·부분 취소·리뷰 답글 (새 회원 대상 알림은 사이트 알림만 켜짐)
+            // 쿠폰 만료 임박·마일리지 적립/차감·부분 취소·리뷰 답글 (새 회원 대상 알림은 사이트 알림만 켜짐)
             $this->couponExpiringSoonDefinition(),
             $this->mileageEarnedDefinition(),
             $this->mileageDeductedDefinition(),
@@ -1771,7 +1771,7 @@ class Module extends AbstractModule
     }
 
     /**
-     * 쿠폰별 발급 알림 정의 (#952) — 발급 알림을 켠(또는 정의가 이미 있는) 쿠폰마다 `coupon_issued.{쿠폰ID}`.
+     * 쿠폰별 발급 알림 정의 — 발급 알림을 켠(또는 정의가 이미 있는) 쿠폰마다 `coupon_issued.{쿠폰ID}`.
      *
      * 런타임에 쿠폰 화면이 만든 정의를 선언에도 싣는다. 그래야 확장 업데이트의 「선언에 없는 정의 정리」 가 지우지 않는다.
      * 테이블이 없는 설치 전 시점에는 빈 배열이다.
@@ -1799,7 +1799,7 @@ class Module extends AbstractModule
     }
 
     /**
-     * 내보내기(#787) 완료·실패 알림 정의 — 요청자에게 사이트 내 알림으로 보낸다.
+     * 내보내기 완료·실패 알림 정의 — 요청자에게 사이트 내 알림으로 보낸다.
      *
      * 데이터는 {@see ExportNotificationDataListener} 가 채운다. 알림 센터는 같은 탭 이동을 사이트 내 경로(`/…`)로만
      * 허용하고 전체 주소는 첫 화면으로 보내므로 click_url 은 경로 변수 `{exports_path}` 를 쓴다.
@@ -1873,7 +1873,7 @@ class Module extends AbstractModule
      * 주문 상세 「고객에게 메일 보내기」 알림 정의.
      *
      * 관리자가 주문 상세에서 직접 쓰는 메일이다. 7.1.0 전에는 알림 밖에서 `Mail::raw()` 로 보내
-     * 「알림 채널 관리」의 메일 토글·발송 로그를 거치지 않았다(#699). 훅으로 발화되지 않고
+     * 「알림 채널 관리」의 메일 토글·발송 로그를 거치지 않았다. 훅으로 발화되지 않고
      * OrderService::sendEmail() 이 직접 보낸다 — hooks 는 비운다. 제목·본문은 관리자 입력을
      * 그대로 싣고({subject}·{message}), 운영자는 앞뒤 문구(꼬리말 등)를 편집할 수 있다.
      *
@@ -1928,7 +1928,7 @@ class Module extends AbstractModule
      * 결제 시 본인 확인(checkout_verification) 본인인증 알림 정의.
      *
      * 이 모듈이 도입한 `checkout_verification` 목적의 전용 메일 문구다. 7.1.0 부터 본인인증 메시지는
-     * 알림 정의(category=identity)이므로 `getIdentityMessages()` 대신 여기서 선언한다(#699).
+     * 알림 정의(category=identity)이므로 `getIdentityMessages()` 대신 여기서 선언한다.
      * 정의가 없으면 코어 `identity.default` 범용 문구로 나가 결제 맥락이 사라진다.
      * 결제 도메인 정책(payment.cancel/approve/confirm_deposit)은 코어 sensitive_action 문구로 충분해
      * 따로 선언하지 않는다 — 정책별 문구가 필요하면 운영자가 알림 설정 > 본인인증에서 추가한다.
@@ -2182,7 +2182,7 @@ class Module extends AbstractModule
     }
 
     /**
-     * 쿠폰 만료 임박 알림 정의 (#952).
+     * 쿠폰 만료 임박 알림 정의.
      *
      * 마일리지 소멸 예정 알림과 같은 방식이다. 새 회원 대상 알림이라 사이트 알림만 켠 채로 들어온다.
      *
@@ -2244,7 +2244,7 @@ class Module extends AbstractModule
     }
 
     /**
-     * 마일리지 적립 알림 정의 (#952 — 구매 적립·관리자 지급·가입 적립).
+     * 마일리지 적립 알림 정의 (구매 적립·관리자 지급·가입 적립).
      *
      * @return array<string, mixed> 알림 정의
      */
@@ -2300,7 +2300,7 @@ class Module extends AbstractModule
     }
 
     /**
-     * 마일리지 관리자 차감 알림 정의 (#952).
+     * 마일리지 관리자 차감 알림 정의.
      *
      * @return array<string, mixed> 알림 정의
      */
@@ -2376,7 +2376,7 @@ class Module extends AbstractModule
     }
 
     /**
-     * 부분 취소 알림 정의 (#952).
+     * 부분 취소 알림 정의.
      *
      * 전체 취소(`order_cancelled`)와 문구가 달라 따로 둔다. 비회원 주문은 주문서의 연락처로 보낸다(guest_recipient).
      *
@@ -2439,7 +2439,7 @@ class Module extends AbstractModule
     }
 
     /**
-     * 리뷰 답글 알림 정의 (#952).
+     * 리뷰 답글 알림 정의.
      *
      * 관리자가 리뷰에 처음 답글을 달 때 리뷰를 쓴 회원에게 보낸다(수정에는 보내지 않는다). 선례: 문의 답변 `inquiry_replied`.
      *
@@ -2500,7 +2500,7 @@ class Module extends AbstractModule
     }
 
     /**
-     * 항목 몇 줄과 버튼 하나로 된 알림 메일 본문을 만듭니다. (#952 새 알림 공용)
+     * 항목 몇 줄과 버튼 하나로 된 알림 메일 본문을 만듭니다. (새 알림 공용)
      *
      * @param  string  $heading  제목
      * @param  string  $intro  첫 문단
@@ -4549,7 +4549,7 @@ class Module extends AbstractModule
     {
         return [
             GrantSignupMileageListener::class,
-            // 쿠폰 자동발급(#952) — 가입(sync)·첫구매(큐) 발급과 첫구매 회수
+            // 쿠폰 자동발급 — 가입(sync)·첫구매(큐) 발급과 첫구매 회수
             GrantSignupCouponListener::class,
             FirstPurchaseCouponListener::class,
             CouponIssueNotificationListener::class,
@@ -4565,7 +4565,7 @@ class Module extends AbstractModule
             EcommerceAdminActivityLogListener::class,
             EcommerceUserActivityLogListener::class,
             ActivityLogDescriptionResolver::class,
-            // 내보내기(#787) — 활동 로그·설명 해석·완료/실패 알림 데이터
+            // 내보내기 — 활동 로그·설명 해석·완료/실패 알림 데이터
             ExportActivityLogListener::class,
             ExportActivityLogDescriptionResolver::class,
             ExportNotificationDataListener::class,
@@ -4576,12 +4576,12 @@ class Module extends AbstractModule
             CloseUnpaidVbankOnCancelListener::class,
             CouponUseListener::class,
             SeoProductCacheListener::class,
-            // 상세 재렌더는 큐 — 무효화(SeoProductCacheListener, sync)가 먼저 돌고 커밋 뒤에 다시 그린다(#724)
+            // 상세 재렌더는 큐 — 무효화(SeoProductCacheListener, sync)가 먼저 돌고 커밋 뒤에 다시 그린다
             SeoProductDetailRegenerateListener::class,
             SeoCategoryCacheListener::class,
             CategoryTreeCacheListener::class,
             SeoSettingsCacheListener::class,
-            // 회원의 표시 이름이 바뀌면 후기와 문의 작성자가 구워진 상품 상세 SEO 캐시를 비운다(#490)
+            // 회원의 표시 이름이 바뀌면 후기와 문의 작성자가 구워진 상품 상세 SEO 캐시를 비운다
             SeoMemberDisplayNameCacheListener::class,
             ShippingPolicyCacheListener::class,
             MileageTransactionListener::class,
@@ -4606,13 +4606,13 @@ class Module extends AbstractModule
             PurgeCashReceiptIdentifierListener::class,
             Ckeditor5ReferenceSourcesListener::class,
             PrivacyRetentionListener::class,
-            // 코어 회원관리 목록의 확장 필터 예제 2종 — 마일리지 잔액·배송지 (#705)
+            // 코어 회원관리 목록의 확장 필터 예제 2종 — 마일리지 잔액·배송지
             UserListMileageFilterListener::class,
             UserListAddressFilterListener::class,
             ProvideNecessaryStorageKeysListener::class,
             // 스코프 강제 지점 원장 (core.permission.scope_enforcement_ledger 필터)
             EcommerceScopeLedgerListener::class,
-            // 이미지 썸네일 — 서빙 경로 패턴·원본 제공자 (core.thumbnail.filter_* 필터, #869)
+            // 이미지 썸네일 — 서빙 경로 패턴·원본 제공자 (core.thumbnail.filter_* 필터)
             ThumbnailSourcesListener::class,
         ];
     }
@@ -4672,7 +4672,7 @@ class Module extends AbstractModule
                 'name' => 'prune-temp-category-images',
                 'type' => 'artisan',
                 'label' => ['ko' => '임시 카테고리 이미지 삭제', 'en' => 'Prune temporary category images'],
-                // 카테고리를 저장하면 temp_key 가 비워지므로 남아 있으면 끝내 저장되지 않은 폼 세션 부산물이다 (보존기간은 커맨드 옵션, #876)
+                // 카테고리를 저장하면 temp_key 가 비워지므로 남아 있으면 끝내 저장되지 않은 폼 세션 부산물이다 (보존기간은 커맨드 옵션)
                 'description' => ['ko' => '새 카테고리 폼에서 올리고 저장하지 않은 임시 이미지를 지웁니다.', 'en' => 'Deletes temporary images uploaded in the new category form that were never saved.'],
                 'command' => 'sirsoft-ecommerce:prune-temp-category-images',
                 'frequency' => 'daily',
@@ -4722,7 +4722,7 @@ class Module extends AbstractModule
                 'name' => 'issue-birthday-coupons',
                 'type' => 'artisan',
                 'label' => ['ko' => '생일 쿠폰 발급', 'en' => 'Issue birthday coupons'],
-                // 생일 항목을 지정하지 않으면 돌지 않는다. 같은 날 다시 돌아도 발급 키 유니크로 1회다 (#952)
+                // 생일 항목을 지정하지 않으면 돌지 않는다. 같은 날 다시 돌아도 발급 키 유니크로 1회다
                 'description' => ['ko' => '생일인 회원에게 생일 쿠폰을 발급합니다(쿠폰 설정에서 생일 항목을 지정한 경우만).', 'en' => 'Issues birthday coupons to members whose birthday is today (only when a birthday field is set in coupon settings).'],
                 'command' => 'sirsoft-ecommerce:issue-birthday-coupons',
                 'frequency' => 'daily',
@@ -4805,7 +4805,7 @@ class Module extends AbstractModule
     }
 
     /**
-     * 모듈 비활성화 — 보관 기간이 지난 내보내기 파일을 지금 정리한다(#787).
+     * 모듈 비활성화 — 보관 기간이 지난 내보내기 파일을 지금 정리한다.
      *
      * 비활성 동안에는 정리 스케줄이 돌지 않아 만료 파일이 남는다 — 그래서 끄기 직전에 한 번 정리한다. 아직 기간이 남은
      * 파일은 지우지 않는다(다시 켜면 내려받을 수 있어야 한다).
@@ -4825,7 +4825,7 @@ class Module extends AbstractModule
     }
 
     /**
-     * 모듈 제거 — 내보낸 파일을 모두 지운다(#787).
+     * 모듈 제거 — 내보낸 파일을 모두 지운다.
      *
      * 개인정보가 담길 수 있는 파일이라 「데이터 유지」로 제거해도 남기지 않는다(작업 기록·다운로드 이력은 테이블에 남는다).
      *
@@ -4852,7 +4852,7 @@ class Module extends AbstractModule
      * 파일을 못 지웠는데 기록을 만료로 바꾸면 남은 파일을 다시 찾을 수 없다. 그래서 테이블이 있으면(데이터를 남기는 제거)
      * 기록을 그대로 두고 실패를 돌려준다. 테이블이 이미 없으면(데이터도 삭제) 오류 로그만 남기고 성공으로 본다.
      *
-     * 파일은 저장할 때의 디스크(행 `disk` — 관리자가 고른 「비공개 첨부 저장소」)에 있다(#916). 그래서 기본 디스크에 더해
+     * 파일은 저장할 때의 디스크(행 `disk` — 관리자가 고른 「비공개 첨부 저장소」)에 있다. 그래서 기본 디스크에 더해
      * 남은 행이 가리키는 디스크마다 `exports` 폴더를 지운다. 테이블이 이미 없으면 행을 볼 수 없으므로 지금의 비공개 첨부
      * 디스크를 대신 지운다. config 에서 사라진(고아) 디스크는 건너뛴다 — 닿을 수 없는 디스크를 이유로 제거를 멈추지 않는다.
      *

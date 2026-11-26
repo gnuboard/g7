@@ -7,7 +7,7 @@ use Modules\Sirsoft\Page\Listeners\PageActivityLogListener;
 use Tests\PureTestCase;
 
 /**
- * 페이지 모듈의 ActivityLog action 라벨 영역 분리 회귀 차단 (이슈 #317).
+ * 페이지 모듈의 ActivityLog action 라벨 영역 분리 회귀 차단.
  */
 class ActivityLogActionLabelTest extends PureTestCase
 {
@@ -45,7 +45,7 @@ class ActivityLogActionLabelTest extends PureTestCase
         $this->assertFileExists($langFile);
 
         $lang = require $langFile;
-        $this->assertArrayHasKey('action', $lang, '모듈 lang 에 action 배열이 신설되어야 함 (이슈 #317)');
+        $this->assertArrayHasKey('action', $lang, '모듈 lang 에 action 배열이 신설되어야 함');
 
         // 페이지 origin 모든 last segment (모두 공용 어휘이지만 영역 분리 일관성)
         $required = ['create', 'update', 'delete', 'restore', 'upload'];

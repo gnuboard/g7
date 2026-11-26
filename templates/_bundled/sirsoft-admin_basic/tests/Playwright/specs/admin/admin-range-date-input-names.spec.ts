@@ -1,5 +1,5 @@
 /**
- * sirsoft-admin_basic — 목록 필터 기간 칸의 읽기 이름 (#747 리베이스 후속).
+ * sirsoft-admin_basic — 목록 필터 기간 칸의 읽기 이름 (리베이스 후속).
  *
  * 결함: 곁 라벨 이름을 자동으로 잇는 훅은 라벨 하나 뒤에 칸이 둘 이상이면 어느 칸에도 잇지 않는다
  *   (「가입일」 을 두 칸에 똑같이 달면 둘을 구별할 수 없다). 그래서 회원 목록의 기간 칸이 화면 낭독기에서
@@ -21,7 +21,7 @@ const KO_RANGES: Array<[string, string, string]> = [
   ['statusChangedStart', 'statusChangedEnd', '상태 변경일'],
 ];
 
-test.describe('@sirsoft-admin_basic 목록 필터 기간 칸 이름 (#747)', () => {
+test.describe('@sirsoft-admin_basic 목록 필터 기간 칸 이름', () => {
   // @scenario case=c02
   // @effects range_date_inputs_named
   test('회원 목록 기간 칸이 칸마다 「{라벨} 시작일/종료일」 로 읽힌다', async ({ page, userManageToken }) => {

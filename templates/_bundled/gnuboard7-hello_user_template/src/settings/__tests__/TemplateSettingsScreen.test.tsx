@@ -1,7 +1,7 @@
 // e2e:allow 학습용 최소 설정 화면 단위 잠금 — 브라우저 실측은 이력 문서 매트릭스(업로드·저장·새로고침·기본값으로)
 /**
  * @file TemplateSettingsScreen.test.tsx
- * @description 학습용 최소 설정 화면의 첨부 칸을 잠근다 (#434 D28·D29).
+ * @description 학습용 최소 설정 화면의 첨부 칸을 잠근다.
  *
  * - 파일을 고르면 저장 단추를 풀고, 저장 신호를 받아서야 올린 뒤 값을 바꾼다
  * - 이 화면이 그리지 못하는 칸 종류는 입력칸으로 떨어뜨리지 않고 안내만 보인다
@@ -25,7 +25,7 @@ const data = {
   ] }],
 };
 
-describe('학습용 설정 화면 (#434)', () => {
+describe('학습용 설정 화면', () => {
   let listener: (() => Promise<unknown>) | null = null;
   const post = vi.fn();
 

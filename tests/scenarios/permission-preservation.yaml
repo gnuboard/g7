@@ -64,7 +64,7 @@ effects:
   - chown_recursive_detailed_backward_compatible_without_marker_option
   - audit_rule_no_storage_bulk_in_restore_ownership_detects_violation
   - audit_rule_no_storage_bulk_in_restore_ownership_ignores_other_keys
-  # sudo 로 돌린 업데이트가 남기는 소유권 (#651) — 복원 대상 목록과 신규 생성 지점 양쪽
+  # sudo 로 돌린 업데이트가 남기는 소유권 — 복원 대상 목록과 신규 생성 지점 양쪽
   - settings_directory_seed_inherits_ownership
   - update_temp_directory_inherits_ownership
   - runtime_ownership_targets_cover_temp_and_logs

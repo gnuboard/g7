@@ -18,7 +18,7 @@ use RuntimeException;
 use Tests\TestCase;
 
 /**
- * 부팅 캐시 파일을 비는 순간 없이 바꿔 끼우기 (#882)
+ * 부팅 캐시 파일을 비는 순간 없이 바꿔 끼우기
  *
  * 확장을 켜고 끌 때 라우트·설정 캐시를 「지운 뒤 다시 굽는」 1~2초 사이에 다른 요청이 들어오면 `file_exists()` 를 통과한 뒤
  * `require` 직전에 파일이 지워져 500(`routes-v7.php: No such file`)이 났다 — 관리자 화면은 「초기화 실패 Failed to reload

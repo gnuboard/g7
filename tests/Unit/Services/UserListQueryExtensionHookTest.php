@@ -14,7 +14,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
- * 회원 목록 확장 필터 훅 테스트 (#705 D5)
+ * 회원 목록 확장 필터 훅 테스트
  *
  * 확장이 회원 목록에 자기 조건을 더하는 경로는 네 층이다 — 화면 확장점, `ext_filters[]` 값 채널,
  * 검증 훅(`core.user.list_validation_rules`), 쿼리 훅 2종. 이 테스트는 서버 쪽 세 층을 본다.

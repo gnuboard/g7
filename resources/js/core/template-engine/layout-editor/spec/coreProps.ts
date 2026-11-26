@@ -47,7 +47,7 @@ export type CorePropKey = 'id' | 'dataKey' | 'isolatedState' | 'isolatedScopeId'
  */
 export const CORE_PROP_CONTROLS: Record<CorePropKey, EditorControlSpec> = {
   // `apply` 는 controls.json 과 같은 객체(`{type,propKey}` / `{type,nodeKey}`)다 — EditorControlSpec.apply 가
-  // RecipeApply 로 선언돼 캐스팅이 필요 없다(#869, 종전 string 선언 시절의 우회 캐스팅 제거).
+  // RecipeApply 로 선언돼 캐스팅이 필요 없다(종전 string 선언 시절의 우회 캐스팅 제거).
   id: {
     label: '$t:layout_editor.core_props.id.label',
     // 전용 `core-id` 위젯 — 바인딩(`{{...}}`) 디그레이드 + HTML 안전 문자 sanitize.

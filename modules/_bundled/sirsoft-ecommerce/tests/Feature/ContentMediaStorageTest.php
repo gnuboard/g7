@@ -23,7 +23,7 @@ use Modules\Sirsoft\Ecommerce\Services\ContentMediaService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 이커머스 본문 미디어 저장소 — 범용 첨부 표 `ecommerce_attachments` 의 보존 계약 (#887)
+ * 이커머스 본문 미디어 저장소 — 범용 첨부 표 `ecommerce_attachments` 의 보존 계약
  *
  * 저장소를 개발 중 전용 표 `ecommerce_content_media` 에서 게시판·페이지와 같은 모양의 이 모듈 범용 첨부 표 `ecommerce_attachments`
  * (collection = content_media)로 옮겼고, 흐름은 코어 골격(`AbstractContentMediaService`)이 돌린다. 바깥 계약(업로드·업로드 계약·서빙
@@ -213,7 +213,7 @@ class ContentMediaStorageTest extends ModuleTestCase
 
     /**
      * 응답 캐시는 서명 없이 아무나 볼 수 있을 때만 public 이다 — 미공개 상품 미디어는 서명 주소·관리자 열람 모두 private(종전에는
-     * 이어진 행이면 public 이었다), 전시 중 상품·공통 정보 미디어는 public (#887 Q9).
+     * 이어진 행이면 public 이었다), 전시 중 상품·공통 정보 미디어는 public.
      *
      * @return void 반환값 없음
      *

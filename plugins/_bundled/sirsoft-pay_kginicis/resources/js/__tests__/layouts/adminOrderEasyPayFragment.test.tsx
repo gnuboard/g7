@@ -4,7 +4,7 @@
  *
  * 예전에는 주입 스크립트(adminOrderPaymentDisplayInjector)가 `/admin/ecommerce/orders/…` 주소 글자를 맞추고
  * 로그인 토큰을 저장소에서 직접 읽어 거래 상태를 다시 조회한 뒤, 이커머스가 그린 결제수단 칸 글자를 덮어썼다.
- * history.pushState 도 덮어써 화면 이동을 엿봤다(#639). 이제 같은 조각의 결제 상태 데이터 소스(kginicis_status)를
+ * history.pushState 도 덮어써 화면 이동을 엿봤다. 이제 같은 조각의 결제 상태 데이터 소스(kginicis_status)를
  * 그대로 쓰고, 이커머스가 약속한 결제수단 칸(payment_method_block_{결제 순번}) 안에 한 줄을 덧붙인다.
  *
  * 시나리오: plugins/_bundled/sirsoft-pay_kginicis/tests/scenarios/admin-order-easy-pay-fragment.yaml

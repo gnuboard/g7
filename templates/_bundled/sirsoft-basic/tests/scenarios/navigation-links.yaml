@@ -1,4 +1,4 @@
-feature: sirsoft-basic 화면 이동을 링크로 — 새 탭 열기 (#757)
+feature: sirsoft-basic 화면 이동을 링크로 — 새 탭 열기
 
 description: |
   머리글 메뉴·모바일 메뉴·꼬리말·회원 메뉴·상품 카드·페이지 번호·탭과 레이아웃의 이동 단추가 `<button>` + navigate 라
@@ -9,7 +9,7 @@ description: |
   링크로 바꾸되 보통 클릭은 지금처럼 정리 후 이동하고, 새 탭은 href 로 연다.
   쿼리를 합치는 링크(`mergeQuery`·`pageHrefMergeQuery`·`preserveListQuery`·`tabHrefMergeQuery`)는 같은 화면에서 쿼리만
   바꾸는 `navigate replace` 뒤에도 새 쿼리를 합친 href 로 다시 그려진다(엔진 `subscribeLocationSearch` 구독, props 가 같아도).
-  하위 폴더 설치(`G7Config.basePath`)에서는 그리는 href 의 루트 상대 경로에 사이트 마운트 접두사를 붙인다(`sitePath()`, #609 D2) —
+  하위 폴더 설치(`G7Config.basePath`)에서는 그리는 href 의 루트 상대 경로에 사이트 마운트 접두사를 붙인다(`sitePath()`) —
   새 탭·링크 복사가 사이트 밖(404)으로 가지 않게. 보통 클릭의 SPA 이동 값은 접두사 없는 앱 경로 그대로다.
 
 axes:

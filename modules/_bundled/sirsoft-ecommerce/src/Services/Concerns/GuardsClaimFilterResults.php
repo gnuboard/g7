@@ -6,7 +6,7 @@ namespace Modules\Sirsoft\Ecommerce\Services\Concerns;
  * 클레임 before·filter 훅의 필터 결과를 받아들이는 공용 규칙
  *
  * 클레임 서비스는 쓰기 **전에** `claim.{type}.before_{동작}`(action) → `claim.{type}.filter_{동작}_data`
- * (filter) 를 동기로 발화한다(#599 validate 01-#6). before 는 예외를 던져 동작을 막는 자리이고,
+ * (filter) 를 동기로 발화한다(validate 01-#6). before 는 예외를 던져 동작을 막는 자리이고,
  * filter 는 확장이 입력을 바꾸는 자리다. 둘 다 트랜잭션·잠금 **전**(또는 호출자 트랜잭션 안에서
  * 쓰기 전)에 돌아야 막거나 바꾼 결과가 쓰기에 반영된다 — 커밋 뒤 발화(`FiresClaimHooksAfterCommit`)
  * 는 after 훅의 규칙이다.

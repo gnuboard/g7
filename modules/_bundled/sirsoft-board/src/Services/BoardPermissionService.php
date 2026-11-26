@@ -344,7 +344,7 @@ class BoardPermissionService
     /**
      * 게시판의 모든 권한을 삭제합니다.
      *
-     * 카테고리 권한(`sirsoft-board.{slug}`)과 그 하위 권한을 깊은 자식부터 명시적으로 지운다(DB CASCADE 비의존, #888).
+     * 카테고리 권한(`sirsoft-board.{slug}`)과 그 하위 권한을 깊은 자식부터 명시적으로 지운다(DB CASCADE 비의존).
      * 권한마다 역할 부여(`role_permissions`)를 떼고 훅 매핑(`permission_hooks`)을 지운 뒤 권한 행을 지운다.
      *
      * 지울 대상은 두 갈래로 모은다 — 카테고리의 `parent_id` 사슬로 이어진 하위 트리, 그리고 사슬에서 떨어져

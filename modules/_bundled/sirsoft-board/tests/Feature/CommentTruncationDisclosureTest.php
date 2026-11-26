@@ -10,7 +10,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 댓글 목록 절단 노출 계약 테스트 (#519)
+ * 댓글 목록 절단 노출 계약 테스트
  *
  * 한 글의 댓글은 상한을 넘으면 그 지점에서 끊긴다. 끊긴 사실을 알리지 않으면
  * 사용자에게는 "댓글이 그만큼뿐" 으로 보인다 — 오류도 빈 화면도 아니라서

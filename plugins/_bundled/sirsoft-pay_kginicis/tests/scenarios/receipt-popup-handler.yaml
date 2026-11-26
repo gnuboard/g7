@@ -1,4 +1,4 @@
-feature: 영수증 창 핸들러 — 조각이 받아 둔 영수증 응답으로 창만 연다 (#639)
+feature: 영수증 창 핸들러 — 조각이 받아 둔 영수증 응답으로 창만 연다
 
 description: |
   주문 상세·주문 완료 조각의 버튼은 `sirsoft-pay_kginicis.openReceipt` 핸들러에 마운트 때 받아 둔 영수증 조회 응답을 넘긴다.

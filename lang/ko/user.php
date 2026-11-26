@@ -13,7 +13,7 @@ return [
         'dormant' => '휴면',
     ],
 
-    // 비밀번호 정책 (#736) — Enum label() 이 읽는다
+    // 비밀번호 정책 — Enum label() 이 읽는다
     'password_expiry_policy' => [
         'inherit' => '역할·사이트 설정 따름',
         'apply' => '적용',
@@ -207,7 +207,7 @@ return [
         'search_keyword_required' => '검색 키워드를 입력해주세요.',
         'exclude_user_id_uuid' => '제외할 사용자 ID는 유효한 UUID여야 합니다.',
         'exclude_user_id_exists' => '존재하지 않는 사용자입니다.',
-        // 회원 목록 필터 (#705)
+        // 회원 목록 필터
         'list_status_array' => '계정 상태 조건은 목록 형식이어야 합니다.',
         'list_status_invalid' => '유효하지 않은 계정 상태입니다.',
         'list_role_ids_array' => '권한 그룹 조건은 목록 형식이어야 합니다.',
@@ -221,7 +221,7 @@ return [
         'list_ext_filters_invalid' => '확장 필터 조건의 형식이 올바르지 않습니다.',
         'list_ext_filters_max' => '확장 필터 조건은 최대 20개까지 가능합니다.',
     ],
-    // 회원 목록 필터의 검증 항목명 — UserListRequest::attributes() 가 읽는다 (#705)
+    // 회원 목록 필터의 검증 항목명 — UserListRequest::attributes() 가 읽는다
     'list_filter_attributes' => [
         'status' => '계정 상태',
         'role_ids' => '권한 그룹',

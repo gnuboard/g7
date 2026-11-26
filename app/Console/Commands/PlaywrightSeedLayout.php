@@ -222,7 +222,7 @@ class PlaywrightSeedLayout extends Command
                 return false;
             }
 
-            // 빈 객체 `{}` 를 보존해 읽는다 — 캐스트로 저장할 때 `{}` 로 남는다 (#758)
+            // 빈 객체 `{}` 를 보존해 읽는다 — 캐스트로 저장할 때 `{}` 로 남는다
             $content = EmptyMap::decodePreserving((string) File::get($fixturePath));
             if (json_last_error() !== JSON_ERROR_NONE || ! is_array($content)) {
                 $this->error(__('common.console.playwright_seed_layout.fixture_parse_failed', ['path' => $fixturePath]));

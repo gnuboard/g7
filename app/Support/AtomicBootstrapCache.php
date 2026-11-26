@@ -12,7 +12,7 @@ use Throwable;
  * 종전에는 라우트·설정 캐시를 「지운 뒤 다시 굽고」(route:clear → route:cache), 훅·확장 오토로드 캐시를 제자리에
  * 덮어썼다(File::put). 굽는 1~2초 사이에 들어온 다른 요청은 `file_exists()` 를 통과한 뒤 `require` 직전에 파일이
  * 지워져 500(`routes-v7.php: No such file`)을 받거나, 반쯤 쓰인 파일을 읽었다 — 확장을 켜고 끄는 동안 다른 관리자가
- * 화면을 열면 「초기화 실패 Failed to reload routes」가 났다(#882 실측). 이제 새 파일을 같은 폴더의 임시 파일에 다 쓴 뒤
+ * 화면을 열면 「초기화 실패 Failed to reload routes」가 났다. 이제 새 파일을 같은 폴더의 임시 파일에 다 쓴 뒤
  * `rename` 으로 한 번에 바꿔 끼운다.
  *
  * Windows 는 다른 요청이 그 순간 파일을 열고 있으면 `rename` 이 「Access is denied」로 실패하므로 짧게 다시 시도한다.

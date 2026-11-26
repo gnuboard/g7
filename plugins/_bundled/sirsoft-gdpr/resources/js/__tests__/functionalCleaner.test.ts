@@ -89,7 +89,7 @@ describe('functionalCleaner', () => {
         expect(window.localStorage.getItem('app_pref')).toBeNull();
     });
 
-    // dev-g7#640: 동의 철회 정리에서도 테마는 언어 설정과 같이 남아야 한다.
+    // 동의 철회 정리에서도 테마는 언어 설정과 같이 남아야 한다.
     it('설정에 등재된 키 (g7_color_scheme) 는 보존', () => {
         window.localStorage.setItem('g7_color_scheme', 'dark');
         window.localStorage.setItem('app_pref', 'value');

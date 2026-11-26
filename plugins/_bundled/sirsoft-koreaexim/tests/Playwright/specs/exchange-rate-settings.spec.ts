@@ -81,7 +81,7 @@ test('update time is managed by the schedule screen and invalid input still retu
  */
 test('history status filter sends a string and resetting it restores rows',async({page})=>{
   await page.goto(path+'?tab=history&page=3');
-  // 목록형 단추 이름은 「{이름} {현재 값}」(#757) — 「결과」 필터만 고른다(「계기」도 「전체」다)
+  // 목록형 단추 이름은 「{이름} {현재 값}」 — 「결과」 필터만 고른다(「계기」도 「전체」다)
   const selector=page.getByRole('button',{name:'결과 전체',exact:true});
   await selector.click();
   await page.getByRole('option',{name:'성공',exact:true}).click();

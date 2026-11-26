@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-drivers-s3-fields.test.tsx
- * @description 드라이버 탭 S3 블록 렌더링 테스트 (공개 #99 / 내부 #563)
+ * @description 드라이버 탭 S3 블록 렌더링 테스트 (공개 #99)
  *
  * 실제 partial(_tab_drivers.json)의 s3_settings 블록을 그대로 렌더하여 검증한다:
  * - s3 선택 시 리전이 자유 입력 Input 으로 렌더 (Select 아님 — A4)
@@ -337,7 +337,7 @@ describe('드라이버 탭 연결 테스트 payload 계약', () => {
 
     // 탭 폼 객체를 통째로 전달 — s3_endpoint/s3_use_path_style 등 신규 키가
     // 별도 열거 없이 자동 포함된다 (열거 방식이면 키 추가 시 조용히 누락).
-    // .env 로 잠긴 키만 걸러 낸다(#869 ζ — admin-settings-env-locked-save-body.test.tsx 가 값을 잰다)
+    // .env 로 잠긴 키만 걸러 낸다(admin-settings-env-locked-save-body.test.tsx 가 값을 잰다)
     expect(saveBody).toContain('[tab]: unlocked(tab, form[tab])');
     expect(saveBody).not.toContain('s3_');
   });

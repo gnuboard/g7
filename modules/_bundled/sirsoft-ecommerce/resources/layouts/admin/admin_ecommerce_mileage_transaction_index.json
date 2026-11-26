@@ -217,7 +217,7 @@
             }
         },
         {
-            "comment": "내보내기(#787) — 목록에 들어올 때 다른 화면에서 따라가던 진행 표시를 비운다(반복은 페이지가 바뀔 때 코어가 멈춘다)",
+            "comment": "내보내기 — 목록에 들어올 때 다른 화면에서 따라가던 진행 표시를 비운다(반복은 페이지가 바뀔 때 코어가 멈춘다)",
             "handler": "setState",
             "params": {
                 "target": "global",
@@ -552,7 +552,7 @@
                                         }
                                     },
                                     {
-                                        "comment": "내보내기(#787) — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 목록 응답의 `abilities.can_export`(내보내기 요청 권한 — 목록 API 가 이미 조회 권한을 요구한다)가 참인\n               운영자에게만 보인다. 창은 상품·주문·마일리지 목록이 함께 쓰는 공용 창이다",
+                                        "comment": "내보내기 — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 목록 응답의 `abilities.can_export`(내보내기 요청 권한 — 목록 API 가 이미 조회 권한을 요구한다)가 참인\n               운영자에게만 보인다. 창은 상품·주문·마일리지 목록이 함께 쓰는 공용 창이다",
                                         "id": "ecommerce_export_mileage_actions",
                                         "type": "basic",
                                         "name": "Div",
@@ -680,7 +680,7 @@
             "partial": "partials/admin_ecommerce_mileage_transaction_index/_modal_edit_transaction.json"
         },
         {
-            "comment": "내보내기 요청 창 — 상품·주문·마일리지 목록이 함께 쓰는 공용 창(#787)",
+            "comment": "내보내기 요청 창 — 상품·주문·마일리지 목록이 함께 쓰는 공용 창",
             "partial": "partials/admin_ecommerce_export/_modal_export_request.json"
         }
     ]

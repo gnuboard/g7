@@ -19,7 +19,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 클레임 상세의 주문금액 비교 블록(`calculation_comparison`) Feature 테스트 (#599 후속)
+ * 클레임 상세의 주문금액 비교 블록(`calculation_comparison`) Feature 테스트
  *
  * 검증 축:
  * - 네 유형(반품·교환·환불신청·취소)의 회원 상세가 접수 시점 전/후 스냅샷 + 다통화 줄을 싣는다

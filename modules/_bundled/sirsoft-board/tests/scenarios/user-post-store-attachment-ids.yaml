@@ -1,4 +1,4 @@
-feature: 사용자 글 작성의 첨부 번호(attachment_ids) 연결 (#883 후속)
+feature: 사용자 글 작성의 첨부 번호(attachment_ids) 연결
 
 description: |
   사용자 글 작성(`POST boards/{slug}/posts`)이 `attachment_ids` 를 검증만 하고 서비스로 넘기지 않아 첨부가 이어지지 않던 결함.

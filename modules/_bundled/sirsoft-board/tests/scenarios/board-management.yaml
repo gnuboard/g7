@@ -7,8 +7,8 @@ description: |
 
   - 활성 상태(is_active): 생성 기본값 true · 명시 false 존중 · 수정(on/off) 저장과 응답 노출 ·
     목록/상세/폼 데이터에 필드 노출 · 부분 수정은 다른 필드를 건드리지 않는다
-  - 스크랩 토글(use_scrap): 수정이 저장되고 조회 응답에 노출된다(#524 — 미노출이면 편집 화면 토글이 DB 값을 못 받는다)
-  - slug 라우팅(#450): 상세·수정·폼 데이터(board_slug)·관리자 메뉴 추가 모두 숫자 id 대신 slug 로 게시판을 해석한다
+  - 스크랩 토글(use_scrap): 수정이 저장되고 조회 응답에 노출된다(미노출이면 편집 화면 토글이 DB 값을 못 받는다)
+  - slug 라우팅: 상세·수정·폼 데이터(board_slug)·관리자 메뉴 추가 모두 숫자 id 대신 slug 로 게시판을 해석한다
   - 폼 데이터 _meta: limits(답글·댓글 깊이 최소/최대)와 depth 필드가 함께 실린다
   - 역할 동기화: 생성 시 board_manager_ids·board_step_ids 의 사용자가 `sirsoft-board.{slug}.manager|step`
     역할에 연결되고, 권한 기본값은 manager·step 을 posts_read 에 넣되 step 은 admin.manage 에서 뺀다.
@@ -28,7 +28,7 @@ axes:
     - form_data_default_active
     # 스크랩 토글
     - update_scrap_toggle
-    # slug 라우팅 (#450)
+    # slug 라우팅
     - detail_by_slug
     - update_by_slug
     - form_data_edit_by_slug

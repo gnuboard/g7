@@ -21,10 +21,10 @@ use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
  *
  * 열람자 대조를 `(int) ($payment->order?->user_id ?? 0) !== (int) ($request->user()?->id ?? 0)`
  * 로 쓰면 **양쪽이 모두 0 인 순간 통과**한다 — 주문을 못 읽었고(soft-delete) 열람자도 없는
- * 조합이다. 승인키 라우트는 `optional.sanctum` 이라(#883) 비로그인 요청도 이 게이트까지 오므로,
+ * 조합이다. 승인키 라우트는 `optional.sanctum` 이라 비로그인 요청도 이 게이트까지 오므로,
  * 그 방어는 이 판정 **안에** 있어야 한다.
  *
- * 비회원 주문의 결제 건은 그 주문의 조회 토큰(`X-Guest-Order-Token`)이 있어야 통과한다(#855) —
+ * 비회원 주문의 결제 건은 그 주문의 조회 토큰(`X-Guest-Order-Token`)이 있어야 통과한다 —
  * 토큰 없는 익명 요청은 401 이다. 게이트를 직접 불러 **판정식의 형태**를 잰다(HTTP 경로는
  * `ClaimPaymentCallbackTest` 가 잰다).
  */

@@ -2,7 +2,7 @@
  * Breadcrumb — 경로 표시와 항목 링크
  *
  * 주소(href)가 있는 항목은 `<a href>`(가운데 클릭·Ctrl+클릭 새 탭), 주소 없이 동작(onClick)만 있는 항목은 단추다.
- * 주소 없는 `<a href="#">` 는 쓰지 않는다(#757 링크 단계 — 새 탭으로 열면 같은 화면 맨 위가 열린다).
+ * 주소 없는 `<a href="#">` 는 쓰지 않는다(링크 단계 — 새 탭으로 열면 같은 화면 맨 위가 열린다).
  *
  * @scenario-manifest tests/scenarios/navigation-links.yaml
  *
@@ -135,7 +135,7 @@ describe('Breadcrumb', () => {
     expect(container.firstChild).toHaveClass('custom-class');
   });
 
-  describe('항목 링크 (#757)', () => {
+  describe('항목 링크', () => {
     beforeEach(() => {
       (window as any).G7Core = { t: (key: string) => key, navigation: { isPlainLeftClick: engineIsPlainLeftClick } };
     });

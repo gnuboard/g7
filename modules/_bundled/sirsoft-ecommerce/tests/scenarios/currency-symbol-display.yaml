@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: issue:#857 screen=order_history 조합을 재는 시험은 currency-symbol-display.spec.ts 뿐인데 그 spec 이 test.describe.skip(skeleton, 활성화 조건은 spec 머리말)이라 실행되지 않는다. 건너뛴 시험의 마킹은 커버로 세지 않는다(docs/testing-guide.md 「describe.skip 인 spec 의 그 축 커버리지는 0」). 나머지 세 화면은 additional-option-currency-conversion.spec.ts 의 실행 시험이 잰다. 같은 조합을 재는 다른 실행 시험은 없다(#857 후속 대조). skip 을 풀면 이 표식을 걷는다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#857 screen=order_history 조합을 재는 시험은 currency-symbol-display.spec.ts 뿐인데 그 spec 이 test.describe.skip(skeleton, 활성화 조건은 spec 머리말)이라 실행되지 않는다. 건너뛴 시험의 마킹은 커버로 세지 않는다(docs/testing-guide.md 「describe.skip 인 spec 의 그 축 커버리지는 0」). 나머지 세 화면은 additional-option-currency-conversion.spec.ts 의 실행 시험이 잰다. 같은 조합을 재는 다른 실행 시험은 없다(후속 대조). skip 을 풀면 이 표식을 걷는다.
 
 feature: 유저 화면 통화 표기 — 통화 기호 구분과 추가옵션 추가금의 표시통화 환산 (E2E)
 
@@ -32,7 +32,7 @@ effects:
   - additional_option_currency_follows_display_switch        # 표시통화를 바꾸면 추가금 표기가 따라가고 총액과 같은 통화로 남는다
 
 # 아래 효과는 아직 실행되는 시험이 재지 않는다 — 이 효과를 재는 spec(currency-symbol-display.spec.ts)이 test.describe.skip 상태라 건너뛴 시험의 @effects 는
-# 커버가 아니다(#857 후속). spec 의 skip 을 풀면 effects 로 되돌린다.
+# 커버가 아니다. spec 의 skip 을 풀면 effects 로 되돌린다.
 pending_effects:
   # ① 통화 기호
   - cart_jpy_uses_yen_symbol                                 # 장바구니 JPY 가격은 ¥ 로 표기된다

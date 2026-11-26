@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
-// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 결제 행 직접 조회·기록을 이커머스 공개 결제 계약으로 바꾼 내부 전환 (#916)
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 결제 행 직접 조회·기록을 이커머스 공개 결제 계약으로 바꾼 내부 전환 
 
 use App\Http\Controllers\Controller;
 use App\Support\SiteUrl;
@@ -186,7 +186,7 @@ class UserEscrowConfirmController extends Controller
         }
 
         // 보안: 상대 경로를 redirect() 에 넘기면 요청 Host 로 절대화된다 — 설정 주소로 만든다.
-        // 사람이 돌아가는 마이페이지 화면이라 이커머스 화면 주소 래퍼(「사용자 화면 URL」·주소 필터)를 쓴다(#792 F1-16).
+        // 사람이 돌아가는 마이페이지 화면이라 이커머스 화면 주소 래퍼(「사용자 화면 URL」·주소 필터)를 쓴다.
         return redirect($orderNumber
             ? EcommerceScreenUrl::mypageOrderDetail((string) $orderNumber, absolute: true)
             : EcommerceScreenUrl::mypageOrders(absolute: true));

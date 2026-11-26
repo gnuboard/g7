@@ -4981,7 +4981,7 @@ export class G7DevToolsCore {
         );
 
         if (!exists) {
-            // StyleTracker 는 id 없이 넘기므로 여기서 붙인다(#869)
+            // StyleTracker 는 id 없이 넘기므로 여기서 붙인다
             this.styleIssues.push({ ...issue, id: issue.id ?? this.generateId() });
         }
     }

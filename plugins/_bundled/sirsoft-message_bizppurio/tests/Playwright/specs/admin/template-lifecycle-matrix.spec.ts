@@ -1,5 +1,5 @@
 /**
- * E2E 정밀 점검 매트릭스: 비즈뿌리오 알림 템플릿 라이프사이클 (#597 §6.3)
+ * E2E 정밀 점검 매트릭스: 비즈뿌리오 알림 템플릿 라이프사이클
  *
  * @scenario bizppurio-template-lifecycle
  * 케이스(마커 아님 — 평문): bizppurio_tab_integration_e2e, bizppurio_edit_modal_e2e, bizppurio_compose_modal_e2e, bizppurio_manage_round_trip_e2e
@@ -27,7 +27,7 @@
 import { test, expect, authenticatePage } from '../../fixtures/bizppurio-auth';
 import type { Page } from '@playwright/test';
 
-// #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+// 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
 const SETTINGS_URL = '/admin/settings?tab=notification_definitions&channel=alimtalk';
 const MANAGE_URL = '/admin/plugins/sirsoft-message_bizppurio/settings?tab=templates';
 const BOARD_URL = '/admin/boards/settings?tab=notification_definitions&channel=alimtalk';
@@ -327,7 +327,7 @@ async function clearTemplates(page: Page): Promise<number> {
 
 /** 서브탭 버튼 텍스트 배열 */
 async function tabTexts(page: Page): Promise<string[]> {
-    // 채널 탭은 링크(#757) — 단추만 보면 빈 목록이 된다
+    // 채널 탭은 링크 — 단추만 보면 빈 목록이 된다
     return (await page.locator('#channel_sub_tabs :is(a, button)').allInnerTexts()).map((t) => t.trim());
 }
 
@@ -739,7 +739,7 @@ test.describe('T6·T7 영속성·컨텍스트 격리', () => {
 
         const before = new URL(page.url()).search;
         // 메일 탭 → 비즈뿌리오 복귀
-        // 채널 탭은 링크(#757) — 단추만 보면 늘 0 개라 왕복을 조용히 건너뛰었다. 「메일」 채널을 꺼 둔 환경만 건너뛴다
+        // 채널 탭은 링크 — 단추만 보면 늘 0 개라 왕복을 조용히 건너뛰었다. 「메일」 채널을 꺼 둔 환경만 건너뛴다
         const mail = page.locator('#channel_sub_tabs :is(a, button)', { hasText: '메일' }).first();
         const bizppurio = page.locator('#channel_sub_tabs :is(a, button)', { hasText: '비즈뿌리오' }).first();
         if (await mail.count() > 0) {
@@ -803,7 +803,7 @@ test.describe('T8 3면 패리티·다크·로케일', () => {
             const barId = url.includes('/boards/') ? '#board_channel_sub_tabs' : '#ecommerce_channel_sub_tabs';
             const bar = page.locator(barId);
             const visible = await bar.isVisible().catch(() => false);
-            // 채널 탭은 링크(#757) — 단추만 보면 tabs 가 비어 아래 단언이 건너뛰어진다
+            // 채널 탭은 링크 — 단추만 보면 tabs 가 비어 아래 단언이 건너뛰어진다
             const tabs = visible ? (await bar.locator(':is(a, button)').allInnerTexts()).map((t) => t.trim()) : [];
             const rows = await page.locator('[id^="bizppurio_row_lifecycle"]').count();
             evidence(`8 ${face} 탭/행`, { visible, tabs, rows, errors: errors.length });
@@ -967,7 +967,7 @@ test.describe('라운드5 신규 축 — 업로드 가드·관리 라벨·SMS �
         const smsBtn = page.getByRole('button', { name: 'SMS 본문', exact: false }).first();
         if (await smsBtn.count() > 0) {
             await smsBtn.click();
-            // #408 엔진 스코프 비대상: 이 탭은 플러그인 설정 레이아웃 modals 의 노드라(확장점 조각 아님) 정확 일치를 유지한다.
+            // 엔진 스코프 비대상: 이 탭은 플러그인 설정 레이아웃 modals 의 노드라(확장점 조각 아님) 정확 일치를 유지한다.
             const tabs = page.locator('#bz_sms_lang_tabs');
             await expect(tabs).toBeVisible({ timeout: 15_000 });
             const langs = (await tabs.locator('button').allInnerTexts()).map((t) => t.trim());
@@ -1013,7 +1013,7 @@ test.describe('회귀 축', () => {
         await page.goto('/admin/plugins/sirsoft-message_bizppurio/settings');
         await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-        // 플러그인 설정 탭(연결·템플릿)은 링크(#757) — 단추와 함께 모은다
+        // 플러그인 설정 탭(연결·템플릿)은 링크 — 단추와 함께 모은다
         const tabs = (await page.locator(':is(a, button)').allInnerTexts()).map((t) => t.trim());
         evidence('R3·R4 플러그인 설정 탭', tabs.filter((t) => t && t.length < 20).slice(0, 12));
         evidence('R3·R4 콘솔 에러 수', errors.length);

@@ -178,7 +178,7 @@ effects:
   - kcp_escrow_notify_retries_on_tno_mismatch_without_hooks
   - kcp_escrow_notify_with_matching_tno_fires_purchase_confirmed_hook
 
-# 미작성 원장(회차 16 W6 G3)의 9건은 #916 에서 모두 정리했다.
+# 미작성 원장의 9건은 모두 정리했다.
 #   - 5건은 테스트를 써서 effects 로 승격(재생 로그·유일 인덱스·취소 주문 복구 시점·승인 뒤 자동 취소·승인 뒤 실패 기록).
 #   - cli_arg_rejects_dollar_paren / pipe / redirect / semicolon 4건은 원장에서 뺐다. 그런 「거부」 동작이 없다 —
 #     src/Services/NhnKcpApiService.php assertSafeCliValue(661-673)는 인용을 깨는 따옴표·백틱·제어문자만 거부하고,

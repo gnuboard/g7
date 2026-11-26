@@ -8,7 +8,7 @@ description: |
   가 덮어쓰지 않으며, 확장 도메인의 캐시는 `BasePluginServiceProvider` / `BaseModuleServiceProvider`
   의 `$cacheServices` / `$storageServices` 배열로만 contextual binding 으로 주입한다.
 
-  이슈 #392 의 회귀 가드 — InicisVerificationServiceProvider 가 글로벌 singleton 재바인딩으로
+  회귀 가드 — InicisVerificationServiceProvider 가 글로벌 singleton 재바인딩으로
   코어 LayoutService 의 `ext.cache_version` bump 키를 플러그인 도메인으로 누수시킨 결함의
   재발 차단.
 

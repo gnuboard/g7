@@ -1,6 +1,6 @@
 import { default as React } from 'react';
 /**
- * 키보드로 누르기 — 단추가 아닌 요소를 단추처럼 쓸 때 Enter 와 Space 로 클릭과 같은 동작을 한다(#869 키보드 접근).
+ * 키보드로 누르기 — 단추가 아닌 요소를 단추처럼 쓸 때 Enter 와 Space 로 클릭과 같은 동작을 한다(키보드 접근).
  *
  * Space 는 페이지 스크롤이 기본 동작이라 막는다. 처리한 키는 위로 번지지 않게 해 감싼 요소나 문서 키 처리(메뉴의 Enter 등)가
  * 같은 동작을 한 번 더 하지 않게 한다.
@@ -28,7 +28,7 @@ export declare function keyboardActivationProps(onClick: ((event: any) => void) 
     onKeyDown?: (event: React.KeyboardEvent) => void;
 };
 /**
- * 펼친 목록 닫기 — 목록 안 어디에서든(검색칸, 항목) Esc 로 닫고 여는 단추로 포커스를 돌린다(#869 키보드 접근).
+ * 펼친 목록 닫기 — 목록 안 어디에서든(검색칸, 항목) Esc 로 닫고 여는 단추로 포커스를 돌린다(키보드 접근).
  *
  * 여는 단추와 목록을 함께 감싼 요소의 onKeyDown 에 단다(포털로 그린 목록도 React 트리로 올라온다). 처리한 Esc 는 위로
  * 번지지 않게 해 목록을 품은 창(Modal)이 같은 Esc 로 닫히지 않게 한다 — 여는 단추에는 Modal 이 「펼친 팝업」으로
@@ -64,7 +64,7 @@ export declare const menuTriggerKeyDown: (open: boolean, setOpen: (open: boolean
  * 메뉴 안의 키 — WAI-ARIA 메뉴 단추 관례. 화살표는 항목 사이를 돌고, Home 과 End 는 처음과 끝, Enter 와 Space 는 항목을
  * 실행하고 여는 단추로 돌아간다(링크의 Ctrl, Meta, Shift+Enter 는 브라우저의 새 탭 열기에 맡긴다). Esc 는 닫고 여는 단추로
  * 돌아간다. Tab 은 닫고 포커스를 여는 단추에 둔다 — 메뉴는 포털로 문서 끝에 붙어 있어, 그냥 두면 Tab 이 메뉴 밖 다음 자리가
- * 아니라 문서 끝으로 간다. 단추에 둔 뒤 기본 Tab 이동이 단추 다음 자리로 간다(관리자 ActionMenu 와 같은 규칙, #869 8차 8부).
+ * 아니라 문서 끝으로 간다. 단추에 둔 뒤 기본 Tab 이동이 단추 다음 자리로 간다(관리자 ActionMenu 와 같은 규칙).
  *
  * @param menuRef 메뉴 요소
  * @param triggerRef 여는 단추

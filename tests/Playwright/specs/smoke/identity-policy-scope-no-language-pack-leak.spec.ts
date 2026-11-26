@@ -1,6 +1,6 @@
 /**
  * Smoke: 환경설정 정책/언어팩 데이터소스가 같은 query.scope 를 공유해 양방향으로 422 토스트를
- *        유발하던 회귀 (#415).
+ *        유발하던 회귀.
  *
  * 버그:
  *   admin_settings.g7.html 에 정책(policies)·언어팩(language_packs) 데이터소스가 공존하며 둘 다

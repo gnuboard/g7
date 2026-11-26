@@ -70,7 +70,7 @@
       </div>
     </div>
     <footer>
-      <!-- 변경 이력 보기와 업데이트 단추는 새 버전이 있을 때만 그린다. 둘 다 빠지면 Modal 이 빈 바닥 줄을 숨긴다(#869 C1) -->
+      <!-- 변경 이력 보기와 업데이트 단추는 새 버전이 있을 때만 그린다. 둘 다 빠지면 Modal 이 빈 바닥 줄을 숨긴다 -->
       <button data-if="{{$parent._local.coreUpdateInfo?.update_available}}" type="button" class="btn btn-primary btn-sm rounded-md" disabled="{{_local.loadingChangelog}}">
         <on type="click">
           <!-- 변경 이력 보기 — 현재↔최신 두 버전 사이의 이력을 받아 이력 창을 연다. 실패해도 빈 이력으로

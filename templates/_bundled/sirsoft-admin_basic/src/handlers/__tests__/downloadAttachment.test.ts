@@ -1,6 +1,6 @@
 /**
  * @file downloadAttachment.test.ts
- * @description 관리자 게시판 첨부 다운로드 핸들러 단위 검증 (이슈 #413 item 58b)
+ * @description 관리자 게시판 첨부 다운로드 핸들러 단위 검증 (item 58b)
  *
  * 배경: 관리자 게시글/답변 첨부 카드도 사용자 라우트(optional.sanctum)의 download_url 을
  * <a href> 직접 링크로 호출해, 토큰 미동반으로 활동이력 행위자(user_id)가 NULL 로 남았다.
@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { downloadAttachmentHandler } from '../downloadAttachment';
 
-describe('downloadAttachmentHandler (admin) — 토큰 동반 첨부 다운로드 (이슈 #413 item 58b)', () => {
+describe('downloadAttachmentHandler (admin) — 토큰 동반 첨부 다운로드 (item 58b)', () => {
   let apiGetSpy: ReturnType<typeof vi.fn>;
   let createObjectURLSpy: ReturnType<typeof vi.fn>;
   let revokeObjectURLSpy: ReturnType<typeof vi.fn>;

@@ -130,7 +130,7 @@ class PublicBannerImageTest extends PluginTestCase
     }
 
     /**
-     * 공개 자산 디스크(직접 URL) 행도 공개 API 주소로 계속 받을 수 있다 — 썸네일·같은 출처 자리와 옛 캐시 주소 호환 (#878).
+     * 공개 자산 디스크(직접 URL) 행도 공개 API 주소로 계속 받을 수 있다 — 썸네일·같은 출처 자리와 옛 캐시 주소 호환.
      *
      * @scenario surface=serve
      *
@@ -161,7 +161,7 @@ class PublicBannerImageTest extends PluginTestCase
     }
 
     /**
-     * 웹서버 위임(X-Sendfile)을 켜면 로컬 영상은 헤더만 PHP 가 내고 본문은 웹서버가 보낸다 — 1년 불변 캐시는 그대로 (#878, D5).
+     * 웹서버 위임(X-Sendfile)을 켜면 로컬 영상은 헤더만 PHP 가 내고 본문은 웹서버가 보낸다 — 1년 불변 캐시는 그대로.
      *
      * @scenario surface=serve
      *

@@ -855,7 +855,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
       }
 
       // 링크를 Ctrl·Meta·Shift 로 누르거나 target="_blank" 링크를 누르면 새 탭·새 창에서 열리고 이 화면은 그대로다
-      // — 물을 일이 없다(#757 링크 단계). 이 처리기는 문서에 붙어 있으므로 링크 요소를 currentTarget 으로 넘겨
+      // — 물을 일이 없다(링크 단계). 이 처리기는 문서에 붙어 있으므로 링크 요소를 currentTarget 으로 넘겨
       // 엔진이 그 target·download 까지 판정하게 한다.
       const anchor = target.closest('a[href]');
       if (anchor && !isPlainLeftClick({

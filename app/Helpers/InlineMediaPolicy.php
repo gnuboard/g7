@@ -110,7 +110,7 @@ final class InlineMediaPolicy
     }
 
     /**
-     * 본문 동영상·오디오로 인라인 재생을 허용하는 MIME 타입 (#883 5단계 D14, #887 단일 출처)
+     * 본문 동영상·오디오로 인라인 재생을 허용하는 MIME 타입 (단일 출처)
      *
      * 이 목록에 들고 확장 정책·코어 「본문 콘텐츠」 설정이 그 종류를 켰을 때만 `hardenPlayable` 로 인라인 서빙한다.
      * 그 밖에는 `harden()` 그대로(다운로드) — 기존 판정은 바뀌지 않는다. 목록은 본문 미디어 종류(`ContentMediaKind`)의
@@ -132,7 +132,7 @@ final class InlineMediaPolicy
     public const PLAYABLE_CSP = "default-src 'none'; media-src 'self'; sandbox";
 
     /**
-     * MIME 타입이 인라인 재생 가능한 동영상·오디오인지 판정합니다 (#883 5단계).
+     * MIME 타입이 인라인 재생 가능한 동영상·오디오인지 판정합니다.
      *
      * @param  string|null  $mimeType  MIME 타입 (파라미터는 무시)
      * @return bool 재생 가능하면 true
@@ -149,7 +149,7 @@ final class InlineMediaPolicy
     }
 
     /**
-     * 재생 가능한 동영상·오디오 서빙 응답 헤더를 굳힙니다 (#883 5단계, D14).
+     * 재생 가능한 동영상·오디오 서빙 응답 헤더를 굳힙니다.
      *
      * `nosniff` + `Content-Disposition: inline` + CSP(`media-src 'self'; sandbox`). 재생 가능 형식이 아니면 `harden()` 으로
      * 넘긴다(다운로드 강제) — 호출자가 잘못 불러도 인라인이 넓어지지 않는다.

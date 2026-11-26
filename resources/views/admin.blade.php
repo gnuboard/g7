@@ -7,7 +7,7 @@
         {!! g7_meta_generator_tag() !!}
 
         <title>{{ config('app.name', '그누보드7') }} - Admin</title>
-        {{-- 파비콘 — 활성 관리자 템플릿 설정 > 일반 탭 파비콘 > 번들 기본 (#434). 템플릿 없음 화면에서도 낸다 --}}
+        {{-- 파비콘 — 활성 관리자 템플릿 설정 > 일반 탭 파비콘 > 번들 기본. 템플릿 없음 화면에서도 낸다 --}}
         {!! g7_favicon_tags('admin') !!}
 
         <!-- 템플릿 외부 리소스 (template.json의 externals) -->
@@ -71,13 +71,13 @@
                 'basePath' => \App\Support\AssetUrl::basePrefix(),
                 'settings' => (object) ($frontendSettings ?? []),
                 'plugins' => (object) ($pluginSettings ?? []),
-                // 활성 템플릿 공개 설정 (#434) — 엔진이 `_global.templateSettings` 로 싣는다
+                // 활성 템플릿 공개 설정 — 엔진이 `_global.templateSettings` 로 싣는다
                 'templateSettings' => (object) ($templateSettings ?? []),
                 'modules' => (object) ($moduleSettings ?? []),
                 'moduleAssets' => $moduleAssets ?? [],
                 'pluginAssets' => $pluginAssets ?? [],
                 'bundleUrls' => $bundleUrls ?? null,
-                // 설치된 템플릿(꺼진 것 포함)이 공급한 설정 화면 부품 묶음 — 관리자 화면만 플러그인 묶음 뒤에 싣는다 (#434)
+                // 설치된 템플릿(꺼진 것 포함)이 공급한 설정 화면 부품 묶음 — 관리자 화면만 플러그인 묶음 뒤에 싣는다
                 'templateSettingsAssets' => $templateSettingsAssets ?? [],
                 'customAssets' => $customAssets ?? [],
                 // 템플릿 다크 방식 선언 — 엔진이 `<html data-g7-color-scheme>` 중립 표식으로 옮긴다(확장 CSS 는 표식만 본다)
@@ -95,7 +95,7 @@
                 // 전역 상태 공개 계약 (코어 예약 + 활성 확장 선언) — G7Core.stateContracts 가 읽는다
                 'stateContracts' => (object) ($stateContracts ?? []),
                 'appConfig' => (object) ($appConfig ?? []),
-                // routes/custom.php 로 등록된 개발자 화면 GET 주소(#792) — 엔진 라우터가 이 주소로는 전체 페이지 이동한다
+                // routes/custom.php 로 등록된 개발자 화면 GET 주소 — 엔진 라우터가 이 주소로는 전체 페이지 이동한다
                 'customRoutes' => $customRoutes ?? ['user' => [], 'admin' => []],
                 // 브라우저 탭 제목 계산 값(사이트 이름 + 언어별 관리자 접미사) — 엔진 DocumentTitle 이 「{화면 제목} - {사이트 이름} 관리자」로 쓴다
                 'seoTitle' => $seoTitle ?? null,
@@ -118,7 +118,7 @@
                 $g7Config['staticBase'] = $staticExtBase;
             }
             // 템플릿 설정 중 template.json `expose` 에 제작자가 선언한 키만 — 엔진이 첫 화면 전 config API 를 부르지 않는다.
-            // 선언이 없는 템플릿은 싣지 않고 엔진이 종전처럼 API 를 부른다 (#879)
+            // 선언이 없는 템플릿은 싣지 않고 엔진이 종전처럼 API 를 부른다
             if (($exposedTemplateConfig ?? null) !== null) {
                 $g7Config['templateConfig'] = (object) $exposedTemplateConfig;
             }

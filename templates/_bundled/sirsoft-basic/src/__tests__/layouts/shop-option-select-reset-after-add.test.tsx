@@ -77,7 +77,7 @@ function findNode(x: any, pred: (n: Node) => boolean): Node | null {
 
 /**
  * 실물 옵션 선택 섹션(옵션 그룹별 Select 반복).
- * 구매 카드와 바텀시트가 같은 조각을 함께 포함하므로 노드 id 대신 `data-testid` 로 찾는다(#408 — 같은 화면 DOM id 중복 제거).
+ * 구매 카드와 바텀시트가 같은 조각을 함께 포함하므로 노드 id 대신 `data-testid` 로 찾는다(같은 화면 DOM id 중복 제거).
  */
 const optionSection = findNode(purchaseCard, (n) => n.props?.['data-testid'] === 'option-select')!;
 

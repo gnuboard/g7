@@ -68,7 +68,7 @@ class OrderPrivacyRetentionRepository implements OrderPrivacyRetentionRepository
     ];
 
     /**
-     * 교환·반품 신청서에서 NULL 로 지우는 칸 (#599) — 환불 계좌 명의·번호(주문 환불과 같은 기준)와 자유 기재 칸.
+     * 교환·반품 신청서에서 NULL 로 지우는 칸 — 환불 계좌 명의·번호(주문 환불과 같은 기준)와 자유 기재 칸.
      *
      * 상세 사유·관리자 메모는 주문의 배송 메모·관리자 메모처럼 상담 중 받아 적은 연락처·주소가 섞이는 칸이다.
      * 은행 코드·사유 코드·금액·상태·시각은 청약철회 거래 기록이라 남긴다.
@@ -104,11 +104,11 @@ class OrderPrivacyRetentionRepository implements OrderPrivacyRetentionRepository
         OrderPayment::query()->where('order_id', $orderId)->toBase()
             ->update(array_fill_keys(self::PAYMENT_NULL_COLUMNS, null));
 
-        // 환불신청서의 상세 사유도 교환·반품과 같은 자유 기재 칸이다(#599).
+        // 환불신청서의 상세 사유도 교환·반품과 같은 자유 기재 칸이다.
         OrderRefund::query()->where('order_id', $orderId)->toBase()
             ->update(['refund_bank_holder' => null, 'refund_bank_account' => null, 'reason_detail' => null]);
 
-        // 교환·반품 신청서 (#599) — 두 신청서는 주문 상태를 바꾸지 않고 주문 곁에 남는다.
+        // 교환·반품 신청서 — 두 신청서는 주문 상태를 바꾸지 않고 주문 곁에 남는다.
         foreach ([OrderExchange::class, OrderReturn::class] as $claim) {
             $claim::query()->where('order_id', $orderId)->toBase()
                 ->update(array_fill_keys(self::CLAIM_NULL_COLUMNS, null));
@@ -137,7 +137,7 @@ class OrderPrivacyRetentionRepository implements OrderPrivacyRetentionRepository
     }
 
     /**
-     * 교환 재배송지 스냅샷을 주문 배송지와 같은 기준으로 가립니다 (#599).
+     * 교환 재배송지 스냅샷을 주문 배송지와 같은 기준으로 가립니다.
      *
      * 받는 분·연락처·우편번호·주소는 치환값, 상세 주소는 NULL 로 두고 국가·변경 여부 표지는 남긴다 —
      * 주문 배송지(`ADDRESS_MASKED_COLUMNS`·`ADDRESS_NULL_COLUMNS`)와 같은 판정이다. 스냅샷 모양을 유지해
@@ -216,7 +216,7 @@ class OrderPrivacyRetentionRepository implements OrderPrivacyRetentionRepository
     }
 
     /**
-     * 주문의 교환·반품·클레임 결제와 클레임 첨부 행을 명시 삭제합니다 (#599).
+     * 주문의 교환·반품·클레임 결제와 클레임 첨부 행을 명시 삭제합니다.
      *
      * 이 행들은 주문 FK 의 CASCADE 로도 사라지지만 거기에 기대지 않는다 — 첨부(`ecommerce_claim_images`)는
      * 주문 FK 가 없어(다형 연결) CASCADE 로도 남는다. 첨부 파일은 저장소가 아니라 서비스가 커밋 뒤에 지운다.

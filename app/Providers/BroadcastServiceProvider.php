@@ -20,7 +20,7 @@ use Illuminate\Support\ServiceProvider;
  *   인증 엔드포인트의 SSoT 는 `routes/api.php` 의 `api.broadcasting.auth` 하나다
  *   (`auth:sanctum` + 킬스위치 가드).
  *
- * 지연 등록 (#860):
+ * 지연 등록:
  *   채널 인가 콜백은 인가 요청에서만 쓰이는데, 부팅마다 `Broadcast::channel()` 을 부르면 그때마다
  *   드라이버(reverb 면 Pusher·HTTP 클라이언트)가 만들어졌다. 그래서 이 프로바이더는
  *   {@see BroadcastChannelRegistrar} 만 등록하고, `api.broadcasting.auth` 라우트가 `Broadcast::auth()`

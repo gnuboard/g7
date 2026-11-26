@@ -17,7 +17,7 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 /**
- * KG이니시스 취소 요청을 공식 사양(https://manual.inicis.com/pay/cancel.html)에 맞춘다 — #747 C8
+ * KG이니시스 취소 요청을 공식 사양(https://manual.inicis.com/pay/cancel.html)에 맞춘다
  *
  * - P-D7: 부분취소를 거절당할 결제(에스크로, 달이 바뀐 휴대폰 — 「당월 거래만 취소 가능」)는 접수 단계에서 먼저 알린다.
  * - P-D8: 부분취소의 과세 필드는 선택이고 키는 `tax`·`taxFree` 다. `tax='0'`·`taxfree='0'` 고정값을 보내지 않는다.
@@ -141,7 +141,7 @@ class RefundSpecConformanceTest extends PluginTestCase
     }
 
     /**
-     * 과세 구분이 주어진 부분취소는 매뉴얼 키 `tax`·`taxFree` 로 싣고, 가상계좌 환불(`/vacct`)에는 싣지 않는다(#820).
+     * 과세 구분이 주어진 부분취소는 매뉴얼 키 `tax`·`taxFree` 로 싣고, 가상계좌 환불(`/vacct`)에는 싣지 않는다.
      *
      * @scenario method=card
      *
@@ -172,7 +172,7 @@ class RefundSpecConformanceTest extends PluginTestCase
 
     /**
      * 승인 때 과세 구분을 실은 결제(`payment_meta.tax_split`)의 부분취소만 구분을 나눠 싣고, 비과세 소진액을 기록한다.
-     * 표식이 없는 결제(면세분 없음·이 표식 이전 결제)는 종전대로 싣지 않는다 — 승인에 없던 구분을 취소에만 실으면 거절된다(#820).
+     * 표식이 없는 결제(면세분 없음·이 표식 이전 결제)는 종전대로 싣지 않는다 — 승인에 없던 구분을 취소에만 실으면 거절된다.
      *
      * @scenario method=card
      *
@@ -253,7 +253,7 @@ class RefundSpecConformanceTest extends PluginTestCase
 
     /**
      * 영세 금액은 승인 때처럼 비과세로 나눈다 — 승인 표식은 면세 + 영세, 부분취소 비과세는 그 비율, 부가세는 영세를 뺀
-     * 과세분에서만 뗀다 (이커머스 1.3.3, #612).
+     * 과세분에서만 뗀다 (이커머스 1.3.3).
      *
      * 주문: 과세표준 22,000(영세 8,000 포함)·부가세 1,273·면세 0. 10,000 부분취소 → 비과세 10000×8000/22000 = 3,636,
      * 부가세 (10000−3636)×1273/14000 = 579.

@@ -3,7 +3,7 @@
  * @description DevTools 탭이 G7DevToolsCore 가 실제로 넣는 값 모양대로 읽는다.
  * Sequence 탭은 없는 필드(id, totalSequences, 'completed' 상태, stateChanges)를 읽어 총 실행 수가 비고, 성공한 실행도 ⏳ 로 보였고,
  * 목록을 눌러도 상세가 열리지 않았다. Stale Closure 탭은 statePath, capturedValue, currentValue 를 경고 최상위에서 읽어
- * 상태 경로와 두 값이 비었다(#869 타입 검사로 드러남). 탭에는 실제 코어가 기록한 값을 그대로 넣는다.
+ * 상태 경로와 두 값이 비었다(타입 검사로 드러남). 탭에는 실제 코어가 기록한 값을 그대로 넣는다.
  * (매니페스트 devtools-tabs-data-shape.yaml)
  *
  * @vitest-environment jsdom
@@ -84,7 +84,7 @@ describe('DevTools 탭 데이터 모양', () => {
   });
 
   // 엔진은 type 을 적지 않은 액션(event 만 적은 진입점, 풀리지 않은 actionRef)을 type 없이 기록한다.
-  // 필터 글자를 넣으면 탭이 a.type.toLowerCase() 에서 TypeError 로 깨졌다(#869 타입 검사로 드러남).
+  // 필터 글자를 넣으면 탭이 a.type.toLowerCase() 에서 TypeError 로 깨졌다(타입 검사로 드러남).
   // @scenario tab=actions_filter
   // @effects devtools_filter_tolerates_missing_field
   it('Actions 탭 필터가 type 없는 액션이 섞여도 깨지지 않고 맞는 액션만 남긴다', () => {

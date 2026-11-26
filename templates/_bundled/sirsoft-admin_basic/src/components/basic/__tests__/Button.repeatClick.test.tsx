@@ -1,6 +1,6 @@
 /**
  * @file Button.repeatClick.test.tsx
- * @description admin_basic Button — 연타 잠금(`lockRepeatClick`) 회귀 테스트 (#736 S2 P10)
+ * @description admin_basic Button — 연타 잠금(`lockRepeatClick`) 회귀 테스트
  *
  * 실행 버튼의 `disabled="{{…submitting}}"` 는 첫 클릭의 상태 변경이 화면에 그려진 뒤에야 걸려, 그 사이의 두 번째 클릭
  * (더블클릭)이 요청을 한 번 더 보냈다(비밀번호 만료 「지금 실행」 확인 창). 버튼이 첫 클릭 즉시 스스로 잠그고,

@@ -16,7 +16,7 @@ use Tests\Concerns\MenuRoleFixtures;
 use Tests\TestCase;
 
 /**
- * 메뉴 관리 「여러 개 선택」 — 메뉴 역할 일괄 추가·제거 (#708)
+ * 메뉴 관리 「여러 개 선택」 — 메뉴 역할 일괄 추가·제거
  *
  * `PATCH /api/admin/menus/bulk-roles` 는 라우트 모델이 없는 정적 경로라 미들웨어의 범위 검사가
  * 빠진다. 서비스가 범위 밖 메뉴가 섞이면 전량 거부하는지, 부모·자식을 맞추는지, 관리자 역할을

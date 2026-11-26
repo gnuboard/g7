@@ -587,7 +587,7 @@ export class TemplateApp {
                 logger.log('Loaded module settings from G7Config:', Object.keys(g7Config.modules));
             }
 
-            // 활성 템플릿 공개 설정 로드 (engine-v1.94.0, #434) — 이 화면 종류(사용자·관리자)의 활성 템플릿 하나의
+            // 활성 템플릿 공개 설정 로드 (engine-v1.94.0) — 이 화면 종류(사용자·관리자)의 활성 템플릿 하나의
             // `frontend_schema` 노출값(평면 객체). `_global.plugins` 대칭. 키가 없는 옛 코어에서는 만들지 않는다.
             if (g7Config.templateSettings && typeof g7Config.templateSettings === 'object') {
                 this.globalState.templateSettings = g7Config.templateSettings;
@@ -671,7 +671,7 @@ export class TemplateApp {
     }
 
     /**
-     * 첫 화면 레이아웃을 미리 요청합니다 (@since engine-v1.96.0, #879).
+     * 첫 화면 레이아웃을 미리 요청합니다 (@since engine-v1.96.0).
      *
      * 부팅은 routes 를 받은 뒤 확장 번들을 다 싣고서야 첫 라우트를 처리해, 레이아웃 PHP 왕복이 번들 로드 뒤에 시작됐다.
      * routes 를 받은 직후 현재 경로의 레이아웃을 `LayoutLoader.prefetchLayout()` 으로 요청해 두면, 첫 라우트 처리
@@ -763,7 +763,7 @@ export class TemplateApp {
 
             // 템플릿 설정 — 셸이 template.json 의 `expose` 선언 키를 실었고 부팅이 읽는 키가 모두 있으면 config API 를
             // 부르지 않는다(첫 화면 전 PHP 1왕복 제거). 캐시 버전은 셸 주입값(API 응답의 cache_version 과 같은 서버 값)이다.
-            // 키가 하나라도 빠졌거나 주입 버전이 없으면 종전처럼 API (@since engine-v1.96.0, #879)
+            // 키가 하나라도 빠졌거나 주입 버전이 없으면 종전처럼 API (@since engine-v1.96.0)
             const inlineTemplateConfig = readInlineTemplateConfig();
             const useInlineTemplateConfig = injectedCacheVersion > 0
                 && hasInlineTemplateConfigKeys(inlineTemplateConfig, TEMPLATE_BOOT_CONFIG_KEYS);
@@ -953,7 +953,7 @@ export class TemplateApp {
 
             logger.log('AuthManager event handlers registered');
 
-            // 2.1 방문자 동의 런타임 (사용자 템플릿 전용, engine-v1.78.0 #639)
+            // 2.1 방문자 동의 런타임 (사용자 템플릿 전용, engine-v1.78.0)
             //
             // `preloadAuth` 가 끝난 뒤에 시작한다 — 인증 여부가 정해져야 조회 방식을 고를 수 있다. 비인증이면 토큰
             // 없이 부른다(서버에서 폐기된 토큰이 남은 방문자가 그 토큰으로 부르면 401 → 공개 페이지에서 로그인 화면으로
@@ -1166,7 +1166,7 @@ export class TemplateApp {
             await moduleAssetLoader.loadBundle('module', bundleUrls.moduleJs, bundleUrls.moduleCss);
             await moduleAssetLoader.loadBundle('plugin', bundleUrls.pluginJs, bundleUrls.pluginCss);
 
-            // 템플릿이 공급한 설정 화면 부품 묶음 — 관리자 화면만 서버가 목록을 싣는다(#434, engine-v1.94.0)
+            // 템플릿이 공급한 설정 화면 부품 묶음 — 관리자 화면만 서버가 목록을 싣는다(engine-v1.94.0)
             await moduleAssetLoader.loadTemplateSettingsBundles();
 
             // 템플릿의 확장 CSS 덮기 파일은 확장 번들 뒤에 붙인다 — 같은 특이도의 확장 규칙을
@@ -1674,7 +1674,7 @@ export class TemplateApp {
 
                 // fetchDataSourcesWithResults를 사용하여 에러 상태도 추적
                 // 대기열에 새 이동이 들어오면 응답을 기다리지 않고 물러난다 — 늦게 온 응답은 세대 판정으로 버려진다 (@since engine-v1.82.0)
-                // 다른 화면으로 옮기면 onSuccess 를 미룬다 (@since engine-v1.95.0, #869) — 여기는 아직 앞 화면 상태 위라, 종전에는 그 `_local` 쓰기가
+                // 다른 화면으로 옮기면 onSuccess 를 미룬다 (@since engine-v1.95.0) — 여기는 아직 앞 화면 상태 위라, 종전에는 그 `_local` 쓰기가
                 // 아래 레이아웃 전환 초기화에 지워지고 그 안의 다시 받기 결과도 렌더 문맥 재구성에 버려졌다. 첫 진입(비울 앞 화면 없음)은
                 // 결과가 남아 같은 주소를 바로 열면 되고 SPA 로 들어오면 빈 화면이었다(클레임 신청 「신청할 수 있는 상품이 없습니다」,
                 // 신청 상세 원 주문 카드). 같은 화면(쿼리만 다름)은 상태를 비우지 않으므로 종전대로 여기서 돌린다
@@ -3202,7 +3202,7 @@ export class TemplateApp {
     ): Promise<void> {
         const loadPromises: Promise<void>[] = [];
         // 조건 평가용 바인딩 엔진. TemplateApp 에는 bindingEngine 필드가 없어 종전의 `this.bindingEngine` 은
-        // undefined 였고, `{{...}}` 조건은 평가 중 예외로 늘 거짓이 되어 스크립트가 로드되지 않았다(#869)
+        // undefined 였고, `{{...}}` 조건은 평가 중 예외로 늘 거짓이 되어 스크립트가 로드되지 않았다
         const conditionBindingEngine = new DataBindingEngine();
 
         for (const script of scripts) {
@@ -3874,7 +3874,7 @@ export class TemplateApp {
         // 모양은 코어 정적 CSS(g7-core.css)의 클래스로 준다. HTML 문자열의 style 속성은 엄격한 스타일 정책에서
         // 막혀 스피너가 보이지 않는다(#163). 색은 종전대로 CSS 변수 --g7-overlay-bg·--g7-spinner-color 로 바꾼다.
         // 배경 기본값은 다른 덮개와 같은 판정으로 다크 모드면 gray-900 이다 — 수식 클래스 g7-spinner-overlay--dark 의
-        // 규칙(g7-core.css)이 준다. --g7-overlay-bg 를 정의하는 곳이 없어 종전에는 다크 모드에서도 밝은 회색이 그려졌다(#869)
+        // 규칙(g7-core.css)이 준다. --g7-overlay-bg 를 정의하는 곳이 없어 종전에는 다크 모드에서도 밝은 회색이 그려졌다
         const isDark = document.documentElement.classList.contains('dark');
         const fallbackOverlay = document.createElement('div');
         fallbackOverlay.className = isDark ? 'g7-spinner-overlay g7-spinner-overlay--dark' : 'g7-spinner-overlay';
@@ -4188,7 +4188,7 @@ export class TemplateApp {
      * 템플릿 오류 레이아웃(503)은 쓰지 않는다. 그 레이아웃은 base 를 상속해 머리글이 `current_user` 로 로그인 분기를
      * 하는데, 서버가 계속 실패하면 그 조회도 실패해 로그인돼 있는 사람에게 비로그인 머리글(로그인 단추)을 보인다. 로그인
      * 여부를 모르는 상태이므로 로그인 상태를 단정하는 요소가 없는 코어 기본 오류 표시가 맞다. 실패할 base 데이터 소스와
-     * 오류 레이아웃 적재 요청을 서버에 더 보내지도 않는다. 템플릿 503 은 서버가 정한 의존 확장 미충족 화면으로 남는다 (#869 N5).
+     * 오류 레이아웃 적재 요청을 서버에 더 보내지도 않는다. 템플릿 503 은 서버가 정한 의존 확장 미충족 화면으로 남는다.
      *
      * @param path 인증을 확인하던 경로
      * @since engine-v1.95.0
@@ -4627,7 +4627,7 @@ export class TemplateApp {
     }
 
     /**
-     * 언어 전환 직전 포커스 요소의 안정된 식별자를 잡습니다 (engine-v1.95.0, #869).
+     * 언어 전환 직전 포커스 요소의 안정된 식별자를 잡습니다 (engine-v1.95.0).
      *
      * 언어 전환은 엔진을 내리고 같은 화면을 새로 마운트하므로 포커스가 body 로 빠진다. 레이아웃의 `<set-locale>` 단추(모바일 서랍
      * 언어 칩 등)와 서드파티 레이아웃은 부품 훅(`G7Core.locale.handoff`)이 닿지 않으므로 엔진이 맡는다. 식별자는 렌더러가 DOM 에 싣는
@@ -4650,7 +4650,7 @@ export class TemplateApp {
     }
 
     /**
-     * 언어 전환으로 다시 그린 뒤 맡겨 둔 자리로 포커스를 되돌립니다 (engine-v1.95.0, #869).
+     * 언어 전환으로 다시 그린 뒤 맡겨 둔 자리로 포커스를 되돌립니다 (engine-v1.95.0).
      *
      * 다시 그린 화면은 비동기로 커밋되므로 요소가 나타날 때까지 `LOCALE_FOCUS_RESTORE_ATTEMPTS` 프레임까지 다시 본다. 끝내 없으면 본문
      * 시작점(`main`·`[role=main]`·`#main_content`, 없으면 #app)으로 보낸다. 매 시도마다 포커스가 body 일 때만 움직인다 — 그 사이 사용자가
@@ -5166,7 +5166,7 @@ export class TemplateApp {
                 bindingEngine?.startCacheEpoch();
                 bindingEngine?.startRenderCycle();
             },
-            // 템플릿에 그 코드의 오류 레이아웃도 default 도 없으면 엔진 내장 오류 화면 (engine-v1.95.0, #869 λ 4부 18) — 종전에는 아무것도
+            // 템플릿에 그 코드의 오류 레이아웃도 default 도 없으면 엔진 내장 오류 화면 (engine-v1.95.0) — 종전에는 아무것도
             // 그리지 않아 화면이 오류 전 모습으로 남았다. 레이아웃 적재 실패 화면과 같이 React 루트를 내려놓고 #app 을 덮는다
             renderBuiltinFallback: (errorCode: number) => {
                 releaseTemplateRoot();
@@ -5252,7 +5252,7 @@ export class TemplateApp {
      *
      * 해제 함수를 돌려줍니다. 화면 컴포넌트는 언마운트 때 이 함수를 불러야 리스너가 쌓이지 않습니다 —
      * 종전에는 `undefined` 를 돌려줘, 반환값을 해제 함수로 쓰던 호출부(상품 카드·관리자 사이드바·본인인증
-     * 실행기)가 화면을 떠날 때마다 리스너를 남겼습니다(실측: 상품 목록 왕복 20회에 29 → 281, #639).
+     * 실행기)가 화면을 떠날 때마다 리스너를 남겼습니다(실측: 상품 목록 왕복 20회에 29 → 281).
      *
      * @param listener 상태 변경 시 호출될 콜백 함수
      * @returns 구독 해제 함수
@@ -5322,7 +5322,7 @@ export class TemplateApp {
 
             // _global 상태 가져오기 (endpoint 표현식에서 {{_global.xxx}} 접근 지원)
             // globalStateOverride가 있으면 기존 상태와 병합 (sequence에서 setState 후 업데이트된 값 반영)
-            // engine-v1.95.0 (#869 λ 4부 17): 다시 그리기 전 화면 문맥이 아니라 정본 최신 상태를 기준으로 쓴다 — `G7Core.state.set` 은
+            // engine-v1.95.0 (4부 17): 다시 그리기 전 화면 문맥이 아니라 정본 최신 상태를 기준으로 쓴다 — `G7Core.state.set` 은
             // 정본(this.globalState)을 바로 바꾸는데 화면 문맥은 다시 그린 뒤에야 바뀌어, state.set 직후의 다시 받기가 앞 값으로 나갔다
             // (늦게 받은 장바구니 키를 싣고 바로 다시 받으면 키 없이 400). 레이아웃 refetchDataSource 핸들러와 handleApiCall 은 이미 최신
             // 상태를 쓴다. 화면 문맥에만 있는 값(layoutWarnings 등)은 남기고 정본이 이긴다. override 는 그대로 우선한다
@@ -6417,7 +6417,7 @@ export class TemplateApp {
     }
 
     /**
-     * 화면 처리 밖의 데이터 요청(다시 받기, 쿼리 갱신 재조회)에 쓸 `_global` — 정본 최신 상태 (engine-v1.95.0, #869).
+     * 화면 처리 밖의 데이터 요청(다시 받기, 쿼리 갱신 재조회)에 쓸 `_global` — 정본 최신 상태 (engine-v1.95.0).
      *
      * `G7Core.state.set` 은 정본(this.globalState)을 바로 바꾸지만 화면 문맥(`currentDataContext._global`)은 다시 그린 뒤에야 바뀐다.
      * 화면 문맥에만 있는 값(layoutWarnings 등)은 남기고 정본이 이긴다.
@@ -6430,7 +6430,7 @@ export class TemplateApp {
 
     /**
      * 화면 처리 밖의 데이터 요청에 쓸 페이지 `_local` — 정본 B 위에 아직 반영 대기 중인 값(`__g7PendingLocalState`)만 얹는다
-     * (engine-v1.95.0, #869 ρ 9부 M9).
+     * (engine-v1.95.0).
      *
      * `G7Core.state.getLocal()` 은 마지막 setLocal 사본(`__g7LastSetLocalSnapshot`)이 B 와 다르면 그 사본을 B 위에 덮는데, 그 사본은
      * 렌더에서 지워지지 않아 setLocal 뒤 사본을 지우지 않는 B 쓰기가 있으면 낡은 값이 된다. 반영 대기 값은 렌더마다 비워져 B 보다

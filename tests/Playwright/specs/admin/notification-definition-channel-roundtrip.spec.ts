@@ -1,5 +1,5 @@
 /**
- * E2E: 알림 정의 채널 탭 왕복 후 목록이 다른 채널을 보게 되는 결함 (#518)
+ * E2E: 알림 정의 채널 탭 왕복 후 목록이 다른 채널을 보게 되는 결함
  *
  * 배경 (실측 결함):
  * 채널은 두 곳에서 읽히고 있었다 — URL(`query.channel`)과 페이지 로컬 상태
@@ -146,7 +146,7 @@ async function settingsTabRoundTrip(page: Page): Promise<void> {
  */
 test.describe.configure({ mode: 'serial' });
 
-test.describe('알림 정의 채널 왕복 (#518)', () => {
+test.describe('알림 정의 채널 왕복', () => {
   /**
    * @scenario surface=core_settings,action=channel_switch
    *
@@ -204,7 +204,7 @@ test.describe('알림 정의 채널 왕복 (#518)', () => {
   });
 
   /**
-   * 본인인증 메일 문구(category=identity, #699)는 분류 칩으로 고른다. 칩은 URL(`?category=`)에 남아
+   * 본인인증 메일 문구(category=identity)는 분류 칩으로 고른다. 칩은 URL(`?category=`)에 남아
    * 새로고침해도 같은 분류로 다시 불러와야 한다 — 로컬 상태에만 두면 새로고침 뒤 전체 목록으로 돌아간다.
    * 편집 창은 값을 바꾸지 않고 저장한다(같은 값 저장은 「기본」 표시를 유지하는 계약이라 데이터가 변하지 않는다).
    *

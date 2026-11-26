@@ -179,7 +179,7 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
 
   // Provider 가 있으면 그 인스턴스, 없으면 자체 hook 호출(레거시 호환 — Chrome 미연결 시).
   const docCtxValue = useLayoutDocumentContext();
-  // Provider 가 있으면 사본 훅은 요청하지 않는다 — 같은 레이아웃을 두 번 받던 중복(편집기 첫 적재 지연, #869).
+  // Provider 가 있으면 사본 훅은 요청하지 않는다 — 같은 레이아웃을 두 번 받던 중복(편집기 첫 적재 지연).
   const standalone = useLayoutDocument({ enabled: docCtxValue === null });
   const { document, isLoading, error } = docCtxValue ?? standalone;
 

@@ -96,7 +96,7 @@ class SeoProductCacheListenerTest extends ModuleTestCase
     // ─── onProductCreate ──────────────────────────────────
 
     /**
-     * 상품 생성 시 관련 캐시를 무효화하고, 상세 재생성은 하지 않는다 (큐 리스너가 맡는다, #724)
+     * 상품 생성 시 관련 캐시를 무효화하고, 상세 재생성은 하지 않는다 (큐 리스너가 맡는다)
      *
      * @scenario listener=seo_product, queue=sync
      *
@@ -122,7 +122,7 @@ class SeoProductCacheListenerTest extends ModuleTestCase
     // ─── onProductUpdate ──────────────────────────────────
 
     /**
-     * 상품 수정 시 관련 캐시를 무효화하고, 상세 재생성은 하지 않는다 (큐 리스너가 맡는다, #724)
+     * 상품 수정 시 관련 캐시를 무효화하고, 상세 재생성은 하지 않는다 (큐 리스너가 맡는다)
      *
      * @scenario listener=seo_product, queue=sync
      *

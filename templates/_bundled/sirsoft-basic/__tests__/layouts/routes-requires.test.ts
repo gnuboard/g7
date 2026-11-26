@@ -1,5 +1,5 @@
 /**
- * 라우트 requires — 모듈 화면은 그 모듈이 켜져 있을 때만 공개 라우트에 실린다 (#822)
+ * 라우트 requires — 모듈 화면은 그 모듈이 켜져 있을 때만 공개 라우트에 실린다
  *
  * @description
  * routes.json 의 `requires: {"modules": [...]}` 는 코어 7.1.4+ 가 읽어, 나열한 모듈이 **모두** 활성일 때만 그 라우트를
@@ -41,7 +41,7 @@ const SHOP_MYPAGE_PATHS = [
     '/mypage/mileage',
     '/mypage/wishlist',
     '/mypage/addresses',
-    // #952 쿠폰함·내 리뷰 — 쇼핑몰이 꺼지면 열리지 않는다(활동 기록은 코어 기능이라 requires 없음)
+    // 쿠폰함·내 리뷰 — 쇼핑몰이 꺼지면 열리지 않는다(활동 기록은 코어 기능이라 requires 없음)
     '/mypage/coupons',
     '/mypage/reviews',
 ];
@@ -53,7 +53,7 @@ function route(p: string): Route {
     return found[0];
 }
 
-describe('routes.json requires (#822)', () => {
+describe('routes.json requires', () => {
     // @scenario surface=routes
     // @effects routes_require_their_module
     it.each(BOARD_PATHS)('게시판 화면 %s 는 sirsoft-board 를 요구한다', (p) => {
@@ -64,7 +64,7 @@ describe('routes.json requires (#822)', () => {
     // @effects routes_require_their_module
     it('쇼핑 경로 14개와 쇼핑 마이페이지 11개는 sirsoft-ecommerce 를 요구한다', () => {
         const shop = routes.filter((r) => r.path.startsWith(SHOP_PREFIX));
-        // #952 쿠폰존(/shop/coupons) 추가로 14개
+        // 쿠폰존(/shop/coupons) 추가로 14개
         expect(shop).toHaveLength(14);
         [...shop, ...SHOP_MYPAGE_PATHS.map(route)].forEach((r) =>
             expect(r.requires, r.path).toEqual({ modules: ['sirsoft-ecommerce'] }),
@@ -95,7 +95,7 @@ describe('routes.json requires (#822)', () => {
         const rest = routes.filter((r) => !guarded.has(r.path) && !r.path.startsWith(SHOP_PREFIX));
         expect(rest.map((r) => r.path)).toEqual(expect.arrayContaining(['/', '/login', '/register', '/users/:userId', '/search', '/mypage/profile', '/mypage/notifications', '/mypage/activity']));
         rest.forEach((r) => expect(r.requires, r.path).toBeUndefined());
-        // 표의 행 수 합계 = 9 + 14 + 11 + 1 + 1 = 36 (쇼핑 경로에 리뷰 모아보기, #952 쿠폰존·쿠폰함·내 리뷰 추가)
+        // 표의 행 수 합계 = 9 + 14 + 11 + 1 + 1 = 36 (쇼핑 경로에 리뷰 모아보기, 쿠폰존·쿠폰함·내 리뷰 추가)
         expect(routes.filter((r) => r.requires).length).toBe(36);
     });
 

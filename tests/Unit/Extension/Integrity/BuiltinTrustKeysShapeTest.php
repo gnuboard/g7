@@ -10,7 +10,7 @@ use Tests\Concerns\PackageSignatureFixtures;
 use Tests\TestCase;
 
 /**
- * 코어 내장 신뢰 키 목록(`BuiltinTrustKeys::KEYS`) 가드 (#916 ④)
+ * 코어 내장 신뢰 키 목록(`BuiltinTrustKeys::KEYS`) 가드
  *
  * 이 목록은 코어 패키지를 검증하는 유일한 근거라 잘못 들어간 한 항목이 신뢰 경계를 무너뜨린다. 두 가지를 막는다.
  *

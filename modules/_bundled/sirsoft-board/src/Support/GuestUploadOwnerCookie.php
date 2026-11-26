@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * 비회원 업로드 소유 쿠키 — 비회원이 자기가 올린 임시 첨부를 지우고 순서를 바꿀 수 있게 한다 (#883)
+ * 비회원 업로드 소유 쿠키 — 비회원이 자기가 올린 임시 첨부를 지우고 순서를 바꿀 수 있게 한다
  *
  * 비회원 업로드 응답에 무작위 40자 값을 쿠키로 붙이고, 첨부 행에는 그 SHA-256 만 둔다(`guest_owner_hash`).
  * 같은 출처 XHR 이라 쿠키가 자동으로 실리므로 템플릿을 바꿀 필요가 없다. 글에 연결되면 해시를 지운다 — 연결 전만 의미.

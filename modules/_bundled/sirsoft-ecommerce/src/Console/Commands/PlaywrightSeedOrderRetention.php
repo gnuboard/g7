@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\OrderPrivacyRetentionService;
 
 /**
- * Playwright E2E · 브라우저 실측용 종결 주문 개인정보 보유기간 시드 커맨드 (이슈 #636 S5).
+ * Playwright E2E · 브라우저 실측용 종결 주문 개인정보 보유기간 시드 커맨드.
  *
  * 보유기간 처리는 「종결 후 N년(최소 5년)이 지난 주문」만 건드리므로, 실측하려면 **오래전에 끝난
  * 주문**이 필요하다. 화면·API 로는 종결 시각을 과거로 만들 수 없어 이 커맨드가 그 상태를 고정한다.

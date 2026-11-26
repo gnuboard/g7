@@ -17,7 +17,7 @@ use App\Support\LayoutMarkup\LayoutPartialOrigin;
  * 같은 노드를 찾았을 때뿐이라, 엉뚱한 노드에 새 판이 붙지 않는다.
  *
  * 단계: 0 지름길 → 1 분해 → 2 운영자 판 투영 → 3 단위별 판정 → 4 고아 방지 → 5 조립·검증.
- * 판정표는 계획서 #727 §5.5 를 그대로 옮긴 것이다(각 분기 주석 참조).
+ * 판정표는 각 분기 주석에 적었다.
  */
 final class LayoutThreeWayMerger
 {

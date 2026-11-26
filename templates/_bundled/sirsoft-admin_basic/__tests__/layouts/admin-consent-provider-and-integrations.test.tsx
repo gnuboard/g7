@@ -1,6 +1,6 @@
 /**
  * @file admin-consent-provider-and-integrations.test.tsx
- * @description #639 관리자 화면 — 개인정보 탭 「동의 관리 제공자」 카드, 방문자 통계 동의 출처 배지, 확장 상세 「연동 확장」 행
+ * @description 관리자 화면 — 개인정보 탭 「동의 관리 제공자」 카드, 방문자 통계 동의 출처 배지, 확장 상세 「연동 확장」 행
  *
  * 테스트 대상:
  * - partials/admin_settings/_tab_privacy.json (card_consent_provider)
@@ -118,7 +118,7 @@ function stubTemplateApp(): void {
 const PROVIDERS = [{ id: 'sirsoft-gdpr', label: '쿠키 동의 배너' }, { id: 'acme-consent', label: 'Acme' }];
 const ALERT_TEXTS = ['제공자가 2개 이상', '선택한 제공자 비활성', '동의 관리 확장 없음', '동의 수집 꺼짐'];
 
-describe('개인정보 탭 — 동의 관리 제공자 카드 (#639 §4.1)', () => {
+describe('개인정보 탭 — 동의 관리 제공자 카드', () => {
   let testUtils: ReturnType<typeof createLayoutTest>;
   let registry: ComponentRegistry;
   let card: any;
@@ -227,7 +227,7 @@ describe('개인정보 탭 — 동의 관리 제공자 카드 (#639 §4.1)', () 
   });
 });
 
-describe('방문자 통계 설정 — 동의 출처 배지 (#639 §4.2)', () => {
+describe('방문자 통계 설정 — 동의 출처 배지', () => {
   const layout = loadJson('admin_analytics_settings.json');
   const row = findNodeById(layout, 'consent_source_row');
 
@@ -250,7 +250,7 @@ describe('방문자 통계 설정 — 동의 출처 배지 (#639 §4.2)', () => 
     // 선택이 필요한 상태는 감싸는 요소가, 목적지를 열 권한(core.settings.read)은 링크 자신이 가린다.
     expect(wrapper?.if).toContain("['ambiguous', 'missing']");
     expect(link.if).toBe('{{_computed.canReadDefinitions}}');
-    // 링크(#757) — 주소는 href 한 곳, 보통 클릭은 path 없는 navigate 가 그 href 로 SPA 이동
+    // 링크 — 주소는 href 한 곳, 보통 클릭은 path 없는 navigate 가 그 href 로 SPA 이동
     expect(link.name).toBe('A');
     expect(link.props.href).toBe('/admin/settings?tab=privacy');
     expect(link.actions?.[0]).toMatchObject({ handler: 'navigate' });
@@ -258,7 +258,7 @@ describe('방문자 통계 설정 — 동의 출처 배지 (#639 §4.2)', () => 
   });
 });
 
-describe('확장 상세 — 함께 쓰면 연동되는 확장 (#639 §4.3)', () => {
+describe('확장 상세 — 함께 쓰면 연동되는 확장', () => {
   let testUtils: ReturnType<typeof createLayoutTest>;
   let registry: ComponentRegistry;
 

@@ -3,7 +3,7 @@ feature: 게시판 글쓰기 첨부 — 저장 때 미뤄 둔 업로드를 먼�
 description: |
   글쓰기 첨부 업로더는 자동 업로드를 끄고 임시 키(temp_key)로 묶어 둔다. 저장 단추가 `upload:board_attachments` 신호로
   업로드를 먼저 돌린 뒤 글 저장 요청을 보내고, 업로드 오류는 저장 중 표시를 되돌린다. 업로드가 실패하면 저장 요청을
-  건너뛴다(#869 브라우저 실측 — 실행 검증은 관리자 템플릿 uploadFailureStopsSave.test.ts).
+  건너뛴다(실행 검증은 관리자 템플릿 uploadFailureStopsSave.test.ts).
 
 # axis 의미:
 #   area — admin_attachments 관리자 첨부 조각, admin_save 관리자 저장 단추, user_form 사용자 폼, upload_error 업로드 오류 처리.

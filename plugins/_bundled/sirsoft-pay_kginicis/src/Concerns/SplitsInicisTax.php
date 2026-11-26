@@ -16,10 +16,10 @@ use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
  * (`requestPayment.ts` `buildInicisTaxAmounts`). 부분취소(`/v2/pg/partialRefund` 의 `tax`·`taxFree`)는 **승인 때 과세 구분을
  * 실은 결제에만** 같은 구분을 실어야 한다 — 승인에 없던 구분을 취소에만 실으면 PG 가 「취소할 수 없는 금액」으로 거절하고,
  * 승인에 실은 구분을 취소에서 빼면 면세 상품 환불이 과세분 잔액을 넘을 때 거절된다(토스 「세금 처리」와 같은 동작).
- * 그래서 승인 때 `payment_meta.tax_split` 에 승인 면세액을 남기고, 부분취소는 그 표식이 있을 때만 구분을 싣는다(#820).
+ * 그래서 승인 때 `payment_meta.tax_split` 에 승인 면세액을 남기고, 부분취소는 그 표식이 있을 때만 구분을 싣는다.
  *
  * 주문의 면세·과세·부가세 합계와 결제 통화 환산은 이커머스 공개 계약 {@see PaymentLookup::pgTaxSplit()},
- * {@see PaymentLookup::resolveChargeAmount()} 로 얻는다(#916). 호스트 요건: 생성자에서 `PaymentGatewayBridge`
+ * {@see PaymentLookup::resolveChargeAmount()} 로 얻는다. 호스트 요건: 생성자에서 `PaymentGatewayBridge`
  * (또는 `PaymentLookup`)를 `$bridge` 로 주입받는다.
  */
 trait SplitsInicisTax
@@ -31,7 +31,7 @@ trait SplitsInicisTax
      * 승인 결제에 남길 과세 구분 표식을 만듭니다.
      *
      * 결제창이 실은 값과 같은 규칙이다 — 주문 면세 합계(면세 + 영세)를 청구액과 같은 스냅샷 환산 규칙으로 바꾸고
-     * 승인액으로 자른다(이커머스 `buildPgPaymentData` 의 `tax_free_amount`, 1.3.3 #612).
+     * 승인액으로 자른다(이커머스 `buildPgPaymentData` 의 `tax_free_amount`, 1.3.3).
      *
      * @param  OrderRecord  $order  승인한 주문
      * @param  int  $approvedAmount  승인 금액(결제 통화 최소 단위)
@@ -73,7 +73,7 @@ trait SplitsInicisTax
         }
 
         $budget = max(0, (int) ($split['tax_free_amount'] ?? 0) - (int) ($split['tax_free_cancelled'] ?? 0));
-        // 승인 때와 같은 분류 — 면세 = 면세 + 영세, 과세 = 영세를 뺀 과세 합계(#612). 훅 인자 주문 값으로 계산한다.
+        // 승인 때와 같은 분류 — 면세 = 면세 + 영세, 과세 = 영세를 뺀 과세 합계. 훅 인자 주문 값으로 계산한다.
         $taxSplit = $this->bridge->pgTaxSplit($order);
         $taxFreeTotal = (int) round($taxSplit->taxFree);
         $taxableTotal = (int) round($taxSplit->taxable);

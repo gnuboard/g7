@@ -1,4 +1,4 @@
-feature: 사용자 로그인 복귀 주소 대체 경로 (sirsoft-basic, #757)
+feature: 사용자 로그인 복귀 주소 대체 경로 (sirsoft-basic)
 
 description: |
   엔진이 실행 스킴·다른 출처 주소로의 navigate 를 무동작으로 바꾼 뒤(결정), 로그인 폼의 복귀 이동이

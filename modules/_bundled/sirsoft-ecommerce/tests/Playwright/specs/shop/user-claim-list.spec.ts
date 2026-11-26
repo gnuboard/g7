@@ -1,5 +1,5 @@
 /**
- * 구매자 클레임 신청내역 — 목록 · 상세 왕복 · 결제 결과 (#599 S15b · §6-1)
+ * 구매자 클레임 신청내역 — 목록 · 상세 왕복 · 결제 결과
  *
  * 브라우저로만 드러나는 축을 본다.
  *
@@ -47,7 +47,7 @@ import type { Page } from '@playwright/test';
 async function openList(page: Page, query = '', expectText?: string): Promise<void> {
   await page.goto(`/mypage/claims${query}`);
   await waitForApp(page);
-  // 회원 화면의 유형 서브탭은 링크다(#757 WP-L, 비회원 화면은 단추) — 이 스펙은 회원 화면만 연다.
+  // 회원 화면의 유형 서브탭은 링크다(비회원 화면은 단추) — 이 스펙은 회원 화면만 연다.
   await expect(page.getByRole('link', { name: '교환', exact: true })).toBeVisible({ timeout: 30_000 });
 
   if (expectText) {
@@ -235,7 +235,7 @@ test.describe('구매자 클레임 신청내역', () => {
     });
 
     await openList(page, '?type=exchange', 'EX20260902-0201');
-    // 회원 화면의 [수정]은 수정 화면 링크다(#757 WP-L) — [철회]는 확인 창을 여는 단추라 그대로다.
+    // 회원 화면의 [수정]은 수정 화면 링크다 — [철회]는 확인 창을 여는 단추라 그대로다.
     await expect(page.getByRole('link', { name: '수정' })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('button', { name: '철회' })).toBeVisible();
 
@@ -424,7 +424,7 @@ test.describe('구매자 클레임 신청내역', () => {
    * 대기 결제행의 수단은 접수 때 확정되지만 그 뒤에 낼 수 없게 될 수 있다 — 마일리지 잔액이
    * 모자라거나, 운영자가 그 수단을 카탈로그에서 내리거나. 고를 자리가 없으면 사용자는
    * 「미수납 ○○원 + 결제하기」를 보면서 누를 때마다 같은 거절을 받고 출구가 철회뿐이다
-   * (#599 실측).
+   *.
    *
    * @scenario claim_type=exchange, screen=detail, entry=none
    * @effects claim_detail_pending_payment_method_can_be_rechosen

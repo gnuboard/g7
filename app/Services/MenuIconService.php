@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * 관리자 메뉴 아이콘 업로드·저장 변환·첨부 수명 서비스 (#381).
+ * 관리자 메뉴 아이콘 업로드·저장 변환·첨부 수명 서비스.
  *
  * - 래스터(png·webp·jpg·gif) 업로드는 코어 첨부(collection `menu_icons`)로 저장하고 `<img>` 로 그린다.
  * - SVG 파일은 파일로 저장하지 않는다 — 첨부 SVG 는 KVE-2026-2366 정책상 다운로드로만 나가 사이드바에 보이지 않으므로,

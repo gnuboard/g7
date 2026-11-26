@@ -1,6 +1,6 @@
 /**
  * @file exportRequestSourcesIdentical.test.ts
- * @description 내보내기 창의 데이터 소스·진입 초기화가 주문·상품·마일리지 세 목록 레이아웃에서 같은지 잠근다(#787)
+ * @description 내보내기 창의 데이터 소스·진입 초기화가 주문·상품·마일리지 세 목록 레이아웃에서 같은지 잠근다
  *
  * 창(`partials/admin_ecommerce_export/_modal_export_request`)은 세 목록이 함께 쓰지만, 창이 부르는 데이터 소스(카탈로그·예상 건수)는
  * 레이아웃 최상위에만 둘 수 있어 세 레이아웃에 같은 선언이 한 벌씩 있다. 한 곳만 고치면 그 목록의 창만 조용히 다르게 동작하므로

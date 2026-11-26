@@ -1,5 +1,5 @@
 <!-- 공개 사용자 화면 전체의 상속원 — 홈·게시판·검색·쇼핑·마이페이지·인증·에러가 모두 이 레이아웃을 extends 하고 자기 본문을 content 슬롯에 넣는다. 여기서 세운 전역값(통화·배송국가·장바구니 키·비회원 주문 토큰)과 헤더/드로어/푸터는 자식이 다시 정의하지 않는다. 상속원이라 이 파일의 변경은 공개 사이트 전 화면에 동시에 닿는다.
-     계산값 siteMenu — 템플릿 설정 header.menu(#434)에서 꺼진 항목·꺼진 모듈의 자동 항목·보이지 않을 대상(회원만·비회원만·특정 역할)을 거른 메뉴.
+     계산값 siteMenu — 템플릿 설정 header.menu에서 꺼진 항목·꺼진 모듈의 자동 항목·보이지 않을 대상(회원만·비회원만·특정 역할)을 거른 메뉴.
      헤더·모바일 드로어·봇 화면이 모두 이 값을 쓴다(따로 판정하면 셋이 어긋난다). 비회원은 역할 guest 로 본다. 보이기는 메뉴 안내일 뿐 접근 제어가 아니다. -->
 <layout name="_user_base" version="1.0.0">
   <meta title="$t:user.base_layout_title" description="$t:user.base_layout_description" :is_base="true">
@@ -293,7 +293,7 @@
           <!-- 수 배지 — PC 머리글(Header.tsx)과 같이 최소 폭 + 좌우 여백으로 「99+」 가 원 밖으로 넘치지 않게 한다(7.1.0 D-N2 모바일 짝). -->
           <span data-if="{{_global.cartCount > 0}}" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-blue-600 dark:bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">{{_global.cartCount > 99 ? '99+' : _global.cartCount}}</span>
         </a>
-        <!-- 사용자 정보를 받는 동안 — 링크 없는 같은 크기 자리. 받는 중을 비회원으로 읽어 회원에게 로그인 링크를 주지 않는다(#915). -->
+        <!-- 사용자 정보를 받는 동안 — 링크 없는 같은 크기 자리. 받는 중을 비회원으로 읽어 회원에게 로그인 링크를 주지 않는다. -->
         <span data-ref="mobile_user_btn_loading" data-if="{{_global.currentUser === undefined}}" role="status" aria-label="$t:common.loading" class="inline-flex items-center justify-center p-2 text-gray-300 dark:text-gray-600 rounded-lg">
           <icon name="user" size="md"/>
         </span>
@@ -427,7 +427,7 @@
               <icon name="heart" size="sm"/>
               <span>$t:mypage.tabs.wishlist</span>
             </a>
-            <!-- 쿠폰함(#952) — 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
+            <!-- 쿠폰함 — 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
             <a href="/mypage/coupons" data-ref="mobile_drawer_coupons_link" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
               <on type="click">
                 <set-state target="global" :mobileMenuOpen="false" :mobileUserMenuOpen="false"/>
@@ -451,7 +451,7 @@
           </div>
         </div>
       </div>
-      <!-- 비로그인 상태 - 로그인/회원가입 버튼. 사용자 정보를 받는 동안(undefined)은 그리지 않는다 — 회원에게 잠깐 보였다(#915). -->
+      <!-- 비로그인 상태 - 로그인/회원가입 버튼. 사용자 정보를 받는 동안(undefined)은 그리지 않는다 — 회원에게 잠깐 보였다. -->
       <div data-if="{{_global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid}}" class="p-4 border-b border-gray-200 dark:border-gray-700">
         <div class="flex gap-2">
           <a href="/login" class="inline-block flex-1 py-2.5 text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm cursor-pointer">
@@ -525,7 +525,7 @@
           </a>
           <a data-if="{{item.kind === 'coupons' &amp;&amp; (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}" data-ref="mobile_drawer_coupons_{{itemIndex}}" href="{{_global.shopBase}}/coupons" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
             <on type="click">
-              <!-- 쿠폰존으로(#952) — 앞머리(shopBase)는 상품 목록과 같다 -->
+              <!-- 쿠폰존으로 — 앞머리(shopBase)는 상품 목록과 같다 -->
               <sequence>
                 <set-state target="global" :mobileMenuOpen="false"/>
                 <navigate path="{{_global.shopBase}}/coupons"/>
@@ -628,7 +628,7 @@
                 </a>
                 <a data-if="{{child.kind === 'coupons' &amp;&amp; (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}" href="{{_global.shopBase}}/coupons" class="w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
                   <on type="click">
-                    <!-- 쿠폰존으로(#952) -->
+                    <!-- 쿠폰존으로 -->
                     <sequence>
                       <set-state target="global" :mobileMenuOpen="false"/>
                       <navigate path="{{_global.shopBase}}/coupons"/>

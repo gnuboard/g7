@@ -13,7 +13,7 @@ use Tests\Helpers\CreatesTemplateSettingsFixtures;
 use Tests\TestCase;
 
 /**
- * 7.2.0 업그레이드 — 템플릿 설정 화면 등록 스텝 테스트 (#434)
+ * 7.2.0 업그레이드 — 템플릿 설정 화면 등록 스텝 테스트
  */
 class Upgrade720RegisterTemplateSettingsLayoutsTest extends TestCase
 {

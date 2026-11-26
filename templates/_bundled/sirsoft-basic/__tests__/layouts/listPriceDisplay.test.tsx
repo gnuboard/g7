@@ -112,7 +112,7 @@ describe.each([
   it('정가 블록은 라이트/다크 클래스 쌍을 갖는다', () => {
     const nodes = flatten(listPriceBlock);
     const strikethrough = nodes.find((n) => n.props?.className?.includes?.('line-through'));
-    // #399 R-1 — 보조 글자색 묶음이 의미 클래스 `text-muted` 로 바뀌었다. 템플릿 CSS 정의(다크 짝 포함)까지 펼쳐 본다
+    // 보조 글자색 묶음이 의미 클래스 `text-muted` 로 바뀌었다. 템플릿 CSS 정의(다크 짝 포함)까지 펼쳐 본다
     expect(expandSemanticClassName(strikethrough!.props!.className)).toMatch(/dark:/);
   });
 });

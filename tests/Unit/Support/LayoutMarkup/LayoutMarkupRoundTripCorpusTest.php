@@ -425,8 +425,8 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/partials/plugin_settings/_modal_privacy_targets.g7.html',
         'plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/partials/plugin_settings/_policy_version_publish_modal.g7.html',
         'plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/plugin_settings.g7.html',
-        // #810 히어로섹션 — 플러그인 추가 때 이관 목록 등록을 빠뜨린 것을 develop-7.2.0 리베이스 종료 관문에서 찾아 등록
-        // #874 가 더한 게시판·카테고리·상품 자리 조각 3개도 같은 누락이라 #490 develop-7.2.0 리베이스 종료 관문에서 등록
+        // 히어로섹션 — 플러그인 추가 때 이관 목록 등록을 빠뜨린 것을 develop-7.2.0 리베이스 종료 관문에서 찾아 등록
+        // 게시판·카테고리·상품 자리 조각 3개도 같은 누락이라 develop-7.2.0 리베이스 종료 관문에서 등록
         'plugins/_bundled/sirsoft-hero_section/resources/extensions/board_hero.g7.html',
         'plugins/_bundled/sirsoft-hero_section/resources/extensions/category_hero.g7.html',
         'plugins/_bundled/sirsoft-hero_section/resources/extensions/home_hero.g7.html',
@@ -462,7 +462,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/user_mypage_order_receipt.g7.html',
         'plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/user_order_complete_receipt.g7.html',
         'plugins/_bundled/sirsoft-pay_nicepayments/resources/layouts/admin/plugin_settings.g7.html',
-        // #812 팝업 플러그인 신규(2026-11-02 develop-7.2.0 리베이스 뒤 등록 — 옛 tip·새 base 명단 모두 없음)
+        // 팝업 플러그인 신규(2026-11-02 develop-7.2.0 리베이스 뒤 등록 — 옛 tip·새 base 명단 모두 없음)
         'plugins/_bundled/sirsoft-popup/resources/extensions/popup_layer.g7.html',
         'plugins/_bundled/sirsoft-popup/resources/layouts/admin/plugin_settings.g7.html',
         'plugins/_bundled/sirsoft-popup/resources/layouts/admin/popup_form.g7.html',
@@ -478,7 +478,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-social_login/resources/extensions/mypage_profile_edit_reauth.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/extensions/mypage_reauth_methods.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/extensions/mypage_social_accounts_card.g7.html',
-        // 알림 탭(#835) — 알림 정의·템플릿 편집·미리보기·초기화 창
+        // 알림 탭 — 알림 정의·템플릿 편집·미리보기·초기화 창
         'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_modal_notification_definition_reset.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_preview.g7.html',
@@ -894,7 +894,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-basic/layouts/users/show.g7.html',
         // ── develop-7.1.0 2차 병합 전수 보존 검사(2026-09-17)가 등재한 39건. 저작 트랙 종료 게이트를 1·2차 병합
         // 어느 회차도 돌리지 않아 세 갈래가 검사 없이 합류했다 — issue524 가 만든 회원 데이터 관리자 화면·
-        // 스크랩·알림 목록·코드 편집기 모달 14건(base 선재), #525 반응·신고 저작본 13건, #675 수출입은행
+        // 스크랩·알림 목록·코드 편집기 모달 14건(base 선재), 반응·신고 저작본 13건, 수출입은행
         // 환율 플러그인 12건. 전건 짝 `.json` 굽기 최신·escape 0 을 이 게이트가 다시 잰다.
         'modules/_bundled/sirsoft-board/resources/extensions/admin-user-reactions-tab.g7.html',
         'modules/_bundled/sirsoft-board/resources/extensions/admin-user-scraps-tab.g7.html',
@@ -943,8 +943,8 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-basic/layouts/partials/mypage/scrap/_list.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/mypage/scrap/_modal_scrap_bulk_delete.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/mypage/scrap/_modal_scrap_delete.g7.html',
-        // ── develop-7.1.0 1차 병합(2026-09-26) 뒤 저작 트랙 종료 게이트가 잡은 31건. 양쪽 부채의 합류다 — #636
-        // 개인정보 조치 직권 실행 확인 창·보유기간 탭 5건(게시판 2·쇼핑몰 1·gdpr 1·코어 1)과 #682 방문자 통계
+        // ── develop-7.1.0 1차 병합(2026-09-26) 뒤 저작 트랙 종료 게이트가 잡은 31건. 양쪽 부채의 합류다
+        // 개인정보 조치 직권 실행 확인 창·보유기간 탭 5건(게시판 2·쇼핑몰 1·gdpr 1·코어 1)과 방문자 통계
         // 화면·조각 26건(대시보드 위젯·sirsoft-basic 방문자 수 조각 포함). 주석 앵커(S21)를 채워 짝 `.json` 을 다시 구웠다.
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_modal_privacy_run.g7.html',
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_privacy_retention.g7.html',
@@ -1013,7 +1013,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_claim_list/_partial_bulk_action_section.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_claim_list/_partial_claim_datagrid.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_claim_list/_partial_filter_section.g7.html',
-        // ── #599 상품 행 송장·선교환·관리자 직권 접수(2026-09-25) 가 새로 저작한 모달 4건.
+        // ── 상품 행 송장·선교환·관리자 직권 접수(2026-09-25) 가 새로 저작한 모달 4건.
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_claim_detail/_modal_claim_exchange_mode_confirm.g7.html',
         // 선행 커밋(첨부 전체 삭제 확인 창)이 저작하고 등재를 빠뜨린 1건 — 같은 게이트가 굽기 최신·escape 0 을 잰다.
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_claim_detail/_modal_claim_images_clear.g7.html',
@@ -1022,7 +1022,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_modal_admin_claim_request.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/shop/guest_claim_apply.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/shop/guest_claim_show.g7.html',
-        // ── #705 회원관리 목록 필터 개편이 새로 저작한 조각 1건 + 이커머스 확장 필터 예제 2건.
+        // ── 회원관리 목록 필터 개편이 새로 저작한 조각 1건 + 이커머스 확장 필터 예제 2건.
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_user_list/_partial_filter_section.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-list-filter-mileage.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-list-filter-address.g7.html',
@@ -1033,26 +1033,26 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_update.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_cron_token_rotate.g7.html',
         'templates/_bundled/sirsoft-basic/settings/template_settings.g7.html',
-        // ── #869 이미지 썸네일이 새로 저작한 환경설정 업로드 탭 창 2건(두 곳 모두 비우기 확인·기존 이미지 썸네일 만들기).
+        // ── 이미지 썸네일이 새로 저작한 환경설정 업로드 탭 창 2건(두 곳 모두 비우기 확인·기존 이미지 썸네일 만들기).
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_thumbnail_purge_all.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_thumbnail_pregenerate.g7.html',
-        // ── #869 번들 CloudFront 플러그인(sirsoft-cdn_cloudfront)의 설정 화면 — 신규 플러그인이 처음부터 마크업으로 저작.
+        // ── 번들 CloudFront 플러그인(sirsoft-cdn_cloudfront)의 설정 화면 — 신규 플러그인이 처음부터 마크업으로 저작.
         'plugins/_bundled/sirsoft-cdn_cloudfront/resources/layouts/admin/plugin_settings.g7.html',
-        // ── #860 이 저작하고 등재를 빠뜨린 2건 — develop 리베이스 뒤 저작 트랙 종료 게이트(2026-11-04)가 찾았다.
+        // ── 저작하고 등재를 빠뜨린 2건 — develop 리베이스 뒤 저작 트랙 종료 게이트(2026-11-04)가 찾았다.
         // 관리자 회원 상세 「최근 검색어」 게시판 탭, 이커머스 환경설정 「상품 표시」 탭.
         'modules/_bundled/sirsoft-board/resources/extensions/admin-user-search-history-tab.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_product_display.g7.html',
-        // ── #883 본문 미디어·본문 콘텐츠가 저작하고 등재를 빠뜨린 4건 — 커밋 전 점검(2026-11-09)의 전체 검증이 찾았다.
+        // ── 본문 미디어·본문 콘텐츠가 저작하고 등재를 빠뜨린 4건 — 커밋 전 점검(2026-11-09)의 전체 검증이 찾았다.
         // 게시판·쇼핑몰 「본문 미디어」 정책 조각, 관리자 환경설정 「본문 콘텐츠」 탭과 외부 영상 서비스 추가 창.
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_form/_content_media_policy.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_content_media_policy.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_embed_provider_form.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_content.g7.html',
-        // ── #490 회원 항목 설정 4단계 — 관리자 환경설정 「회원」 탭(가입 항목 표와 카드, 닉네임 정책)과 항목 창 셋.
+        // ── 회원 항목 설정 4단계 — 관리자 환경설정 「회원」 탭(가입 항목 표와 카드, 닉네임 정책)과 항목 창 셋.
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_member.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_member_fields.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_member_fields_cards.g7.html',
-        // #490 8단계 — 회원 탭의 표시 이름 구획.
+        // 회원 탭의 표시 이름 구획.
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_member_display_name.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_member_nickname.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_member_field_form.g7.html',
@@ -1060,14 +1060,14 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_member_field_required.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/member/_member_fields.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/member/_member_fields_view.g7.html',
-        // ── #490 쇼핑몰 설정 주문 설정 탭의 주문서 항목 표와 카드, 항목 추가·수정 창과 삭제 확인 창.
+        // ── 쇼핑몰 설정 주문 설정 탭의 주문서 항목 표와 카드, 항목 추가·수정 창과 삭제 확인 창.
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_checkout_fields_table.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_checkout_fields_cards.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_checkout_field_form.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_checkout_field_delete.g7.html',
-        // ── #490 게시판 설정 글쓰기 탭의 비회원 작성자 항목 추가 창 — 커밋 전 점검(2026-11-13)의 선별 시험이 찾았다.
+        // ── 게시판 설정 글쓰기 탭의 비회원 작성자 항목 추가 창 — 커밋 전 점검(2026-11-13)의 선별 시험이 찾았다.
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_form/_guest_author_field_add_modal.g7.html',
-        // ── #952 회원 혜택 — 쿠폰 발급 알림 구획·쇼핑몰 설정 쿠폰 탭, 2단계 인증 회원 카드, 회원 화면(쿠폰존·쿠폰함·
+        // ── 회원 혜택 — 쿠폰 발급 알림 구획·쇼핑몰 설정 쿠폰 탭, 2단계 인증 회원 카드, 회원 화면(쿠폰존·쿠폰함·
         // 내 리뷰·활동 기록·모든 기기 로그아웃 확인 창) 14건. 짝 `.json` 굽기 최신·escape 0 을 이 게이트가 잰다.
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_promotion_coupon_form/_partial_notification_settings.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_promotion.g7.html',
@@ -1158,7 +1158,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_form.g7.html' => [':ui' => 1],
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_claim_detail.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_claim_list.g7.html',
-        // #860 — **`<meta>` 의 구조 객체 속성**. 엔진 스크롤 복원(engine-v1.85.0)의 `meta.scroll_restoration` 은
+        // **`<meta>` 의 구조 객체 속성**. 엔진 스크롤 복원(engine-v1.85.0)의 `meta.scroll_restoration` 은
         // `containers`(문자열 리스트)·`snapshot`(하위 객체)을 담는 객체인데, `<meta>` 는 `seo` 만 `<seo>` 하위
         // 요소로 펴고 나머지 키는 속성값으로 내보낸다({@see LayoutMarkupDecompiler::meta}). 문법이 없는 자리라
         // 등재한다 — `<meta>` 에 하위 요소 문법이 생기면 이 두 행을 지우고 재생성한다.

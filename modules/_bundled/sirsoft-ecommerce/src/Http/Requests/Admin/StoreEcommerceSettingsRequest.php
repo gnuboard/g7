@@ -100,7 +100,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             $changed = true;
         }
 
-        // 본문 미디어 정책: 「직접 정하기」가 꺼져 있으면 비운다(상품 이미지 규칙을 따름), 스위치 문자열은 불리언으로 (#883)
+        // 본문 미디어 정책: 「직접 정하기」가 꺼져 있으면 비운다(상품 이미지 규칙을 따름), 스위치 문자열은 불리언으로
         if (is_array($data['product_display'] ?? null) && array_key_exists('content_media', $data['product_display'])) {
             $data['product_display']['content_media'] = ContentMediaPolicyRules::normalizeInput($data['product_display']['content_media']);
             $changed = true;
@@ -412,7 +412,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             //  시점의 오타를 성공 응답으로 통과시켜도 된다는 뜻이 아니다 — 운영자에게는
             //  "저장됐는데 CDN 이 안 붙는" 무증상 상태로만 보인다.)
             'basic_info.public_asset_disk' => ['nullable', 'string', 'max:100', $this->publicAssetDiskRule()],
-            // 내보내기 파일 보관 기간(일, #787) — 경계값은 config limits 가 단일 출처
+            // 내보내기 파일 보관 기간(일) — 경계값은 config limits 가 단일 출처
             'basic_info.export_retention_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.export_retention_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.export_retention_days_max', 30)],
 
             'language_currency' => ['sometimes', 'array'],
@@ -492,7 +492,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'order_settings.cart_expiry_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.cart_expiry_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.cart_expiry_days_max', 365)],
             'order_settings.stock_restore_on_cancel' => ['nullable', 'boolean'],
 
-            // 개인정보 보유기간 (이슈 #636) — 종결 주문의 개인정보를 보유기간 경과 후 익명화·삭제한다.
+            // 개인정보 보유기간 — 종결 주문의 개인정보를 보유기간 경과 후 익명화·삭제한다.
             // 되돌릴 수 없는 파기라 하한(전자상거래법 5년)을 서버가 강제한다.
             'privacy_retention' => ['sometimes', 'array'],
             'privacy_retention.enabled' => ['nullable', 'boolean'],
@@ -620,7 +620,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'product_display' => ['sometimes', 'array'],
             'product_display.related_order' => ['nullable', 'string', Rule::in(RelatedProductOrder::values())],
             'product_display.related_cache_hours' => ['nullable', 'integer', 'min:0', 'max:720'],
-            // 본문 미디어 정책 (#883) — 형식은 코어가 정한다. 비우면 상품 이미지 규칙(동영상·오디오는 코어 스위치)
+            // 본문 미디어 정책 — 형식은 코어가 정한다. 비우면 상품 이미지 규칙(동영상·오디오는 코어 스위치)
             ...ContentMediaPolicyRules::settingsRules('product_display.content_media'),
 
             // review_settings 섹션
@@ -631,7 +631,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             // 공개 후기 작성자 이름 가림 방식 (가운데 가림 / 가리지 않음)
             'review_settings.author_name_masking' => ['nullable', 'string', 'in:'.AuthorNameMasker::MODE_MIDDLE.','.AuthorNameMasker::MODE_NONE],
 
-            // promotion 섹션 — 쿠폰 탭(#952): 생일로 쓸 회원 항목·쿠폰 만료 임박 알림
+            // promotion 섹션 — 쿠폰 탭: 생일로 쓸 회원 항목·쿠폰 만료 임박 알림
             'promotion' => ['sometimes', 'array'],
             'promotion.birthday_field_key' => ['nullable', 'string', 'max:100', function (string $attribute, mixed $value, \Closure $fail) {
                 if ($value !== null && $value !== '' && ! app(BirthdayFieldResolver::class)->isCandidate((string) $value)) {
@@ -755,12 +755,12 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'mileage.no_earn_when_points_used' => __('sirsoft-ecommerce::validation.settings_attributes.no_earn_when_points_used'),
             'mileage.min_product_total_for_use_enabled' => __('sirsoft-ecommerce::validation.settings_attributes.min_product_total_for_use_enabled'),
             'mileage.min_product_total_for_use' => __('sirsoft-ecommerce::validation.settings_attributes.min_product_total_for_use'),
-            // 개인정보 보유기간 (이슈 #636) — 키별로 명시해 오류 문구에 필드 키가 노출되지 않게 한다
+            // 개인정보 보유기간 — 키별로 명시해 오류 문구에 필드 키가 노출되지 않게 한다
             'privacy_retention' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.section'),
             'privacy_retention.enabled' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.enabled'),
             'privacy_retention.retention_years' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.retention_years'),
             'privacy_retention.mode' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.mode'),
-            // 클레임 정책 (이슈 #599) — 환경설정 화면 라벨과 같은 문구로 키별 명시
+            // 클레임 정책 — 환경설정 화면 라벨과 같은 문구로 키별 명시
             'order_settings.cancellable_statuses' => __('sirsoft-ecommerce::validation.claim_settings_attributes.cancellable_statuses'),
             'order_settings.cancellable_statuses.*' => __('sirsoft-ecommerce::validation.claim_settings_attributes.cancellable_statuses'),
             'claim.exchange_requestable_statuses' => __('sirsoft-ecommerce::validation.claim_settings_attributes.exchange_requestable_statuses'),
@@ -836,7 +836,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 저장할 설정 구역이 하나라도 실렸는지 검증합니다.
      *
      * 구역이 하나도 없으면 저장할 것이 없는데도 「설정이 저장되었습니다」로 응답했다 — 화면의 본문 식이 평가에
-     * 실패해 식 원문 문자열이 본문으로 나갔을 때 운영자는 저장된 줄 알았다(#703 실측). 빈 요청은 거절한다.
+     * 실패해 식 원문 문자열이 본문으로 나갔을 때 운영자는 저장된 줄 알았다. 빈 요청은 거절한다.
      *
      * @param  Validator  $validator  Validator 인스턴스
      * @return void 반환값 없음
@@ -1199,7 +1199,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             }
 
             // 확장 결제수단도 카탈로그 선언으로 PG 필요 여부가 판정된다.
-            // enum tryFrom() 으로 판정하면 확장수단이 null → 검증이 통째로 스킵됐다(#475).
+            // enum tryFrom() 으로 판정하면 확장수단이 null → 검증이 통째로 스킵됐다.
             if ($resolver->needsPgProvider($id) && $isActive && ! $pgProvider && ! $defaultPg) {
                 $validator->errors()->add(
                     "order_settings.payment_methods.{$index}.pg_provider",

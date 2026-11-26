@@ -804,7 +804,7 @@ describe('TemplateApp', () => {
     });
 
     /**
-     * [TS-INIT-4] init 항목을 통째로 넘긴다 (engine-v1.80.0, #753)
+     * [TS-INIT-4] init 항목을 통째로 넘긴다 (engine-v1.80.0)
      *
      * 문제: executeInitActions 가 10개 키만 골라 담아 sequence(actions)·switch(cases)·actionRef·errorHandling 이
      *       탈락했고, handler 없는 항목(actionRef 만)이 하나라도 있으면 `a.handler.includes` TypeError 로
@@ -954,7 +954,7 @@ describe('TemplateApp', () => {
     });
 
     /**
-     * [TS-WS-ONRECEIVE-1] 웹소켓 onReceive 단일 객체 (engine-v1.80.0, #753 S11)
+     * [TS-WS-ONRECEIVE-1] 웹소켓 onReceive 단일 객체 (engine-v1.80.0)
      *
      * 문제: onReceive 가 배열일 때만 실행해 단일 객체로 적은 수신 동작이 조용히 무시됐다.
      */

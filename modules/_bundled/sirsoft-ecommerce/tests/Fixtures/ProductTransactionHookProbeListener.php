@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 
 /**
- * 시험용 — 상품 저장 트랜잭션 안 훅(`before_*_commit`)을 sync 로 구독해 그 시점에 보이는 것을 적는다 (#883 3단계)
+ * 시험용 — 상품 저장 트랜잭션 안 훅(`before_*_commit`)을 sync 로 구독해 그 시점에 보이는 것을 적는다
  */
 class ProductTransactionHookProbeListener implements HookListenerInterface
 {

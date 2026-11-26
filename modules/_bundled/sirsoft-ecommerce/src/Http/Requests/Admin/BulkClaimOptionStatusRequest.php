@@ -84,7 +84,7 @@ class BulkClaimOptionStatusRequest extends FormRequest
             'items.*.quantity' => ['nullable', 'integer', 'min:1'],
             'status' => ['required', 'string', Rule::in(ClaimTransitionVocabulary::assignableValuesFor($type, true))],
             // 상품 칸의 반려도 사유가 정본이다 — 상품을 모두 반려하면 신청서가 따라 반려되는데,
-            // 사유 없이 받으면 구매자 화면의 반려 사유가 빈 칸으로 남는다(#599 후속 운영 결정).
+            // 사유 없이 받으면 구매자 화면의 반려 사유가 빈 칸으로 남는다(후속 운영 결정).
             'reject_reason' => ['nullable', 'required_if:status,rejected', 'string', 'max:2000'],
         ] + $this->transitionTrackingRules() + $this->completionRules();
     }

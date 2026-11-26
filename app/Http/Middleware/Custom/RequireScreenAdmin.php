@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * 개발자 관리자 화면(routes/custom.php 의 `/admin/...`) 관리자 필수 미들웨어 — 별칭 `custom.admin` (#792 W8).
+ * 개발자 관리자 화면(routes/custom.php 의 `/admin/...`) 관리자 필수 미들웨어 — 별칭 `custom.admin`.
  *
  * 비회원이면 관리자 로그인 화면으로 보내고(`redirect` 로 복귀 주소), 회원이지만 관리자가 아니면 403.
  * 관리자 판정은 관리자 API 의 `admin` 미들웨어와 같은 함수(`User::isAdmin()`)다.

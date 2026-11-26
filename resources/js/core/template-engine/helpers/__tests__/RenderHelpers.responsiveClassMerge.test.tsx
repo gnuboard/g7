@@ -1,5 +1,5 @@
 /**
- * 셀·반복 항목 렌더 경로(renderItemChildren)의 구간 classMerge·classMap (engine-v1.98.0, #399 F10·F11)
+ * 셀·반복 항목 렌더 경로(renderItemChildren)의 구간 classMerge·classMap (engine-v1.98.0)
  *
  * DynamicRenderer 와 같은 순서(props 해석 → classMap → classMerge)로 적용돼야 셀 안 노드도 폭별 클래스가 같다.
  * 종전 셀 경로는 classMap 자체를 적용하지 않았다(번들 셀 정의 사용 0건 — 기존 화면 변화 없음).

@@ -10,7 +10,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * 메뉴 아이콘 파일 업로드 요청 (#381).
+ * 메뉴 아이콘 파일 업로드 요청.
  *
  * png·webp·jpg·gif(1MB 이하)는 코어 첨부로, SVG(32KB 이하)는 내용 검사 뒤 인라인 코드로 돌려준다.
  */

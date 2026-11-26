@@ -1,5 +1,5 @@
 /**
- * 클레임 신청 수량 칸이 잔여 수량을 넘겨 쳐도 상한으로 되돌아오는지 검증 (#599 S2-D9).
+ * 클레임 신청 수량 칸이 잔여 수량을 넘겨 쳐도 상한으로 되돌아오는지 검증.
  *
  * 결함: `updateClaimQuantityHandler` 는 state 를 잔여 수량으로 자르지만, **클램프 결과가
  *   state 에 들어 있던 값과 같으면** state 가 안 바뀌어 리액트가 입력 칸을 다시 그리지 않았다.
@@ -25,7 +25,7 @@
  *   - resources/js/__tests__/handlers/claimApplyHandlers.test.ts
  *     가 state 클램프와 (활성 입력이 있을 때의) 칸 동기화를 잠근다.
  *
- * 활성화 경위(#599 세션2 계획서준수검증 결함3): 이 spec 은 오래 `test.skip` 이었다. 사전
+ * 활성화 경위(세션2 계획서준수검증 결함3): 이 spec 은 오래 `test.skip` 이었다. 사전
  *   작업으로 ① `data-testid` ② 시드 fixture ③ 회원 토큰 fixture 세 가지를 적었으나, 실제로
  *   필요했던 것은 ①뿐이었다 — 이 스위트는 DB 를 시드하지 않고 `mockClaimable()` 로 응답을
  *   가로채고, 회원 토큰은 `ecommerce-auth` 가 이미 제공한다. 남은 ①을 레이아웃에 넣고 활성화했다.
@@ -65,7 +65,7 @@ const OPTION_ID = 610;
  *
  * `fill()` 을 쓰면 안 된다 — Playwright 의 fill 은 리액트가 추적하는 내부 값까지 함께
  * 맞춰 놓아 **결함 조건(state 무변화)이 만들어지지 않는다.** 실제로 fill 로 적었을 때는
- * 수정을 통째로 꺼도 칸이 저절로 2로 돌아와 **red 가 나지 않았다**(#599 세션2 계획서준수검증
+ * 수정을 통째로 꺼도 칸이 저절로 2로 돌아와 **red 가 나지 않았다**(세션2 계획서준수검증
  * 결함3 해소 중 확인). 네이티브 setter 로 쓰고 `input` 을 흘려야 브라우저의 실제 경로가 된다.
  *
  * @param qty 수량 입력 칸 로케이터
@@ -104,7 +104,7 @@ async function openAndSelect(page: Page): Promise<Locator> {
   return qty;
 }
 
-test.describe('#599 S2-D9 클레임 수량 칸 클램프', () => {
+test.describe('D9 클레임 수량 칸 클램프', () => {
   test.beforeEach(async ({ page, memberToken }) => {
     await grantFunctionalConsent(page);
     await authenticatePage(page, memberToken);

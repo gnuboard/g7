@@ -9,7 +9,7 @@ use App\Support\Favicon\BundledFavicon;
 use App\Support\Favicon\FaviconPolicy;
 
 /**
- * 파비콘 우선순위 해석 — 단일 지점 (#434)
+ * 파비콘 우선순위 해석 — 단일 지점
  *
  * 우선순위: ① 그 화면 종류(사용자·관리자)의 활성 템플릿 설정 `favicon` > ② 코어 일반 탭 `site_favicon` > ③ 번들 기본
  * (운영자가 직접 바꾼 `public/favicon.ico` 가 있으면 그것). ①·② 의 「유효 첨부」는 행이 있고 그 계층의 컬렉션 소속이며

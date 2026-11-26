@@ -1,7 +1,7 @@
-// e2e:allow #855 후속: 키보드 초점이 고정 헤더에 가려지던 접근성 결함(scroll-padding-top) — Chrome MCP 실측(휴대폰 비회원 주문서 Shift+Tab, 체크박스 top 16 → 434, PC 변수 113px)과 Vitest 로 고정한다.
+// e2e:allow 키보드 초점이 고정 헤더에 가려지던 접근성 결함(scroll-padding-top) — Chrome MCP 실측(휴대폰 비회원 주문서 Shift+Tab, 체크박스 top 16 → 434, PC 변수 113px)과 Vitest 로 고정한다.
 /**
  * useHeaderOverlayController — 맨 위 배너의 메뉴 겹침 신호(`<html data-header-overlay>`)를 따라 헤더 높이(`--g7-header-height`)를 알리고
- * 화면 맨 위에서만 `data-header-overlay-active` 를 단다. 신호가 없으면 아무것도 바꾸지 않는다(종전 화면). (#810)
+ * 화면 맨 위에서만 `data-header-overlay-active` 를 단다. 신호가 없으면 아무것도 바꾸지 않는다(종전 화면).
  * @scenario-manifest tests/scenarios/hero-extension-points.yaml
  *
  * @vitest-environment jsdom
@@ -97,7 +97,7 @@ describe('useHeaderOverlayController', () => {
 
   /**
    * 고정 헤더 높이는 겹침 신호와 무관하게 늘 알린다 — main.css 가 그만큼 scroll-padding-top 을 두어 키보드 초점·앵커 이동이 대상을
-   * 헤더 밑에 두지 않게 한다(WCAG 2.4.11, #855).
+   * 헤더 밑에 두지 않게 한다(WCAG 2.4.11).
    */
   // @scenario surface=header_overlay_no_signal
   // @effects sticky_header_height_drives_scroll_padding

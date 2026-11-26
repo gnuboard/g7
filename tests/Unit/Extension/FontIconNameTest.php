@@ -12,7 +12,7 @@ use Tests\TestCase;
  * 이름(`x-circle`·`refresh-cw`·`more-horizontal` 같은 Lucide 식 이름)은 클래스만 붙고 글리프가 없어 **빈칸**으로
  * 그려진다 — 오류도 경고도 없다. 사용자 템플릿(sirsoft-basic)의 `Icon` 은 변환표(`iconNameMap`)로 몇몇 별칭을
  * FA 이름으로 바꿔 주지만, 관리자 템플릿(sirsoft-admin_basic)의 `Icon` 은 변환표를 쓰지 않는다. 그래서 같은
- * 이름이라도 **어느 템플릿이 그리는 화면이냐**로 판정한다(#682 실측 후속 4 — 전수조사에서 35개 파일 126곳).
+ * 이름이라도 **어느 템플릿이 그리는 화면이냐**로 판정한다(실측 후속 4 — 전수조사에서 35개 파일 126곳).
  *
  * 이름 목록의 원천은 저장소에 커밋된 FA 스타일시트(`dist/vendor/font-awesome/6.4.0/css/all.inlined.css`)다 —
  * 화면이 실제로 싣는 파일과 같은 것이다.
@@ -335,7 +335,7 @@ class FontIconNameTest extends TestCase
     }
 
     /**
-     * 관리자 메뉴 선언(코어 config·번들 모듈·플러그인 manifest 클래스)의 FA 클래스 아이콘은 풀리는 FA 이름이다 (#381).
+     * 관리자 메뉴 선언(코어 config·번들 모듈·플러그인 manifest 클래스)의 FA 클래스 아이콘은 풀리는 FA 이름이다.
      *
      * 메뉴 아이콘은 이제 이미지·SVG 도 받지만, class 형은 여전히 FA 6.4.0 글꼴로 그린다 — 없는 이름은 사이드바에 빈칸으로 남는다.
      * 클래스 문자열의 모든 토큰(스타일 접두 제외)이 FA 이름 또는 보조 클래스여야 한다.
@@ -408,7 +408,7 @@ class FontIconNameTest extends TestCase
      * 메뉴 선언 수집기는 문자열·class 배열 선언을(자식까지 재귀로) 모으고 image·svg 선언은 건너뛴다.
      *
      * 번들 선언에 class 배열 선언이 아직 없어 위 모집단 검사만으로는 그 분기가 한 번도 재지지 않는다
-     * (#381 validate-plan 5차 2회차) — 픽스처로 수집기·manifest 줄 판독을 직접 잰다.
+     * (plan 5차 2회차) — 픽스처로 수집기·manifest 줄 판독을 직접 잰다.
      *
      * @scenario source=menu_declaration
      *

@@ -6,7 +6,7 @@ use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 
 /**
- * 공개 쿠폰존 카드 리소스 (#952)
+ * 공개 쿠폰존 카드 리소스
  *
  * 허용 목록 방식이다 — 화면 카드가 그리는 값만 싣고, 발급 수·회원당 한도·알림 설정 같은 운영 값은 싣지 않는다.
  * 비로그인 방문자가 보므로 받은 여부(`is_downloaded`)도 없다. 입력은 `UserCouponService::decorateDownloadableCoupon()` 이

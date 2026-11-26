@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 서버별 스케줄 스위치(`G7_SCHEDULER`)의 진입점 — CLI(`g7:schedule-run`)와 웹 크론 주소 (#888).
+ * 서버별 스케줄 스위치(`G7_SCHEDULER`)의 진입점 — CLI(`g7:schedule-run`)와 웹 크론 주소.
  *
  * 공유 설정 `system.cron_mode` 는 서버마다 다르게 둘 수 없어, 여러 서버 중 한 대만 스케줄을 돌리게 할 때 이 스위치를 쓴다.
  * 꺼진 서버의 CLI 진입점은 아무것도 돌리지 않고 안내 후 종료 0(cron 을 그대로 두어도 된다), 웹 크론 주소는 실행 없이

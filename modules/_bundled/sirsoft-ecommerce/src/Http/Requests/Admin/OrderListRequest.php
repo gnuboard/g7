@@ -69,7 +69,7 @@ class OrderListRequest extends FormRequest
 
             // 결제수단 (다중선택)
             'payment_method' => ['nullable', 'array'],
-            // 확장 결제수단(간편결제)도 주문 목록에서 필터링할 수 있어야 한다 (#475).
+            // 확장 결제수단(간편결제)도 주문 목록에서 필터링할 수 있어야 한다.
             'payment_method.*' => ['string', Rule::in(app(PaymentMethodResolver::class)->allValidIds())],
 
             // 카테고리

@@ -3,7 +3,7 @@ feature: cache_artisan_clear_key_round_trip
 description: |
   캐시 이관 그룹 G(module:cache-clear, plugin:cache-clear, template:cache-clear) 당시의 키 픽스처로
   CacheInterface(코어 드라이버, array 저장소)의 다건 put 후 forget 왕복을 고정한다.
-  커맨드는 호출하지 않는다. 현행 커맨드는 상태 키 무효화, 레이아웃 캐시, 버전 증가로 동작하며(#588)
+  커맨드는 호출하지 않는다. 현행 커맨드는 상태 키 무효화, 레이아웃 캐시, 버전 증가로 동작하며
   커맨드 실동작은 {Module,Plugin,Template}ArtisanCommandsTest 가 맡는다. 여기서는 모듈, 플러그인,
   템플릿 키와 전역 키를 forget 하면 모두 사라지는지만 본다.
 

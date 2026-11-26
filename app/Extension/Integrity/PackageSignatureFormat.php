@@ -33,8 +33,33 @@ final class PackageSignatureFormat
     /** 서명 파일 확장자 (ZIP 경로 뒤에 붙는다) */
     public const FILE_SUFFIX = '.sig.json';
 
+    /**
+     * 릴리스 자산의 서명 파일 이름 꼬리 — `{base}.zip` 옆의 `{base}.sig.json` (7.2.1).
+     *
+     * 7.2.0 이하 업데이터는 `{base}.zip.sig.json` 짝을 집어 결함 있는 자산 다운로드(Accept 헤더 중복 → 메타데이터 JSON)로
+     * 받다가 「서명 형식을 알 수 없음」으로 실패한다. 그 짝을 만들지 않고 이 이름으로 올리면 7.2.0 은 짝을 못 찾아
+     * 종전처럼 미서명 zipball 로 진행하고, 7.2.1 이상은 이 이름을 읽어 서명을 검증한다.
+     */
+    public const RELEASE_ASSET_SUFFIX = '.sig.json';
+
     /** 서명 파일 최대 크기 (바이트) — 업로드 칸 검증(64KB)과 같다 */
     public const MAX_FILE_BYTES = 65536;
+
+    /**
+     * ZIP 옆에서 찾을 서명 파일 후보 — `{zip}.sig.json`, 그다음 `{base}.sig.json`(릴리스 자산 이름).
+     *
+     * @param  string  $zipPath  ZIP 경로
+     * @return array<int, string> 후보 경로 (앞이 우선)
+     */
+    public static function sidecarCandidates(string $zipPath): array
+    {
+        $candidates = [$zipPath.self::FILE_SUFFIX];
+        if (str_ends_with(strtolower($zipPath), '.zip')) {
+            $candidates[] = substr($zipPath, 0, -4).self::RELEASE_ASSET_SUFFIX;
+        }
+
+        return $candidates;
+    }
 
     /** 서명자 이름 규칙 — key_id 앞부분이 되므로 영문·숫자·`_`·`-` 만 */
     public const LABEL_PATTERN = '/^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/';

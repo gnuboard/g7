@@ -8,7 +8,7 @@ description: |
   챌린지 행은 만들어진다. 그 상태로 201 을 돌려주면 화면은 「전송된 6자리 코드를 입력해주세요」와
   남은 시간·남은 시도 카운트다운을 띄우고, 사용자는 오지 않을 코드를 기다리다 만료를 맞는다.
 
-  실측(#599 세션A 2026-09-22 · `/mypage/profile` → [회원 탈퇴]): 챌린지
+  실측(세션A 2026-09-22 · `/mypage/profile` → [회원 탈퇴]): 챌린지
   `01a0c4c9-6dc7-739b-a096-4a87d65d5039` 가 생성 2초 뒤 `status=failed` 인데 API 는 201 과
   「인증 요청이 전송되었습니다」를 냈다. 코드는 bcrypt 해시로만 남아 복구할 수 없어,
   그 환경에서는 **회원이 스스로 탈퇴할 방법이 없었다**.
@@ -26,7 +26,7 @@ effects:
   - failed_dispatch_is_not_reported_as_success        # 실패를 201 로 포장하지 않는다
   - failed_dispatch_message_exists_in_all_locales     # 실패 문구가 ko·en 에 있다
   - successful_dispatch_still_returns_created         # 정상 발송은 201 을 유지한다
-  - mail_channel_off_answers_502                      # 메일 채널을 끄면 502 (본인인증 메일도 채널 토글을 따른다, #699)
+  - mail_channel_off_answers_502                      # 메일 채널을 끄면 502 (본인인증 메일도 채널 토글을 따른다)
 
 test_files:
   - tests/Feature/Identity/ChallengeSendFailureIsReportedTest.php
@@ -34,7 +34,7 @@ test_files:
 validation:
   audit_rule: backend-change-requires-test
   browser_check: |
-    #599 세션A 실측(2026-09-22 · `POST /api/identity/challenges`, purpose=sensitive_action).
+    실측(2026-09-22 · `POST /api/identity/challenges`, purpose=sensitive_action).
     수정 전: 201 + 「인증 요청이 전송되었습니다」(챌린지는 failed).
     수정 후: **502** + 「인증 코드를 보내지 못했습니다. 잠시 후 다시 시도하시거나 다른 인증 수단을 이용해주세요.」
   note: |

@@ -1,4 +1,4 @@
-<!-- 관리자 대시보드의 커뮤니티 구획(카드 데이터 API 가 모두 게시판 대시보드 조회 권한을 요구해 그 권한으로 구획 전체를 그린다) — 오늘 배지 · 글/댓글 추이 차트 · 최신 글 · 대기 중 신고 넷을 한 그리드로 얹는다. 카드마다 데이터소스를 따로 두고 progressive 로 읽어, 느린 하나가 나머지를 붙잡지 않는다 e2e:allow 최신 글 메타 줄을 이름·시각 두 칸으로 나눈 표시 배치 변경 — 데이터·동작 무변경이라 화면 확인으로 대신한다(#777). -->
+<!-- 관리자 대시보드의 커뮤니티 구획(카드 데이터 API 가 모두 게시판 대시보드 조회 권한을 요구해 그 권한으로 구획 전체를 그린다) — 오늘 배지 · 글/댓글 추이 차트 · 최신 글 · 대기 중 신고 넷을 한 그리드로 얹는다. 카드마다 데이터소스를 따로 두고 progressive 로 읽어, 느린 하나가 나머지를 붙잡지 않는다 e2e:allow 최신 글 메타 줄을 이름·시각 두 칸으로 나눈 표시 배치 변경 — 데이터·동작 무변경이라 화면 확인으로 대신한다. -->
 <extension extension-point="admin_dashboard_community" mode="append" priority="100">
   <div data-ref="community_section_wrapper" class="board:mb-4">
     <responsive on="tablet" class="board:mb-6"/>
@@ -86,7 +86,7 @@
               <span class="board:min-w-0 board:truncate">{{(post?.board_name ?? '') + ' · ' + (post?.author_name ?? '')}}</span>
               <span class="board:shrink-0 board:whitespace-nowrap">{{' · ' + (post?.created_at ?? '')}}</span>
             </div>
-            <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+            <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다 -->
             <p data-ref="latest_post_real_name_{{i}}" data-testid="author-real-name" data-if="{{!!post?.real_name}}" class="board:text-xs board:text-slate-600 board:dark:text-slate-400 board:truncate" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: post?.real_name })}}">{{$t('sirsoft-board.common.real_name_label', { name: post?.real_name })}}</p>
           </a>
         </div>
@@ -113,7 +113,7 @@
               <span data-ref="report_status_badge_{{i}}" data-if="{{!!report?.status_label}}" class="board:shrink-0 board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium {{report?.status === 'pending' ? 'board:bg-yellow-100 board:text-yellow-800 board:dark:bg-yellow-900 board:dark:text-yellow-200' : report?.status === 'review' ? 'board:bg-blue-100 board:text-blue-800 board:dark:bg-blue-900 board:dark:text-blue-200' : report?.status === 'rejected' ? 'board:bg-purple-100 board:text-purple-800 board:dark:bg-purple-900 board:dark:text-purple-200' : report?.status === 'suspended' ? 'board:bg-red-100 board:text-red-800 board:dark:bg-red-900 board:dark:text-red-200' : report?.status === 'deleted' ? 'board:bg-gray-600 board:text-white board:dark:bg-gray-600 board:dark:text-gray-100' : 'board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200'}}">{{report?.status_label ?? ''}}</span>
             </div>
             <p data-ref="report_meta_{{i}}" class="board:text-xs board:text-slate-600 board:dark:text-slate-400">{{(report?.board_name ?? '') + ' · ' + (report?.author_name ?? $t('sirsoft-board.admin.dashboard.community.anonymous')) + ' · ' + (report?.last_reported_at ?? '')}}</p>
-            <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+            <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다 -->
             <p data-ref="report_real_name_{{i}}" data-testid="author-real-name" data-if="{{!!report?.real_name}}" class="board:text-xs board:text-slate-600 board:dark:text-slate-400 board:truncate" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: report?.real_name })}}">{{$t('sirsoft-board.common.real_name_label', { name: report?.real_name })}}</p>
           </a>
         </div>

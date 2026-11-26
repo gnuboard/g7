@@ -68,7 +68,7 @@ class NotificationLogControllerTest extends TestCase
     }
 
     /**
-     * 커서 요청이 정상 응답하는지 확인 (#519 회귀)
+     * 커서 요청이 정상 응답하는지 확인
      *
      * 이 목록은 커서를 주면 키셋 페이지로 응답한다. 커서 결과에는 총 건수와 마지막 페이지가
      * 없는데, 컬렉션이 페이지네이션 블록을 손으로 조립하면 없는 값을 불러 그 요청만 500 이
@@ -109,7 +109,7 @@ class NotificationLogControllerTest extends TestCase
     }
 
     /**
-     * 상한형 목록이 정확도 메타를 함께 싣는지 확인 (#519 — 성능 개선 유지)
+     * 상한형 목록이 정확도 메타를 함께 싣는지 확인 (성능 개선 유지)
      */
     public function test_index_carries_total_accuracy_meta(): void
     {

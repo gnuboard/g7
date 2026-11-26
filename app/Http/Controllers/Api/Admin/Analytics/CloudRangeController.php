@@ -42,7 +42,7 @@ class CloudRangeController extends AdminBaseController
         }
 
         // 갱신 시각은 설정·진단 응답과 **같은 기준**으로 내보낸다 — 오프셋을 실으면 화면의
-        // `| datetime` 이 브라우저 시간대로 다시 옮긴다(#682 S3 라운드 7).
+        // `| datetime` 이 브라우저 시간대로 다시 옮긴다.
         $result['updated_at'] = AnalyticsClock::storedToSiteDateTimeString($result['updated_at'] ?? null);
 
         return $this->success('analytics.cloud_ranges.refresh_success', $result);

@@ -1,4 +1,4 @@
-feature: 본문 미디어 업로드 계약 — 코어 런타임 G7Core.contentMedia (#883 4단계, engine-v1.89.0)
+feature: 본문 미디어 업로드 계약 — 코어 런타임 G7Core.contentMedia (4단계, engine-v1.89.0)
 
 description: |
   확장(게시판·페이지·이커머스)이 확장점 `html_editor` 의 prop `mediaUpload` 로 업로드 계약을 넘기면, 편집기 플러그인은

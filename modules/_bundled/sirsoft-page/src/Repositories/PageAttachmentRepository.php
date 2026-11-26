@@ -47,7 +47,7 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
      */
     public function getByPageId(int $pageId): Collection
     {
-        // 첨부 목록 — 본문 미디어(예약 컬렉션)는 뺀다 (#883)
+        // 첨부 목록 — 본문 미디어(예약 컬렉션)는 뺀다
         return PageAttachment::where('page_id', $pageId)
             ->whereNotIn('collection', PageAttachment::RESERVED_COLLECTIONS)
             ->orderBy('order')
@@ -62,7 +62,7 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
      */
     public function getByTempKey(string $tempKey): Collection
     {
-        // 임시 첨부 — 본문 미디어는 임시 키가 같아도 첨부 연결(파일 이동)이 집어 가지 않는다 (#883)
+        // 임시 첨부 — 본문 미디어는 임시 키가 같아도 첨부 연결(파일 이동)이 집어 가지 않는다
         return PageAttachment::where('temp_key', $tempKey)
             ->whereNull('page_id')
             ->whereNotIn('collection', PageAttachment::RESERVED_COLLECTIONS)

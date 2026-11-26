@@ -7,7 +7,7 @@ use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\ContentMediaOwnerType;
 
 /**
- * 이커머스 본문 미디어 업로드 계약 조회 요청 (#883 4단계)
+ * 이커머스 본문 미디어 업로드 계약 조회 요청
  */
 class ContentMediaTargetRequest extends FormRequest
 {

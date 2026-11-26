@@ -593,7 +593,7 @@
                                         }
                                     },
                                     {
-                                        "comment": "생일 쿠폰인데 생일로 쓸 회원 항목이 지정되지 않았다 — 발급되지 않는다(#952)",
+                                        "comment": "생일 쿠폰인데 생일로 쓸 회원 항목이 지정되지 않았다 — 발급되지 않는다",
                                         "id": "birthday_field_missing_badge",
                                         "type": "composite",
                                         "name": "Badge",
@@ -604,7 +604,7 @@
                                         }
                                     },
                                     {
-                                        "comment": "발급 알림을 켠 쿠폰(#952)",
+                                        "comment": "발급 알림을 켠 쿠폰",
                                         "id": "notify_enabled_badge",
                                         "type": "composite",
                                         "name": "Badge",

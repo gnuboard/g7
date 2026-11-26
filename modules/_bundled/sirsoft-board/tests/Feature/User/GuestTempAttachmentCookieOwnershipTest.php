@@ -14,7 +14,7 @@ use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 비회원 임시 첨부 소유 쿠키 (#883 2단계)
+ * 비회원 임시 첨부 소유 쿠키
  *
  * 비회원 업로드 응답에 무작위 값 쿠키(`g7_board_guest_upload`)를 붙이고 첨부 행에는 그 해시만 둔다. 그 쿠키가 있으면
  * 비회원도 글에 연결되기 전의 자기 임시 첨부를 지우고 순서를 바꿀 수 있다. 종전에는 403 이라 업로더의 X 가 서버에 남았다.

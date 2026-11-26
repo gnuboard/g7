@@ -106,7 +106,7 @@ class StoreProductRequest extends FormRequest
             // 이미지 (별도 테이블)
             'thumbnail_hash' => ['nullable', 'string', 'max:64'],
             'image_temp_key' => $this->tempKeyRules(),
-            // 본문 미디어 임시 키 — 설명 편집기가 올린 미디어를 저장 때 잇는다 (#883)
+            // 본문 미디어 임시 키 — 설명 편집기가 올린 미디어를 저장 때 잇는다
             'content_media_temp_key' => ['nullable', 'string', 'uuid'],
             'images' => ['nullable', 'array', 'max:'.ProductImageCollection::MAX_IMAGES_PER_COLLECTION],
             'images.*.id' => ['nullable', 'integer'],
@@ -148,7 +148,7 @@ class StoreProductRequest extends FormRequest
             'options.*.volume' => ['nullable', 'numeric', 'min:0'],
             'options.*.mileage_value' => ['nullable', 'numeric', 'min:0'],
             'options.*.mileage_type' => ['nullable', 'string', 'in:fixed,percent'],
-            // 옵션별 과세 종류 — 비우면(null) 상품 기본값을 따른다 (#612)
+            // 옵션별 과세 종류 — 비우면(null) 상품 기본값을 따른다
             'options.*.tax_status' => ['nullable', Rule::enum(ProductTaxStatus::class)],
             'options.*.is_default' => ['nullable', 'boolean'],
             'options.*.is_active' => ['nullable', 'boolean'],

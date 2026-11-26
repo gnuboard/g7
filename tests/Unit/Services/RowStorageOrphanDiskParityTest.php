@@ -47,11 +47,11 @@ class RowStorageOrphanDiskParityTest extends TestCase
         'modules/_bundled/sirsoft-page/src/Services/PageAttachmentService.php',
         'modules/_bundled/sirsoft-ecommerce/src/Services/Concerns/ResolvesRowStorage.php',
         'plugins/_bundled/sirsoft-ckeditor5/src/Services/ImageServeService.php',
-        // #878 — 공개 자산 디스크를 따르게 되며 행 disk 로 읽고·지우게 된 두 플러그인.
+        // 공개 자산 디스크를 따르게 되며 행 disk 로 읽고·지우게 된 두 플러그인.
         // 사본을 또 두지 않고 코어 도우미 `RowDiskStorage::resolve()`(@since 7.1.5)를 부른다.
         'plugins/_bundled/sirsoft-hero_section/src/Services/BannerImageService.php',
         'plugins/_bundled/sirsoft-popup/src/Services/PopupImageService.php',
-        // #916 — 내보내기 파일이 비공개 첨부 저장소를 따르게 되며 행 disk(`ecommerce_exports.disk`)로 내리고·지우게 됐다.
+        // 내보내기 파일이 비공개 첨부 저장소를 따르게 되며 행 disk(`ecommerce_exports.disk`)로 내리고·지우게 됐다.
         // 이커머스 사본 trait(`use ResolvesRowStorage;`)을 쓴다.
         'modules/_bundled/sirsoft-ecommerce/src/Services/ExportService.php',
     ];

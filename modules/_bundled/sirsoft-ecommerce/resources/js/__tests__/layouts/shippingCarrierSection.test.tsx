@@ -64,12 +64,12 @@ function findButtonWithIcon(allNodes: any[], iconName: string): any {
 }
 
 /** 모든 Span/Button 중 text를 가진 노드(children 내부 Span 포함)에서 텍스트 검색 */
-/** 확장 생성 CSS — 의미 클래스 사본(`ecommerce-btn` 등)의 실제 정의를 확인한다 (#399 R-1) */
+/** 확장 생성 CSS — 의미 클래스 사본(`ecommerce-btn` 등)의 실제 정의를 확인한다 */
 const EXT_CSS = fs.readFileSync(path.resolve(__dirname, '../../../css/g7-extension.generated.css'), 'utf8');
 
 /**
  * 추가 버튼이 주 버튼 모양인지 — 인라인 묶음(`bg-gray-900 dark:bg-white rounded-lg font-medium`)은
- * 확장 사본 의미 클래스 `ecommerce-btn ecommerce-btn-primary` 로 묶였다(#399 R-1 P3). 그 정의가 같은 모양
+ * 확장 사본 의미 클래스 `ecommerce-btn ecommerce-btn-primary` 로 묶였다. 그 정의가 같은 모양
  * (모서리 0.5rem, 굵기 500, 배경 gray-900, 다크 배경 흰색)인지 생성 CSS 에서 확인한다.
  */
 function expectPrimaryButtonLook(className: unknown): void {
@@ -594,7 +594,7 @@ describe('택배사 빈 상태 표시', () => {
                 n.if?.includes('_local.form?.shipping?.carriers') &&
                 n.if?.includes('length === 0')
         );
-        // 인라인 회색 쌍(text-gray-500 + dark:text-gray-400)은 확장 사본 의미 클래스 ecommerce-text-muted 로 묶였다(#399 R-1 P1).
+        // 인라인 회색 쌍(text-gray-500 + dark:text-gray-400)은 확장 사본 의미 클래스 ecommerce-text-muted 로 묶였다.
         // 그 클래스가 다크 짝을 갖는지는 생성 CSS 에서 확인한다.
         const tokens = String(emptyDiv?.props?.className ?? '').split(/\s+/);
         if (tokens.includes('ecommerce-text-muted')) {

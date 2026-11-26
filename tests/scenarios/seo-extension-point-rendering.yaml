@@ -110,7 +110,7 @@ sub_flows:
       - unclassified_node_key_is_detected
       - node_rooted_partials_are_scanned
       - key_classification_is_unambiguous
-      # 썸네일 표기(Img thumbPreset·파이프 thumb 계열)는 노드 키가 아니라 따로 잰다 — img 태그 매핑·SEO 파이프 표·코어 규격 이름 (#869)
+      # 썸네일 표기(Img thumbPreset·파이프 thumb 계열)는 노드 키가 아니라 따로 잰다 — img 태그 매핑·SEO 파이프 표·코어 규격 이름
       - thumbnail_notations_resolved_by_seo_renderer
 
   - id: bot_html_sanitization
@@ -126,7 +126,7 @@ sub_flows:
 
   - id: bot_image_thumbnail
     description: |
-      봇 화면의 이미지 썸네일 계약(#869). Img 의 thumbPreset 변환은 seo-component-html-mapper.yaml 이 소유한다. 사람 화면은 Img 의 `thumbPreset`·파이프 `thumb`·
+      봇 화면의 이미지 썸네일 계약. Img 의 thumbPreset 변환은 seo-component-html-mapper.yaml 이 소유한다. 사람 화면은 Img 의 `thumbPreset`·파이프 `thumb`·
       HtmlContent 본문 처리가 같은 출처 + 등록된 서빙 경로의 이미지에만 `size` 를 붙인다.
       봇 화면이 같은 판정을 하지 않으면 봇만 원본을 받거나(미러 누락) 외부 주소에 `size` 가
       붙는다. 저장된 본문 HTML 은 바꾸지 않고 렌더 시점에만 바꾼다. 본문 srcset 은 img width(정수) 이하 후보만
@@ -162,11 +162,11 @@ test_files:
   # 6차 병합(develop) — $switch prop 값이 봇 렌더에서 해석되는지의 패리티 표본
   - tests/Unit/Seo/SeoSwitchValueParityTest.php
   - tests/Unit/Seo/HtmlSanitizerTest.php
-  # #869 — 봇 화면 썸네일 파이프(thumb·thumbSrcset) 미러
+  # 봇 화면 썸네일 파이프(thumb·thumbSrcset) 미러
   - tests/Unit/Seo/PipeRegistryTest.php
   - tests/Unit/Seo/SeoLayoutDataSourceDeclarationTest.php
   - tests/Unit/Upgrades/ClearSeoPageCacheAfterRendererParityFixTest.php
-  # #399 (7.2.1) — classMerge·구간 classMap 봇 렌더 도입 뒤 페이지 캐시 1회 무효화
+  # 7.2.1 — classMerge·구간 classMap 봇 렌더 도입 뒤 페이지 캐시 1회 무효화
   - tests/Unit/Upgrades/ClearSeoPageCacheAfterClassMergeRendererTest.php
   - tests/Playwright/specs/seo-bot-rendering.spec.ts
 

@@ -405,7 +405,7 @@ class NhnKcpApiServiceTest extends PluginTestCase
     }
 
     /**
-     * 복합과세(TG03) 부분취소는 과세 분리 금액을 CLI 인자에 싣고, 전액취소에는 싣지 않는다 (#747 C8 P-D8).
+     * 복합과세(TG03) 부분취소는 과세 분리 금액을 CLI 인자에 싣고, 전액취소에는 싣지 않는다.
      *
      * @scenario call=cancel
      *
@@ -525,7 +525,7 @@ class NhnKcpApiServiceTest extends PluginTestCase
 
     /**
      * 에스크로 배송등록 응답 코드가 0000 이 아니면 KCP 거절 예외(NhnKcpRejectedException)에 res_msg 를 담아 던진다 —
-     * 관리자 응답은 이 예외의 사유만 그대로 싣고, CLI 실행 실패 같은 다른 예외는 일반 문구로 바꾼다(#858).
+     * 관리자 응답은 이 예외의 사유만 그대로 싣고, CLI 실행 실패 같은 다른 예외는 일반 문구로 바꾼다.
      *
      * @scenario call=escrow
      *

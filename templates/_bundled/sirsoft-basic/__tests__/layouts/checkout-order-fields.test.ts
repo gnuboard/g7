@@ -312,7 +312,7 @@ describe('주문서 — 운영자 설정을 따르는 항목', () => {
       expect(!!evaluate(error.if, failed)).toBe(true);
       expect(evaluate(error.text, failed)).toBe('배송 메모를 선택해 주세요.');
       expect(!!evaluate(error.if, { _local: { errors: null } })).toBe(false);
-      // #399 R-1 — 오류 줄 묶음이 의미 클래스 `form-error` 로 바뀌었다. 템플릿 CSS 정의까지 펼쳐 다크 짝을 확인한다
+      // 오류 줄 묶음이 의미 클래스 `form-error` 로 바뀌었다. 템플릿 CSS 정의까지 펼쳐 다크 짝을 확인한다
       expect(error.props.className.split(/\s+/)).toContain('form-error');
       expect(expandSemanticTokens(error.props.className)).toContain('dark:text-red-400');
     });
@@ -519,7 +519,7 @@ describe('주문서 — 운영자 설정을 따르는 항목', () => {
       expect(evaluate(error.if, { field: doorField, _local })).toBe(false);
       expect(evaluate(input.props.error, { field: doorField, _local })).toBe('');
       expect(evaluate(error.if, { field: textField, _local: { errors: null } })).toBe(false);
-      // #399 R-1 — 오류 줄 묶음이 의미 클래스 `form-error` 로 바뀌었다. 템플릿 CSS 정의까지 펼쳐 같은 색·다크 짝을 확인한다
+      // 오류 줄 묶음이 의미 클래스 `form-error` 로 바뀌었다. 템플릿 CSS 정의까지 펼쳐 같은 색·다크 짝을 확인한다
       expect(error.props.className.split(/\s+/)).toContain('form-error');
       expect(expandSemanticTokens(error.props.className)).toEqual(expect.arrayContaining(['text-red-600', 'dark:text-red-400']));
     });

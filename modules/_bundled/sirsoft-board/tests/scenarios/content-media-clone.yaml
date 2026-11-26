@@ -1,4 +1,4 @@
-feature: 게시판 본문 미디어 — 다른 글의 본문 미디어를 쓴 글 저장 시 새 글 소유로 복제 (#887)
+feature: 게시판 본문 미디어 — 다른 글의 본문 미디어를 쓴 글 저장 시 새 글 소유로 복제
 
 description: |
   글 저장 동기화(`PostContentMediaService::syncWithContent` → 코어 골격 `AbstractContentMediaService::syncWithContent`)가

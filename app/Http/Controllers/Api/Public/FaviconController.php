@@ -9,7 +9,7 @@ use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * 업로드한 파비콘 서빙 — 공개 (#434)
+ * 업로드한 파비콘 서빙 — 공개
  *
  * 일반 첨부 다운로드(`/api/attachment/{hash}`)는 ico·svg 를 다운로드(attachment)로 내보내고 캐시 헤더가 없어
  * 탭 아이콘으로 쓸 수 없다. 전역 인라인 정책은 넓히지 않고, 파비콘 컬렉션 첨부만 이 전용 경로로 내보낸다.

@@ -10,7 +10,7 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * 전역 상태 공개 계약 집계 (#639, 결정)
+ * 전역 상태 공개 계약 집계
  *
  * 코어 예약 계약과 활성 확장 manifest 의 `state_contracts` 를 모아 프론트(`G7Core.stateContracts`)와 설치 충돌
  * 검사가 함께 쓴다. 집계가 한 소스의 실패로 통째로 비면 프론트는 계약이 없는 것으로 읽는다.
@@ -105,7 +105,7 @@ class StateContractsTest extends TestCase
     }
 
     /**
-     * 코어 예약 이름은 D13 목록 + #822 활성 확장 식별자 2종(activeModules·activePlugins) + #434 활성 템플릿 공개 설정(templateSettings)이다.
+     * 코어 예약 이름은 기본 목록 + 활성 확장 식별자 2종(activeModules·activePlugins) + 활성 템플릿 공개 설정(templateSettings)이다.
      *
      * @scenario case=core_reserved_list
      *

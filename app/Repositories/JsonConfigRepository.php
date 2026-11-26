@@ -44,7 +44,7 @@ class JsonConfigRepository implements ConfigRepositoryInterface
      *
      * 저장소는 부팅 중에도 여러 번 만들어지는데(설정 미러·드라이버 설정·워커 갱신) 기본값 파일(약 30KB)은
      * 그때마다 같은 내용이다. 키에 mtime·크기를 넣어 코어 업데이트·settings:install 로 파일이 바뀌면
-     * 같은 프로세스에서도 다시 읽는다(#860).
+     * 같은 프로세스에서도 다시 읽는다.
      *
      * @var array{key: string, data: array<string, mixed>}|null
      */

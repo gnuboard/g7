@@ -36,7 +36,7 @@ class HookListenerSyncContractTest extends PureTestCase
             'core BroadcastNotificationListener' => ['App\\Listeners\\BroadcastNotificationListener', [
                 'core.notification.after_channel_send',
             ]],
-            // before_save 는 업로드 탭 썸네일 값의 저장 전 사본을 뜬다 — 큐로 가면 after_save 보다 늦게 떠 비교가 어긋난다 (#869)
+            // before_save 는 업로드 탭 썸네일 값의 저장 전 사본을 뜬다 — 큐로 가면 after_save 보다 늦게 떠 비교가 어긋난다
             'core SeoSettingsCacheListener' => ['App\\Listeners\\SeoSettingsCacheListener', [
                 'core.settings.before_save', 'core.settings.after_save', 'core.settings.after_set',
             ]],
@@ -85,7 +85,7 @@ class HookListenerSyncContractTest extends PureTestCase
             'gdpr GdprUserDeleteListener' => ['Plugins\\Sirsoft\\Gdpr\\Listeners\\GdprUserDeleteListener', [
                 'core.user.before_delete',
             ]],
-            // 동의값 저장은 #490 에서 코어 회원 항목(확장 선언 항목) 저장으로 옮겨 after_create·after_update 구독이 없어졌다.
+            // 동의값 저장은 코어 회원 항목(확장 선언 항목) 저장으로 옮겨 after_create·after_update 구독이 없어졌다.
             // 남은 sync 구독: 회원 삭제와 같은 트랜잭션의 동의 삭제, 설정 저장 직후 항목 선언 재동기화.
             'marketing MarketingConsentListener' => ['Plugins\\Sirsoft\\Marketing\\Listeners\\MarketingConsentListener', [
                 'core.user.before_delete', 'core.plugin_settings.after_save',

@@ -10,7 +10,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 이커머스 알림 링크와 밖으로 나가는 링크의 주소(`G7_PUBLIC_LINK_URL` → `core.public_link_url`) 테스트 (#888)
+ * 이커머스 알림 링크와 밖으로 나가는 링크의 주소(`G7_PUBLIC_LINK_URL` → `core.public_link_url`) 테스트
  *
  * 공개 링크 주소를 정하면 회원·운영자에게 가는 주문·클레임 알림의 링크와 사이트 링크가 그 주소이고, 비워 두면
  * 지금처럼 사이트 주소인지 잠근다.

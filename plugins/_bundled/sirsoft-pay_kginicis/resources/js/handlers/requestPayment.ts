@@ -1,4 +1,4 @@
-// e2e:allow 결제창 과세 구분(#820) — PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않는다. Vitest 가 PC tax·taxfree / 모바일 P_TAX·P_TAXFREE 금액을 잠그고, 「부가세 업체정함」 계약 MID 가 없어 KG 매출 구분은 실측 불가. / #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다. / #855 후속: 결제창 열기 전 오류의 화면 문구를 번역된 일반 문구로(내부 영어 문구는 콘솔) — Chrome MCP 실측(신청서 ko/ja, 주문서 오류 창)과 Vitest 로 고정한다.
+// e2e:allow 결제창 과세 구분 — PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않는다. Vitest 가 PC tax·taxfree / 모바일 P_TAX·P_TAXFREE 금액을 잠그고, 「부가세 업체정함」 계약 MID 가 없어 KG 매출 구분은 실측 불가. / 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다. / 결제창 열기 전 오류의 화면 문구를 번역된 일반 문구로(내부 영어 문구는 콘솔) — Chrome MCP 실측(신청서 ko/ja, 주문서 오류 창)과 Vitest 로 고정한다.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { toApiClientPath } from '../apiPath';
@@ -21,7 +21,7 @@ interface PgPaymentData {
     /**
      * 서버가 저장한 결제수단 ID — 확장 수단이면 확장 ID 그대로(예: 'kginicis_lpay').
      * 이 값이 gopaymethod / CBT paymethod 매핑의 입력이 된다. 확장 결제수단이 1급 시민이
-     * 되면서 서버가 원본 수단을 알고 내려주므로, 프론트 인터셉터가 따로 전달할 필요가 없다(#475).
+     * 되면서 서버가 원본 수단을 알고 내려주므로, 프론트 인터셉터가 따로 전달할 필요가 없다.
      */
     payment_method?: string;
     customer_name?: string;
@@ -54,7 +54,7 @@ const DEFAULT_VAT_RATE = 10;
  *
  * KG 매뉴얼(stdpay_pc·stdpay_m): 두 필드는 「부가세 업체정함」 계약 가맹점만 설정한다 — 그래서 면세분이 있는 결제에만
  * 싣고 전부 과세면 보내지 않는다(PG 가 결제액에서 부가세를 계산). 종전에는 면세분이 있어도 보내지 않아 면세 상품이
- * 과세로 등록됐다(#820). 비과세 = 면세분(결제액 안으로 자름), 부가세 = 나머지 과세분을 주문 부가세 비율로 나눈 값 —
+ * 과세로 등록됐다. 비과세 = 면세분(결제액 안으로 자름), 부가세 = 나머지 과세분을 주문 부가세 비율로 나눈 값 —
  * NHN KCP·나이스 플러그인과 같은 규칙이다. 과세 합계를 받지 못하면(구버전 서버) 기본 세율로 나눈다.
  *
  * @param pgPaymentData 서버 결제 데이터
@@ -234,7 +234,7 @@ function t(key: string, fallback: string): string {
  * 사용자에게 그대로 보여도 되는(이미 번역된) 결제 진입 오류입니다.
  *
  * 핸들러 안의 나머지 오류(설정 누락·통화 불일치 같은 내부 영어 문구, 네트워크 오류)는 콘솔에만 남기고 화면에는
- * 번역된 일반 문구를 보인다 — 내부 문구가 주문서 오류 모달과 신청서 추가결제 안내에 그대로 노출됐다(#855).
+ * 번역된 일반 문구를 보인다 — 내부 문구가 주문서 오류 모달과 신청서 추가결제 안내에 그대로 노출됐다.
  */
 export class InicisUserFacingError extends Error {}
 
@@ -867,7 +867,7 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
     }
 
     // 결제수단은 액션 인자 하나에서만 읽는다 — 서버가 주문에 저장한 결제수단(pg_payment_data.payment_method)이
-    // 단일 출처이고, 확장 수단이면 확장 ID 가 그대로 온다(#475). 화면 상태를 뒤져 채우면 서버와 다른 수단으로
+    // 단일 출처이고, 확장 수단이면 확장 ID 가 그대로 온다. 화면 상태를 뒤져 채우면 서버와 다른 수단으로
     // 결제창을 열 수 있어, 없으면 결제창을 열지 않고 오류로 끝낸다.
     const paymentMethod = typeof pgPaymentData.payment_method === 'string' ? pgPaymentData.payment_method : '';
 
@@ -939,7 +939,7 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         }
 
     } catch (error: unknown) {
-        // 내부 영어 문구는 콘솔에만 남기고 화면에는 번역된 문구를 보인다(#855).
+        // 내부 영어 문구는 콘솔에만 남기고 화면에는 번역된 문구를 보인다.
         console.error('[sirsoft-pay_kginicis] requestPayment error', error);
         const errorMessage = resolvePaymentErrorMessage(error);
 

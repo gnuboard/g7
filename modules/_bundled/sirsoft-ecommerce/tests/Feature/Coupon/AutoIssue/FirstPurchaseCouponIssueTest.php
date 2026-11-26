@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * 첫구매 쿠폰 자동발급·회수 (#952 P4·P5)
+ * 첫구매 쿠폰 자동발급·회수
  */
 class FirstPurchaseCouponIssueTest extends ModuleTestCase
 {

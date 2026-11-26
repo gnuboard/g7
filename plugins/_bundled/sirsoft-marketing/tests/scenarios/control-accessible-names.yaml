@@ -1,4 +1,4 @@
-feature: 플러그인 sirsoft-marketing 입력칸 접근 가능한 이름 (#757)
+feature: 플러그인 sirsoft-marketing 입력칸 접근 가능한 이름
 
 description: |
   화면 낭독기가 입력칸을 이름 없이 「편집 가능 텍스트」·「체크박스」·「스위치」로만 읽거나
@@ -17,7 +17,7 @@ exclusions:
 effects:
   - controls_have_accessible_name      # 모든 입력칸이 이름(자기 이름·감싼 Label·for 연결·관리자 곁 라벨)을 갖는다
   - row_controls_read_row_and_column   # 반복 행·표 셀 칸이 「{행 이름} {열 이름}」 형태의 이름을 갖는다
-  - no_user_screen_fragment_controls   # 사용자 화면에 주입되는 조각의 칸이 없다(동의 칸은 회원 항목으로 코어 템플릿이 그린다, #490)
+  - no_user_screen_fragment_controls   # 사용자 화면에 주입되는 조각의 칸이 없다(동의 칸은 회원 항목으로 코어 템플릿이 그린다)
 
 test_files:
   - plugins/_bundled/sirsoft-marketing/resources/js/__tests__/layouts/control-names.test.ts

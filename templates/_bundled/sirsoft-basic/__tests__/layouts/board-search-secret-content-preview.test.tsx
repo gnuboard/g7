@@ -3,7 +3,7 @@
 
 /**
  * @file board-search-secret-content-preview.test.tsx
- * @description 게시판 목록/검색 미리보기 비밀글·블라인드 차단 게이트 회귀 (이슈 #413-37)
+ * @description 게시판 목록/검색 미리보기 비밀글·블라인드 차단 게이트 회귀 (37)
  *
  * 검증 방식: 레이아웃 JSON 트리 직접 분석 (DOM 비의존).
  * 정책(확정): 목록/검색 미리보기(content_preview)는 비밀글·블라인드 글에서
@@ -14,7 +14,7 @@
  * 본 테스트는 그 게이트(미리보기 노드의 if 가 content_preview 에 의존)가 유지되는지 고정한다.
  *
  * 회귀 배경: 과거 백엔드가 비밀글 본문 요약을 권한 무관하게 응답 →
- *   비로그인·제3자도 검색 결과에서 비밀글 본문 일부 열람 가능 (보안 결함, #413-37).
+ *   비로그인·제3자도 검색 결과에서 비밀글 본문 일부 열람 가능 (보안 결함).
  *   백엔드 차단 + 본 게이트로 방어.
  *
  * @effects published_preview_visible_in_list,
@@ -57,7 +57,7 @@ function findByComment(root: unknown, commentText: string): Node[] {
     return collectNodes(root, (n) => typeof n.comment === 'string' && (n.comment as string).includes(commentText));
 }
 
-describe('이슈 #413-37 — 게시판 카드 목록 미리보기 차단 게이트 (card/index.json)', () => {
+describe('37 — 게시판 카드 목록 미리보기 차단 게이트 (card/index.json)', () => {
     // @scenario viewer=guest
     // @effects secret_preview_empty_for_guest, blinded_preview_empty_in_list
     it('본문 요약 노드의 if 가 content_preview 존재에 의존한다 (빈 문자열이면 미렌더)', () => {

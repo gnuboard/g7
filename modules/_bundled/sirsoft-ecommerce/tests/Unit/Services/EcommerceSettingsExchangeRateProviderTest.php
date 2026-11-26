@@ -161,7 +161,7 @@ class EcommerceSettingsExchangeRateProviderTest extends ModuleTestCase
     {
         $root = dirname(__DIR__, 3);
         $service = file_get_contents($root.'/src/Services/EcommerceSettingsService.php');
-        // 응답 조립은 관리자 설정 서비스로 옮겨졌다(#599 validate P3) — 두 소스를 함께 본다.
+        // 응답 조립은 관리자 설정 서비스로 옮겨졌다 — 두 소스를 함께 본다.
         $controller = file_get_contents($root.'/src/Http/Controllers/Admin/EcommerceSettingsController.php')
             .file_get_contents($root.'/src/Services/EcommerceSettingsAdminService.php');
         preg_match_all("/'(sirsoft-ecommerce\.currency\.[a-z_]+)'/", $service, $hooks);

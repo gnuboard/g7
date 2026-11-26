@@ -1,6 +1,6 @@
 /**
  * @file mypage-tab-navigation.test.tsx
- * @description 마이페이지 탭 — 꺼진 기능의 탭을 감춘다 (#524 WP-C3).
+ * @description 마이페이지 탭 — 꺼진 기능의 탭을 감춘다.
  *
  * 고치기 전에는 적립금 탭이 마일리지 기능을 꺼 둔 쇼핑몰에서도 보였다. 눌러 봐야 「사용하지 않는
  * 기능입니다」 안내만 나오는 탭이라, 회원은 자기 적립금이 사라진 것으로 읽었다. 문의 탭은 이미
@@ -20,12 +20,12 @@ const nav = require('../../layouts/partials/mypage/_tab_navigation.json');
 const tabs = asArray(nav.props.tabs);
 const hidden: string = nav.props.hiddenTabIds;
 
-describe('마이페이지 탭 — 기능 OFF 탭 숨김 (#524 WP-C3)', () => {
+describe('마이페이지 탭 — 기능 OFF 탭 숨김', () => {
     // @scenario surface=mypage_tabs
     // @effects mypage_tabs_declare_all_nine
     it('탭 열세 개가 모두 선언되어 있다', () => {
-        // #524 스크랩(scrap)과 #599 클레임 신청내역(claims)이 병합에서 합류해 아홉이 열이 됐다.
-        // #952 쿠폰함(coupons)·내 리뷰(reviews)·활동 기록(activity)이 적립금 뒤에 더해져 열셋이 됐다.
+        // 스크랩(scrap)과 클레임 신청내역(claims)이 병합에서 합류해 아홉이 열이 됐다.
+        // 쿠폰함(coupons)·내 리뷰(reviews)·활동 기록(activity)이 적립금 뒤에 더해져 열셋이 됐다.
         expect(tabs.map((t: any) => t.id)).toEqual([
             'profile', 'board', 'scrap', 'orders', 'claims', 'mileage', 'coupons', 'reviews', 'activity', 'wishlist', 'addresses', 'notifications', 'inquiries',
         ]);
@@ -34,14 +34,14 @@ describe('마이페이지 탭 — 기능 OFF 탭 숨김 (#524 WP-C3)', () => {
     // @scenario surface=mypage_tabs, mileage=off
     // @effects mypage_tabs_hide_mileage_when_disabled
     it('마일리지가 꺼져 있으면 적립금 탭을 감춘다', () => {
-        // 1.3.0(#822): 쇼핑몰 모듈 활성도 함께 본다 — 꺼지면 설정과 무관하게 감춘다
+        // 1.3.0: 쇼핑몰 모듈 활성도 함께 본다 — 꺼지면 설정과 무관하게 감춘다
         expect(hidden).toMatch(/mileage\?\.enabled && \(_global\.activeModules\?\.includes\('sirsoft-ecommerce'\) \?\? true\) \? \[\] : \['mileage'\]/);
     });
 
     // @scenario surface=mypage_tabs, inquiry=off
     // @effects mypage_tabs_hide_inquiries_without_board
     it('문의 게시판이 연결되지 않았으면 문의 탭을 감춘다 — 기존 규칙을 유지한다', () => {
-        // 1.3.0(#822): 문의는 쇼핑몰·게시판 모듈이 모두 켜져 있어야 한다(상품 문의는 게시판 글로 저장)
+        // 1.3.0: 문의는 쇼핑몰·게시판 모듈이 모두 켜져 있어야 한다(상품 문의는 게시판 글로 저장)
         expect(hidden).toMatch(/inquiry\?\.board_slug && \(_global\.activeModules\?\.includes\('sirsoft-ecommerce'\) \?\? true\) && \(_global\.activeModules\?\.includes\('sirsoft-board'\) \?\? true\) \? \[\] : \['inquiries'\]/);
     });
 
@@ -54,7 +54,7 @@ describe('마이페이지 탭 — 기능 OFF 탭 숨김 (#524 WP-C3)', () => {
 
     // @scenario surface=mypage_tabs
     // @effects mypage_tabs_hidden_list_covers_only_two_ids
-    it('기능 설정으로 감추는 대상은 둘뿐이다 — 나머지 탭은 모듈이 꺼졌을 때만 모듈 가드로 감춘다(#822, standalone-module-guards.test.ts)', () => {
+    it('기능 설정으로 감추는 대상은 둘뿐이다 — 나머지 탭은 모듈이 꺼졌을 때만 모듈 가드로 감춘다(standalone-module-guards.test.ts)', () => {
         const hiddenIds = Array.from(hidden.matchAll(/\['(\w+)'\]/g)).map((m) => m[1]);
 
         expect(new Set(hiddenIds)).toEqual(new Set(['mileage', 'inquiries']));

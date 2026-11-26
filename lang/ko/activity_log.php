@@ -110,7 +110,7 @@ return [
         'password_change_postpone' => '비밀번호 변경 연기',
         'password_expiry_logout' => '비밀번호 만료 로그인 해제',
 
-        // 회원 등록·수정의 역할 변경 (user.roles_update, #736) — 일괄 변경(bulk_roles)과 겹치지 않는 복합어
+        // 회원 등록·수정의 역할 변경 (user.roles_update) — 일괄 변경(bulk_roles)과 겹치지 않는 복합어
         'roles_update' => '역할 변경',
 
         // 개인정보 조치 직권 실행 (privacy.manual_run_*) — 흔한 낱말과 겹치지 않는 복합어
@@ -420,7 +420,7 @@ return [
         'archive_requested' => '방문자 통계 수동 집계 실행 (:run_type)',
         'extension_purged' => '확장 통계 데이터 정리 (:identifier)',
     ],
-    // 확장 업데이트 레이아웃 병합 결과의 변경 내역 라벨 (#727)
+    // 확장 업데이트 레이아웃 병합 결과의 변경 내역 라벨
     'layout_sync' => [
         'operator_modified' => '운영자 수정본',
     ],

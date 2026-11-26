@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Tests\TestCase;
 
 /**
- * S3 디스크 첨부의 공개 이미지 서빙 회귀 테스트 (공개 #99 / 내부 #563)
+ * S3 디스크 첨부의 공개 이미지 서빙 회귀 테스트 (공개 #99)
  *
  * attachment.disk 가 s3 로 전환된 상태에서 이미지 인라인 서빙 분기가 로컬 절대
  * 경로(filemtime/filesize)를 전제해 500 이 나던 결함의 회귀 가드.
@@ -190,7 +190,7 @@ class AttachmentS3DiskServingTest extends TestCase
     }
 
     /**
-     * 비공개 첨부 저장소를 고르면 새 코어 첨부는 그 디스크에 저장되고 행 disk 에 기록되며, 고르기 전 행은 원래 디스크에서 그대로 내려간다(#916).
+     * 비공개 첨부 저장소를 고르면 새 코어 첨부는 그 디스크에 저장되고 행 disk 에 기록되며, 고르기 전 행은 원래 디스크에서 그대로 내려간다.
      * `ATTACHMENT_DISK` env 명시는 선택보다 우선한다.
      *
      * @scenario attachment_disk=private_attachment_selection, consumer=attachment

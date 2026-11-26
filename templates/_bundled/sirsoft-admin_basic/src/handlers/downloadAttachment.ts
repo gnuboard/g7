@@ -1,7 +1,7 @@
 /**
  * downloadAttachment 핸들러 (관리자 템플릿)
  *
- * 관리자 게시글/답변 첨부파일을 토큰 동반 요청으로 다운로드한다 (이슈 #413 item 58b).
+ * 관리자 게시글/답변 첨부파일을 토큰 동반 요청으로 다운로드한다 (item 58b).
  *
  * 배경: 관리자 게시글/답변 첨부 카드도 사용자 라우트(optional.sanctum)의 download_url 을
  * <a href> 직접 링크로 호출했다. <a> 네비게이션에는 Authorization 헤더(토큰)가 실리지 않아

@@ -22,7 +22,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Modules\Sirsoft\Ecommerce\Thumbnails\ContentMediaSourceProvider;
 
 /**
- * 이커머스 본문 미디어 이미지의 썸네일 계약 (#883 본문 미디어와 #869 이미지 썸네일의 접합)
+ * 이커머스 본문 미디어 이미지의 썸네일 계약 (본문 미디어와 이미지 썸네일의 접합)
  *
  * 본문 미디어 서빙 주소에 `?size=`·`?w=` 를 붙이면 게이트(전시 중 또는 관리자 또는 서명, 공통 정보는 공개)를 지난 뒤 줄인 이미지를 낸다.
  * 숨긴 상품의 본문 이미지는 규격을 붙여도 서명 없이는 403 이다. 본문 미디어 이미지는 전용 원본 제공자(권한 원본)가 센다.

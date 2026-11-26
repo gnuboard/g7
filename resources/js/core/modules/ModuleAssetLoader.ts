@@ -216,7 +216,7 @@ export class ModuleAssetLoader {
     }
 
     /**
-     * 템플릿이 공급한 설정 화면 부품 묶음을 싣습니다 (#434).
+     * 템플릿이 공급한 설정 화면 부품 묶음을 싣습니다.
      *
      * 템플릿 설정 화면은 그 템플릿 부품으로 그린다 — 어느 관리자 템플릿이 켜져 있든 뜨게, 플러그인 묶음처럼 관리자
      * 화면을 열 때 싣는다. 묶음은 `registerExtensionComponent('{템플릿id}.이름')` 로 등록하므로 확장 묶음과 같이
@@ -879,7 +879,7 @@ export function parseBundleUrlsFromConfig(): ExtensionBundleUrls | null {
 }
 
 /**
- * 템플릿이 공급한 설정 화면 부품 묶음 서술자 (#434).
+ * 템플릿이 공급한 설정 화면 부품 묶음 서술자.
  */
 export interface TemplateSettingsBundle {
     identifier: string;

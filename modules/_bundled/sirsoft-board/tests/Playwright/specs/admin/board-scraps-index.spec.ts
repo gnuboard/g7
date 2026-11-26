@@ -1,5 +1,5 @@
 /**
- * 관리자 스크랩 관리 화면 (#524 WP-A).
+ * 관리자 스크랩 관리 화면.
  *
  * 실브라우저로 세 갈래를 잰다:
  *   ① 전 회원의 스크랩이 한 목록에 서고, 게시판이 지워진 행·스크랩 중지 행도 남는다
@@ -35,7 +35,7 @@ async function openAdminScraps(page: Page, token: string, query = ''): Promise<v
   await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 15_000 });
 }
 
-test.describe('관리자 스크랩 관리 (#524)', () => {
+test.describe('관리자 스크랩 관리', () => {
   // @scenario surface=admin_list, permission=manage, member_scope=false, board_state=deleted
   // @effects admin_scrap_index_lists_all_members, admin_list_marks_deleted_board_and_post
   test('전 회원의 스크랩이 한 목록에 서고 지워진 게시판 행도 남는다', async ({ page, scrapSeed, scrapManageToken }) => {

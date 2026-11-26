@@ -153,7 +153,7 @@ export const AdminFooter: React.FC<AdminFooterProps> = ({
           <Span
             className={copyrightModalId ? `admin-footer-link-hover rounded ${FOCUS_VISIBLE_RING}` : ''}
             onClick={copyrightModalId ? handleCopyrightClick : undefined}
-            // 창을 여는 칸은 키보드로도 연다(#869 키보드 접근)
+            // 창을 여는 칸은 키보드로도 연다(키보드 접근)
             {...keyboardActivationProps(copyrightModalId ? handleCopyrightClick : undefined)}
           >
             {copyright}

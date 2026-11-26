@@ -1,4 +1,4 @@
-feature: KG이니시스 결제 통화별 결제수단 제한 — 쇼핑몰 서버 훅에 답한다 (#639 ⑤, 결정 D17)
+feature: KG이니시스 결제 통화별 결제수단 제한 — 쇼핑몰 서버 훅에 답한다
 
 description: |
   쇼핑몰 필터 훅 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency` 에 답해, 주문서 표시(체크아웃 응답

@@ -1,9 +1,9 @@
-# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험 주석(@scenario)에서 모은 입력 변종이고, 회귀 가드는 effects 다 — 모든 effect 가 test_files 의 @effects 로 귀속된다(#798 A1).
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험 주석(@scenario)에서 모은 입력 변종이고, 회귀 가드는 effects 다 — 모든 effect 가 test_files 의 @effects 로 귀속된다.
 
-feature: "로그인 문맥 보존과 토큰 절대 상한 (#798 K7)"
+feature: "로그인 문맥 보존과 토큰 절대 상한"
 
 description: |
-  로그인 문맥 보존과 토큰 절대 상한 (#798 K7)
+  로그인 문맥 보존과 토큰 절대 상한
   외부 인증이 로그인 문맥 `max_session_minutes` 로 세션 수명 상한을 주면 토큰 만료가 그 시각을 넘지 않는다 — 사용 중 연장(슬라이드)과
   갱신(refresh)도 넘지 못한다. 문맥(`max_session_minutes`, `external_ref`)은 2단계 인증을 거쳐도 유지되고, 로그인 완료 훅에
   `token_id`·`external_ref` 가 실리며, 토큰에 로그인 수단이 기록된다.

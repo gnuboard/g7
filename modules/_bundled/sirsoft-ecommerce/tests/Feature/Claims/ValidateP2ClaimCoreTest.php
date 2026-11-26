@@ -25,7 +25,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use RuntimeException;
 
 /**
- * 클레임 핵심 서비스 결함 수정 검증 — 전이 게이트·종결 정산·원자성·입력 방어 (#599 validate P2-A)
+ * 클레임 핵심 서비스 결함 수정 검증 — 전이 게이트·종결 정산·원자성·입력 방어 (A)
  *
  * 검증 축:
  * - 상품 단위 승인이 헤더 승인과 같은 미수납 게이트를 거친다(#1).

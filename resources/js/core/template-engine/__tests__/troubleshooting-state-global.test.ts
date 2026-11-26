@@ -790,7 +790,7 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
   describe('[사례 8] initLocal 동기화가 init_actions 의 query 시드를 되돌림 (engine-v1.54.5)', () => {
     /**
      * 증상: 목록에서 필터 적용 → 상세 진입 → 뒤로가기 복귀 시 URL·목록은 필터 상태인데
-     *       필터 컨트롤만 기본값으로 표시된다 (#492 D-20).
+     *       필터 컨트롤만 기본값으로 표시된다.
      * 원인: _localInit → 전역 _local 동기화가 **렌더 시점 스냅샷**을 병합 base 로 썼고,
      *       setGlobalState 는 `{ _local: X }` 를 얕게 펼쳐 저장소를 통째로 교체한다.
      *       effect 는 렌더 커밋 뒤에 실행되므로 그 사이의 init_actions query 시드가 되돌아갔다.

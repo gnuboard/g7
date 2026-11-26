@@ -11,7 +11,7 @@ description: |
   백엔드는 이미 값을 내보내고 있었다 — `OrderResource` 의 `confirmed_at_formatted`.
   DB 에도 값이 있었다. **화면 쪽 행과 라벨만 없었다.**
 
-  #599 통합실측 세션2 실측(주문 107 · 2026-09-15):
+  통합 실측(주문 107 · 2026-09-15):
 
     order_status            = confirmed
     confirmed_at            = 2026-09-15 07:52:28   (DB)

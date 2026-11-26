@@ -11,7 +11,7 @@ axes:
   failure: [server_5xx_then_ok, network_then_ok, server_5xx_persistent, server_5xx_persistent_with_session, rate_limited_429, unauthorized_401, csrf_419, non_http_exception, listener_throws, no_token]
 
 effects:
-  - transient_auth_failure_retried                # 5xx·429·네트워크 오류 뒤 성공하면 다시 물어 인증 상태가 된다(429 는 Retry-After 를 5초까지 따른다, #869 λ 4부 16 관찰 4)
+  - transient_auth_failure_retried                # 5xx·429·네트워크 오류 뒤 성공하면 다시 물어 인증 상태가 된다(429 는 Retry-After 를 5초까지 따른다)
   - transient_auth_failure_reported_unavailable   # 일시 오류가 이어지면 몇 번만 묻고 확인 불가로 남기며 토큰을 지우지 않는다
   - transient_auth_failure_keeps_session          # 이미 인증된 세션은 일시 오류가 이어져도 유지한다(상태 변경 이벤트 없음)
   - real_auth_failure_still_unauthenticated       # 401·419·HTTP 아닌 예외·토큰 없음은 다시 묻지 않고 미인증이다

@@ -237,7 +237,7 @@ class LayoutServingTest extends TestCase
         ]);
 
         // PublicLayoutController 는 CacheInterface + 버전 키 ("layout.{id}.{name}.v{v}") 사용.
-        // `?v` 생략 시 현재 확장 캐시 버전으로 폴백하므로 (#588 — `.v0` 사각 키 방지)
+        // `?v` 생략 시 현재 확장 캐시 버전으로 폴백하므로 (`.v0` 사각 키 방지)
         // 버전을 시드해 결정적 키로 검증한다
         Cache::put('g7:core:ext.cache_version', 1234);
 

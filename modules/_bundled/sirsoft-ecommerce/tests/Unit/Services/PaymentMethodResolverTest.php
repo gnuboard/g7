@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * PaymentMethodResolver 단위 테스트 — 이슈 #475
+ * PaymentMethodResolver 단위 테스트
  *
  * 결제수단 능력 해석의 폴백 3단계를 검증한다:
  *
@@ -142,7 +142,7 @@ class PaymentMethodResolverTest extends ModuleTestCase
     public function unregistered_extension_id_defaults_to_requiring_pg(): void
     {
         // 미등록 확장 ID 는 안전한 쪽(PG 필요)으로 판정한다.
-        // false 로 오판하면 결제 실패 주문에 관리자 알림이 발송되고 TempOrder 가 삭제된다(#475).
+        // false 로 오판하면 결제 실패 주문에 관리자 알림이 발송되고 TempOrder 가 삭제된다.
         $this->assertTrue($this->resolver()->needsPgProvider('some_unknown_plugin_method'));
     }
 
@@ -493,7 +493,7 @@ class PaymentMethodResolverTest extends ModuleTestCase
     public function saved_null_pg_provider_does_not_override_pg_locked_declaration(): void
     {
         // 기존 설치 환경의 order_settings.json 에는 확장 결제수단이 이미
-        // `pg_provider: null` 로 영속화되어 있다(#475 결함 시절의 값).
+        // `pg_provider: null` 로 영속화되어 있다(결함 시절의 값).
         //
         // mergePaymentMethodSettings() 가 saved 우선이면 플러그인이 defaults 를 고쳐도
         // 기존 설정 파일이 이겨서 결함이 그대로 남는다. 능력 선언(pg_locked/needs_pg/
@@ -647,7 +647,7 @@ class PaymentMethodResolverTest extends ModuleTestCase
     }
 
     // ─────────────────────────────────────────────
-    // orderListFilterClauses — 관리자 주문 목록 결제수단 필터 (#933)
+    // orderListFilterClauses — 관리자 주문 목록 결제수단 필터
     // ─────────────────────────────────────────────
 
     /**

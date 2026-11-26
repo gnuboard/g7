@@ -45,7 +45,7 @@ effects:
   - preview_serves_through_the_same_stream_point
   # row_disk
   - serving_follows_the_disk_recorded_on_the_row
-  # #609 docblock 정리 때 사후 등재 — AttachmentDownloadCacheContractTest 가 따로 재는 다운로드 통로 단언
+  # docblock 정리 때 사후 등재 — AttachmentDownloadCacheContractTest 가 따로 재는 다운로드 통로 단언
   - download_carries_row_meta_validators_and_keeps_attachment_disposition
   - download_returns_full_200_for_a_non_matching_validator
   - download_declares_compression_skip

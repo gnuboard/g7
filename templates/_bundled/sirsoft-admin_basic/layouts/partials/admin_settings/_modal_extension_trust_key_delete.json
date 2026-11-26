@@ -1,5 +1,5 @@
 {
-    "comment": "제작자 신뢰 키 삭제 확인 창(#916, 「확장 신뢰 키」 카드의 키 행 [삭제]가 연다). 대상은 행이 담아 준 `_global.trustKeyDeleteTarget`.\n  삭제는 탭 저장과 분리된 전용 API(DELETE /api/admin/extension-trust-keys/{id}) 이고 본인 비밀번호를 다시 받는다 —\n  지운 키로 서명된 확장은 다음 설치·업데이트부터 미신뢰 키로 막히므로 자리를 비운 사이 남이 누르는 것을 막는다.\n  비밀번호 없는 관리자는 칸이 없고 서버의 본인인증 요구(428)를 엔진이 받는다. 입력한 비밀번호는 창을 닫으면(어느 갈래로든) 지운다.",
+    "comment": "제작자 신뢰 키 삭제 확인 창. 대상은 행이 담아 준 `_global.trustKeyDeleteTarget`.\n  삭제는 탭 저장과 분리된 전용 API(DELETE /api/admin/extension-trust-keys/{id}) 이고 본인 비밀번호를 다시 받는다 —\n  지운 키로 서명된 확장은 다음 설치·업데이트부터 미신뢰 키로 막히므로 자리를 비운 사이 남이 누르는 것을 막는다.\n  비밀번호 없는 관리자는 칸이 없고 서버의 본인인증 요구(428)를 엔진이 받는다. 입력한 비밀번호는 창을 닫으면(어느 갈래로든) 지운다.",
     "meta": {
         "is_partial": true,
         "editor_label": "$t:admin.modal_label.admin_settings.extension_trust_key_delete_modal",

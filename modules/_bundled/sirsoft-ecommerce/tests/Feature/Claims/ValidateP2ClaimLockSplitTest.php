@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 클레임 핵심 서비스 결함 수정 검증 — 접수 잠금과 분할 로그 (#599 validate P2-A 후속)
+ * 클레임 핵심 서비스 결함 수정 검증 — 접수 잠금과 분할 로그 (A 후속)
  *
  * 검증 축:
  * - 접수 잠금이 `findForUpdate() ?? $order` 로 **잠기지 않은 모델**에 떨어지지 않는다. 떨어지면

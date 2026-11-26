@@ -489,7 +489,7 @@ return [
         'parcel_box' => 'Leave in parcel box',
         'call' => 'Please call before delivery',
     ],
-    // 내보내기(#787)
+    // 내보내기
     'export_status' => [
         'pending' => 'Pending',
         'processing' => 'Processing',

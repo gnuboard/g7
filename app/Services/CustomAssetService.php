@@ -601,7 +601,7 @@ class CustomAssetService
 
         // 확보는 코어 공통 프리미티브가 맡는다 — 소유권 상속·그룹 쓰기까지 정합화하고, 실패는 예외가 아니라
         // 사유로 올라온다. `custom/` 은 지연 생성이라 `deploy:deploy 0755` 로 배포된 확장 디렉토리에서
-        // 첫 저장이 여기서 실패하는데, 경로만 적으면 운영자가 무엇을 고쳐야 하는지 알 수 없다(#651 D6).
+        // 첫 저장이 여기서 실패하는데, 경로만 적으면 운영자가 무엇을 고쳐야 하는지 알 수 없다.
         // 사유·소유자·권한·실행 계정·조치 예시를 함께 싣는다 (정적 게시 프리플라이트와 같은 식).
         if (FilePermissionHelper::ensureWritableDirectory($directory, 0775, $failure)) {
             return;

@@ -16,7 +16,7 @@ use Tests\Support\Concerns\GrantsExtensionAdminToken;
 use Tests\TestCase;
 
 /**
- * 본인인증 「사용자 지정」 체크포인트 (7.2.1, #952 F)
+ * 본인인증 「사용자 지정」 체크포인트 (7.2.1)
  */
 class IdentityCheckpointTest extends TestCase
 {

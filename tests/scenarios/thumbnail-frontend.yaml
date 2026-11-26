@@ -1,4 +1,4 @@
-feature: 이미지 썸네일 프론트 — 주소 유틸과 편집기 「썸네일 규격」 위젯 (#869)
+feature: 이미지 썸네일 프론트 — 주소 유틸과 편집기 「썸네일 규격」 위젯
 
 description: |
   화면이 서빙 주소에 `?size={규격}` 을 붙이는 판정은 코어 `resources/js/core/support/thumbnailUrl.ts` 한 곳에 있다. 서버 `App\Thumbnails\ThumbnailUrl`

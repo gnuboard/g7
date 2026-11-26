@@ -4,7 +4,7 @@
  * 레이아웃 JSON 의 defines 와 computed 가 라우트 진입 때 화면 데이터 컨텍스트에 실리는지 본다.
  * 실제 TemplateApp 의 라우트 변경 처리(handleRouteChange)와 계산 메서드(calculateComputed)를 거친다.
  *
- * #869: 종전에는 계산 로직의 사본을 시험 안에 두고, 「정적 상수」 「_defines 주입」 「LayoutData 인터페이스」 시험은
+ * 종전에는 계산 로직의 사본을 시험 안에 두고, 「정적 상수」 「_defines 주입」 「LayoutData 인터페이스」 시험은
  * 시험이 만든 객체 리터럴이나 시험 안에서 다시 구현한 주입 로직만 단언했다. 원본이 깨져도 통과했으므로 실제 경로로 옮겼다.
  * (매니페스트 core-defines-computed-nu2.yaml)
  *

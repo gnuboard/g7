@@ -65,7 +65,7 @@ effects:
   - checkout_policy_declares_checkout_verification_purpose_for_self  # checkout.before_pay → checkout_verification · self · grace 30
   - checkout_verification_purpose_registers_email_and_sms_channels   # 매니저 등록 + 허용 채널 email·sms
   - checkout_verification_purpose_label_resolves_via_module_lang     # label/description 이 모듈 lang 키 → ko/en 해석
-  - checkout_verification_message_declared_as_identity_notification_definition  # 문구가 알림 정의(category=identity)로 적재 (#699)
+  - checkout_verification_message_declared_as_identity_notification_definition  # 문구가 알림 정의(category=identity)로 적재
   - policy_user_overrides_preserved_on_resync               # 재동기화가 운영자 변경값(enabled·grace)을 덮지 않음
   # 서비스 enforce 매트릭스 — IdentityPolicyService::enforce 가 applies_to·grace 로 throw/통과를 가른다(실경로와 독립)
   - checkout_policy_enforces_for_self_member                # self 정책 + 인증 이력 없는 회원 → throw

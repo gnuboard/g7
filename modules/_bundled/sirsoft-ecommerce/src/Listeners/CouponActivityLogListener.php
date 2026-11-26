@@ -42,7 +42,7 @@ class CouponActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.coupon.after_bulk_status' => ['method' => 'handleAfterBulkStatus', 'priority' => 20],
             'sirsoft-ecommerce.coupon.after_direct_issue' => ['method' => 'handleAfterDirectIssue', 'priority' => 20],
             'sirsoft-ecommerce.coupon.after_issue_cancel' => ['method' => 'handleAfterIssueCancel', 'priority' => 20],
-            // 자동발급(#952) — 가입·첫구매·생일 발급과 첫구매 회수
+            // 자동발급 — 가입·첫구매·생일 발급과 첫구매 회수
             'sirsoft-ecommerce.coupon.after_auto_issue' => ['method' => 'handleAfterAutoIssue', 'priority' => 20],
             'sirsoft-ecommerce.coupon.after_auto_issue_revoke' => ['method' => 'handleAfterAutoIssueRevoke', 'priority' => 20],
         ];
@@ -166,7 +166,7 @@ class CouponActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 쿠폰 자동발급 후 로그 기록 (#952)
+     * 쿠폰 자동발급 후 로그 기록
      *
      * @param  CouponIssue  $couponIssue  생성된 발급 레코드
      * @param  string  $source  발급 경로 (signup·first_purchase·birthday)
@@ -195,7 +195,7 @@ class CouponActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 첫구매 쿠폰 회수 후 로그 기록 (#952)
+     * 첫구매 쿠폰 회수 후 로그 기록
      *
      * @param  CouponIssue  $couponIssue  회수된 발급 레코드
      * @param  int  $orderId  전부 취소·반품완료된 원천 주문 ID

@@ -1,6 +1,6 @@
 /**
  * @file analyticsDashboardWidget.test.tsx
- * @description 대시보드 방문자 통계 카드와 알림 카드 이동 버튼(C1)의 계약 (이슈 #682 S3)
+ * @description 대시보드 방문자 통계 카드와 알림 카드 이동 버튼(C1)의 계약
  *
  * 카드: 개요 소스가 background·403 무시이고 대시보드 진입 대기 목록에 들어가지 않는 것, 카드가 데이터 유무로 스스로 빠지는 것.
  * 알림(C1): `recover_endpoint` 가 있으면 종전처럼 복구 버튼(POST), 없고 `action_url` 이 있으면 이동 버튼(navigate), 둘 다 없으면
@@ -102,7 +102,7 @@ describe('대시보드 방문자 통계 카드', () => {
     for (const id of ['dashboard_analytics_today', 'dashboard_analytics_yesterday', 'dashboard_analytics_max', 'dashboard_analytics_total', 'dashboard_analytics_chart', 'dashboard_analytics_now']) {
       expect(nodeById(widget, id), id).toBeDefined();
     }
-    // 링크(#757) — 목적지는 A 의 href(path 없는 navigate 가 그 href 로 간다)
+    // 링크 — 목적지는 A 의 href(path 없는 navigate 가 그 href 로 간다)
     expect(moveTargets(widget).map((t) => t.path)).toEqual(expect.arrayContaining(['/admin/analytics', '/admin/analytics/realtime']));
   });
 
@@ -172,7 +172,7 @@ describe('대시보드 알림 카드 — 복구 버튼과 이동 버튼 (C1)', (
       const nav = nodeById(dashboard, `${prefix}_navigate_button_{{$idx}}`);
       expect(nav?.if, prefix).toBe('{{!alert.recover_endpoint && !!alert.action_url}}');
       const navigate = actionsWithHandler(nav, 'navigate')[0];
-      // 링크(#757) — 주소 식은 A 의 href 한 곳, navigate 는 path 없이 그 href 로 간다
+      // 링크 — 주소 식은 A 의 href 한 곳, navigate 는 path 없이 그 href 로 간다
       expect(nav?.name, prefix).toBe('A');
       expect(navigate.params?.path, prefix).toBeUndefined();
       // 식을 엔진 평가기로 직접 돌린다 — 문자열 대조만 하면 평가기가 읽지 못하는 식(정규식 리터럴)도 통과한다.

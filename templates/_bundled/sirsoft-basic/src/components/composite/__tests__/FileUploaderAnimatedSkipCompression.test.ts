@@ -1,5 +1,5 @@
 /**
- * FileUploader 움직이는 이미지 압축 건너뛰기 테스트 (#869 P4)
+ * FileUploader 움직이는 이미지 압축 건너뛰기 테스트
  *
  * 이미지 압축이 켜진 업로더(사용자 템플릿 — 관리자 템플릿과 같은 결함)가 움직이는 GIF·WebP·APNG 를 browser-image-compression 으로
  * 다시 인코딩해 첫 프레임만 남은 정지 그림이 올라갔다. 움직임은 MIME 이 아니라 파일 바이트로 가린다 —
@@ -181,7 +181,7 @@ describe('useFileUploader — 움직이는 이미지는 압축하지 않고 원�
    * @scenario image_format=still
    * @effects compression_failure_message_translated
    */
-  it('압축이 실패하면 오류 문구를 번역 키로 만든다 — 한국어 리터럴이 다른 언어 화면에 섞이지 않는다 (#869 G4)', async () => {
+  it('압축이 실패하면 오류 문구를 번역 키로 만든다 — 한국어 리터럴이 다른 언어 화면에 섞이지 않는다', async () => {
     vi.mocked(imageCompression).mockImplementationOnce(() => Promise.reject(new Error('압축기 실패')));
     const { result } = setup();
 
@@ -198,7 +198,7 @@ describe('useFileUploader — 움직이는 이미지는 압축하지 않고 원�
    * @scenario image_format=still
    * @effects compressed_larger_than_original_uploads_original
    */
-  it('압축 결과가 원본보다 크거나 같으면 원본을 올린다 (#869 브라우저 실측: 22,273 → 28,823 바이트)', async () => {
+  it('압축 결과가 원본보다 크거나 같으면 원본을 올린다 (22,273 → 28,823 바이트)', async () => {
     vi.mocked(imageCompression).mockImplementationOnce((file: File) => Promise.resolve(new File([new Uint8Array(file.size + 100)], file.name, { type: file.type })));
     const { result } = setup();
     const still = fileOf(png(0), 'still.png', 'image/png');

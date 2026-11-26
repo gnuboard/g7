@@ -22,7 +22,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 결제수단별 취소·환불 경로의 돈·재고 회귀 잠금 (#599 후속 §7-2)
+ * 결제수단별 취소·환불 경로의 돈·재고 회귀 잠금
  *
  * 이 파일이 잠그는 셋은 전수조사에서 **돈이나 재고가 실제로 어긋나는** 결함으로 분류된 것이다:
  *

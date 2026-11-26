@@ -73,7 +73,7 @@ class MarketingConsentListener implements HookListenerInterface
             ],
 
             // Action 훅: 사용자 삭제 전 마케팅 동의 데이터 명시적 삭제
-            // sync: 회원 삭제와 같은 트랜잭션에서 지운다 — 큐로 가면 커밋 뒤로 밀리고, 실패해도 삭제가 되돌려지지 않는다(#724).
+            // sync: 회원 삭제와 같은 트랜잭션에서 지운다 — 큐로 가면 커밋 뒤로 밀리고, 실패해도 삭제가 되돌려지지 않는다.
             'core.user.before_delete' => [
                 'method' => 'beforeDelete',
                 'priority' => 10,

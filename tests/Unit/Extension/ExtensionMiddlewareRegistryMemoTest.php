@@ -10,7 +10,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 확장 미들웨어 인덱스 요청 메모 (#860 W7)
+ * 확장 미들웨어 인덱스 요청 메모
  *
  * 게이트는 한 요청에서 before·after 두 시점에 인덱스를 찾는다. 인덱스는 요청 안에서 바뀌지 않으므로
  * 캐시 저장소는 한 번만 읽고, 확장 상태가 바뀌어 `flush()` 가 불리면 같은 요청 뒤쪽도 새로 읽는다.

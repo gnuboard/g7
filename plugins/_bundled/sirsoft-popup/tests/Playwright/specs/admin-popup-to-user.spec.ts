@@ -111,7 +111,7 @@ async function flow_close_hides_across_spa_navigation({ page, request, managerTo
     await expect(page.locator(`.g7pp-slide[data-popup-id="${id}"]`)).toHaveCount(1);
 }
 
-/** PC 폭에서 닫은 뒤 같은 페이지에서 휴대폰 폭으로 줄여도 모바일 전용 팝업이 레이어를 다시 열지 않고, 새로고침하면 뜬다(#902) */
+/** PC 폭에서 닫은 뒤 같은 페이지에서 휴대폰 폭으로 줄여도 모바일 전용 팝업이 레이어를 다시 열지 않고, 새로고침하면 뜬다 */
 async function flow_close_survives_resize_to_mobile({ page, request, managerToken, created }: Ctx): Promise<void> {
     const pc = await createHtmlPopup(request, managerToken, { device: 'pc' });
     const mobile = await createHtmlPopup(request, managerToken, { device: 'mobile' });
@@ -484,7 +484,7 @@ test.describe('팝업 → 사용자 화면', () => {
 
   // @scenario flow=close_survives_resize_to_mobile, viewport=desktop
   // @effects user_screen_reflects_admin_change, test_data_cleaned_up
-  test('PC 폭에서 닫은 뒤 휴대폰 폭으로 줄여도 레이어가 다시 열리지 않고, 새로고침하면 모바일 전용이 뜬다 (#902)', async ({ page, request, managerToken, created }) => {
+  test('PC 폭에서 닫은 뒤 휴대폰 폭으로 줄여도 레이어가 다시 열리지 않고, 새로고침하면 모바일 전용이 뜬다', async ({ page, request, managerToken, created }) => {
     await flow_close_survives_resize_to_mobile({ page, request, managerToken, created } as Ctx);
   });
 

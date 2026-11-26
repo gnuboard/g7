@@ -17,7 +17,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardPermissionRepositoryInterf
 use Modules\Sirsoft\Board\Services\BoardPermissionService;
 
 /**
- * Playwright E2E · 브라우저 실측용 스크랩 도메인 시드 커맨드 (#524).
+ * Playwright E2E · 브라우저 실측용 스크랩 도메인 시드 커맨드.
  *
  * 스크랩 화면은 **세 상태의 행**(정상 · 스크랩 중지 · 삭제글)과 **게시판이 지워진 행**을 함께
  * 보여 준다. 그 넷을 한 화면에 세우려면 게시판 설정을 바꾸고 글과 게시판을 지운 «뒤» 의 상태가
@@ -232,7 +232,7 @@ class PlaywrightSeedBoardScrap extends Command
         // 게시판마다 딸린 권한도 함께 지운다. 시드가 만든 것을 지우지 않으면 개발 DB 의 권한 목록에
         // `sirsoft-board.e2e-*` 가 회차마다 쌓인다. 게시판 행으로 찾지 않고 **고정 slug 로** 찾는 것은
         // 시드가 tmpboard 를 스스로 지워 행이 이미 없을 수 있기 때문이다.
-        // 자식 권한은 DB 연쇄에 맡기지 않고 명시적으로 지운다(BoardPermissionService 와 같은 규약, #888).
+        // 자식 권한은 DB 연쇄에 맡기지 않고 명시적으로 지운다(BoardPermissionService 와 같은 규약).
         // `parent_id` 가 비어 있는 행은 카테고리 사슬에 걸리지 않으므로(등록 경로가 둘이라 실제로 그런 행이
         // 남는다) 사슬 대신 **identifier 접두**로 모집단을 직접 훑는다 — 시드 전용 고정 slug 라 접두가 겹칠
         // 다른 권한이 없다. 깊은 식별자(자식)부터 역할 부여·훅 매핑을 떼고 지운다.

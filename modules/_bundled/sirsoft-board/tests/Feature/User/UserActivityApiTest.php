@@ -283,7 +283,7 @@ class UserActivityApiTest extends BoardTestCase
     }
 
     /**
-     * per_page 경계값 회귀 가드 (#492 브라우저 실측).
+     * per_page 경계값 회귀 가드.
      *
      * 같은 컨트롤러의 my-comments 는 min(max(per_page,1),100) 로 잘라내는데
      * board-activities 만 원시 입력을 그대로 페이지네이터에 넘겨,

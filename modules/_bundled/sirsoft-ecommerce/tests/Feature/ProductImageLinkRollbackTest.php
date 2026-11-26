@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 상품 임시 이미지 연결의 롤백 — 파일도 임시 자리로 (#883 3단계)
+ * 상품 임시 이미지 연결의 롤백 — 파일도 임시 자리로
  *
  * 상품 저장이 임시 이미지를 상품 경로로 옮긴 뒤 같은 트랜잭션의 뒤 단계가 실패하면, 종전에는 파일만 상품 경로에 남아
  * 이미지 행(임시 경로)과 어긋났다. 이동은 StorageTransaction 이라 롤백되면 사본을 지우고 원본을 둔다.

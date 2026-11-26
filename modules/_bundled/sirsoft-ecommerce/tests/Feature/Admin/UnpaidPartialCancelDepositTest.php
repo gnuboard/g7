@@ -154,7 +154,7 @@ class UnpaidPartialCancelDepositTest extends ModuleTestCase
      * 실주문처럼 상품 행이 「주문대기」인 무통장 주문을 입금 전에 부분취소해도 주문은 결제대기로 남는다.
      *
      * 주문서는 무통장 주문의 상품 행을 `pending_order` 로 만든다(헤더만 `pending_payment`). 부분취소 뒤 남은 행으로
-     * 부모 상태를 다시 정하면 헤더가 `pending_order` 로 내려가 관리자 주문 목록(주문대기 기본 숨김)에서 사라졌다(#747 C12 V1).
+     * 부모 상태를 다시 정하면 헤더가 `pending_order` 로 내려가 관리자 주문 목록(주문대기 기본 숨김)에서 사라졌다.
      *
      * @effects unpaid_partial_cancel_moves_remaining_total_to_due
      *

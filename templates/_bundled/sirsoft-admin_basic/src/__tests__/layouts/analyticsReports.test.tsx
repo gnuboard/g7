@@ -1,6 +1,6 @@
 /**
  * @file analyticsReports.test.tsx
- * @description 리포트 화면 6종(페이지·유입·환경·지역·행동·봇)과 공통 표 조각의 런타임 계약 (이슈 #682 S3)
+ * @description 리포트 화면 6종(페이지·유입·환경·지역·행동·봇)과 공통 표 조각의 런타임 계약
  *
  * 잠그는 것: 서브탭이 `query.tab` 하나를 출처로 삼는 것, 탭 → 리포트 이름 매핑이 엔드포인트에 있는 것,
  * 표의 쪽 이동·정렬·검색이 전부 질의 이동인 것, 지역 화면의 GeoIP 안내, 비율 도넛의 조건, 행동 화면의 차원 탭.
@@ -16,7 +16,7 @@ import { scanBindings } from '@core/template-engine/BindingShape';
 /**
  * 리포트 화면마다 설계로 정한 값(기본 탭·엔드포인트가 고르는 리포트 이름·기간 질의 키). 모집단은 이 표가
  * 아니라 `layouts/` 에서 **공통 표 조각을 품는 화면**으로 파생하고, 첫 케이스가 둘을 양방향으로 대조한다
- * — 6번째 리포트 화면이 생기면 이 표에 행을 더하기 전까지 red 다(#682 S3 R7-D4·R11-D2·R12-D3).
+ * — 6번째 리포트 화면이 생기면 이 표에 행을 더하기 전까지 red 다.
  * `screenKeys` 는 그 화면만의 질의 — 유입의 드릴다운 `host` 는 탭을 옮기면 비우고, 행동의 차원 `dimension` 은 잇는다.
  */
 const PERIOD_KEYS = ['preset', 'from', 'to', 'unit', 'exclude', 'per_page'];
@@ -72,7 +72,7 @@ describe('리포트 화면 — 탭·엔드포인트·기간 바', () => {
   for (const file of Object.keys(SPEC)) {
     const s = SPEC[file];
     // 이 케이스는 SPEC 여섯 화면을 모두 돈다 — 축도 여섯을 적어야 「이 화면은 아무도 안 잰다」가
-    // 매니페스트에서 보이지 않는 일이 없다(#682 S3 라운드 3: screen=environment 소비 0회였다).
+    // 매니페스트에서 보이지 않는 일이 없다(screen=environment 소비 0회였다).
     // @scenario screen=pages, state=normal, viewport=1440, locale=ko
     // @scenario screen=referrers, state=normal, viewport=1440, locale=ko
     // @scenario screen=environment, state=normal, viewport=1440, locale=ko
@@ -128,7 +128,7 @@ describe('리포트 화면 — 탭·엔드포인트·기간 바', () => {
     const layout = loadLayout('admin_analytics_regions.json');
     const alert = nodeById(layout, 'geoip_off_alert');
     expect(alert?.if).toContain('geoip?.enabled === false');
-    // 링크(#757) — 주소는 A 의 href 한 곳
+    // 링크 — 주소는 A 의 href 한 곳
     const [link] = moveTargets(alert);
     expect(link.node.name).toBe('A');
     expect(link.path).toBe('/admin/settings?tab=advanced');
@@ -186,8 +186,8 @@ describe('리포트 화면 — 탭·엔드포인트·기간 바', () => {
   // @scenario screen=actions, state=empty, viewport=1440, locale=ko
   // @effects pii_dimension_is_listed_with_the_reason_instead_of_an_empty_table
   it('개인정보 분류 기준은 목록에 표시를 달고, 고르면 빈 표·진단 안내 대신 집계하지 않는 이유를 보인다', () => {
-    // 개인정보로 표시된 분류 기준은 집계하지 않는다(#682 S4 라운드 4). 목록에서 빼지 않되(선언이 보여야 한다)
-    // 고르면 늘 빈 표와 「수집 진단」 안내가 떠 수집 고장으로 읽혔다(#682 S4 라운드 8).
+    // 개인정보로 표시된 분류 기준은 집계하지 않는다. 목록에서 빼지 않되(선언이 보여야 한다)
+    // 고르면 늘 빈 표와 「수집 진단」 안내가 떠 수집 고장으로 읽혔다.
     const layout = loadLayout('admin_analytics_actions.json');
     const dimensions = [
       { key: 'vendor-board:board_id', label: '게시판', owner_identifier: 'vendor-board', pii: false },
@@ -221,7 +221,7 @@ describe('리포트 화면 — 탭·엔드포인트·기간 바', () => {
   // @effects empty_grid_shows_one_empty_message
   it('0건이면 표의 빈 문구와 같은 데이터의 빈 화면 안내가 함께 보이지 않는다(쪽 번호도 없음)', () => {
     // 표(빈 문구 + 쪽 번호 「1」)와 아래 빈 화면 안내가 함께 떠 「선택 기간에 기록이 없습니다」가 두 번
-    // 보였다(#682 S4 라운드 8). 모집단은 관리자 레이아웃 전체에서 「표 + 그 표의 데이터가
+    // 보였다. 모집단은 관리자 레이아웃 전체에서 「표 + 그 표의 데이터가
     // 0건일 때 뜨는 빈 화면 안내」 짝을 파생한다 — 불러오기가 끝난 0건 상태에서 식을 평가한다.
     const layoutsDir = path.join(TEMPLATE_DIR, 'layouts');
     const files: string[] = [];
@@ -280,7 +280,7 @@ describe('리포트 화면 — 탭·엔드포인트·기간 바', () => {
   // @effects button_variant_classes_come_with_the_base_btn_class
   it('버튼 색 클래스(btn-primary 등)는 기본 모양 클래스 btn 과 함께 쓴다', () => {
     // `.btn-secondary` 는 색·테두리만 있고 여백·모서리는 `.btn` 이 준다 — 빠지면 테두리만 있는 글자가 된다
-    // (#682 S4 라운드 8, 빈 화면 「수집 진단 열기」). 모집단은 관리자 레이아웃 전체의 className 값.
+    // (빈 화면 「수집 진단 열기」). 모집단은 관리자 레이아웃 전체의 className 값.
     const layoutsDir = path.join(TEMPLATE_DIR, 'layouts');
     const files: string[] = [];
     const walk = (dir: string): void => {
@@ -315,7 +315,7 @@ describe('리포트 화면 — 탭·엔드포인트·기간 바', () => {
   // @scenario screen=visitor_detail, state=normal, viewport=1440, locale=ko
   // @effects label_value_lists_align_values_in_one_column
   it('「라벨 값」 짝을 세 줄 이상 늘어놓은 목록은 라벨 칸을 맞춘 kv-list 격자에 담는다(값이 한 줄로 시작)', () => {
-    // 라벨 폭이 달라 값이 들쭉날쭉 시작하고, 라벨(xs)·값(sm) 기준선이 어긋나던 결함(#682 S4 라운드 8:
+    // 라벨 폭이 달라 값이 들쭉날쭉 시작하고, 라벨(xs)·값(sm) 기준선이 어긋나던 결함(
     // 방문자 상세 › 방문 정보). 모집단은 이 템플릿 아래에서 그려지는 레이아웃 전부 — 템플릿 + 번들 모듈·플러그인.
     // 짝 = 자식이 둘이고 첫째가 고정 문구 라벨(`$t:` 만)인 행. 가로로 흐르는 요약(부모가 flex)은 목록이 아니다.
     const repo = path.resolve(TEMPLATE_DIR, '../../..');
@@ -336,7 +336,7 @@ describe('리포트 화면 — 탭·엔드포인트·기간 바', () => {
     };
     roots.forEach(walk);
 
-    // 확장 레이아웃은 자기 CSS 의 앞글자 이름을 쓴다(접두 빌드 `{letters}:flex`, 의미 클래스 `{namespace}-kv-row` — #816).
+    // 확장 레이아웃은 자기 CSS 의 앞글자 이름을 쓴다(접두 빌드 `{letters}:flex`, 의미 클래스 `{namespace}-kv-row`).
     // 앞글자를 떼고 읽어야 템플릿 화면과 같은 기준으로 판정한다. 앞글자는 manifest `assets.css.namespace` 에서 파생한다.
     const prefixes = ['modules', 'plugins'].flatMap((kind) => {
       const dir = path.join(repo, kind, '_bundled');
@@ -390,7 +390,7 @@ describe('리포트 화면 — 탭·엔드포인트·기간 바', () => {
   // @scenario screen=diagnostics, state=normal, viewport=1440, locale=ko
   // @effects stored_codes_are_shown_as_human_labels
   it('통계 화면은 저장 코드값(scheduled·desktop·KR·ko-KR·hit·gdpr·database·표 이름)을 그대로 보이지 않는다', () => {
-    // 집계 실행의 「실행」 열이 `scheduled` 로 찍히던 결함(#682 S4 라운드 8)과 같은 모양 전수.
+    // 집계 실행의 「실행」 열이 `scheduled` 로 찍히던 결함과 같은 모양 전수.
     // 모집단 = 통계 레이아웃의 화면 문구(text) 중 코드 필드를 읽는 식. 코드 필드는 번역 키 끝(`$t('…' + x)`),
     // 비교·포함 검사, 또는 이름 필드 뒤의 대체값(`x_label ?? x`)으로만 쓰일 수 있다.
     const CODE_FIELDS = ['trigger', 'device_type', 'country_code', 'cache_status', 'consent_source', 'connection', 'browser_language', 'locale', 'table', 'referrer_type', 'visitor_type', 'status', 'run_type', 'reason', 'source'];
@@ -479,8 +479,8 @@ describe('공통 표 조각', () => {
     expect(dg.props.serverHasMorePages).toContain('pagination?.has_more');
 
     // 목록 컨텍스트 이동(쪽·정렬·검색·건수)만 이 계약의 대상이다 — 빈 상태의 「수집 진단 열기」는
-    // 목록이 아니라 다른 화면으로 가는 안내라 기간을 병합하지 않는다(#682 S3 라운드 5).
-    // 링크로 바뀐 칸(#757)은 목적지가 A 의 href(쿼리 포함)라 경로 부분으로 가른다
+    // 목록이 아니라 다른 화면으로 가는 안내라 기간을 병합하지 않는다.
+    // 링크로 바뀐 칸은 목적지가 A 의 href(쿼리 포함)라 경로 부분으로 가른다
     const allTargets = moveTargets(grid);
     const isList = (t: { path: string | undefined }) => String(t.path).split('?')[0] === '{{_local.periodPath}}';
     const navs = allTargets.filter(isList).map((t) => t.navigate);
@@ -685,7 +685,7 @@ describe('CSV 저장 파일명', () => {
   ): unknown => {
     const layout = loadLayout(file);
     // 달력 두 칸과 파일명은 같은 값을 읽는다 — 서버가 되돌려 준 구간이 먼저이고, 첫 응답 전에는
-    // 초기화가 계산해 둔 범위를 쓴다(#682 라운드 4).
+    // 초기화가 계산해 둔 범위를 쓴다.
     const servedData = { data: served };
     const ctx: Record<string, any> = {
       query,
@@ -693,7 +693,7 @@ describe('CSV 저장 파일명', () => {
       _computed: {},
       analytics_report: servedData,
       // 개요 응답만 구간을 `data.meta` 에 싣는다(`OverviewController::meta`). 다른 응답처럼 `data.from` 으로
-      // 흉내 내면 틀린 경로를 읽는 식이 초록이 된다(#682 S3 라운드 14).
+      // 흉내 내면 틀린 경로를 읽는 식이 초록이 된다.
       analytics_overview: { data: { meta: served } },
       analytics_bots: servedData,
       analytics_visitors: servedData,
@@ -734,7 +734,7 @@ describe('CSV 저장 파일명', () => {
   // @scenario screen=visitor_detail, state=normal, viewport=1440, locale=ko
   // @effects csv_filename_carries_the_actual_date_range
   it('방문자 단건 CSV 도 버튼이 넘기는 이름이 서버 규약(analytics-visitor-{key}-{from}_{to}.csv)을 따르고, 주소와 같은 기간을 담는다', () => {
-    // 이 버튼만 이름을 `analytics-visitor-{key}.csv` 로 고정해 서버가 붙인 기간을 덮었다(#682 S3 라운드 13).
+    // 이 버튼만 이름을 `analytics-visitor-{key}.csv` 로 고정해 서버가 붙인 기간을 덮었다.
     const layout = loadLayout('admin_analytics_visitor_detail.json');
     const button = nodeById(layout, 'visitor_csv_button');
     const download = collectObjects(button).find((o) => o.handler === 'downloadAttachment');
@@ -785,7 +785,7 @@ describe('내려받기 저장 이름 전수', () => {
   // @effects download_filename_matches_the_server_name
   it('화면이 내려받는 모든 자리(탭까지)의 저장 이름이 서버가 붙이는 이름과 같다 — 자리는 레이아웃에서 파생한다', () => {
     // blob 저장은 응답 헤더를 못 써 화면이 준 이름이 이긴다. 기본 탭 7자리만 손으로 재던 가드가 봇 「페이지」 탭
-    // (`bot_page` ↔ 서버 `bot_pages`)과 정보주체 JSON(검색한 IP 를 파일명에 넣음)을 놓쳤다(#682 S3 라운드 15).
+    // (`bot_page` ↔ 서버 `bot_pages`)과 정보주체 JSON(검색한 IP 를 파일명에 넣음)을 놓쳤다.
     const repo = path.resolve(TEMPLATE_DIR, '../../..');
     const controller = fs.readFileSync(path.join(repo, 'app/Http/Controllers/Api/Admin/Analytics/ReportController.php'), 'utf8');
     const dimensions = fs.readFileSync(path.join(repo, 'app/Enums/Analytics/StatsDimension.php'), 'utf8');

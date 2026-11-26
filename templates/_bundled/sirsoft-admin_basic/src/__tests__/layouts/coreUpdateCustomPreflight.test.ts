@@ -1,6 +1,6 @@
 /**
  * @file coreUpdateCustomPreflight.test.ts
- * @description 코어 업데이트 확인 결과 창의 「개발자 패키지 충돌로 업데이트를 시작하지 않았습니다」 영역 계약 (#792 WP-K3)
+ * @description 코어 업데이트 확인 결과 창의 「개발자 패키지 충돌로 업데이트를 시작하지 않았습니다」 영역 계약
  *
  * 잠그는 것: 영역이 확인 API 의 `custom_preflight` 가 있을 때만 보이는 것, 충돌 행이 `conflicts` 배열을 반복하는 것,
  * 충돌 종류(duplicate / constraint)에 따라 문구가 갈리는 것, 배포본 예약 자리 파일 목록, 쓰는 번역 키가 모든 로케일에 있는 것.

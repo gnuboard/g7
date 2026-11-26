@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 확장 설정 시드·업데이트 임시 폴더의 소유권 상속 회귀 테스트 (#651 B2·B4).
+ * 확장 설정 시드·업데이트 임시 폴더의 소유권 상속 회귀 테스트.
  *
  * sudo 코어 업데이트(번들 확장 업데이트 프롬프트)가 root 로 `storage/app/{modules,plugins}/{id}/settings/`
  * 를 만들면 그 서브트리는 restore_ownership 의도적 제외 경로라 코어 업데이트로도 되돌려지지 않고,

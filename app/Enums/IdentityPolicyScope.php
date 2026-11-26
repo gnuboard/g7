@@ -6,7 +6,7 @@ namespace App\Enums;
  * 본인인증 정책 적용 범위 Enum.
  *
  * `identity_policies.scope` 에 저장되어 정책이 어떤 단위에 적용되는지 결정합니다.
- * 이슈 #297 에서 scope=route 분기가 강화되었으므로 enum 화로 회귀 방지.
+ * scope=route 분기가 강화되었으므로 enum 화로 회귀 방지.
  *
  * @since 7.0.0-beta.5
  */

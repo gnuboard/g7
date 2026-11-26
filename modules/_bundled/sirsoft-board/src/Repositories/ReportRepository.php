@@ -59,7 +59,7 @@ class ReportRepository implements ReportRepositoryInterface
     {
         $query = Report::query();
 
-        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다(#789)
+        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다
 
         // 검색
         $this->applySearchConditions($query, $filters);
@@ -169,7 +169,7 @@ class ReportRepository implements ReportRepositoryInterface
     /**
      * 신고를 영구 삭제합니다 — 그 케이스의 신고 로그를 먼저 지운 뒤 케이스를 지웁니다.
      *
-     * 로그(`boards_report_logs.report_id`)를 DB 외래키 연쇄에 맡기지 않는다(#888). 두 단계를 한 트랜잭션으로 묶어
+     * 로그(`boards_report_logs.report_id`)를 DB 외래키 연쇄에 맡기지 않는다. 두 단계를 한 트랜잭션으로 묶어
      * 케이스 삭제가 실패하면 로그도 되돌린다.
      *
      * @param  int  $id  신고 ID
@@ -922,7 +922,7 @@ class ReportRepository implements ReportRepositoryInterface
     }
 
     /**
-     * 신고 대상의 스냅샷에서 개인정보 필드를 덮어씁니다 (개인정보 보유기간 처리, 이슈 #636).
+     * 신고 대상의 스냅샷에서 개인정보 필드를 덮어씁니다 (개인정보 보유기간 처리).
      *
      * 스냅샷에 그 키가 없는 로그는 건드리지 않는다. 수정 시각을 바꾸지 않도록 타임스탬프를
      * 끄고 모델 이벤트 없이 저장한다 — 파기는 신고 처리 이력이 아니다.

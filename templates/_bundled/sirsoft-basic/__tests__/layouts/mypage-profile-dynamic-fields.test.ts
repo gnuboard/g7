@@ -6,7 +6,7 @@
  * 이제 그 칸은 공용 항목 조각이 서버가 준 계약(profileFields)으로 카드마다 그리고, 운영자가 추가한 항목은
  * 「추가 정보」 카드에 선다. 아바타, 이메일과 저장 요청은 그대로다.
  *
- * 게시판 알림, 결제 통화, 배송 국가처럼 모듈과 플러그인이 가진 칸도 레이아웃에 박혀 있었는데(#490 7단계에서 걷어 냈다),
+ * 게시판 알림, 결제 통화, 배송 국가처럼 모듈과 플러그인이 가진 칸도 레이아웃에 박혀 있었는데(7단계에서 걷어 냈다),
  * 지금은 그 확장이 회원 항목으로 선언한 것을 계산값 profileExtensionGroups 가 확장마다 한 묶음으로 만들고,
  * 확장별 카드가 그 묶음을 돌며 같은 공용 조각으로 그린다. 선택지와 보기용 값도 항목 계약에서 온다.
  *
@@ -292,7 +292,7 @@ describe('내 정보 수정 — 운영자 설정을 따르는 항목', () => {
      * @effects no_hardcoded_extension_inputs
      */
     it('게시판 알림 4칸, 결제 통화, 배송 국가 칸이 레이아웃에 박혀 있지 않고, 선택지를 모듈 전역에서 읽지도 않는다', () => {
-      // 폼에 이름이 박힌 입력은 표시 이름 종류 선택 칸 하나뿐이다(항목이 아니라 회원의 선택이라 이 조각이 직접 그린다, #490 8단계).
+      // 폼에 이름이 박힌 입력은 표시 이름 종류 선택 칸 하나뿐이다(항목이 아니라 회원의 선택이라 이 조각이 직접 그린다).
       // 값이 실리는 나머지 칸은 모두 공용 조각이 항목 계약의 name 으로 그린다 (아이콘의 name 은 그림 이름이라 뺀다)
       const names = editNodes.filter((node) => node.name !== 'Icon').map((node) => node.props?.name).filter((name) => typeof name === 'string');
       expect(names).toEqual(['display_name_kind']);
@@ -537,7 +537,7 @@ describe('내 정보 수정 — 운영자 설정을 따르는 항목', () => {
       // 받은 정의 버전(fields_version)을 얹는다 — 회원 항목을 그리는 화면이라는 표식이다(없으면 서버가 옛 화면으로 보고 운영자 추가 필수 항목을 건너뛴다).
       expect(engineExpression(call.params.body, { _local: { profileEditForm: sent }, profileFields: { data: { fields_version: 'v916' } } })).toEqual({ ...sent, fields_version: 'v916' });
 
-      // 저장 성공 처리는 확장의 전역 값을 직접 맞추지 않는다 — 확장이 current_user 재조회를 지켜보다 자기 전역 값을 맞춘다(#490 7단계).
+      // 저장 성공 처리는 확장의 전역 값을 직접 맞추지 않는다 — 확장이 current_user 재조회를 지켜보다 자기 전역 값을 맞춘다.
       const saved = callbacksOf(call, 'onSuccess');
       expect(saved.filter((action: Node) => action.handler === 'setState' && action.params.target === 'global')).toEqual([]);
       expect(saved.filter((action: Node) => action.handler === 'refetchDataSource').map((action: Node) => action.params.dataSourceId)).toEqual(['user', 'current_user']);
@@ -548,7 +548,7 @@ describe('내 정보 수정 — 운영자 설정을 따르는 항목', () => {
     });
   });
 
-  describe('표시 이름 종류 선택 (#490 8단계)', () => {
+  describe('표시 이름 종류 선택', () => {
     const byId = (id: string) => editNodes.find((node) => node.id === id)!;
     const options = [
       { value: 'name', label: '이름', preview: '홍길동', requires_nickname: false, is_default: false },

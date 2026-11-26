@@ -29,7 +29,7 @@ use Throwable;
  * (failer 조회 → JobRetryRequested → attempts·retryUntil 초기화 → pushRaw → forget). 다른 점 둘:
  *
  * 1. 원래 연결·큐를 QueueWorkerRegistry::resolve() 로 다시 해석한다. 워커가 보지 않는 연결·큐로 되넣으면
- *    그 작업은 영영 처리되지 않는다(#780). 폴백하면 사례를 남긴다.
+ *    그 작업은 영영 처리되지 않는다. 폴백하면 사례를 남긴다.
  * 2. 해석된 연결이 sync·null 이면 거부한다 — SyncQueue::pushRaw() 는 아무것도 하지 않으므로 그대로 두면
  *    작업은 사라지고 실패 기록만 지워진다.
  *

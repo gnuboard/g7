@@ -76,7 +76,7 @@ test.describe('게시판 확장점 — 글 행 자리', () => {
     const slots = page.locator('[data-extension-point="board_post_row_badges"]');
     expect(await slots.count()).toBe(rows * 2);
 
-    // 호스트 DOM id 가 행·PC/모바일 자리마다 모두 다르다 (#408 — 확장점 호스트 id 의무, 반복 안은 행 변수 보간)
+    // 호스트 DOM id 가 행·PC/모바일 자리마다 모두 다르다 (확장점 호스트 id 의무, 반복 안은 행 변수 보간)
     const hostIds = await slots.evaluateAll((els) => els.map((el) => el.id));
     expect(hostIds.every((id) => id !== '')).toBe(true);
     expect(new Set(hostIds).size).toBe(hostIds.length);

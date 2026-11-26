@@ -8,7 +8,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductCommonInfoService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 상품 공통 정보 저장 정화 — 상품 설명과 같은 규칙 (#887 Q8)
+ * 상품 공통 정보 저장 정화 — 상품 설명과 같은 규칙
  *
  * 종전에는 공통 정보 본문을 정화 없이 저장했다. 이제 HTML 모드 본문은 로케일마다 상품 설명과 같은 저장 정화(`PurifiesHtml` 의
  * `content` 프로필 — 코어 `ContentHtmlPolicy::forStorage()`)를 거친다: 위험 요소(스크립트·이벤트 속성·`javascript:` 주소)는 지우고,

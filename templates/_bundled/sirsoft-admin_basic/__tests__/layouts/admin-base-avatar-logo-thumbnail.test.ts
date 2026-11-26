@@ -1,6 +1,6 @@
 /**
  * @file admin-base-avatar-logo-thumbnail.test.ts
- * @description 관리자 헤더 사용자 사진·로고 — 실제 응답 필드와 썸네일 규격 계약 (#869)
+ * @description 관리자 헤더 사용자 사진·로고 — 실제 응답 필드와 썸네일 규격 계약
  *
  * - 헤더 사진은 관리자 사용자 응답(`/api/admin/auth/user`)의 `avatar` 를 읽는다. 종전 `avatar_url` 은 응답에 없는
  *   필드라 사진을 올린 관리자에게도 늘 대신 그림(아이콘)이 나왔다. 사진 칸이 작아 규격 `xs` 로 요청한다.
@@ -35,7 +35,7 @@ function byId(node: unknown, id: string): Node | undefined {
 describe('관리자 헤더 사용자 사진·로고 썸네일', () => {
   /**
    * 사진은 응답의 avatar 필드를 쓰고, 사진이 없을 때만 대신 그림이 나온다. 대신 그림은 사용자 정보를 받은 뒤에만
-   * 판정한다 — 받기 전(`current_user` 가 undefined)에는 사진이 없는 것으로 읽지 않는다(#915, 7.1.6 받는 중 노출 규칙).
+   * 판정한다 — 받기 전(`current_user` 가 undefined)에는 사진이 없는 것으로 읽지 않는다(7.1.6 받는 중 노출 규칙).
    *
    * @scenario target=header_avatar
    * @effects avatar_reads_response_field
@@ -59,7 +59,7 @@ describe('관리자 헤더 사용자 사진·로고 썸네일', () => {
   it('헤더 사진은 eager 로딩이고 alt 대체 문구가 다국어 키다', () => {
     const img = byId(layout, 'user_avatar_img');
     expect(img?.props?.loading).toBe('eager');
-    // 대체 문구는 옆 이름 줄과 같이 표시 이름을 먼저 읽는다(#490 8단계)
+    // 대체 문구는 옆 이름 줄과 같이 표시 이름을 먼저 읽는다
     expect(img?.props?.alt).toBe("{{current_user.data?.display_name ?? current_user.data?.name ?? $t('admin.default_user_name')}}");
     expect(String(img?.props?.alt)).not.toContain("'User'");
   });
@@ -73,7 +73,7 @@ describe('관리자 헤더 사용자 사진·로고 썸네일', () => {
   it('사이드바·모바일 로고는 md 규격, eager 로딩이다', () => {
     for (const id of ['logo_image', 'mobile_logo_image']) {
       const img = byId(layout, id);
-      // 템플릿 설정 로고(branding.logo)가 있으면 그것, 없으면 환경설정 사이트 로고(#434). 규격은 그대로 md 다.
+      // 템플릿 설정 로고(branding.logo)가 있으면 그것, 없으면 환경설정 사이트 로고. 규격은 그대로 md 다.
       expect(img?.props?.src, id).toBe('{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}');
       expect(img?.props?.thumbPreset, id).toBe('md');
       expect(img?.props?.loading, id).toBe('eager');

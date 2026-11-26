@@ -23,7 +23,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductService;
 use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyService;
 
 /**
- * 이미지 썸네일 브라우저 실측 — 이커머스 데이터 정리 (이슈 #869).
+ * 이미지 썸네일 브라우저 실측 — 이커머스 데이터 정리.
  *
  * 대상은 실측 시더의 표식이 맞는 것만이다 — 주문번호 접두 `THUMB-MEAS-` + (실측 작성자 회원의 주문 또는 주문자 이름 표지),
  * 상품 코드 접두 `THUMBMEASURE` + 이름 표지, 카테고리 슬러그 `thumb-measure` + 이름 표지, 이름 표지가 있는 배송정책.

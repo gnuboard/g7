@@ -1,4 +1,4 @@
-feature: 게시판 본문 미디어 수명 — 휴지통 삭제·복원과 임시 정리 (#887 잠금)
+feature: 게시판 본문 미디어 수명 — 휴지통 삭제·복원과 임시 정리 (잠금)
 
 description: |
   게시글 삭제는 휴지통 정책이다. 본문 미디어(`board_attachments.collection = content_media`)도 일반 첨부와 같은 연쇄

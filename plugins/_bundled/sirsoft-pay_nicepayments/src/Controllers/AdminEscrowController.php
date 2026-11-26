@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 
-// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -118,7 +118,7 @@ class AdminEscrowController extends AdminBaseController
             return ResponseHelper::success('common.success', $result);
         } catch (\Exception $e) {
             // 메시지 키 자리에는 원문 금지 — 키 해석에 실패해 원문이 그대로 나간다.
-            // 원문은 서버 로그에 남기고, 응답 errors 에는 운영자가 봐도 되는 사유만 싣는다(#858).
+            // 원문은 서버 로그에 남기고, 응답 errors 에는 운영자가 봐도 되는 사유만 싣는다.
             Log::error('NicePayments: escrow delivery registration failed', [
                 'tid' => $validated['tid'],
                 'exception_class' => $e::class,

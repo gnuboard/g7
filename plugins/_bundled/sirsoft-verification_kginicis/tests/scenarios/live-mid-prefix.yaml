@@ -1,7 +1,7 @@
 feature: KG이니시스 본인인증 — 라이브 MID 접두(LIVE_MID_PREFIX) 부착과 라이브 모드 사용 가능 판정
 
 description: |
-  이니시스 정책 변경으로 라이브 가맹점 MID 접두가 SRA 에서 SRB 로 바뀌었다(#458). 접두는
+  이니시스 정책 변경으로 라이브 가맹점 MID 접두가 SRA 에서 SRB 로 바뀌었다. 접두는
   InicisIdentityProvider::LIVE_MID_PREFIX 상수 한 곳에 있고 buildLiveMid / isAvailable 이 그 상수를 따른다.
   입력에 접두가 없으면 붙이고, 이미 있으면 다시 붙이지 않으며, 빈 입력은 빈 값으로 둔다.
   라이브 모드는 MID 와 API 키가 모두 있어야 사용 가능하다.

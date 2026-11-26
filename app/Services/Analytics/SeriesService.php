@@ -199,7 +199,7 @@ class SeriesService
     public function hourlyAvailableFrom(AnalyticsConfig $config): Carbon
     {
         // 경계는 **사이트 표준시 일자**로 센다 — 보존기간은 사이트 자정으로 끊기고 화면도 그 일자를
-        // 그린다(#682 S3 라운드 7). `Carbon::now()` 는 `config('app.timezone')`(UTC)을 따르므로
+        // 그린다. `Carbon::now()` 는 `config('app.timezone')`(UTC)을 따르므로
         // UTC 보다 앞선 사이트에서는 새벽 시간대에 하루 앞 날짜가 나와, 안내 문구와 단위 강등
         // 분기가 함께 어긋났다.
         //

@@ -127,7 +127,7 @@
       <!-- 비회원 작성자 항목 기본값 카드 — 새 게시판을 만들 때 그 게시판의 비회원 작성자 항목 설정으로 복사된다(이미 만든 게시판은 그대로) -->
       <section-layout data-type="layout" data-ref="section_guest_author_defaults" class="board-admin-card">
         <h3 class="board-card-title">$t:sirsoft-board.admin.settings.sections.guest_author_fields</h3>
-        <!-- 비회원 작성자 항목 기본값 — 새 게시판이 물려받는 사용, 필수(모듈 설정 basic_defaults.guest_author_fields). 게시판 수정 화면의 표와 같은 모양이다(#490).
+        <!-- 비회원 작성자 항목 기본값 — 새 게시판이 물려받는 사용, 필수(모듈 설정 basic_defaults.guest_author_fields). 게시판 수정 화면의 표와 같은 모양이다.
              행은 서버가 준 `form.guest_author_field_rows`(고정 항목 이름과 비밀번호 + 항목 엔진의 항목)이고,
              스위치가 바꾸는 값은 `form.guest_author_fields[항목 키].{post|comment}.{enabled|required}`(불리언)이다.
              행마다 `_v` 에 지금 값(폼 값 우선, 없으면 서버가 준 행 값)을 얹어 네 칸이 같은 값을 읽는다. 「사용」이 꺼지면 「필수」도 꺼진 것으로 본다.

@@ -28,14 +28,14 @@ final class EnumeratedSettingValues
     public static function allowed(): array
     {
         return [
-            // 자산 URL 방식 — 정적 최적화 서버 대응 (이슈 #486)
+            // 자산 URL 방식 — 정적 최적화 서버 대응
             'general.asset_url_mode' => [
                 AssetUrl::MODE_EXTENSION,
                 AssetUrl::MODE_EXTENSIONLESS,
             ],
-            // 실행 모드 — 웹 요청 안의 커맨드 실행 방식 (#609)
+            // 실행 모드 — 웹 요청 안의 커맨드 실행 방식
             'system.execution_mode' => ExecutionMode::values(),
-            // 예약 작업 실행 방식 — 주소 호출 / 서버 크론 (#609)
+            // 예약 작업 실행 방식 — 주소 호출 / 서버 크론
             'system.cron_mode' => WebCronPolicy::modes(),
         ];
     }

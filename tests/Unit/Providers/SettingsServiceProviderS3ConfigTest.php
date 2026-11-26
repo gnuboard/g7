@@ -10,7 +10,7 @@ use ReflectionMethod;
 use Tests\TestCase;
 
 /**
- * SettingsServiceProvider S3 설정 주입 테스트 (공개 #99 / 내부 #563)
+ * SettingsServiceProvider S3 설정 주입 테스트 (공개 #99)
  *
  * applyS3Config()의 endpoint/path-style 주입, s3_url→url 매핑,
  * applyDriverConfig()의 첨부 디스크 전환(A8), 죽은 주입 제거(a2·a3) 회귀를 검증합니다.

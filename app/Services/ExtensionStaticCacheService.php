@@ -1096,7 +1096,7 @@ class ExtensionStaticCacheService
         // 3. routes 병합 결과 — 프론트 소비 코드 무변경을 위한 성공 봉투 포함.
         //    열화 스냅샷(확장 업데이트 진행 중 등)은 게시하지 않는다 — 정적 파일은
         //    스스로 회복되지 않으므로 열화 상태가 다음 bump 까지 박제된다 (getRoutes 와 동일 규율)
-        //    공개 routes 응답의 정적 사본이므로 그 응답처럼 빈 맵 `{}` 를 보존한다 (#758)
+        //    공개 routes 응답의 정적 사본이므로 그 응답처럼 빈 맵 `{}` 를 보존한다
         $routesResult = $this->templateService->getRoutesDataWithModules($identifier, preserveEmptyMaps: true);
 
         if (($routesResult['success'] ?? false) && ! $this->templateService->lastRouteMergeWasDegraded()) {
@@ -1146,7 +1146,7 @@ class ExtensionStaticCacheService
      *
      * 파일 집합은 `CustomAssets::publishableFiles()` 가 정한다 — 변경 감지(`CollectsCustomAssets`)
      * 와 같은 열거자다. 게시와 감지가 서로 다른 코드로 범위를 정하면 어긋나고, 그 어긋남은
-     * "글꼴을 바꿨는데 반영되지 않는다" 로만 나타난다(#651 F7).
+     * "글꼴을 바꿨는데 반영되지 않는다" 로만 나타난다.
      *
      * @param  string  $extensionType  `templates` | `modules` | `plugins`
      * @param  string  $identifier  확장 식별자

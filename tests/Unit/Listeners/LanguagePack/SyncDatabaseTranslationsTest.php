@@ -246,7 +246,7 @@ class SyncDatabaseTranslationsTest extends TestCase
      */
     public function test_activate_merges_identity_message_locale_into_definition_and_template(): void
     {
-        // 본인인증 알림(7.1.0~)은 알림 정의 type 키로 seed/notifications.json 에서 번역을 받는다 (#699).
+        // 본인인증 알림(7.1.0~)은 알림 정의 type 키로 seed/notifications.json 에서 번역을 받는다.
         $def = NotificationDefinition::query()->create([
             'type' => 'identity.purpose.signup',
             'hook_prefix' => 'core.identity',

@@ -25,7 +25,7 @@ if (! function_exists('g7_settings')) {
      * // 플러그인 설정 조회
      * $displayMode = g7_settings('plugins.sirsoft-daum_postcode.display_mode');
      * @example
-     * // 템플릿 설정 조회 (#434 — 처음 읽을 때 미러를 채운다)
+     * // 템플릿 설정 조회 (처음 읽을 때 미러를 채운다)
      * $maxBoards = g7_settings('templates.sirsoft-basic.header.max_boards');
      * @example
      * // 전체 설정 조회
@@ -148,7 +148,7 @@ if (! function_exists('g7_plugin_settings')) {
 
 if (! function_exists('g7_template_settings')) {
     /**
-     * 템플릿 환경설정 값을 조회합니다 (#434).
+     * 템플릿 환경설정 값을 조회합니다.
      *
      * 미러(`g7_settings.templates.{id}`)는 처음 읽을 때 채운다 — 부팅 때 모든 요청이 설정 파일을 읽지 않게 한다.
      * 꺼진 템플릿의 설정도 읽힌다(값이 화면에 영향을 주는지는 호출자가 판단한다).
@@ -202,7 +202,7 @@ if (! function_exists('g7_meta_generator_tag')) {
 
 if (! function_exists('g7_template_html_attributes')) {
     /**
-     * 활성 템플릿 표준 설정을 `<html>` 속성으로 만듭니다 (#434).
+     * 활성 템플릿 표준 설정을 `<html>` 속성으로 만듭니다.
      *
      * 템플릿 설정의 표준 키 `branding.accent`·`branding.color_scheme_default` 를 선언한 활성 템플릿이면
      * ` data-g7-accent="green" data-g7-color-scheme-default="dark"` 꼴을 돌려준다. 값은 그 템플릿이 선언한 선택지 안의
@@ -234,7 +234,7 @@ if (! function_exists('g7_template_html_attributes')) {
 
 if (! function_exists('g7_favicon_tags')) {
     /**
-     * 파비콘 `<link>` 태그 HTML 을 생성합니다 (#434).
+     * 파비콘 `<link>` 태그 HTML 을 생성합니다.
      *
      * 우선순위: 그 화면 종류의 활성 템플릿 설정 `favicon` > 코어 일반 탭 `site_favicon` > 번들 기본
      * (운영자가 직접 바꾼 `public/favicon.ico` 가 있으면 그것). SPA 셸·관리자 셸·SEO 봇 화면이 공통 호출한다.
@@ -258,7 +258,7 @@ if (! function_exists('g7_favicon_tags')) {
 
 if (! function_exists('g7_favicon_tags_static')) {
     /**
-     * 번들 계층 파비콘 `<link>` 태그 HTML 을 생성합니다 — DB·API 를 보지 않는다 (#434).
+     * 번들 계층 파비콘 `<link>` 태그 HTML 을 생성합니다 — DB·API 를 보지 않는다.
      *
      * 오류 화면·점검 화면·DB 접속 오류 화면처럼 DB 와 `/api/*` 를 믿을 수 없는 화면용. 예외를 삼켜 빈 문자열을 돌려준다.
      *

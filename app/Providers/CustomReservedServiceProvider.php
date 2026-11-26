@@ -9,7 +9,7 @@ use Illuminate\View\Factory;
 use Illuminate\View\FileViewFinder;
 
 /**
- * custom 예약 자리(#792) 연결 — 라라벨 개발자가 평소 쓰는 기본 위치를 코어 업데이트와 무관하게 쓰게 한다.
+ * custom 예약 자리 연결 — 라라벨 개발자가 평소 쓰는 기본 위치를 코어 업데이트와 무관하게 쓰게 한다.
  *
  * - `custom/vendor/autoload.php`(개발자 전용 composer) — 코어·확장 오토로드 **다음에** 로드
  * - `.html` 뷰 = 파일 그대로 (custom 뷰에서만, {@see CustomViewFinder})

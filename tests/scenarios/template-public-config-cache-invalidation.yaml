@@ -9,7 +9,7 @@ description: |
   (cache-clear 커맨드 단일/전체, update, deactivate, uninstall) 전 경로가
   `TemplateManager::clearTemplateCache()` 단일 지점을 경유해 이 키(+ components_manifest
   두 변종, 현재 버전 routes/language 키, `.with_source_meta` 편집기 변종)를 능동
-  삭제함을 고정한다 (#588, 공개 #119).
+  삭제함을 고정한다 (공개 #119).
 
 coverage_strategy: pairwise
 

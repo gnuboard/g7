@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Enums;
 
 /**
- * 쿠폰 발급 경로 Enum (#952)
+ * 쿠폰 발급 경로 Enum
  *
  * 발급 내역(`ecommerce_promotion_coupon_issues.issue_source`)에 기록한다. 이 컬럼이 생기기 전의 행은 NULL 이며,
  * 화면은 쿠폰 코드 접두(DL·DR)로 경로를 추정한다(`fromLegacyCode()`).

@@ -23,7 +23,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 클레임 상품 행 송장 규칙 테스트 (#599 후속 §3-2 R1~R12 — `RecordsClaimTracking`)
+ * 클레임 상품 행 송장 규칙 테스트 (`RecordsClaimTracking`)
  *
  * 송장은 신청서 헤더가 아니라 **상품 행**에 붙는다(주문과 같은 행 쪼개기 방식). 교환·반품 서비스가
  * 같은 trait 을 쓰므로 두 유형을 같은 규칙으로 잰다.

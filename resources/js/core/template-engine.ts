@@ -31,7 +31,7 @@ import { createLogger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { initializeG7CoreGlobals, initDevToolsAPI } from './template-engine/G7CoreGlobals';
 import { checkLayoutEditorMode } from './template-engine/layout-editor/hooks/useEditorMode';
-// 운영 화면 편집 진입 단추 — 편집기 lazy 번들이 아니라 메인 번들에 둔다(일반 렌더 화면에 붙는다, #869)
+// 운영 화면 편집 진입 단추 — 편집기 lazy 번들이 아니라 메인 번들에 둔다(일반 렌더 화면에 붙는다)
 import { EditEntryFabHost } from './template-engine/layout-editor/components/EditEntryFabHost';
 import { isEditEntryButtonEnabled } from './template-engine/layout-editor/hooks/useEditEntryFab';
 import { documentTitle } from './routing/DocumentTitle';
@@ -161,7 +161,7 @@ const pendingDataUpdates: Array<{ data: Record<string, any>; options?: UpdateOpt
 let rootReleased = false;
 
 /**
- * 디버그 모드 중복 DOM id 감시 해제 함수 (engine-v1.99.0, #408)
+ * 디버그 모드 중복 DOM id 감시 해제 함수 (engine-v1.99.0)
  *
  * 디버그 모드에서만 첫 renderTemplate 때 만든다. 운영(디버그 꺼짐)에서는 observer 를 만들지 않는다.
  */
@@ -512,7 +512,7 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
       }
     }
 
-    // 디버그 모드 중복 DOM id 경고 — 앱 루트가 정해진 뒤 한 번만 시작한다 (engine-v1.99.0, #408, 결정 D5).
+    // 디버그 모드 중복 DOM id 경고 — 앱 루트가 정해진 뒤 한 번만 시작한다 (engine-v1.99.0).
     // 모달·토스트는 body 로 포털되므로 컨테이너가 속한 문서의 body 를 본다.
     if (debugMode && !stopDuplicateIdMonitor) {
       stopDuplicateIdMonitor = startDuplicateIdMonitor(container.ownerDocument?.body ?? container);
@@ -727,7 +727,7 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
                 return modalRenderer;
               })
               ),  // ParentContextProvider 종료
-              // 운영 화면 편집 진입 단추 — 모달 묶음 뒤 고정 키 형제라 앞 형제의 키·순서를 바꾸지 않는다 (engine-v1.95.0, #869)
+              // 운영 화면 편집 진입 단추 — 모달 묶음 뒤 고정 키 형제라 앞 형제의 키·순서를 바꾸지 않는다 (engine-v1.95.0)
               React.createElement(EditEntryFabHost, {
                 key: '__g7_edit_entry_fab',
                 templateIdentifier: state.templateId || '',
@@ -964,7 +964,7 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
                     return modalRenderer;
                   })
                 ),  // ParentContextProvider 종료
-                // 운영 화면 편집 진입 단추 — renderTemplate 과 같은 키·자리여야 재렌더 때 내려갔다 붙지 않는다 (engine-v1.95.0, #869)
+                // 운영 화면 편집 진입 단추 — renderTemplate 과 같은 키·자리여야 재렌더 때 내려갔다 붙지 않는다 (engine-v1.95.0)
                 React.createElement(EditEntryFabHost, {
                   key: '__g7_edit_entry_fab',
                   templateIdentifier: state.templateId || '',
@@ -1056,7 +1056,7 @@ function destroyTemplate(): void {
     // 루트 반납 표식도 거둔다 — 남기면 재초기화 뒤 첫 렌더 전 업데이트가 큐 대신 버려진다 (engine-v1.79.0)
     rootReleased = false;
 
-    // 디버그 모드 중복 DOM id 감시 해제 (engine-v1.99.0, #408)
+    // 디버그 모드 중복 DOM id 감시 해제 (engine-v1.99.0)
     if (stopDuplicateIdMonitor) {
       stopDuplicateIdMonitor();
       stopDuplicateIdMonitor = null;

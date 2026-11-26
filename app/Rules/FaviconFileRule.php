@@ -9,7 +9,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Http\UploadedFile;
 
 /**
- * 파비콘 업로드 파일의 내용 검증 (#434)
+ * 파비콘 업로드 파일의 내용 검증
  *
  * 파비콘 컬렉션은 ico·svg 를 받는다(전역 첨부 허용 목록과 무관). 그래서 그 두 형식은 내용까지 본다.
  * 크기 상한은 1MB({@see FaviconPolicy::MAX_SIZE_KB}).

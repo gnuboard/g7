@@ -1,6 +1,6 @@
 /**
  * @file admin-board-post-form-content-media-target.test.ts
- * @description 관리자 글쓰기 — 편집기 업로드 계약을 표준 계약 엔드포인트에서 받는다 (#887)
+ * @description 관리자 글쓰기 — 편집기 업로드 계약을 표준 계약 엔드포인트에서 받는다
  *
  * 편집 화면이 「무엇을 올릴 수 있나」를 받는 길을 확장마다 `GET …/content-media/target` 으로 맞췄다. 관리자 글쓰기는
  * 데이터소스 `content_media_target`(관리자 계약 주소)을 받아 편집기 `mediaUpload` 에 임시 키를 더해 넘긴다. 올릴 권한이
@@ -70,7 +70,7 @@ const dataSources = (postForm as Node).data_sources as Node[];
 const target = dataSources.find((d) => d.id === 'content_media_target');
 const editor = findById(formFields, 'content_section');
 
-describe('관리자 글쓰기 — 편집기 업로드 계약 데이터소스 (#887)', () => {
+describe('관리자 글쓰기 — 편집기 업로드 계약 데이터소스', () => {
     // @scenario surface=admin
     // @effects editor_waits_for_target_source
     it('관리자 표준 계약 엔드포인트를 데이터소스로 받고, 실패는 조용히 넘겨 data: null 로 둔다', () => {
@@ -92,7 +92,7 @@ describe('관리자 글쓰기 — 편집기 업로드 계약 데이터소스 (#8
         expect(shows({ content_media_target: undefined, form_meta: formMeta })).toBe(false);
         expect(shows({ content_media_target: { data: null }, form_meta: formMeta })).toBe(true);
         expect(shows({ content_media_target: { data: { endpoint: '/x' } }, form_meta: formMeta })).toBe(true);
-        // 폼 메타 대기(#883)는 그대로 — 계약을 받았어도 폼 메타 전이면 세우지 않는다
+        // 폼 메타 대기는 그대로 — 계약을 받았어도 폼 메타 전이면 세우지 않는다
         expect(shows({ content_media_target: { data: { endpoint: '/x' } }, form_meta: undefined })).toBe(false);
     });
 

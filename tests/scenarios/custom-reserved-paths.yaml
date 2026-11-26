@@ -1,4 +1,4 @@
-feature: custom 예약 자리 — 코어 업데이트가 덮지도 지우지도 않는 개발자 자리 (#792)
+feature: custom 예약 자리 — 코어 업데이트가 덮지도 지우지도 않는 개발자 자리
 
 description: |
   업데이트 대상 폴더(routes·resources·app·public·lang·config·database) 안쪽의 custom 예약 자리

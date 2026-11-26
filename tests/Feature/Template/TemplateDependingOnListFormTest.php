@@ -11,7 +11,7 @@ use App\Services\TemplateService;
 use Tests\TestCase;
 
 /**
- * 템플릿 의존 역조회(getTemplatesDependingOnModule·Plugin)가 dependencies 목록형도 읽는다 (#822, D6 같은 결함군).
+ * 템플릿 의존 역조회(getTemplatesDependingOnModule·Plugin)가 dependencies 목록형도 읽는다 (D6 같은 결함군).
  *
  * 종전에는 `$dependencies['modules']` 를 키로 읽어, 목록형 `{"modules": ["sirsoft-board"]}` 이면 키가 0·1 이라
  * 의존 템플릿을 찾지 못했다 — 모듈 비활성화 경고에서 그 템플릿이 빠졌다.

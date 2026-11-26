@@ -111,7 +111,7 @@ class AdminCbtReconciliationController extends AdminBaseController
                 'error' => $e->getMessage(),
             ]);
 
-            // 이 기록은 관리자 주문 상세 「환불 오류」 칸에 그대로 보인다 — 원문은 위 로그에만 남긴다(#858)
+            // 이 기록은 관리자 주문 상세 「환불 오류」 칸에 그대로 보인다 — 원문은 위 로그에만 남긴다
             $failureReason = $this->refundFailureReason($e);
 
             $this->reconciliationService->record($orderNumber, [

@@ -34,7 +34,7 @@ class BoardSitemapLifecycleTest extends BoardTestCase
     private SeoBoardCacheListener $listener;
 
     /**
-     * 게시판 재활성 재색인을 맡는 큐 리스너 (운영에서는 커밋 뒤 워커가 같은 인자로 실행한다, #724)
+     * 게시판 재활성 재색인을 맡는 큐 리스너 (운영에서는 커밋 뒤 워커가 같은 인자로 실행한다)
      */
     private SeoBoardRegenerateListener $regenerate;
 
@@ -295,7 +295,7 @@ class BoardSitemapLifecycleTest extends BoardTestCase
 
     /**
      * 개발자가 화면 주소 필터로 게시판 주소를 바꿔 두면 증분 색인(글 저장·게시판 수정·재활성 묶음)도 전체 재생성과
-     * 같은 필터 주소를 쓴다 (#792 W17) — 필터 전 주소가 섞이면 글을 저장할 때마다 사이트맵이 옛 주소로 덮인다.
+     * 같은 필터 주소를 쓴다 — 필터 전 주소가 섞이면 글을 저장할 때마다 사이트맵이 옛 주소로 덮인다.
      *
      * @scenario lifecycle=reactivate
      *

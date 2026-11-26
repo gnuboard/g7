@@ -1,5 +1,5 @@
 /**
- * E2E: 환경설정 > 고급 — 아웃바운드 HTTP 프록시 (#600)
+ * E2E: 환경설정 > 고급 — 아웃바운드 HTTP 프록시
  *
  * 시나리오 매니페스트: tests/scenarios/outbound-http-proxy.yaml — 마킹은 각 테스트의
  * scenario(k=v 조합)·effects 주석이 담당하며, 헤더 요약 마킹은 파서 형식이 아니다
@@ -19,7 +19,7 @@ import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth'
  *
  * 이 화면은 하드 로드 시 설정 응답이 도착하기 전에도 폼이 렌더되어 조작할 수 있고,
  * 그 조작은 뒤늦게 도착한 `initLocal` 시드에 덮인다(실측 노출 창 300~430ms).
- * 제품 차원의 잠금은 두지 않기로 했으므로(#600 제품 결정), 테스트가 시드 완료를
+ * 제품 차원의 잠금은 두지 않기로 했으므로(제품 결정), 테스트가 시드 완료를
  * 기다린 뒤에 조작한다.
  */
 async function gotoAdvancedTab(page: import('@playwright/test').Page): Promise<void> {
@@ -90,7 +90,7 @@ async function disableDebugMode(page: import('@playwright/test').Page): Promise<
 
 // @scenario debug_mode=off, proxy_value=valid, bypass_list=empty
 // @effects proxy_inputs_hidden_when_debug_mode_off
-test('#600 - 디버그 모드가 꺼져 있으면 프록시 입력칸이 없다', async ({ page }) => {
+test('디버그 모드가 꺼져 있으면 프록시 입력칸이 없다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -113,7 +113,7 @@ test('#600 - 디버그 모드가 꺼져 있으면 프록시 입력칸이 없다'
 
 // @scenario debug_mode=on, proxy_value=valid, bypass_list=empty
 // @effects proxy_inputs_visible_when_debug_mode_on
-test('@smoke #600 - 디버그 모드를 켜면 프록시 주소와 예외 목록이 마운트된다', async ({ page }) => {
+test('@smoke 디버그 모드를 켜면 프록시 주소와 예외 목록이 마운트된다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -132,7 +132,7 @@ test('@smoke #600 - 디버그 모드를 켜면 프록시 주소와 예외 목록
 
 // @scenario debug_mode=on, proxy_value=invalid, bypass_list=empty
 // @effects proxy_setting_rejects_invalid_url
-test('#600 - 허용되지 않는 형태의 프록시 주소는 저장이 거부된다', async ({ page }) => {
+test('허용되지 않는 형태의 프록시 주소는 저장이 거부된다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -157,7 +157,7 @@ test('#600 - 허용되지 않는 형태의 프록시 주소는 저장이 거부�
 
 // @scenario debug_mode=on, proxy_value=valid, bypass_list=empty
 // @effects proxy_connection_test_button_wired
-test('#600 - 연결 테스트가 프록시를 거친 출발지 IP 를 화면에 보고한다', async ({ page }) => {
+test('연결 테스트가 프록시를 거친 출발지 IP 를 화면에 보고한다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 

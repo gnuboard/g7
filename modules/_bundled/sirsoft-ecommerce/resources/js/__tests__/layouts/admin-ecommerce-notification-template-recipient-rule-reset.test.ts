@@ -1,6 +1,6 @@
 /**
  * @file admin-ecommerce-notification-template-recipient-rule-reset.test.ts
- * @description 쇼핑몰 환경설정 — 알림 템플릿 편집 창 — 수신자 규칙 종류 전환·관련 사용자 관계·다중 선택 문구 (#599 validate P7)
+ * @description 쇼핑몰 환경설정 — 알림 템플릿 편집 창 — 수신자 규칙 종류 전환·관련 사용자 관계·다중 선택 문구
  *
  * 구조 단언만으로는 표현식이 런타임에 무엇을 만드는지 보장하지 못한다. 레이아웃에 적힌 표현식을
  * 엔진에 그대로 넣어 결과 배열을 본다.

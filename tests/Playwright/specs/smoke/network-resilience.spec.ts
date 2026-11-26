@@ -1,5 +1,5 @@
 /**
- * Smoke: 페이지 로드 요청 1건의 일시 실패가 앱 전체를 죽이지 않는다 (#463)
+ * Smoke: 페이지 로드 요청 1건의 일시 실패가 앱 전체를 죽이지 않는다
  *
  * 한 페이지 로드는 same-origin 요청 20여 개를 발사하는데, 그중 6개는 1건만 취소돼도
  * 앱 전체가 죽었다(전면 "초기화 실패" / 백지 / raw 영문 토스트). 모바일 회선에서
@@ -85,7 +85,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/build/ext/**', (route) => route.fulfill({ status: 404, body: '' }));
 });
 
-test.describe('네트워크 복원력 — 요청 1건의 일시 실패 (#463)', () => {
+test.describe('네트워크 복원력 — 요청 1건의 일시 실패', () => {
   // 각 경로의 첫 요청 1건을 취소해도 재시도로 복구되어 앱이 정상 렌더돼야 한다.
   const SINGLE_ABORT_PATHS: Array<{ name: string; pattern: string | ((url: URL) => boolean) }> = [
     { name: 'routes.json', pattern: suffixedPath('\\/api\\/templates\\/[^/]+\\/routes', 'json') },
@@ -182,7 +182,7 @@ test.describe('네트워크 복원력 — 요청 1건의 일시 실패 (#463)', 
   });
 });
 
-test.describe('네트워크 복원력 — 번들이 끝내 부재할 때 (#463)', () => {
+test.describe('네트워크 복원력 — 번들이 끝내 부재할 때', () => {
   /**
    * 코어 번들이 없으면 재시도할 JS 자체가 없다(닭-달걀). blade 인라인 JS 가 재시도하고,
    * 끝내 실패하면 **백지가 아니라** 사용자 안내를 심어야 한다.

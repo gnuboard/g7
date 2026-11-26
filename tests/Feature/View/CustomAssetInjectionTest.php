@@ -353,7 +353,7 @@ class CustomAssetInjectionTest extends TestCase
             }
 
             // 두 렌더의 서명이 **각자** 기억된다 — 하나의 자리를 서로 덮어쓰지 않는다.
-            // 스코프 키는 `{템플릿}@{호스트명}` — 다중 서버 공유 캐시에서 서버별로 기억한다(#651 F9).
+            // 스코프 키는 `{템플릿}@{호스트명}` — 다중 서버 공유 캐시에서 서버별로 기억한다.
             $host = gethostname() ?: 'host';
             $stored = $cache->get(CustomAssets::SIGNATURE_CACHE_KEY);
 
@@ -390,7 +390,7 @@ class CustomAssetInjectionTest extends TestCase
     }
 
     /**
-     * `custom/` **하위 디렉토리**의 글꼴·이미지 변경도 감지한다 — 게시와 같은 범위 (#651 F7).
+     * `custom/` **하위 디렉토리**의 글꼴·이미지 변경도 감지한다 — 게시와 같은 범위.
      *
      * 종전 서명은 로드 목록(최상위 css/js)의 mtime 만 봤다. 게시는 `custom/**` 를 재귀로
      * 복사하므로, 문서가 권장하는 `url('./img/marker.svg')` 의 대상 파일만 교체하면 게시본이
@@ -443,7 +443,7 @@ class CustomAssetInjectionTest extends TestCase
     }
 
     /**
-     * 서명 키는 만료되지 않는다 — 기본 TTL 로 만료되면 그 경계의 첫 관측이 "기록만" 이라 변경 1회를 놓친다 (#651).
+     * 서명 키는 만료되지 않는다 — 기본 TTL 로 만료되면 그 경계의 첫 관측이 "기록만" 이라 변경 1회를 놓친다.
      *
      * @scenario custom_source=convention_scan, custom_asset=css, custom_change_detection=no_change
      *

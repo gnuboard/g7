@@ -3,7 +3,7 @@
  * @file pluginSettingsToneClasses.test.ts
  * @description KG이니시스 결제 환경설정 화면의 안내 글자색을 플러그인이 자기 CSS 로 제공하는지
  *
- * 회귀 배경: 관리자 템플릿 의미 클래스 도입(#408) 때 글자색 치환이 한 칸씩 밀렸다. 라이브 모드 경고 본문이 초록,
+ * 회귀 배경: 관리자 템플릿 의미 클래스 도입 때 글자색 치환이 한 칸씩 밀렸다. 라이브 모드 경고 본문이 초록,
  * CBT 연결 점검의 「정상」이 노랑, 파란 CBT 도우미 카드 설명이 노랑, 주황 연결 진단 카드 설명이 파랑으로 보였다.
  * 결정(2026-10-09): 확장이 템플릿에 의존하지 않게 확장 자체가 클래스를 제공한다 — 접두 `pay-kginicis-` 의
  * 의미 글자색 클래스를 `resources/css/main.css` 에 정의하고(다크 모드 짝 포함) 레이아웃이 그것을 쓴다.
@@ -59,7 +59,7 @@ const cls = (n: LayoutNode | undefined) => (typeof n?.props?.className === 'stri
 const tokens = (n: LayoutNode | undefined) => cls(n).replace(/[{}'?:]/g, ' ').split(/\s+/).filter(Boolean);
 type ResponsiveRange = { props?: { className?: string }; classMerge?: string };
 /**
- * 폭 구간의 실효 className — 구간 class(있으면 통째 교체, 없으면 기본 class) 위에 구간 class-merge 를 엔진 규칙으로 덧붙인 값 (#399, engine-v1.98.0).
+ * 폭 구간의 실효 className — 구간 class(있으면 통째 교체, 없으면 기본 class) 위에 구간 class-merge 를 엔진 규칙으로 덧붙인 값 (engine-v1.98.0).
  * 접두 토큰(`paykginicis:…`)끼리 충돌 교체가 되도록 서버가 내려 주는 확장 접두 목록을 계산하는 동안만 세운다.
  */
 const rangeClassName = (n: LayoutNode | undefined, range: ResponsiveRange): string => {

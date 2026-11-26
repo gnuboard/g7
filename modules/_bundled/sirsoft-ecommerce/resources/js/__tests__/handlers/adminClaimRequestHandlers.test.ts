@@ -1,5 +1,5 @@
 /**
- * 관리자 직권 접수 핸들러 테스트 (#599 §3-11 · D5~D8)
+ * 관리자 직권 접수 핸들러 테스트
  *
  * @description
  * 접수 창(`modal_admin_claim_request`)의 상태는 전부 `_global.adminClaimRequest` 에 있고, 화면에서는

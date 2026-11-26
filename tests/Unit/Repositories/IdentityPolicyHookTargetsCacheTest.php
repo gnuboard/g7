@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 본인인증 hook target 목록 캐시 (#860 W6)
+ * 본인인증 hook target 목록 캐시
  *
  * 동적 hook 구독 동기화가 매 요청 `identity_policies` 를 DISTINCT 조회하던 것을 캐시로 바꾼다. 정책이
  * 바뀌면(모델 저장·삭제, 이벤트 없는 대량 삭제) 같은 무효화 계열이 함께 지워 다음 요청이 바로 본다.

@@ -114,7 +114,7 @@ class CoreUpdatePhpRequirementPreflightTest extends TestCase
      * 항목 이름을 역슬래시로 저장한 zip(Windows 압축 도구)도 요구 목록을 읽어 같은 자리에서 실패로 끝납니다.
      *
      * 정규화한 이름으로 `getFromName()` 하면 원본 이름(`config\…`)과 달라 목록을 못 읽고, 사전 점검이
-     * 「목록 없음」으로 조용히 생략돼 필수 확장이 빠진 서버에서 업데이트가 진행됐다(#971).
+     * 「목록 없음」으로 조용히 생략돼 필수 확장이 빠진 서버에서 업데이트가 진행됐다.
      *
      * @scenario source_kind=zip, core_extension=missing
      *

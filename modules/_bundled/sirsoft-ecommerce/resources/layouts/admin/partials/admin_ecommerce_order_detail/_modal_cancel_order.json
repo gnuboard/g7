@@ -615,7 +615,7 @@
                     ]
                 },
                 {
-                    "comment": "환불 계좌 (W-4 / #454). 가상계좌·무통장에서만 노출한다 — 카드·간편결제는 원 결제수단으로 환불되므로 계좌가 불필요하다. 가상계좌 입금완료 건은 서버(CancelOrderRequest)가 필수로 강제한다. 주문 시 입력값은 레이아웃 initLocal 이 프리필하며, cancelOrderHandlers 가 _local.refundBank* 를 읽어 전송한다. 신설 블록이므로 responsive.portable 로 작성한다(§6-0). **돌려줄 돈이 없으면 감춘다** — 아직 입금되지 않은 무통장 주문에까지 계좌칸을 세우면 운영자는 존재하지 않는 환불을 위해 계좌를 찾게 된다(브라우저 실측). 서버의 같은 판정(CancelOrderRequest::hasMoneyToReturn)과 축을 맞춘다. 입금을 「기록만」 한 결제 전 주문은 헤더의 받은 돈이 0 이지만 돌려줄 돈이 있으므로 서버 판정(payment.has_cash_to_return)도 함께 읽는다(S3-D7).",
+                    "comment": "환불 계좌 (W-4). 가상계좌·무통장에서만 노출한다 — 카드·간편결제는 원 결제수단으로 환불되므로 계좌가 불필요하다. 가상계좌 입금완료 건은 서버(CancelOrderRequest)가 필수로 강제한다. 주문 시 입력값은 레이아웃 initLocal 이 프리필하며, cancelOrderHandlers 가 _local.refundBank* 를 읽어 전송한다. 신설 블록이므로 responsive.portable 로 작성한다(§6-0). **돌려줄 돈이 없으면 감춘다** — 아직 입금되지 않은 무통장 주문에까지 계좌칸을 세우면 운영자는 존재하지 않는 환불을 위해 계좌를 찾게 된다(브라우저 실측). 서버의 같은 판정(CancelOrderRequest::hasMoneyToReturn)과 축을 맞춘다. 입금을 「기록만」 한 결제 전 주문은 헤더의 받은 돈이 0 이지만 돌려줄 돈이 있으므로 서버 판정(payment.has_cash_to_return)도 함께 읽는다(S3-D7).",
                     "id": "cancel_refund_bank_section",
                     "type": "basic",
                     "name": "Div",
@@ -1810,7 +1810,7 @@
                                     ]
                                 },
                                 {
-                                    "comment": "영세금액 — 과세금액에 포함된 세율 0% 몫. 취소 전·후 어느 쪽이든 있을 때만 (#612)",
+                                    "comment": "영세금액 — 과세금액에 포함된 세율 0% 몫. 취소 전·후 어느 쪽이든 있을 때만",
                                     "type": "basic",
                                     "name": "Div",
                                     "if": "{{(_local.refundEstimate?.original_snapshot?.total_zero_rated_amount ?? 0) > 0 || (_local.refundEstimate?.recalculated_snapshot?.total_zero_rated_amount ?? 0) > 0}}",

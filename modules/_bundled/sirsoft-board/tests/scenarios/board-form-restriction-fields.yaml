@@ -1,7 +1,7 @@
 feature: 게시판 폼 제한 키워드/허용 확장자 입력 통일 (배열 + TagInput)
 
 description: |
-  이슈 #413 item 24 — 제한 키워드(blocked_keywords)와 허용 확장자(allowed_extensions)의
+  제한 키워드(blocked_keywords)와 허용 확장자(allowed_extensions)의
   데이터 타입/입력 UI 불일치 및 댓글 차단 누락을 해소한다.
 
   수정 이력:
@@ -77,7 +77,7 @@ test_files:
 
 validation:
   note: |
-    - field × tab 4조합: admin-board-form.test.tsx 의 #413-24 테스트군이 docblock 마킹으로
+    - field × tab 4조합: admin-board-form.test.tsx 의 제한 키워드 테스트군이 docblock 마킹으로
       전수 커버 (post 의 blocked_keywords TagInput / post 의 allowed_extensions TagInput /
       basic 의 blocked_keywords 부재 / basic 의 allowed_extensions 부재).
     - 댓글 차단 effects: CommentCrudScenarioTest 의 blocked_keywords 테스트군.

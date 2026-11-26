@@ -229,7 +229,7 @@ describe('마일리지 탭 콘텐츠 (_tab_mileage.json)', () => {
     const btn = findById(basicCard, 'view_transactions_button');
     expect(btn, '내역 보기 버튼이 기본 설정 카드에 없다').toBeTruthy();
     expect(asArray(btn?.actions)[0].handler).toBe('navigate');
-    // 링크다(#757 WP-L) — 주소는 href, navigate 는 path 없이 그 href 로 간다
+    // 링크다 — 주소는 href, navigate 는 path 없이 그 href 로 간다
     expect(btn?.name).toBe('A');
     expect(btn?.props?.href).toBe('/admin/ecommerce/mileage-transactions');
     expect(asArray(btn?.actions)[0].params?.path).toBeUndefined();
@@ -337,7 +337,7 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
     // 배열 map 교체로 갱신한다.
     //
     // 종전에는 라디오를 `pointer-events-none`(시각 전용)으로 두고 부모 Label click 만 처리했으나,
-    // 그 형태는 키보드(Tab → Space/방향키)로 값을 바꿀 수 없어 #493 에서 되돌렸다. 지금 계약은
+    // 그 형태는 키보드(Tab → Space/방향키)로 값을 바꿀 수 없어 되돌렸다. 지금 계약은
     // **라디오 자신의 change + 부모 Label 의 click 둘 다** 같은 setState 를 수행하는 것이다
     // (같은 값을 쓰므로 이벤트가 겹쳐 두 번 실행돼도 결과가 같다).
     const radios = findAll(currencyTable, (n) => n.name === 'Input' && n.props?.type === 'radio'
@@ -356,7 +356,7 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
       expect(changeActions.length, `radio(${radio.props.value}) 에 change 액션 누락`).toBe(1);
       expect(changeActions[0].handler).toBe('setState');
       // Label click 과 **동일한 params** 여야 한다 — 대상 저장소(local)와 갱신 키가 갈리면
-      // 마우스로 고른 값과 키보드로 고른 값이 서로 다른 곳에 쓰인다 (#493)
+      // 마우스로 고른 값과 키보드로 고른 값이 서로 다른 곳에 쓰인다
       expect(changeActions[0].params?.target).toBe('local');
       expect(JSON.stringify(changeActions[0].params ?? {})).toContain('max_use_type');
     }

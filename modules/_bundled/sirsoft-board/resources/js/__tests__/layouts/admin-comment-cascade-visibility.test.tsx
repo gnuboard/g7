@@ -1,6 +1,6 @@
 // e2e:allow 시나리오 매니페스트(deleted-post-detail-visibility.yaml)가 선언한 이 파일에 @scenario/@effects 표식만 추가 — 대상 레이아웃·런타임 동작 무변경
 /**
- * 관리자 게시글 상세 - cascade 댓글 노출 분기 회귀 테스트 (#413-69-②)
+ * 관리자 게시글 상세 - cascade 댓글 노출 분기 회귀 테스트 (69-②)
  *
  * @description
  * 게시글 삭제로 함께 숨겨진(cascade) 댓글이 사용자 직접 삭제 댓글과 동일하게
@@ -57,7 +57,7 @@ function findById(node: any, id: string): any {
     return null;
 }
 
-describe('관리자 댓글 - cascade 노출 분기 (#413-69-②)', () => {
+describe('관리자 댓글 - cascade 노출 분기 (69-②)', () => {
     const deletedNode = findById(commentPartial, 'deleted_comment_content');
     const normalNode = findById(commentPartial, 'normal_comment_content');
 

@@ -1,5 +1,5 @@
 /**
- * E2E: 쇼핑몰 환경설정 > 개인정보 보유기간 탭 (이슈 #636 S5)
+ * E2E: 쇼핑몰 환경설정 > 개인정보 보유기간 탭
  *
  * 검증:
  *  1. 탭이 **꺼진 채** 번역문(법령 안내 포함)과 함께 마운트되고, 꺼져 있으면 보유기간·방식 칸이 없다
@@ -200,7 +200,7 @@ test('기능이 꺼져 있어도 대상 주문 건수가 보이고 「대상 주
     await expect(firstLink).toHaveAttribute('target', '_blank');
     await expect(firstLink).toHaveAttribute('href', /^\/admin\/ecommerce\/orders\//);
 
-    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다(#869 P1)
+    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다
     await page.getByRole('dialog').locator('.modal-footer-bar button').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   } finally {

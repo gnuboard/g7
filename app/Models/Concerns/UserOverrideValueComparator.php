@@ -3,7 +3,7 @@
 namespace App\Models\Concerns;
 
 /**
- * 「운영자 수정(user_overrides)」 기록 판정용 값 비교기 (#727 §5.11).
+ * 「운영자 수정(user_overrides)」 기록 판정용 값 비교기.
  *
  * 관리 화면 폼은 값을 바꾸지 않아도 표기만 다르게 보내는 일이 잦다 — 문자열 앞뒤 공백(TrimStrings), 빈 문자열과
  * null(ConvertEmptyStringsToNull), 배열 `null`/`[]`/`{signup_stage: null}`, 숫자 문자열과 숫자, enum 객체와 값.

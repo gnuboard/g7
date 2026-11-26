@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
- * 인스톨러 state.json 비밀 잔존 결함 회귀 테스트 (이슈 #465)
+ * 인스톨러 state.json 비밀 잔존 결함 회귀 테스트
  *
  * 결함: 설치 후 storage/installer-state.json 에 admin_password /
  * admin_password_confirm 이 평문으로 남았다.
@@ -21,7 +21,6 @@ use Tests\Concerns\CleansTemporaryBasePath;
  * - buildInstallerRuntimeFromState()  — state 결손 시 기존 runtime 값 보존
  * - hydrateDbSecretsFromRuntime()     — DB 비밀번호 소비처 폴백
  *
- * @see https://github.com/gnuboard/dev-g7/issues/465
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]

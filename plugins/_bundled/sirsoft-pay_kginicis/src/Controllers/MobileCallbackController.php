@@ -258,7 +258,7 @@ class MobileCallbackController
 
             $tid = $result['P_TID'] ?? $pTid;
             // 승인액은 승인 응답의 P_AMT 만 쓴다 — 콜백 P_AMT 는 브라우저를 거친 값이라 대조 근거가 될 수
-            // 없다. 응답에 없으면 0 이 되어 아래 대조에서 자동 취소 + 실패로 끝난다 (#599 validate P2).
+            // 없다. 응답에 없으면 0 이 되어 아래 대조에서 자동 취소 + 실패로 끝난다.
             $totPrice = (int) ($result['P_AMT'] ?? 0);
             $payType = (string) ($result['P_TYPE'] ?? '');
 
@@ -376,7 +376,7 @@ class MobileCallbackController
                     'is_test_mode' => $this->apiService->isTestMode(),
                     'pg_response_sanitized' => true,
                     'pg_raw_response' => $this->sanitizePgResponse($result, self::MOBILE_APPROVE_RESPONSE_KEYS),
-                    // 결제창이 과세 구분(P_TAX·P_TAXFREE)을 실은 결제 — 부분취소가 같은 구분을 싣는 근거(#820)
+                    // 결제창이 과세 구분(P_TAX·P_TAXFREE)을 실은 결제 — 부분취소가 같은 구분을 싣는 근거
                 ], $this->buildEasyPayPaymentMeta($selectedEasyPayMethod), $this->buildTaxSplitApprovalMeta($order, $totPrice)),
                 paymentDevice: 'mobile',
                 isEscrow: $this->apiService->isEscrowEnabled() && $selectedEasyPayMethod === null,

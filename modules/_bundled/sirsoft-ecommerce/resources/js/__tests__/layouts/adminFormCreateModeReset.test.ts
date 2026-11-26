@@ -3,7 +3,7 @@
  * @description 같은 레이아웃 재사용(수정 → 등록) 시 등록 폼에 직전 항목의 form 이 남지 않도록
  * 생성 모드 init_actions 가 form 을 null 로 먼저 비우는지 검증한다 (레이아웃 JSON 구조 검증).
  *
- * 배경(브라우저 실측 2026-09-14, #599): 엔진은 layout_name 이 바뀔 때만 `_local` 을 비운다.
+ * 배경(브라우저 실측 2026-09-14): 엔진은 layout_name 이 바뀔 때만 `_local` 을 비운다.
  * 상품 수정 → 상품 등록, 배송정책 수정 → 배송정책 등록은 같은 레이아웃이라 `_local.form` 이 그대로
  * 남고, init_actions 의 기본값 setState 는 깊은 병합이라 직전 상품의 product_code·이름, 직전
  * 배송정책의 id·이름이 등록 화면에 살아남았다. sirsoft-page 의 admin_page_form 선례처럼

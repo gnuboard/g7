@@ -11,7 +11,7 @@ use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
- * 로그인 사용자 응답이 본인의 레이아웃 편집 권한 판정(can_edit_layouts)을 싣는지 검증합니다 (#869).
+ * 로그인 사용자 응답이 본인의 레이아웃 편집 권한 판정(can_edit_layouts)을 싣는지 검증합니다.
  *
  * 운영 화면의 편집 진입 단추는 이 값이 참인 사람에게만 보인다. 판정은 편집기 API 가드
  * (`permission:admin,core.templates.layouts.edit`)와 같은 `User::hasPermission()` 이어야 한다 —

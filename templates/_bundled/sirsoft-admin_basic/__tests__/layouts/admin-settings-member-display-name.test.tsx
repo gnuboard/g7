@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-member-display-name.test.tsx
- * @description 환경설정 「회원」 탭의 표시 이름 구획(#490 8단계)
+ * @description 환경설정 「회원」 탭의 표시 이름 구획
  *
  * 구획은 회원이 고를 수 있는 종류(체크 목록과 종류별 미리보기), 회원 기본 종류, 자리(영역)별 방식과 종류를 다룬다.
  * 값은 설정 폼(`_local.form.member.display_name_*`)에 담고 화면 하단 「저장」이 회원 탭 몫을 한 번에 보낸다.

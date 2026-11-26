@@ -68,7 +68,7 @@ interface ProductOption {
     volume: number;
     mileage_value: number;
     mileage_type: 'percent' | 'fixed';
-    /** 옵션별 과세 종류 — null 은 상품 기본값(판매정보 과세 여부)을 따른다 (#612) */
+    /** 옵션별 과세 종류 — null 은 상품 기본값(판매정보 과세 여부)을 따른다 */
     tax_status?: 'taxable' | 'tax_free' | 'zero_rated' | null;
     is_active: boolean;
     [key: string]: any;
@@ -346,7 +346,7 @@ export function updateFormOptionFieldHandler(
     if (numericFields.includes(field)) {
         finalValue = parseFloat(value) || 0;
     }
-    // 과세 종류 「기본값 따름」(빈 값)은 null 로 둔다 — 빈 문자열을 저장하면 상품 기본값을 따르지 못한다 (#612)
+    // 과세 종류 「기본값 따름」(빈 값)은 null 로 둔다 — 빈 문자열을 저장하면 상품 기본값을 따르지 못한다
     if (field === 'tax_status' && (value === '' || value === undefined)) {
         finalValue = null;
     }

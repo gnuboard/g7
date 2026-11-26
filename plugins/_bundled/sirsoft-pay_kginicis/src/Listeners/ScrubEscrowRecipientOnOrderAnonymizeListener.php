@@ -8,7 +8,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use Plugins\Sirsoft\PayKginicis\Repositories\EscrowDeliveryRepositoryInterface;
 
 /**
- * KG 이니시스 에스크로 배송 등록 수령인 사본 파기 리스너 (이슈 #636).
+ * KG 이니시스 에스크로 배송 등록 수령인 사본 파기 리스너.
  *
  * 관리자가 에스크로 배송을 등록하면 결제 행 `payment_meta.escrow_delivery` 에 수령인 이름·주소가
  * 남는다(AdminEscrowDeliveryController). 이커머스가 보유기간이 지난 종결 주문을 익명화하면서 주문

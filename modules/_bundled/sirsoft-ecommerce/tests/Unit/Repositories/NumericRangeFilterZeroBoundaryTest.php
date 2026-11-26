@@ -9,7 +9,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 수치 범위 필터의 0 경계 회귀 가드 (#492 브라우저 실측).
+ * 수치 범위 필터의 0 경계 회귀 가드.
  *
  * `! empty($filters['max_shipping_amount'])` 처럼 판정하면 0 이 "미입력"으로 취급돼
  * 필터가 통째로 무시된다. 실측에서 "배송비 0원(무료배송) 주문만 보기" 가 전체 100건을

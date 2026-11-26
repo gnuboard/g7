@@ -1,4 +1,4 @@
-<!-- 체크아웃 현금영수증 신청 폼 (W-1 / #454). 템플릿 sirsoft-basic 의 _checkout_payment.json 이 dbank 블록 내부 말단에 연 슬롯에 주입한다. 슬롯이 무통장 블록 안이므로 결제수단 게이트는 불필요하고, 프로바이더 미설정 시에만 전체를 숨긴다. 발급 프로바이더는 PG 플러그인이 담당하지만 신청 폼은 PG 비종속이라 모듈이 소유한다 — 플러그인이 주입하면 두 PG 동시 활성 시 폼이 2개 렌더된다. -->
+<!-- 체크아웃 현금영수증 신청 폼 (W-1). 템플릿 sirsoft-basic 의 _checkout_payment.json 이 dbank 블록 내부 말단에 연 슬롯에 주입한다. 슬롯이 무통장 블록 안이므로 결제수단 게이트는 불필요하고, 프로바이더 미설정 시에만 전체를 숨긴다. 발급 프로바이더는 PG 플러그인이 담당하지만 신청 폼은 PG 비종속이라 모듈이 소유한다 — 플러그인이 주입하면 두 PG 동시 활성 시 폼이 2개 렌더된다. -->
 <extension extension-point="shop_checkout_cash_receipt_slot" mode="append" priority="100">
   <!-- 프로바이더 미설정이면 슬롯 전체 미렌더 (M2 — DOM 카운트 0) -->
   <div data-ref="ext_checkout_cash_receipt" data-if="{{!!paymentSettings?.data?.order_settings?.cash_receipt_provider}}" class="ecommerce:mt-4 ecommerce:pt-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-600">

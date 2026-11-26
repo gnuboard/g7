@@ -19,7 +19,7 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 /**
- * 관리자 에스크로 배송 등록·구매거절확인·CBT 시험 상품 생성 실패 응답의 사유 선택 (#858)
+ * 관리자 에스크로 배송 등록·구매거절확인·CBT 시험 상품 생성 실패 응답의 사유 선택
  *
  * KG이니시스가 돌려준 거절 사유(resultMsg)는 운영자에게 그대로 보이고, 통신 예외·DB 예외 원문
  * (결제대행사 API 주소·cURL 문구·SQL·DB 접속 정보)은 서버 로그에만 남고 응답에는 번역된 일반 문구가 실린다.
@@ -204,7 +204,7 @@ class AdminEscrowFailureReasonTest extends PluginTestCase
      */
     public function test_cbt_test_product_db_failure_returns_generic_detail(): void
     {
-        // 시험 상품 생성은 이커머스 공개 계약에 맡긴다(#916) — 계약이 DB 예외를 그대로 올려보내는 경우를 만든다.
+        // 시험 상품 생성은 이커머스 공개 계약에 맡긴다 — 계약이 DB 예외를 그대로 올려보내는 경우를 만든다.
         $mock = $this->createMock(ProductProvisioner::class);
         $mock->method('createSimpleProduct')->willThrowException(new QueryException(
             'mysql',

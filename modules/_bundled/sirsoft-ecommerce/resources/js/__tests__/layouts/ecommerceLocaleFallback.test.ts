@@ -1,14 +1,14 @@
 /**
  * 이커머스 모듈 레이아웃 — 활성 언어팩 locale fallback / 정적 ko/en/ja 탭 회귀 가드
  *
- * 이슈 #263 후속 — 두 패턴의 회귀 차단:
+ * 두 패턴의 회귀 차단:
  *
  * (1) 단순 fallback: `?? 'ko'` 하드코딩이 활성 locale 무관하게 ko 를 기본 선택/표시함
  *     - _tab_language_currency.json: default_language picker 의 value fallback
  *
  * (2) 정적 ko/en/ja 3버튼 구조: 새 언어팩(ja/zh 등) 추가 시 미반영
  *     - _partial_common_info_form.json / _partial_common_info_detail.json
- *       (메인 배너 시안 화면의 같은 가드는 그 화면을 지우며 함께 뺐다 — #952)
+ *       (메인 배너 시안 화면의 같은 가드는 그 화면을 지우며 함께 뺐다)
  *     → $locales iteration 으로 동적 그리도록 재구조화 (참조: sirsoft-page admin_page_detail unified_lang_tabs)
  */
 
@@ -18,7 +18,7 @@ import tabLanguageCurrency from '../../../layouts/admin/partials/admin_ecommerce
 import commonInfoForm from '../../../layouts/admin/partials/admin_ecommerce_product_common_info_index/_partial_common_info_form.json';
 import commonInfoDetail from '../../../layouts/admin/partials/admin_ecommerce_product_common_info_index/_partial_common_info_detail.json';
 
-describe('이커머스 모듈 — 단순 locale fallback 회귀 가드 (#263 후속)', () => {
+describe('이커머스 모듈 — 단순 locale fallback 회귀 가드', () => {
     // @scenario case=default_language_fallback
     // @effects locale_fallback_uses_active_locale
     it("default_language picker 의 fallback 이 정적 'ko' 가 아닌 $locale 을 우선 사용함", () => {
@@ -28,7 +28,7 @@ describe('이커머스 모듈 — 단순 locale fallback 회귀 가드 (#263 후
     });
 });
 
-describe('이커머스 모듈 — 정적 ko/en/ja 언어 탭 → $locales iteration 회귀 가드 (#263 후속)', () => {
+describe('이커머스 모듈 — 정적 ko/en/ja 언어 탭 → $locales iteration 회귀 가드', () => {
     const dynamicTabLayouts: Array<[string, unknown]> = [
         ['_partial_common_info_form.json', commonInfoForm],
         ['_partial_common_info_detail.json', commonInfoDetail],

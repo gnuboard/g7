@@ -222,7 +222,7 @@ class ConversionRecorderTest extends TestCase
      *
      * 가입·로그인 전환은 서버가 완료를 확인한 순간에만 남는다. 비콘으로도 받으면 방문자가 콘솔에서
      * `trackGoal('core.user_registered')` 를 불러 가입 수를 부풀릴 수 있다 — 내부 검색어를 비콘으로
-     * 위조하지 못하게 막은 것과 같은 부류다(브라우저 실측에서 발견, #682 S4).
+     * 위조하지 못하게 막은 것과 같은 부류다(브라우저 실측에서 발견).
      *
      * @scenario point=goal, extension_state=active, input=unregistered
      *

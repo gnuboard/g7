@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 단순 상품 생성 공개 계약 (#916)
+ * 단순 상품 생성 공개 계약 
  *
  * 결제사 시험 상품(KG이니시스 일본 결제 등)은 상품 서비스 대신 이 계약으로 만든다. 상품 가격은 쇼핑몰 기본 통화로만
  * 저장되므로, 다른 통화 금액을 주면 지금 환율로 그 통화 금액이 정확히 나오는 기본 통화 가격을 저장해야 한다.

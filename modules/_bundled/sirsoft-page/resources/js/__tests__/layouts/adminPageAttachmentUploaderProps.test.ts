@@ -1,6 +1,6 @@
 /**
  * @file adminPageAttachmentUploaderProps.test.ts
- * @description 페이지 작성 화면 첨부 업로더 — 서버 공개 한도를 그대로 넘긴다 (#599 validate P7)
+ * @description 페이지 작성 화면 첨부 업로더 — 서버 공개 한도를 그대로 넘긴다
  *
  * 서버 `publicLimits()` 는 개수 상한이 없으면(설정 0) `max_count: null` 을 낸다 — "제한 없음" 이라는
  * 뜻이고, 화면은 컴포넌트 기본값을 쓰기로 했다. 그런데 레이아웃이 `?? 5` 로 받아 null 이 5개 상한으로

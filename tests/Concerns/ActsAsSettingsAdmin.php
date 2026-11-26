@@ -9,7 +9,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * 환경설정 읽기·저장 권한을 가진 관리자로 API 를 부르는 시험 보조 (#916)
+ * 환경설정 읽기·저장 권한을 가진 관리자로 API 를 부르는 시험 보조 
  *
  * `SettingsControllerDriverOptionsTest` 의 관리자 준비와 같은 꼴이다 — 설정 권한 두 개를 가진 역할과 기본 관리자 역할을 붙인다.
  */

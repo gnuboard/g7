@@ -1,4 +1,4 @@
-feature: 관리자 화면의 실명 보조 줄 (#490 P17)
+feature: 관리자 화면의 실명 보조 줄
 
 description: |
   관리자 응답의 이름 키(user.name, recipient.name, creator.name, created_by_name, requester_name 등)는 관리자 영역 표시 이름이다.
@@ -39,4 +39,4 @@ test_files:
 
 notes: |
   e2e_browser=pending — 조건식과 값 경로는 레이아웃 식을 엔진에 넣어 잰다. 화면에서 두 줄이 겹치거나 넘치지 않는지는
-  #490 통합 실측에서 본다(회원 조회 권한이 있는 관리자와 없는 관리자, 표시 이름이 닉네임인 회원).
+  통합 브라우저 실측에서 본다(회원 조회 권한이 있는 관리자와 없는 관리자, 표시 이름이 닉네임인 회원).

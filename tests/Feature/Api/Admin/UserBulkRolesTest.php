@@ -19,7 +19,7 @@ use Tests\Concerns\MenuRoleFixtures;
 use Tests\TestCase;
 
 /**
- * 회원 목록 역할 일괄 추가·제거 (#708)
+ * 회원 목록 역할 일괄 추가·제거
  *
  * `PATCH /api/admin/users/bulk-roles` 는 정적 경로라 미들웨어의 범위 검사가 빠진다. 일괄 상태
  * 변경과 같은 두 축(등급·범위)과 역할 상한·자기 잠금을 서비스가 지키는지 찌른다.

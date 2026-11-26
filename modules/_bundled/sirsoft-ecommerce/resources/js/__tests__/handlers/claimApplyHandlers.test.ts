@@ -1,6 +1,6 @@
-// e2e:allow #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
+// e2e:allow 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측과 Vitest 로 고정한다.
 /**
- * claimApplyHandlers 테스트 (#599 S11)
+ * claimApplyHandlers 테스트
  *
  * @description
  * 이 화면에서 조용히 깨지는 축만 고정한다:
@@ -749,13 +749,13 @@ describe('claimApplyHandlers', () => {
         expect(mockG7Core.dispatch).toHaveBeenCalledWith({
             handler: 'example-pg.requestPayment',
             params: { pgPaymentData: { order_number: 'CP20260823000002', amount: 9000 } },
-            // 실패 안내는 신청서가 플러그인 문구로 직접 한다 — 디스패처의 내부 문구 토스트는 막는다(#855).
+            // 실패 안내는 신청서가 플러그인 문구로 직접 한다 — 디스패처의 내부 문구 토스트는 막는다.
             errorHandling: { default: { handler: 'suppress' } },
         });
     });
 
     /**
-     * 접수 뒤 결제 플러그인이 결제창을 열기 전에 실패하면 문구를 토스트로 알리고 신청서 상세로 보낸다 (#855).
+     * 접수 뒤 결제 플러그인이 결제창을 열기 전에 실패하면 문구를 토스트로 알리고 신청서 상세로 보낸다.
      *
      * @scenario apply_handler=submit
      *
@@ -1370,7 +1370,7 @@ describe('claimApplyHandlers', () => {
      * @effects claim_edit_entry_runs_the_first_preview
      */
     it('수정 진입 — 첫 미리보기를 예약한다 (상품·사유가 채워져 들어오므로 바꾸기 전에도 요약·비교표가 서야 한다)', async () => {
-        // 회귀(2026-09-11 브라우저 실측, #599 후속): 수정 화면은 구매자가 사유·재발송지를 바꾸기 전에는
+        // 회귀(2026-09-11 브라우저 실측): 수정 화면은 구매자가 사유·재발송지를 바꾸기 전에는
         // claims/preview 가 한 번도 나가지 않아 요약과 주문금액 비교가 "계산됩니다" 자리표시에 머물렀다.
         vi.useFakeTimers();
         mockDataSources = {
@@ -1928,7 +1928,7 @@ describe('claimApplyHandlers', () => {
         expect(unplacedClaimErrorMessage(errors, [])).toBe('');
     });
 
-    // ── 주문금액 비교 섹션 (#599 후속) ──────────────────────────────
+    // ── 주문금액 비교 섹션 ──────────────────────────────
 
     /**
      * 비교 섹션의 기본 펼침 — PC 펼침 · 모바일 접힘 (P6). `_global.isPortable` 이 아니라 ResponsiveManager 를 읽는다.

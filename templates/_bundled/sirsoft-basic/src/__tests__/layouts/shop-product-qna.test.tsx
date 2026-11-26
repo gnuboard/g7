@@ -1,6 +1,6 @@
 /**
  * @file shop-product-qna.test.tsx
- * @description 상품 상세 QnA 탭 렌더링 테스트 (Issue #208 Phase 3)
+ * @description 상품 상세 QnA 탭 렌더링 테스트
  *
  * 테스트 케이스:
  * - QnA API 응답 구조 (items + meta.board_settings)
@@ -276,7 +276,7 @@ const boardSlugGlobal = {
 
 // ========== 테스트 케이스 ==========
 
-describe('상품 상세 QnA 탭 (Issue #208 Phase 3)', () => {
+describe('상품 상세 QnA 탭', () => {
   let registry: ComponentRegistry;
 
   beforeEach(() => {
@@ -1495,7 +1495,7 @@ describe('상품 상세 QnA 탭 (Issue #208 Phase 3)', () => {
     });
   });
 
-  describe('can_update 비밀글 노출 (Issue #208 2차 피드백)', () => {
+  describe('can_update 비밀글 노출 (2차 피드백)', () => {
     // can_update 권한자 비밀글 노출 테스트용 픽스처
     const makeCanManageFixture = () => ({
       version: '1.0.0',
@@ -1659,7 +1659,7 @@ describe('상품 상세 QnA 탭 (Issue #208 Phase 3)', () => {
     });
   });
 
-  describe('수정됨 표시 (Issue #208 개편)', () => {
+  describe('수정됨 표시 (개편)', () => {
     // updated_at !== created_at 조건 검증용 픽스처
     const makeUpdatedLabelFixture = () => ({
       version: '1.0.0',
@@ -1821,7 +1821,7 @@ describe('상품 상세 QnA 탭 (Issue #208 Phase 3)', () => {
     });
   });
 
-  describe('삭제 버튼 모달 방식 검증 (Issue #208 개편)', () => {
+  describe('삭제 버튼 모달 방식 검증 (개편)', () => {
     // 삭제 버튼 sequence+openModal 방식 검증 픽스처
     const makeDeleteModalFixture = () => ({
       version: '1.0.0',

@@ -84,7 +84,7 @@ abstract class ModuleTestCase extends TestCase
     {
         parent::setUp();
 
-        // 설정 저장소(파일)는 트랜잭션 롤백이 닿지 않는다 — 시험 전 상태를 떠 두고 tearDown 에서 되돌린다 (#789 P17)
+        // 설정 저장소(파일)는 트랜잭션 롤백이 닿지 않는다 — 시험 전 상태를 떠 두고 tearDown 에서 되돌린다
         $this->snapshotBoardSettingsStorage();
 
         // 모듈 오토로드 등록 (테스트 환경)

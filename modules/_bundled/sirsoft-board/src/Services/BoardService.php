@@ -862,7 +862,7 @@ class BoardService
         DB::transaction(function () use ($board) {
             // 0. 본문 미디어 행은 코어 본문 미디어 골격으로 먼저 영구 삭제한다 — 행마다 core.content_media.before_delete 를
             //    아래 파일 일괄 삭제보다 앞서 발화하고, 파일은 커밋 뒤 지운다(일괄 삭제가 먼저 지워도 무해). 일반 첨부는
-            //    아래 일괄 삭제 그대로다 (#887)
+            //    아래 일괄 삭제 그대로다
             app(BoardContentMediaService::class)->purgeForBoard($board);
 
             // 1. 첨부파일 스토리지 일괄 삭제 (물리 파일) — 행 disk 별, 행 삭제(2) 전에
@@ -1106,7 +1106,7 @@ class BoardService
                 continue;
             }
 
-            // 권한·메뉴·회원 연결과 메뉴 권한을 먼저 떼고 지운다 — DB 외래키 연쇄에 맡기지 않는다(#888)
+            // 권한·메뉴·회원 연결과 메뉴 권한을 먼저 떼고 지운다 — DB 외래키 연쇄에 맡기지 않는다
             $this->roleRepository->deleteWithRelations($role);
         }
     }

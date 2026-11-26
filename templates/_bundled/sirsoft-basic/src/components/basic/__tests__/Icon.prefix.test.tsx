@@ -1,6 +1,6 @@
 /**
  * @file Icon.prefix.test.tsx
- * @description 사용자 템플릿 Icon — 이름 속 스타일 토큰 해석 (#381)
+ * @description 사용자 템플릿 Icon — 이름 속 스타일 토큰 해석
  *
  * 종전 Icon 은 스타일 토큰을 읽지 않아 `fas fa-x` 를 `fas fa-fas fa-x` 로, `far fa-x` 를 `fas fa-far fa-x` 로
  * 그렸다(스타일을 잃었다). 이제 iconNameMap 정확 일치를 먼저 보고(맨 이름 출력 보존) 없을 때만 해석한다.
@@ -46,7 +46,7 @@ function classOf(name: string, iconStyle?: 'regular'): string {
   return container.querySelector('i')?.className ?? '';
 }
 
-describe('Icon(sirsoft-basic) — 이름 속 스타일 토큰 해석 (#381)', () => {
+describe('Icon(sirsoft-basic) — 이름 속 스타일 토큰 해석', () => {
   /**
    * @scenario component=icon
    * @effects style_prefix_tokens_resolved_once

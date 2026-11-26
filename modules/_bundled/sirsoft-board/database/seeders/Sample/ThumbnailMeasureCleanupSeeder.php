@@ -13,7 +13,7 @@ use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\BoardService;
 
 /**
- * 이미지 썸네일 브라우저 실측 — 게시판 데이터 정리 (이슈 #869).
+ * 이미지 썸네일 브라우저 실측 — 게시판 데이터 정리.
  *
  * 대상은 실측 게시판 두 개뿐이다 — 슬러그(`ThumbnailMeasureSeeder::CARD_SLUG`, `GALLERY_SLUG`)와 이름의
  * 표지(`[실측-썸네일]`)가 **둘 다** 맞는 게시판만 지운다(같은 슬러그의 실데이터 게시판이 우연히 있어도 건드리지 않는다).

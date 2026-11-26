@@ -158,7 +158,7 @@ class HookListenerRegistrarTest extends TestCase
     /**
      * 동일 listener 를 동일 source 로 2회 등록해도 hook callback 이 1번만 추가되는지 검증합니다.
      *
-     * 회귀 차단 (이슈 #204):
+     * 회귀 차단:
      * 테스트 환경에서 매 setUp 시 ServiceProvider boot 가 다시 호출되며 ModuleManager
      * loadModules → registerModuleHookListeners → HookListenerRegistrar::register 가
      * 매번 호출되어, HookManager::$hooks 에 동일 listener callback 이 누적됨.

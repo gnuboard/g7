@@ -151,7 +151,7 @@ class NoExternalUrlsTest extends TestCase
     }
 
     /**
-     * 입력 안내 문구(placeholder)·링크(href)의 외부 웹 주소는 컴포넌트·모달 어디서든 저장된다 (#727).
+     * 입력 안내 문구(placeholder)·링크(href)의 외부 웹 주소는 컴포넌트·모달 어디서든 저장된다.
      *
      * 번들 관리자 화면 5개가 이 값(`https://github.com/username/module-name` 안내 문구·설치 안내 문서 링크)을 담고
      * 있어, 편집기로 열어 그대로 저장해도 422 였다. 결정(2026-09-30): 안내 문구·문서 링크는 어디서든 허용.
@@ -182,7 +182,7 @@ class NoExternalUrlsTest extends TestCase
     }
 
     /**
-     * 요청 본문(`params.body`)의 예시 주소는 요청 대상이 아니라 데이터라 저장된다 (#727 — 환경설정 메일 미리보기).
+     * 요청 본문(`params.body`)의 예시 주소는 요청 대상이 아니라 데이터라 저장된다 (환경설정 메일 미리보기).
      *
      * @effects request_body_example_url_accepted
      *

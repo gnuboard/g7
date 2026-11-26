@@ -99,7 +99,7 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 수정 훅(board.after_update) 구독이 등록되어 있는지 확인합니다. (#413-17)
+     * 게시판 수정 훅(board.after_update) 구독이 등록되어 있는지 확인합니다. (17)
      *
      * 이 훅 미구독이 "게시판 정보 수정 후 SEO 메타 캐시 미무효화" 버그의 원인이었습니다.
      *
@@ -118,10 +118,10 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
         $this->assertEquals(20, $hooks['sirsoft-board.board.after_update']['priority']);
     }
 
-    // ─── onBoardUpdate (#413-17) ───────────────────────────
+    // ─── onBoardUpdate (17) ───────────────────────────
 
     /**
-     * 게시판 수정 시 해당 게시판 SEO 캐시가 무효화되는지 확인합니다. (#413-17)
+     * 게시판 수정 시 해당 게시판 SEO 캐시가 무효화되는지 확인합니다. (17)
      *
      * 게시판 이름/설명 변경은 게시판 목록(/board/{slug})과 인덱스(/boards)
      * 메타에 노출되므로, 이 두 URL + 전역 레이아웃(home, search/index) +
@@ -163,7 +163,7 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 수정 무효화 중 예외 발생 시 graceful하게 처리되는지 확인합니다. (#413-17)
+     * 게시판 수정 무효화 중 예외 발생 시 graceful하게 처리되는지 확인합니다. (17)
      *
      * @effects board_update_invalidation_graceful_on_exception
      *
@@ -193,7 +193,7 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
     // ─── onPostCreate ──────────────────────────────────────
 
     /**
-     * 게시글 생성 시 해당 게시판의 캐시만 무효화하고, 상세 재생성은 하지 않는다 (큐 리스너가 맡는다, #724).
+     * 게시글 생성 시 해당 게시판의 캐시만 무효화하고, 상세 재생성은 하지 않는다 (큐 리스너가 맡는다).
      *
      * @scenario listener=seo_board, queue=sync
      *
@@ -221,7 +221,7 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
     // ─── onPostUpdate ──────────────────────────────────────
 
     /**
-     * 게시글 수정 시 해당 게시판의 캐시만 무효화하고, 상세 재생성은 하지 않는다 (큐 리스너가 맡는다, #724).
+     * 게시글 수정 시 해당 게시판의 캐시만 무효화하고, 상세 재생성은 하지 않는다 (큐 리스너가 맡는다).
      *
      * @scenario listener=seo_board, queue=sync
      *
@@ -418,7 +418,7 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
     // ─── 헬퍼 ──────────────────────────────────────────────
 
     /**
-     * 게시판 수정 시 해당 게시판 SEO 캐시 전체가 무효화되는지 단언합니다. (#413-17)
+     * 게시판 수정 시 해당 게시판 SEO 캐시 전체가 무효화되는지 단언합니다. (17)
      *
      * 무효화 대상: /board/{slug}(쪽 변종·글 상세 포함) · /boards URL + home·search/index 레이아웃 + seo.sitemap 캐시.
      *

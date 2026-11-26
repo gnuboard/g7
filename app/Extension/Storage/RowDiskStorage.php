@@ -5,7 +5,7 @@ namespace App\Extension\Storage;
 use App\Contracts\Extension\StorageInterface;
 
 /**
- * 행에 기록된 디스크로 저장소를 고르는 도우미 (#887)
+ * 행에 기록된 디스크로 저장소를 고르는 도우미
  *
  * 업로드 행은 저장한 디스크(`disk`)를 함께 기록한다. 운영자가 기본 디스크를 바꾼 뒤에도 옛 행은 그 행이 실제로 저장된
  * 디스크에서 읽고·복사하고·지워야 한다. 확장 저장소(`StorageInterface`)는 디스크만 바꾼 사본(`withDisk`)을 만들 수 있으므로

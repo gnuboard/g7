@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 상품 카테고리 조회 공개 계약 (#916)
+ * 상품 카테고리 조회 공개 계약 
  *
  * 다른 확장(히어로섹션 카테고리 위치)은 카테고리 Model·저장소 대신 이 계약으로 카테고리를 찾는다. 경로 이름(「의류 › 남성」)·사이트 경로·
  * id 묶음 조회·검색이 전환 전 히어로 해석기가 직접 만들던 값과 같아야 한다.

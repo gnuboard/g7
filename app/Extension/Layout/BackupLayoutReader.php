@@ -27,7 +27,7 @@ final class BackupLayoutReader
      * 백업 조각 읽기 결과 (백업 경로|식별자 → 조각 식별자 → 원본) — 업데이트 1회에 한 번만 컴파일·경고한다.
      *
      * 등록 경로는 템플릿마다·경로마다 백업 기준을 다시 구한다. 종전에는 그때마다 다시 컴파일했고, 읽지 못한 조각은
-     * 공용 읽기 함수가 ERROR 로 남겨 「백업 파일 수 × 템플릿 수 × 경로 수」 줄이 쌓였다(#725).
+     * 공용 읽기 함수가 ERROR 로 남겨 「백업 파일 수 × 템플릿 수 × 경로 수」 줄이 쌓였다.
      *
      * @var array<string, array<string, array<string, mixed>>>
      */
@@ -93,7 +93,7 @@ final class BackupLayoutReader
      * 백업의 확장 조각을 컴파일합니다 — 컴파일은 템플릿과 무관하므로 업데이트 1회에 한 번만 한다.
      *
      * 읽지 못한 조각은 그것만 빼고(비교 기준 없이 진행) 업데이트 1회에 WARNING 1줄로 모아 알린다 — 못 읽은 파일마다
-     * 원인(행·열)을 싣는다. 백업 레이아웃 쪽({@see layouts()})과 같은 방식이다(#725).
+     * 원인(행·열)을 싣는다. 백업 레이아웃 쪽({@see layouts()})과 같은 방식이다.
      *
      * @param  string  $backupPath  백업 디렉토리
      * @param  string  $identifier  확장 식별자

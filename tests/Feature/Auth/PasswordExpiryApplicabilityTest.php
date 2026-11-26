@@ -12,7 +12,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 비밀번호 만료 적용 판정 테스트 (#736 D6·D9·D10)
+ * 비밀번호 만료 적용 판정 테스트
  *
  * 회원 개별 > 역할 > 사이트 범위의 우선순위와 "역할끼리 부딪치면 적용" 을 PHP 판정(`appliesTo`)과
  * SQL 판정(`applyScope` — 배치·건수·명단이 쓰는 쿼리)이 똑같이 내리는지 전 조합으로 대조한다.

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * 비밀번호 정책(#736) 테스트 공용 픽스처
+ * 비밀번호 정책 테스트 공용 픽스처
  *
  * 보안 설정은 config(`g7_settings.core.security.*`)로 테스트마다 명시한다 — 사이트 저장값이 새지 않도록
  * `TestCase` 가 기본값(전부 꺼짐)으로 고정해 두었고, 정책을 검증하는 테스트가 필요한 키만 켠다.

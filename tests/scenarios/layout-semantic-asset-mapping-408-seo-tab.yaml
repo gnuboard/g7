@@ -1,10 +1,10 @@
 # audit:allow test-scenario-coverage[cross_product] reason: issue:#609 시각 회귀 없는 시맨틱 자산 치환 — 메타 설정 카드(card + card-header + card-accordion × N) → section-header + admin-card × N 으로 교체. 모든 form field name / 다국어 키 / actions / data_sources 동일 유지. Playwright cross-product 가드 불필요 — 자산 정의는 admin_basic main.css SSoT.
 
-feature: 게시판/이커머스 어드민 설정 SEO 탭 메타 설정 영역 시맨틱 자산 매핑 (#408 보강)
+feature: 게시판/이커머스 어드민 설정 SEO 탭 메타 설정 영역 시맨틱 자산 매핑 (보강)
 
 description: |
-  이슈 #408 후속 — board/ecommerce admin SEO 탭의 메타 설정 영역에 잔존한
-  card-accordion + card-header 패턴을 #408 신설 자산(section-header, admin-card)
+  board/ecommerce admin SEO 탭의 메타 설정 영역에 잔존한
+  card-accordion + card-header 패턴을 새로 만든 자산(section-header, admin-card)
   으로 교체. 토글 동작이 없는 더미 아코디언이었으므로 시각/동작 양면에서 회귀 없음.
 
   결정 요약:

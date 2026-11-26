@@ -399,7 +399,7 @@ describe('ErrorHandlingResolver', () => {
     // @scenario area=resolve_and_execute
     // @effects error_resolve_execute_result
     // 종전 이름은 「핸들러를 찾지 못하면 handled: false 반환」이었으나 단언은 true 였다. 시스템 기본값에
-    // default 가 있어 설정을 모두 비워도 핸들러를 찾으므로, 실제로 검증하는 내용에 맞게 이름을 바로잡았다(#869).
+    // default 가 있어 설정을 모두 비워도 핸들러를 찾으므로, 실제로 검증하는 내용에 맞게 이름을 바로잡았다.
     it('설정을 모두 비워도 시스템 기본값 default 가 받아 handled: true 를 반환', async () => {
       resolver.clearAllConfig();
 

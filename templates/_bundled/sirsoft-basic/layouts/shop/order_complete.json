@@ -4,7 +4,7 @@
     "layout_name": "shop/order_complete",
     "extends": "_user_base",
     "meta": {
-        "_e2e_allow": "e2e:allow SA-D2 — 「이 배송지를 저장하기」 버튼의 **요청 본문 키만** 서버 계약(StoreUserAddressRequest)에 맞춘 변경이다. 화면 구조·노출 조건·동작 흐름은 그대로이고, 바뀐 것은 어떤 키로 보내는가 하나다. 그 계약은 레이아웃 계약 테스트가 잠근다 — __tests__/layouts/shop-order-complete-save-address-payload.test.ts (6케이스 · 되돌리면 4 failed 대조 확인). 서버 쪽 required 규칙은 StoreUserAddressRequest 가 소유한다. Playwright 로 재현하려면 「로그인 회원 + 장바구니 상품 + 완료된 주문」 상태가 필요해 기존 주문서 spec 의 시드로는 세울 수 없다(형제 시나리오 checkout-default-address-prefill 과 같은 사유). 브라우저 검수는 Chrome MCP 실측으로 기록했다 — 수정 전 POST /user/addresses 422 · 배송지 행 증가 0 → 수정 후 200 · 토스트 「배송지가 저장되었습니다.」 · 행 name=배송지 주소·상세 정합 · 재클릭 시 서버 중복 가드 문구. / e2e:allow 후속B B6 — 주소록 대조로 버튼 숨김·409 안내(api-call 의 fail 하나 안 conditions — #753)는 같은 「로그인 회원 + 완료된 주문」 전제라 spec 시드로 세울 수 없다. 레이아웃 테스트 order-complete-save-address.test.tsx 9케이스(실제 클릭 흐름 409→info·500→error·성공→success 포함, 수정 전 2 failed)가 잠그고, 전용 Chrome·Playwright MCP 실측 T1~T7(이력 후속B 「Chrome MCP 정밀 점검 매트릭스」)으로 확인했다.",
+        "_e2e_allow": "e2e:allow SA-D2 — 「이 배송지를 저장하기」 버튼의 **요청 본문 키만** 서버 계약(StoreUserAddressRequest)에 맞춘 변경이다. 화면 구조·노출 조건·동작 흐름은 그대로이고, 바뀐 것은 어떤 키로 보내는가 하나다. 그 계약은 레이아웃 계약 테스트가 잠근다 — __tests__/layouts/shop-order-complete-save-address-payload.test.ts (6케이스 · 되돌리면 4 failed 대조 확인). 서버 쪽 required 규칙은 StoreUserAddressRequest 가 소유한다. Playwright 로 재현하려면 「로그인 회원 + 장바구니 상품 + 완료된 주문」 상태가 필요해 기존 주문서 spec 의 시드로는 세울 수 없다(형제 시나리오 checkout-default-address-prefill 과 같은 사유). 브라우저 검수는 Chrome MCP 실측으로 기록했다 — 수정 전 POST /user/addresses 422 · 배송지 행 증가 0 → 수정 후 200 · 토스트 「배송지가 저장되었습니다.」 · 행 name=배송지 주소·상세 정합 · 재클릭 시 서버 중복 가드 문구. / e2e:allow 후속B B6 — 주소록 대조로 버튼 숨김·409 안내(api-call 의 fail 하나 안 conditions)는 같은 「로그인 회원 + 완료된 주문」 전제라 spec 시드로 세울 수 없다. 레이아웃 테스트 order-complete-save-address.test.tsx 9케이스(실제 클릭 흐름 409→info·500→error·성공→success 포함, 수정 전 2 failed)가 잠그고, 전용 Chrome·Playwright MCP 실측 T1~T7(이력 후속B 「Chrome MCP 정밀 점검 매트릭스」)으로 확인했다.",
         "title": "$t:shop.order_complete.page_title",
         "description": "주문 완료/결제 완료 화면"
     },
@@ -192,7 +192,7 @@
                                 ]
                             },
                             {
-                                "comment": "즉시 결제완료 헤더 — 가상계좌/무통장(입금대기)이 아닌 모든 결제수단. 확장 결제수단(간편결제)도 결제수단 ID 가 'card' 가 아니라 확장 ID(예: nhnkcp_naverpay)로 저장되므로 'card' 하드코딩 대신 입금대기 수단의 여집합으로 판정한다(#475).",
+                                "comment": "즉시 결제완료 헤더 — 가상계좌/무통장(입금대기)이 아닌 모든 결제수단. 확장 결제수단(간편결제)도 결제수단 ID 가 'card' 가 아니라 확장 ID(예: nhnkcp_naverpay)로 저장되므로 'card' 하드코딩 대신 입금대기 수단의 여집합으로 판정한다.",
                                 "type": "basic",
                                 "name": "Div",
                                 "if": "{{orderData?.data?.payment?.payment_method && orderData?.data?.payment?.payment_method !== 'vbank' && orderData?.data?.payment?.payment_method !== 'dbank'}}",
@@ -1091,7 +1091,7 @@
                                                 ]
                                             },
                                             {
-                                                "comment": "배송지 저장 버튼 (로그인 사용자만).\n                 본문 키는 서버 계약(`StoreUserAddressRequest`)을 그대로 따른다 — `name` 필수,\n                 국내는 `address`/`address_detail`, 해외는 `address_line_1`+`intl_*`.\n                 `address1`/`address2` 는 서버에 없는 키라 어떤 주문에서 눌러도 422 였다(#599 세션A 실측).\n                 배송지명은 주문완료 화면에 입력칸이 없어 「배송지」 라벨을 그대로 쓴다 —\n                 같은 이름이 이미 있으면 서버가 중복으로 거절하고 그 문구를 토스트로 보여 준다.\n                 라벨은 `$t:` 접두가 아니라 `{{$t('…')}}` 표현식이어야 한다 — 전자는 화면 문구에만\n                 치환되고 API 본문 값으로는 원문 키가 그대로 저장된다(실측: 배송지명 `$t:shop.…`).\n                 저장 배송지로 주문했으면(주소록에 같은 주소가 있으면) 숨긴다 — 누르면 같은 주소가 또 쌓였다(전수 실측, 제품 결정).",
+                                                "comment": "배송지 저장 버튼 (로그인 사용자만).\n                 본문 키는 서버 계약(`StoreUserAddressRequest`)을 그대로 따른다 — `name` 필수,\n                 국내는 `address`/`address_detail`, 해외는 `address_line_1`+`intl_*`.\n                 `address1`/`address2` 는 서버에 없는 키라 어떤 주문에서 눌러도 422 였다.\n                 배송지명은 주문완료 화면에 입력칸이 없어 「배송지」 라벨을 그대로 쓴다 —\n                 같은 이름이 이미 있으면 서버가 중복으로 거절하고 그 문구를 토스트로 보여 준다.\n                 라벨은 `$t:` 접두가 아니라 `{{$t('…')}}` 표현식이어야 한다 — 전자는 화면 문구에만\n                 치환되고 API 본문 값으로는 원문 키가 그대로 저장된다(실측: 배송지명 `$t:shop.…`).\n                 저장 배송지로 주문했으면(주소록에 같은 주소가 있으면) 숨긴다 — 누르면 같은 주소가 또 쌓였다(전수 실측, 제품 결정).",
                                                 "id": "save_shipping_address_button",
                                                 "type": "basic",
                                                 "name": "Button",
@@ -1182,7 +1182,7 @@
                                         ]
                                     },
                                     {
-                                        "comment": "결제 금액 요약 — 결제 플러그인 조각(영수증·매출전표·가상계좌 안내)이 이 id 끝에 붙는다(#639, 쇼핑몰 docs/extension-points.md 약속)",
+                                        "comment": "결제 금액 요약 — 결제 플러그인 조각(영수증·매출전표·가상계좌 안내)이 이 id 끝에 붙는다(쇼핑몰 docs/extension-points.md 약속)",
                                         "id": "order_complete_payment_summary",
                                         "type": "basic",
                                         "name": "Div",

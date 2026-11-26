@@ -1,6 +1,6 @@
 /**
  * @file admin-menu-icon-field.test.tsx
- * @description 메뉴 관리 레이아웃 — 아이콘을 구조형 값(icon_spec)으로 편집·저장·표시한다 (#381)
+ * @description 메뉴 관리 레이아웃 — 아이콘을 구조형 값(icon_spec)으로 편집·저장·표시한다
  *
  * 굽기 산출(JSON)을 읽어
  *   ① 폼 판의 아이콘 칸이 MenuIconField(name=icon_spec)이고 서버 오류를 icon_spec·icon 순으로 보인다
@@ -61,7 +61,7 @@ const form = read('partials/admin_menu_list/_panel_form.json');
 const view = read('partials/admin_menu_list/_panel_view.json');
 const list = read('admin_menu_list.json');
 
-describe('메뉴 관리 — 아이콘 구조형 값(icon_spec) (#381)', () => {
+describe('메뉴 관리 — 아이콘 구조형 값(icon_spec)', () => {
   /**
    * @scenario surface=form_field, icon_type=class
    * @effects layout_form_posts_icon_spec, form_emits_icon_spec_event

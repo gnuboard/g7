@@ -2,7 +2,7 @@
  * @file checkoutSummaryBodyPayload.test.tsx
  * @description 주문 생성 POST body 의 확장 병합 칸(checkoutExtraPayload) 계약 검증.
  *
- * 배경 (#454 S3):
+ * 배경:
  *   슬롯에 주입된 모듈 폼이 _local 에 값을 써도, body 가 템플릿 소유 리터럴 객체이면
  *   그 값은 서버에 도달하지 않는다. 모듈은 body 줄을 추가할 수단이 없다
  *   (결제 버튼 id 부재 → overlay 불가 / inject_props 는 actions[].params.body 미도달).
@@ -318,14 +318,14 @@ describe('주문 생성 body — 확장 병합 칸 계약', () => {
   });
 
   // ─────────────────────────────────────────────────────────────
-  // #454 — 플러그인 결제수단(toss_*)의 코어 결제수단 전송
+  // 플러그인 결제수단(toss_*)의 코어 결제수단 전송
   //
   // 유저 표면에서는 "토스 가상계좌"(toss_virtual_account) 라는 독립 결제수단이지만,
   // 주문 레코드에는 코어 PaymentMethodEnum 값(vbank)으로 저장되어야 한다. 코어 enum 은
   // toss_* 를 거부하므로(422), body 의 payment_method 는 선택 결제수단의 core_payment_method
   // 로 번역해 전송한다. toss_* 선택값 자체는 _local.paymentMethod 에 남아 SDK 호출 시 참조된다.
   // ─────────────────────────────────────────────────────────────
-  describe('플러그인 결제수단 → 코어 결제수단 전송 (#454)', () => {
+  describe('플러그인 결제수단 → 코어 결제수단 전송', () => {
     /** @effects checkout_body_sends_core_payment_method */
     it('body 의 payment_method 는 _computed.selectedCorePaymentMethod 를 사용한다', () => {
       const ctx = baseCtx({

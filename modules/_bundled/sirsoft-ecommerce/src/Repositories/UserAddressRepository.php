@@ -267,7 +267,7 @@ class UserAddressRepository implements UserAddressRepositoryInterface
     }
 
     /**
-     * 배송지를 가진 회원 ID 서브쿼리를 만듭니다 (회원 목록 확장 필터용, #705).
+     * 배송지를 가진 회원 ID 서브쿼리를 만듭니다 (회원 목록 확장 필터용).
      *
      * 국가 조건은 `country_code` 인덱스를 탄다. 한 회원이 배송지를 여럿 가질 수 있어 결과에 같은
      * user_id 가 반복되지만 `IN (서브쿼리)` 로만 쓰이므로 중복을 걷지 않는다(정렬 비용을 아낀다).

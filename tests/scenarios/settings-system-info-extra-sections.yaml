@@ -2,7 +2,7 @@ feature: settings_system_info_extra_sections
 
 description: |
   확장이 필터 훅 `core.settings.filter_system_info_sections` 로 시스템 정보 응답(`GET /api/admin/settings/system-info`)의
-  `extra_sections` 에 카드를 더한다(#888). `SettingsService::getSystemInfo()` 는 코어 정보의 1시간 캐시 밖에서 매 요청
+  `extra_sections` 에 카드를 더한다. `SettingsService::getSystemInfo()` 는 코어 정보의 1시간 캐시 밖에서 매 요청
   `SystemInfoSectionService::collect()` 를 부른다. 섹션은 `{id, title, badge?, rows, list?, notice?}` 형식으로 검증·정규화되고,
   형식이 틀린 섹션·id 가 겹치는 뒤 섹션은 버리고 경고 로그를 남긴다. 리스너가 던지면 `report()` 로 남기고 그 리스너 섹션만
   빠지며 응답은 200 이다.

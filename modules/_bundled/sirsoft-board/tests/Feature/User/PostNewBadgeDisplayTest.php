@@ -11,7 +11,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 /**
  * New 배지 표시 기간(new_display_hours)이 사용자 게시글 목록과 관리자 게시글 목록에 반영되는지 검증합니다.
  *
- * 이슈 #413-22-2: 목록 조회 시 게시글에 board 관계가 주입되지 않아
+ * 22-2: 목록 조회 시 게시글에 board 관계가 주입되지 않아
  * Post::isNew()가 게시판 설정값 대신 기본값 24시간으로만 판정하던 회귀.
  *
  * 목록 응답 각 게시글의 is_new 가 게시판 new_display_hours 설정을 따라야 한다. 관리자 목록도 같은 주입을 받으므로

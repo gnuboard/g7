@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 입금 기한 만료 자동취소 커맨드 테스트 (#599 후속 P17)
+ * 입금 기한 만료 자동취소 커맨드 테스트
  *
  * 커맨드가 사유 **코드** 자리에 번역 **문장**을 넣고 있었다. 영문 로케일의 문장은 59자라
  * `order_cancels.cancel_reason_type`(varchar(50))을 넘겨 DB 오류가 났고, **만료 주문
@@ -120,7 +120,7 @@ class CancelPendingPaymentOrdersTest extends ModuleTestCase
     /**
      * 결제수단 표기가 `unknown` 으로 무너지지 않는다.
      *
-     * `payment_method` 는 순수 string 이다(#475 — 확장 결제수단 ID 허용). enum 으로 보고
+     * `payment_method` 는 순수 string 이다(확장 결제수단 ID 허용). enum 으로 보고
      * `?->value` 로 읽으면 경고와 함께 언제나 null 이 되어, 수단 표기가 전건 `unknown` 이고
      * 아래 match 가 한 번도 맞지 않아 입금 기한 대신 주문 시각이 찍힌다.
      *

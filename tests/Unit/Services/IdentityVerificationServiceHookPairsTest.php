@@ -15,7 +15,7 @@ use Tests\TestCase;
 /**
  * IdentityVerificationService 의 라이프사이클 hook pair 회귀 차단.
  *
- * 이슈 #275 — cancel()/consumeToken() 메서드가 start/verify 와 달리 before/after hook 을
+ * cancel()/consumeToken() 메서드가 start/verify 와 달리 before/after hook 을
  * 발행하지 않아 외부 plugin 이 cancel 시점/token 소비 시점에 자기 record 정리 listener 를
  * 등록할 수 없었던 결함을 차단한다.
  *

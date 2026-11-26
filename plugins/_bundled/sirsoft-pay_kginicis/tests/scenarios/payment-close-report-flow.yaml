@@ -1,4 +1,4 @@
-feature: 결제창 닫힘·실패 복귀 보고 — 공개 상태 계약과 G7Core.api 만 쓴다 (#639)
+feature: 결제창 닫힘·실패 복귀 보고 — 공개 상태 계약과 G7Core.api 만 쓴다
 
 description: |
   표준결제 창 닫힘(closeUrl 메시지)과 결제 실패 화면 복귀를 서버(close-report)에 보고하고, 체크아웃 제출 상태를 푼다.

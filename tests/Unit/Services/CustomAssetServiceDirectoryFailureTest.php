@@ -9,7 +9,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * `custom/` 디렉토리 생성 실패 안내 테스트 (#651 D6·C2).
+ * `custom/` 디렉토리 생성 실패 안내 테스트.
  *
  * `custom/` 은 지연 생성이라 `deploy:deploy 0755` 로 배포된 확장 디렉토리에서 운영자의 첫 저장이
  * 여기서 실패한다. 종전 문구는 경로만 적어 무엇을 고쳐야 하는지 알 수 없었다 — 사유·소유자·권한·

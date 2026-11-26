@@ -87,7 +87,7 @@ export interface MultilingualTagInputProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
-  /** 입력칸 접근 가능한 이름 — 없으면 곁 라벨, 그것도 없으면 placeholder(#757) */
+  /** 입력칸 접근 가능한 이름 — 없으면 곁 라벨, 그것도 없으면 placeholder */
   'aria-label'?: string;
   /** 입력칸 이름이 될 요소 id */
   'aria-labelledby'?: string;
@@ -150,7 +150,7 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
   const rootRef = useRef<HTMLDivElement>(null);
 
   // 이름 — aria-label → aria-labelledby → 곁 라벨 → (마지막 수단) placeholder. 종전에는 placeholder 를 aria-label 로 박아
-  // 곁 라벨(「색상」)이 있어도 「입력 후 Enter」로 읽혔다(#757). 입력칸이 루트 안쪽이라 라벨 탐색은 루트에서 시작한다
+  // 곁 라벨(「색상」)이 있어도 「입력 후 Enter」로 읽혔다. 입력칸이 루트 안쪽이라 라벨 탐색은 루트에서 시작한다
   useEffect(() => {
     const el = inputRef.current;
     if (!el || ariaLabel || ariaLabelledBy) return;
@@ -200,7 +200,7 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
   }, [supportedLocales]);
 
   // 태그 삭제
-  // 지운 뒤 포커스 — 같은 자리의 다음 지우기 단추, 마지막을 지웠으면 입력칸(#869 키보드 접근)
+  // 지운 뒤 포커스 — 같은 자리의 다음 지우기 단추, 마지막을 지웠으면 입력칸(키보드 접근)
   const markRemoved = useRemovalFocus(rootRef, '[data-tag-remove]', () => inputRef.current);
 
   const handleRemoveTag = useCallback((index: number) => {
@@ -385,7 +385,7 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
             <Span
               className={`cursor-pointer hover:underline rounded ${FOCUS_VISIBLE_RING} ${disabled ? 'cursor-not-allowed' : ''}`}
               onClick={() => handleTagClick(index)}
-              // 이름을 누르면 편집 창이 열린다 — 키보드로도 연다(#869 키보드 접근)
+              // 이름을 누르면 편집 창이 열린다 — 키보드로도 연다(키보드 접근)
               {...keyboardActivationProps(() => handleTagClick(index), { disabled })}
             >
               {getTagLabel(tag)}

@@ -1,5 +1,5 @@
 /**
- * 구매자 클레임 신청서 작성 — 반품 (#599 S15b · §6-3)
+ * 구매자 클레임 신청서 작성 — 반품
  *
  * 반품 요약의 줄 수를 가르는 축은 **청구 방식** 하나다. 회수비를 환불금에서 차감하는 방식이면
  * 세 줄(환불 예정액 / 회수 배송비 차감 / 최종 환불액)이 서고, 별도 결제 방식이면 두 줄이다.
@@ -211,7 +211,7 @@ test.describe('구매자 클레임 신청서 작성 — 반품', () => {
 
   // @scenario claim_type=return, charge_method=deduct_from_refund, refund_branch=none
   // @effects claim_apply_comparison_table_renders_sixteen_rows, claim_apply_comparison_highlights_changed_after_values
-  test('요약 카드 안 주문금액 비교표가 서버 formatted 값 그대로 15행으로 선다 (#599 후속)', async ({ page }) => {
+  test('요약 카드 안 주문금액 비교표가 서버 formatted 값 그대로 15행으로 선다', async ({ page }) => {
     const calls = await mockPreview(page, () => previewWithComparison({
       claim_type: 'return',
       shipping_fee: { fee: DEDUCT.collectionFee, extra_fee: 0, groups: [] },

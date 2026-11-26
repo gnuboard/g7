@@ -775,7 +775,7 @@ export class LayoutLoader {
       // 네트워크 일시 실패(응답 없음)에만 재시도한다. 401 등 HTTP 응답은 그대로 넘어와
       // 아래 상태코드 분기가 종전대로 동작한다 (두 재시도는 계층이 달라 중첩되지 않는다).
       // @since engine-v1.53.0
-      // 시도별 상한은 다른 API 요청과 같은 30초 — 공용 기본 15초는 느린 서버의 정상 응답을 끊었다 (#869)
+      // 시도별 상한은 다른 API 요청과 같은 30초 — 공용 기본 15초는 느린 서버의 정상 응답을 끊었다
       // base-path:allow `apiUrl` 은 위 두 분기 모두 `suffixed()` 산출값이라 접두사가 이미 붙어 있다
       const response = await fetchWithRetry(apiUrl, {
         init: { headers },

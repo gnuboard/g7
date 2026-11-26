@@ -10,7 +10,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 배송정책 목록 페이로드 프루닝 (#518 / 공개 #76)
+ * 배송정책 목록 페이로드 프루닝 (공개 #76)
  *
  * 종전에는 정책마다 국가별 설정이 **전체 컬럼**으로 실렸다. 목록이 그리지도 않는
  * `extra_fee_settings`(도서산간 지역 배열)·`api_config`·`api_request_fields`·`ranges` 가

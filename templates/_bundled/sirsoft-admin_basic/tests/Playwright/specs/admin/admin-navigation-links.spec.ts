@@ -1,5 +1,5 @@
 /**
- * sirsoft-admin_basic — 관리자 화면 이동 링크 (#757 링크 단계).
+ * sirsoft-admin_basic — 관리자 화면 이동 링크 (링크 단계).
  *
  * 결함: 사이드바 메뉴·목록 행 메뉴·페이지 번호·설정 탭·바로가기가 클릭으로만 이동해(렌더 시점에 주소가 없음)
  *   가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 되지 않았다. 반대로 대시보드 바로가기처럼 이미 맨 `<a href>` 인
@@ -98,7 +98,7 @@ async function tokenUserUuid(request: APIRequestContext, token: string): Promise
   return uuid;
 }
 
-test.describe('@sirsoft-admin_basic 화면 이동 링크 (#757)', () => {
+test.describe('@sirsoft-admin_basic 화면 이동 링크', () => {
   // @scenario component=admin_sidebar
   // @effects modified_click_opens_browser_default, plain_click_spa_navigate
   test('사이드바 메뉴 — Ctrl·가운데 클릭은 새 탭, 보통 클릭은 문서 다시 부르기 없이 SPA 이동', async ({ page, context }) => {

@@ -1,6 +1,6 @@
 /**
  * @file profile-security-card.test.tsx
- * @description 내 정보 보안 카드 (#952 E) — 모든 기기 로그아웃 단추와 확인 창, 2단계 인증 플러그인이 끼워 넣을 앵커.
+ * @description 내 정보 보안 카드 — 모든 기기 로그아웃 단추와 확인 창, 2단계 인증 플러그인이 끼워 넣을 앵커.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -29,7 +29,7 @@ const refOf = (n: any) => String(n?.props?.['data-ref'] ?? n?.id ?? '');
 const view = load('partials/mypage/profile/_view.json');
 const modal = load('partials/mypage/profile/_modal_logout_all_devices.json');
 
-describe('내 정보 보안 카드 (#952)', () => {
+describe('내 정보 보안 카드', () => {
   // @scenario case=mypage_profile_security_card
   // @effects profile_security_card_visible
   it('보안 카드는 탈퇴 회원이 아니면 보이고, 2단계 인증 플러그인이 끼울 앵커(profile_security_card)를 둔다', () => {

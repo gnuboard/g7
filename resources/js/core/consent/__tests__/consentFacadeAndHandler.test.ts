@@ -1,5 +1,5 @@
 /**
- * 내장 핸들러 `refreshConsent` 와 `G7Core.consent` 파사드 (#639, 결정 D6·D7)
+ * 내장 핸들러 `refreshConsent` 와 `G7Core.consent` 파사드
  *
  * 레이아웃은 동의 저장 성공 뒤 `<action handler="refreshConsent"/>` 로 런타임을 다시 조회하게 하고,
  * TS 확장은 `G7Core.consent.subscribe()` 로 변경을 받아 해제 함수로 푼다. 둘 다 같은 런타임 하나를 쓴다.

@@ -1,6 +1,6 @@
 /**
  * @file popup-hidden-slide-media.spec.ts
- * @description 숨은 장 내용 지연과 PC 이미지 sizes (#879) — 팝업 3개면 첫 방문에 지금 장·다음 장만 내용을 그리고, 셋째 장 본문 이미지는
+ * @description 숨은 장 내용 지연과 PC 이미지 sizes — 팝업 3개면 첫 방문에 지금 장·다음 장만 내용을 그리고, 셋째 장 본문 이미지는
  * 그 장으로 넘길 때 처음 받는다. PC 창은 본문 상한(fit)을 잰 뒤 이미지를 붙여 같은 이미지를 두 규격으로 요청하지 않는다.
  * (매니페스트 popup-layer.yaml)
  */
@@ -8,7 +8,7 @@ import { test, expect, createHtmlPopup, createImagePopup, gotoUser, layer } from
 
 const BODY_IMG = '/api/modules/sirsoft-ecommerce/product-image/026938c07cab?size=lg';
 
-test.describe('팝업 숨은 장 내용 지연 (#879)', () => {
+test.describe('팝업 숨은 장 내용 지연', () => {
   // @scenario surface=hidden_slides_render_only_current_and_next
   // @effects hidden_slide_media_deferred
   test('셋째 장 본문 이미지는 그 장으로 넘길 때 처음 받고, 지금 장 이미지는 한 규격만 받는다', async ({ page, request, managerToken, created }) => {

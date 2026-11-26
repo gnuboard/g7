@@ -87,7 +87,7 @@ describe('곧바로 담기', () => {
   // @scenario case=c11
   // @effects quick_add_issues_cart_key_first
   it('장바구니 키가 없으면 기존 발급 경로로 먼저 받고 그 키로 담는다', async () => {
-    // 저장된 키는 서버 형식(`ck_` + 영숫자 32자)이어야 그대로 쓴다 — 형식이 망가진 키는 initCartKey 가 버리고 새로 발급한다(#869)
+    // 저장된 키는 서버 형식(`ck_` + 영숫자 32자)이어야 그대로 쓴다 — 형식이 망가진 키는 initCartKey 가 버리고 새로 발급한다
     const storedKey = 'ck_' + 'Stored0'.repeat(4) + 'Key0';
     globalState.cartKey = null;
     localStorage.setItem('g7_cart_key', storedKey);

@@ -12,7 +12,7 @@ use ReflectionProperty;
 use Tests\TestCase;
 
 /**
- * `_bundled`·`_pending` 메타 지연 로딩 (#860 W2)
+ * `_bundled`·`_pending` 메타 지연 로딩
  *
  * 부팅마다 미설치 번들 확장 매니페스트까지 읽던 것을, 관리 목록·업데이트 확인처럼 그 메타를 실제로 쓰는
  * 곳에서 처음 읽을 때로 미룬다. 읽는 것은 JSON 뿐이고(진입 클래스 require 없음), `load*()` 를 다시 부르면

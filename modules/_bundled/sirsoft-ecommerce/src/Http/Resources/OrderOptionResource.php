@@ -136,7 +136,7 @@ class OrderOptionResource extends BaseApiResource
             'final_amount' => $this->roundToOrderCurrency($finalAmount),
             'final_amount_formatted' => $this->formatOrderCurrency($finalAmount),
 
-            // 품목 과세 구분 (#612) — 주문 시점에 확정한 과세 종류와 그 행의 과세·영세·부가세 몫.
+            // 품목 과세 구분 — 주문 시점에 확정한 과세 종류와 그 행의 과세·영세·부가세 몫.
             // 관리자 주문상세 실결제 셀의 「과세: · 부가세: · 영세:」 줄과 품목 배지 재료다(S7 — 종전엔 미노출).
             ...$this->taxBreakdown(),
 
@@ -425,7 +425,7 @@ class OrderOptionResource extends BaseApiResource
     }
 
     /**
-     * 이 주문상품 행의 과세 구분 필드를 만듭니다 (#612).
+     * 이 주문상품 행의 과세 구분 필드를 만듭니다.
      *
      * 과세 행의 부가세는 주문 시점 세율(상품 스냅샷 `tax_rate`)로 그 행의 과세 금액에서 구한다 — 주문 헤더의
      * 부가세가 옵션별 부가세의 합이라 같은 식이다. 영세 행은 과세 금액 전부가 영세 몫이고 부가세는 0 이다.

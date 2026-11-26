@@ -54,7 +54,7 @@ class OrderPaymentResourceTest extends ModuleTestCase
     /**
      * 에스크로 여부가 API 로 노출된다.
      *
-     * 회귀 배경(#454): is_escrow 는 DB·모델·부분취소 차단 로직(PaymentRefundListener)에는
+     * 회귀 배경: is_escrow 는 DB·모델·부분취소 차단 로직(PaymentRefundListener)에는
      * 있었지만 Resource 가 내보내지 않아, 이 값을 참조하는 주문 상세 화면(관리자/회원)의
      * 에스크로 표시가 항상 false 로 평가되어 렌더되지 않았다.
      */

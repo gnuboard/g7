@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 기본 통화 플래그 단일성 테스트 (#543 — PG 청구 1/100 회귀)
+ * 기본 통화 플래그 단일성 테스트 (PG 청구 1/100 회귀)
  *
  * 저장본에 없는 통화를 defaults 에서 보충할 때(mergeCurrenciesByCode) 보충 항목의
  * is_default 를 그대로 들여오면 기본 통화가 2개가 된다. 그 상태에서
@@ -182,7 +182,7 @@ class EcommerceSettingsCurrencyDefaultFlagTest extends ModuleTestCase
     public function test_unconfigured_exchange_rate_currency_is_not_treated_as_base(): void
     {
         // KRW 는 환율 미입력(null) 상태로 보충된다. 기본 통화로 오인되면 환율이 1.0 으로
-        // 박제되어 PG 청구가 base 금액의 1/base_unit 으로 나간다(#543).
+        // 박제되어 PG 청구가 base 금액의 1/base_unit 으로 나간다.
         $this->saveJpyBaseSubset();
         $this->service->clearCache();
 

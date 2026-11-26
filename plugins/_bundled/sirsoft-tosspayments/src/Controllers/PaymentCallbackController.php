@@ -574,7 +574,7 @@ class PaymentCallbackController
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
         $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
 
-        // 보안: 상대 경로를 redirect() 에 넘기면 요청 Host 로 절대화된다 — 설정 주소로 만든다. 결제·인증 뒤 사람이 돌아가는 화면이라 「사용자 화면 URL」(비면 사이트 주소) 기준이다(#792 W15).
+        // 보안: 상대 경로를 redirect() 에 넘기면 요청 Host 로 절대화된다 — 설정 주소로 만든다. 결제·인증 뒤 사람이 돌아가는 화면이라 「사용자 화면 URL」(비면 사이트 주소) 기준이다.
         return ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 

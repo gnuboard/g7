@@ -1,7 +1,7 @@
 /**
  * DynamicRenderer.responsiveClassMerge.test.tsx
  *
- * responsive 구간 classMerge(덧붙이기)와 구간 classMap 적용 (engine-v1.98.0, #399 F10·F11)
+ * responsive 구간 classMerge(덧붙이기)와 구간 classMap 적용 (engine-v1.98.0)
  *
  * 1. 구간 classMerge 가 기본 className 에 충돌 교체형으로 덧붙는다 (해당 폭에서만)
  * 2. 바인딩을 해석한 뒤 합친다 (className·classMerge 양쪽)

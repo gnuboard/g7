@@ -1,6 +1,6 @@
 /**
  * @file analyticsPrivacyRequests.test.tsx
- * @description 정보주체 요청 화면 런타임 계약 (이슈 #682 S3)
+ * @description 정보주체 요청 화면 런타임 계약
  *
  * 잠그는 것: 조건이 질의에 있을 때만 조회하는 것, 기준 셋 중 하나만 싣는 것, 내보내기가 POST 본문 blob 다운로드인 것,
  * 삭제가 공통 창을 검색 기준으로 여는 것, 익명 모드 안내.

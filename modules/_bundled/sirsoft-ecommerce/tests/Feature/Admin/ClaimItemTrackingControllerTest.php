@@ -20,7 +20,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 관리자 상품 행 송장 API 테스트 (#599 후속 §3-8)
+ * 관리자 상품 행 송장 API 테스트
  *
  * 검증 축:
  * - `PATCH {type}/{id}/options/tracking`(「송장만 저장」) · `POST {type}/{id}/tracking/deliver`(운송장 단위 도착)

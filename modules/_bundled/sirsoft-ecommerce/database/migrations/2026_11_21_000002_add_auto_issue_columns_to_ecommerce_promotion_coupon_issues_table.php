@@ -23,7 +23,7 @@ return new class extends Migration
     private const SOURCE_ORDER_FOREIGN = 'fk_coupon_issue_source_order';
 
     /**
-     * 발급 내역에 발급 경로·자동발급 키·원천 주문·만료 임박 알림 시각을 추가합니다. (#952)
+     * 발급 내역에 발급 경로·자동발급 키·원천 주문·만료 임박 알림 시각을 추가합니다.
      *
      * `(coupon_id, user_id, auto_issue_key)` 유니크가 「조건마다 1회(생일은 해마다 1회)」를 DB 에서 지킨다.
      * MySQL 유니크 인덱스는 NULL 을 서로 다른 값으로 보므로 수동 다운로드·직접발급(키 NULL)과 기존 행은 제약을 받지 않는다.

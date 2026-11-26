@@ -11,7 +11,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  * 관리자 반응 유형 목록 API Feature 테스트.
  *
  * GET admin/reaction-types 목록 조회, 다국어 라벨 폴백(확정 15), 시더 등록 확인,
- * 권한 경계를 검증한다 (이슈 #525 §10 테스트 범위).
+ * 권한 경계를 검증한다 (§10 테스트 범위).
  */
 class ReactionTypeApiTest extends ModuleTestCase
 {

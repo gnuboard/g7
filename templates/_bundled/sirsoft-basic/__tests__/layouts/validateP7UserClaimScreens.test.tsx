@@ -1,6 +1,6 @@
 /**
  * @file validateP7UserClaimScreens.test.tsx
- * @description #599 validate P7 — 사용자 화면(sirsoft-basic) 결함 회귀 테스트
+ * @description 사용자 화면(sirsoft-basic) 결함 회귀 테스트
  *
  * 브랜치 검증(2026-09-23)이 주문상세·주문서·클레임 신청/상세 화면에서 찾은 결함을 잠근다.
  * 구조로 판정되는 것은 레이아웃 JSON 을 읽고, 글자로만 드러나는 것은 화면을 그려 잰다.
@@ -191,7 +191,7 @@ describe('클레임 상세 첨부 (_detail_reason)', () => {
   });
 });
 
-describe('반복 노드 간격 클래스 (#599 사용자 클레임 화면)', () => {
+describe('반복 노드 간격 클래스 (사용자 클레임 화면)', () => {
   /**
    * `data-each` 노드는 자기 자신이 복제되므로 그 노드의 space-y·divide-y 는 형제 사이에 걸리지 않는다.
    *

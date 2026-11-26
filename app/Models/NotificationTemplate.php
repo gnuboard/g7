@@ -32,7 +32,7 @@ class NotificationTemplate extends Model
      *
      * 미선언 시 수정이 컬럼 전체 항목(`"subject"`)으로 기록되어 시더 재실행이 컬럼을
      * 통째로 얼리고(다른 로케일 갱신·신규 팩 로케일 추가 불가), 언어팩 병합의
-     * 사용자 수정 보존(Case B)도 로케일 단위로 판정할 수 없다 (#597 에서 교정).
+     * 사용자 수정 보존(Case B)도 로케일 단위로 판정할 수 없다.
      *
      * @var array<int, string>
      */

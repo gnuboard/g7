@@ -144,7 +144,7 @@ beforeEach(() => {
     )
   );
 
-  // 진짜 관리자 Modal — 실행·취소 단추가 고정 하단(props.footer)에 있어 Modal 이 그 자리를 그려야 보인다(#869 P1).
+  // 진짜 관리자 Modal — 실행·취소 단추가 고정 하단(props.footer)에 있어 Modal 이 그 자리를 그려야 보인다.
   // 하네스 G7Core 에 없는 엔진 렌더러 접근자만 잇는다(운영 G7CoreGlobals.initSlotAPI 와 같은 값)
   registry.register('composite', 'Modal', (props: any) => {
     const g7 = (window as any).G7Core;
@@ -191,7 +191,7 @@ function renderCell(column: any, row: any): string {
       if (resolved) texts.push(resolved);
     }
     (node.children ?? []).forEach(visit);
-    (node.props?.footer ?? []).forEach(visit); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
+    (node.props?.footer ?? []).forEach(visit); // 고정 하단 (바닥 단추가 Modal 고정 하단으로 옮김)
   };
 
   (column.cellChildren ?? []).forEach(visit);

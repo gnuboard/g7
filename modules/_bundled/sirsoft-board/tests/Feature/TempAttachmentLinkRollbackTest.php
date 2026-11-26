@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 임시 첨부 연결·이동의 롤백 — 파일도 제자리로 (#883 3단계)
+ * 임시 첨부 연결·이동의 롤백 — 파일도 제자리로
  *
  * 글 저장이 임시 첨부를 본경로로 옮긴 뒤 바깥에서 실패해 DB 가 되돌아가면, 종전에는 파일만 본경로에 남아 첨부 행(임시 경로)과
  * 어긋났다. 특히 상품문의처럼 **바깥 트랜잭션 안에서 글 저장이 먼저 커밋**되고 바깥이 롤백되는 경우는 `DB::afterRollBack()` 으로

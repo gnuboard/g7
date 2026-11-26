@@ -6,7 +6,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Tests\Support\Concerns\AssertsLayoutSortOptionGateParity;
 
 /**
- * 화면 정렬 옵션 ↔ 게이트 허용 집합 회귀 가드 — 이커머스 모듈 (#492 D-19).
+ * 화면 정렬 옵션 ↔ 게이트 허용 집합 회귀 가드 — 이커머스 모듈.
  *
  * 실제로 이 모듈의 두 화면이 이 형태로 깨져 있었다.
  *

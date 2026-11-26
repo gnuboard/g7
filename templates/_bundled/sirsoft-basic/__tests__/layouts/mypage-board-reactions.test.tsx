@@ -1,6 +1,6 @@
 /**
  * @file mypage-board-reactions.test.tsx
- * @description 마이페이지 「내 반응」 서브탭 레이아웃 회귀 (이슈 #525 WP-B)
+ * @description 마이페이지 「내 반응」 서브탭 레이아웃 회귀
  *
  * 이 화면이 지키는 계약:
  *  - 조건은 전역 상태에 있고 데이터소스가 그것을 전부 읽는다 — 하나라도 빠지면 그 필터는

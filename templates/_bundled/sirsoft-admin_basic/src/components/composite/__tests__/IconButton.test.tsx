@@ -92,7 +92,7 @@ describe('IconButton', () => {
   /**
    * @effects icon_button_variant_uses_semantic_btn_classes
    */
-  it('variant="primary" 는 관리자 주 버튼 의미 클래스(btn-primary, 검정)를 쓴다 (#399 F14)', () => {
+  it('variant="primary" 는 관리자 주 버튼 의미 클래스(btn-primary, 검정)를 쓴다', () => {
     render(<IconButton iconName={IconName.Plus} variant="primary" />);
 
     const button = screen.getByRole('button');

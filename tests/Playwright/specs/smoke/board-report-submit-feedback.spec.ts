@@ -1,5 +1,5 @@
 /**
- * Smoke: 게시글/댓글 신고 제출 후 피드백·상태 반영 (이슈 #413-60)
+ * Smoke: 게시글/댓글 신고 제출 후 피드백·상태 반영 (60)
  *
  * @scenario actor=member, target=post, board=use_report
  * @effects report_success_button_switches_to_reported_without_reload
@@ -44,7 +44,7 @@ async function pickFirstReason(page: Page, dialog: Locator): Promise<void> {
   await choices.nth(1).click();
 }
 
-test.describe('@smoke 신고 제출 후 피드백·상태 반영 (이슈 #413-60)', () => {
+test.describe('@smoke 신고 제출 후 피드백·상태 반영 (60)', () => {
   test.skip(
     !REPORT_POST_ID,
     'PLAYWRIGHT_REPORT_POST_ID(타인 글, 신고 사용 게시판) 미지정 — 신고 대상 데이터 없이 검증 불가'

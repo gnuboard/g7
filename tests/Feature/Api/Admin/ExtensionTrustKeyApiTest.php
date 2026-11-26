@@ -13,7 +13,7 @@ use Tests\Concerns\PackageSignatureFixtures;
 use Tests\TestCase;
 
 /**
- * 확장 신뢰 키 API `GET/POST/DELETE /api/admin/extension-trust-keys` (#916 ④, D20·D31·D33)
+ * 확장 신뢰 키 API `GET/POST/DELETE /api/admin/extension-trust-keys`
  *
  * 추가·삭제는 같은 요청의 비밀번호 재확인을 거치고, 권한 없는 관리자는 403 이다. 「미서명 패키지 차단」은 탭 저장
  * (`security.extension_block_unsigned`)이고 목록 응답에 상태가 실린다.

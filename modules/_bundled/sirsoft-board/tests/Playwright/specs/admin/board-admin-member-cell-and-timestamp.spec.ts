@@ -1,5 +1,5 @@
 /**
- * 관리자 스크랩·반응 목록의 «회원 칸과 시각 칸» (이슈 #525 후속, 2026-09-16 제보).
+ * 관리자 스크랩·반응 목록의 «회원 칸과 시각 칸» (2026-09-16 제보).
  *
  * 두 갈래를 실브라우저로 잰다:
  *   ① 시각 칸이 **초 단위 절대 시각**으로 선다 — 「2시간 전」·「09-14」 같은 어림 표기가 아니다.
@@ -42,7 +42,7 @@ async function openAdminScraps(page: Page, token: string, query = ''): Promise<v
   await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 15_000 });
 }
 
-test.describe('관리자 목록의 회원 칸·시각 칸 (#525)', () => {
+test.describe('관리자 목록의 회원 칸·시각 칸', () => {
   // 문맥 메뉴는 `position: fixed` 로 뜬다 — 뷰포트 밖으로 나가면 Playwright 가 스크롤로
   // 끌어올 수 없어(고정 요소는 스크롤에 따라오지 않는다) 클릭이 30초 동안 재시도만 하다 죽는다.
   // 기본 Desktop Chrome(1280×720)에서는 표 아래쪽 행의 메뉴가 그 밖으로 떨어지므로 높이를 준다.

@@ -6,7 +6,7 @@ use App\Support\ExtensionDependencies;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 필수 의존 선언(`dependencies`)의 목록형 해석 (#822 D6)
+ * 필수 의존 선언(`dependencies`)의 목록형 해석
  *
  * `{"modules": ["sirsoft-board"]}` 목록형을 키로 순회하면 식별자 자리에 `0`·`1` 이 들어가 의존 검사·역조회·정렬이
  * 엉뚱한 확장을 찾았다. 의존을 읽는 곳은 모두 이 정규화기를 거친다 — 목록형은 「버전 무관(*)」, 객체형은 그대로.

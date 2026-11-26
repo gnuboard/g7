@@ -30,7 +30,7 @@ use Tests\TestCase;
  *
  * DB 스키마를 건드리지 않으므로 RefreshDatabase 를 쓰지 않는다(API 응답 시험이 만드는 관리자 계정은 트랜잭션으로 되돌린다).
  *
- * 확장 카드(#888): 확장은 필터 훅 `core.settings.filter_system_info_sections` 로 응답의 `extra_sections` 에 카드를 더한다.
+ * 확장 카드: 확장은 필터 훅 `core.settings.filter_system_info_sections` 로 응답의 `extra_sections` 에 카드를 더한다.
  * 형식이 틀린 섹션은 버리고 경고를 남기며, 리스너가 던지면 그 리스너 섹션만 빠지고 응답은 200 이다. 코어 정보는 1시간
  * 캐시지만 확장 섹션은 캐시 밖에서 매 요청 새로 계산한다.
  */

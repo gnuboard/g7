@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * CategoryImageService::pruneTempUploads() 단위 테스트 (#876)
+ * CategoryImageService::pruneTempUploads() 단위 테스트
  *
  * 파일 삭제에 실패한 행은 지우지 않고 남겨야 다음 회차가 다시 시도한다 — 행을 먼저 지우면 그 파일을
  * 가리키는 기록이 사라져 아무도 되찾지 못하는 고아 파일이 된다.

@@ -8,7 +8,7 @@ description: |
   live 의 정리는 종전대로 곧바로 지운다. 운영 서버 실행은 지우기 전에 정리할 항목과 건수를 먼저 알린다(`--json` 에는 섞지 않음).
 
 # 축 의미:
-#   case — 경로. stage_redeploy 는 검수 서버에 여러 번 배포한 뒤 운영 서버에서 실행하는 경로(#888).
+#   case — 경로. stage_redeploy 는 검수 서버에 여러 번 배포한 뒤 운영 서버에서 실행하는 경로.
 axes:
   case: [deferred_cleanup, live_regression, status_not_updating, stage_redeploy]
 

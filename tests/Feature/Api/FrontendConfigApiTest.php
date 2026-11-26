@@ -20,7 +20,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * 공개 설정 API 테스트 (#792 WP-C1 — D8)
+ * 공개 설정 API 테스트 (D8)
  *
  * 셸(`window.G7Config`)과 같은 함수로 만든 값이 API 로 나가고, 민감 키가 없으며, 사용자 템플릿이 없어도 동작하고,
  * 관리자 API 는 비인증 401·일반 회원 403·관리자 200 인지 잠근다.
@@ -107,7 +107,7 @@ class FrontendConfigApiTest extends TestCase
         // 활성 템플릿이 있어야 G7Config 를 싣는 셸 본문이 그려진다(시험 DB 에는 설치 템플릿이 없다)
         $templates = Mockery::mock(TemplateService::class);
         $templates->shouldReceive('getActiveTemplateIdentifier')->andReturnUsing(fn (string $type) => $type === 'admin' ? 'sirsoft-admin_basic' : 'sirsoft-basic');
-        // 템플릿 설정 중 expose 선언 키(#879) — 7.1 셸에 없던 키라 아래에서 걷는다
+        // 템플릿 설정 중 expose 선언 키 — 7.1 셸에 없던 키라 아래에서 걷는다
         $templates->shouldReceive('getExposedTemplateConfig')->andReturn(['scroll_restoration' => null]);
         $this->app->instance(TemplateService::class, $templates);
 
@@ -122,13 +122,13 @@ class FrontendConfigApiTest extends TestCase
         [$legacyRest, $legacyConfig] = $this->splitConfigBlock($legacy);
         $this->assertArrayHasKey('customRoutes', $config);
         unset($config['customRoutes']);
-        // 7.2.0 #434 — 활성 템플릿 공개 설정 키와 head 파비콘 링크가 더해졌다. 그 둘만 걷고 나머지는 7.1 과 같아야 한다.
+        // 7.2.0 — 활성 템플릿 공개 설정 키와 head 파비콘 링크가 더해졌다. 그 둘만 걷고 나머지는 7.1 과 같아야 한다.
         $this->assertArrayHasKey('templateSettings', $config);
         unset($config['templateSettings']);
-        // 7.2.0 #879 — 템플릿 설정 중 template.json expose 선언 키(첫 화면 config API 왕복 제거)
+        // 7.2.0 — 템플릿 설정 중 template.json expose 선언 키(첫 화면 config API 왕복 제거)
         $this->assertSame(['scroll_restoration' => null], $config['templateConfig'] ?? null);
         unset($config['templateConfig']);
-        // 템플릿이 공급하는 설정 화면 번들 주소(#434) — 관리자 셸만 싣는다.
+        // 템플릿이 공급하는 설정 화면 번들 주소 — 관리자 셸만 싣는다.
         if ($view === 'admin') {
             $this->assertArrayHasKey('templateSettingsAssets', $config);
             unset($config['templateSettingsAssets']);

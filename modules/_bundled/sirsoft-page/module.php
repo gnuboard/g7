@@ -135,7 +135,7 @@ class Module extends AbstractModule
             ActivityLogDescriptionResolver::class,
             SeoPageCacheListener::class,
             Ckeditor5ReferenceSourcesListener::class,
-            // 첨부 미리보기를 코어 이미지 썸네일의 서빙 경로·원본 제공자로 등록 (#869)
+            // 첨부 미리보기를 코어 이미지 썸네일의 서빙 경로·원본 제공자로 등록
             ThumbnailServingListener::class,
         ];
     }

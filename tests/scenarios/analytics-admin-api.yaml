@@ -3,7 +3,7 @@
 #   못한다(저장소 기존 시나리오와 같은 한계). 축 조합은 PHPUnit Feature 테스트가 커버하고
 #   green 이다.
 
-feature: 방문자 통계 관리자·공개 API (이슈 #682 S2)
+feature: 방문자 통계 관리자·공개 API
 
 description: |
   집계된 숫자를 화면이 읽어 가는 길, 그리고 운영자가 설정·삭제·정보주체 요청을 수행하는 길.
@@ -103,7 +103,7 @@ effects:
   - total_is_the_sum_of_daily_unique_visitors
   - change_percent_is_empty_when_yesterday_was_zero
   - overview_meta_exposes_collection_and_queue_state
-  - diagnostics_report_consent_selection_and_provider_label   # 동의 출처 배지 — 선택 상태·제공자 이름 (#639)
+  - diagnostics_report_consent_selection_and_provider_label   # 동의 출처 배지 — 선택 상태·제공자 이름
   - series_unit_is_chosen_from_the_range_length
   - series_downgrades_hour_outside_the_retention_window
   - series_fills_empty_buckets_with_zero
@@ -152,7 +152,7 @@ effects:
   - settings_save_only_the_keys_that_were_sent
   - settings_reject_values_outside_their_range
   - stricter_privacy_offers_retroactive_anonymization
-  - tightening_without_retro_target_offers_nothing      # 강해졌어도 소급 요청이 성립하지 않으면(가릴 폭 0·해시 아님) 제안하지 않는다 (#703 실측)
+  - tightening_without_retro_target_offers_nothing      # 강해졌어도 소급 요청이 성립하지 않으면(가릴 폭 0·해시 아님) 제안하지 않는다
   - weaker_privacy_does_not_offer_it
   - the_core_settings_route_validates_analytics_the_same_way
   # 되돌릴 수 없는 길
@@ -240,7 +240,7 @@ effects:
   # 방문자 목록의 회원 신원 (라운드 4, 검수 지적 ⑦)
   - visitor_list_carries_member_identity_for_logged_in_visitors
   - visitor_list_leaves_member_null_when_the_account_is_gone
-  # 마스킹 표시·회원 이동 (#682 S3 라운드 6)
+  # 마스킹 표시·회원 이동
   - masked_ip_is_labelled_as_masked
   - analytics_times_are_rendered_in_the_site_timezone
   - member_jump_is_gated_by_destination_permission

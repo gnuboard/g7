@@ -14,7 +14,7 @@ use Plugins\Sirsoft\Gdpr\Services\CookieCategoryService;
 use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
 
 /**
- * 코어 동의 제공자 계약 구현 — 쿠키 동의 배너의 판단을 코어와 다른 확장에 답합니다 (#639)
+ * 코어 동의 제공자 계약 구현 — 쿠키 동의 배너의 판단을 코어와 다른 확장에 답합니다
  *
  * 코어는 이 플러그인을 모릅니다. `core.consent.registered_providers` 필터로 등록되고, 운영자가 고른(또는 하나뿐이라
  * 자동으로 고른) 제공자일 때만 질문을 받습니다.

@@ -30,7 +30,7 @@ const rolesRowOf = (menuName: string): HTMLElement => {
 };
 
 /**
- * 메뉴 관리 목록 — 메뉴마다 부여된 역할을 행에서 바로 보인다 (#708 추가 요구).
+ * 메뉴 관리 목록 — 메뉴마다 부여된 역할을 행에서 바로 보인다.
  * 목록 응답은 역할 ID 만 싣고, 이름은 화면이 가진 역할 목록(roleOptions)에서 찾는다.
  */
 describe('SortableMenuList — 행마다 부여된 역할', () => {

@@ -1,9 +1,9 @@
 /**
- * 주문서 배송지 관리 모달 — 제목이 «추가»와 «수정»을 가르는 기준 계약 테스트 (#599 세션A)
+ * 주문서 배송지 관리 모달 — 제목이 «추가»와 «수정»을 가르는 기준 계약 테스트
  *
- * 배경: 한 창(`addressManageModal`)이 모드 값(지금은 `_global.checkoutAddressModal.mode`, #599 당시 `_local.addressModalMode`)으로
+ * 배경: 한 창(`addressManageModal`)이 모드 값(지금은 `_global.checkoutAddressModal.mode`, 당시 `_local.addressModalMode`)으로
  *   «목록»과 «입력 폼» 두 얼굴을 갖고, 폼 모드에서는 다시 «새 주소 추가»와 «기존 배송지 수정»으로 갈린다.
- *   등록/수정을 가르는 SSoT 는 편집 대상의 id(지금은 `_global.checkoutAddressModal.editing?.id`, #599 당시 `_local.editingAddress?.id`)다 — 저장 버튼의 API target·
+ *   등록/수정을 가르는 SSoT 는 편집 대상의 id(지금은 `_global.checkoutAddressModal.editing?.id`, 당시 `_local.editingAddress?.id`)다 — 저장 버튼의 API target·
  *   method·성공 토스트·버튼 라벨이 모두 그 키를 본다.
  *
  * 결함(브라우저 실측 2026-09-21 · 주문서 `배송지 관리` → `새 배송지`):

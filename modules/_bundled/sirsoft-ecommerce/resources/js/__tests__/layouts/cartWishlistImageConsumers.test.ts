@@ -1,6 +1,6 @@
 /**
  * @file cartWishlistImageConsumers.test.ts
- * @description 카트·찜목록 — 상품 이미지 소비 경로 고정 (#518 / 공개 #76)
+ * @description 카트·찜목록 — 상품 이미지 소비 경로 고정 (공개 #76)
  *
  * 배경:
  * 카트·찜목록 조회가 `product.images` 를 전량 hydration 하고 있었다. 두 화면 모두 상품
@@ -53,7 +53,7 @@ function readRaw(filePath: string): string {
  * @scenario surface=cart,observation=consumer_screen
  * @effects cart_and_wishlist_consume_thumbnail_only
  */
-describe('카트 — 상품 이미지 소비 (#518 / 공개 #76)', () => {
+describe('카트 — 상품 이미지 소비 (공개 #76)', () => {
     it('썸네일 1장만 그린다 (이미지 배열을 순회하지 않는다)', () => {
         const raw = readRaw(CART_ITEM);
 
@@ -70,7 +70,7 @@ describe('카트 — 상품 이미지 소비 (#518 / 공개 #76)', () => {
  * @scenario surface=wishlist,observation=consumer_screen
  * @effects cart_and_wishlist_consume_thumbnail_only
  */
-describe('찜목록 — 상품 이미지 소비 (#518 / 공개 #76)', () => {
+describe('찜목록 — 상품 이미지 소비 (공개 #76)', () => {
     it('상품 카드에 상품 객체를 넘기고, 배열을 직접 읽지 않는다', () => {
         const raw = readRaw(WISHLIST_LIST);
 

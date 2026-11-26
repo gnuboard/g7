@@ -31,7 +31,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * 본문 미디어 코어 골격 — 업로드·저장 동기화·서명·서빙·정리 흐름 (#887)
+ * 본문 미디어 코어 골격 — 업로드·저장 동기화·서명·서빙·정리 흐름
  *
  * 편집기 본문에 바로 넣는 이미지·동영상·오디오를 다루는 흐름을 한 곳에서 돌린다. 확장(모듈·플러그인)은 저장소·권한 부분만
  * 어댑터(`ContentMediaStore`)로 구현하고, 이 클래스를 상속한 얇은 서비스에 그 어댑터와 자기 저장소를 넘긴다.

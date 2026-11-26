@@ -36,7 +36,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 관리자 뒤늦은 처리 API 테스트 (#599 후속 §5 S13~S15 — 「그 순간에만 열리는 입구」·「고객만 할 수 있는 처리」)
+ * 관리자 뒤늦은 처리 API 테스트 (「그 순간에만 열리는 입구」·「고객만 할 수 있는 처리」)
  *
  * 검증 축:
  * - S13 뒤늦은 재고 복구 — 재고가 실제로 늘고 행에 기록 · 두 번째 요청 422(멱등) · 선교환 미회수 행 제외 · 권한 403

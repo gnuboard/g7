@@ -11,7 +11,7 @@ use Laravel\Sanctum\PersonalAccessToken;
  * 인증 토큰 만료 시각 슬라이딩 연장.
  *
  * 남은 시간이 유지시간(`security.auth_token_lifetime`, 분)의 절반 미만이고 아직 만료 전이면 만료 시각을
- * 지금부터 유지시간만큼 뒤로 민다. API 요청(`RefreshTokenExpiration`)과 개발자 화면 요청(`ScreenAuth`, #792)이
+ * 지금부터 유지시간만큼 뒤로 민다. API 요청(`RefreshTokenExpiration`)과 개발자 화면 요청(`ScreenAuth`)이
  * 같은 함수를 쓴다 — 개발자 화면만 보는 회원이 토큰 만료(기본 30분)로 로그아웃되지 않게 한다.
  *
  * @since 7.2.0

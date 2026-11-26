@@ -28,7 +28,7 @@ use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
 
 /**
- * 나이스페이먼츠 클레임 결제 경로의 #599 validate P2 결함 회귀 테스트
+ * 나이스페이먼츠 클레임 결제 경로의 결함 회귀 테스트
  *
  * - #8 클라이언트 승인 API 경로에는 승인 뒤 거절의 보상(망취소)이 없었다 — 판정·보상을 승인
  *   리스너로 옮겨 서버 콜백과 같게 한다. 서명 금액(Amt)도 승인 호출 **전에** 청구액과 대조한다.
@@ -431,7 +431,7 @@ class ValidateP2ClaimPaymentHardeningTest extends PluginTestCase
      * 콜백 컨트롤러가 이커머스 결제 계약을 생성자로 주입받고, 공용 트레이트가 로케이터를 쓰지 않는다.
      *
      * 수정 전: `HandlesClaimPaymentCallbacks::findClaimPayment()` 가 `app(ClaimPaymentRepositoryInterface::class)` 였다.
-     * 결제 계약 전환(#916) 뒤에는 이커머스 내부 Repository 대신 공개 계약 `PaymentGatewayBridge` 하나를 주입받는다.
+     * 결제 계약 전환 뒤에는 이커머스 내부 Repository 대신 공개 계약 `PaymentGatewayBridge` 하나를 주입받는다.
      *
      * @return void 반환값 없음
      *

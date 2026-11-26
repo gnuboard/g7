@@ -1398,7 +1398,7 @@ return [
         'update_failed' => '배송국가 변경에 실패했습니다.',
     ],
 
-    // 회원 소유 데이터 관리자 목록 (#524 §4.1)
+    // 회원 소유 데이터 관리자 목록
     'user_address' => [
         'admin_list_retrieved' => '회원 배송지 목록을 조회했습니다.',
         'admin_deleted' => '배송지를 삭제했습니다.',
@@ -1411,7 +1411,7 @@ return [
         'admin_bulk_deleted' => ':count개의 상품문의를 삭제했습니다.',
     ],
 
-    // 개인정보 보유기간 (이슈 #636) — 코어 보유기간 커맨드의 핸들러 이름과 연간 통지문 「주문 정보」 섹션
+    // 개인정보 보유기간 — 코어 보유기간 커맨드의 핸들러 이름과 연간 통지문 「주문 정보」 섹션
     'privacy_retention' => [
         'handler_label' => '이커머스 종결 주문 개인정보',
         'target_columns' => [
@@ -1556,7 +1556,7 @@ return [
             'order_custom_email' => [
                 'app_name' => '사이트명',
             ],
-            // 내보내기(#787)
+            // 내보내기
             'export_completed' => [
                 'name' => '수신자(요청자) 이름',
                 'type_label' => '작업유형 (주문내역·상품내역·마일리지 내역)',
@@ -1989,7 +1989,7 @@ return [
             ],
         ],
     ],
-    // 내보내기(#787)
+    // 내보내기
     'export' => [
         'download_link_issued' => '다운로드 주소를 발급했습니다.',
         'catalog_retrieved' => '내보내기 설정을 불러왔습니다.',

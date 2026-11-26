@@ -10,7 +10,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\TestCase;
 
 /**
- * `stage:apply-to-live` — 운영 서버에서, 검수 서버가 공유 DB 에 먼저 반영한 확장 판을 마무리한다 (#888).
+ * `stage:apply-to-live` — 운영 서버에서, 검수 서버가 공유 DB 에 먼저 반영한 확장 판을 마무리한다.
  *
  * 검수 서버가 확장을 업데이트하면 공유 DB 판이 먼저 새 판이 되어 운영 서버의 `*:update` 는 「업데이트 없음」으로 끝난다. 운영 서버가
  * 따로 해야 하는 일(파일 맞추기 → 레이아웃 갱신 keep → 미뤄 둔 정리)을 한 명령으로 차례로 하고, 실패한 단계에서 멈춘다.

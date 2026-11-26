@@ -398,7 +398,7 @@ class JobQueueControllerTest extends TestCase
     }
 
     /**
-     * 워커가 보지 않는(등록되지 않은) 연결의 실패 작업은 기본 연결로 되넣는다(#780).
+     * 워커가 보지 않는(등록되지 않은) 연결의 실패 작업은 기본 연결로 되넣는다.
      *
      * @scenario action=retry, placement=unregistered_connection
      *

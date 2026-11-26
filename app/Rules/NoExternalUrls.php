@@ -91,7 +91,7 @@ class NoExternalUrls implements ValidationRule
     private const ACTION_TARGET_KEYS = ['target', 'params.path', 'params.url'];
 
     /**
-     * http(s) 웹 주소를 허용하는 prop 키 — 입력 안내 문구와 링크 (#727).
+     * http(s) 웹 주소를 허용하는 prop 키 — 입력 안내 문구와 링크.
      *
      * @var array<int, string>
      */
@@ -195,7 +195,7 @@ class NoExternalUrls implements ValidationRule
         }
 
         // injections: 확장 조각이 대상 화면에 끼워 넣는 컴포넌트와 대상 컴포넌트 prop 덧씌우기 — 화면 컴포넌트와 같은
-        // sink 다. 종전에는 부분 순회가 이 키를 몰라 조각 저장 경로에서 자원 prop 의 외부 주소가 그대로 저장됐다(#727).
+        // sink 다. 종전에는 부분 순회가 이 키를 몰라 조각 저장 경로에서 자원 prop 의 외부 주소가 그대로 저장됐다.
         if (isset($value['injections']) && is_array($value['injections'])) {
             foreach ($value['injections'] as $i => $injection) {
                 if (! is_array($injection)) {

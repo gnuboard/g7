@@ -14,7 +14,7 @@ use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
- * 관리자 「비밀번호 없이 만들기」 (#798 K11 · P7)
+ * 관리자 「비밀번호 없이 만들기」
  *
  * 관리자가 회사 계정으로만 로그인할 회원을 미리 만든다. `create_without_password=true` 면 비밀번호를 받지 않고(`prohibited`) 비밀번호 없는
  * 회원이 된다 — 비밀번호 로그인은 실패하고 재설정 메일로 처음 만들 수 있다. 기존 경로(비밀번호 필수)는 그대로다.

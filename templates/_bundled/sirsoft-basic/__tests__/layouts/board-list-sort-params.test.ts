@@ -4,7 +4,7 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * 사용자 게시판 목록 — 정렬 쿼리 파라미터 전달 (#534 검수 발견)
+ * 사용자 게시판 목록 — 정렬 쿼리 파라미터 전달 (검수 발견)
  *
  * 서버 계약(`PostService::extractSortParams`)의 정렬 우선순위는
  * **쿼리 파라미터(sort_by/sort_order) > 게시판 설정(order_by/order_direction) > 기본값** 이다.

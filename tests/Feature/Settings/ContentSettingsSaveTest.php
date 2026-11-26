@@ -14,7 +14,7 @@ use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
- * 환경설정 「본문 콘텐츠」 탭 저장·화면 규칙 (#883 5단계)
+ * 환경설정 「본문 콘텐츠」 탭 저장·화면 규칙
  *
  * 거절 태그는 사유와 함께 422, svg 는 저장(경고는 화면 몫), 직접 추가 서비스는 필드별 문구로 거절, 정상 값은 저장되고 공개 설정의
  * `content.render_policy` 에 반영된다(원본 설정은 공개하지 않는다).

@@ -80,7 +80,7 @@ class BackfillWriteNoticeDefaultPermission implements DataMigration
         $settings['default_board_permissions'] = $this->insertAfter($permissions);
 
         File::put($path, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-        // sudo 코어 업데이트 경로에서 root 로 실행되면 파일이 root 소유로 남는다 — 부모 소유권 상속 (#651)
+        // sudo 코어 업데이트 경로에서 root 로 실행되면 파일이 root 소유로 남는다 — 부모 소유권 상속
         FilePermissionHelper::inheritOwnershipFromParent($path);
 
         $context->logger->info('[board:1.2.0] 공지 등록 기본 권한 백필 완료 ('.self::PERMISSION_KEY.' → '.implode(',', self::DEFAULT_ROLES).')');

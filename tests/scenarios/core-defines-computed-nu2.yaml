@@ -4,7 +4,7 @@ description: |
   레이아웃 JSON 의 defines 는 라우트 진입 때 화면 데이터 컨텍스트의 _defines 로 실리고(없으면 싣지 않음),
   computed 는 TemplateApp.calculateComputed 가 화이트리스트 평가기로 계산한다. {{}} 없는 문자열은 그대로 두고,
   평가 실패와 샌드박스 탈출 시도는 undefined 다. 시험은 실제 TemplateApp 의 라우트 변경 처리와 계산 메서드를 거친다
-  (#869: 종전에는 시험 안 사본만 단언했다). 이 매니페스트는 그 단위 시험 파일을 영역별로 소유한다.
+  (종전에는 시험 안 사본만 단언했다). 이 매니페스트는 그 단위 시험 파일을 영역별로 소유한다.
 
 axes:
   area: [defines_constants, defines_injection, computed_expression, computed_route_entry, real_cases, security, layout_contract]

@@ -12,7 +12,7 @@ use Illuminate\Http\JsonResponse;
  * - 비활성화·제거: `data.integrated_by`(이 확장을 연동으로 선언한 활성 확장)
  *
  * 안내는 막지 않는다 — HTTP 상태와 기존 키는 그대로 두고 키만 더한다. 응답 본문은 객체(stdClass)로 풀어 고친다 —
- * 연관 배열로 풀면 빈 객체 `{}` 가 다시 쓸 때 `[]` 로 바뀐다(#758 같은 결함군).
+ * 연관 배열로 풀면 빈 객체 `{}` 가 다시 쓸 때 `[]` 로 바뀐다(같은 결함군).
  */
 trait RespondsWithIntegrationNotices
 {

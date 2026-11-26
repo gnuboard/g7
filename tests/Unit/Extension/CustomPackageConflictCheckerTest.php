@@ -6,7 +6,7 @@ use App\Extension\Custom\CustomPackageConflictChecker;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 개발자 패키지(custom/composer.lock) ↔ 코어 패키지 정적 충돌 판정 단위 테스트 (#792 W18)
+ * 개발자 패키지(custom/composer.lock) ↔ 코어 패키지 정적 충돌 판정 단위 테스트
  *
  * composer 를 실행하지 않고 lock 두 개만으로 「요구 제약 불만족」과 「같은 패키지 다른 버전」을 잡는지 잠근다.
  */

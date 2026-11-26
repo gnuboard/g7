@@ -173,7 +173,7 @@ export function useFileDrafts({
   debounceMs = DEFAULT_DEBOUNCE_MS,
   maxBytes = DEFAULT_MAX_BYTES,
 }: UseFileDraftsOptions): UseFileDraftsResult {
-  // 초안은 작성물이라 관리자 회원마다 갈린다(#639 ⑩) — 같은 브라우저를 쓰는 다른 관리자에게
+  // 초안은 작성물이라 관리자 회원마다 갈린다 — 같은 브라우저를 쓰는 다른 관리자에게
   // 「저장하지 않은 편집」이 뜨면 안 된다. `namespace` 는 글꼴 크기 같은 기기 선호 키의 접두이기도 하므로
   // 건드리지 않고 uuid 는 이 훅 안에서만 넣는다. 회원을 모르면 초안을 남기지 않는다(null) — 공용 키에 다시 쓰면
   // 같은 결함이 돌아온다.

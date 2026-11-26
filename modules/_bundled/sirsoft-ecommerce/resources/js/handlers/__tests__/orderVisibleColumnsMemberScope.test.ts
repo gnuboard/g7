@@ -1,5 +1,5 @@
 /**
- * 주문 목록 표시 컬럼 저장값의 회원 구분 테스트 (#639 ⑩)
+ * 주문 목록 표시 컬럼 저장값의 회원 구분 테스트
  *
  * 배경(브라우저 실측 2026-10-05): DataGrid 열 토글 경로(`sirsoft-ecommerce.saveVisibleColumns`)가
  * `g7_order_visible_columns` 하나에 적었고, 주문 목록 초기화가 같은 키를 그대로 읽어 같은 브라우저의
@@ -30,7 +30,7 @@ function signInAs(uuid: string | null): void {
 
 const context = {} as ActionContext;
 
-describe('주문 목록 표시 컬럼 — 회원별 저장 (#639 ⑩)', () => {
+describe('주문 목록 표시 컬럼 — 회원별 저장', () => {
     beforeEach(() => {
         localStorage.clear();
     });

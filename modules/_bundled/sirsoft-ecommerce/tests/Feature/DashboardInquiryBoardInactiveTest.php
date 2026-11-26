@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 게시판 모듈이 꺼진 사이트의 대시보드 미답변 문의 (#822 G2)
+ * 게시판 모듈이 꺼진 사이트의 대시보드 미답변 문의
  *
  * 상품 문의는 게시판 모듈의 글로 저장되고, 대시보드 미답변 문의 카드의 항목·「전체 보기」는
  * 게시판 관리자 화면(`/admin/board/{slug}/post/{id}`)으로 간다. 게시판 모듈이 꺼져 있으면

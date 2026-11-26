@@ -10,7 +10,7 @@ use App\Models\User;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 게시판 편집기 업로드 계약 표준 엔드포인트 `…/content-media/target` (#887)
+ * 게시판 편집기 업로드 계약 표준 엔드포인트 `…/content-media/target`
  *
  * 편집 화면이 「무엇을 올릴 수 있나」를 받는 길을 확장마다 같은 모양(`GET …/content-media/target`)으로 맞췄다. 게시판은 사용자
  * `boards/{slug}/content-media/target`, 관리자 `admin/board/{slug}/content-media/target` 이고 권한은 업로드와 같다
@@ -76,7 +76,7 @@ class ContentMediaTargetTest extends BoardTestCase
     }
 
     /**
-     * 「파일 첨부 사용」을 꺼도 업로드 권한이 있으면 비회원도 계약을 받는다(#883 D26).
+     * 「파일 첨부 사용」을 꺼도 업로드 권한이 있으면 비회원도 계약을 받는다.
      *
      * @return void 반환값 없음
      *

@@ -1,6 +1,6 @@
 /**
  * @file admin-user-detail-password-status.test.tsx
- * @description 관리자 회원 상세 「비밀번호」 구획 구조 회귀 테스트 (#736)
+ * @description 관리자 회원 상세 「비밀번호」 구획 구조 회귀 테스트
  *
  * 활동 정보 바로 뒤·동의정보 앞에 서고, 값은 상세 응답에만 실리는 `password_status` 를 읽는다.
  * 만료 예정은 적용 안 됨 / 만료됨 / 날짜(D-n) 세 갈래로 그리고, 연기 종료는 연기 중일 때만 보인다.
@@ -22,7 +22,7 @@ function flatten(node: any): any[] {
 const nodes = flatten((detail as any).slots?.content ?? (detail as any).components);
 const ids = nodes.map((n) => n.id).filter(Boolean) as string[];
 
-describe('관리자 회원 상세 — 비밀번호 구획 (#736)', () => {
+describe('관리자 회원 상세 — 비밀번호 구획', () => {
   /**
    * @scenario applies=true, expired=false
    * @effects detail_password_section_after_activity
@@ -49,7 +49,7 @@ describe('관리자 회원 상세 — 비밀번호 구획 (#736)', () => {
     const expires = nodes.find((n) => n.id === 'field_password_expires_at');
     const branches = flatten(expires).filter((n) => n.if).map((n) => n.if);
     expect(branches).toEqual([
-      // 「적용 안 됨」은 회원 정보를 받은 뒤에만 판정한다(받는 중을 「적용 안 됨」으로 읽지 않는다, #915)
+      // 「적용 안 됨」은 회원 정보를 받은 뒤에만 판정한다(받는 중을 「적용 안 됨」으로 읽지 않는다)
       '{{user !== undefined && (!user?.data?.password_status?.applies)}}',
       '{{user?.data?.password_status?.applies && user?.data?.password_status?.expired}}',
       '{{user?.data?.password_status?.applies && !user?.data?.password_status?.expired}}',

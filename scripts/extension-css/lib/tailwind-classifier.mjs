@@ -109,7 +109,7 @@ export function buildEntryCss({ letters, theme, typography, withGenerated = true
   ];
   if (withGenerated) lines.push('@import "./g7-extension.generated.css";');
   if (withSources) {
-    // 시험 디렉터리는 훑지 않는다 — 시험 파일 문자열의 클래스(금지 폭 접두 포함)가 빌드 CSS 에 실렸다(#869 S7)
+    // 시험 디렉터리는 훑지 않는다 — 시험 파일 문자열의 클래스(금지 폭 접두 포함)가 빌드 CSS 에 실렸다
     lines.push('@source "../layouts";', '@source "../extensions";', '@source "../js";', '@source not "../js/**/__tests__";', '@source "../../src";');
   }
   if (theme.length > 0) {

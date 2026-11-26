@@ -18,7 +18,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 코어 업데이트 웹 단계 실행의 HTTP 표면 (#609 G6 · W6).
+ * 코어 업데이트 웹 단계 실행의 HTTP 표면.
  *
  * 여기서 잠그는 것은 셋이다:
  *

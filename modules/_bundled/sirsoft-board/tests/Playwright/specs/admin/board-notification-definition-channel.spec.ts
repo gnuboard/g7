@@ -1,5 +1,5 @@
 /**
- * 게시판 알림 정의 탭 채널 계약 — 목록 요청이 화면 채널을 나르는지 (#518 / 공개 #76).
+ * 게시판 알림 정의 탭 채널 계약 — 목록 요청이 화면 채널을 나르는지 (공개 #76).
  *
  * 결함(2026-08-05 브라우저 실측): 목록 프루닝으로 서버가 `template_channel` 을 받은 요청에만
  *   `templates` 를 싣게 됐는데, 코어 설정 화면만 그 파라미터를 보내도록 고쳐지고 게시판 탭
@@ -131,7 +131,7 @@ async function assertResetButtonSpansChannels(page: Page, channel: string) {
     }
 }
 
-test.describe('게시판 알림 정의 탭 — 채널 계약 (#518)', () => {
+test.describe('게시판 알림 정의 탭 — 채널 계약', () => {
     /**
      * @scenario channel=mail,template_state=default
      * @effects board_notification_list_requests_template_channel, board_notification_channel_reads_single_source

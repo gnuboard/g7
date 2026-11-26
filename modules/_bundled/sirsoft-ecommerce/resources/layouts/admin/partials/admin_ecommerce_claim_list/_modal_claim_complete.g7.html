@@ -96,7 +96,7 @@
         <!-- 대상이 여러 통화에 걸치면 서버가 합계 표기를 내지 않는다 — 그때는 건수만 말한다. 화면이 숫자를 더해 기호를 붙이면 단위만 틀린 합계가 나간다. -->
         <p data-ref="cc_012_refund_now_desc_mixed" data-if="{{_global.claimCompleteCreateRefundRequest !== false &amp;&amp; (_global.claimCompletePreview?.totals?.refund_amount_total_formatted ?? null) == null}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.complete.refund_now_desc|count={{(_global.claimCompleteRows ?? []).filter(r => r.refund_applicable).length}}</p>
         <p data-ref="cc_013_refund_later_desc" data-if="{{_global.claimCompleteCreateRefundRequest === false}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.complete.refund_later_desc</p>
-        <!-- 환불신청서를 끄면 취소신청서도 생기지 않는다 (#599 후속 §5-5). 취소신청서는 '환불이 집행되어 주문에서 금액이 빠진 사실' 의 기록이라, 돈이 나가지 않으면 만들 것이 없다 — 이 관계를 적지 않으면 운영자는 완료 처리 후 취소 탭이 비어 있는 것을 결함으로 읽는다. -->
+        <!-- 환불신청서를 끄면 취소신청서도 생기지 않는다. 취소신청서는 '환불이 집행되어 주문에서 금액이 빠진 사실' 의 기록이라, 돈이 나가지 않으면 만들 것이 없다 — 이 관계를 적지 않으면 운영자는 완료 처리 후 취소 탭이 비어 있는 것을 결함으로 읽는다. -->
         <p data-ref="cc_013_refund_later_cancellation_note" data-if="{{_global.claimCompleteCreateRefundRequest === false}}" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.complete.refund_later_desc_cancellation</p>
       </div>
       <!-- 요약 문구는 `$t:defer:` 를 쓰지 않는다 — defer 는 반복 서브트리(iteration·cellChildren)에서만 해소되고, 반복 밖 노드는 DynamicRenderer 가 건너뛰어 원문 키가 화면에 그대로 나온다(실측 확인). 이 블록은 반복 밖이므로 일반 `$t:` 다. -->

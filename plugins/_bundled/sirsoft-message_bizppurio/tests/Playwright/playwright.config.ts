@@ -1,5 +1,5 @@
 /**
- * 비즈뿌리오 메시징 플러그인 Playwright E2E 설정 (#597).
+ * 비즈뿌리오 메시징 플러그인 Playwright E2E 설정.
  *
  * 코어 `playwright.config.ts` 와 동일한 base URL 해석 우선순위를 따른다 — 활성 호스트가
  * 환경별로 다르므로 하드코딩을 피한다.

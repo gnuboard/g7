@@ -3,7 +3,7 @@
  * GDPR 플러그인 화면 문구 — 서버 문구식 자리표시자 `:word` 를 쓰지 않는다.
  *
  * 화면 번역 엔진(`TranslationEngine::replaceParams`)은 `{key}`·`{{key}}` 만 치환한다. `:key` 는
- * 서버 문구(`lang/*.php`) 전용이라 화면에서는 글자 그대로 보인다(#798).
+ * 서버 문구(`lang/*.php`) 전용이라 화면에서는 글자 그대로 보인다.
  * 서버는 이 JSON 을 읽지 않는다(모듈 `src/lang`, 플러그인 `lang` 의 PHP 만 읽는다).
  *
  * @vitest-environment node

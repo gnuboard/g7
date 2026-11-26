@@ -120,7 +120,7 @@ class CouponResource extends BaseApiResource
             'target_scope' => $this->target_scope?->value,
             'target_scope_label' => $this->target_scope?->label(),
 
-            // 자동발급·발급 알림 (#952) — 모델은 이 세 칸을 직렬화에서 숨기고, 관리자 응답만 여기서 싣는다
+            // 자동발급·발급 알림 — 모델은 이 세 칸을 직렬화에서 숨기고, 관리자 응답만 여기서 싣는다
             'first_purchase_trigger_status' => $this->issue_condition === CouponIssueCondition::FIRST_PURCHASE
                 ? $this->resource->firstPurchaseTrigger()->value
                 : null,

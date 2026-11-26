@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-info-extra-sections.test.tsx
- * @description 환경설정 > 정보 탭 확장 카드(일반 카드 렌더러) 렌더링 테스트 (#888)
+ * @description 환경설정 > 정보 탭 확장 카드(일반 카드 렌더러) 렌더링 테스트
  *
  * 테스트 대상: `_tab_info.json` 의 `card_extra_section_*` 노드 (실제 굽기 산출물을 그대로 렌더한다).
  * 확장은 필터 훅 `core.settings.filter_system_info_sections` 로 시스템 정보 응답의 `extra_sections` 에 카드를 더한다.
@@ -118,7 +118,7 @@ function systemInfoResponse(sections: unknown[]) {
   return { success: true, data: { php_version: '8.3.0', extra_sections: sections } };
 }
 
-describe('admin-settings 정보 탭 — 확장 카드 일반 렌더러 (#888)', () => {
+describe('admin-settings 정보 탭 — 확장 카드 일반 렌더러', () => {
   let registry: ComponentRegistry;
 
   beforeEach(() => {

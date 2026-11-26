@@ -1,12 +1,12 @@
 feature: identity_logs_filters_and_channel_label
 
 description: |
-  관리자 본인인증 이력 화면(/admin/identity/logs)의 필터 체크박스 렌더와 채널명 다국어 라벨 회귀 가드(#415, #420-4).
+  관리자 본인인증 이력 화면(/admin/identity/logs)의 필터 체크박스 렌더와 채널명 다국어 라벨 회귀 가드(4).
   - 결함 #1/#2: 상태·발생유형 필터의 배열 리터럴 source 가 엔진 isComplexExpression 정규식의 `[]{}` 누락으로
     undefined 로 풀려 체크박스가 렌더되지 않던 결함.
   - 결함 #3: 채널 필터의 `Array.from(new Set(...))` 가 reserved 화이트리스트의 Set 누락으로 빈 배열이 되던 결함.
   - 채널명 버그: 채널이 `email`/`ipin` 식별자로 표시되던 것을 provider 의 getChannelLabels() 다국어 라벨로 표시.
-  - #420-4: 인증수단 탭 전환 시 상태 필터가 남아 체크박스와 조회 결과가 어긋나던 결함.
+  - 4: 인증수단 탭 전환 시 상태 필터가 남아 체크박스와 조회 결과가 어긋나던 결함.
   검증은 로케일 비의존(체크박스 개수, 식별자 부재)으로 구성한다.
 
 # 입력 axis — 시험이 화면에서 실제로 수행하는 조작. 세 값 모두 시험이 잰다.
@@ -29,7 +29,7 @@ effects:
   - datagrid_channel_column_shows_labels_not_identifiers
 
 sub_flows:
-  # 상태 필터 적용(체크 + 검색) 뒤 인증수단 탭을 바꾸면 필터가 초기화된다 (#420-4)
+  # 상태 필터 적용(체크 + 검색) 뒤 인증수단 탭을 바꾸면 필터가 초기화된다 (4)
   - id: tab-switch-filter-reset
     effects:
       # 탭 전환 뒤 개별 상태 체크박스가 모두 해제된다

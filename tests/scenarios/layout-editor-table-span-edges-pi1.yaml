@@ -1,5 +1,5 @@
 # 레이아웃 편집기 표 격자 — 병합이 걸친 행과 열의 추가와 삭제
-# #869 이월 0 회차(π1): addColumn 흡수칸 skip 결함과 removeRow 세로 병합 소실 결함의 회귀 시험을 소유한다.
+# addColumn 흡수칸 skip 결함과 removeRow 세로 병합 소실 결함의 회귀 시험을 소유한다.
 # 축 subject 는 시험 파일이 재는 대상(표 격자 변형 함수)이고, effects 는 시험이 단언하는 동작이다.
 feature: layout_editor_table_span_edges_pi1
 

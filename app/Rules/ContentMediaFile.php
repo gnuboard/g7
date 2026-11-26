@@ -10,7 +10,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Http\UploadedFile;
 
 /**
- * 본문 미디어 파일 검증 — 정책이 허용한 종류·확장자·크기인지 (#883 4단계)
+ * 본문 미디어 파일 검증 — 정책이 허용한 종류·확장자·크기인지
  *
  * 내용으로 추론한 MIME(`FileContentSniffer::mimeType` — finfo, `AttachmentFileContent` 와 같은 내용 판정 입구)과 파일 이름
  * 확장자가 **모두** 같은 종류의 허용 목록에 들어야 통과한다 — 이름만 바꾼 SVG·HTML 은 내용 추론으로 거부된다. 크기는 종류별
@@ -48,7 +48,7 @@ class ContentMediaFile implements ValidationRule
     }
 
     /**
-     * 서버 안에서 만든 파일(업로드 파일 필터가 돌려준 변환본 등)을 같은 규칙으로 판정합니다 (#887).
+     * 서버 안에서 만든 파일(업로드 파일 필터가 돌려준 변환본 등)을 같은 규칙으로 판정합니다.
      *
      * HTTP 업로드가 아닌 파일이라 `isValid()`(업로드 여부) 대신 실제 파일이 있는지만 본다. 나머지 판정(빈 파일·내용 종류·
      * 이름 확장자·크기)은 `validate()` 와 같다.
@@ -83,7 +83,7 @@ class ContentMediaFile implements ValidationRule
     /**
      * 파일 내용으로 MIME 을 추론합니다(finfo). 클라이언트가 보낸 Content-Type·이름은 보지 않는다.
      *
-     * 판정은 `FileContentSniffer::mimeType()` 한 곳에서 한다(#887) — 이 메서드는 확장이 쓰던 호출 지점을 위해 남긴다.
+     * 판정은 `FileContentSniffer::mimeType()` 한 곳에서 한다 — 이 메서드는 확장이 쓰던 호출 지점을 위해 남긴다.
      *
      * @param  UploadedFile  $file  업로드 파일
      * @return string|null MIME (알 수 없으면 null)

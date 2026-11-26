@@ -67,7 +67,7 @@
         행동을 세므로 이탈률·체류·방문당 페이지가 0·0:00·1 로만 채워진다 — 보이면 읽는 사람을 속인다. 부가 열은
         값을 싣는 차원(검색어의 결과 없음·전환 금액·확장)에만 둔다. 화면은 `_computed.reportName` 을 채운다.
         0건이면 표(빈 문구·쪽 번호 「1」)를 숨기고 아래 빈 화면 안내 하나만 남긴다 — 둘 다 그리면 「선택 기간에 기록이
-        없습니다」가 두 번 보였다(#682 S4 라운드 8). 불러오는 동안은 표 뼈대를 그대로 둔다. -->
+        없습니다」가 두 번 보였다. 불러오는 동안은 표 뼈대를 그대로 둔다. -->
       <data-grid pageHref="{{_local.periodPath}}?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="analytics_report_grid" data-if="{{analytics_report === undefined || (analytics_report?.data?.data ?? []).length &gt; 0}}" visibleColumns="{{(function(r) { const name = String(r ?? ''); const ext = name.startsWith('ext:'); const action = ext || ['site_search', 'download', 'outlink', 'goal', 'search_tab', 'event_name'].includes(name); const extra = ext || ['site_search', 'goal'].includes(name); return ['label_display', 'visits', 'hits'].concat(action ? [] : ['bounce_rate', 'avg_time', 'pages_per_visit'], extra ? ['extra'] : [], ['trend']); })(_computed.reportName)}}" data="{{analytics_report?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_report?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="{{analytics_report === undefined ? '' : $t('admin.analytics.common.empty_title')}}">
         <on type="action" event="onPageChange">
           <!-- 쪽 이동 — 주소를 갈아 끼워 다시 받는다. 돌아온 목록이 곧 화면이다. -->
@@ -79,8 +79,8 @@
           <cell>
             <!-- 라벨을 눌러 한 단계 더 들어가는 화면은 `_local.labelDrilldownKey` 를 채운다. 지금은
               유입 경로>유입 사이트 하나가 쓴다 — 도메인 행을 누르면 그 도메인의 전체 유입 주소가 열린다.
-              질의 키(`host`)는 링크 주소(href)에 박아 두고, 켤지 말지만 화면이 정한다 — 링크라 새 탭으로도 열린다(#757).
-              켜지 않은 화면은 종전대로 글자다(#682 라운드 4, 검수 지적 ⑥). -->
+              질의 키(`host`)는 링크 주소(href)에 박아 두고, 켤지 말지만 화면이 정한다 — 링크라 새 탭으로도 열린다.
+              켜지 않은 화면은 종전대로 글자다. -->
             <a data-ref="report_label_link" href="{{_local.periodPath}}?host={{row.label ?? ''}}&amp;page=1" :mergeQuery="true" data-if="{{_local.labelDrilldownKey === 'host'}}" class="button justify-start text-link whitespace-normal break-all text-left" title="{{row.label ?? ''}}">
               <on type="click">
                 <navigate :mergeQuery="true"><query/></navigate>

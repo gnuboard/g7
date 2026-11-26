@@ -108,14 +108,14 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
         </div>
       </div>
     </div>
-    <!-- 주문금액 비교(전/후) 접이식 섹션 (#599 후속 P1) — 옛 취소 모달의 비교표를 세 유형 신청서로 옮긴 partial. 금액 요약 바로 뒤, 분기 안내 앞. -->
+    <!-- 주문금액 비교(전/후) 접이식 섹션 — 옛 취소 모달의 비교표를 세 유형 신청서로 옮긴 partial. 금액 요약 바로 뒤, 분기 안내 앞. -->
     <include src="partials/mypage/claims/_apply_comparison.g7.html"/>
     <!-- 취소·환불 분기 안내 (§6-3) — 같은 작성 셸이지만 서버는 두 파이프라인으로 갈린다. 즉시취소는 승인 없이 바로 환불되고 환불신청서는 판매자 확인을 거친다 — 금액은 같아도 언제 돈이 돌아오는지가 다르므로 신청 전에 밝힌다. 분기는 서버 판정(resolved_type)이 아니라 **지금 고른 상품**을 따른다 — 두 분기가 섞인 주문에서 서버 판정은 'mixed' 라, 그 값으로 안내하면 결제완료 상품만 골라 즉시 취소되는데도 판매자 확인을 거친다고 말하게 된다. -->
     <div data-if="{{_local.claimType === 'refund' &amp;&amp; !!(_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) &amp;&amp; (_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) !== 'mixed'}}" class="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
       <icon name="circle-info" class="text-base text-blue-600 dark:text-blue-400 flex-shrink-0"/>
       <p class="text-xs text-blue-700 dark:text-blue-300 min-w-0">{{((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' &amp;&amp; (_local.claimableSnapshot ?? claimable?.data)?.refund_auto_approved !== false) ? $t('claim.apply.notice_cancel') : $t('claim.apply.notice_refund')}}</p>
     </div>
-    <!-- 환불 우선순위 (#599 후속 P3-③) — 마일리지를 쓴 주문에서만 뜻이 있다(포인트 사용액 0 이면 미노출). 사용 마일리지를 차감하지 않은 주문도 돌려줄 마일리지가 없어 미노출(Q15). 교환은 저가 교환(차액 환불)일 때만. 바꾸면 미리보기를 다시 부른다(수량 변경과 같은 debounce·세대 가드). 수정 화면은 우선순위를 바꿀 수 없어 읽기 전용 텍스트다. -->
+    <!-- 환불 우선순위 — 마일리지를 쓴 주문에서만 뜻이 있다(포인트 사용액 0 이면 미노출). 사용 마일리지를 차감하지 않은 주문도 돌려줄 마일리지가 없어 미노출(Q15). 교환은 저가 교환(차액 환불)일 때만. 바꾸면 미리보기를 다시 부른다(수량 변경과 같은 debounce·세대 가드). 수정 화면은 우선순위를 바꿀 수 없어 읽기 전용 텍스트다. -->
     <div data-if="{{_local.claimEstimateLoading !== true &amp;&amp; !!_local.claimEstimate &amp;&amp; (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) &amp;&amp; (_local.claimEstimate?.adjustment?.original_snapshot?.total_points_used_amount ?? 0) > 0 &amp;&amp; order?.data?.points_not_deducted !== true}}" class="pt-3 border-t border-gray-200 dark:border-gray-700" data-testid="claim-refund-priority">
       <p class="text-sm font-medium text-gray-900 dark:text-white mb-2">$t:claim.apply.refund_priority.title</p>
       <div data-if="{{_local.claimEditMode !== true}}" class="space-y-1">
@@ -195,7 +195,7 @@ PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포�
     <div data-if="{{!!_local.claimSubmitError}}" class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
       <p class="text-sm text-red-700 dark:text-red-300">{{_local.claimSubmitError ?? ''}}</p>
     </div>
-    <!-- 환불 계좌 미입력 안내 (#599 실측) — 계좌로 돈이 돌아가는 주문인데 계좌가 비면 제출을 막고 그 이유를 버튼 위에 남긴다. 막기만 하면 구매자는 버튼이 왜 회색인지 알 수 없다. 판정은 계좌 카드가 서는 조건과 **같은 값**을 쓴다((claimableSnapshot ?? claimable).refund_account.required + 교환은 돌려줄 돈이 있을 때만) — 다른 값을 쓰면 칸은 없는데 버튼만 잠기거나 그 반대가 되고, 둘 다 오류를 남기지 않는다. 서버도 같은 규칙으로 422 를 낸다(StoreRefundRequestRequest::requiresRefundBank). 수정 화면에는 세우지 않는다 — 그 화면은 계좌 칸을 빈 채로 열고 「비워 두면 그대로 둔다」 고 안내하며, [저장]도 계좌를 요구하지 않는다. -->
+    <!-- 환불 계좌 미입력 안내 — 계좌로 돈이 돌아가는 주문인데 계좌가 비면 제출을 막고 그 이유를 버튼 위에 남긴다. 막기만 하면 구매자는 버튼이 왜 회색인지 알 수 없다. 판정은 계좌 카드가 서는 조건과 **같은 값**을 쓴다((claimableSnapshot ?? claimable).refund_account.required + 교환은 돌려줄 돈이 있을 때만) — 다른 값을 쓰면 칸은 없는데 버튼만 잠기거나 그 반대가 되고, 둘 다 오류를 남기지 않는다. 서버도 같은 규칙으로 422 를 낸다(StoreRefundRequestRequest::requiresRefundBank). 수정 화면에는 세우지 않는다 — 그 화면은 계좌 칸을 빈 채로 열고 「비워 두면 그대로 둔다」 고 안내하며, [저장]도 계좌를 요구하지 않는다. -->
     <div data-if="{{_local.claimEditMode !== true &amp;&amp; (((_local.claimableSnapshot ?? claimable?.data)?.refund_account?.required === true) &amp;&amp; (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) &amp;&amp; !((_local.claimRefundBankCode ?? '').trim() &amp;&amp; (_local.claimRefundBankAccount ?? '').trim() &amp;&amp; (_local.claimRefundBankHolder ?? '').trim()))}}" class="p-3 rounded-lg bg-amber-50 dark:bg-yellow-900/20 border border-amber-200 dark:border-yellow-800">
       <p class="text-xs text-amber-800 dark:text-yellow-200">$t:claim.apply.refund_account_required_to_submit</p>
     </div>

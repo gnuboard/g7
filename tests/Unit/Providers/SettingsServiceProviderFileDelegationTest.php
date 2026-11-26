@@ -9,7 +9,7 @@ use ReflectionMethod;
 use Tests\TestCase;
 
 /**
- * SettingsServiceProvider 웹서버 파일 위임 주입 사슬 테스트 (#878)
+ * SettingsServiceProvider 웹서버 파일 위임 주입 사슬 테스트
  *
  * drivers.file_delegation·drivers.file_delegation_accel_prefix 저장값 → core.file_serving.{delegation,accel_prefix}
  * 주입과 정규화(빈/모르는 방식 → none, 끝 `/` 보정, 빈 접두사는 주입하지 않음)를 검증합니다. 주입부

@@ -17,7 +17,7 @@ use Tests\TestCase;
 /**
  * 템플릿 확장 오버라이드 등록이 소스에 더는 없는 옛 행을 정리하는지 검증합니다.
  *
- * 브라우저 실측(#703): 주문서 배송지의 「주소 검색」 버튼이 두 개 그려졌다. 조각 식별자(fragment_key)를 들인
+ * 브라우저 실측: 주문서 배송지의 「주소 검색」 버튼이 두 개 그려졌다. 조각 식별자(fragment_key)를 들인
  * 마이그레이션이 기존 행의 키를 대상 이름(`address_search_slot`)으로 백필했는데, 이후 템플릿 오버라이드 등록은
  * 파일 이름(`user-address-search`)을 키로 써 새 행을 만들었다. 모듈·플러그인 갱신 경로는 소스에 없는 조각 행을
  * 지우지만(`removeOrphanFragments`) 템플릿 오버라이드 경로에는 그 정리가 없어 옛 행이 살아남아 두 번 주입됐다.
@@ -204,7 +204,7 @@ class TemplateOverrideStaleRowCleanupTest extends TestCase
             'is_active' => true,
         ]);
 
-        // 의도된 컴파일 실패라 공용 로그에 남기지 않고 가둬서 1줄인지 본다(#725).
+        // 의도된 컴파일 실패라 공용 로그에 남기지 않고 가둬서 1줄인지 본다.
         Log::spy();
 
         $this->registerOverrides();

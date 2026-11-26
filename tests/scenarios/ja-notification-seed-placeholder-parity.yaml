@@ -1,4 +1,4 @@
-feature: ja 알림 시드의 자리표시자가 원본 알림 정의를 따른다 (#703)
+feature: ja 알림 시드의 자리표시자가 원본 알림 정의를 따른다
 
 description: |
   언어팩 동기화 검사(check-language-pack-sync)는 키 집합만 비교해, 원본(ko) 본문의 자리표시자가 바뀐 뒤 ja 시드

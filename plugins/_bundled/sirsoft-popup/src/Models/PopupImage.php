@@ -93,7 +93,7 @@ class PopupImage extends Model
     private static array $storageByDisk = [];
 
     /**
-     * 원본 파일의 직접 주소를 반환합니다 — 행 disk 가 직접 URL 을 내지 않으면 null (#878).
+     * 원본 파일의 직접 주소를 반환합니다 — 행 disk 가 직접 URL 을 내지 않으면 null.
      *
      * 행에 기록된 disk 의 드라이버 `url()` 이 주소를 주면 그것을 쓴다. 공개 자산 디스크 설정을 나중에 꺼도 그 디스크에
      * 남은 행은 계속 직접 주소를 낸다(제품 결정 — 확장 선례와 같음). 이 주소는 **원본 한 장**에만 쓴다 — 썸네일(`?size=`)과

@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Tests\TestCase;
 
 /**
- * 확장 목록 행의 코어 호환 여부(`core_compatible`) 노출 (#703)
+ * 확장 목록 행의 코어 호환 여부(`core_compatible`) 노출
  *
  * 코어 요구 버전(`g7_version`)을 만족하지 못하는 확장은 서버가 설치·활성을 422
  * (`core_version_mismatch`)로 거절한다. 목록 행이 그 판정을 싣지 않으면 화면은 설치 버튼과

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 레이아웃 확장 행의 고유 키에 템플릿 오버라이드 대상(`override_target`)을 넣습니다 (#703).
+ * 레이아웃 확장 행의 고유 키에 템플릿 오버라이드 대상(`override_target`)을 넣습니다.
  *
  * 7.0.x 는 템플릿 오버라이드 행을 대상 확장까지 여섯 축으로 갈랐다. 조각 식별자 마이그레이션이 대상 확장을 뺀
  * 고유 키를 걸자, 한 템플릿이 같은 확장점·레이아웃을 두 확장에 대해 오버라이드한 설치는 백필 뒤 두 행의 키가

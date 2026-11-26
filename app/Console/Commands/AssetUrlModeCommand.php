@@ -9,7 +9,7 @@ use App\Support\AssetUrl;
 use Illuminate\Console\Command;
 
 /**
- * 자산 URL 모드 조회/전환 Artisan 커맨드 (이슈 #486 §9)
+ * 자산 URL 모드 조회/전환 Artisan 커맨드
  *
  * 정적 최적화 블록(`location ~* \.(js|css|json)$`)이 동적 응답을 가로채는 서버에서는
  * **관리자 화면 자체가 뜨지 않는다**. "브라우저로 설정을 바꾸세요" 는 순환 참조이므로

@@ -1,5 +1,5 @@
 /**
- * 관리자 회원 알림함 (#524 WP-F).
+ * 관리자 회원 알림함.
  *
  * 실브라우저로 세 갈래를 잰다:
  *   ① 전 회원의 수신함이 한 목록에 서고 읽음/안 읽음이 배지로 갈린다
@@ -35,7 +35,7 @@ async function openInbox(page: Page, token: string, query = ''): Promise<void> {
   await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 15_000 });
 }
 
-test.describe('관리자 회원 알림함 (#524 WP-F)', () => {
+test.describe('관리자 회원 알림함', () => {
   // @scenario surface=admin_member_notifications, permission=delete, search_type=all, read=all, member_scope=true
   // @effects admin_member_notifications_lists_all_members, read_cell_shows_read_unread_badge
   test('전 회원 수신함이 서고 읽음·안 읽음이 배지로 갈린다', async ({ page, notificationSeed, notificationManageToken }) => {

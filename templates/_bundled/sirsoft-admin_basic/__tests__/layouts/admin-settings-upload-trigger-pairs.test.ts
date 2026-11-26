@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-upload-trigger-pairs.test.ts
- * @description 환경설정의 「저장할 때 올리는」 업로더마다 저장 버튼이 그 신호를 보내는지 잠근다 (#639 ⑨).
+ * @description 환경설정의 「저장할 때 올리는」 업로더마다 저장 버튼이 그 신호를 보내는지 잠근다.
  *
  * 배경(브라우저 실측 2026-10-05): SEO 탭 「기본 공유 이미지」 업로더는 `upload:og_image_default` 를
  * 기다리는데(`autoUpload=false`), 저장 버튼 시퀀스는 `upload:site_logo` 만 보냈다. 새 이미지를 골라
@@ -85,7 +85,7 @@ function saveButtonEmits(): string[] {
     return emitted;
 }
 
-describe('환경설정 저장 — 지연 업로더 신호 짝 (#639 ⑨)', () => {
+describe('환경설정 저장 — 지연 업로더 신호 짝', () => {
     // @scenario surface=admin_settings_save, uploader=deferred
     // @effects every_deferred_uploader_receives_its_trigger_on_save
     it('탭 조각에서 지연 업로더 신호를 찾는다 (측정 대상이 비면 이 테스트가 무의미)', () => {
@@ -104,7 +104,7 @@ describe('환경설정 저장 — 지연 업로더 신호 짝 (#639 ⑨)', () =>
 
     // @scenario surface=admin_settings_save, uploader=deferred
     // @effects every_deferred_uploader_receives_its_trigger_on_save
-    it('업로드 신호는 로고 → 파비콘(#434) → 기본 공유 이미지 순으로 이어서 보낸다 (설정 저장 요청보다 먼저)', () => {
+    it('업로드 신호는 로고 → 파비콘 → 기본 공유 이미지 순으로 이어서 보낸다 (설정 저장 요청보다 먼저)', () => {
         const emitted = saveButtonEmits();
         const logo = emitted.indexOf('upload:site_logo');
 

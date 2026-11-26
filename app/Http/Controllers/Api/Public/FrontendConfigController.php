@@ -8,7 +8,7 @@ use App\Services\FrontendConfigService;
 use Illuminate\Http\JsonResponse;
 
 /**
- * 사용자 공개 설정 API (#792 D8)
+ * 사용자 공개 설정 API
  *
  * G7 사용자 셸이 `window.G7Config` 로 내려 주는 설정과 같은 값을 외부 화면(Next.js·HTML+jQuery·Blade)도
  * 받게 한다. 노출 범위는 셸과 같고(frontend_schema 가 거른다), 엔진 전용 값은 싣지 않는다.

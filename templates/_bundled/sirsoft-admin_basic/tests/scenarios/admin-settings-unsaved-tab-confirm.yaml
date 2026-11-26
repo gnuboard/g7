@@ -18,7 +18,7 @@ effects:
   - identity_filter_not_bound_to_settings_form
   - tab_refetch_overlay_covers_inputs
   - identity_list_ops_keep_settings_edits
-  - member_fields_table_keeps_settings_form_clean   # 회원 탭 가입 항목 표는 즉시 저장이라 설정 폼과 「변경 있음」을 건드리지 않는다(#490 D1)
+  - member_fields_table_keeps_settings_form_clean   # 회원 탭 가입 항목 표는 즉시 저장이라 설정 폼과 「변경 있음」을 건드리지 않는다
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-unsaved-tab-confirm.test.ts

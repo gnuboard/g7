@@ -7,7 +7,7 @@ use Modules\Sirsoft\Board\Privacy\BoardGuestRetentionHandler;
 use Modules\Sirsoft\Board\Privacy\BoardIpRetentionHandler;
 
 /**
- * 게시판 개인정보 보유기간 핸들러를 코어에 등록하는 리스너 (이슈 #636)
+ * 게시판 개인정보 보유기간 핸들러를 코어에 등록하는 리스너
  *
  * 코어 `core.privacy.retention_handlers` 필터에 게시판의 두 축(작성 IP · 비회원 작성자
  * 정보)을 덧붙입니다. 코어 보유기간 커맨드(`privacy:process-retention`)와 미리보기가 이 목록을

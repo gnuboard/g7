@@ -255,7 +255,7 @@ function LayoutEditorChromeBody({
   // 가 코어 시드와 합성해 격리 store baseline 을 만든다.
   const [sampleGlobalSources, setSampleGlobalSources] = useState<SampleGlobalSource[]>([]);
   // 스펙 묶음 요청 실패 — 알림과 다시 시도 단추를 보인다. 다시 시도는 요청 차례(specLoadAttempt)를 올려
-  // 아래 로드 effect 를 다시 돌린다(묶음을 다시 요청, 개별 엔드포인트로 되돌아가지 않음 — #869, 설계 확정 2026-11-09).
+  // 아래 로드 effect 를 다시 돌린다(묶음을 다시 요청, 개별 엔드포인트로 되돌아가지 않음 — 설계 확정 2026-11-09).
   const [specLoadFailed, setSpecLoadFailed] = useState(false);
   const [specLoading, setSpecLoading] = useState(false);
   const [specLoadAttempt, setSpecLoadAttempt] = useState(0);

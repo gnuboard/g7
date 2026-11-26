@@ -147,7 +147,7 @@ class PaymentRefundListener implements HookListenerInterface
             $isPartial = $previousCancelled > 0 || $cancelAmt < $paidAmount;
 
             $isCbt = $this->isCbtPayment($payment);
-            // 승인 때 과세 구분을 실은 결제의 부분취소만 같은 구분을 싣는다(#820). 가상계좌 환불 경로(/vacct)에는 필드가 없다.
+            // 승인 때 과세 구분을 실은 결제의 부분취소만 같은 구분을 싣는다. 가상계좌 환불 경로(/vacct)에는 필드가 없다.
             // 판정 메서드는 훅 인자 Model 이 아니라 계약의 DTO 로 읽는다(읽기 전용 Model 은 속성 읽기만).
             $isVirtualAccount = $this->bridge->describePayment($payment)->isVirtualAccount;
             $taxSplit = $isPartial && ! $isCbt && ! $isVirtualAccount
@@ -214,7 +214,7 @@ class PaymentRefundListener implements HookListenerInterface
                 'handled' => true,
                 'error_code' => 'PG_API_ERROR',
                 // 이 사유는 쇼핑몰이 「PG 환불 처리에 실패했습니다. (…)」 안내에 끼워 회원·비회원·관리자 응답으로 낸다 —
-                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다(#858).
+                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다.
                 'error_message' => $this->refundFailureReason($e),
                 'transaction_id' => null,
             ];

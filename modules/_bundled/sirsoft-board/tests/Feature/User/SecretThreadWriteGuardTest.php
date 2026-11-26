@@ -12,7 +12,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use Modules\Sirsoft\Board\Tests\Concerns\BuildsSecretThread;
 
 /**
- * 답변 작성 가드 — 경로 규칙이 여는 권한 상승 구멍 차단 (#789 §3)
+ * 답변 작성 가드 — 경로 규칙이 여는 권한 상승 구멍 차단
  *
  * 경로 규칙은 답변 작성자를 앵커로 삼아 조상을 열어 준다. 그래서 남의 비밀글 H 아래 공개 답변 P 에
  * 외부인이 답변을 달 수 있으면 그 외부인이 H 를 보게 된다. 답변은 부모의 모든 비밀 조상을 지금

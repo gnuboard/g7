@@ -14,7 +14,7 @@ use Tests\PureTestCase;
 /**
  * IdentityPolicyService::resolveProviderId 의 fallback 분기 회귀 차단.
  *
- * 이슈 #275 — 정책 DB 의 provider_id 가 NULL 인 경우 enforce() 가 던지는 428 응답의
+ * 정책 DB 의 provider_id 가 NULL 인 경우 enforce() 가 던지는 428 응답의
  * verification.provider_id 가 그대로 NULL 로 흘러가 launcher 가 외부 plugin Extension Point
  * 슬롯과 매칭 못해 빈 모달이 표시되던 결함을 차단한다.
  *

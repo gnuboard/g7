@@ -9,7 +9,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use Modules\Sirsoft\Board\Upgrades\Upgrade_1_3_1;
 
 /**
- * 게시판 1.3.1 업그레이드 — 저장만 되던 신고 알림 채널 키 정리 (#952 P16)
+ * 게시판 1.3.1 업그레이드 — 저장만 되던 신고 알림 채널 키 정리
  */
 class Upgrade131Test extends ModuleTestCase
 {

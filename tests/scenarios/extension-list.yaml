@@ -1,7 +1,7 @@
 feature: 확장 설치 상태 조회 (extension:list)
 
 description: |
-  #888. `php artisan extension:list [--type=all|module|plugin|template|language-pack] [--json]` 는 설치된 확장(DB 행)과
+  `php artisan extension:list [--type=all|module|plugin|template|language-pack] [--json]` 는 설치된 확장(DB 행)과
   번들에만 있는 확장(`status: not_installed`)의 상태·DB 판·활성 폴더 판·번들 판·저장된 업데이트 가능 여부를 출력한다.
   DB·캐시·파일을 쓰지 않고 GitHub 도 조회하지 않는다. `--json` 형식은 `schema: 1` 로 고정(키를 바꾸면 schema 를 올린다).
   설치 전(확장 테이블 없음)이면 종료 코드 1, 알 수 없는 `--type` 은 2.

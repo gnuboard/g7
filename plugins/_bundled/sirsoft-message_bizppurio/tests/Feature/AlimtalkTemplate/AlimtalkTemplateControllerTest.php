@@ -12,7 +12,7 @@ use Plugins\Sirsoft\MessageBizppurio\Services\AlimtalkTemplateService;
 use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
- * 알림톡 작성 모달 참조 조회 컨트롤러 Feature 테스트 (#597).
+ * 알림톡 작성 모달 참조 조회 컨트롤러 Feature 테스트.
  *
  * 라우트 → 컨트롤러 → 서비스 경계를 검증한다. kapi 실제 호출 로직은
  * AlimtalkTemplateServiceTest 가 검증하므로, 여기서는 AlimtalkTemplateService 를

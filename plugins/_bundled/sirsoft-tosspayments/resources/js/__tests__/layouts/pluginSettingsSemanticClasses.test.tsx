@@ -2,7 +2,7 @@
  * @file pluginSettingsSemanticClasses.test.tsx
  * @description sirsoft-tosspayments 환경설정 화면의 시맨틱 클래스 매핑 회귀 테스트
  *
- * #399 Phase 1 전수 시맨틱화 당시 이 레이아웃의 클래스가 한 칸씩 밀려 순환 배치되었다:
+ * 전수 시맨틱화 당시 이 레이아웃의 클래스가 한 칸씩 밀려 순환 배치되었다:
  *   field_* 컨테이너(3열 그리드) → section-heading-md (그리드 아님, 제목 타이포)
  *   섹션 H3(제목)              → text-error-strong (에러 색)
  *   에러 H3                    → text-error-soft

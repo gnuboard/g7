@@ -51,7 +51,7 @@ let resolvedLayoutEditJson: any;
  * `{actionRef: 'x'}` 를 `named_actions.x` 의 본문으로 펼친다.
  *
  * 저장·미리보기·판본 이력은 머리말 버튼과 단축키가 **같은 정의**를 부르도록 문서 층
- * `named_actions` 한 곳으로 옮겼다(#476). 그래서 "그 버튼이 무엇을 하는가" 를 재려면 참조를
+ * `named_actions` 한 곳으로 옮겼다. 그래서 "그 버튼이 무엇을 하는가" 를 재려면 참조를
  * 먼저 풀어야 한다 — 참조가 걸린 자리만 보고 판정하면 정의를 옮길 때마다 테스트가 깨지고,
  * 정작 동작이 바뀐 것은 놓친다.
  *
@@ -96,7 +96,7 @@ function findAllComponents(node: any, predicate: (n: any) => boolean): any[] {
     }
   }
 
-  // Modal 고정 하단(props.footer)의 단추도 걷는다(#869 P1)
+  // Modal 고정 하단(props.footer)의 단추도 걷는다
   if (Array.isArray(node.props?.footer)) {
     for (const child of node.props.footer) {
       results.push(...findAllComponents(child, predicate));
@@ -355,7 +355,7 @@ describe('레이아웃 확장 데이터 소스', () => {
     const keys = ds.initGlobal.map((m: any) => m.key);
     // JSON 뷰·경고·오류는 "지금 열린 파일의 서버 상태" 라 전역이 맞다.
     expect(keys).toEqual(expect.arrayContaining(['editorContent']));
-    // 마크업 버퍼는 **여기서 심지 않는다** — 이 심기가 곧 미저장 수정을 덮어쓰는 경로였다(D1/D4, #476).
+    // 마크업 버퍼는 **여기서 심지 않는다** — 이 심기가 곧 미저장 수정을 덮어쓰는 경로였다(D1/D4).
     // `<code-workspace>` 가 `serverValue` prop 으로 직접 읽고, 편집 값은 파일별 버퍼가 소유한다.
     expect(keys).not.toContain('editorMarkup');
   });

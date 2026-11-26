@@ -23,7 +23,7 @@ use Modules\Sirsoft\Page\Support\AttachmentThumbnailSourceProvider;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 
 /**
- * 페이지 본문 미디어 이미지의 썸네일 계약 (#883 본문 미디어와 #869 이미지 썸네일의 접합)
+ * 페이지 본문 미디어 이미지의 썸네일 계약 (본문 미디어와 이미지 썸네일의 접합)
  *
  * 본문 미디어 서빙 주소에 `?size=`·`?w=` 를 붙이면 게이트(발행 또는 열람권 또는 서명)를 지난 뒤 줄인 이미지를 낸다. 미발행 페이지의
  * 본문 이미지는 규격을 붙여도 서명 없이는 403 이다. 본문 미디어 이미지는 페이지 첨부 원본 제공자가 함께 맡아 한 번만 센다.

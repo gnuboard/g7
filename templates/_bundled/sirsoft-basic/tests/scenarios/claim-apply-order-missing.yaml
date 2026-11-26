@@ -1,4 +1,4 @@
-feature: 회원 클레임 신청 셸 — 주문 조회 404 를 주소로 가른다 (#753 X3)
+feature: 회원 클레임 신청 셸 — 주문 조회 404 를 주소로 가른다
 
 description: |
   회원 클레임 신청서는 작성(`/mypage/orders/:order_number/claims/apply/:type`)과 수정(`/mypage/claims/:claim_number/edit`)이

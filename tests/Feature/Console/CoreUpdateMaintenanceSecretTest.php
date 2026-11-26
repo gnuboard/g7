@@ -121,7 +121,7 @@ class CoreUpdateMaintenanceSecretTest extends TestCase
     /**
      * `core:update` 가 터미널에 안내하는 우회 주소가 실제로 점검 중인 사이트를 연다 — 비밀 경로 302 + 쿠키, 그 쿠키로 200.
      *
-     * 점검 미들웨어를 바꾼 뒤로 비밀 경로가 쿠키를 발급하지 않아, 안내받은 주소로 들어가도 503 이었다(#888).
+     * 점검 미들웨어를 바꾼 뒤로 비밀 경로가 쿠키를 발급하지 않아, 안내받은 주소로 들어가도 503 이었다.
      *
      * @scenario request_time_limit=unlimited, secret_channel=cli_report
      *

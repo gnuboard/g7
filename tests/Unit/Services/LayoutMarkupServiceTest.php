@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 설치본(DB 행) 변환 서비스 — 코드 편집기·점검 커맨드가 쓰는 JSON ↔ `.g7.html` 공용 진입점 (#476 4.1).
+ * 설치본(DB 행) 변환 서비스 — 코드 편집기·점검 커맨드가 쓰는 JSON ↔ `.g7.html` 공용 진입점 (4.1).
  *
  * 파일 경로가 없는 문서라 표·문맥을 템플릿 식별자로 고른다({@see MarkupCompileContextResolver::registryForTemplate()}·
  * {@see MarkupCompileContextResolver::contextForInstalled()}). 두 방향 모두 설치 경로와 같은 클래스를 탄다.

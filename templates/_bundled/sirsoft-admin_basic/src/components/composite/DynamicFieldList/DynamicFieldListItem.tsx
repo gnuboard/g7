@@ -28,7 +28,7 @@ const tOr = (key: string, fallback: string, params?: Record<string, string | num
 };
 
 /**
- * 동적 행 칸 이름 — 「N번째 행 {열 이름}」. 종전에는 셀 칸에 열 이름을 넘기지 않아 이름 없이 읽혔다(#757).
+ * 동적 행 칸 이름 — 「N번째 행 {열 이름}」. 종전에는 셀 칸에 열 이름을 넘기지 않아 이름 없이 읽혔다.
  *
  * @param index 0부터 세는 행 순번
  * @param columnLabel 열 머리 글자

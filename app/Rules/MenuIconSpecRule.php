@@ -10,7 +10,7 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
- * 메뉴 아이콘 구조형 값(icon_spec) 검증 규칙 (#381).
+ * 메뉴 아이콘 구조형 값(icon_spec) 검증 규칙.
  *
  * class(FA 클래스) · image(사이트 경로·업로드 첨부·확장 패키지) · svg(인라인 코드) 세 형을 판정한다.
  * 형식이 틀리면 조용히 빈 칸으로 저장되던 종전 동작 대신 사유 문구로 422 를 낸다.

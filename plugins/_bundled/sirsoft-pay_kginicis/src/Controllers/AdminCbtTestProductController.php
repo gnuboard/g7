@@ -20,7 +20,7 @@ use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
  * 한 번에 생성한다. 운영자가 admin 상품 폼에서 JPY 가격 필드를 일일이
  * 채울 필요를 줄여 CBT 테스트 진입 장벽을 낮춘다.
  *
- * 생성은 이커머스 공개 계약 {@see ProductProvisioner} 에 맡긴다(#916). 가격은 명세 통화 JPY 100 이다 —
+ * 생성은 이커머스 공개 계약 {@see ProductProvisioner} 에 맡긴다. 가격은 명세 통화 JPY 100 이다 —
  * 상점 기본 통화가 KRW 여도 지금 환율로 기본 통화 가격을 역산해 저장하므로 결제 때 정확히 100엔이 된다
  * (환율이 바뀌면 엔화 금액도 바뀐다. JPY 환율이 없는 상점이면 생성에 실패한다).
  */
@@ -86,7 +86,7 @@ class AdminCbtTestProductController extends AdminBaseController
                 'product_code' => $product->productCode,
                 'admin_url' => '/admin/ecommerce/products/'.$product->id.'/edit',
                 // 상점 주소는 운영자 설정이라 리터럴로 두면 주소를 바꾼 상점에서 없는 페이지를 가리킨다.
-                // 화면과 같은 상품 코드 주소(#792 W12) — 화면 주소 래퍼로 「사용자 화면 URL」·주소 필터를 따른다
+                // 화면과 같은 상품 코드 주소 — 화면 주소 래퍼로 「사용자 화면 URL」·주소 필터를 따른다
                 'shop_url' => EcommerceScreenUrl::product($product->productCode).'?locale=ja',
             ]);
         } catch (\InvalidArgumentException $e) {
@@ -100,7 +100,7 @@ class AdminCbtTestProductController extends AdminBaseController
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            // 배열 errors 는 운영 모드 500 차단을 거치지 않는다 — DB 예외 원문(SQL·DB 접속 정보)은 일반 문구로 바꾼다(#858)
+            // 배열 errors 는 운영 모드 500 차단을 거치지 않는다 — DB 예외 원문(SQL·DB 접속 정보)은 일반 문구로 바꾼다
             return ResponseHelper::error('common.failed', 500, [
                 'detail' => SafeExceptionMessage::for($e, ['plugin' => 'sirsoft-pay_kginicis', 'action' => 'cbt_test_product']),
             ]);

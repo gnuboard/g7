@@ -9,7 +9,7 @@ use Tests\Concerns\InstallsCustomExample;
 use Tests\TestCase;
 
 /**
- * 견본 명령 `custom:example` 테스트 (#792 WP-S)
+ * 견본 명령 `custom:example` 테스트
  *
  * 견본은 예약 자리에 파일을 만들고(`.stub` 제거) 만든 목록을 보여 주며, 만들 파일이 하나라도 있으면
  * 아무것도 쓰지 않고 그 목록을 보여 준 뒤 중단한다. 시험은 프로젝트 루트 대신 임시 디렉터리에 만든다.

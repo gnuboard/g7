@@ -10,7 +10,7 @@ use App\Contracts\Extension\HookListenerInterface;
  * 이커머스 결제수단 설정 화면에 KG 이니시스 테스트모드 경고를 주입한다.
  *
  * 간편결제의 PG 표시(PG 고정 배지)는 코어 레이아웃이 결제수단 카탈로그의 pg_locked /
- * needs_pg 를 읽어 직접 처리하므로 이 리스너가 관여하지 않는다(#475).
+ * needs_pg 를 읽어 직접 처리하므로 이 리스너가 관여하지 않는다.
  */
 class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterface
 {
@@ -57,7 +57,7 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
      * 과거에는 코어 레이아웃의 "PG 불필요 결제수단" 하드코딩 배열
      * (`['point','deposit','free','dbank']`)을 문자열 치환해 간편결제를 그 목록에 끼워 넣어
      * PG 선택 셀렉트를 숨겼다. 그러나 간편결제는 "PG 불필요" 가 아니라 "PG 고정" 이며,
-     * 이 표시 왜곡은 실제로 서버가 간편결제를 PG 없는 주문으로 오인하던 결함과 짝을 이뤘다(#475).
+     * 이 표시 왜곡은 실제로 서버가 간편결제를 PG 없는 주문으로 오인하던 결함과 짝을 이뤘다.
      *
      * 이제 결제수단 카탈로그가 `pg_locked` / `needs_pg` 를 내려주고 코어 레이아웃이 그 값으로
      * 직접 3분기(PG 고정 배지 / PG 선택 / PG 불필요)하므로 문자열 치환이 불필요하다.
@@ -267,7 +267,7 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
             'props' => [
                 'className' => 'paykginicis:flex paykginicis:flex-col paykginicis:gap-3',
             ],
-            // 폭 분기는 엔진 responsive 로 — Tailwind 폭 접두(`paykginicis:sm:`)는 편집기 미리보기 기기 폭을 따르지 못한다(#869)
+            // 폭 분기는 엔진 responsive 로 — Tailwind 폭 접두(`paykginicis:sm:`)는 편집기 미리보기 기기 폭을 따르지 못한다
             'responsive' => [
                 '640-' => [
                     'props' => [

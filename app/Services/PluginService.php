@@ -244,7 +244,7 @@ class PluginService
                 return [
                     'success' => true,
                     'plugin_info' => $pluginInfo,
-                    // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+                    // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고
                     'layout_warnings' => $result['layout_warnings'] ?? [],
                 ];
             }

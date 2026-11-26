@@ -10,7 +10,7 @@ use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface
 use Plugins\Sirsoft\HeroSection\Services\BannerService;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
-/** #810 편집 표시 설정·시간대·동시 수정의 API 계약 */
+/** 편집 표시 설정·시간대·동시 수정의 API 계약 */
 class BannerEditorImprovementTest extends PluginTestCase
 {
     /**

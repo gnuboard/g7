@@ -1,7 +1,7 @@
 /**
  * 본인인증 정책 데이터소스/네비게이션의 source_identifier 형식 회귀 테스트.
  *
- * 회귀 사례 (#297): 모듈 본인인증 정책 탭에서 데이터소스가
+ * 회귀 사례: 모듈 본인인증 정책 탭에서 데이터소스가
  *   `source_identifier: "module:sirsoft-ecommerce"` (잘못된 접두사 포함) 으로 필터하여
  *   DB 의 `source_identifier='sirsoft-ecommerce'` (모듈 식별자만 저장) 와 매칭되지 않아
  *   정책 목록이 항상 비어있던 문제.
@@ -31,7 +31,7 @@ function findValuesByKey(node: any, targetKey: string, results: string[] = []): 
     return results;
 }
 
-describe('이커머스 본인인증 정책 — source_identifier 형식 회귀 (#297)', () => {
+describe('이커머스 본인인증 정책 — source_identifier 형식 회귀', () => {
     it('데이터소스 source_identifier 는 모듈 식별자만 사용 (module: 접두사 금지)', () => {
         const ds = (settingsLayout.data_sources ?? []).find(
             (d: any) => d.id === 'ecommerceIdentityPolicies'

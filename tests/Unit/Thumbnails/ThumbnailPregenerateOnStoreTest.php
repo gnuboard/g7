@@ -119,7 +119,7 @@ class ThumbnailPregenerateOnStoreTest extends TestCase
     }
 
     /**
-     * 「비공개 첨부 저장소」로 고른 디스크에 올린 코어 첨부도 코어 첨부 원본(게이트)으로 분류해 작업을 넣는다 (#916).
+     * 「비공개 첨부 저장소」로 고른 디스크에 올린 코어 첨부도 코어 첨부 원본(게이트)으로 분류해 작업을 넣는다 .
      *
      * 업로드 디스크는 `PrivateAttachmentDisk::forCore()` 가 정한다. 원본 제공자가 종전 `attachment.disk` 하나만 알면
      * 고른 디스크의 새 첨부가 「모르는 원본」이 되어 미리 생성이 조용히 빠진다.

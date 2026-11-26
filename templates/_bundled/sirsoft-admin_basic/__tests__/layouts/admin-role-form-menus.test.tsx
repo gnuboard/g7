@@ -1,6 +1,6 @@
 /**
  * @file admin-role-form-menus.test.tsx
- * @description 역할 폼 — 「접근 가능 메뉴」 카드 (#708)
+ * @description 역할 폼 — 「접근 가능 메뉴」 카드
  *
  * 실제 레이아웃 JSON 을 읽어, 저장 본문의 menu_ids 식과 트리·안내의 조건 식을 그 식 그대로 평가한다.
  * - 메뉴 수정 권한이 없거나 관리자 역할이면 menu_ids 를 아예 싣지 않는다 (서버가 기존 할당을 그대로 둔다)
@@ -51,7 +51,7 @@ const saveCall = () => collect(layout, (n) => n.handler === 'apiCall' && String(
   .find((n) => n.params?.body && 'menu_ids' in n.params.body);
 const menuIdsOf = (context: Record<string, any>) => evaluate(saveCall().params.body.menu_ids, context);
 
-describe('역할 폼 — 접근 가능 메뉴 (#708)', () => {
+describe('역할 폼 — 접근 가능 메뉴', () => {
   // @scenario entry=role_form_update, actor=super_admin, menu_shape=parent_with_children
   // @effects parent_auto_included
   it('메뉴 수정 권한이 있으면 고른 메뉴를 menu_ids 로 싣는다', () => {

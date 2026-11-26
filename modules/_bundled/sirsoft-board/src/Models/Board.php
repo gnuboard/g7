@@ -176,7 +176,7 @@ class Board extends Model
         'max_file_count',
         'allowed_extensions',
 
-        // 본문 미디어 정책 (null: 첨부 정책을 따름, #883)
+        // 본문 미디어 정책 (null: 첨부 정책을 따름)
         'content_media_policy',
 
         // 작성자 표시 이름 설정 (null: 회원 설정의 게시판 영역을 따름)

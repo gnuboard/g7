@@ -10,7 +10,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 카운트 컬럼 모델 보강 회귀 테스트 (이슈 #304 Phase 2)
+ * 카운트 컬럼 모델 보강 회귀 테스트
  *
  * 마이그레이션으로 추가된 카운트 컬럼이 모델 fillable·casts 양쪽에 반영되어
  * mass-assignment + integer cast 가 정상 동작하는지 검증한다.

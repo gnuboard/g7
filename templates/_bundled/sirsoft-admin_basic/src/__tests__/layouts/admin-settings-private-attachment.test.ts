@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-private-attachment.test.ts
- * @description 환경설정 > 드라이버 「비공개 첨부 저장소」 카드 계약 (#916)
+ * @description 환경설정 > 드라이버 「비공개 첨부 저장소」 카드 계약 
  *
  * 잠그는 것: 카드가 공개 자산 카드 뒤에 있고 select 가 `drivers.private_attachment_disk` 로 바인딩되며 선택지는 서버 카탈로그
  * (`available_drivers.private_attachment`)를 그대로 쓴다. S3 접속 블록은 비공개 저장소가 s3 일 때도 열린다. 공개 자산과 같은 디스크일

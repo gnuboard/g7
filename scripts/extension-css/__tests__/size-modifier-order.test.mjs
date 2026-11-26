@@ -70,7 +70,7 @@ function classStrings(dir) {
       else if (/\.(g7\.html|json|tsx)$/.test(name)) {
         for (const hit of readFileSync(full, 'utf8').matchAll(/(?:class|className)\s*[=:]\s*["'`]([^"'`]*)/g)) out.push(hit[1]);
       } else if (name.endsWith('.php')) {
-        // 리스너가 레이아웃에 끼워 넣는 노드(`'className' => '…'`)도 같은 화면에 그려진다(#869 결제 3종).
+        // 리스너가 레이아웃에 끼워 넣는 노드(`'className' => '…'`)도 같은 화면에 그려진다(결제 3종).
         for (const hit of readFileSync(full, 'utf8').matchAll(/["'](?:class|className|\w+ClassName)["']\s*=>\s*["']([^"']*)/g)) out.push(hit[1]);
       }
     }

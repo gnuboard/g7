@@ -11,7 +11,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
 /**
  * existing_db_action 변경 시 db_cleanup 재실행 보장 회귀 테스트
  *
- * 회귀 시나리오 (이슈 #319 부수 발견):
+ * 회귀 시나리오 (부수 발견):
  * - 첫 시도에서 사용자가 'skip' 으로 진행 → db_cleanup 이 즉시 completed 마킹
  * - db_migrate 가 잔존 테이블에 막혀 fail
  * - 재시도에서 사용자가 'drop_tables' 동의
@@ -349,7 +349,7 @@ class ExistingDbActionGuardTest extends TestCase
     }
 
     /**
-     * 회귀 (이슈 #599 후속): db_cleanup 은 g7_ 접두사 테이블을 전부 DROP 하므로
+     * 회귀: db_cleanup 은 g7_ 접두사 테이블을 전부 DROP 하므로
      * 확장 install/activate 의 결과물(DB 등록 행)도 함께 사라진다. 그런데 기존 가드는
      * db_* 3종 마커만 제거해서, 1차 시도에서 db_cleanup 보다 먼저 설치된 확장의 마커가
      * 살아남아 재개 시 스킵됐다 → 파일만 있고 DB 행은 없는 유령 상태.

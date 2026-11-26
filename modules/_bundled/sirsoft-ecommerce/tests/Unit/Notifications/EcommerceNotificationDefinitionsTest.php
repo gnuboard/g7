@@ -50,7 +50,7 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
     ];
 
     /**
-     * 메일로만 보내는 정의 — mail + database 두 채널 규칙의 명시적 예외 (#699).
+     * 메일로만 보내는 정의 — mail + database 두 채널 규칙의 명시적 예외.
      *
      * - order_custom_email: 주문 상세 「고객에게 메일 보내기」. 관리자가 쓴 글을 메일로 보내는 기능이라 사이트 내 알림 짝이 없다.
      * - identity.purpose.checkout_verification: 결제 전 본인확인 인증번호 메일. 인증 메일은 메일 채널만 쓴다(본인인증 분류).
@@ -63,7 +63,7 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
     ];
 
     /**
-     * 사이트 내 알림으로만 보내는 정의 — mail + database 두 채널 규칙의 명시적 예외 (#787).
+     * 사이트 내 알림으로만 보내는 정의 — mail + database 두 채널 규칙의 명시적 예외.
      *
      * - export_completed·export_failed: 운영자가 목록 화면에서 방금 요청한 내보내기의 결과다. 관리 화면 알림으로 충분하고,
      *   개인정보가 담길 수 있는 파일의 안내를 메일로 내보내지 않는다(파일은 관리 화면의 일회용 주소로만 받는다).
@@ -98,7 +98,7 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
         foreach (ClaimStatusNotificationListener::notifiableStatuses() as $keys) {
             $claimCount += count($keys) + count(array_intersect($keys, $staffKeys));
         }
-        // 상태가 아닌 사건 알림(송장 등록 3종 · 선교환 회수 지연 — #599) — 목록은 리스너가 소유한다.
+        // 상태가 아닌 사건 알림(송장 등록 3종 · 선교환 회수 지연) — 목록은 리스너가 소유한다.
         $claimCount += count(ClaimStatusNotificationListener::eventNotifyHooks());
 
         $this->assertCount(count($this->expectedTypes) + $claimCount, $definitions);

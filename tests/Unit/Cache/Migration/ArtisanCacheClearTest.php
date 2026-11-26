@@ -19,7 +19,7 @@ use Tests\TestCase;
  * CacheInterface 의 다건 put/forget 왕복 동작을 키 차원에서 검증합니다.
  *
  * 주의: 아래 키 문자열은 이관 당시의 픽스처다. 현행 커맨드는 유령 키 forget 을
- * 제거하고 상태 키 무효화 + 레이아웃 캐시 + 버전 bump 로 동작한다 (#588) —
+ * 제거하고 상태 키 무효화 + 레이아웃 캐시 + 버전 bump 로 동작한다 —
  * 커맨드의 실동작 검증은 {Module,Plugin,Template}ArtisanCommandsTest 가 담당한다.
  *
  * @scenario-manifest tests/scenarios/cache-artisan-clear-key-round-trip.yaml

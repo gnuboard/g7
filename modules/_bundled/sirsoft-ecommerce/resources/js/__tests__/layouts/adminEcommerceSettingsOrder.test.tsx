@@ -160,7 +160,7 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
          */
         it('카드 섹션이 정해진 순서로 배치된다', () => {
             // 개수가 아니라 id 를 고정한다 — 카드가 추가·제거되면 어느 카드인지 바로 드러난다.
-            // 맨 아래 주문서 항목 구획(#490)은 조각 참조라 id 대신 조각 이름으로 적는다(즉시 저장 구획이라 폼 카드들 뒤에 둔다).
+            // 맨 아래 주문서 항목 구획은 조각 참조라 id 대신 조각 이름으로 적는다(즉시 저장 구획이라 폼 카드들 뒤에 둔다).
             expect(tab.children.map((c: any) => c.id ?? c.partial)).toEqual([
                 'default_pg_card',
                 'cash_receipt_card',
@@ -488,7 +488,7 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
             expect(handle.props['data-drag-handle']).toBe(true);
         });
 
-        // 브랜드 마크가 있는 수단은 BrandMark, 없는 수단은 Icon 을 그린다(#639 — 주입 스크립트 삭제 뒤 레이아웃이 직접 그림).
+        // 브랜드 마크가 있는 수단은 BrandMark, 없는 수단은 Icon 을 그린다(주입 스크립트 삭제 뒤 레이아웃이 직접 그림).
         /**
          * @scenario method_kind=extension, capability_declared=declared, capability=brand_mark
          * @effects admin_shows_brand_mark, admin_falls_back_to_icon_without_brand_mark
@@ -761,15 +761,15 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
         });
     });
 
-    // ─── PG 능력 기반 3분기 (#475) ───
+    // ─── PG 능력 기반 3분기 ───
     // 배경: 과거에는 PG 필요 여부를 하드코딩 배열(['point','deposit','free','dbank'])로
     // 정규식 판정해 간편결제를 "PG 불필요"로 오분류했다. 이제 결제수단 카탈로그의
     // pg_locked / needs_pg 능력으로 직접 3분기한다:
     //   ① pg_locked        → "PG 고정 · {PG명}" 배지 (관리자 변경 불가)
     //   ② !pg_locked && needs_pg → PG 선택 셀렉트 (또는 미설치 안내)
     //   ③ !pg_locked && !needs_pg → "PG 불필요"
-    // 이 분기가 능력 대신 다시 하드코딩/orphaned 로 회귀하면 #475 재발이다.
-    describe('PG 능력 3분기 (#475)', () => {
+    // 이 분기가 능력 대신 다시 하드코딩/orphaned 로 회귀하면 같은 결함의 재발이다.
+    describe('PG 능력 3분기', () => {
         const tpl = layout.itemTemplate;
         const findByTestidExpr = (needle: string) =>
             findFirst(tpl, (n: any) =>
@@ -871,8 +871,8 @@ describe('결제수단 모바일 카드 구조 검증 (_payment_methods_cards.js
         expect(layout.itemTemplate.classMap.variants.orphaned).toBeDefined();
     });
 
-    // ─── PG 능력 3분기 (#475) — 모바일 카드도 PC 리스트와 동일하게 판정해야 한다 ───
-    describe('PG 능력 3분기 (#475)', () => {
+    // ─── PG 능력 3분기 — 모바일 카드도 PC 리스트와 동일하게 판정해야 한다 ───
+    describe('PG 능력 3분기', () => {
         const tpl = layout.itemTemplate;
         const findByTestidExpr = (needle: string) =>
             findFirst(tpl, (n: any) =>

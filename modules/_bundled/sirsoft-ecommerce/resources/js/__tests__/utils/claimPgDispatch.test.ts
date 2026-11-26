@@ -1,6 +1,6 @@
-// e2e:allow PG 결제창 진입 결과 판정 순수 함수 — 실제 결제창 실패는 Chrome MCP 모바일 실측(#855 T4-c)으로 확인한다.
+// e2e:allow PG 결제창 진입 결과 판정 순수 함수 — 실제 결제창 실패는 Chrome MCP 모바일 실측(c)으로 확인한다.
 /**
- * 클레임 추가결제의 PG 결제창 진입 결과 판정 (#855)
+ * 클레임 추가결제의 PG 결제창 진입 결과 판정
  *
  * 신청서 핸들러는 결제 플러그인 핸들러를 `G7Core.dispatch` 로 부르고, 디스패처는 핸들러 오류를 던지지 않고
  * `{ success: false, error: ActionError }` 로 돌려준다. 사용자 문구는 감싼 오류가 아니라 `originalError` 에 있다.

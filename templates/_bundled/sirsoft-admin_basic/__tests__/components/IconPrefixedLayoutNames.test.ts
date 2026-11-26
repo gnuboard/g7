@@ -1,6 +1,6 @@
 /**
  * @file IconPrefixedLayoutNames.test.ts
- * @description 관리자 레이아웃이 Icon 에 넘기는 「스타일 토큰이 붙은 이름」 전수 — 스타일 클래스가 한 번만 나온다 (#381)
+ * @description 관리자 레이아웃이 Icon 에 넘기는 「스타일 토큰이 붙은 이름」 전수 — 스타일 클래스가 한 번만 나온다
  *
  * 관리자 템플릿·번들 모듈·번들 플러그인의 관리자 레이아웃(.g7.html)에서 `<icon name="…">` 값을 모은다.
  *  - 리터럴 값 중 스타일 토큰(fas·far·fab·fal·fad·fa-solid·fa-regular·fa-brands·fa-light·fa-duotone)이 있는 것
@@ -143,7 +143,7 @@ function expectedClass(value: string): string {
 const { cases, files } = collectCases();
 const uniqueValues = [...new Set(cases.map((c) => c.value.trim().replace(/\s+/g, ' ')))].sort();
 
-describe(`${SIDE} 레이아웃의 스타일 토큰 붙은 아이콘 이름 (#381)`, () => {
+describe(`${SIDE} 레이아웃의 스타일 토큰 붙은 아이콘 이름`, () => {
   /**
    * @scenario component=layout_scan
    * @effects style_prefix_tokens_resolved_once

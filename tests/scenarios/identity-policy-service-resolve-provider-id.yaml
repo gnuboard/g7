@@ -1,7 +1,7 @@
 feature: 본인인증 정책의 provider_id 해석 fallback
 
 description: |
-  IdentityPolicyService::resolveProviderId 가 428 응답에 실을 provider_id 를 정하는 규칙을 지킨다(#275).
+  IdentityPolicyService::resolveProviderId 가 428 응답에 실을 provider_id 를 정하는 규칙을 지킨다.
   정책의 provider_id 가 쓸 수 있는 provider 면 그대로 쓰고, 쓸 수 없으면(미등록·비활성) 메일로 폴백하지 않고 null 을
   돌려준다(7.1.6 — 다른 수단으로 받은 결과는 정책 결박에서 거부되므로). NULL 이면 Manager 의 목적 기반 해석을 따르고, 해석이 실패하면 null.
 

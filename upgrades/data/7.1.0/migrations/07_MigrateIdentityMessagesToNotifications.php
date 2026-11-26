@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 
 /**
- * 본인인증(IDV) 메시지를 알림 정의로 옮기고 옛 표를 드랍합니다 (#699).
+ * 본인인증(IDV) 메시지를 알림 정의로 옮기고 옛 표를 드랍합니다.
  *
  * 7.0.x 는 본인인증 메일 문구를 알림 밖의 `identity_message_definitions/templates` 에 두고 알림 시스템을 거치지 않고
  * 보냈습니다. 7.1.0 은 같은 문구를 알림 정의(`notification_definitions`, category=identity)로 다룹니다.

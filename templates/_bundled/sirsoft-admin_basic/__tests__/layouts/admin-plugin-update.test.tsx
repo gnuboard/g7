@@ -592,7 +592,7 @@ describe('플러그인 업데이트 - 업데이트 모달', () => {
   let testUtils: ReturnType<typeof createLayoutTest>;
   let registry: ComponentRegistry;
 
-  // 실제 굽기 산출물을 읽는다 — 손으로 쓴 모달 사본은 실제 창과 어긋난 옛 구조를 단언하고 있었다(#888).
+  // 실제 굽기 산출물을 읽는다 — 손으로 쓴 모달 사본은 실제 창과 어긋난 옛 구조를 단언하고 있었다.
   const modal: any = JSON.parse(readFileSync(resolve(__dirname, '../../layouts/partials/admin_plugin_list/_modal_update.json'), 'utf-8'));
   const { meta: sharedMeta, ...sharedPreview } = JSON.parse(readFileSync(resolve(__dirname, '../../layouts/partials/_shared/_layout_sync_preview.json'), 'utf-8'));
   void sharedMeta; // 조각 표식(meta.is_partial)은 페이지에 들어가면 사라진다 — 본문만 쓴다.
@@ -767,7 +767,7 @@ describe('플러그인 업데이트 - 업데이트 모달', () => {
       expect(JSON.stringify(cancelBtn.children)).toContain('$t:common.cancel');
       expect(JSON.stringify(cancelBtn.actions)).toContain('closeModal');
 
-      // 실행 버튼은 진행 중이거나 화면별 처리 미리보기가 준비되기 전에는 잠긴다(#888)
+      // 실행 버튼은 진행 중이거나 화면별 처리 미리보기가 준비되기 전에는 잠긴다
       expect(confirmBtn.props.disabled).toContain('_global.isPluginUpdating');
       expect(confirmBtn.props.disabled).toContain("_global.layoutPreviewState !== 'ready'");
     });
@@ -809,7 +809,7 @@ describe('플러그인 업데이트 - 업데이트 모달', () => {
 });
 
 // ==============================
-// 레이아웃 업데이트 전략 (실제 부분 레이아웃 렌더) — #727
+// 레이아웃 업데이트 전략 (실제 부분 레이아웃 렌더)
 // ==============================
 
 describe('플러그인 업데이트 - 레이아웃 전략 선택', () => {
@@ -908,7 +908,7 @@ describe('플러그인 업데이트 - 레이아웃 전략 선택', () => {
   }
 
   /**
-   * 미리보기 결과를 실은 업데이트 창 레이아웃을 만든다 (#888).
+   * 미리보기 결과를 실은 업데이트 창 레이아웃을 만든다.
    */
   function buildPreviewLayout(strategy: 'overwrite' | 'keep') {
     const fs = require('fs');
@@ -930,7 +930,7 @@ describe('플러그인 업데이트 - 레이아웃 전략 선택', () => {
 
   // @scenario kind=plugin, area=layout_strategy
   // @effects layout_strategy_choice_is_offered
-  it('처리 방식은 공통 미리보기의 같은 라디오 그룹이고 기본값은 수정 유지다 (#888)', () => {
+  it('처리 방식은 공통 미리보기의 같은 라디오 그룹이고 기본값은 수정 유지다', () => {
     const fs = require('fs');
     const path = require('path');
     const shared = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../layouts/partials/_shared/_layout_sync_preview.json'), 'utf-8'));
@@ -987,7 +987,7 @@ describe('플러그인 업데이트 - 레이아웃 전략 선택', () => {
   // @scenario kind=plugin, area=layout_strategy
   // @effects layout_strategy_keep_notice_explains_merge
   it('유지 안내 문구가 "통째로 유지" 가 아니라 부분 병합을 설명한다 (ko·en)', () => {
-    // 업데이트 창이 실제로 그리는 안내는 공통 미리보기 조각의 처리 방식 설명이다(#888) — 옛 창 전용 키는 더 그리지 않는다.
+    // 업데이트 창이 실제로 그리는 안내는 공통 미리보기 조각의 처리 방식 설명이다 — 옛 창 전용 키는 더 그리지 않는다.
     const shared = readFileSync(resolve(__dirname, '../../layouts/partials/_shared/_layout_sync_preview.json'), 'utf-8');
     expect(shared).toContain('$t:admin.layout_sync_preview.strategy_keep_desc');
 

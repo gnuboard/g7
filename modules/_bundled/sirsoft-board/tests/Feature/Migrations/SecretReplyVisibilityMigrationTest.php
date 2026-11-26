@@ -10,7 +10,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * boards.secret_reply_visibility 마이그레이션 왕복 테스트 (#789 D19)
+ * boards.secret_reply_visibility 마이그레이션 왕복 테스트
  *
  * 모듈 삭제(delete_data)·업데이트 재실행에서 up → down → up 이 깨지지 않아야 하고, 기존 게시판은
  * 기본값 thread_path 로 채워져야 한다. ADD/DROP COLUMN(DDL)은 암묵 커밋이라 이 클래스는 트랜잭션을

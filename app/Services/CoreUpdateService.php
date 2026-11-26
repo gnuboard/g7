@@ -78,7 +78,7 @@ class CoreUpdateService
     public const UPDATE_REPORT_PREFIX = 'core_update_';
 
     /**
-     * 운영자 파비콘 보존 대상 경로 (base 상대, #434)
+     * 운영자 파비콘 보존 대상 경로 (base 상대)
      */
     private const PUBLIC_FAVICON_PATH = 'public/favicon.ico';
 
@@ -97,7 +97,7 @@ class CoreUpdateService
      * 불린다 — 치명 오류·타임아웃·kill(무CLI 웹 워커에서 특히 흔하다)이면 그 코드가 돌지
      * 않아 릴리즈 한 벌 크기의 디렉토리가 영구히 남는다. 회수는 `StorageLeftoverPruneService`
      * 의 `core_pending_staging` 대상군이 맡고, 이름 규약의 일치는 계약 테스트가 이 상수를
-     * 읽어 잠근다 (#609 G6 — 회차 6 이관).
+     * 읽어 잠근다 (회차 6 이관).
      */
     public const PENDING_DIR_PREFIX = 'core_';
 
@@ -881,7 +881,7 @@ class CoreUpdateService
     }
 
     /**
-     * 직전 업데이트 시도가 개발자 custom 자리 사전 검사로 멈춘 기록을 돌려줍니다 (#792).
+     * 직전 업데이트 시도가 개발자 custom 자리 사전 검사로 멈춘 기록을 돌려줍니다.
      *
      * 업데이트는 CLI 가 하므로 결과는 기록으로 전달된다. 관리자 확인 창은 지금 확인한 새 버전과 같은 버전의
      * 기록만 보여 준다 — 다른 버전을 시도하다 멈춘 기록은 지금 업데이트와 무관하다.
@@ -1678,11 +1678,11 @@ class CoreUpdateService
     {
         $targets = config('app.update.targets', []);
         $excludes = config('app.update.excludes', []);
-        // custom 예약 자리(#792)는 어느 모드에서도 복사·orphan 정리·자동 발견 대상이 아니다 —
+        // custom 예약 자리는 어느 모드에서도 복사·orphan 정리·자동 발견 대상이 아니다 —
         // skipPaths 와 같은 경로 판정으로 copyDirectory 의 복사·removeOrphanItems 양쪽에서 건너뛴다.
         $skipPaths = array_values(array_filter(array_map(fn ($p) => $this->normalizeRelativePath((string) $p), UpdateReservedPaths::mergeInto($skipPaths))));
 
-        // 운영자가 직접 바꿔 둔 `public/favicon.ico` 는 덮지 않는다 (#434 D7). 이름 기준 excludes 에 넣으면
+        // 운영자가 직접 바꿔 둔 `public/favicon.ico` 는 덮지 않는다. 이름 기준 excludes 에 넣으면
         // 코어 번들 아이콘(`public/assets/core/favicon/favicon.ico`)까지 갱신이 막히므로 이 경로 하나만 건너뛴다.
         // 비어 있는 파일(7.1 이하 기본값)은 운영자 파일이 아니므로 새 번들 아이콘으로 바뀐다.
         if ($this->isOperatorFavicon($sourcePath) && ! in_array(self::PUBLIC_FAVICON_PATH, $skipPaths, true)) {
@@ -2244,7 +2244,7 @@ class CoreUpdateService
     }
 
     /**
-     * 사이트의 `public/favicon.ico` 가 운영자가 직접 넣은 파일인지 판정합니다 (#434 D7).
+     * 사이트의 `public/favicon.ico` 가 운영자가 직접 넣은 파일인지 판정합니다.
      *
      * 비어 있지 않고 이번 배포본의 같은 파일과 내용이 다르면 운영자 파일이다. 비어 있는 파일(7.1 이하 기본값)이나
      * 배포본과 같은 파일은 운영자 파일이 아니므로 평소대로 갱신한다.
@@ -2694,7 +2694,7 @@ class CoreUpdateService
         // composer 실행은 `proc_open` 없이는 성립하지 않는다. 무가드로 부르면 그 함수가
         // 막힌 호스팅에서 `Error` 로 요청이 죽어, 호출자(`VendorResolver`)가 번들 모드로
         // 폴백할 기회를 잃는다 — 무CLI 환경에서 vendor 가 빈 채 진행되는 것보다 나쁜
-        // 상태다(사유가 남지 않는다). 여기서는 도메인 예외로 바꿔 폴백에 태운다 (#609 D34).
+        // 상태다(사유가 남지 않는다). 여기서는 도메인 예외로 바꿔 폴백에 태운다.
         if (! ExecutionEnvironment::hasFunction('proc_open')) {
             throw new CoreUpdateOperationException('settings.core_update.composer_unavailable');
         }
@@ -3117,7 +3117,7 @@ class CoreUpdateService
         // 새로 시작한 프로세스(`core:execute-upgrade-steps` — spawn 자식이든 운영자 단독 실행이든)는 디스크의 새 코드를
         // 읽으므로 아래 「낡은 메모리」 가드의 대상이 아니다. 가드는 옛 코드를 이미 메모리에 올린 `core:update` 부모가
         // in-process 로 스텝을 돌릴 때만 의미가 있다. 종전에는 단독 실행도 .env 의 옛 APP_VERSION 으로 판정돼
-        // 「수동 재개」 안내대로 실행해도 가드가 다시 막았다(#888).
+        // 「수동 재개」 안내대로 실행해도 가드가 다시 막았다.
         // 부모 in-process fallback 진입 시 stale 메모리 가드.
         //
         // 현재 메모리의 `config('app.version')` 이 toVersion 보다 낮으면 부모는 stale 코드를
@@ -3246,7 +3246,7 @@ class CoreUpdateService
         $context = new UpgradeContext($fromVersion, $toVersion);
 
         // 실행 대장 — DB 를 함께 쓰는 다른 서버가 이미 끝낸 스텝은 건너뛰고, 실행 선점은 유니크 삽입으로 한다(7.2.0).
-        // 내용 지문을 함께 넘긴다 — 검수 서버의 같은 판 --force 재배포는 같은 내용으로 끝난 스텝을 건너뛴다(#888)
+        // 내용 지문을 함께 넘긴다 — 검수 서버의 같은 판 --force 재배포는 같은 내용으로 끝난 스텝을 건너뛴다
         $ledger = app(UpgradeStepRunLedger::class);
 
         foreach ($steps as $version => $step) {
@@ -3257,7 +3257,7 @@ class CoreUpdateService
             }, fingerprint: UpgradeStepRunLedger::fingerprint($step, (string) $version));
 
             // 다른 실행이 이미 끝낸 스텝은 실행 건수가 아니라 건너뜀으로 따로 알린다 — 부모의 「발견했는데 실행 0건」 가드가
-            // 공유 DB 의 두 번째 서버를 실패로 읽지 않게 한다(#888)
+            // 공유 DB 의 두 번째 서버를 실패로 읽지 않게 한다
             if (! $ran) {
                 $onSkipped?->__invoke((string) $version);
             }
@@ -4060,10 +4060,10 @@ class CoreUpdateService
             base_path('bootstrap/cache'),
             storage_path('app/ext-bundles'),
             // 확장 업데이트의 다운로드·추출 임시 폴더. 부모 `storage/app/temp` 가 sudo 업데이트에서 root 로
-            // 최초 생성되면 이후 관리자 화면의 확장 업데이트가 임시 폴더를 만들지 못한다 (#651).
+            // 최초 생성되면 이후 관리자 화면의 확장 업데이트가 임시 폴더를 만들지 못한다.
             storage_path('app/temp'),
             // `restore_ownership` 은 `storage/logs` 를 포함하지만 그 복원은 흐름 **중간**(Step 11)이라,
-            // 그 뒤에 만들어지는 daily 롤오버·신규 로그 파일은 root 로 남는다 (#651).
+            // 그 뒤에 만들어지는 daily 롤오버·신규 로그 파일은 root 로 남는다.
             storage_path('logs'),
         ];
 

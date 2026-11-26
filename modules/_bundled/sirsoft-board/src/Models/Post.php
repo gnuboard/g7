@@ -243,14 +243,14 @@ class Post extends Model implements FulltextSearchable
      */
     public function attachments(): HasMany
     {
-        // 본문 미디어(예약 컬렉션)는 본문의 일부라 첨부 목록에 넣지 않는다 — contentMedia() 로 따로 본다 (#883)
+        // 본문 미디어(예약 컬렉션)는 본문의 일부라 첨부 목록에 넣지 않는다 — contentMedia() 로 따로 본다
         return $this->hasMany(Attachment::class, 'post_id')
             ->whereNotIn('collection', Attachment::RESERVED_COLLECTIONS)
             ->orderBy('order');
     }
 
     /**
-     * 본문 미디어(편집기 본문에 넣은 이미지·동영상·오디오)와의 관계를 정의합니다 (#883).
+     * 본문 미디어(편집기 본문에 넣은 이미지·동영상·오디오)와의 관계를 정의합니다.
      *
      * 첨부 목록·첨부 개수·목록 썸네일에 들지 않는다. 서빙은 본문 미디어 경로(글 읽기 권한·비밀·삭제·블라인드 게이트)가 맡는다.
      *

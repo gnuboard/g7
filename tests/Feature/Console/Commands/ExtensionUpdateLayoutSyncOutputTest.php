@@ -32,7 +32,7 @@ use Tests\Support\Console\NoSpawnExecuteBundledUpdatesCommand;
 use Tests\TestCase;
 
 /**
- * 확장 업데이트 커맨드가 레이아웃 처리 결과를 실제로 출력하는지 고정한다 (#727 §5.8 D2 — CLI).
+ * 확장 업데이트 커맨드가 레이아웃 처리 결과를 실제로 출력하는지 고정한다 (CLI).
  *
  * `module:update`·`plugin:update`·`template:update` 는 keep 결과가 있으면 표(머리·행)와 요약 한 줄을, overwrite 면 업데이트 전에
  * 덮어쓰일 수정본 경고를 낸다. `core:update` 의 번들 일괄 업데이트 자식(`core:execute-bundled-updates`)은 확장마다 요약 한 줄만

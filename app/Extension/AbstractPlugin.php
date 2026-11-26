@@ -1672,7 +1672,7 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
-     * 비공개 원본 디스크 선택 전용 바인딩 키 (#916)
+     * 비공개 원본 디스크 선택 전용 바인딩 키 
      *
      * 서비스 프로바이더 `$storageCategoryServices` 에 `서비스 => self::PRIVATE_ATTACHMENT_BINDING` 으로 등록하면 그 서비스에
      * 관리자가 고른 비공개 첨부 저장소 디스크의 스토리지가 주입된다(「기본」이면 플러그인 기본 디스크 `plugins`). 저장 경로
@@ -1702,7 +1702,7 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
      */
     public function getStorageDiskFor(string $category): string
     {
-        // 비공개 원본 디스크 선택 전용 키(#916) — 저장 경로 카테고리가 아니다. 서비스 프로바이더의
+        // 비공개 원본 디스크 선택 전용 키 — 저장 경로 카테고리가 아니다. 서비스 프로바이더의
         // $storageCategoryServices 에 이 키로 등록한 서비스만 관리자가 고른 비공개 첨부 저장소를 따른다.
         if ($category === self::PRIVATE_ATTACHMENT_BINDING) {
             $pin = $this->getPrivateAttachmentDiskPin();

@@ -13,7 +13,7 @@
             "endpoint": "/api/admin/templates/{{_global.selectedTemplate.identifier}}",
             "auth_required": true,
             "initGlobal": "selectedTemplate",
-            "comment": "상세 재조회 — 응답을 **같은 전역(`selectedTemplate`)에 덮어쓴다**. 목록이 담아 준 얕은 값 위에\n         전체 정보를 얹는 것이라, 창은 목록 값으로 먼저 그려지고 곧 채워진다.\n         그래서 목록 응답에 없는 항목(컴포넌트·코어 요구·언어·외부 자원)의 「없음」은 상세 응답에만 있는\n         `metadata` 가 온 뒤에만 보인다 — 받기 전에 「없음」이 먼저 보였다가 바뀌지 않게(#915)."
+            "comment": "상세 재조회 — 응답을 **같은 전역(`selectedTemplate`)에 덮어쓴다**. 목록이 담아 준 얕은 값 위에\n         전체 정보를 얹는 것이라, 창은 목록 값으로 먼저 그려지고 곧 채워진다.\n         그래서 목록 응답에 없는 항목(컴포넌트·코어 요구·언어·외부 자원)의 「없음」은 상세 응답에만 있는\n         `metadata` 가 온 뒤에만 보인다 — 받기 전에 「없음」이 먼저 보였다가 바뀌지 않게."
         }
     ],
     "id": "template_detail_modal",
@@ -280,7 +280,7 @@
                                                     ]
                                                 },
                                                 {
-                                                    "comment": "패키지 서명(#916) — 설치·업데이트 때 남긴 검증 기록(integrity_status). verified 면 키 ID 콜론 앞(서명자)을 보인다.\n                   기록이 없으면(이 기능 전에 설치했거나 옛 코어) 「기록 없음」이다.",
+                                                    "comment": "패키지 서명 — 설치·업데이트 때 남긴 검증 기록(integrity_status). verified 면 키 ID 콜론 앞(서명자)을 보인다.\n                   기록이 없으면(이 기능 전에 설치했거나 옛 코어) 「기록 없음」이다.",
                                                     "id": "package_signature_field",
                                                     "type": "basic",
                                                     "name": "Div",
@@ -363,7 +363,7 @@
                                                             "name": "Button",
                                                             "actions": [
                                                                 {
-                                                                    "comment": "라이선스 이름을 누르면 전문을 받아 별도 창으로 띄운다. 전문은 길어 상세 응답에 싣지 않는다. 버튼이어야 키보드로도 열린다(#736 F 실측).",
+                                                                    "comment": "라이선스 이름을 누르면 전문을 받아 별도 창으로 띄운다. 전문은 길어 상세 응답에 싣지 않는다. 버튼이어야 키보드로도 열린다.",
                                                                     "type": "click",
                                                                     "handler": "sequence",
                                                                     "actions": [
@@ -844,7 +844,7 @@
                                     ]
                                 },
                                 {
-                                    "comment": "함께 쓰면 연동되는 확장 (#639) — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로\n            설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다.\n            요구 버전(`required_version`, 무제약 `*` 은 감춘다)·설치 버전을 보이고, 설치됐는데 제약을 못 맞추면(`is_met === false`) 「버전 미달」 배지를 단다(#822).\n            옛 코어는 `is_met` 을 싣지 않으므로 `false` 일 때만 단다 — `!is_met` 이면 옛 코어에서 모든 항목에 배지가 붙는다.",
+                                    "comment": "함께 쓰면 연동되는 확장 — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로\n            설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다.\n            요구 버전(`required_version`, 무제약 `*` 은 감춘다)·설치 버전을 보이고, 설치됐는데 제약을 못 맞추면(`is_met === false`) 「버전 미달」 배지를 단다.\n            옛 코어는 `is_met` 을 싣지 않으므로 `false` 일 때만 단다 — `!is_met` 이면 옛 코어에서 모든 항목에 배지가 붙는다.",
                                     "id": "integrations_section",
                                     "type": "basic",
                                     "name": "Div",

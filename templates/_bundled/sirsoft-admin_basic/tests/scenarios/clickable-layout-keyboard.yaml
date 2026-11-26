@@ -1,7 +1,7 @@
 feature: 관리자 템플릿과 번들 확장 레이아웃 전수 — 클릭을 받는 비대화형 노드는 키보드로도 같은 일을 한다
 
 description: |
-  클릭 동작만 달린 div, span, li, tr, td, img 는 Tab 이 닿지 않고 Enter, Space 로 눌리지 않는다(#869, 설계 확정 2026-11-08,
+  클릭 동작만 달린 div, span, li, tr, td, img 는 Tab 이 닿지 않고 Enter, Space 로 눌리지 않는다(설계 확정 2026-11-08,
   키보드 접근 전부 고침). 그 노드에 role, tabindex, 키 이벤트를 주거나, 같은 일을 하는 키보드 수단을 안에 둔다 — 덮개(같은
   상태를 쓰는 단추가 같은 파일에 있음), 같은 일의 라디오, `aria-expanded` 펼침 단추, 자기 동작 없이 눌림을 올려 보내는
   `aria-expanded`·`aria-pressed` 대리 단추, 같은 상태를 쓰는 주소 링크. 사용자 템플릿은 sirsoft-basic 의

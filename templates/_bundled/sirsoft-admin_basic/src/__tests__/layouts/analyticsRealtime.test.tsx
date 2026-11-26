@@ -1,6 +1,6 @@
 /**
  * @file analyticsRealtime.test.tsx
- * @description 실시간 화면 런타임 계약 — 방송 소스가 실시간 소스를 갈아 끼우고 폴링이 폴백으로 도는 것 (이슈 #682 S3)
+ * @description 실시간 화면 런타임 계약 — 방송 소스가 실시간 소스를 갈아 끼우고 폴링이 폴백으로 도는 것
  */
 
 import fs from 'fs';
@@ -65,7 +65,7 @@ describe('실시간 화면', () => {
     expect(rt?.params?.minutes).toBe('{{query.minutes}}');
 
     // 방송은 채널의 모든 연결에 같은 값(기본 창·주소 없음)이라, 그 값으로 소스를 갈아 끼우면 창을 30분으로
-    // 고른 화면이 방송마다 「최근 5분」으로 튀고 주소 열람 권한자의 IP 칸이 비었다(#682 S3 라운드 14, 실측).
+    // 고른 화면이 방송마다 「최근 5분」으로 튀고 주소 열람 권한자의 IP 칸이 비었다.
     const ws = dataSource(layout, 'analytics_realtime_ws');
     expect(ws).toMatchObject({ type: 'websocket', channel: 'core.admin.analytics', event: 'analytics.realtime.updated', channel_type: 'private' });
     expect(ws?.target_source, '방송 값으로 실시간 소스를 갈아 끼우면 창·권한이 사라진다').toBeUndefined();

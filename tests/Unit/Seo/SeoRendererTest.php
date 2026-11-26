@@ -3013,7 +3013,7 @@ class SeoRendererTest extends TestCase
     }
 
     /**
-     * init 의 sequence·parallel 안 setState 도 봇 화면 초기 상태에 반영됩니다 (#753 W6).
+     * init 의 sequence·parallel 안 setState 도 봇 화면 초기 상태에 반영됩니다.
      *
      * 엔진은 `<init>` 의 sequence 를 실행하게 됐다(engine-v1.80.0) — 봇 렌더러가 최상위 setState 만 읽으면
      * 그 초기 상태가 봇 화면에서만 빠진다.

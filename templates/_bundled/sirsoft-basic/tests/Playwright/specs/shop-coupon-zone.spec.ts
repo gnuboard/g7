@@ -1,5 +1,5 @@
 /**
- * 쿠폰존 — 비로그인은 공개 목록과 로그인 안내, 로그인 회원은 받기·받음 표시, 좁은 화면에서도 가로 넘침이 없다 (#952 C)
+ * 쿠폰존 — 비로그인은 공개 목록과 로그인 안내, 로그인 회원은 받기·받음 표시, 좁은 화면에서도 가로 넘침이 없다
  *
  * 목록 응답은 page.route 로 고정한다 — 사이트의 실제 쿠폰 유무와 무관하게 화면 동작만 잰다. 받기 요청도 가로채
  * 성공으로 답하므로 실제 발급은 일어나지 않는다. 서버 계약(공개·회원 응답 모양·요청 제한)은 PHPUnit PublicCouponZoneTest.
@@ -56,7 +56,7 @@ const page1 = (items: unknown[]) => ({
   data: { data: items, current_page: 1, last_page: 1, per_page: 12, total: items.length, next_page_url: null },
 });
 
-test.describe('쿠폰존 (#952)', () => {
+test.describe('쿠폰존', () => {
   // @scenario case=guest_browser
   // @effects coupon_zone_guest_login_prompt
   test('비로그인 — 공개 목록을 받고, 받기를 누르면 로그인 안내 창이 뜬다', async ({ page }) => {

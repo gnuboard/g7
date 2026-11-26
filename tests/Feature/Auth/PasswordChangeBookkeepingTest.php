@@ -17,7 +17,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 비밀번호 변경 기록 테스트 (#736 §4.5 — W1~W8)
+ * 비밀번호 변경 기록 테스트 (W1~W8)
  *
  * 모든 비밀번호 쓰기 경로가 한 곳(`PasswordChangeService`)에서 변경일·표지·변경 요구 플래그를 기록하고,
  * 경로·행위자를 아는 `core.auth.password_change_recorded` 를 발행하며, 활동 로그가 경로별 문구로 남는지

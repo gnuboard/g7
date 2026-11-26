@@ -1,6 +1,6 @@
 /**
  * @file pluginSettingsLiveMid.test.tsx
- * @description sirsoft-verification_kginicis 플러그인 환경설정 라이브 MID 입력칸 회귀 테스트 (#458)
+ * @description sirsoft-verification_kginicis 플러그인 환경설정 라이브 MID 입력칸 회귀 테스트
  *
  * 작업 A — 라이브 MID 입력칸(live_mid)에 autoComplete="off" 가 적용되어 브라우저 자동완성
  *          (계정 이메일 등)이 채워지지 않도록 한다.
@@ -47,11 +47,11 @@ function findByText(node: unknown, text: string): Record<string, unknown> | unde
   return undefined;
 }
 
-describe('plugin_settings 라이브 MID 입력칸 (#458)', () => {
+describe('plugin_settings 라이브 MID 입력칸', () => {
   it('live_mid input 에 autoComplete="one-time-code" 가 적용되어 있어야 한다 (크롬 autofill/제안 차단)', () => {
     // 크롬은 autoComplete="off" 를 무시하고 저장된 계정(이메일)을 채운다. live_mid 는 비밀번호가
     // 아닌 일반 텍스트 MID 칸이므로, autofill/제안을 차단하되 "비밀번호 생성" 제안이 뜨지 않는
-    // one-time-code 토큰을 사용한다 (new-password 는 live_api_key 처럼 실제 비번 칸에만) (#458).
+    // one-time-code 토큰을 사용한다 (new-password 는 live_api_key 처럼 실제 비번 칸에만).
     const liveMid = findByPropName(pluginSettingsLayout, 'live_mid');
     expect(liveMid).toBeDefined();
 

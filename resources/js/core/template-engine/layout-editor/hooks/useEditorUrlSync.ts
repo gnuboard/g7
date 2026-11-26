@@ -154,7 +154,7 @@ function collectRouteNodes(tree: RouteTreeNode[], out: RouteTreeNode[] = []): Ro
  * `?route=` 값으로 라우트 노드를 찾는다 — 정의 path 정확 일치가 먼저, 없으면 실제 주소로 보고 정의 path 를 찾는다.
  *
  * 편집기와 편집 단추는 정의 path 를 넘기지만, 사람이 사이트 주소(`/board/notice`, `/admin/users`)를 붙여 넣으면
- * 정확 일치가 없어 선택이 비고 `?route=` 까지 지워졌다(#869, λ 실측). 찾으면 주소 보정(3)이 정의 path 로 다시 쓴다.
+ * 정확 일치가 없어 선택이 비고 `?route=` 까지 지워졌다. 찾으면 주소 보정(3)이 정의 path 로 다시 쓴다.
  *
  * 패턴 해석은 Router.matchPattern 과 같지만, 여러 정의가 맞을 때 고르는 법은 다르다. 라우터는 routes 목록 순서의
  * 첫 일치를 고르는데, 편집기 트리는 출처별로 묶여 그 순서를 잃는다. 그래서 동적 세그먼트가 적은 쪽, 같으면 트리 순서가
@@ -197,11 +197,11 @@ export function useEditorUrlSync(templateIdentifier: string): void {
   // (selectedRoute=null, editMode='route')를 본다. 그 상태로 보정하면 `?route=`·`?edit=` 를 지운 주소로
   // replaceState 하고, `?edit=` 복원은 다음 순회에서 「편집 모드 진입」으로 보여 pushState 가 한 번 더 나가
   // 기록 항목이 늘었다(뒤로 가기가 라우트 없는 주소에서 한 번 더 멈춤). 'dispatched' 는 그 순회를 건너뛰고,
-  // 'settling' 은 다음 보정을 진입이 아닌 복원으로 다룬다(pushState 금지) (#869).
+  // 'settling' 은 다음 보정을 진입이 아닌 복원으로 다룬다(pushState 금지).
   const initialRestoreRef = useRef<'idle' | 'dispatched' | 'settling'>('idle');
   // 첫 복원이 고를 path(`?route=` 의 정의 path 또는 `?edit=` 가상 path). 다음 보정이 정말 그 복원의 반영일 때만
   // 복원으로 다룬다 — 복원 dispatch 가 상태를 바꾸지 못하면 다음 보정은 사용자 동작이므로 진입 규칙(pushState)을
-  // 따라야 한다. 종전에는 'settling' 이 남아 그 진입이 replaceState 를 타 뒤로 가기 한 단계가 사라질 수 있었다(#869 σ).
+  // 따라야 한다. 종전에는 'settling' 이 남아 그 진입이 replaceState 를 타 뒤로 가기 한 단계가 사라질 수 있었다.
   const initialRestoreTargetRef = useRef<string | null>(null);
 
   // (1) 초기 ?route= 복원 — routes 로드 완료(routeTree.length > 0) 후 1회만 실행.
@@ -325,7 +325,7 @@ export function useEditorUrlSync(templateIdentifier: string): void {
       templateIdentifier,
       state.selectedRoute?.path ?? null,
       state.selectedRoute?.layoutName ?? null,
-      // 기반·확장 편집은 복귀 라우트의 레이아웃을 &host= 로 싣는다 — 새로고침해도 복귀 라우트가 남는다 (#869)
+      // 기반·확장 편집은 복귀 라우트의 레이아웃을 &host= 로 싣는다 — 새로고침해도 복귀 라우트가 남는다
       state.returnRoute?.layoutName ?? null,
     );
     // base-path:allow 현재 주소 문자열 비교용 — 접두사를 품은 원본끼리 견준다

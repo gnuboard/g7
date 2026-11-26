@@ -8,7 +8,7 @@ use Modules\Sirsoft\Board\Models\ReactionType;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 댓글 반응 — 비밀글 게이트와 카운트 캐시 재집계 회귀 (#525 WP-D).
+ * 댓글 반응 — 비밀글 게이트와 카운트 캐시 재집계 회귀.
  *
  * `CommentReactionApiTest` 가 토글·본인·비회원 규약을 잠근다. 이 파일은 그쪽이 다루지 않는
  * 두 축을 잠근다:
@@ -235,7 +235,7 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
 
     /**
      * 비밀 댓글 반응은 canViewSecretComment 로 판정된다 — 부모 댓글 작성자는 그 비밀 대댓글에 반응할 수 있고,
-     * 무관한 회원은 못 한다 (#789 D6, 댓글 목록과 같은 판정).
+     * 무관한 회원은 못 한다 (댓글 목록과 같은 판정).
      *
      * @scenario case=secret_post_comment_reaction_denied
      *
@@ -270,7 +270,7 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
 
     /**
      * 비밀글의 댓글 반응은 글 canView 로 판정된다 — 경로 규칙 앵커(비밀 답변 작성자)는 조상 비밀글의
-     * 댓글에 반응할 수 있다 (#789 D1·D6).
+     * 댓글에 반응할 수 있다.
      *
      * @scenario case=secret_post_comment_reaction_denied
      *

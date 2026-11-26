@@ -1,6 +1,6 @@
 /**
  * @file admin-product-seo-preview-image-alt.test.ts
- * @description 관리자 상품 폼 SEO 탭 — 검색결과 미리보기 이미지의 대체 텍스트가 다국어 키인지 (#869 검토)
+ * @description 관리자 상품 폼 SEO 탭 — 검색결과 미리보기 이미지의 대체 텍스트가 다국어 키인지 (검토)
  *
  * 배경: 미리보기 이미지에 썸네일 규격을 붙이면서 대체 텍스트가 고정 영문 `OG Image` 로 남아, 한국어·일본어 화면의
  * 화면 낭독기가 영문을 읽었다. 굽힌 `_partial_seo_settings.json` 의 alt 가 모듈 다국어 키이고 ko·en·ja 세 언어에

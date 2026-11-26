@@ -6,7 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * 마이페이지 내 리뷰 목록 요청 (#952)
+ * 마이페이지 내 리뷰 목록 요청
  */
 class UserReviewListRequest extends FormRequest
 {

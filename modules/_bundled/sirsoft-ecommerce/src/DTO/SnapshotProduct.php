@@ -43,7 +43,7 @@ class SnapshotProduct
         $this->name = $snapshot['name'] ?? '';
         $this->selling_price = $snapshot['selling_price'] ?? 0;
         // 없거나 해석할 수 없는 값은 과세로 본다 — 「없으면 과세」 규약. tryFrom 의 null 을 그대로 두면
-        // 과세 판정(=== TAXABLE)이 거짓이 되어 손상된 스냅샷 주문이 조용히 면세로 재계산됐다(#612 S9).
+        // 과세 판정(=== TAXABLE)이 거짓이 되어 손상된 스냅샷 주문이 조용히 면세로 재계산됐다.
         $this->tax_status = (is_string($snapshot['tax_status'] ?? null)
             ? ProductTaxStatus::tryFrom($snapshot['tax_status'])
             : null) ?? ProductTaxStatus::TAXABLE;

@@ -3,9 +3,9 @@
  * @file pluginSettingsSemanticClasses.test.ts
  * @description NHN KCP 결제 환경설정 화면의 의미 클래스가 제자리에 붙어 있는지
  *
- * 회귀 배경: 관리자 템플릿 의미 클래스 도입(#408) 때 치환이 한 칸씩 밀렸다. 입력 줄에 섹션 제목 클래스(`section-heading-md`), 섹션 제목에 오류 강조 클래스(`text-error-strong`), 오류 제목에 옅은 오류 클래스가 붙어 라벨·입력이 3열로 놓이지 않고 섹션 제목이 붉은 14px 로 보였다.
+ * 회귀 배경: 관리자 템플릿 의미 클래스 도입 때 치환이 한 칸씩 밀렸다. 입력 줄에 섹션 제목 클래스(`section-heading-md`), 섹션 제목에 오류 강조 클래스(`text-error-strong`), 오류 제목에 옅은 오류 클래스가 붙어 라벨·입력이 3열로 놓이지 않고 섹션 제목이 붉은 14px 로 보였다.
  * 원래 매핑: 입력 줄 = `grid-3col-responsive`, 섹션 제목 = `section-heading-md`, 오류 제목 = `text-error-strong`,
- * 오류 목록 줄 = `text-error-soft` (7.1.0 전수 실측 #408 클래스 밀림 후속 — KG이니시스에서 먼저 고친 것과 같은 결함이 남아 있었다).
+ * 오류 목록 줄 = `text-error-soft` (7.1.0 전수 실측에서 드러난 클래스 밀림 — KG이니시스에서 먼저 고친 것과 같은 결함이 남아 있었다).
  *
  * @scenario-manifest tests/scenarios/plugin-settings-semantic-classes.yaml
  */
@@ -88,7 +88,7 @@ describe('NHN KCP 결제 환경설정 — 의미 클래스 위치', () => {
      * @effects section_titles_use_heading_class
      */
     it('섹션 제목은 섹션 제목 클래스를 쓰고 오류 강조색을 쓰지 않는다', () => {
-        // 색 머리띠가 있는 카드(가상계좌 입금통보·에스크로·에스크로 배송 통보)는 제목도 그 카드 색을 쓴다(#408 이전부터 같은 값) — 흰 패널 섹션 제목만 본다
+        // 색 머리띠가 있는 카드(가상계좌 입금통보·에스크로·에스크로 배송 통보)는 제목도 그 카드 색을 쓴다(이전부터 같은 값) — 흰 패널 섹션 제목만 본다
         const headings = nodes.filter(
             (n) =>
                 n.name === 'H3' &&

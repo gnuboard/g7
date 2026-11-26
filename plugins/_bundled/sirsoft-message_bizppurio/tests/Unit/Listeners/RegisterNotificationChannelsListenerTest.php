@@ -143,7 +143,7 @@ class RegisterNotificationChannelsListenerTest extends PureTestCase
      */
     public function test_채널메타에_비즈뿌리오_통합_탭_필드가_실린다(): void
     {
-        // #597 §3.3 '비즈뿌리오' 통합 탭: sms 는 탭만 숨기고(hidden_tab — 채널 토글 카드·발송
+        // 3 '비즈뿌리오' 통합 탭: sms 는 탭만 숨기고(hidden_tab — 채널 토글 카드·발송
         // 축은 유지), alimtalk 이 두 채널을 묶은 통합 탭을 대표한다(tab_channels/tab_label_key).
         // 코어 getAvailableChannels 는 임의 필드를 보존하므로 프론트까지 그대로 도달한다.
         $channels = $this->makeListener()->addChannels([]);

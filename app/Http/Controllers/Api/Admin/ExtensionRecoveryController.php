@@ -102,7 +102,7 @@ class ExtensionRecoveryController extends AdminBaseController
 
         $record = $repo->findByIdentifier($identifier);
         if (! $record) {
-            // 문구의 :identifier 자리표시자를 채워 찾지 못한 확장을 알린다 (#888)
+            // 문구의 :identifier 자리표시자를 채워 찾지 못한 확장을 알린다
             return ResponseHelper::error('extensions.errors.not_found', 404, [], ['identifier' => $identifier]);
         }
 

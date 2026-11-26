@@ -179,7 +179,7 @@ describe('설정 클레임 탭 — 구성', () => {
    */
   it('상위 탭 전환은 고른 하위 탭을 비워, 다시 돌아오면 주소(sub_tab 없음)와 화면(교환)이 어긋나지 않는다', () => {
     // 탭 전환은 「저장하지 않은 변경」 확인 창(S5-D41) 뒤로 갈렸다 — 변경 없음 갈래(if 없는 else)와 창 [이동] 이 모두 같은
-    // 탭 전환 이벤트만 보내고, 정리는 탭 본문 틀의 이벤트 받기 한 곳이 한다(#753 — 두 곳에 복제했던 목록을 하나로)
+    // 탭 전환 이벤트만 보내고, 정리는 탭 본문 틀의 이벤트 받기 한 곳이 한다(두 곳에 복제했던 목록을 하나로)
     const switchEvent = 'sirsoft-ecommerce:settings-switch-tab';
     const onTabChange = findNode(settingsShell, (n) => n?.id === 'tab_navigation').actions.find((a: any) => a.event === 'onTabChange');
     expect(onTabChange.conditions[1].then).toMatchObject({ handler: 'emitEvent', params: { event: switchEvent } });
@@ -212,7 +212,7 @@ describe('클레임 정책 — defaults 의 스칼라 축 전부가 편집 통�
    * `complete_defaults` 는 하위 키를 갖는 축이라 아래 전용 루프가 따로 본다.
    * `auto_approve_refund_payment_methods_decided` 는 운영자가 편집하는 값이 아니라 **서버 전용 결정
    * 이력**이다 — 운영자가 한 번 뺀 즉시 환불 수단이 다음 조회의 자동 합류로 되살아나지 않도록 남기는
-   * 키다(#599 §4-A A-2 · P17). 이력은 전체 저장과 단건 저장이 **같은 저장 경로**
+   * 키다(A A-2 · P17). 이력은 전체 저장과 단건 저장이 **같은 저장 경로**
    * (`EcommerceSettingsAdminService::saveSettings` / `updateSetting`)에서 서버가 기록하고, 관리자 조회
    * 응답에서는 빠지며(`getSettingsForAdmin`), 저장 요청에 실으면 `prohibited` 로 거절된다
    * (`StoreEcommerceSettingsRequest`). 화면 편집 통로가 없는 것이 설계이므로 「스칼라 축 전부가 편집
@@ -333,9 +333,9 @@ describe('클레임 정책 — defaults 의 스칼라 축 전부가 편집 통�
     [claimPolicy, exchangeSection, returnSection, refundSection, exchangeCards, returnCards, refundCards].forEach(walk);
 
     // 하한(>14)이면 partial 3개가 통째로 사라져도 통과한다 — 정확값으로 고정한다.
-    // 52 = 종전 50 + 자동승인 대상 상태 MultiSelect 1(#599 후속 D8)
-    //      + 환불 자동 승인 결제수단 MultiSelect 1(#599 §4-A A-2 · P17 · `591770d69`)
-    //      + 선교환 허용 Toggle 1 · 회수 기한(일) 숫자 입력 1(#599 §3-3 = 54).
+    // 52 = 종전 50 + 자동승인 대상 상태 MultiSelect 1
+    //      + 환불 자동 승인 결제수단 MultiSelect 1(A A-2 · P17 · `591770d69`)
+    //      + 선교환 허용 Toggle 1 · 회수 기한(일) 숫자 입력 1(3 = 54).
     expect(found.length, '7 partial 의 입력형 노드 수가 바뀌었다 — 입력을 더했거나 뺐으면 이 수를 함께 고친다').toBe(54);
 
     const open = found.filter(

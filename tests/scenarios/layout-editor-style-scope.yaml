@@ -37,7 +37,7 @@ exclusions:
 
 effects:
   # 위치 결정 + 무손실
-  # #399 (engine-v1.98.0) — 디바이스 탭 className 편집은 기본 대비 바뀐 토큰만 responsive.{bp}.classMerge 로 저장(종전 B안 시드 대체). 덧붙이기로 못 나타내는 삭제 편집·기존 props.className 구간은 통째 교체 유지
+  # engine-v1.98.0 — 디바이스 탭 className 편집은 기본 대비 바뀐 토큰만 responsive.{bp}.classMerge 로 저장(종전 B안 시드 대체). 덧붙이기로 못 나타내는 삭제 편집·기존 props.className 구간은 통째 교체 유지
   - device_scope_class_edit_writes_only_changed_tokens_as_class_merge
   - base_scope_writes_node_props_byte_identical_to_pre_scope
   - device_scope_writes_responsive_breakpoint_props_base_unchanged
@@ -78,7 +78,7 @@ effects:
   - preview_color_scheme_toggle_applies_dark_wrapper_to_preview_frame_only
   # 2026-10-31 issue609 테스트 매핑 부채 정리: 레이아웃 편집기 단위 테스트가 실제로 재는 효과 (메서드 단위 마킹)
   - dark_scope_classToken_control_stays_editable   # 다크 scope 에서도 classToken 컨트롤은 읽기 전용이 아니라 편집된다
-  # #399 선행 마킹 정리: styleScope.test.ts, recipeEngine.scope.test.ts 의 시험마다 재는 효과
+  # 선행 마킹 정리: styleScope.test.ts, recipeEngine.scope.test.ts 의 시험마다 재는 효과
   - scoped_props_read_from_scope_container          # getScopedProps 는 scope 가 가리키는 컨테이너(base props, responsive[bp].props, 범위 키)만 읽고 없으면 빈 객체
   - scoped_edit_never_mutates_input_node            # scope 편집 함수(withScopedProps, setScopedIf, applyRecipe)는 입력 노드를 바꾸지 않고 복제본을 돌려준다
   - empty_style_pruned_from_scoped_props            # 편집 뒤 빈 style 객체는 props 에서 지운다

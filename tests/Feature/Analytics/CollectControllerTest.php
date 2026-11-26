@@ -141,7 +141,7 @@ class CollectControllerTest extends TestCase
      * 적재는 언제나 훅을 거친다.
      *
      * 훅은 확장이 같은 자리에 끼어드는 이음매다. 구독 리스너는 `sync => true` 라 큐를
-     * 타지 않고 발화 자리에서 도는데(#682 S3 라운드 6), 그 사실은
+     * 타지 않고 발화 자리에서 도는데, 그 사실은
      * `CollectionDispatchTest` 가 잡 수로 따로 잠근다 — 여기서는 **훅이 발화했는지**만 본다.
      *
      * @scenario dispatch=sync, source=beacon

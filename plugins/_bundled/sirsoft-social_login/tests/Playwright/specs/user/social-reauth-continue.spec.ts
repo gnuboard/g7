@@ -182,7 +182,7 @@ test('처음 비밀번호 저장의 본인 확인은 연결한 제공자로 가�
   await approveMock(page, { subject: pwSubject });
   await page.waitForURL((url) => url.pathname === '/mypage/change-password', { timeout: 15_000 });
   expect(new URL(page.url()).searchParams.has('social_reauth')).toBe(true);
-  // #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+  // 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
   await expect(page.locator('[id^="social_change_password_reauth_done__"]')).toBeVisible({ timeout: 15_000 });
   // 돌아온 화면도 새로 열린 화면이라 회원 정보를 다시 받는다 — 받고 반영된 뒤에 다시 저장한다
   await expectPasswordFormReady(page, returnedMemberInfo);

@@ -121,7 +121,7 @@ const BULK_STATUS_URL = '/api/modules/sirsoft-ecommerce/admin/claims/bulk-status
  * 송장이 있어야 들어가는 상태 — 서버 `ValidatesClaimTransitionTracking` 과 같은 목록이다.
  *
  * 회수중·발송중은 택배가 물건을 싣고 가는 중이라는 사실이라 송장 없이 들어가면 고객 알림의
- * 운송장 칸이 비어서 나간다(#599 후속 운영 결정). 서버가 422 로 막지만, 수량 확인 모달까지 연 뒤에야
+ * 운송장 칸이 비어서 나간다(후속 운영 결정). 서버가 422 로 막지만, 수량 확인 모달까지 연 뒤에야
  * 거절되지 않게 입구에서 먼저 세운다.
  */
 const TRACKING_REQUIRED_STATUSES = ['collecting', 'redelivering'];
@@ -925,9 +925,9 @@ export async function buildClaimBulkConfirmDataHandler(
             ids,
             status,
             statusLabel: resolveStatusLabel(claimType, status),
-            // 목록 일괄 반려의 사유 — 고른 신청서 전부에 같은 사유가 들어간다(#599 후속 운영 결정).
+            // 목록 일괄 반려의 사유 — 고른 신청서 전부에 같은 사유가 들어간다(후속 운영 결정).
             rejectReason: status === 'rejected' ? (params.rejectReason ?? '').trim() : '',
-            // 회수중·발송중은 신청서마다 송장을 받는다 — 송장은 신청서마다 다르다(#599 후속 운영 결정).
+            // 회수중·발송중은 신청서마다 송장을 받는다 — 송장은 신청서마다 다르다(후속 운영 결정).
             // 저장된 송장이 있으면 미리 채워 같은 번호를 다시 치지 않게 한다.
             trackings: TRACKING_REQUIRED_STATUSES.includes(status) ? ids.map((id) => bulkTrackingRow(id, status, rows)) : [],
             carriers: params.carriers ?? [],
@@ -1620,7 +1620,7 @@ function rejectReasonMissing(status: string, rejectReason?: string | null): bool
 }
 
 /**
- * 신청서 **단위** 상태를 전이시킵니다. (상세 화면 전이 바 — #599 후속 F1)
+ * 신청서 **단위** 상태를 전이시킵니다. (상세 화면 전이 바)
  *
  * 예전에는 상세에 신청서 단위 전이 진입점이 통째로 없었다. 승인·반려·보류·결제대기는 **목록의
  * 일괄 바**에서만 가능했고, 환불 유형은 상품 단위 축조차 없어 상세에서 할 수 있는 전이가
@@ -1630,7 +1630,7 @@ function rejectReasonMissing(status: string, rejectReason?: string | null): bool
  *
  * 선택지는 서버가 준 **심사 어휘**(결제 요청·승인·보류·반려)뿐이다 — 회수·발송 단계는 상품 칸,
  * 완료는 [완료 처리](`openClaimDetailComplete`)가 입구다. 예전에는 완료가 이 칸에 서서 고르면
- * "완료 모달에서 진행해주세요" 안내만 뜨고 아무 일도 일어나지 않았다(#599 후속).
+ * "완료 모달에서 진행해주세요" 안내만 뜨고 아무 일도 일어나지 않았다.
  *
  * @param action 액션 객체 (params: pathSegment / claimId / status / rejectReason)
  * @param _context 액션 컨텍스트
@@ -1706,7 +1706,7 @@ export async function executeClaimStatusTransitionHandler(
 }
 
 /**
- * 완료된 교환·반품에 환불신청서를 **수동으로** 접수합니다. (정산 카드 — #599 후속 F5)
+ * 완료된 교환·반품에 환불신청서를 **수동으로** 접수합니다. (정산 카드)
  *
  * 라우트·컨트롤러·서비스는 처음부터 완비돼 있었고 상세는 접수 **불가 사유**까지 보여 주는데,
  * 정작 접수 버튼만 없었다 — 완료 모달에서 "환불신청서 생성" 을 끈 건은 그 뒤로 환불을 접수할
@@ -1763,7 +1763,7 @@ export async function storeClaimRefundRequestHandler(
 }
 
 /**
- * 첨부가 늘거나 줄어든 뒤 상세를 다시 읽습니다. (사유 카드 — #599 후속)
+ * 첨부가 늘거나 줄어든 뒤 상세를 다시 읽습니다. (사유 카드)
  *
  * **업로드·삭제는 공용 업로더 컴포넌트가 한다.** 이 핸들러가 하는 일은 그 결과를 화면의
  * 나머지(첨부 출처 스트립·활동 로그)에 반영하는 것뿐이다 — 업로드와 삭제가 같은 일을
@@ -1799,7 +1799,7 @@ export async function refreshClaimAttachmentsHandler(
 }
 
 /**
- * 신청서의 첨부를 **일괄 정리**합니다. (사유 카드 — #599 후속 F6)
+ * 신청서의 첨부를 **일괄 정리**합니다. (사유 카드)
  *
  * 잘못 올라온 증빙(개인정보가 찍힌 사진 등)을 운영자가 지울 수 있어야 한다 — 라우트는
  * 있었지만 화면에는 삭제 진입점이 없었다.

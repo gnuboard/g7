@@ -2,7 +2,7 @@
 # audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 # 원장: 이 매니페스트는 :cross-product 로 좁히면 effects 23건이 미검증으로 드러난다.
 #   그 짝 맞추기는 이 공정(결제 플러그인(KG이니시스))의 몫이며, 좁히는 시점에 함께 처리한다.
-#   2026-11-14 #857 후속 재실측: [cross_product] 로 좁히면 21건이 드러났다. 그중 replay_* 6건은 이 매니페스트의 축·효과로
+#   2026-11-14 재실측: [cross_product] 로 좁히면 21건이 드러났다. 그중 replay_* 6건은 이 매니페스트의 축·효과로
 #   이미 마킹된 VbankNotifyReplayTest 가 test_files 에서 빠져 있던 탓이라 test_files 에 더했다(좁히면 15건).
 #   남은 15건은 KG 테스트 어디에도 그 이름의 @effects 마킹이 없다. 일부는 다른 효과 이름으로 마킹된 시험이나 test_files
 #   밖의 시험이 재는 것으로 보인다(후보: post_approve_failure_triggers_auto_cancel ↔ PaymentCallbackControllerTest 의 net cancel 시험,

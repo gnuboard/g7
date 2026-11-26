@@ -24,7 +24,7 @@
       </div>
     </div>
     <!-- 이 카드가 읽는 API 는 알림 설정 권한 소관이다. 통계 설정 권한만 받은 운영자에게는 403 이라
-         목록이 비는데, 「정의가 없다」로 그리면 거짓이 된다 — 권한이 없다고 말한다(#682 S3 라운드 2). -->
+         목록이 비는데, 「정의가 없다」로 그리면 거짓이 된다 — 권한이 없다고 말한다. -->
     <p data-ref="definitions_permission_notice" data-if="{{current_user !== undefined &amp;&amp; (!_computed.canReadDefinitions)}}" class="text-hint py-4 text-center">$t:admin.analytics.settings.reports.definitions_permission_required</p>
     <p data-if="{{_computed.canReadDefinitions &amp;&amp; analytics_notification_definitions !== undefined &amp;&amp; (analytics_notification_definitions?.data?.data ?? []).filter(d => d.hook_prefix === 'core.analytics').length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.settings.reports.definitions_empty</p>
     <div data-ref="definition_list" class="divide-y divide-gray-200 dark:divide-gray-700">

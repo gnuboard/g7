@@ -1,6 +1,6 @@
 /**
  * @file navigation-links.test.ts
- * @description 사용자 템플릿 레이아웃의 화면 이동 자리는 주소를 가진 링크로 그린다 (#757)
+ * @description 사용자 템플릿 레이아웃의 화면 이동 자리는 주소를 가진 링크로 그린다
  *
  * 검증 방식: 레이아웃 굽기 산출물(JSON) 전수의 정적 판정(DOM 비의존).
  *
@@ -55,7 +55,7 @@ const EXCEPTIONS: Array<{ file: string; node: string; path: string; reason: stri
   { file: 'auth/reset_password.json', node: 'Modal', path: '/', reason: '모달 자체의 닫기 이동 — 누를 링크 요소가 없다' },
   { file: 'partials/board/form/_password_verify_modal.json', node: 'Modal', path: '/board/{{route.slug}}/{{route.id}}', reason: '모달 자체의 닫기 이동 — 누를 링크 요소가 없다' },
   { file: 'partials/shop/list/_sort_bar.json', node: 'Button', path: '{{route.path}}', reason: '검색 초기화 — 조건을 모두 비우는 단추(전체 목록·분류 화면이 같이 쓰는 정렬 줄 조각)' },
-  { file: 'partials/mypage/activity/_list.json', node: 'Button', path: '/mypage/activity', reason: '기간 [조회] — 입력한 시작·끝 날짜를 쿼리로 옮기는 필터 제출 단추(#952). 갈 곳이 입력값에 달려 있어 미리 정한 href 가 없다' },
+  { file: 'partials/mypage/activity/_list.json', node: 'Button', path: '/mypage/activity', reason: '기간 [조회] — 입력한 시작·끝 날짜를 쿼리로 옮기는 필터 제출 단추. 갈 곳이 입력값에 달려 있어 미리 정한 href 가 없다' },
   { file: 'partials/mypage/claims/_list.json', node: 'Button', path: "{{(_local.claimDetailPathBase ?? '') + '/' + (claim.claim_number ?? '')}}", reason: '비회원 주문상세 셸 전용 번호(same_window) — 조회 토큰이 탭에 묶여 새 탭은 조회 폼으로. 7.1.1 부터 role=link 글자 대신 키보드로 누르는 단추' },
   { file: 'shop/order_complete.json', node: 'Button', path: "{{(_global.shopBase ?? '/shop') + '/guest/orders/' + orderData?.data?.order_number}}", reason: '비회원 갈래 — 비회원 주문 조회 토큰이 탭에 묶여 새 탭은 조회 폼으로(회원 갈래는 링크)' },
   { file: 'partials/board/index/_write_button.json', node: 'Button', path: '/login', reason: '비로그인 로그인 유도 — 안내 후 로그인 화면으로(권한 있는 회원 갈래는 링크)' },

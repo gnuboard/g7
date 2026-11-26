@@ -64,7 +64,7 @@ interface BuildOrderColumnsParams {
  *
  * 배선 현황: **현재 이 핸들러를 호출하는 레이아웃은 없다.** 주문 목록 DataGrid 는 컬럼을
  * `_partial_order_datagrid.json` 에 직접 열거하며, 그 정의만이 셀 내용(`cellChildren`)을
- * 갖는다. (형제 `saveVisibleColumnsHandler`·`loadVisibleColumnsHandler` 는 #639 부터 주문 목록이 쓴다.)
+ * 갖는다. (형제 `saveVisibleColumnsHandler`·`loadVisibleColumnsHandler` 는 주문 목록이 쓴다.)
  * 나중에 이 핸들러를 배선하려면 레이아웃 컬럼 정의의
  * `cellChildren` 을 함께 가져오는 경로부터 만들어야 한다 — 아래 claim 컬럼 주석 참조.
  *
@@ -279,11 +279,11 @@ interface SaveVisibleColumnsParams {
     columns: string[];
 }
 
-/** 회원 구분 없이 쓰던 옛 저장 키 (#639 ⑩ 이전) */
+/** 회원 구분 없이 쓰던 옛 저장 키 (⑩ 이전) */
 const LEGACY_VISIBLE_COLUMNS_KEY = 'g7_order_visible_columns';
 
 /**
- * 주문 목록 표시 컬럼의 저장 키를 구합니다 (#639 ⑩).
+ * 주문 목록 표시 컬럼의 저장 키를 구합니다.
  *
  * 표시 컬럼은 관리자의 업무 설정이라 회원마다 갈린다 — 같은 브라우저의 다른 관리자에게 앞 사람의 설정이 실리면 안 된다.
  * 형식은 코어 `ColumnSelector` 와 같이 키 끝에 회원 uuid 를 붙인다. 회원을 모르면 null(저장하지 않음).
@@ -345,7 +345,7 @@ export function saveVisibleColumnsHandler(
 /**
  * 컬럼 표시/숨김 설정 로드 핸들러
  *
- * LocalStorage에서 지금 관리자의 표시 컬럼 설정을 로드합니다 (#639 ⑩ — 회원 uuid 키).
+ * LocalStorage에서 지금 관리자의 표시 컬럼 설정을 로드합니다 (회원 uuid 키).
  *
  * 주문 목록 초기화(`admin_ecommerce_order_list` 의 init)가 이 핸들러로 읽는다. 예전처럼 레이아웃이
  * `loadFromLocalStorage` 로 공용 키를 직접 읽으면 다른 관리자의 설정이 실린다. 회원 구분 없는 옛 값은 지운다.

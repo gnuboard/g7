@@ -1,7 +1,7 @@
-// e2e:allow 게시판 설정 폼의 「작성자 표시 이름」 구획을 실물 조각과 실물 관리자 Select 로 그려 방식 전환, 종류 선택 노출, 안내 문구, 저장 본문을 잰다 — 브라우저 축은 #490 화면 실측이 덮는다
+// e2e:allow 게시판 설정 폼의 「작성자 표시 이름」 구획을 실물 조각과 실물 관리자 Select 로 그려 방식 전환, 종류 선택 노출, 안내 문구, 저장 본문을 잰다 — 브라우저 축은 화면 실측이 덮는다
 /**
  * @file admin-board-form-display-name.test.tsx
- * @description 게시판 설정 폼 「글 설정」 탭 — 작성자 표시 이름 (#490)
+ * @description 게시판 설정 폼 「글 설정」 탭 — 작성자 표시 이름
  *
  * 실제 조각 JSON(`_tab_post.json`)의 `display_name_field` 를 엔진 렌더러(createLayoutTest)로 그린다.
  * - 방식은 셋(사이트 기본값 따름, 특정 종류 고정, 회원이 고른 값)이고 「고정」일 때만 종류 선택이 보인다
@@ -183,7 +183,7 @@ function settingNow(): any {
     return local['form.display_name_setting'] ?? local.form?.display_name_setting;
 }
 
-describe('게시판 설정 폼 — 작성자 표시 이름 (#490)', () => {
+describe('게시판 설정 폼 — 작성자 표시 이름', () => {
     // @scenario case=display_name_inherit
     // @effects display_name_inherit_shows_applied_value
     it('「따름」이면 종류 선택이 없고 지금 적용되는 종류를 알려 준다', async () => {

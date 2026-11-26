@@ -1,5 +1,5 @@
 /**
- * 라디오 선택이 키보드로도 조작 가능한지 계약 테스트 (#493 후속)
+ * 라디오 선택이 키보드로도 조작 가능한지 계약 테스트
  *
  * 배경: 라디오를 커스텀 스타일로 그리기 위해 `<Label>` 로 감싸고, 라디오 자체는
  *   `pointer-events-none` 으로 클릭을 통과시킨 뒤 Label 의 click 액션이 상태를 바꾼다.
@@ -79,7 +79,7 @@ const layouts: Array<[string, unknown]> = [
     ['마일리지 통화 표(데스크탑)', currencyTable],
 ];
 
-describe('라디오 키보드 조작 계약 (#493 후속)', () => {
+describe('라디오 키보드 조작 계약', () => {
     it.each(layouts)('%s — 라디오가 클릭을 받을 수 있다', (_label, layout) => {
         const radios = collectRadios(layout);
 

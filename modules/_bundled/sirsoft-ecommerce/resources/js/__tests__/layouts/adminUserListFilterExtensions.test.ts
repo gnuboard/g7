@@ -1,6 +1,6 @@
 /**
  * @file adminUserListFilterExtensions.test.ts
- * @description 회원관리 목록 확장 필터 조각 2종 구조 테스트 (#705 예제 E1·E2)
+ * @description 회원관리 목록 확장 필터 조각 2종 구조 테스트 (예제 E1·E2)
  *
  * 관리자 템플릿의 회원 목록이 연 확장점(`admin_user_list_filters`)에 붙는 이커머스 필터 행이 규약을
  * 지키는지 잠근다 — 확장점·모드, 행 권한(서버 리스너와 같은 권한), 값을 직접 URL 에 싣지 않고 이 모듈의

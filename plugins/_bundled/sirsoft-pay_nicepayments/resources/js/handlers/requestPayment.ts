@@ -1,4 +1,4 @@
-// e2e:allow 결제창은 외부 나이스페이먼츠 테스트 결제창으로 이어져 공용 E2E 로 재현하지 않는다. 대체 검증: Vitest 바이트 절단 단언 2건 + 브라우저 실측(한글 6자 주문자 → 결제창 예금주명 5자 「남궁홍길동」, 주문 입금대기), 과세 필드(#820)는 Vitest 합계·필드명 단언(복합과세 협의 MID 가 없어 나이스 매출 구분은 실측 불가) / #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
+// e2e:allow 결제창은 외부 나이스페이먼츠 테스트 결제창으로 이어져 공용 E2E 로 재현하지 않는다. 대체 검증: Vitest 바이트 절단 단언 2건 + 브라우저 실측(한글 6자 주문자 → 결제창 예금주명 5자 「남궁홍길동」, 주문 입금대기), 과세 필드는 Vitest 합계·필드명 단언(복합과세 협의 MID 가 없어 나이스 매출 구분은 실측 불가) / 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
 import { sitePath } from '../apiUrl';
 import { buildGuestOrderTokenHeaders } from '../guestOrderToken';
 import { reportPaymentWindowClosed } from '../paymentCloseReport';
@@ -39,7 +39,7 @@ interface PgPaymentData {
     currency?: string;
     /**
      * 서버가 저장한 결제수단 ID — 확장 수단이면 확장 ID 그대로(예: 'nicepay_naverpay').
-     * 확장 결제수단이 1급 시민이 되면서 서버가 원본 수단을 알고 내려준다(#475).
+     * 확장 결제수단이 1급 시민이 되면서 서버가 원본 수단을 알고 내려준다.
      */
     payment_method?: string;
     customer_name?: string;
@@ -89,7 +89,7 @@ const DEFAULT_VAT_RATE = 10;
  * 나이스 결제창 사양: 네 필드의 합이 `Amt` 와 같아야 하고, MID 에 복합과세 설정을 협의한 상점만 쓴다
  * (협의 없이 보내면 결제·취소가 실패할 수 있다). 그래서 면세분이 있는 결제에만 싣고, 전부 과세면 보내지 않는다.
  * 종전에는 사양에 없는 `TaxAmt`·`VatAmt` 에 마일리지·쿠폰 차감 전 주문 합계를 그대로 넣어, 나이스가 과세 구분을
- * 받지 못했고 합도 결제 금액과 맞지 않았다(#820).
+ * 받지 못했고 합도 결제 금액과 맞지 않았다.
  *
  * 금액은 실제 결제액(`Amt`) 기준이다 — 면세분은 결제액 안으로 자르고, 나머지 과세분을 주문의 부가세 비율로
  * 공급가액·부가세로 나눈다(NHN KCP 플러그인 `buildKcpTaxFields` 와 같은 방식). 주문 합계가 없으면 기본 세율로 나눈다.
@@ -395,9 +395,9 @@ function reportPaymentError(
  *   params: { pgPaymentData: response.data.pg_payment_data, paymentMethod?: string }
  *
  * 결제수단은 액션 인자로만 받는다 — `paymentMethod` 를 명시하면 그 값, 아니면 서버가 저장해 내려준
- * `pgPaymentData.payment_method`(확장 수단이면 확장 ID 그대로, #475). 둘 다 없으면 결제를 시작하지 않는다.
+ * `pgPaymentData.payment_method`(확장 수단이면 확장 ID 그대로). 둘 다 없으면 결제를 시작하지 않는다.
  * 종전에는 엔진 내부(`window.__templateApp`)의 화면 상태와 'card' 기본값까지 뒤져, 잘못된 수단으로 결제창이
- * 열릴 수 있었다(#639).
+ * 열릴 수 있었다.
  *
  * 호출 순서:
  *   1. Client Config API 호출 → MID, SDK URL, SignData URL 획득
@@ -421,7 +421,7 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
 
     const G7Core = window.G7Core;
 
-    // 서버가 저장한 결제수단(payment_method)이 SSoT — 확장 수단이면 확장 ID 가 그대로 온다(#475).
+    // 서버가 저장한 결제수단(payment_method)이 SSoT — 확장 수단이면 확장 ID 가 그대로 온다.
     const paymentMethod = paramPaymentMethod || pgPaymentData.payment_method;
 
     if (typeof paymentMethod !== 'string' || paymentMethod === '') {
@@ -431,7 +431,7 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
     }
 
     // 애플페이는 iOS 기기에서만 결제된다. 주문서가 `requires_ios` 로 숨기지만 화면 상태를 조작해 골랐다면 결제 설정 조회 전에
-    // 멈춘다(NHN KCP 와 같은 결제 시점 확인, #933).
+    // 멈춘다(NHN KCP 와 같은 결제 시점 확인).
     if (isNicepayApplePayMethod(paymentMethod) && !isIosMobileDevice()) {
         reportPaymentError(G7Core, pgPaymentData, applePayUnsupportedMessage(), paymentMethod);
         return;

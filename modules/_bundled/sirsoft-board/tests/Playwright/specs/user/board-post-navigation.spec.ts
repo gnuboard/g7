@@ -1,5 +1,5 @@
 /**
- * 게시글 상세 이전/다음 네비게이션 + 목록 복귀 상태 보존 — 사용자 페이지 (이슈 #413 item 45, 47).
+ * 게시글 상세 이전/다음 네비게이션 + 목록 복귀 상태 보존 — 사용자 페이지 (item 45, 47).
  *
  * - 45-1: 목록(category/search/page)에서 상세 진입 후 '목록' 클릭 시 동일 query 로 복귀.
  *         행 클릭/목록 버튼 navigate 의 mergeQuery:true 가 URL 상태를 왕복 보존.
@@ -29,7 +29,7 @@ const FREE_MIDDLE_POST_ID = 49;
 // depth 2 답글 상세 (시드: /board/navtest/66)
 const REPLY_POST_ID = 66;
 
-test.describe.skip('게시글 네비게이션 + 목록 복귀 — 사용자 페이지 (#413)', () => {
+test.describe.skip('게시글 네비게이션 + 목록 복귀 — 사용자 페이지', () => {
   // (position=middle — 미선언 축은 평문으로)
 // @scenario post_kind=original
   // @effects list_return_preserves_query
@@ -38,7 +38,7 @@ test.describe.skip('게시글 네비게이션 + 목록 복귀 — 사용자 페�
     await page.goto(listUrl);
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-    // 첫 번째 글 행(상세 주소를 가진 링크, #757) 클릭 → 상세 진입. 글쓰기 링크는 제외한다
+    // 첫 번째 글 행(상세 주소를 가진 링크) 클릭 → 상세 진입. 글쓰기 링크는 제외한다
     const firstRow = page.locator(`a[href^="/board/${BOARD_SLUG}/"]:not([href*="/write"])`).first();
     await firstRow.click();
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
@@ -81,7 +81,7 @@ test.describe.skip('게시글 네비게이션 + 목록 복귀 — 사용자 페�
     // 같은 네비게이션 영역의 '목록' 링크가 그려진 뒤에 부재를 잰다 — 렌더 전 0 으로 통과하지 않게
     await expect(page.getByRole('link', { name: /(목록|Back to List)$/i }).first()).toBeVisible({ timeout: 10_000 });
 
-    // 이전/다음은 링크(#757)다. 단추로 되돌아가도 거짓 통과하지 않도록 두 역할을 함께 단언한다.
+    // 이전/다음은 링크다. 단추로 되돌아가도 거짓 통과하지 않도록 두 역할을 함께 단언한다.
     // '이전 페이지'·'Previous page'(댓글 페이지 번호)는 제외한다.
     const prevName = /(이전글|Previous)(?!\s*page)/i;
     const nextName = /(다음글|Next)(?!\s*page)/i;

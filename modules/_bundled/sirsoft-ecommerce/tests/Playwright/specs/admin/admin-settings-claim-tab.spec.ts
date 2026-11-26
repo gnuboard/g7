@@ -1,5 +1,5 @@
 /**
- * 쇼핑몰 설정 '클레임' 탭 — 정책 저장 왕복 · 사유 카탈로그 3종 (#599 S10 · D23/D26)
+ * 쇼핑몰 설정 '클레임' 탭 — 정책 저장 왕복 · 사유 카탈로그 3종
  *
  * 브라우저로만 드러나는 축을 본다:
  *
@@ -131,7 +131,7 @@ test.describe('설정 클레임 탭', () => {
     });
     page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
     const tabs = page.locator('#claim_reason_sub_tabs');
-    // 하위 탭은 링크다(#757 WP-L) — 가운데 클릭·새 탭으로 열어도 같은 하위 탭이 서는 주소를 든다. 보통 클릭은 아래처럼 같은 화면 안 교체다.
+    // 하위 탭은 링크다 — 가운데 클릭·새 탭으로 열어도 같은 하위 탭이 서는 주소를 든다. 보통 클릭은 아래처럼 같은 화면 안 교체다.
     await expect(tabs.getByRole('tab', { name: /반품 사유|Return reasons|返品理由/ })).toHaveAttribute('href', '/admin/ecommerce/settings?tab=claim&sub_tab=return');
     await expect(tabs.getByRole('tab', { name: /환불 사유|Refund reasons|返金理由/ })).toHaveAttribute('href', '/admin/ecommerce/settings?tab=claim&sub_tab=refund');
     await tabs.getByRole('tab', { name: /반품 사유|Return reasons|返品理由/ }).click();

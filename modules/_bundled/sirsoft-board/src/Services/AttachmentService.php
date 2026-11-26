@@ -93,7 +93,7 @@ class AttachmentService
         }
 
         // 예약 컬렉션(본문 미디어)을 뺀 모든 컬렉션을 센다. 종전에는 `attachments` 만 세어, 업로더가 보내는
-        // `post_attachments` 처럼 다른 이름으로 올리면 상한이 걸리지 않았다(#883). 요청 계층(ValidatesAttachmentCount)과 같은 기준이다.
+        // `post_attachments` 처럼 다른 이름으로 올리면 상한이 걸리지 않았다. 요청 계층(ValidatesAttachmentCount)과 같은 기준이다.
         $existing = 0;
         if ($postId !== null) {
             $existing = $this->repository->countForLimitByPost($slug, $postId);
@@ -171,7 +171,7 @@ class AttachmentService
         clearstatcache(true, $file->getRealPath());
 
         // 스토리지에 파일 저장 (category: 'attachments') — 글 저장 트랜잭션 안(파일 함께 보낸 업로드)이면
-        // 저장이 롤백될 때 이 파일도 지운다 (StorageTransaction, #883)
+        // 저장이 롤백될 때 이 파일도 지운다 (StorageTransaction)
         StorageTransaction::put($this->storage, 'attachments', $path, file_get_contents($file->getRealPath()));
 
         // Disk 정보는 스토리지 드라이버에서 가져옴
@@ -314,7 +314,7 @@ class AttachmentService
             $newPath = "{$slug}/".date('Y/m/d')."/{$attachment->stored_filename}";
 
             // 파일 이동 — 글 저장 트랜잭션 안에서는 복사해 두고 커밋되면 원본을 지운다. 롤백되면 사본을 지워 DB 와
-            // 파일이 함께 임시 자리로 돌아간다. 종전 get+put+delete 는 뒤 단계가 실패하면 파일만 본경로에 남았다(#883)
+            // 파일이 함께 임시 자리로 돌아간다. 종전 get+put+delete 는 뒤 단계가 실패하면 파일만 본경로에 남았다
             //
             // 디스크는 **행이 정한다.** 읽기 실패도 조용히 지나가지 않는다. 종전에는 `if ($content)` 라 ①읽기 실패
             // (`get()` 은 미존재 시 null)와 ②0 바이트 파일이 모두 falsy 로 접혀 이동을
@@ -352,7 +352,7 @@ class AttachmentService
 
         // 임시 디렉토리 정리 — 부수 작업이라 실패해도 연결을 되돌리지 않는다. 막 옮긴 대용량 파일을 운영체제가
         // 잠시 붙잡고 있으면(삭제 대기) 디렉토리 순회가 lstat 오류를 던졌고, 그 예외가 글 저장 전체를 500 으로
-        // 되돌려 파일은 본경로, DB 는 임시 경로를 가리키는 어긋남이 남았다(#703 실측). 정리에 실패해 남는 것은 빈
+        // 되돌려 파일은 본경로, DB 는 임시 경로를 가리키는 어긋남이 남았다. 정리에 실패해 남는 것은 빈
         // 임시 디렉토리뿐이라 동작에는 영향이 없다(경고 로그로 남긴다). 원본 삭제가 커밋 뒤라 정리도 커밋 뒤에 한다.
         StorageTransaction::afterCommit(function () use ($slug, $tempKey) {
             try {
@@ -389,7 +389,7 @@ class AttachmentService
      * KVE-2026-2349 후속). 요청 컨텍스트가 없는 콘솔 실행(시더·큐)은 종전처럼 판정하지 않는다.
      *
      * 게시판(`$slug`)을 주면 이 게시판의 임시 첨부 중 회원은 본인 업로드, 비회원은 비회원 업로드이면서 임시 키가 같은
-     * 것만 남긴다 — 비회원끼리 번호만으로, 또는 다른 게시판 임시 첨부를 잇던 빈틈을 막는다(#883). 이미 글에 이어진
+     * 것만 남긴다 — 비회원끼리 번호만으로, 또는 다른 게시판 임시 첨부를 잇던 빈틈을 막는다. 이미 글에 이어진
      * 첨부 번호(수정 화면이 함께 보낸다)는 잇는 대상이 아니므로 빠진다. 게시판을 주지 않는 옛 호출은 종전 판정이다.
      *
      * @param  array<int>  $ids  요청의 첨부파일 ID 배열
@@ -430,7 +430,7 @@ class AttachmentService
      * 지우지 못하게 한다. 인증 컨텍스트가 없으면(콘솔·큐) 판정하지 않는다.
      *
      * - 회원: 본인이 올린 것만(`created_by` = 본인). 종전에는 비회원 업로드(`created_by` 없음)도 통과해, 회원이 비회원의
-     *   임시 키를 알면 그 첨부를 자기 글에 이을 수 있었다(#883).
+     *   임시 키를 알면 그 첨부를 자기 글에 이을 수 있었다.
      * - 비회원: 비회원이 올린 것만(`created_by` 없음) — 임시 키 소지로 판단한다. 회원이 올린 임시 첨부는 잇지 않는다.
      * - 회원이 로그인 전에 비회원으로 올린 것은 그때 받은 소유 쿠키가 맞으면 함께 잇는다(2단계 완화).
      *
@@ -458,7 +458,7 @@ class AttachmentService
     /**
      * 현재 요청의 비회원 소유 쿠키 해시를 돌려줍니다(요청이 없거나 쿠키가 없으면 null).
      *
-     * 본문 미디어 복제 게이트(다른 임시 키로 올린 비회원 임시 본문 미디어는 소유 쿠키가 맞을 때만 복제, #887)도 이 값을 쓴다.
+     * 본문 미디어 복제 게이트(다른 임시 키로 올린 비회원 임시 본문 미디어는 소유 쿠키가 맞을 때만 복제)도 이 값을 쓴다.
      *
      * @return string|null 소유 쿠키 해시
      */
@@ -497,7 +497,7 @@ class AttachmentService
     }
 
     /**
-     * 로그에 남길 임시 키를 가립니다 — 임시 키는 그 임시 첨부를 잇는 권한이라 원문을 남기지 않는다(#883).
+     * 로그에 남길 임시 키를 가립니다 — 임시 키는 그 임시 첨부를 잇는 권한이라 원문을 남기지 않는다.
      *
      * 같은 키끼리 로그를 묶어 볼 수 있게 SHA-256 앞 12자를 쓴다.
      *
@@ -549,7 +549,7 @@ class AttachmentService
     }
 
     /**
-     * 글에 이어진 첨부의 콘텐츠 상태 게이트(삭제·비밀·블라인드)를 한 번에 겁니다 (#883).
+     * 글에 이어진 첨부의 콘텐츠 상태 게이트(삭제·비밀·블라인드)를 한 번에 겁니다.
      *
      * 본문 미디어 서빙(`PostContentMediaService::findServable`)이 첨부 미리보기와 같은 기준을 쓰게 하는 공개 래퍼다.
      * 글에 이어지지 않은 임시 행은 통과시킨다 — 임시 행의 서빙 조건(서명 필수)은 호출자가 정한다.
@@ -570,7 +570,7 @@ class AttachmentService
     }
 
     /**
-     * 임시 첨부 중 현재 요청자가 올린 것만 남깁니다 — 임시 키 연결과 같은 소유 기준의 공개 래퍼 (#883).
+     * 임시 첨부 중 현재 요청자가 올린 것만 남깁니다 — 임시 키 연결과 같은 소유 기준의 공개 래퍼.
      *
      * 본문 미디어 연결(`PostContentMediaService::syncWithContent`)이 첨부와 같은 소유 규칙(회원은 본인 업로드, 비회원은 비회원
      * 업로드, 로그인 전 비회원 업로드는 소유 쿠키가 맞을 때)을 쓰게 한다.
@@ -715,7 +715,7 @@ class AttachmentService
      * 사용자가 첨부파일을 삭제할 권한이 있는지 확인
      *
      * 비회원은 글에 연결되기 전의 자기 임시 첨부만 지운다 — 업로드 응답에서 받은 소유 쿠키가 첨부 행의 해시와 같아야 한다
-     * (#883). 종전에는 비회원이 자기 임시 첨부를 지울 수 없어 업로더의 X 가 서버에 남았다.
+     *. 종전에는 비회원이 자기 임시 첨부를 지울 수 없어 업로더의 X 가 서버에 남았다.
      *
      * @param  Attachment  $attachment  첨부파일
      * @param  int|null  $userId  사용자 ID (null이면 비회원)
@@ -882,7 +882,7 @@ class AttachmentService
     }
 
     /**
-     * 게시글들에 딸린 첨부를 파일과 기록째 즉시 파기합니다 (개인정보 보유기간 삭제 모드, 이슈 #636).
+     * 게시글들에 딸린 첨부를 파일과 기록째 즉시 파기합니다 (개인정보 보유기간 삭제 모드).
      *
      * 게시글 삭제는 첨부를 소프트 삭제만 하므로 파일이 남는다. 첨부 정리 설정이 꺼져 있으면
      * 그 파일은 영원히 남아 「파기했다」가 거짓이 되므로, 보유기간 삭제는 첨부 정리 주기를
@@ -901,7 +901,7 @@ class AttachmentService
     }
 
     /**
-     * 영구 삭제할 게시글들에 아직 남은 본문 미디어 행을 코어 본문 미디어 골격으로 지웁니다 (#887).
+     * 영구 삭제할 게시글들에 아직 남은 본문 미디어 행을 코어 본문 미디어 골격으로 지웁니다.
      *
      * `purgeByPostIds` 는 파일 삭제에 실패한 행을 다음 실행을 위해 남긴다. 글 자체를 영구 삭제하는 경로
      * (`PostRepository::forceDeleteWithRepliesByIds`)는 그 행을 일괄 삭제하므로, 그 전에 본문 미디어 행만 골격으로 지워
@@ -935,7 +935,7 @@ class AttachmentService
         }
 
         // 본문 미디어 행은 코어 본문 미디어 골격 정리로 지운다 — 행마다 `core.content_media.before_delete` 를 발화하고,
-        // 파일 → 행 순서·파일 삭제 실패 시 행 보존은 아래 일반 첨부와 같다. 일반 첨부의 삭제·훅은 그대로다 (#887)
+        // 파일 → 행 순서·파일 삭제 실패 시 행 보존은 아래 일반 첨부와 같다. 일반 첨부의 삭제·훅은 그대로다
         [$contentMedia, $attachments] = $attachments->partition(
             fn (Attachment $attachment) => $attachment->collection === Attachment::COLLECTION_CONTENT_MEDIA
         );
@@ -1141,7 +1141,7 @@ class AttachmentService
     public function rollbackUploadedFiles(string $slug, array $attachmentIds): void
     {
         // 저장 실패 뒤의 정리라 예외를 올리지 않는다 — 올리면 저장이 실패한 원래 이유를 덮는다. 비회원은 업로드 때 받은
-        // 소유 쿠키로 자기 임시 첨부를 정리한다(#883).
+        // 소유 쿠키로 자기 임시 첨부를 정리한다.
         $guestToken = $this->runsWithoutRequest() ? null : $this->guestOwnerCookie()->resolveToken(request());
 
         foreach ($attachmentIds as $id) {

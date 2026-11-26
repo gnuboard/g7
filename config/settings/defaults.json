@@ -627,7 +627,7 @@
         },
         "content": {
             "expose": true,
-            "_comment": "원본 설정은 공개하지 않고, 표시기·편집기가 쓰는 계산 규칙(render_policy — 허용 태그·속성·미디어 출처·켜진 외부 영상 서비스의 컴파일 정규식)만 내린다 (#883)",
+            "_comment": "원본 설정은 공개하지 않고, 표시기·편집기가 쓰는 계산 규칙(render_policy — 허용 태그·속성·미디어 출처·켜진 외부 영상 서비스의 컴파일 정규식)만 내린다",
             "fields": {
                 "allow_figure_caption": {
                     "type": "boolean",

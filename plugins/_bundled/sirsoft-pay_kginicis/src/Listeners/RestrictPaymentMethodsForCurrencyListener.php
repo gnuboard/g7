@@ -7,7 +7,7 @@ namespace Plugins\Sirsoft\PayKginicis\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 
 /**
- * 결제 통화별 KG 이니시스 결제수단 제한 (#639 ⑤, 결정 D17)
+ * 결제 통화별 KG 이니시스 결제수단 제한
  *
  * 쇼핑몰 필터 훅 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency` 에 답한다. 예전에는 브라우저에서
  * 주문서 응답을 고치고(window.fetch 덮어쓰기) 그려진 버튼을 숨겼다 — 서버는 그 판정을 몰라 직접 POST 하면 그대로

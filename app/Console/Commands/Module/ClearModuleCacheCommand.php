@@ -48,7 +48,7 @@ class ClearModuleCacheCommand extends Command
      *
      * 실재하는 서버 캐시(모듈 레이아웃 서빙/해석 캐시 + 상태 키 + 미들웨어 인덱스
      * + 버전 포함 키)를 무효화한다.
-     * 종전 forget 대상(module.config.{id} 등)은 writer 가 없는 유령 키였다 (#588).
+     * 종전 forget 대상(module.config.{id} 등)은 writer 가 없는 유령 키였다.
      *
      * @return int 종료 코드 (성공 0, 실패 1)
      */
@@ -129,7 +129,7 @@ class ClearModuleCacheCommand extends Command
      * 트레이트(InvalidatesLayoutCache)와 LayoutResolverService 단일 지점으로
      * 위임해 키 규약 드리프트를 방지한다. 해석 캐시(layout_resolver.*)는 버전
      * 접미사 없는 고정 키에 레이아웃 row ID 를 저장하므로 능동 삭제하지 않으면
-     * TTL 동안 이전 해석 결과가 유지된다 (#588 동종 보강).
+     * TTL 동안 이전 해석 결과가 유지된다 (동종 보강).
      *
      * @param  string  $identifier  모듈 식별자
      * @return int 캐시를 무효화한 레이아웃 수

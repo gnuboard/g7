@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Feature\Coupon\AutoIssue\Concerns\CreatesAut
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 쿠폰존 공개 목록 API (#952 C)
+ * 쿠폰존 공개 목록 API
  */
 class PublicCouponZoneTest extends ModuleTestCase
 {

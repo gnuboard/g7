@@ -1,5 +1,5 @@
 /**
- * E2E: 쇼핑몰 첫 방문 요청 사슬 (#879, engine-v1.96.0)
+ * E2E: 쇼핑몰 첫 방문 요청 사슬 (engine-v1.96.0)
  *
  * 비로그인 첫 방문이 첫 글자까지 PHP 왕복을 줄줄이 기다리던 것을 실제 브라우저에서 잰다.
  *  - 템플릿 설정은 셸 HTML(`#g7-config` 의 `templateConfig`, template.json `expose` 선언 키만)에서 읽고 config API 를 부르지 않는다.
@@ -24,7 +24,7 @@ function trackRequests(page: Page): Array<{ url: string; method: string; start: 
   return rows;
 }
 
-test.describe('쇼핑몰 첫 방문 요청 사슬 (#879)', () => {
+test.describe('쇼핑몰 첫 방문 요청 사슬', () => {
   // @scenario boot_case=inline_complete
   // @scenario boot_case=prefetch_public_route
   // @effects first_paint_skips_template_config_roundtrip, initial_layout_requested_before_extension_bundles

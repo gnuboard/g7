@@ -7,7 +7,7 @@ use Modules\Sirsoft\Board\Listeners\BoardActivityLogListener;
 use Tests\PureTestCase;
 
 /**
- * 게시판 모듈의 ActivityLog action 라벨 영역 분리 회귀 차단 (이슈 #317).
+ * 게시판 모듈의 ActivityLog action 라벨 영역 분리 회귀 차단.
  *
  * 5단계 fallback 매커니즘 자체는 코어 ModuleActionLabelIsolationTest 가 검증.
  * 본 테스트는 게시판 모듈이 정확히 식별되고 모듈 lang 에 필수 라벨이 정의되어 있는지 확인.
@@ -48,7 +48,7 @@ class ActivityLogActionLabelTest extends PureTestCase
         $this->assertFileExists($langFile);
 
         $lang = require $langFile;
-        $this->assertArrayHasKey('action', $lang, '모듈 lang 에 action 배열이 신설되어야 함 (이슈 #317)');
+        $this->assertArrayHasKey('action', $lang, '모듈 lang 에 action 배열이 신설되어야 함');
 
         $required = ['blind', 'blind_content', 'restore_content', 'delete_content', 'add_to_menu', 'bulk_apply'];
         foreach ($required as $key) {

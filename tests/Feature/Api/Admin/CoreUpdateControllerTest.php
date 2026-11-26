@@ -166,7 +166,7 @@ class CoreUpdateControllerTest extends TestCase
     }
 
     /**
-     * 직전 업데이트가 custom 사전 검사로 멈춘 기록은 같은 새 버전일 때만 확인 결과에 실립니다 (#792).
+     * 직전 업데이트가 custom 사전 검사로 멈춘 기록은 같은 새 버전일 때만 확인 결과에 실립니다.
      *
      * @scenario area=core_update.check
      *

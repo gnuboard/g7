@@ -12,7 +12,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 블라인드 게시글/댓글 원문 접근 차단 테스트 (이슈 #413-34)
+ * 블라인드 게시글/댓글 원문 접근 차단 테스트 (34)
  *
  * 블라인드 처리된 게시글·댓글의 원문(content)은 게시판 관리자(manager/admin.manage)
  * 또는 작성자 본인만 열람할 수 있어야 한다. 그 외(비로그인·제3자)에게는

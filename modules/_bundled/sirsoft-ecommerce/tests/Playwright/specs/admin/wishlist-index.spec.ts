@@ -1,5 +1,5 @@
 /**
- * 관리자 찜 관리 목록 (#524 WP-E) — 네 이커머스 목록의 대표.
+ * 관리자 찜 관리 목록 — 네 이커머스 목록의 대표.
  *
  * 네 화면(찜·장바구니·배송지·문의)은 같은 뼈대를 쓴다. 그 뼈대가 실제 데이터와 만났을 때
  * 동작하는지를 대표 하나로 잰다 — 나머지 셋의 «모양» 은 레이아웃 테스트가, «서버 계약» 은
@@ -33,7 +33,7 @@ async function openWishlist(page: Page, token: string, query = ''): Promise<void
   await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 15_000 });
 }
 
-test.describe('관리자 찜 관리 (#524 WP-E)', () => {
+test.describe('관리자 찜 관리', () => {
   // @scenario list=wishlist, permission=manage, member_scope=true, extra_filter=none
   // @effects ecommerce_admin_list_member_banner_shows_only_when_scoped, admin_wishlist_filters_by_user_uuid
   test('회원 한정으로 들어오면 배너가 서고 그 회원의 찜만 남는다', async ({ page, memberDataSeed, wishlistManageToken }) => {

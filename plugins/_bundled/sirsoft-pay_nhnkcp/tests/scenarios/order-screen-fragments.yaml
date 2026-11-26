@@ -2,7 +2,7 @@ feature: 주문 화면 표시는 레이아웃 조각이 맡고, 플러그인 엔
 
 description: |
   관리자 주문 상세·내 주문 상세·주문 완료·관리자 결제수단 설정에 붙던 주입 스크립트(경로 정규식 판정, DOM 폴링,
-  window.fetch·history.pushState 덮어쓰기, 로그인 토큰 직접 읽기)를 걷어 내고 레이아웃 조각과 공개 API 로 옮긴다 (#639).
+  window.fetch·history.pushState 덮어쓰기, 로그인 토큰 직접 읽기)를 걷어 내고 레이아웃 조각과 공개 API 로 옮긴다.
   관리자 주문 상세의 간편결제 원 수단은 이 플러그인의 KCP 패널(admin_order_payment_query, kcp_status 데이터 소스)이
   보여 주고 이커머스 결제수단 칸 글자를 고치지 않는다. 주문 완료 매출전표 요청은 회원은 선택 인증, 비회원은 공개 상태
   `_global.guestOrderToken` 을 X-Guest-Order-Token 헤더로 싣는다. 애플페이 기기 제한은 결제수단 카탈로그(requires_ios)가

@@ -39,7 +39,7 @@ async function writeResultCap(page: import('@playwright/test').Page, token: stri
 // @scenario link=activity_log_unbounded_pager_numbers, permitted=na
 // @scenario link=activity_log_unbounded_pager_no_last, permitted=na
 // @effects page_numbers_visible, last_page_jump_hidden
-test('#519 후속 - 총 건수를 모르는 활동 로그에서도 페이지 번호가 그려지고 마지막 페이지 버튼만 감춰진다', async ({ page }) => {
+test('총 건수를 모르는 활동 로그에서도 페이지 번호가 그려지고 마지막 페이지 버튼만 감춰진다', async ({ page }) => {
   const token = issueToken('core.settings.update');
   await authenticatePage(page, token);
 
@@ -61,7 +61,7 @@ test('#519 후속 - 총 건수를 모르는 활동 로그에서도 페이지 번
     const nav = page.getByRole('navigation', { name: '페이지네이션' }).first();
     await expect(nav).toBeVisible({ timeout: 15_000 });
 
-    // 쪽 번호는 링크(<a href>, pageHref — #757). 갈 수 없는 이전·다음은 href 없는 aria-disabled 링크라 a·button 을 함께 본다
+    // 쪽 번호는 링크(<a href>, pageHref). 갈 수 없는 이전·다음은 href 없는 aria-disabled 링크라 a·button 을 함께 본다
     const pageButton = (n: number) => nav.locator(':is(a, button)', { hasText: new RegExp(`^${n}$`) });
     await expect(pageButton(1)).toBeVisible();
     await expect(pageButton(1)).toHaveAttribute('aria-current', 'page');

@@ -8,7 +8,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Tests\Support\UpgradeFiles;
 
 /**
- * 배송가능 국가명의 빈 로케일 키 청소 마이그레이션 테스트 (#459)
+ * 배송가능 국가명의 빈 로케일 키 청소 마이그레이션 테스트
  *
  * 구 국가 추가 폼은 한국어/영문 두 입력칸을 항상 렌더했고, 운영자가 한쪽을 비운 채 저장하면
  * `{"ko":"프랑스","en":""}` 처럼 빈 문자열이 저장본에 박혔다. 빈 문자열은 "값이 있음" 도

@@ -21,7 +21,7 @@ use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
  * 검증 축은 주문 경로(`ValidatesCbtOrderContext`)와 1:1 로 대응한다:
  * 대상 존재 / 결제 가능 상태 / 통화(JPY) / 구매자 대조 / 금액 일치.
  *
- * 결제 건 조회·청구액은 이커머스 공개 계약으로 한다(#916) — 호스트는 `HandlesClaimPaymentCallbacks` 를 함께 쓰고
+ * 결제 건 조회·청구액은 이커머스 공개 계약으로 한다 — 호스트는 `HandlesClaimPaymentCallbacks` 를 함께 쓰고
  * 생성자에서 `PaymentGatewayBridge` 를 `$bridge` 로 주입받는다.
  */
 trait HandlesCbtClaimPayments

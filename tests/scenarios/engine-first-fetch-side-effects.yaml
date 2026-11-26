@@ -1,4 +1,4 @@
-feature: 화면 처리 — 첫 받기와 미룬 blocking onSuccess (#869)
+feature: 화면 처리 — 첫 받기와 미룬 blocking onSuccess
 
 description: |
   화면 처리(handleRouteChange)의 첫 받기는 화면 세대로만 걸러 그대로 실린다(출시본 동작). 다른 레이아웃으로 옮기는 전환의

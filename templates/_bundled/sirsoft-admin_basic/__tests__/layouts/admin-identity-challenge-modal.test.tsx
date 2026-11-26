@@ -139,7 +139,7 @@ describe('Admin 본인인증 모달 cancel 흐름 (sirsoft-admin_basic)', () => 
   });
 });
 
-describe('Admin 본인인증 모달 Extension Point 구조 (sirsoft-admin_basic) — 이슈 #275 회귀 차단', () => {
+describe('Admin 본인인증 모달 Extension Point 구조 (sirsoft-admin_basic) — 회귀 차단', () => {
   const slots: Node[] = [];
   walk(identityModal as unknown as Node, (n) => {
     if (n.type === 'extension_point') slots.push(n);
@@ -197,7 +197,7 @@ describe('Admin 본인인증 모달 Extension Point 구조 (sirsoft-admin_basic)
   });
 
   it('maxAttempts=0(무제한) 케이스를 정합 처리한다 — disabled 식이 max > 0 가드를 둔다', () => {
-    // 이슈 #275: backend 응답에 max_attempts=0 (무제한) 일 때 모달 확인 버튼이 disabled 되던 회귀 차단.
+    // backend 응답에 max_attempts=0 (무제한) 일 때 모달 확인 버튼이 disabled 되던 회귀 차단.
     // attempts >= max_attempts 비교 전에 max_attempts > 0 가드가 있어야 함.
     let disabledHasUnlimitedGuard = false;
     walk(identityModal as unknown as Node, (n) => {

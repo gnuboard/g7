@@ -1026,7 +1026,7 @@ export class DataSourceManager {
    *
    * `fallback` 은 아직 한 번도 못 받았을 때 흰 화면을 막는 첫 그림이다. 이미 값을 받아 그리고 있는
    * 요청이 폴링 한 번 실패했다고 fallback(0·빈 배열)으로 되돌아가면 화면이 거짓을 말한다 — 실시간
-   * 화면이 서버 오류 동안 「지금 0명」을 띄운 것이 그 예다(이슈 #682 §8 M4-T4).
+   * 화면이 서버 오류 동안 「지금 0명」을 띄운 것이 그 예다.
    *
    * 매니저는 화면을 다시 그릴 때마다 새로 만들어지므로 인스턴스가 아니라 클래스에 둔다. 키에 주소와
    * 파라미터를 함께 넣어, **같은 요청**이 다시 실패했을 때만 그 값을 지킨다 — 기간이나 화면이 바뀌면
@@ -1216,7 +1216,7 @@ export class DataSourceManager {
    * 데이터소스 오류 처리기(onError·errorHandling·errorCondition)의 실행 문맥에 더 실을 값.
    *
    * 작성/수정 겸용 화면이 404 를 주소로 가를 수 있게 `route`·`query` 를 싣는다 — 종전 문맥은
-   * `{ auth, error }` 뿐이라 그 판정을 확장 핸들러로 옮겨 우회해야 했다(#753).
+   * `{ auth, error }` 뿐이라 그 판정을 확장 핸들러로 옮겨 우회해야 했다.
    *
    * @param routeParams 라우트 파라미터
    * @param queryParams 쿼리 파라미터
@@ -1441,7 +1441,7 @@ export class DataSourceManager {
    * @param options fetch 옵션
    *   - ignoreAutoFetch: true면 auto_fetch: false인 소스도 강제 fetch (refetchDataSource 용)
    *   - deferOnSuccess: true면 onSuccess 를 돌리지 않고 결과의 `runOnSuccess` 로 넘긴다 — 다른 화면으로 옮기는 전환의 blocking 받기는
-   *     아직 앞 화면 상태 위라, 거기서 돌린 `_local` 쓰기·다시 받기가 뒤이은 상태 초기화와 렌더 문맥 재구성에 버려진다 (engine-v1.95.0, #869)
+   *     아직 앞 화면 상태 위라, 거기서 돌린 `_local` 쓰기·다시 받기가 뒤이은 상태 초기화와 렌더 문맥 재구성에 버려진다 (engine-v1.95.0)
    */
   async fetchDataSourcesWithResults(
     sources: DataSource[],

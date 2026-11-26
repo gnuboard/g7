@@ -2,7 +2,7 @@
 /**
  * ErrorHandlingUnsetClearsKey.test.tsx — 오류 처리 「설정 안 함」은 그 코드 키를 지운다
  *
- * 결함(#869): 코드 행에서 「설정 안 함」을 고르면 편집기가 키를 지우지 않고 `{ [code]: {} }` 를 남겼다.
+ * 결함: 코드 행에서 「설정 안 함」을 고르면 편집기가 키를 지우지 않고 `{ [code]: {} }` 를 남겼다.
  * 저장 직렬화(stripInheritedFromLayoutContent, 당시)와 서버 검증(content.errorHandling 은 배열 여부만 확인)
  * 어디에서도 이 빈 객체가 정리되지 않고, 런타임 findHandler 는 빈 객체도 참으로 보아 「그 코드는 처리됨」
  * 으로 판정한다. 그래서 같은 맵의 default, 데이터 소스 onError, 레이아웃과 템플릿과 시스템 기본 처리가

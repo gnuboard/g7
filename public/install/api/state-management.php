@@ -330,7 +330,7 @@ class StateManagementApi
 
             $state['last_updated'] = gmdate('Y-m-d\TH:i:s\Z');
 
-            // 보존되는 config 에서 비밀 제거 (이슈 #465) — 초기화 후 무기한 잔존 가능하므로
+            // 보존되는 config 에서 비밀 제거 — 초기화 후 무기한 잔존 가능하므로
             // 평문이 남지 않아야 한다. 비밀번호는 runtime.php 에 있고, 재설치 시 Step 3
             // 재입력 또는 runtime 폴백으로 복원된다.
             $state = redactInstallationStateSecrets($state);

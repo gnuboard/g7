@@ -1,6 +1,6 @@
 /**
  * @file mypage-coupons.test.tsx
- * @description 마이페이지 쿠폰함 (#952 C) — 상태 탭, 카드(발급 경로·남은 날), 빈 목록의 쿠폰존 링크, 쪽 나누기, 탭 숨김.
+ * @description 마이페이지 쿠폰함 — 상태 탭, 카드(발급 경로·남은 날), 빈 목록의 쿠폰존 링크, 쪽 나누기, 탭 숨김.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -30,7 +30,7 @@ const page = load('mypage/coupons.json');
 const list = load('partials/mypage/coupons/_list.json');
 const tabs = load('partials/mypage/_tab_navigation.json');
 
-describe('마이페이지 쿠폰함 (#952)', () => {
+describe('마이페이지 쿠폰함', () => {
   // @scenario case=mypage_coupons_data_source
   // @effects coupon_box_lists_my_coupons
   it('내 쿠폰 목록 API 를 부르고 카드를 발급 건마다 그린다', () => {

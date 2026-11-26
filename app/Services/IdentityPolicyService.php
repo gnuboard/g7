@@ -157,7 +157,7 @@ class IdentityPolicyService
     }
 
     /**
-     * 활성 확장이 선언한 「사용자 지정」 확장 지점 목록을 지금 언어로 반환합니다. (7.2.1, #952)
+     * 활성 확장이 선언한 「사용자 지정」 확장 지점 목록을 지금 언어로 반환합니다. (7.2.1)
      *
      * @return array<int, array{key: string, name: string, description: string, source_type: string, source_identifier: string}> 목록
      */
@@ -167,7 +167,7 @@ class IdentityPolicyService
     }
 
     /**
-     * 확장이 선언한 「사용자 지정」 확장 지점에서 본인인증 정책을 강제합니다. (7.2.1, #952)
+     * 확장이 선언한 「사용자 지정」 확장 지점에서 본인인증 정책을 강제합니다. (7.2.1)
      *
      * `resolve('custom', $key, $context)` 로 그 지점에 연결된 정책을 찾고, 있으면 {@see self::enforce()} 와 같은 규칙으로 강제한다.
      * 연결된 정책이 없으면 아무 일도 하지 않는다. 등록되지 않은 키는 개발자 오류라 예외를 던진다 — 오타 난 키로 부르면
@@ -575,7 +575,7 @@ class IdentityPolicyService
     {
         // 값이 같은 칸은 빼고 저장한다 — 편집 창은 8칸 전부를 늘 보내고(`conditions` 는 null 대신 `{}`·
         // `{signup_stage: null}`), 종전엔 보낸 키 전부를 수정으로 기록해 한 칸만 고쳐도 전 칸이 고정됐다
-        // (#727 D5-②). 수정 기록은 모델 updating 이벤트가 실제로 바뀐 칸만 한다(HasUserOverrides).
+        //. 수정 기록은 모델 updating 이벤트가 실제로 바뀐 칸만 한다(HasUserOverrides).
         $attributes = array_filter(
             $attributes,
             fn ($value, $field) => ! UserOverrideValueComparator::same($policy->getAttribute($field), $value),

@@ -38,7 +38,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use ReflectionMethod;
 
 /**
- * 금액 산정 결함 수정 검증 — 회차 차분·기준선·후속 행 단가·정가 합계·치환 라인 (#599 validate P2-B)
+ * 금액 산정 결함 수정 검증 — 회차 차분·기준선·후속 행 단가·정가 합계·치환 라인 (B)
  *
  * 검증 축:
  * - 반품 발 환불신청서의 취소 가능 한도가 완료 경로와 같은 회차 차분이다(#1).

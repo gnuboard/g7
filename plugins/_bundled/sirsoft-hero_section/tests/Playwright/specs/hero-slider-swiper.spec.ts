@@ -1,5 +1,5 @@
 /**
- * E2E: 사이트 홈 히어로 슬라이더의 실제 넘김(Swiper) — 단추·무한 반복·자동 재생·손가락 넘기기 (#810)
+ * E2E: 사이트 홈 히어로 슬라이더의 실제 넘김(Swiper) — 단추·무한 반복·자동 재생·손가락 넘기기
  *
  * @scenario-manifest tests/scenarios/e2e-flows.yaml
  * 효과 요약(마커 아님 — 평문): user_screen_reflects_admin_change, test_data_cleaned_up

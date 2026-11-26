@@ -10,7 +10,7 @@
  *    `data.pagination.*` 이라 "총 0개 중 1-0개 표시" 로 고정 표기됐다.
  * 3) check-modified-layouts 호출에 onError 가 없어, 네트워크 실패 시 모달이
  *    "수정된 레이아웃이 없습니다" 라고 단언 → '모두 교체' 진행 시 수정 소실.
- *    7.2.0(#888)부터 업데이트 창의 레이아웃 판정은 미리보기 API 한 곳이 한다 — 여는 쪽은 그 호출을 더 하지 않고,
+ *    7.2.0부터 업데이트 창의 레이아웃 판정은 미리보기 API 한 곳이 한다 — 여는 쪽은 그 호출을 더 하지 않고,
  *    결과를 읽는 곳도 없다(읽지 않는 상태를 쓰는 죽은 호출이었다).
  */
 
@@ -81,7 +81,7 @@ describe('확장 목록 레이아웃 — API 계약', () => {
    * @scenario case=check_modified_on_error
    * @effects extension_list_reads_api_contract
    */
-  it.each(CHECK_SOURCES)('%s: 업데이트 창을 열 때 check-modified-layouts 를 부르지 않고 미리보기만 부른다 (#888)', (_name, layout, kind) => {
+  it.each(CHECK_SOURCES)('%s: 업데이트 창을 열 때 check-modified-layouts 를 부르지 않고 미리보기만 부른다', (_name, layout, kind) => {
     const json = JSON.stringify(layout);
     // 판정은 미리보기(…/update/preview)가 한다 — 옛 확인 호출과 그 결과 상태는 남아 있지 않다
     expect(json).not.toContain('/check-modified-layouts');
@@ -91,7 +91,7 @@ describe('확장 목록 레이아웃 — API 계약', () => {
     expect(json).toContain('"fetchLayoutPreview"');
   });
 
-  // 7.2.0(#888)부터 업데이트 창의 레이아웃 판정은 공통 미리보기 조각이 그린다 — 「수정 없음」 단언은 미리보기가
+  // 7.2.0부터 업데이트 창의 레이아웃 판정은 공통 미리보기 조각이 그린다 — 「수정 없음」 단언은 미리보기가
   // 성공(ready)했을 때만 보이고, 실패(error)하면 오류 + 다시 시도가 보이며 실행 버튼이 잠긴다.
   /**
    * @scenario case=update_modal_preview_gate

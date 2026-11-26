@@ -1,7 +1,7 @@
 feature: 주문 목록 프리셋 저장 창 — 바닥 단추가 Modal 고정 하단에서 본문 입력을 따라간다
 
 description: |
-  저장·취소 단추를 본문 안 `ecommerce-modal-footer-buttons` 줄로 그려 640px 이하에서 세로로 쌓이지 않았다(#869 P1).
+  저장·취소 단추를 본문 안 `ecommerce-modal-footer-buttons` 줄로 그려 640px 이하에서 세로로 쌓이지 않았다.
   단추를 Modal 고정 하단(`<footer>` → props.footer)으로 옮겼다. 고정 하단은 Modal 이 본문 자식과 같은 데이터
   컨텍스트·상태 범위로 그리므로, 본문 입력이 쓰는 창의 `_local.presetName` 을 저장 단추가 읽어 이름을 치면 풀린다.
   진짜 관리자 Modal 과 엔진으로 그려 잰다.

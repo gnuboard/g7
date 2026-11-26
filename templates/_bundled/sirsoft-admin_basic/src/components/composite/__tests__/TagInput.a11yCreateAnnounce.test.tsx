@@ -2,7 +2,7 @@
  * @file TagInput.a11yCreateAnnounce.test.tsx
  * @description 태그 입력 — 새 태그를 만들 때 화면 읽기 알림(라이브 영역)이 태그 이름을 읽는다
  *
- * 환경설정 > 본문 콘텐츠 > 「운영자 추가 태그」 실측(#887): 태그를 치고 고르면 라이브 영역이 「[object Object] 선택됨」 을
+ * 환경설정 > 본문 콘텐츠 > 「운영자 추가 태그」 실측: 태그를 치고 고르면 라이브 영역이 「[object Object] 선택됨」 을
  * 읽었다. 만들기 행의 label 은 화면용 요소(`<span><strong>값</strong> 추가</span>`)이고, react-select 는 그 label 을
  * 알림 문구 자리표시자에 그대로 넘긴다 — 문자열로 바뀌며 「[object Object]」 가 됐다. 만들기 행은 친 값으로 읽는다.
  *
@@ -39,7 +39,7 @@ function koTranslate(key: string, params?: Record<string, unknown>): string {
 /** react-select 라이브 영역 글자. */
 const liveText = (container: HTMLElement) => container.querySelector('[role="log"]')?.textContent ?? '';
 
-describe('TagInput — 새 태그 만들기 화면 읽기 알림 (#887)', () => {
+describe('TagInput — 새 태그 만들기 화면 읽기 알림', () => {
   let original: any;
 
   beforeEach(() => {

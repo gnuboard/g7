@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-static-cache.test.tsx
- * @description 환경설정 > 일반 「초기 화면 정적 파일」 카드 + 다시 만들기 확인 모달 (#651 D4·D7)
+ * @description 환경설정 > 일반 「초기 화면 정적 파일」 카드 + 다시 만들기 확인 모달
  *
  * 캐시 버전이 만료로 재생성되지 않으므로(영구 번호) 재게시 누락은 무기한 stale 이 된다 —
  * 이 카드의 [지금 다시 만들기] 가 그 안전망이다. 두 축으로 잠근다:
@@ -37,7 +37,7 @@ const byId = (id: string) => sources.find(s => s.id === id);
 function findNodeById(node: any, id: string): any {
   if (!node || typeof node !== 'object') return null;
   if (node.id === id) return node;
-  // Modal 고정 하단(props.footer)의 단추도 찾는다(#869 P1)
+  // Modal 고정 하단(props.footer)의 단추도 찾는다
   for (const child of [...(node.children ?? []), ...(node.props?.footer ?? [])]) {
     const found = findNodeById(child, id);
     if (found) return found;
@@ -126,7 +126,7 @@ describe('_tab_general — 초기 화면 정적 파일 카드 스키마', () => 
   it('상태 배지는 게시됨/미게시/비활성/개발 모드 4분기를 갖는다', () => {
     const badge = findInPartial(generalPartial, 'static_cache_status_badge');
     expect(badge).not.toBeNull();
-    // 엔진은 노드 최상위 classMap 만 읽는다 — props.classMap 은 무시돼 배지 색이 칠해지지 않았다(#703).
+    // 엔진은 노드 최상위 classMap 만 읽는다 — props.classMap 은 무시돼 배지 색이 칠해지지 않았다.
     expect(badge.props?.classMap).toBeUndefined();
     const variants = Object.keys(badge.classMap.variants).sort();
     expect(variants).toEqual(['dev_mode', 'disabled', 'published', 'unpublished']);

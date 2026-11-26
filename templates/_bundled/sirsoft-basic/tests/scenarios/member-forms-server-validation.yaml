@@ -2,7 +2,7 @@ feature: 회원 항목 폼의 서버 오류 통일 (Member Forms Server Validati
 
 description: |
   가입, 추가 정보 입력, 내 정보 수정 폼은 브라우저 기본 검사(required 말풍선)를 끄고(noValidate), 필수 칸을 비우고
-  제출하면 서버가 돌려준 오류를 칸 아래에 보인다(#490). 소셜, SSO 가입 창은 form 요소가 없어 해당 없다.
+  제출하면 서버가 돌려준 오류를 칸 아래에 보인다. 소셜, SSO 가입 창은 form 요소가 없어 해당 없다.
 
 axes:
   form: [register, required_info, profile_edit]

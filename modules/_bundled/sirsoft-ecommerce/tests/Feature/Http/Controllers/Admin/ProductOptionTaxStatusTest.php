@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Models\Sequence;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 상품 옵션별 과세 종류 — 저장·검증·조회·복사·목록 필터 (#612)
+ * 상품 옵션별 과세 종류 — 저장·검증·조회·복사·목록 필터
  *
  * 상품 기본값(과세/면세/영세) 위에 옵션마다 과세 종류를 덮어쓸 수 있다. 옵션 값 null 은 「상품 따름」이다.
  */

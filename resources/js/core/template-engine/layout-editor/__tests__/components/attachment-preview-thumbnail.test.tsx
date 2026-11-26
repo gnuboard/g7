@@ -1,5 +1,5 @@
 /**
- * attachment-preview-thumbnail.test.tsx — 편집기 첨부 이미지의 표시용 썸네일 주소 (#869)
+ * attachment-preview-thumbnail.test.tsx — 편집기 첨부 이미지의 표시용 썸네일 주소
  *
  * 배경: 이미지 선택기(44px 칸)·미리보기(높이 80)·첨부 관리(높이 88)가 원본을 받았다. 썸네일 주소는 표시에만 쓰고,
  * 저장되는 값은 서버가 준 주소 원문 그대로여야 한다 — `size` 가 저장되면 방문자 화면이 편집기용 규격을 받는다.
@@ -81,7 +81,7 @@ afterEach(() => {
   delete (globalThis as any).G7Config;
 });
 
-describe('ImagePickerControl — 표시용 썸네일 주소 (#869)', () => {
+describe('ImagePickerControl — 표시용 썸네일 주소', () => {
   // @scenario public_asset_disk=unset, row_disk=attachments, filter_url_hook=absent
   // @effects editor_attachment_preview_uses_thumbnail_address, editor_attachment_saved_value_stays_original_url
   it('인라인 44px 칸은 sm 을 받고, 칸을 누르면 저장값은 주소 원문이다', async () => {
@@ -146,7 +146,7 @@ describe('ImagePickerControl — 표시용 썸네일 주소 (#869)', () => {
   });
 });
 
-describe('LayoutAttachmentManager — 표시용 썸네일 주소 (#869)', () => {
+describe('LayoutAttachmentManager — 표시용 썸네일 주소', () => {
   // @scenario public_asset_disk=unset, row_disk=attachments, filter_url_hook=absent
   // @effects editor_attachment_preview_uses_thumbnail_address, editor_attachment_saved_value_stays_original_url
   it('가로로 긴 카드는 자르지 않는 md 를 받고, 배경으로 쓰면 주소 원문을 넘긴다', async () => {

@@ -136,7 +136,7 @@ describe('ConfirmDialog', () => {
       />
     );
 
-    // 취소 버튼은 현재 고정 스타일 사용 — 흰 바탕·회색 테두리 모양을 의미 클래스 btn-secondary 가 준다 (#399)
+    // 취소 버튼은 현재 고정 스타일 사용 — 흰 바탕·회색 테두리 모양을 의미 클래스 btn-secondary 가 준다
     const cancelButton = screen.getByText('취소').closest('button');
     expect(cancelButton).toHaveClass('btn-secondary');
     expect(cancelButton).not.toHaveClass('bg-white');

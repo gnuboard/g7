@@ -6,11 +6,11 @@ description: |
   모든 반영은 폼 저장(Submit) 시점에 변화분만 처리한다.
 
   수정 이력:
-    - 이슈 #413 item 15-(1): 신규 게시판 생성 시 관리자 메뉴 미등록 (편집화면 수동 버튼으로만 가능) 해소
+    - 신규 게시판 생성 시 관리자 메뉴 미등록 (편집화면 수동 버튼으로만 가능) 해소
     - 생성/수정 공용 토글로 통일, 편집화면 수동 add-to-menu 버튼 제거
     - createBoard/updateBoard 가 add_to_menu 토글에 따라 메뉴 추가/제거 (변화분만)
     - 메뉴 식별은 URL(/admin/board/{slug}) 기준 — 동일 게시판 재등록만 스킵
-    - 이슈 #413 item 15-(2): 이름 중복 차단은 미적용 (코어 메뉴/그누보드5 정책과 동일, slug만 식별자)
+    - 이름 중복 차단은 미적용 (코어 메뉴/그누보드5 정책과 동일, slug만 식별자)
     - removeFromAdminMenu 신규 + board.remove_from_menu 활동로그 추가
 
 axes:

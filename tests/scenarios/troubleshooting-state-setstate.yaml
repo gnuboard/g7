@@ -73,6 +73,6 @@ test_files:
   - resources/js/core/template-engine/__tests__/troubleshooting-state-setstate.test.ts
 
 notes: |
-  2026-11-09(#869) tsc 오류를 정리하며 이 파일을 손대자 audit `test-scenario-reverse-mapping` 의 선행 부채(시험별 매핑 누락)가
-  드러나 이 매니페스트로 해소했다. 시험 동작은 바꾸지 않았다(마킹 주석만). 선례는 troubleshooting-state-advanced.yaml(#757).
+  2026-11-09 tsc 오류를 정리하며 이 파일을 손대자 audit `test-scenario-reverse-mapping` 의 선행 부채(시험별 매핑 누락)가
+  드러나 이 매니페스트로 해소했다. 시험 동작은 바꾸지 않았다(마킹 주석만). 선례는 troubleshooting-state-advanced.yaml.
   사례 40(리사이즈 후 저장 시 편집기 본문 보존) 시험은 editor-resize-save-body-integrity.yaml 의 효과로 표식한다.

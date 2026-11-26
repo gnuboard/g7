@@ -1005,7 +1005,7 @@ ini_set(\'zlib.output_compression\', \'off\');
     'core_update_pending_path' => '업데이트 대기 디렉토리 경로',
     'core_update_pending_path_help' => '비워두면 기본값(storage/app/core_pending)을 사용합니다. 외부 경로를 사용하려면 절대 경로 또는 그누보드7 루트 기준 상대 경로를 입력하세요.',
 
-    // 자산 URL 방식 (이슈 #486)
+    // 자산 URL 방식
     'asset_url_mode' => '에셋 파일 서빙 방식',
     'asset_url_mode_extension' => '확장자 사용 (권장)',
     'asset_url_mode_extensionless' => '확장자 미사용',

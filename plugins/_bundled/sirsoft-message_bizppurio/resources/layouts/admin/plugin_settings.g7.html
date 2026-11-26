@@ -19,7 +19,7 @@
   </data-source>
   <!-- 리포트(발송 결과 webhook) 수신 주소 — 서버가 현재 사이트 주소로 만든 값을 그대로 보여 준다. 연결 탭에서만 받는다(if). -->
   <data-source id="report_url" type="api" endpoint="/api/plugins/sirsoft-message_bizppurio/admin/report-url" method="GET" :auto_fetch="true" :auth_required="true" initLocal="reportInfo"/>
-  <!-- 비즈뿌리오 알림 템플릿 DB 목록(#597 §4.3). 필터·검색·페이지는 URL 쿼리 SSoT(bz_status/bz_search/bz_page). -->
+  <!-- 비즈뿌리오 알림 템플릿 DB 목록. 필터·검색·페이지는 URL 쿼리 SSoT(bz_status/bz_search/bz_page). -->
   <data-source id="bizppurio_templates_list" type="api" endpoint="/api/plugins/sirsoft-message_bizppurio/admin/templates" method="GET" :auto_fetch="false" :auth_required="true">
     <params status="{{query.bz_status ?? ''}}" search="{{query.bz_search ?? ''}}" page="{{query.bz_page ?? 1}}" :per_page="20"/>
   </data-source>
@@ -378,7 +378,7 @@
           </div>
           <p class="bizppurio:text-xs bizppurio:text-amber-700 bizppurio:dark:text-amber-300 bizppurio:mt-2 bizppurio:leading-relaxed">$t:sirsoft-message_bizppurio.templates.readiness.note</p>
         </div>
-        <!-- 비즈뿌리오 알림 템플릿 관리(#597 §4.3) — DB 목록(정의 라벨 조인). 필터·검색·페이지는 URL 쿼리(bz_status/bz_search/bz_page, mergeQuery 왕복 규약). 행 액션은 알림 설정 탭 행 하단과 동일 의미(작성 모달·SMS 모달·승인취소·삭제 공유). -->
+        <!-- 비즈뿌리오 알림 템플릿 관리 — DB 목록(정의 라벨 조인). 필터·검색·페이지는 URL 쿼리(bz_status/bz_search/bz_page, mergeQuery 왕복 규약). 행 액션은 알림 설정 탭 행 하단과 동일 의미(작성 모달·SMS 모달·승인취소·삭제 공유). -->
         <div data-ref="templates_manage_view" data-if="{{templates_readiness?.data?.ready}}">
           <div class="bizppurio:flex bizppurio:items-center bizppurio:gap-2 bizppurio:mb-3 bizppurio:p-3 bizppurio:rounded-lg bizppurio:bg-blue-50 bizppurio:dark:bg-blue-950 bizppurio:border bizppurio:border-blue-200 bizppurio:dark:border-blue-800">
             <icon name="circle-info" size="sm" class="bizppurio:text-blue-500 bizppurio:dark:text-blue-400 bizppurio:flex-shrink-0"/>
@@ -723,7 +723,7 @@
     </div>
   </slot>
   <modal>
-    <!-- 알림톡 템플릿 작성/신청 모달(#597 §4.2, 3면+플러그인 관리 화면 공유). 값은 _global.bz_tpl_modal 에 담는다(모달 컨텍스트 분리). content 는 kapi 등록 페이로드 필드 그대로이며, 유형 전환 잔여 필드는 서버(FormRequest)가 정돈한다. 신규/기존 분기는 id 유무의 저장 버튼 if 2벌(POST/PUT)로 처리한다. -->
+    <!-- 알림톡 템플릿 작성/신청 모달(3면+플러그인 관리 화면 공유). 값은 _global.bz_tpl_modal 에 담는다(모달 컨텍스트 분리). content 는 kapi 등록 페이로드 필드 그대로이며, 유형 전환 잔여 필드는 서버(FormRequest)가 정돈한다. 신규/기존 분기는 id 유무의 저장 버튼 if 2벌(POST/PUT)로 처리한다. -->
     <modal data-type="composite" data-ref="modal_bizppurio_template" title="$t:sirsoft-message_bizppurio.template.form.modal_title|name={{_global.bz_tpl_modal?.notification_name ?? ''}}" size="xl" :closeOnOverlayClick="false">
       <meta editor_label="$t:sirsoft-message_bizppurio.template.form.editor_label"/>
       <div data-ref="bizppurio_tpl_modal_body" class="bizppurio:space-y-4 bizppurio-scroll-panel bizppurio:overflow-y-auto bizppurio:pr-1">
@@ -1263,7 +1263,7 @@
     </modal>
   </modal>
   <modal>
-    <!-- 대체 SMS/SMS 단독 본문 편집 모달(#597 §4.1). 값은 _global.bz_sms_modal, 저장은 delivery upsert(행 없으면 draft 생성). #{var} 치환 규칙은 알림톡 본문과 동일. -->
+    <!-- 대체 SMS/SMS 단독 본문 편집 모달. 값은 _global.bz_sms_modal, 저장은 delivery upsert(행 없으면 draft 생성). #{var} 치환 규칙은 알림톡 본문과 동일. -->
     <modal data-type="composite" data-ref="modal_bizppurio_sms" title="$t:sirsoft-message_bizppurio.template.sms.modal_title|name={{_global.bz_sms_modal?.notification_name ?? ''}}" size="md" :closeOnOverlayClick="false">
       <meta editor_label="$t:sirsoft-message_bizppurio.template.sms.editor_label"/>
       <div class="bizppurio:space-y-3">
@@ -1330,7 +1330,7 @@
     </modal>
   </modal>
   <modal>
-    <!-- 승인 취소 경고 확인 모달(#597 §3.2). 확정 시 kapi cancel_approval → draft 복귀 — status 가 approved 를 벗어나는 즉시 발송 게이트가 차단된다(대체 SMS 는 sms 채널 규칙으로 계속). 취소 후 상세를 받아 작성 모달을 이어서 연다. -->
+    <!-- 승인 취소 경고 확인 모달. 확정 시 kapi cancel_approval → draft 복귀 — status 가 approved 를 벗어나는 즉시 발송 게이트가 차단된다(대체 SMS 는 sms 채널 규칙으로 계속). 취소 후 상세를 받아 작성 모달을 이어서 연다. -->
     <modal data-type="composite" data-ref="modal_bizppurio_cancel_approval" title="$t:sirsoft-message_bizppurio.template.cancel_approval.modal_title" size="sm" :closeOnOverlayClick="false">
       <div class="bizppurio:flex bizppurio:items-start bizppurio:gap-2">
         <icon name="triangle-exclamation" class="bizppurio:text-amber-600 bizppurio:flex-shrink-0"/>
@@ -1368,7 +1368,7 @@
     </modal>
   </modal>
   <modal>
-    <!-- 반려 사유 열람 모달(#597 §4.1). kapi detail 의 comments 스냅샷(inspection_detail) 원문을 그대로 보여준다. -->
+    <!-- 반려 사유 열람 모달. kapi detail 의 comments 스냅샷(inspection_detail) 원문을 그대로 보여준다. -->
     <modal data-type="composite" data-ref="modal_bizppurio_rejection" title="$t:sirsoft-message_bizppurio.template.rejection.modal_title|name={{_global.bz_reject_view?.notification_name ?? ''}}" size="md">
       <meta editor_label="$t:sirsoft-message_bizppurio.template.rejection.editor_label"/>
       <div class="bizppurio:space-y-2 bizppurio:max-h-80 bizppurio:overflow-y-auto">
@@ -1388,7 +1388,7 @@
     </modal>
   </modal>
   <modal>
-    <!-- 템플릿 삭제 확인 모달(#597 §3.2 DELETE). 카카오측 코드는 삭제 가능 상태(R+REG/REJ)일 때만 동반 삭제되며, 그 외에는 DB 행만 삭제되고 사유가 응답에 실린다. -->
+    <!-- 템플릿 삭제 확인 모달. 카카오측 코드는 삭제 가능 상태(R+REG/REJ)일 때만 동반 삭제되며, 그 외에는 DB 행만 삭제되고 사유가 응답에 실린다. -->
     <modal data-type="composite" data-ref="modal_bizppurio_delete" title="$t:sirsoft-message_bizppurio.manage.delete.modal_title" size="sm" :closeOnOverlayClick="false">
       <p class="bizppurio:text-sm bizppurio:text-gray-700 bizppurio:dark:text-gray-200">$t:sirsoft-message_bizppurio.manage.delete.warning|name={{_global.bz_delete_modal?.notification_name ?? ''}}</p>
       <footer>

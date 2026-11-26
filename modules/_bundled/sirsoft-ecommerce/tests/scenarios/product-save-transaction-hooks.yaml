@@ -1,4 +1,4 @@
-feature: 상품 저장 트랜잭션 안 훅 before_create_commit·before_update_commit + 파일 보상 (#883 3단계)
+feature: 상품 저장 트랜잭션 안 훅 before_create_commit·before_update_commit + 파일 보상
 
 description: |
   `sirsoft-ecommerce.product.before_create_commit(Product, data)`·`before_update_commit(Product, data, snapshot)` 는 상품 저장

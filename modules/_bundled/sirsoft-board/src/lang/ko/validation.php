@@ -324,7 +324,7 @@ return [
             'temp_key' => '임시 키',
             'post_id' => '게시글 번호',
         ],
-        // 본문 미디어 정책 하위 칸 (#883) — :kind 는 코어 미디어 종류 이름(이미지·동영상·오디오)
+        // 본문 미디어 정책 하위 칸 — :kind 는 코어 미디어 종류 이름(이미지·동영상·오디오)
         'content_media_policy' => [
             'policy' => '본문 미디어 정책',
             'max_per_document' => '문서당 최대 본문 미디어 수',
@@ -824,7 +824,7 @@ return [
             'in' => '유효하지 않은 처리 상태입니다.',
         ],
     ],
-    // 개인정보 보유기간 설정 필드 라벨 (이슈 #636) — StoreBoardSettingsRequest::attributes() 가 키별로 읽는다
+    // 개인정보 보유기간 설정 필드 라벨 — StoreBoardSettingsRequest::attributes() 가 키별로 읽는다
     'privacy_retention_attributes' => [
         'enabled' => '개인정보 보유기간 자동 파기',
         'ip_retention_days' => '작성 IP 보유기간',

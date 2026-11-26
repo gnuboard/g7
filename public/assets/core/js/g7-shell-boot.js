@@ -75,7 +75,7 @@
     window.addEventListener('pageshow', function (e) { if (e.persisted) window.__g7Unloading = false; });
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 자산 URL 모드 자가 복구 (이슈 #486)
+    // 자산 URL 모드 자가 복구
     //
     // nginx 의 정적 최적화 블록(`location ~* \.(js|css|json)$`)은 정규식 location 이라
     // 프리픽스 location 보다 먼저 매칭되고, 그 안에 PHP 핸들러가 없으면 확장자 붙은

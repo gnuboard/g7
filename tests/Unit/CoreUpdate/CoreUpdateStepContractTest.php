@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 웹 코어 업데이트의 **단계 계약** (#609 G6).
+ * 웹 코어 업데이트의 **단계 계약**.
  *
  * 여기서 잠그는 것은 구현이 아니라 **순서가 갖는 안전 성질**이다:
  *

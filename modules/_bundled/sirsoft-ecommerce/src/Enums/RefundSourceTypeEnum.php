@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
  * 환불신청서(`ecommerce_order_refunds.refund_source_type`)가 어느 경로에서
  * 생겼는지를 기록한다. DIRECT·ADMIN 은 참조 대상 레코드가 없다.
  *
- * ## DIRECT 와 ADMIN 을 가르는 이유 (#599 후속 §4-3-1)
+ * ## DIRECT 와 ADMIN 을 가르는 이유
  *
  * 철회(`withdraw()`)와 수정(`updateRequest()`)은 "고객이 낸 신청서" 에만 열려 있어야 한다.
  * 새 모델에서 관리자 [주문취소]도 환불신청서를 만드는데, 그 행까지 DIRECT 로 두면

@@ -41,5 +41,5 @@ test_files:
   - resources/js/core/template-engine/__tests__/troubleshooting-state-advanced.test.ts
 
 notes: |
-  2026-10-15(#757) 시험 주석의 낡은 줄 번호를 위치 이름으로 바꾸면서 audit `test-scenario-reverse-mapping` 의 선행 부채(시험 45건 매핑 누락)를
+  2026-10-15 시험 주석의 낡은 줄 번호를 위치 이름으로 바꾸면서 audit `test-scenario-reverse-mapping` 의 선행 부채(시험 45건 매핑 누락)를
   이 매니페스트로 해소했다. 시험 동작은 바꾸지 않았다(마킹 주석만).

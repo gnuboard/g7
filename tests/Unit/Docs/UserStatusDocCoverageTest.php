@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  *
  * `api:docgen --check` 는 이 축을 재지 못합니다 — `docs/backend/api-documentation.md` 가
  * 「표·필드 설명·엔드포인트 서술은 전량 보존된다」를 규약으로 두어 신규 상태 값·필드 행은
- * 사람이 넣어야 하기 때문입니다. 그래서 #636 S4 가 `dormant` 를 더했을 때 여덟 라운드 동안
+ * 사람이 넣어야 하기 때문입니다. 그래서 `dormant` 를 더했을 때 여덟 라운드 동안
  * 어느 게이트도 「문서가 그 값을 모른다」를 잡지 못했고, `users.md` 의 **요청 허용값 표**가
  * 실제 API(`Rule::in(UserStatus::values())`)보다 좁은 상태로 남아 있었습니다.
  *

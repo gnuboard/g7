@@ -22,7 +22,7 @@ use Tests\Support\Concerns\BuildsLayoutMergeFixtures;
 use Tests\TestCase;
 
 /**
- * 확장 업데이트가 버전 기록 뒤 단계(레이아웃 갱신)에서 실패하면 DB 버전도 업데이트 전으로 돌아가는지 고정하는 회귀 테스트 (#727).
+ * 확장 업데이트가 버전 기록 뒤 단계(레이아웃 갱신)에서 실패하면 DB 버전도 업데이트 전으로 돌아가는지 고정하는 회귀 테스트.
  *
  * 결함(수정 전): 업데이트는 새 버전을 DB 에 먼저 저장(커밋)한 뒤 레이아웃을 갱신한다. 레이아웃 파일 검증이 실패하면
  * 파일은 백업으로 되돌아가지만 DB 는 새 버전으로 남아, 관리자 화면이 설치되지 않은 버전을 보여 주고 "업데이트 없음" 으로
@@ -161,7 +161,7 @@ class ExtensionUpdateFailureRestoresVersionTest extends TestCase
 
         $manager = app(ModuleManager::class);
         $manager->loadModules();
-        // 실패 경로도 검색봇 화면 캐시를 비워야 한다 — 「업데이트 중」 창에 렌더된 봇 화면이 남지 않게(#822)
+        // 실패 경로도 검색봇 화면 캐시를 비워야 한다 — 「업데이트 중」 창에 렌더된 봇 화면이 남지 않게
         $seoListener = $this->spy(SeoExtensionCacheListener::class);
 
         try {
@@ -200,7 +200,7 @@ class ExtensionUpdateFailureRestoresVersionTest extends TestCase
 
         $manager = app(PluginManager::class);
         $manager->loadPlugins();
-        // 실패 경로도 검색봇 화면 캐시를 비워야 한다 — 「업데이트 중」 창에 렌더된 봇 화면이 남지 않게(#822)
+        // 실패 경로도 검색봇 화면 캐시를 비워야 한다 — 「업데이트 중」 창에 렌더된 봇 화면이 남지 않게
         $seoListener = $this->spy(SeoExtensionCacheListener::class);
 
         try {

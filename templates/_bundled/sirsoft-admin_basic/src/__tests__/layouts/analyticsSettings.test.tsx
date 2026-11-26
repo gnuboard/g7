@@ -1,6 +1,6 @@
 /**
  * @file analyticsSettings.test.tsx
- * @description 방문자 통계 설정 화면과 소급·삭제 창, 알림 정의 카드의 런타임 계약 (이슈 #682 S3)
+ * @description 방문자 통계 설정 화면과 소급·삭제 창, 알림 정의 카드의 런타임 계약
  *
  * 잠그는 것: 탭 5개가 `query.tab` 출처인 것, 폼이 자동 바인딩(`dataKey=form` + 변경 추적)인 것, 저장 본문이 받아 온 값과
  * 달라진 키만 담는 것(탭을 가리지 않는다), 더 엄격한 저장 뒤 소급 창이 열리는 것, 소급·삭제 창의 체크 게이트, 정의 상태 카드가 정의 API 를 따로 읽고
@@ -23,7 +23,7 @@ const defs = loadLayout('partials/admin_analytics/_partial_notification_definiti
 /**
  * 탭별 설정 키 — 어느 탭에 무엇을 두는지는 화면 설계라 여기 적는다. 다만 **모집단**은 서버 기본값
  * (`config/settings/defaults.json` 의 `defaults.analytics`)과 아래 첫 케이스가 양방향으로 대조한다 —
- * 서버가 키를 더하고 이 표를 안 늘리면 red 다(#682 S3 R7-D3·R11-D3·R12-D2).
+ * 서버가 키를 더하고 이 표를 안 늘리면 red 다.
  */
 const TAB_KEYS: Record<string, string[]> = {
   collection: ['enabled', 'visit_timeout_minutes', 'max_actions_per_visit', 'excluded_url_patterns', 'site_search_enabled', 'track_downloads', 'track_outlinks', 'download_extensions', 'public_summary_enabled'],
@@ -150,7 +150,7 @@ describe('설정 화면 — 탭·폼·저장', () => {
   it('개인정보 수준 카드 3장은 상호배타 라디오로 읽힌다 — 독립 토글 3개가 아니다', () => {
     // 계획서 §4.11 은 이 세 장을 `◉`/`○` 라디오 카드로 그렸다. `aria-pressed` 버튼이면 읽어 주는
     // 도구가 「선택 1/3」이 아니라 독립 누름 토글 셋으로 읽고 화살표 키 그룹 이동도 없다
-    // (#682 S3 라운드 5, §6.5-12 접근성). 묶음은 radiogroup, 카드는 radio + aria-checked 다.
+    // (12 접근성). 묶음은 radiogroup, 카드는 radio + aria-checked 다.
     const group = nodeById(layout, 'privacy_mode_cards');
     expect(group?.props?.role, '묶음').toBe('radiogroup');
     expect(group?.props?.['aria-label'], '묶음 이름').toBeTruthy();
@@ -221,7 +221,7 @@ describe('리포트 탭 정의 상태 카드 (§6.3-17)', () => {
     // 정의를 고르는 열은 `type` 이다. `id` 는 테이블 자동증가 정수 PK 라
     // (`database/migrations/2026_04_08_000001_create_notification_definitions_table.php` 의
     // `$table->id()`) 문자열과 `===` 로 비교하면 **어떤 데이터에서도 참이 되지 않는다** —
-    // 경고가 사문이 되어 「리포트는 켰는데 메일이 안 온다」의 이유를 영영 못 보여 준다(#682 라운드 5).
+    // 경고가 사문이 되어 「리포트는 켰는데 메일이 안 온다」의 이유를 영영 못 보여 준다.
     // 모집단을 `config/core.php` 에서 파생해, 리포트 정의를 하나 더 만들면 이 검사가 그것도 요구한다.
     const php = fs.readFileSync(path.join(REPO_ROOT, 'config/core.php'), 'utf8');
     const reportTypes = [...php.matchAll(/^\s{8}'(analytics_(?:weekly|monthly)_report)' => \[$/gm)].map((m) => m[1]);
@@ -257,7 +257,7 @@ describe('내 방문 제외(opt-out)', () => {
   it('교차 소스(진단)로 입력을 잠그는 자리는 전부 조회 권한을 먼저 본다 — 403 을 「꺼짐」으로 읽지 않는다', () => {
     // 설정 화면의 권한은 update 다. 조회 권한이 없으면 `analytics_status` 는 403 이고 fallback 이
     // `geoip.enabled:false` 로 굳는다 — 그 값으로 입력을 잠그면 GeoIP 가 켜진 사이트에서도
-    // 국가 필터를 영영 못 고르고, 이유로 거짓 안내를 본다(#682 S3 라운드 3).
+    // 국가 필터를 영영 못 고르고, 이유로 거짓 안내를 본다.
     const gated: string[] = [];
     const ungated: string[] = [];
     const walk = (value: any): void => {
@@ -269,7 +269,7 @@ describe('내 방문 제외(opt-out)', () => {
       for (const [key, child] of Object.entries(value)) {
         // 모집단을 `geoip` 계열·특정 prop 이름으로 좁히면 같은 소스의 다른 자리가 새어 나간다 —
         // 라운드 4 까지 이 가드가 초록인 채로 `consent_source` 두 자리(computed 와 badge)가 가드
-        // 없이 남아 「GDPR 연동 고장」을 거짓으로 띄우고 있었다(#682 S3 라운드 5). prop 이름을
+        // 없이 남아 「GDPR 연동 고장」을 거짓으로 띄우고 있었다. prop 이름을
         // 열거하지 않고 **교차 소스를 읽는 문자열 전부**를 모집단으로 둔다 — `computed` 는 이름이
         // 곧 키라 prop 목록으로는 영영 안 걸린다.
         if (typeof child === 'string' && child.includes('analytics_status?.data?.')) {
@@ -290,7 +290,7 @@ describe('내 방문 제외(opt-out)', () => {
   it('「내 방문은 세지 않기」 버튼 글자가 호출 메서드와 같은 방향이다', () => {
     // 버튼 글자는 「지금 상태」가 아니라 「누르면 일어나는 일」이다. 배지가 상태를 말하고
     // 버튼이 행동을 말해야 하는데 삼항이 뒤집혀 있어, 세는 중인데 「제외 끄기」(en: Count me
-    // again)가 보였다(#682 S3 라운드 8 실측: 누르니 opted_out false→true). 동작은 맞고 글자만
+    // again)가 보였다(누르니 opted_out false→true). 동작은 맞고 글자만
     // 반대였으므로, 글자 삼항과 메서드 삼항이 **같은 분기에 같은 뜻**을 두는지 잰다.
     const found: { method?: string; label?: string } = {};
     const walk = (node: unknown): void => {

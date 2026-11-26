@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 썸네일 규격 설정의 저장 변환(mergeForSave)과 관리자 표(presentRows) 테스트 (#869)
+ * 썸네일 규격 설정의 저장 변환(mergeForSave)과 관리자 표(presentRows) 테스트
  *
  * 설정 저장소는 카테고리 1단계만 병합해 목록을 통째로 바꾼다. 그래서 저장 변환이 고정 슬롯을 늘 보충하고,
  * 잠긴 행(고정, 확장)의 이름을 지키고, 지금 꺼진 확장의 수정값을 이어 붙이는지가 곧 데이터 보존이다.

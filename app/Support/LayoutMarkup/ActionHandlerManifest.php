@@ -93,7 +93,7 @@ final class ActionHandlerManifest
      * 전 코퍼스에서 top-level 은 `initTheme` 3건뿐이고 나머지(`sirsoft-ecommerce.toggleArrayValue`
      * 15·`scrollTo` 1)는 전부 `params.target` → 기본을 params 로 두고 여기만 지목한다.
      * setTheme 도 여기 든다 — 템플릿 핸들러(setThemeHandler)가 action.target 만 읽고 params.theme 은 무시하므로
-     * (dev-g7#640, 감사 handler-registry 와 동일) params 형태로 구우면 조용한 no-op 이 된다.
+     * (감사 handler-registry 와 동일) params 형태로 구우면 조용한 no-op 이 된다.
      *
      * @var array<int, string>
      */
