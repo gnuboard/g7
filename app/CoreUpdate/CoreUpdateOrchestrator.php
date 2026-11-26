@@ -26,8 +26,10 @@ use App\Extension\HookManager;
 use App\Extension\Integrity\PackageVerification;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Extension\Support\ExtensionBatchUpdateContext;
 use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
+use App\Listeners\ExtensionUpdateQueueListener;
 use App\Services\Core\BundledPlacementPlan;
 use App\Services\Core\BundledSourcePlanner;
 use App\Services\CoreUpdateService;
@@ -1671,7 +1673,12 @@ class CoreUpdateOrchestrator
                 $manifest['lang_packs'],
             );
 
-            $progress = ['items' => $items, 'index' => 0, 'success' => 0, 'failed' => 0, 'planned' => count($items)];
+            // 몇 개짜리 묶음인지 항목마다 싣는다 — 2개 이상이면 항목 자식이 정적 게시·시작 재굽기·확장마다의 큐 워커 재시작을
+            // 건너뛰고, 이 단계 끝(재시작)과 마무리 단계(게시)가 한 번 한다. 1개짜리는 종전과 같다.
+            $progress = [
+                'items' => $items, 'index' => 0, 'success' => 0, 'failed' => 0, 'planned' => count($items),
+                ExtensionBatchUpdateContext::MANIFEST_KEY => ExtensionBatchUpdateContext::begin(count($items))->toManifest(),
+            ];
 
             // 항목을 돌리기 **전에** 진행분을 저장한다 — 첫 항목이 끊기면 종료 처리가 그 항목만 건너뛰고 다음
             // 항목으로 넘어가야 하는데, 진행분이 없으면 끊김이 코어 되돌리기로 간다.
@@ -1685,7 +1692,7 @@ class CoreUpdateOrchestrator
         if ($index < $total) {
             $item = (array) $items[$index];
             $marker = $this->state->newBundledChildMarkerPath();
-            $manifestPath = $this->writeBundledItemManifest($item, $index === $total - 1 && $options->rebuildSearchIndex, $marker);
+            $manifestPath = $this->writeBundledItemManifest($item, $index === $total - 1 && $options->rebuildSearchIndex, $marker, ExtensionBatchUpdateContext::fromManifest($progress));
 
             // 자식이 잡을 표식을 **돌리기 전에** 실행 상태에 적는다 — 이 요청이 시간 제한으로 죽으면 다음 요청이 이것으로 기다린다.
             // 업데이트 전 확장 상태와 매니페스트 경로도 함께 — 자식이 죽은 것을 확인하면 그 확장의 `updating`·잠금을 정리하고,
@@ -1745,6 +1752,13 @@ class CoreUpdateOrchestrator
         }
 
         $unconfirmed = $this->resolveInterruptedBundledItems($progress);
+
+        // 일괄(2개 이상)의 항목 자식은 확장마다의 큐 워커 재시작을 미뤘다 — 모든 항목을 돈 지금 한 번 보낸다(실패한 항목이 있어도).
+        // 마무리 단계도 보내지만, 그 전에 실패해 되돌리기로 가도 업데이트된 확장의 새 코드를 워커가 물도록 여기서 먼저 보낸다.
+        $batch = ExtensionBatchUpdateContext::fromManifest($progress);
+        if ($batch !== null && $batch->isBatch()) {
+            app(ExtensionUpdateQueueListener::class)->restartAfterBatch($batch);
+        }
 
         $this->state->mergeContext([
             'bundled_progress' => null,
@@ -2061,9 +2075,10 @@ class CoreUpdateOrchestrator
      * @param  array<string, mixed>  $item  `ExecuteBundledUpdatesCommand::flattenItems()` 항목
      * @param  bool  $rebuildSearchIndex  이 항목 뒤에 검색 인덱스를 다시 만들지 (마지막 항목만)
      * @param  string|null  $childMarker  자식이 잡을 표식 경로
+     * @param  ExtensionBatchUpdateContext|null  $batch  이 번들 단계의 묶음 (없으면 싣지 않음 — 1개짜리처럼 동작)
      * @return string 매니페스트 경로
      */
-    private function writeBundledItemManifest(array $item, bool $rebuildSearchIndex, ?string $childMarker = null): string
+    private function writeBundledItemManifest(array $item, bool $rebuildSearchIndex, ?string $childMarker = null, ?ExtensionBatchUpdateContext $batch = null): string
     {
         // 항목 하나짜리 매니페스트 모양은 명령 쪽이 소유한다 — 같은 함수를 써서 두 곳이 갈리지 않게 한다.
         $manifest = ExecuteBundledUpdatesCommand::manifestForItem($item);
@@ -2073,6 +2088,10 @@ class CoreUpdateOrchestrator
 
         if ($childMarker !== null) {
             $manifest['child_marker'] = $childMarker;
+        }
+
+        if ($batch !== null) {
+            $manifest[ExtensionBatchUpdateContext::MANIFEST_KEY] = $batch->toManifest();
         }
 
         $directory = storage_path('app'.DIRECTORY_SEPARATOR.'core_pending');

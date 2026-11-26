@@ -53,17 +53,18 @@ use Database\Seeders\CoreScheduleSeeder;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Dotenv\Dotenv;
-use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Env;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Laravel\Reverb\Servers\Reverb\Console\Commands\RestartServer;
 
 class CoreUpdateService
 {
@@ -3715,7 +3716,11 @@ class CoreUpdateService
      *
      * 신호는 둘 다 캐시 키다(`queue:restart`·`reverb:restart`). 상주 프로세스가 그 키를 보고 스스로 멈추면
      * 프로세스 관리자(supervisor 등)가 새 코드로 다시 띄운다. 상주 프로세스가 없는 사이트에서는 키 하나씩을
-     * 쓰고 끝난다. Reverb 패키지가 없거나 명령이 등록되지 않은 사이트는 Reverb 신호를 건너뛴다.
+     * 쓰고 끝난다. Reverb 패키지가 없는 사이트는 Reverb 신호를 건너뛴다.
+     *
+     * Reverb 신호는 `reverb:restart` 명령을 부르지 않고 Reverb 서버가 읽는 캐시 키(`laravel:reverb:restart`)를
+     * 직접 쓴다. Reverb 는 콘솔 실행일 때만 그 명령을 등록하므로, HTTP 요청 안에서 도는 웹 업데이트의 마무리에서는
+     * 명령이 없는 것으로 보여 신호가 조용히 빠졌다(7.2.1 서버 재시험).
      *
      * 캐시가 새 코드 기준으로 정리된 뒤(`clearAllCaches()` 직후) 호출해야 새 캐시로 재기동한다.
      * 신호 전송 실패는 업데이트 결과를 되돌리지 않는다 (경고 로깅 후 계속).
@@ -3729,21 +3734,21 @@ class CoreUpdateService
             return;
         }
 
-        $commands = ['queue:restart'];
-
         try {
-            if (array_key_exists('reverb:restart', app(Kernel::class)->all())) {
-                $commands[] = 'reverb:restart';
-            }
-        } catch (\Throwable) {
-            // 명령 목록을 못 읽으면 큐 신호만 보낸다
+            Artisan::call('queue:restart');
+        } catch (\Throwable $e) {
+            Log::channel('upgrade')->warning('queue:restart 실행 실패 (업데이트는 계속 진행)', [
+                'error' => $e->getMessage(),
+            ]);
         }
 
-        foreach ($commands as $command) {
+        // Reverb 서버는 이 키 값이 기동 때와 달라지면 스스로 멈춘다(RestartServer 명령과 같은 키·값 형식)
+        if (class_exists(RestartServer::class)) {
             try {
-                Artisan::call($command);
+                // audit:allow no-cache-facade-direct reason: Reverb 서버가 접두사 없는 원래 키를 Cache 파사드로 읽는다 — CacheInterface 는 g7 접두사를 붙여 서버가 못 본다
+                Cache::forever('laravel:reverb:restart', now()->getTimestamp());
             } catch (\Throwable $e) {
-                Log::channel('upgrade')->warning($command.' 실행 실패 (업데이트는 계속 진행)', [
+                Log::channel('upgrade')->warning('Reverb 재시작 신호 기록 실패 (업데이트는 계속 진행)', [
                     'error' => $e->getMessage(),
                 ]);
             }

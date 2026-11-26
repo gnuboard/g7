@@ -424,6 +424,7 @@ return [
     'log_language_pack_install_success' => '언어팩 설치 완료',
     'warning_language_pack_install_partial' => '언어팩 일부 설치에 실패했습니다: :identifier (계속 진행)',
     'log_composer_unavailable_fallback_bundle' => '이 서버에서는 Composer 를 실행할 수 없어 동봉된 묶음으로 설치합니다.',
+    'cli_best_effort_not_completed' => ':task 단계가 끝나지 않았지만 설치에 필수가 아니라 완료했습니다 (설치 기록 참고)',
     'warning_best_effort_task_failed' => ':task 단계가 실패했지만 설치에 필수가 아니라 계속 진행합니다 (재시도 시 다시 시도) — :error',
     'task_vendor_bundle_extract' => 'Vendor 번들 추출',
     'log_vendor_bundle_extract_start' => 'Vendor 번들 추출을 시작합니다...',

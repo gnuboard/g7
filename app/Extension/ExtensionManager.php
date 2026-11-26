@@ -424,6 +424,90 @@ class ExtensionManager
     }
 
     /**
+     * 확장 오토로드·훅·config 캐시가 지금 다시 구워도 같은지(신선한지) 판정합니다 — 다시 굽는 {@see updateComposerAutoload()} 를 건너뛰어도 되는가.
+     *
+     * 일괄 업데이트의 항목 프로세스가 시작 때의 재굽기(소스 classmap 을 만들려고 확장 소스 수천 파일을 훑는다)를 건너뛸지
+     * 정할 때 쓴다. 그 재굽기는 낡은 매핑으로 뜬 자식이 「Class not found」로 죽던 결함을 막으려고 들어왔으므로 조금이라도
+     * 다르면 거짓이다. 모두 맞아야 참이다.
+     *  - 오토로드 파일이 있고, `$since` 를 주면 그 시각 이후에 썼다 (묶음 안에서 지금 코드가 구웠다)
+     *  - 지문이 있는 지금 형식이다 (7.1.2 이하가 만든 옛 파일은 다시 굽는다)
+     *  - 수집 입력(PSR-4·classmap·files·확장 vendor — DB 설치 목록 × 디스크 활성 디렉토리)이 지금과 같다
+     *  - 확장 파일 지문(매니페스트·진입 파일·composer.json 수정 시각)이 지금과 같다
+     *  - 훅 캐시를 쓸 수 있다 (형식·코어 버전·지문)
+     *  - config 캐시가 있으면 오토로드 파일보다 먼저 굽지 않았다 (없으면 부팅이 설정 파일을 직접 읽어 낡을 것이 없다)
+     *
+     * 소스 classmap 자체는 다시 훑지 않는다 — 그 비용을 아끼려는 판정이다. 확장 소스는 확장 설치·업데이트로만 바뀌고, 그
+     * 절차는 파일을 바꾼 뒤 스스로 오토로드를 다시 굽는다. `$since` 는 그 재굽기가 이 묶음 안에서 일어났음을 확인한다.
+     *
+     * @param  int|null  $since  오토로드 파일이 이 시각(유닉스 초) 이후에 쓰였어야 함 (null 이면 따지지 않음)
+     * @return bool 신선하면 true
+     */
+    public function extensionCachesFreshSince(?int $since): bool
+    {
+        clearstatcache(true, $this->autoloadFilePath);
+        if (! is_file($this->autoloadFilePath)) {
+            return false;
+        }
+
+        $writtenAt = (int) filemtime($this->autoloadFilePath);
+        if ($since !== null && $writtenAt < $since) {
+            return false;
+        }
+
+        // 같은 프로세스가 방금 바꿔 쓴 파일을 옛 내용으로 읽지 않도록 opcache 를 비우고 읽는다
+        if (function_exists('opcache_invalidate')) {
+            @opcache_invalidate($this->autoloadFilePath, true);
+        }
+        $stored = (static fn (string $path): mixed => require $path)($this->autoloadFilePath);
+        if (! is_array($stored) || ! array_key_exists('src_classmap', $stored)) {
+            return false;
+        }
+
+        $fingerprint = $stored['extensions_fingerprint'] ?? null;
+        if (! is_array($fingerprint) || $fingerprint === []) {
+            return false;
+        }
+
+        $modules = $this->collectModuleAutoloads();
+        $plugins = $this->collectPluginAutoloads();
+        $psr4 = array_merge($modules['psr4'], $plugins['psr4']);
+        $current = [
+            'psr4' => $psr4,
+            'classmap' => array_merge($modules['classmap'], $plugins['classmap']),
+            'files' => array_merge($modules['files'], $plugins['files']),
+            'vendor_autoloads' => array_merge($modules['vendor_autoloads'], $plugins['vendor_autoloads']),
+        ];
+        foreach ($current as $key => $value) {
+            if (($stored[$key] ?? null) !== $value) {
+                return false;
+            }
+        }
+
+        if ($this->fingerprintForPsr4($psr4) !== $fingerprint) {
+            return false;
+        }
+
+        if (app(HookCacheManager::class)->read() === null) {
+            return false;
+        }
+
+        $configPath = $this->cachedConfigPath();
+        clearstatcache(true, $configPath);
+
+        return ! is_file($configPath) || (int) filemtime($configPath) >= $writtenAt;
+    }
+
+    /**
+     * config 캐시 파일 경로를 돌려줍니다 ({@see extensionCachesFreshSince()} 의 대조 대상).
+     *
+     * @return string config 캐시 파일 경로
+     */
+    protected function cachedConfigPath(): string
+    {
+        return app()->getCachedConfigPath();
+    }
+
+    /**
      * 현재 호출이 테스트 환경에서 실 캐시 파일을 건드리는지 판정합니다.
      *
      * 경로가 치환된(임시 경로) 인스턴스는 생성 로직 검증용이므로 통과시킨다.
