@@ -21,7 +21,7 @@
 - **IdvTokenRule**: FormRequest 단계 토큰 강건 검증
 - **IdentityGuardInterceptor (프론트엔드)**: 428 가로채기 → verify → token 부착하여 원 요청 재실행
 
-provider 가 자기 저장소에만 토큰을 두고 `IdentityVerificationLog` 를 우회하면 위 4개 진입점이 모두 인식 못 하여 **무한 428 루프**가 발생합니다 (이슈 #297 참고).
+provider 가 자기 저장소에만 토큰을 두고 `IdentityVerificationLog` 를 우회하면 위 4개 진입점이 모두 인식 못 하여 **무한 428 루프**가 발생합니다.
 
 ## 2. 인터페이스 구현
 

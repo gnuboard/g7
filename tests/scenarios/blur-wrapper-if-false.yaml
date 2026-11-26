@@ -1,0 +1,21 @@
+feature: if 가 거짓인 노드는 blur_until_loaded 래퍼도 그리지 않는다 (engine-v1.99.2)
+
+description: |
+  흐림 래퍼는 blur_until_loaded 유무만 보고 그려져, if 가 거짓이라 내용이 null 이어도 빈 <div> 가 남았다.
+  flex 양 끝 정렬 행에서 이 빈 div 가 세 번째 자식이 되어 값이 가운데로 밀렸다(관리자 환경설정 정보 탭 메모리·디스크,
+  회원·스케줄·큐 목록의 추정 건수). 내용이 null 이면 래퍼도 없고, 내용이 있으면 래퍼·흐림은 종전과 같다.
+
+axes:
+  case:
+    - received_if_false_row      # 데이터를 받아 흐림 분기의 if 가 거짓
+    - pending_if_true_row        # 받기 전 — 흐림 분기의 if 가 참(래퍼째 값 자리)
+    - blur_without_if            # if 없는 흐림 노드(종전 래퍼 유지)
+    - estimated_count_row        # 응답 변종 — 건수 추정치(total_is_exact=false)로 정확 건수 분기(흐림)가 거짓
+
+effects:
+  - blur_wrapper_absent_when_if_false   # 흐림 분기의 if 가 거짓이면 행 자식은 라벨·값 둘뿐(빈 div 0), 값이 행 끝에 붙는다
+  - blur_wrapper_kept_when_rendered     # 내용이 있으면 래퍼가 있고 전환 중이면 blur-sm 이 선다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.blurWrapperIfFalse.test.tsx
+  - tests/Playwright/specs/admin/settings-info-value-alignment.spec.ts

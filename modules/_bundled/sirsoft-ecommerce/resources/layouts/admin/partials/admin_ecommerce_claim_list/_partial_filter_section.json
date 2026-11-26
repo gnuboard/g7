@@ -2109,6 +2109,7 @@
                     "id": "claimFlags_filter_row",
                     "type": "basic",
                     "name": "Div",
+                    "if": "{{(query.type || 'exchange') !== 'cancel'}}",
                     "slot": "{{(_local.visibleFilters || []).includes('claimFlags') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 10,
                     "responsive": {

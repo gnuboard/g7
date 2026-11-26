@@ -163,6 +163,10 @@ describe('클레임 목록 상태 필터 — 유형별 칩 (D28)', () => {
     utils.cleanup();
   });
 
+  /**
+   * @scenario claim_type=exchange
+   * @effects status_chips_scoped_to_active_subtab
+   */
   it('서브탭 파라미터가 없으면 교환 어휘로 떨어진다 (기본값 교환 — D16)', async () => {
     const utils = await renderRow(detachRow('claimStatus_filter_row'));
 
@@ -180,6 +184,10 @@ describe('클레임 목록 상태 필터 — 유형별 칩 (D28)', () => {
     utils.cleanup();
   });
 
+  /**
+   * @scenario claim_type=exchange
+   * @effects status_chips_scoped_to_active_subtab, status_vocabulary_matches_request_gate
+   */
   it('교환 서브탭에 반품·환불 어휘가 섞이지 않는다', async () => {
     const utils = await renderRow(detachRow('claimStatus_filter_row'), 'exchange');
     const values = screen.queryAllByTestId(CHIP_TESTID).map((el) => el.getAttribute('data-value'));
@@ -221,6 +229,32 @@ describe('클레임 목록 필터 — 축이 없는 유형에서의 비노출 (�
 
     expect(
       document.querySelectorAll('input[type="checkbox"][value="pay_on_request"]').length > 0
+    ).toBe(visible);
+    utils.cleanup();
+  });
+});
+
+describe('클레임 목록 필터 — 플래그 묶음 행의 취소 서브탭', () => {
+  /**
+   * 접수 출처·회수 기한 초과·환불 미접수는 모두 취소에 없는 축이다. 행을 남겨 두면 취소 서브탭의
+   * 상세 필터에 「클레임 플래그」 라벨만 서고, 그 곁의 컨트롤 묶음 칸은 자식이 모두 숨어 빈 칸으로
+   * 남는다(좁은 화면의 세로 배치에서는 그 칸에 gap 이 한 번 더 붙는다). 귀책 행과 같이 행째로 뺀다.
+   *
+   * @scenario claim_type=cancel
+   * @effects claim_flags_axis_absent_for_cancel
+   */
+  it.each([
+    ['exchange', true],
+    ['return', true],
+    ['refund', true],
+    ['cancel', false],
+  ] as [string, boolean][])('플래그 묶음 행: %s 서브탭 노출 = %s', async (type, visible) => {
+    const utils = await renderRow(detachRow('claimFlags_filter_row'), type);
+
+    expect(document.getElementById('claimFlags_filter_row') !== null).toBe(visible);
+    // 행이 서는 유형에서는 접수 출처 셀렉트가 언제나 묶음 칸 안에 선다 — 그 칸이 빈 채로 남지 않는다.
+    expect(
+      screen.queryAllByTestId('claim-filter-select').some((el) => el.getAttribute('data-name') === 'requestSource')
     ).toBe(visible);
     utils.cleanup();
   });

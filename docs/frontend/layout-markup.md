@@ -334,7 +334,7 @@ hoist 태그는 **부모 컴포넌트 이름과 무관하게** 같은 props 키�
 
 > **이 계약은 기계가 강제한다 (S23 축 B).** 대상 템플릿의 그 노드 컴포넌트가 `footer`/`titlePrefix`/`titleSuffix` 를 선언하지 않았는데 그 자리를 쓰면 `hoist_prop_not_supported_by_template` lint 경고가 난다 — 부모 이름(`Modal`)이 아니라 **그 컴포넌트의 선언**으로 판정한다. 컴파일은 막지 않는다 — 아래 비대칭은 결함이 아니라 의도된 것이고, 막으면 두 템플릿이 공유하는 조각을 작성할 수 없게 된다. 판정 키는 {@see \App\Support\LayoutMarkup\EmbeddingCompiler} 의 `DECLARATION_CHECKED_PROPS` 셋으로 닫혀 있다 — 나머지 hoist 키(`expandChildren`·`options` 등)는 선언 없이 렌더하는 조합이 실측 수백 건이라 선언 대조가 오탐이다.
 >
-> **이 세 표기는 문법이지 보편 표면이 아니다 — 템플릿을 확인하고 쓴다.** `<prop-footer>`·`<title-prefix>`·`<title-suffix>` 는 **컴파일러가 어느 템플릿에서든 `props.footer`/`titlePrefix`/`titleSuffix` 로 hoist** 하지만, `props.footer` 는 두 번들 템플릿 `Modal` 이 모두 렌더하지만(`sirsoft-basic` 은 7.2.0 부터, #869), `titlePrefix`/`titleSuffix` 를 **렌더하는 `Modal` 은 `sirsoft-admin_basic` 뿐**이다. `sirsoft-basic` 의 [Modal.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/Modal.tsx) 는 그 두 prop 을 구조분해하지 않고 rest spread 도 없어 **컴파일·렌더 모두 통과한 뒤 조용히 사라진다**. 컴포넌트 측 계약은 [component-props.md §Modal](component-props.md#modal-컴포넌트) · [modal-usage.md §적용 범위](modal-usage.md) 참조.
+> **이 세 표기는 문법이지 보편 표면이 아니다 — 템플릿을 확인하고 쓴다.** `<prop-footer>`·`<title-prefix>`·`<title-suffix>` 는 **컴파일러가 어느 템플릿에서든 `props.footer`/`titlePrefix`/`titleSuffix` 로 hoist** 하지만, `props.footer` 는 두 번들 템플릿 `Modal` 이 모두 렌더하지만(`sirsoft-basic` 은 7.2.0 부터), `titlePrefix`/`titleSuffix` 를 **렌더하는 `Modal` 은 `sirsoft-admin_basic` 뿐**이다. `sirsoft-basic` 의 [Modal.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/Modal.tsx) 는 그 두 prop 을 구조분해하지 않고 rest spread 도 없어 **컴파일·렌더 모두 통과한 뒤 조용히 사라진다**. 컴포넌트 측 계약은 [component-props.md §Modal](component-props.md#modal-컴포넌트) · [modal-usage.md §적용 범위](modal-usage.md) 참조.
 >
 > **너비는 `<modal size="…">` 로 고른다** — `sm`/`small` 400px · `md`/`medium` 500px · `lg`/`large` 720px · `xl` 900px · `2xl` 1120px. `width` 를 함께 주면 `width` 가 이기고, 모르는 값은 기본 500px 으로 떨어진다. 좁은 화면 넘침은 컨테이너의 `max-w-[calc(100vw-2rem)]` 이 막는다.
 
@@ -787,7 +787,7 @@ Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다**
 
 ---
 
-## 11.5 편집기 — 설치본을 HTML 로 편집한다 (#476)
+## 11.5 편집기 — 설치본을 HTML 로 편집한다
 
 관리자 레이아웃 코드 편집기(`/admin/templates/{템플릿}/edit`)의 정본은 **HTML(`.g7.html`) 탭**이고 JSON 탭은 읽기 전용 산출물이다. DB 는 종전대로 JSON 만 둔다.
 

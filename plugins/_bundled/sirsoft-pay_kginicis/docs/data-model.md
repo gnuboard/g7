@@ -69,7 +69,7 @@ _Enum 이 없습니다._
 두 Repository 모두 자체 테이블이 없고 `sirsoft-ecommerce` 의 공개 결제 계약
 (`Contracts\Payment\PaymentGatewayBridge`)을 감쌉니다 — `CbtReconciliationRepository` 는 주문 meta 의 자기 키
 (`kginicis_cbt_reconciliation`)를 `getOrderMeta`·`mutateOrderMetaWithLock` 으로, `EscrowDeliveryRepository` 는 결제 meta
-`escrow_delivery` 의 수령인 칸을 `scrubPaymentMetaKeys` 로 다룹니다(#916). 이커머스 Model 을 직접 조회하던 종전
+`escrow_delivery` 의 수령인 칸을 `scrubPaymentMetaKeys` 로 다룹니다. 이커머스 Model 을 직접 조회하던 종전
 `CbtCvsOperationsRepository` 는 없앴고, `CbtCvsOperationsService` 가 같은 계약을 바로 씁니다. 소유 데이터가 없는데도
 이 둘을 남긴 이유는 Service 가 쓰는 의미 단위(대사 기록 읽기·덮어쓰기·잠금 변경, 수령인 파기)를 한 곳에 모으기
 위해서입니다 — 일반적인 "내 테이블 CRUD" Repository 와는 쓰임이 다릅니다.

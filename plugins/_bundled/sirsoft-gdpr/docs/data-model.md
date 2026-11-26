@@ -75,7 +75,7 @@
 <!-- @intent START -->
 `ConsentSource` 는 자기 docblock에 "어휘를 이 enum 밖(서비스/리스너 리터럴)에 흩어 두면 화면
 필터가 실제 기록 어휘의 부분집합이 되어 일부 행이 어떤 필터로도 도달하지 못한다"고 명시합니다
-(#492 과거 결함). `withdraw`(회원탈퇴 시 일괄 철회, `GdprConsentService::revokeAllOnWithdraw()`
+(과거 결함). `withdraw`(회원탈퇴 시 일괄 철회, `GdprConsentService::revokeAllOnWithdraw()`
 / `GdprUserConsentRepository::revokeAllForUser()`)가 정확히 이 결함군으로 한 번 더 발생했던
 case입니다 — 두 지점 모두 enum이 아닌 `'withdraw'` 리터럴을 직접 기록해, 그렇게 기록된 행이
 관리자 동의 이력 화면의 어떤 출처 필터로도 걸러지지 않고 라벨도 원시 문자열로 노출됐습니다.

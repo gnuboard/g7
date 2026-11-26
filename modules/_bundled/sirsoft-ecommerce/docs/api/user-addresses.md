@@ -9,7 +9,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 회원이 남긴 배송지 를 전 회원 범위로 조회·삭제하는 관리자 API 입니다 (이슈 #524 WP-E)
+1. 회원이 남긴 배송지 를 전 회원 범위로 조회·삭제하는 관리자 API 입니다
 2. 찜·장바구니·배송지·상품문의 네 목록이 같은 뼈대를 씁니다 — 검색·회원한정·기간·일괄삭제
 3. 받는 사람·주소로도 찾을 수 있습니다 (회원 이름과 다를 수 있습니다)
 4. 권한: sirsoft-ecommerce.user-addresses.read(조회) · sirsoft-ecommerce.user-addresses.manage(삭제)

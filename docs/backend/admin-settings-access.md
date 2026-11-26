@@ -78,7 +78,7 @@ g7_core_settings('drivers.cache_driver');
 
 ### `config()` 를 써야 하는 경우 (testing 격리)
 
-`drivers.cache_driver` / `drivers.session_driver` / `drivers.queue_driver` / `drivers.session_lifetime` 는 testing 환경에서 sync 가 차단된다 (이슈 #258 회귀 방지 — `storage/app/settings/drivers.json` 이 dev 와 testing 이 공유하는 파일이므로 dev 의 Redis/DB 드라이버가 testing 으로 흘러들면 격리가 깨진다).
+`drivers.cache_driver` / `drivers.session_driver` / `drivers.queue_driver` / `drivers.session_lifetime` 는 testing 환경에서 sync 가 차단된다 (회귀 방지 — `storage/app/settings/drivers.json` 이 dev 와 testing 이 공유하는 파일이므로 dev 의 Redis/DB 드라이버가 testing 으로 흘러들면 격리가 깨진다).
 
 ```php
 // testing 환경에서:
@@ -100,7 +100,7 @@ g7_core_settings('drivers.queue_driver');   // dev 공유 drivers.json 의 datab
 
 사용자에게 표시할 타임존이 필요하면 `config('app.default_user_timezone')` 또는 `g7_core_settings('general.timezone')` 을 사용한다. `config('app.timezone')` 사용은 항상 UTC 가 반환되므로 사용자 표시 의도라면 버그다.
 
-큐 워커 등록 키 `drivers.queue_connections`·`drivers.queue_names`(#139)도 `g7_core_settings()` 로만 읽는다 — `QueueWorkerRegistry` 가 유일한 소비자이고 대응하는 Laravel config 가 없어 sync 하지 않는다. 그래서 「새 키 추가 시 점검」 5번의 `EnvPriority` 등재 대상이 아니다(env 우선 모드에서도 이 두 키는 늘 저장값을 따른다). 응답에서 `drivers.queue_names` 는 빈 맵이어도 객체(`{}`)로 낸다.
+큐 워커 등록 키 `drivers.queue_connections`·`drivers.queue_names`(공개 #139)도 `g7_core_settings()` 로만 읽는다 — `QueueWorkerRegistry` 가 유일한 소비자이고 대응하는 Laravel config 가 없어 sync 하지 않는다. 그래서 「새 키 추가 시 점검」 5번의 `EnvPriority` 등재 대상이 아니다(env 우선 모드에서도 이 두 키는 늘 저장값을 따른다). 응답에서 `drivers.queue_names` 는 빈 맵이어도 객체(`{}`)로 낸다.
 
 ---
 

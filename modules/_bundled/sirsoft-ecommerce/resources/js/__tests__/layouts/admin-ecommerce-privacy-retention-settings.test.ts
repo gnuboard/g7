@@ -1,3 +1,4 @@
+// e2e:allow 시험·시험 헬퍼 파일 — 런타임 동작을 바꾸지 않는다. 대상 화면(정보 탭·회원 목록·TagInput 두 화면·클레임 상세)은 headless 브라우저로 수정 전·후를 실측했고 정보 탭·추정 건수는 E2E settings-info-value-alignment.spec.ts 가 잠근다
 /**
  * 쇼핑몰 환경설정 — 개인정보 보유기간 탭 계약 테스트 (이슈 #636 S5)
  *
@@ -340,6 +341,29 @@ describe('보유기간 탭 — 대상 보기 줄의 좁은 화면 줄바꿈 (#63
             expect(rowClass, `${button.id} 부모 줄`).toMatch(/\bgap-/);
             expect(String(button.props?.className ?? ''), button.id).not.toMatch(/\bml-/);
         }
+    });
+
+    /**
+     * 버튼 줄의 두 버튼은 각각 권한으로만 선다 — 둘 다 없는 관리자(설정 읽기만 가진 계정)에게는
+     * 버튼 줄이 빈 칸으로 남아, 좁은 화면의 세로 배치(`flex-col gap-2`)에서 대상 행 아래에 gap 이
+     * 한 번 더 붙는다. 그 줄은 자식 조건의 합으로 자신도 숨어야 한다.
+     *
+     * @scenario order_state=confirmed, toggle=off, mode=anonymize
+     *
+     * @effects order_retention_target_button_row_hides_when_empty
+     */
+    it('버튼 줄은 두 버튼이 모두 숨으면 줄째로 숨는다 (자식 조건의 합)', () => {
+        const [[button, ancestors]] = collectWithAncestors(privacyTab, (n) => n.id === 'view_privacy_retention_targets');
+        const buttonRow = ancestors[ancestors.length - 1];
+        const kids = (buttonRow.children ?? []) as any[];
+
+        expect(kids.map((k) => k.id)).toEqual([button.id, 'run_privacy_retention']);
+        // 자식이 모두 조건부일 때만 이 줄이 빌 수 있다 — 조건 없는 자식이 생기면 이 단언의 전제가 바뀐다.
+        for (const kid of kids) expect(kid.if, kid.id).toBeTruthy();
+        const rowIf = String(buttonRow.if ?? '');
+        expect(rowIf).toContain('can_view_targets');
+        expect(rowIf).toContain("targets?.['retention:sirsoft-ecommerce.order']?.can_run");
+        expect(rowIf).toContain('||');
     });
 });
 

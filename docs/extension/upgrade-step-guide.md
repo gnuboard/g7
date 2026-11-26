@@ -533,7 +533,7 @@ beta.5+ 의 `spawn_failure_mode` (기본 `abort`) 가 위 4분기 모두를 fail
 
 #### In-process fallback 진입 시 위험 메커니즘
 
-부모 프로세스 메모리의 stale 클래스 인스턴스가 Laravel DI 컨테이너에서 반환되어, 디스크의 신버전 코드를 무시한 채 신규 메서드 호출 → `Call to undefined method` fatal. 이슈 #28 의 실 보고 사례:
+부모 프로세스 메모리의 stale 클래스 인스턴스가 Laravel DI 컨테이너에서 반환되어, 디스크의 신버전 코드를 무시한 채 신규 메서드 호출 → `Call to undefined method` fatal. 공개 #28 의 실 보고 사례:
 
 ```text
 Call to undefined method App\Services\CoreUpdateService::ensureWritableDirectories()
@@ -974,9 +974,9 @@ class Upgrade_1_4_0 extends AbstractUpgradeStep
 - `upgrades/data/7.0.0-beta.5/permissions.delta.json` — IDV 권한 식별자 rename 2건
 - `upgrades/data/7.0.0-beta.5/appliers/PermissionsApplier.php` — added/removed/renamed (부재 경로) 적용기
 - `upgrades/data/7.0.0-beta.5/migrations/` — 5종:
-  1. `01_RecoverActiveExtensionDirs.php` — #347 회귀 후속: 4개 도메인 활성 디렉토리 복구
-  2. `02_RecoverPendingStubFiles.php` — #347 회귀 후속: _pending stub 재생성
-  3. `03_VerifyBundledLangPacksFallback.php` — #347 회귀 후속: lang-packs/_bundled fallback
+  1. `01_RecoverActiveExtensionDirs.php` — 회귀 후속: 4개 도메인 활성 디렉토리 복구
+  2. `02_RecoverPendingStubFiles.php` — 회귀 후속: _pending stub 재생성
+  3. `03_VerifyBundledLangPacksFallback.php` — 회귀 후속: lang-packs/_bundled fallback
   4. `04_IdentityPermissionPivotMerge.php` — IDV 권한 rename 충돌 경로 피벗 병합
   5. `05_RecoverPublicStorageSymlink.php` — public/storage symlink 복구
 

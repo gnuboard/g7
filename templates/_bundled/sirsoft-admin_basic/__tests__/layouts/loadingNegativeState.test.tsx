@@ -19,6 +19,7 @@ import path from 'path';
 import { describe, it, expect } from 'vitest';
 import { dataBindingEngine } from '@core/template-engine/DataBindingEngine';
 import { evaluateIfCondition } from '@core/template-engine/helpers/RenderHelpers';
+import { findBlurBranchesInLayoutRows } from '@core/template-engine/__tests__/utils/blurBranchRowUtils';
 
 type Node = Record<string, any>;
 
@@ -520,5 +521,36 @@ describe('sirsoft-admin_basic — 상세 창이 목록 행으로 먼저 그려�
     expect(blurred({ query: {}, route: { id: '7' }, role: { data: {} } }), '수정').toBe(false);
     expect(blurred({ query: { clone_from: '3' }, route: {} }), '복제 받는 중').toBe(true);
     expect(blurred({ query: { clone_from: '3' }, route: {}, clone_source: { data: {} } }), '복제 도착').toBe(false);
+  });
+});
+
+describe('sirsoft-admin_basic — 흐림 래퍼가 배치 행의 자식 모양을 갈래마다 바꾸지 않는다', () => {
+  /**
+   * `blur_until_loaded` 는 대상을 `<div>` 래퍼로 감싸 그린다. 흐림을 `if` 분기 노드에 두고 그 부모가 flex·grid·space·gap·
+   * justify 계열 컨테이너면, 흐림을 선언한 갈래는 래퍼 div 로·선언하지 않은 갈래는 값 요소로 행에 들어가 받기 전·뒤에 행의
+   * 자식 모양이 바뀐다(engine-v1.99.2 전에는 거짓 갈래의 빈 래퍼까지 남아 양 끝 정렬의 값이 가운데로 밀렸다). 위 전수는
+   * 흐림 **선언 여부**만 보므로, 흐림이 **어디에** 선언됐는지를 여기서 함께 잠근다 — 흐림은 분기들을 감싸는 하나의 노드(또는
+   * 분기 없는 값 노드 자체)에 둔다.
+   */
+  /** 배치 행 자식인 흐림 분기 노드로 남겨 둔 자리 — [`파일#노드`, 사유] (같은 표기가 여럿이면 그 수만큼) */
+  const BLUR_BRANCH_ALLOW: Array<[string, string]> = [
+    ['layouts/admin_activity_log_list.json#Span', '건수 두 갈래(끝까지 셈 / 상한에 걸림) 중 끝까지 센 갈래만 흐린다 — 두 갈래를 감싸는 노드로 흐림을 옮기면 상한 갈래도 다시 받는 동안(쪽 넘김·검색) 흐려져 화면 동작이 바뀐다'],
+    ['layouts/admin_identity_logs.json#Span', '건수 두 갈래(끝까지 셈 / 상한에 걸림) 중 끝까지 센 갈래만 흐린다 — 두 갈래를 감싸는 노드로 흐림을 옮기면 상한 갈래도 다시 받는 동안(쪽 넘김·검색) 흐려져 화면 동작이 바뀐다'],
+    ['layouts/admin_member_notification_list.json#Span', '건수 두 갈래(끝까지 셈 / 상한에 걸림) 중 끝까지 센 갈래만 흐린다 — 두 갈래를 감싸는 노드로 흐림을 옮기면 상한 갈래도 다시 받는 동안(쪽 넘김·검색) 흐려져 화면 동작이 바뀐다'],
+    ['layouts/admin_notification_log_list.json#Span', '건수 두 갈래(끝까지 셈 / 상한에 걸림) 중 끝까지 센 갈래만 흐린다 — 두 갈래를 감싸는 노드로 흐림을 옮기면 상한 갈래도 다시 받는 동안(쪽 넘김·검색) 흐려져 화면 동작이 바뀐다'],
+    ['layouts/admin_user_list.json#total_count', '건수 두 갈래(끝까지 셈 / 상한에 걸림) 중 끝까지 센 갈래만 흐린다 — 두 갈래를 감싸는 노드로 흐림을 옮기면 상한 갈래도 다시 받는 동안(쪽 넘김·검색) 흐려져 화면 동작이 바뀐다'],
+    ['layouts/partials/admin_schedule_list/_queue_failed_grid.json#Span', '건수 두 갈래(끝까지 셈 / 상한에 걸림) 중 끝까지 센 갈래만 흐린다 — 두 갈래를 감싸는 노드로 흐림을 옮기면 상한 갈래도 다시 받는 동안(쪽 넘김·검색) 흐려져 화면 동작이 바뀐다'],
+    ['layouts/partials/admin_schedule_list/_queue_logs_grid.json#Span', '건수 두 갈래(끝까지 셈 / 상한에 걸림) 중 끝까지 센 갈래만 흐린다 — 두 갈래를 감싸는 노드로 흐림을 옮기면 상한 갈래도 다시 받는 동안(쪽 넘김·검색) 흐려져 화면 동작이 바뀐다'],
+    ['layouts/partials/admin_schedule_list/_queue_pending_grid.json#Span', '건수 두 갈래(끝까지 셈 / 상한에 걸림) 중 끝까지 센 갈래만 흐린다 — 두 갈래를 감싸는 노드로 흐림을 옮기면 상한 갈래도 다시 받는 동안(쪽 넘김·검색) 흐려져 화면 동작이 바뀐다'],
+    ['layouts/partials/admin_settings/_tab_info.json#Span', '메모리 행 — 받기 전 자리표시(-) 갈래만 흐린다. 세 갈래를 감싸는 노드로 옮기면 받은 값도 탭 전환 재조회 동안 흐려져 화면 동작이 바뀐다'],
+    ['layouts/partials/admin_settings/_tab_info.json#Span', '디스크 행 — 메모리 행과 같은 사유'],
+  ];
+
+  /**
+   * @scenario load_state=loading
+   * @effects blur_wraps_branches_not_row_branch
+   */
+  it('흐림을 선언한 조건 분기 노드가 배치 컨테이너의 자식이 아니다(허용 목록과 같다)', () => {
+    expect(findBlurBranchesInLayoutRows(PKG_ROOT, ['layouts'])).toEqual(BLUR_BRANCH_ALLOW.map(([label]) => label).sort());
   });
 });

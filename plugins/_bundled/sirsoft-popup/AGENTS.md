@@ -15,11 +15,11 @@
 ## 1. 이 확장은 무엇인가
 
 <!-- @intent START -->
-운영자가 휴무·배송 지연·점검 공지나 기간 한정 프로모션을 개발자 도움 없이 등록하고 기간에 맞춰 자동 노출·종료하게 한다(#812).
+운영자가 휴무·배송 지연·점검 공지나 기간 한정 프로모션을 개발자 도움 없이 등록하고 기간에 맞춰 자동 노출·종료하게 한다.
 
 - **소유 구조**: 팝업 데이터·관리 화면·전역 표시 방식(플러그인 설정)·레이어 컴포넌트를 모두 이 플러그인이 가진다. 사용자 템플릿은 공통 확장점 `user_global_overlay` 만 열어 두면 되고 템플릿을 고치지 않는다(GDPR 쿠키 배너와 같은 방식).
 - **노출 판정 분담**: 서버는 사용 여부·기간·노출 대상(손님/회원)만 거르고, 노출 페이지(경로 경계 하위 포함, `/` 는 홈만)·기기(폭 767px 이하 모바일)·「보지 않기」·이번 페이지에서 닫음은 브라우저가 거른다 — SPA 경로 이동마다 서버에 묻지 않고, 공개 응답을 대상·언어 단위로 캐시하기 위해서다.
-- **상태는 저장하지 않는다**: 비활성 > 예약 > 종료 > 노출중을 조회 시점에 SQL 로 판정한다(#810 과 같은 규칙, cron 없음, UTC 저장).
+- **상태는 저장하지 않는다**: 비활성 > 예약 > 종료 > 노출중을 조회 시점에 SQL 로 판정한다(히어로 섹션 플러그인과 같은 규칙, cron 없음, UTC 저장).
 - **「보지 않기」**: 그때 레이어에 보이던 팝업 id 마다 만료를 쿠키 하나(`g7_popup_dismissed`)에 기록한다 — 그 뒤 새로 올린 팝업은 바로 뜬다. 쿠키 이름은 GDPR 계약 훅으로 필수 저장 항목에 등록한다(GDPR 은 고치지 않는다).
 - **직접 작성형 본문**: 저장 때 HTMLPurifier(플러그인 composer 의존성)로 정화하고 출력 때 DOMPurify 로 한 번 더 거른다.
 - **의도적으로 하지 않는 것**: 노출·클릭 통계(2차), 팝업별 위치·크기(표시 방식은 전역), 페이지명으로 노출 페이지 고르기, 관리자 메뉴 그룹, 소유자 범위(owner_key), 휴지통.
@@ -135,8 +135,8 @@
 | `ini_get`·`glob` 처럼 호스팅이 막을 수 있는 함수를 바로 부르기 | `ExecutionEnvironment::hasFunction()` 으로 먼저 판정하고 대체 경로를 둔다(`UploadLimit::iniSettingBytes()`, 대장 나열은 `scandir`) | PHP 8 은 막힌 함수를 함수 표에서 지워 호출이 `Error` 다. 매일 정리 작업이 막힌 서버에서 죽는다 |
 | 팝업 이미지 주소에 `?size=` 를 손으로 붙이거나, 원본보다 큰 규격을 srcset 후보로 넣기 | 사용자 레이어는 `ImageFrame` 에 `sizes`(`lib/thumbnail.ts::popupImageSizes()` — 레이어 배치)를 주고 `responsiveSrcset()`(코어 `G7Core.thumbnail.contentSrcsetWithin(…, { includeOriginal: true })` — 원본보다 작은 후보 + 원본, PC·모바일 각자. 그 함수가 없으면 srcset 없음 — 후보를 직접 거르지 않는다)을 쓴다. 관리 목록은 `thumbPreset="sm"` | 서버는 원본보다 큰 규격을 키우지 않고 원본을 보내는데 브라우저는 후보 폭을 믿고 고른다. 코어 판정(같은 출처 + 등록 경로)을 건너뛰면 외부 주소에 `size` 가 붙는다 |
 | 공개 이미지 썸네일 판정을 서비스 `publicServing()` 안에 넣거나 원본 존재 확인 뒤로 미루기 | 컨트롤러가 해시 조회(게이트) → `?size=` 면 원본 존재 확인 → `ThumbnailResponder::respond()` → 원본 응답 + `markBypass()` 순서로 부른다. 원본 응답은 무파라미터 주소와 같게(1년·`immutable`) 만들고, 썸네일을 요청했는데 원본을 낼 때의 캐시(`immutable` 해제, 유지 시간을 썸네일 응답과 같은 코어 `cache.layout_ttl` 로)는 `markBypass()` 가 맞춘다(컨트롤러에서 따로 줄이지 않는다) | 원본 304 판정이 컨트롤러에 있어 서비스가 썸네일을 돌려주면 원본 검증자로 다시 싸인다. 원본만 지워진 행이 남은 파생본으로 200 이 된다. 유지 시간을 1년으로 두면 규격을 바꿔도 그 `?size=` 주소가 브라우저·CDN 에 1년 동안 원본으로 남는다 |
-| 이미 올린 팝업 이미지를 주입 스토리지(`$this->storage`)로 읽거나 지우기, 행·대장 `disk` 를 날 `withDisk()` 에 넘기기 | 읽기·서빙·썸네일 원본·복제 원본·삭제·대장 재정리·전체 정리는 `PopupImageService::storageFor()`·`RowDiskStorage::resolve()` 로 행(대장) disk 를 고른다. 주입 스토리지는 「지금 업로드가 갈 디스크」(`getStorageDiskFor('images')`)일 뿐이고 복제본은 거기에 쓴다 | 공개 자산 디스크를 켰다 끄면 파일이 디스크마다 흩어진다 — 주입 디스크로 읽으면 옛 행이 404, 고아 disk 로 드라이버를 만들면 서빙·정리가 예외를 던진다(#878, `RowStorageOrphanDiskParityTest`) |
-| 직접 주소(`direct_url`)를 썸네일 기준·그린 크기 비교 키로 쓰거나, srcset 축소 후보를 직접 주소로 만들기 | `ImageFrame` 은 `src` 와 srcset 의 원본 후보만 `mediaSrc()`·`responsiveSrcset(api, w, direct)` 로 직접 주소를 쓰고, `?size=` 후보·`natural.src` 비교 키·관리 목록은 `url`(공개 API) | 코어 썸네일 판정은 같은 출처 + 등록 경로만 대상이다 — 직접 주소에 `?size=` 를 붙이면 원본이 나간다(#878 제품 결정) |
+| 이미 올린 팝업 이미지를 주입 스토리지(`$this->storage`)로 읽거나 지우기, 행·대장 `disk` 를 날 `withDisk()` 에 넘기기 | 읽기·서빙·썸네일 원본·복제 원본·삭제·대장 재정리·전체 정리는 `PopupImageService::storageFor()`·`RowDiskStorage::resolve()` 로 행(대장) disk 를 고른다. 주입 스토리지는 「지금 업로드가 갈 디스크」(`getStorageDiskFor('images')`)일 뿐이고 복제본은 거기에 쓴다 | 공개 자산 디스크를 켰다 끄면 파일이 디스크마다 흩어진다 — 주입 디스크로 읽으면 옛 행이 404, 고아 disk 로 드라이버를 만들면 서빙·정리가 예외를 던진다(`RowStorageOrphanDiskParityTest`) |
+| 직접 주소(`direct_url`)를 썸네일 기준·그린 크기 비교 키로 쓰거나, srcset 축소 후보를 직접 주소로 만들기 | `ImageFrame` 은 `src` 와 srcset 의 원본 후보만 `mediaSrc()`·`responsiveSrcset(api, w, direct)` 로 직접 주소를 쓰고, `?size=` 후보·`natural.src` 비교 키·관리 목록은 `url`(공개 API) | 코어 썸네일 판정은 같은 출처 + 등록 경로만 대상이다 — 직접 주소에 `?size=` 를 붙이면 원본이 나간다(제품 결정) |
 <!-- @intent END -->
 
 ## 7. 테스트 실행

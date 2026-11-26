@@ -5,6 +5,12 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.99.2] - 2026-11-25
+
+### Fixed
+
+- (engine-v1.99.2) 표시 조건(`if`)이 거짓이라 그릴 내용이 없는 노드에 `blur_until_loaded` 가 있으면 흐림 래퍼 `<div>` 가 빈 채로 DOM 에 남던 문제를 고쳤습니다. 이 빈 div 가 flex 행의 자식으로 세어져, 양 끝 정렬(`justify-between`) 행에서는 값이 가운데로 밀렸고(관리자 환경설정 › 정보 탭 「시스템 사양」 메모리·디스크 — 값 칸을 if 3분기로 나누고 마지막 「받는 중」 분기에만 흐림이 있음, 회원·스케줄·큐 목록의 건수가 추정치일 때) `gap` 행에서는 여백이 하나 더 생겼습니다. 이제 내용이 null 이면(if 거짓·미등록 컴포넌트·배열이 아닌 iteration 소스) 래퍼도 그리지 않습니다. 내용이 있을 때의 래퍼·흐림·그리드 클래스 이전은 종전과 같고, 훅·상태 저장소·캐시는 건드리지 않습니다. 발생 시점: 래퍼를 늘 그리는 구조는 2026-05 이래 잠재해 있었고, 2026-11-16 에 if 분기의 받는 중 자리표시에 흐림을 붙이면서 화면에 드러났다(7.2.0 출시본 포함). 회귀 잠금: `DynamicRenderer.blurWrapperIfFalse.test.tsx`(3건, 수정 전 엔진에서 1건 실패 확인) (DynamicRenderer.tsx)
+
 ## [engine-v1.99.1] - 2026-11-24
 
 ### Fixed
@@ -15,7 +21,7 @@
 
 ### Added
 
-- (engine-v1.99.0) 디버그 모드(`G7Config.debug`)에서 같은 DOM id 가 화면에 여러 개 생기면 콘솔에 `[G7] 같은 DOM id 가 화면에 여러 개 있습니다` 경고를 냅니다(`{id, count, pathname}`). 문서 body 의 DOM 변화를 지켜보다 변화가 멈추고 1초 뒤 한 번 세고, 같은 경로·같은 id 는 한 번만 알리며 경로가 바뀌면 다시 셉니다. 디버그 모드가 꺼져 있으면 감시 자체를 만들지 않습니다. 정적 감사와 전 화면 크롤이 모달·시트 열림 같은 상호작용 상태를 다 보지 못해서 넣었습니다(#408). 회귀 잠금: `devDuplicateIdMonitor.test.ts`(6건) (devDuplicateIdMonitor.ts, template-engine.ts)
+- (engine-v1.99.0) 디버그 모드(`G7Config.debug`)에서 같은 DOM id 가 화면에 여러 개 생기면 콘솔에 `[G7] 같은 DOM id 가 화면에 여러 개 있습니다` 경고를 냅니다(`{id, count, pathname}`). 문서 body 의 DOM 변화를 지켜보다 변화가 멈추고 1초 뒤 한 번 세고, 같은 경로·같은 id 는 한 번만 알리며 경로가 바뀌면 다시 셉니다. 디버그 모드가 꺼져 있으면 감시 자체를 만들지 않습니다. 정적 감사와 전 화면 크롤이 모달·시트 열림 같은 상호작용 상태를 다 보지 못해서 넣었습니다. 회귀 잠금: `devDuplicateIdMonitor.test.ts`(6건) (devDuplicateIdMonitor.ts, template-engine.ts)
 
 ### Fixed
 
@@ -211,7 +217,7 @@
 - 데이터 소스 `initLocal` 응답(progressive·background 응답, `refetchDataSource`, `updateQueryParams` 재조회)이 입력 도중 도착하면, 같은 화면에서 initLocal 대상이 아닌 다른 `_local` 칸(내 정보 수정의 비밀번호 확인 등)이 응답 반영 커밋 한 번 동안 앞 값으로 그려져 그 사이 친 키가 앞 글자를 잃던 문제를 고쳤습니다. 페이지 루트는 「아직 반영하지 않은 `_localInit`」 렌더에서 저장소 A 를 빼고 데이터 컨텍스트의 `_local`(마지막 루트 다시 그리기 때의 B 사본 — 입력칸 setState·자동바인딩의 render:false 미러가 닿지 않음)만 썼습니다. 이제 그 렌더에서 렌더 시점의 저장소 B(`TemplateApp.getGlobalState()._local`)를 씁니다(레이아웃 루트만 — 모달 렌더러·레이아웃 편집기 미리보기 제외, 저장소 A 를 빼는 engine-v1.41.0 보호는 유지). engine-v1.41.0(7.0.0-beta.2)부터 있던 결함입니다 (DynamicRenderer.tsx `extendedDataContext`, 회귀: `__tests__/TemplateApp.progressiveInitLocalSiblingInput.test.tsx`)
 - `apiCall` 실패 응답에 서버 메시지가 없으면 한국어 화면에도 영어 토스트(`API call failed: Unprocessable Content`)가 뜨던 문제를 고쳤습니다. 빈 본문 500, `errors` 만 있는 422, JSON 이 아닌 응답(게이트웨이 오류 페이지 등)이 해당하며, statusText 가 비는 HTTP/2 응답은 `API call failed: ` 로 끝났습니다. 오류 문맥(`{{error.message}}`)과 기본 오류 처리에 그 문구가 그대로 실렸고, 엔진 첫 구현(2025-11)부터 있던 결함입니다. 이제 다국어 키 `core.errors.api_request_failed`(「요청을 처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요.」)를 쓰고 오류 문맥을 만들 때 번역합니다 — 응답 자체가 없을 때의 `core.errors.network_request_failed`(engine-v1.54.6)와 같은 방식입니다. 서버가 메시지를 주면 종전대로 그 메시지를 씁니다. 오류 객체의 `status`·`statusText` 는 그대로 남습니다 (ActionDispatcher.ts `handleApiCall`, 코어 다국어 키 ko/en + ja 언어팩, 회귀: `template-engine/__tests__/ActionDispatcher.apiCallFailureMessage.test.ts`, 종전 코드 6건 실패 확인)
 - 확장점(`extension_point`) 호스트 `<div>` 의 `className`·통과 DOM 속성(`data-*`·`aria-*`·`role`·`title` 등)에 든 `{{…}}` 가 평가되지 않고 식 원문 그대로 붙던 문제를 고쳤습니다. 게시판 관리자 글 상세의 본문 확장점 래퍼에 `{{post?.data?.content_mode`·`===`·`'html'` 같은 식 조각이 클래스로 붙어 있었습니다. 반복 컨텍스트(`renderItemChildren`)의 확장점은 처음부터(engine-v1.73.0) 평가한 props 로 호스트를 만들었는데 일반 경로만 평가 전 원본을 넘긴 비대칭이었고, 확장점 도입 때(2025-12)부터 있던 결함입니다. 이제 일반 경로도 평가·번역을 마친 props 로 호스트를 만듭니다(검색엔진용 렌더러는 원래 평가하고 있어 두 렌더러가 같아집니다). 주입 자식에게 가는 확장점 props 는 변경이 없습니다 (DynamicRenderer.tsx 확장점 분기, 회귀: `__tests__/DynamicRenderer.hostPropLeak.test.tsx` extension_point_host_class_expression_evaluated)
-- 노드 오류 경계(`ComponentErrorBoundary`)가 렌더 오류를 잡은 뒤 되돌리는 경로가 없어, 같은 레이아웃 안 SPA 이동(쿼리만 바꾸는 `navigate`, `navigate replace`, 같은 레이아웃의 다른 경로)으로 노드가 다시 마운트되지 않으면 새 화면 데이터가 정상이어도 「컴포넌트 로드 실패」 박스가 새로고침 전까지 남던 문제를 고쳤습니다. 경계가 렌더 문맥의 `route`, `query`(기존 객체 참조)를 받아, 오류 상태일 때 값이 오류 때와 달라지면 자식을 다시 그립니다. 정상 경계는 참조만 기록하고 다시 마운트하지 않으며, 값이 같은 새 객체는 변경으로 보지 않습니다. 다시 그리기는 렌더 중이 아니라 커밋 뒤에 합니다. 커밋 때 화면이 데이터를 받는 중(`transitionManager.getIsPending()`)이 아니면 곧바로, 받는 중이면 받기 끝 알림 때 `React.startTransition` 갱신으로 한 번 다시 그립니다. 받는 중에 난 실패도 받기가 끝난 뒤 한 번 다시 그립니다. 링크 이동의 같은 화면 판정은 첫 렌더에 앞 화면 progressive 값을 이어 그리고, 서버가 빠르면 그 전환 렌더가 끝나기 전에 받는 중 표시가 꺼집니다. 렌더 중에 판정하면 그 렌더의 옛 값으로 던지고, React 가 루트를 동기로 다시 그리며 회복 오류(#520)를 알렸습니다. 받기가 끝난 뒤의 실패는 다음 경로나 쿼리 변경 전까지 다시 시도하지 않습니다(렌더 루프 없음). 받기 끝 알림은 다시 그릴 오류 경계만 구독합니다. 7.0.0-beta.1 부터 있던 결함입니다 (DynamicRenderer.tsx `ComponentErrorBoundary`, 회귀: `__tests__/DynamicRenderer.errorBoundaryRouteReset.test.tsx`)
+- 노드 오류 경계(`ComponentErrorBoundary`)가 렌더 오류를 잡은 뒤 되돌리는 경로가 없어, 같은 레이아웃 안 SPA 이동(쿼리만 바꾸는 `navigate`, `navigate replace`, 같은 레이아웃의 다른 경로)으로 노드가 다시 마운트되지 않으면 새 화면 데이터가 정상이어도 「컴포넌트 로드 실패」 박스가 새로고침 전까지 남던 문제를 고쳤습니다. 경계가 렌더 문맥의 `route`, `query`(기존 객체 참조)를 받아, 오류 상태일 때 값이 오류 때와 달라지면 자식을 다시 그립니다. 정상 경계는 참조만 기록하고 다시 마운트하지 않으며, 값이 같은 새 객체는 변경으로 보지 않습니다. 다시 그리기는 렌더 중이 아니라 커밋 뒤에 합니다. 커밋 때 화면이 데이터를 받는 중(`transitionManager.getIsPending()`)이 아니면 곧바로, 받는 중이면 받기 끝 알림 때 `React.startTransition` 갱신으로 한 번 다시 그립니다. 받는 중에 난 실패도 받기가 끝난 뒤 한 번 다시 그립니다. 링크 이동의 같은 화면 판정은 첫 렌더에 앞 화면 progressive 값을 이어 그리고, 서버가 빠르면 그 전환 렌더가 끝나기 전에 받는 중 표시가 꺼집니다. 렌더 중에 판정하면 그 렌더의 옛 값으로 던지고, React 가 루트를 동기로 다시 그리며 회복 오류를 알렸습니다. 받기가 끝난 뒤의 실패는 다음 경로나 쿼리 변경 전까지 다시 시도하지 않습니다(렌더 루프 없음). 받기 끝 알림은 다시 그릴 오류 경계만 구독합니다. 7.0.0-beta.1 부터 있던 결함입니다 (DynamicRenderer.tsx `ComponentErrorBoundary`, 회귀: `__tests__/DynamicRenderer.errorBoundaryRouteReset.test.tsx`)
 
 #### 하위 폴더 설치: 자산·서버 호출 주소
 
@@ -272,7 +278,7 @@
 
 - 렌더 전 `init_actions` 에서 등록한 `startInterval` 의 틱이 화면 `_local` 을 갱신하지 못하던 문제를 고쳤다. 틱은 등록 문맥으로 돌아 ① 렌더 전 데이터 스냅숏을 읽어 렌더 뒤 바뀐 값을 보지 못했고 ② 컴포넌트 writer 가 없어 `setState`(target `local`)가 렌더 전 경로(저장소 B 만)로 가서 저장소 A 가 가진 같은 키(클릭 `setState`·init 값)에 가려졌다. 본인인증 전체화면(`auth/identity_challenge`, 사용자·관리자 템플릿)이 들어가자마자 「코드 만료」 를 띄우고, [재전송] 뒤 대기 시간이 줄지 않아 새로고침해야 다시 누를 수 있었다. 이제 `TemplateApp.executeInitActions` 가 init 문맥에 시작 세대(`__initRouteGeneration`)를 남기고, 그 값이 있고 컴포넌트 writer 가 없는 타이머의 틱은 매번 `_global`·`_local`(sequence 시작 상태 포함)을 현재 값으로 다시 읽는다. `_local` 쓰기는 액션 밖 writer(`G7Core.state.setLocal` — 저장소 B·화면 덧칠·덮어쓰기 기록)로 하되, 병합은 엔진 규칙(`deepMergeWithState` + 빈 객체 교체)으로 먼저 계산해 최상위 키만 shallow 로 넘기고, 호출 동안 `__g7ActionContext` 를 비우고 `__g7SequenceLocalSync` 를 되돌린다 — 다른 동작이 await 하는 사이 틱이 돌아도 그 동작의 writer(모달 저장소 A)·대기 중인 sequence 상태를 건드리지 않는다(ActionDispatcher `handleStartInterval`·`createDetachedTickContext`·`handleSetState`, `ActionContext.detachedTick`). `route`·`query`·`_computed` 는 등록 시점 값 그대로다.
 - 같은 타이머가 화면을 떠난 뒤에도 계속 돌며 다음 화면 `_local` 에 앞 화면 키를 쓰던 문제를 고쳤다(`stopAllIntervals` 를 부르는 곳이 없었다 — 타이머 맵 주석도 바로잡았다). 렌더 전 `init_actions` 에서 등록한 타이머는 경로 전환 세대가 init 시작 세대와 달라지면 스스로 멈춘다 — init 은 경로마다 다시 돌아 화면이 여전히 원하면 같은 id 로 다시 등록한다. init 이 await 하는 사이 경로가 바뀐 경우(뒤로 가기 경합)도 시작 세대로 판정해 새 세대에 붙지 않는다. 데이터 소스 `onSuccess`·컴포넌트 동작에서 등록한 타이머는 종전과 같다(레이아웃이 `stopInterval` 로 멈춘다).
-- 발생 시점: `startInterval` 과 본인인증 전체화면을 함께 들인 회원 인증 인프라(#297, engine-v1.45.0 무렵)부터. 회귀 잠금: `__tests__/DynamicRenderer.intervalTickFromInit.test.tsx`(실물 TemplateApp init 실행기·루트 렌더러, 수정 전 코드에서 red).
+- 발생 시점: `startInterval` 과 본인인증 전체화면을 함께 들인 회원 인증 인프라(engine-v1.45.0 무렵)부터. 회귀 잠금: `__tests__/DynamicRenderer.intervalTickFromInit.test.tsx`(실물 TemplateApp init 실행기·루트 렌더러, 수정 전 코드에서 red).
 
 ## [engine-v1.91.0] - 2026-11-11
 
@@ -307,7 +313,7 @@
 - 「본문 콘텐츠」의 「그림 캡션」을 꺼도 사용자·관리자 화면에 캡션(`<figcaption>`)이 그대로 보이던 문제 — `figcaption` 은 DOMPurify 가 원래 받는 태그라 후보를 꺼도 금지되지 않았다. 서버 규칙에 표시 제거 태그 `render_policy.drop_tags`(캡션 끔이면 `['figcaption']`)를 더하고, `ContentPolicyRuntime.sanitize()` 가 이 태그를 `FORBID_TAGS` + `ADD_FORBID_CONTENTS` 로 내용째 지운다(그림 `figure`·`img` 는 남김). 편집기 금지 목록(`forbid_tags`)에는 넣지 않아 저장 원문은 그대로이고 다시 켜면 복원된다.
 - 「외부 영상 삽입」을 끄면 영상 주소가 사라지고 빈 `<figure class="media"></figure>` 만 남던 문제 — 끈 규칙에는 `oembed` 가 허용 태그에 없어 정화 단계에서 지워져 `renderEmbeds()` 가 링크로 바꿀 기회가 없었다. `sanitize()` 가 `oembed`(`url` 속성은 `oembed` 에서만)를 늘 통과시켜 `renderEmbeds()` 가 원래 주소 `rel="noopener noreferrer nofollow"` 새 창 링크로 바꾼다 — 봇 화면(`finalize('bot')`)과 같은 결과.
 
-배경: #883(engine-v1.90.0)의 끈 상태 표시를 실측하지 않았다(#887 점검에서 발견). 서버 짝: `ContentHtmlPolicy::displayDropTags()`·`DISPLAY_DROP_WHEN_OFF`, 봇 화면 `finalize('bot')` 도 캡션을 지운다. 회귀 잠금: `contentPolicy/__tests__/ContentPolicyRuntime.test.ts`(끈 상태 2건 + 고정본 1건, 수정 전 3건 red), 두 템플릿 `HtmlContent.contentPolicy.test.tsx`(끈 상태 2건씩, 수정 전 red).
+배경: engine-v1.90.0 의 끈 상태 표시를 실측하지 않았다(이후 점검에서 발견). 서버 짝: `ContentHtmlPolicy::displayDropTags()`·`DISPLAY_DROP_WHEN_OFF`, 봇 화면 `finalize('bot')` 도 캡션을 지운다. 회귀 잠금: `contentPolicy/__tests__/ContentPolicyRuntime.test.ts`(끈 상태 2건 + 고정본 1건, 수정 전 3건 red), 두 템플릿 `HtmlContent.contentPolicy.test.tsx`(끈 상태 2건씩, 수정 전 red).
 
 ## [engine-v1.90.0] - 2026-11-08
 
@@ -339,7 +345,7 @@
 
 - 비회원이 권한 없는 기능(사용자 글쓰기 편집기의 이미지 업로드, 비회원 주문의 모바일 결제 승인키, 비회원 클레임 신청 등 `G7Core.api` 직접 호출)을 누르면 401 을 세션 만료로 보고 로그인 화면(`reason=session_expired`)으로 옮겨 쓰던 글·입력이 사라지던 문제 — ApiClient 요청 인터셉터가 Authorization 을 실었는지 요청 시점에 기록하고(`_g7AuthTokenSent`, 호출자가 직접 넣은 헤더 포함), 응답 인터셉터는 토큰을 싣지 않은 요청의 401 에 토큰 갱신·삭제·`onUnauthorized` 를 부르지 않고 `error.g7Auth = { tokenSent: false }` 를 붙여 호출자에게 돌려준다. 토큰을 실은 요청의 401 은 종전대로 갱신 → 실패 시 로그인 이동이다. 응답 시점의 토큰 유무는 판정에 쓰지 않는다(그사이 다른 요청의 갱신 실패로 지워지거나 다른 탭에서 로그인했을 수 있다).
 
-배경: `TemplateApp` 의 `setOnUnauthorized` 콜백(#301, 7859ece0da)은 「콜백 발동 = 토큰이 거부됨」을 전제로 `session_expired` 를 붙이는데, 그 전제는 데이터소스가 토큰 없으면 required 요청을 건너뛴다는 데에만 기대고 있었고 `G7Core.api` 직접 호출에는 성립하지 않았다. 발생 시점: 401 → onUnauthorized 구조 도입(2cd06d3ac7, 2025-11-11) 이후 7.1.4 까지. 회귀 잠금: `api/__tests__/ApiClient.anonymousUnauthorized.test.ts`(7 — 수정 전 5 red), `ApiClient.crossOriginResponse.test.ts` 동일 출처 401 갱신 회귀.
+배경: `TemplateApp` 의 `setOnUnauthorized` 콜백은 「콜백 발동 = 토큰이 거부됨」을 전제로 `session_expired` 를 붙이는데, 그 전제는 데이터소스가 토큰 없으면 required 요청을 건너뛴다는 데에만 기대고 있었고 `G7Core.api` 직접 호출에는 성립하지 않았다. 발생 시점: 401 → onUnauthorized 구조 도입(2cd06d3ac7, 2025-11-11) 이후 7.1.4 까지. 회귀 잠금: `api/__tests__/ApiClient.anonymousUnauthorized.test.ts`(7 — 수정 전 5 red), `ApiClient.crossOriginResponse.test.ts` 동일 출처 401 갱신 회귀.
 
 ## [engine-v1.88.1] - 2026-11-08
 
@@ -578,7 +584,7 @@
 
 ### Added
 
-- `G7Core.locale.site()`·`G7Core.locale.pick(값, 언어?)` — 사이트 기본 언어(환경설정 「기본 언어」)를 읽고, 다국어 값에서 보여 줄 글자를 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 순으로(빈 칸·공백만 있는 값은 건너뜀) 고릅니다. 고를 값이 없으면 `pick` 은 null 입니다. 규칙 SSoT 는 새 모듈 `support/localeTag.ts`(`isLocaleTag`·`primaryLanguage`·`resolveUsableLocale`·`pickLocalized`)이고 백엔드 `App\Support\LocaleTag`·`LocalizedValue` 와 같은 표로 잠급니다 — 봇(SEO) 화면과 SPA 화면의 글자가 갈리지 않게 (#148, G7CoreGlobals.ts `initLocaleAPI`, 회귀: `support/__tests__/localeTag.test.ts`·`G7CoreGlobals.test.ts`)
+- `G7Core.locale.site()`·`G7Core.locale.pick(값, 언어?)` — 사이트 기본 언어(환경설정 「기본 언어」)를 읽고, 다국어 값에서 보여 줄 글자를 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 순으로(빈 칸·공백만 있는 값은 건너뜀) 고릅니다. 고를 값이 없으면 `pick` 은 null 입니다. 규칙 SSoT 는 새 모듈 `support/localeTag.ts`(`isLocaleTag`·`primaryLanguage`·`resolveUsableLocale`·`pickLocalized`)이고 백엔드 `App\Support\LocaleTag`·`LocalizedValue` 와 같은 표로 잠급니다 — 봇(SEO) 화면과 SPA 화면의 글자가 갈리지 않게 (공개#148, G7CoreGlobals.ts `initLocaleAPI`, 회귀: `support/__tests__/localeTag.test.ts`·`G7CoreGlobals.test.ts`)
 
 ### Changed
 
@@ -590,27 +596,27 @@
 - 저장된 화면 언어(`g7_locale`)가 꺼진 언어(언어팩 비활성 등)면 화면이 그 언어 그대로 열려 영어로 떨어지던 문제 — 주 언어가 같은 지원 언어(`fil` → `fil-PH`, 서버 `LocaleTag::match` 와 같은 순서) → 사이트 기본 언어 → 서버가 정한 언어 순으로 엽니다. 이 브라우저의 저장값은 고쳐 쓰지 않습니다 — 언어팩 업데이트·잠깐 끄기 동안 들어온 비회원의 선택이 지워지지 않고, 팩이 다시 켜지면 다음 방문부터 그 언어로 돌아옵니다(설계 확정 2026-10-19). 지원 목록을 모르면 종전대로입니다 (TemplateApp.ts 생성자, support/localeTag.ts `matchLocale`·`resolveUsableLocale`, 회귀: `TemplateApp.memberLocale.test.ts` 「stale_saved_locale_on_boot」 5건 — 수정 전 red 4·`localeTag.test.ts`)
 - 로그인 회원의 언어가 꺼진 언어면 부팅·로그인 직후 그 언어로 바꿔(engine-v1.79.0 은 브라우저 언어 유지) 화면 언어가 회원 언어와 갈리거나 영어로 떨어지던 문제 — 사이트 기본 언어로 맞춥니다. 회원 정보의 언어 설정(`users.language`)은 바꾸지 않습니다(`changeLocale(…, { persist: false })`) — 언어팩을 잠깐 껐다 켜도 회원 선택이 남도록 (TemplateApp.ts `alignLocaleWithMemberLanguage`, auth/AuthManager.ts `establishSession`, 회귀: `TemplateApp.memberLocale.test.ts`·`AuthManager.loginLocale.test.ts` — 수정 전 red)
 - 공통 오류 화면의 내장 문구가 언어 코드 앞 두 글자로 골라 `kok`(콘칸어)에서 한국어, `jam`(자메이카 크리올)에서 일본어로 나오던 문제 — 주 언어 하위 태그로 비교합니다. 발생: engine-v1.78.5 (ErrorDisplay.ts `text`, 회귀: `ErrorDisplay.locale.test.ts`)
-- 정적 게시 언어 파일 주소를 API 주소로 되돌리는 복구 규칙이 숫자 지역 언어(`es-419`)를 놓쳐, 정적 파일이 없을 때 그 언어의 화면 문구를 복구하지 못하던 문제. 태그 계층 인라인 복구기(`asset-url-recovery.blade.php`)도 같은 규칙으로 고쳤습니다. 발생: #615 정적 게시 도입(2026-08-25) (support/assetUrl.ts `staticToLegacy`, 회귀: `assetUrlRecovery.test.ts`)
+- 정적 게시 언어 파일 주소를 API 주소로 되돌리는 복구 규칙이 숫자 지역 언어(`es-419`)를 놓쳐, 정적 파일이 없을 때 그 언어의 화면 문구를 복구하지 못하던 문제. 태그 계층 인라인 복구기(`asset-url-recovery.blade.php`)도 같은 규칙으로 고쳤습니다. 발생: 정적 게시 도입(2026-08-25) (support/assetUrl.ts `staticToLegacy`, 회귀: `assetUrlRecovery.test.ts`)
 
 ## [engine-v1.80.1] - 2026-10-14
 
 ### Added
 
 - 진입점 액션 키 `preventDefault` — 기본 동작 차단 방식을 정합니다. 생략하면 자동(아래 Changed), `true` 는 언제나 막고 실행(종전 동작), `false` 는 막지 않고 실행합니다. `stopPropagation` 과 같은 자리·형식(`:preventDefault="true"`)이고 컴파일 매니페스트 `ActionHandlerManifest::UNIVERSAL_TOP_LEVEL_KEYS` 에 등록했습니다 (ActionDispatcher.ts `createHandler`, 회귀: `ActionDispatcher.linkClick.test.tsx`·`NavigationLinkMarkupTest`)
-- path 를 생략한 `navigate` — `params.path`·`target` 키를 둘 다 적지 않으면 그 액션이 붙은 `<a href>` 의 href 로 이동합니다(주소는 href 한 곳, #757). 같은 출처 주소만 따르고 외부·실행 스킴 href 는 경고만 남기고 이동하지 않습니다(저장 검사가 `<a href>` 에 외부 주소를 허용하므로). `mergeQuery: true` 면 href 자신의 쿼리를 바탕으로 현재 쿼리를 합치고(href 키가 이김) `query` 가 마지막에 덮습니다. 링크 주소는 진입점 이벤트의 동기 구간에서 읽어 `sequence`·`onSuccess` 안쪽 navigate 에도 넘깁니다(`ActionContext.linkHref`). `path` 식이 빈 값으로 풀린 경우와 이벤트 없이 부른 navigate 는 종전대로 건너뜁니다. 링크 href 의 `#해시` 는 쿼리 병합·교체 뒤에도 유지합니다 (ActionDispatcher.ts `navigate` 분기·`handleNavigate`·`buildMergedQueryPath`, 회귀: `ActionDispatcher.linkClick.test.tsx`)
+- path 를 생략한 `navigate` — `params.path`·`target` 키를 둘 다 적지 않으면 그 액션이 붙은 `<a href>` 의 href 로 이동합니다(주소는 href 한 곳). 같은 출처 주소만 따르고 외부·실행 스킴 href 는 경고만 남기고 이동하지 않습니다(저장 검사가 `<a href>` 에 외부 주소를 허용하므로). `mergeQuery: true` 면 href 자신의 쿼리를 바탕으로 현재 쿼리를 합치고(href 키가 이김) `query` 가 마지막에 덮습니다. 링크 주소는 진입점 이벤트의 동기 구간에서 읽어 `sequence`·`onSuccess` 안쪽 navigate 에도 넘깁니다(`ActionContext.linkHref`). `path` 식이 빈 값으로 풀린 경우와 이벤트 없이 부른 navigate 는 종전대로 건너뜁니다. 링크 href 의 `#해시` 는 쿼리 병합·교체 뒤에도 유지합니다 (ActionDispatcher.ts `navigate` 분기·`handleNavigate`·`buildMergedQueryPath`, 회귀: `ActionDispatcher.linkClick.test.tsx`)
 - `G7Core.navigation.isPlainLeftClick(event)`·`G7Core.navigation.mergeQueryIntoHref(href)` — 링크를 그리는 합성 컴포넌트가 「보통 클릭만 SPA 로 가로채기」와 「렌더 때 현재 쿼리를 href 에 합치기」를 엔진과 같은 규칙으로 하도록 노출합니다. 규칙 SSoT 는 새 모듈 `navigationLinks.ts`(실제 주소 판정은 `support/navPolicy` 의 위험 스킴 판정을 재사용) (G7CoreGlobals.ts `initNavigationAPI`, 회귀: `ActionDispatcher.linkClick.test.tsx`·`G7CoreGlobals.test.ts`)
-- 식 도우미 `$t(키, 인자)` — 두 번째 인자(객체)를 번역 문구에 치환합니다. 레이아웃 반복 행에서 「{N}번째 행」처럼 언어마다 어순이 다른 문구를 `||` 대체값·삼항·`$t:키|이름={{…}}` 의 인자 식 안에서 만들 때 씁니다(#757). 종전에는 키 하나만 받아 인자를 버렸고(`{{n}}번째 행`), 공개 문서도 「인자는 `$t:key|param=` 으로만」이라 적고 있었습니다. 인자 하나 호출은 글자 그대로 같고, 객체가 아닌 두 번째 인자(undefined·글자·배열)는 인자 없는 호출과 같습니다. `count` 복수형 선택(engine-v1.78.7)과 없는 키·폴백 로케일 규칙은 문자열 인자와 같습니다. 봇(SEO) 화면 평가기도 같은 규칙으로 두 번째 인수를 치환합니다(값은 산술·`||`·삼항 식을 글자로 풀어 넣고, 인자 치환은 `strtr` 한 번) (DataBindingEngine.ts `extendedContext.$t`, TranslationEngine.ts `translate` 의 인자 객체 갈래·`toTranslationParams`, ExpressionEvaluator.php `evaluateTranslationFunction`·`translationParamsFromObjectLiteral`·`translateKey`, 회귀: `DataBindingEngine.translateParams.test.tsx`·`ExpressionEvaluatorTest` 2건)
+- 식 도우미 `$t(키, 인자)` — 두 번째 인자(객체)를 번역 문구에 치환합니다. 레이아웃 반복 행에서 「{N}번째 행」처럼 언어마다 어순이 다른 문구를 `||` 대체값·삼항·`$t:키|이름={{…}}` 의 인자 식 안에서 만들 때 씁니다. 종전에는 키 하나만 받아 인자를 버렸고(`{{n}}번째 행`), 공개 문서도 「인자는 `$t:key|param=` 으로만」이라 적고 있었습니다. 인자 하나 호출은 글자 그대로 같고, 객체가 아닌 두 번째 인자(undefined·글자·배열)는 인자 없는 호출과 같습니다. `count` 복수형 선택(engine-v1.78.7)과 없는 키·폴백 로케일 규칙은 문자열 인자와 같습니다. 봇(SEO) 화면 평가기도 같은 규칙으로 두 번째 인수를 치환합니다(값은 산술·`||`·삼항 식을 글자로 풀어 넣고, 인자 치환은 `strtr` 한 번) (DataBindingEngine.ts `extendedContext.$t`, TranslationEngine.ts `translate` 의 인자 객체 갈래·`toTranslationParams`, ExpressionEvaluator.php `evaluateTranslationFunction`·`translationParamsFromObjectLiteral`·`translateKey`, 회귀: `DataBindingEngine.translateParams.test.tsx`·`ExpressionEvaluatorTest` 2건)
 - `navigate` 대체 경로 `params.fallbackPath`(마크업 `<navigate path="…" fallbackPath="/"/>`) — 이동 주소가 비었거나 거부되면(실행 스킴·다른 출처·`//host`·백슬래시 우회) 대체 경로로 이동하고, 대체 경로도 같은 판정에서 거부되면 이동하지 않습니다. 없으면 종전 그대로(거부 → 무동작). 로그인 복귀·본인 확인 복귀·알림 이동처럼 쿼리·서버 값으로 이동하는 자리가 레이아웃 식으로 주소를 직접 거르지 않게 판정을 엔진 한 곳에 둡니다. 미등록 라우트 핸들러 `params.fallback`(engine-v1.40.0)과 다른 인자입니다. 레이아웃 편집기 「다른 페이지로 이동」 폼에 같은 칸을 두어 편집기 저장이 값을 지우지 않습니다. 봇(SEO) 화면도 같은 판정으로 링크를 만들고, 정적 검사 `layout-navigate-untrusted-path-fallback` 이 쿼리·서버 값이 앞자리를 정하는 navigate 에 대체 경로를 요구합니다 (navPolicy.ts `resolveNavigatePathWithFallback`, ActionDispatcher.ts `navigate` 분기, layout-editor/spec/coreActionRecipes.ts, ComponentHtmlMapper.php `resolveNavigateHref`, 회귀: `ActionDispatcher.navigateFallbackPath.test.ts` — 수정 전 red 6·`ComponentHtmlMapperNavigateFallbackPathTest`·`NavigateFallbackPathMarkupTest`)
 
 ### Changed
 
-- 실제 주소 `<a href>` 에 단 click 액션은 보통 클릭이 아니면(Ctrl·Cmd·Shift·Alt+클릭, `target`·`download` 링크) **기본 동작을 막지도 액션을 실행하지도 않습니다** — 브라우저가 새 탭·새 창으로 엽니다(#757). 종전에는 click 마다 수정키를 보지 않고 `preventDefault()` 를 불러 링크여도 새 탭으로 열 수 없었고, 공개 문서도 「`<a href>` 기본 이동은 엔진이 자동으로 막는다」고 적고 있었습니다. 판정 대상은 클릭이 시작된 실제 주소 링크가 그 액션이 붙은 요소 자신이거나 그 안쪽인 경우입니다 — 링크를 감싼 클릭 가능한 부모(카드 아코디언 등)의 액션도 비켜야 부모가 기본 동작을 막아 새 탭을 취소하지 않습니다(사례 밖 대조에서 사용자 템플릿 마이페이지 문의 목록 카드로 확인). 가운데 버튼(`auxclick`)·우클릭(`contextmenu`)에는 엔진 리스너가 없습니다. `href` 없는 요소·`change` 이벤트는 종전과 같습니다 (ActionDispatcher.ts `createHandler`, 회귀: `ActionDispatcher.linkClick.test.tsx` — 기준선 엔진에서 red 9)
+- 실제 주소 `<a href>` 에 단 click 액션은 보통 클릭이 아니면(Ctrl·Cmd·Shift·Alt+클릭, `target`·`download` 링크) **기본 동작을 막지도 액션을 실행하지도 않습니다** — 브라우저가 새 탭·새 창으로 엽니다. 종전에는 click 마다 수정키를 보지 않고 `preventDefault()` 를 불러 링크여도 새 탭으로 열 수 없었고, 공개 문서도 「`<a href>` 기본 이동은 엔진이 자동으로 막는다」고 적고 있었습니다. 판정 대상은 클릭이 시작된 실제 주소 링크가 그 액션이 붙은 요소 자신이거나 그 안쪽인 경우입니다 — 링크를 감싼 클릭 가능한 부모(카드 아코디언 등)의 액션도 비켜야 부모가 기본 동작을 막아 새 탭을 취소하지 않습니다(사례 밖 대조에서 사용자 템플릿 마이페이지 문의 목록 카드로 확인). 가운데 버튼(`auxclick`)·우클릭(`contextmenu`)에는 엔진 리스너가 없습니다. `href` 없는 요소·`change` 이벤트는 종전과 같습니다 (ActionDispatcher.ts `createHandler`, 회귀: `ActionDispatcher.linkClick.test.tsx` — 기준선 엔진에서 red 9)
 
 ### Fixed
 
 #### 번역 인자·식 평가
 
-- `G7Core.t(키, 인자)`·`useTranslation().t(키, 인자)` 가 인자 객체를 `|키=값` 문자열로 이어 붙여 번역 엔진에 넘겨, 값에 든 `&`·`|`·`=` 에서 값이 잘리고(「Tom & Jerry」 → 「Tom」), 끝의 공백·빗금(`/`)은 문장 꼬리로 떼어지고, `{{…}}` 는 데이터 문맥 없이 식으로 평가돼 빈 글자가 되던 문제. 인자 객체를 그대로 넘겨 값을 글자 그대로 치환합니다. 비어 있는 값(null·undefined)은 종전의 `"undefined"`·`"null"` 글자 대신 빈 글자입니다(문자열 인자의 빈 `{{식}}` 과 같음). 컴포넌트가 운영자 입력(상품명·역할명)으로 접근성 이름을 만드는 #757 경로가 이 함수를 씁니다. 레이아웃 편집기 미리보기가 `G7Core.t` 를 편집 대상 사전 우선으로 바꿔 끼우는 래퍼도 같은 이어 붙이기를 해, 사이트와 미리보기가 다른 글자를 그렸습니다 — 같이 고쳤습니다. 7.0.0-beta 부터 있던 결함입니다 (G7CoreGlobals.ts `G7Core.t`, TranslationContext.tsx `t`, layout-editor/components/PreviewCanvas.tsx, 회귀: `DataBindingEngine.translateParams.test.tsx` 「useTranslation().t」·`PreviewCanvas.gCoreTFallback.test.tsx`·`G7CoreGlobals.test.ts` 인자 전달 단언 갱신)
+- `G7Core.t(키, 인자)`·`useTranslation().t(키, 인자)` 가 인자 객체를 `|키=값` 문자열로 이어 붙여 번역 엔진에 넘겨, 값에 든 `&`·`|`·`=` 에서 값이 잘리고(「Tom & Jerry」 → 「Tom」), 끝의 공백·빗금(`/`)은 문장 꼬리로 떼어지고, `{{…}}` 는 데이터 문맥 없이 식으로 평가돼 빈 글자가 되던 문제. 인자 객체를 그대로 넘겨 값을 글자 그대로 치환합니다. 비어 있는 값(null·undefined)은 종전의 `"undefined"`·`"null"` 글자 대신 빈 글자입니다(문자열 인자의 빈 `{{식}}` 과 같음). 컴포넌트가 운영자 입력(상품명·역할명)으로 접근성 이름을 만드는 경로가 이 함수를 씁니다. 레이아웃 편집기 미리보기가 `G7Core.t` 를 편집 대상 사전 우선으로 바꿔 끼우는 래퍼도 같은 이어 붙이기를 해, 사이트와 미리보기가 다른 글자를 그렸습니다 — 같이 고쳤습니다. 7.0.0-beta 부터 있던 결함입니다 (G7CoreGlobals.ts `G7Core.t`, TranslationContext.tsx `t`, layout-editor/components/PreviewCanvas.tsx, 회귀: `DataBindingEngine.translateParams.test.tsx` 「useTranslation().t」·`PreviewCanvas.gCoreTFallback.test.tsx`·`G7CoreGlobals.test.ts` 인자 전달 단언 갱신)
 - 번역 인자 치환(`replaceParams`)이 값을 `String.prototype.replace` 의 바꿈 문자열로 넣어 값의 `$&`·`$'`·`` $` `` 가 일치 글자·앞뒤 글자로 바뀌고, 앞 인자 값에 든 뒤 인자 자리표시자(`{{column}}`)가 뒤 인자 차례에 다시 치환되던 문제. 자리표시자를 먼저 자리 표식으로 바꾼 뒤 값을 함수 치환으로 한 번에 넣습니다. 문자열 인자(`$t:키|…`)·인자 객체 두 경로 모두 해당하고, 봇(SEO) 화면 평가기의 `str_replace` 순차 치환도 `strtr` 한 번으로 바꿨습니다. engine-v1.74.0 정규식 캐시 도입 때 「현행 그대로」로 잠근 `$&` 시험은 새 기대값으로 바꿨습니다. 7.0.0-beta 부터 있던 결함입니다 (TranslationEngine.ts `replaceParams`, 회귀: `DataBindingEngine.translateParams.test.tsx`·`TranslationEngine.replaceParams.cache.test.ts`)
 - 레이아웃 문자열 번역 `$t:키|이름={{값}}` 에서 바인딩한 값에 `&`·`|`·`=` 가 있으면 값이 그 자리에서 잘리던 문제(상품명 「Tom & Jerry 머그컵」의 장바구니 선택 체크박스 이름이 「Tom 선택」). 렌더러가 `{{…}}` 를 먼저 값으로 바꾼 뒤 번역 엔진이 인자를 나눠, 값에 든 글자를 인자 구분자로 읽었습니다. 값 끝의 공백·빗금(`/`)이 문장 꼬리로 떨어지고, 값으로 받은 번역 키(`$t:enums.x`)의 번역 문구에 든 `&` 에서도 잘렸습니다. 바인딩 해석이 `$t:` 인자 자리에 넣은 값을 보호 표식(U+FDD3·U+FDD4)으로 감싸고, 번역 엔진이 인자를 나눈 뒤 글자 그대로 치환하고 표식을 걷습니다. 보호는 결과를 곧바로 번역하는 경로만 켭니다 — 렌더러의 prop·text 보간(반복 렌더 포함), 액션의 확인 창(`confirm`)·`setError`·`showAlert` 문구, `toast` 의 `message`. 상태·요청 본문으로 나가는 다른 핸들러 인자, `$t:defer:` 인자, `$t:` 밖 바인딩, 평가 실패·빈 값 자리는 종전과 같습니다(빈 값은 종전처럼 인자가 빠져 자리표시자가 남습니다). 엘리먼트 직전 안전망(`stripRawDeep`)도 이 표식을 걷습니다. 봇(SEO) 화면 평가기는 인자를 나눈 뒤 값을 풀어 이 결함이 없었지만, 인자를 `|` 로 나눌 때 `{{…}}` 식 안의 파이프(`{{v | date}}`)·`||` 까지 잘라 값이 사라지던 문제를 함께 고쳤습니다. 7.0.0-beta 부터 있던 결함입니다 (translationParamValues.ts, DataBindingEngine.ts `BindingOptions.protectTranslationParams`·`resolveBindings`, TranslationEngine.ts `resolveTranslations`·`translateWithParamString`·`parseParams`, DynamicRenderer.tsx props·text 보간과 `resolveTranslationsDeep`, helpers/RenderHelpers.ts `resolveValue`, rawMarkers.ts `stripRawDeep`, ActionDispatcher.ts `TRANSLATED_PARAM_HANDLERS`·`TRANSLATED_TARGET_HANDLERS`, ExpressionEvaluator.php `resolveTranslation`·`evaluateBinding`, 회귀: `DynamicRenderer.translationParamValues.test.tsx` — 수정 전 red 7·`ExpressionEvaluatorTranslationParamTest`)
 - 문자열 보간과 번역 인자에서 리터럴만 있는 식(`{{1}}`·`{{0}}`·`{{'abc'}}`·`{{"x y"}}`·`{{true}}`·`{{null}}`)이 값이 아니라 같은 이름의 경로(`context['1']`)로 찾아져 빈 글자가 되던 문제(`$t:키|count={{1}}|max={{3}}` → 「{{count}}/{{max}}개」). 식 모양 판정 `BindingShape.isComplexExpression` 이 숫자·따옴표 문자열·`true/false/null/undefined` 를 값으로 평가하게 했습니다(새 `isLiteralExpression` — 앞자리 0 숫자·같은 따옴표를 품은 문자열·`'a' + b` 같은 식은 리터럴이 아님). 번역 인자 평가(`TranslationEngine.resolveParamValue`)도 같은 판정을 씁니다. 봇(SEO) 평가기는 종전부터 값으로 풀어(`1/3개`) 두 렌더러가 갈렸습니다. 같은 판의 `$t:` 인자 값 보호 수정 이후의 회귀로 보였으나, 그 수정 전 코드로 같은 시험을 재도 결과가 같아 종전부터 있던 결함입니다. 번들 레이아웃에서 바뀌는 자리는 계산식 `csvUrl: "{{''}}"` 2곳(`undefined` → `''`, 쓰는 쪽 `!!csvUrl` 판정 동일)뿐입니다 (BindingShape.ts, TranslationEngine.ts, 회귀: `DataBindingEngine.literalBindings.test.tsx` — 수정 전 red 15, `BindingShape.routingParity` 스냅숏 갱신 2건)
@@ -834,11 +840,11 @@
 
 ### Fixed
 
-- 같은 동작 순서(`sequence`, API 성공 분기) 안에서 창을 닫고 바로 다른 창을 열면 방금 닫은 창이 다시 나타나던 문제를 고쳤습니다. `closeModal`·`openModal` 이 순서 시작 시점에 복사해 둔 `_global.modalStack` 을 읽어, 닫기는 `[]` 를 쓰고 열기는 낡은 `[A]` 에 쌓아 `[A, B]` 를 썼습니다(관리자 확장 목록의 강제 활성 창 → 「언어팩 다시 켜기」 창, #712 실측). 두 핸들러가 `G7Core.state.get()` 의 최신 스택을 읽습니다(`ActionDispatcher::latestModalStack()`). 문맥에 전역 사본이 없는 호출(액션 문맥 없이 `G7Core.dispatch()` 를 부른 확장 JS)은 종전대로 빈 스택에서 시작합니다.
+- 같은 동작 순서(`sequence`, API 성공 분기) 안에서 창을 닫고 바로 다른 창을 열면 방금 닫은 창이 다시 나타나던 문제를 고쳤습니다. `closeModal`·`openModal` 이 순서 시작 시점에 복사해 둔 `_global.modalStack` 을 읽어, 닫기는 `[]` 를 쓰고 열기는 낡은 `[A]` 에 쌓아 `[A, B]` 를 썼습니다(관리자 확장 목록의 강제 활성 창 → 「언어팩 다시 켜기」 창 실측). 두 핸들러가 `G7Core.state.get()` 의 최신 스택을 읽습니다(`ActionDispatcher::latestModalStack()`). 문맥에 전역 사본이 없는 호출(액션 문맥 없이 `G7Core.dispatch()` 를 부른 확장 JS)은 종전대로 빈 스택에서 시작합니다.
 - `G7Core.modal.isOpen()`·`getStack()` 이 실제 화면에서 늘 `false`·`[]` 를 돌려주던 문제를 고쳤습니다. `G7Core.state.get()` 은 `_global` 의 내용물을 바로 돌려주는데 두 함수는 `state._global.modalStack` 을 읽었습니다.
 - 레이아웃 편집기 미리보기에서 컴포넌트가 셀 렌더 함수로 직접 그리는 자식(CardGrid·DataGrid 셀, 확장 행, component_layout)이 미리보기 기기 폭 대신 브라우저 창 폭으로 `responsive` 분기를 고르고, `$t:defer:` 를 호스트 언어로 번역하고, 액션을 호스트 dispatcher 에 편집 모드에서도 바인딩하던 문제를 고쳤습니다(공개 이슈 #141). 미리보기는 iframe 이 아니라 같은 문서의 div 라 미리보기 값은 React Context·prop 으로만 전달되는데, 셀 렌더 함수는 Context 를 못 읽어 전역 싱글톤(창 폭)·호스트 상태를 읽었습니다 — `renderItemChildren` 반응형 지원 도입 이후 줄곧 있던 결함이며 7.0.11 에서 제보됐습니다. DynamicRenderer 가 자기 렌더 환경(폭·번역 컨텍스트·엔진·dispatcher·레지스트리·편집 모드)을 안정 ref 로 `__componentContext.renderEnvRef` 에 노출하고(identity 불변이라 deps 재계산 없음), 셀 렌더 함수·`G7Core.renderItemChildren`·`renderComponentLayout`(4번째 인자 신설)·`renderExpandContent` 는 「명시 옵션 > 렌더 환경 > 호스트 값」 순으로 고릅니다. 편집 모드면 셀 액션을 바인딩하지 않습니다(DynamicRenderer 와 같은 규약). 슬롯 등록에는 `getRenderEnv`·`componentPath` 가 실려 SlotContainer 가 등록 렌더러의 환경과 원본 편집 경로로 그립니다. 편집기 밖에서는 렌더 환경이 곧 호스트 값이라 동작이 같습니다. 회귀 잠금: `ResponsiveOverride.renderPathParity.test.tsx`(제보자 요청 두 경로 패리티)·`troubleshooting-render-path-environment.test.ts` (RenderEnvironment.ts, RenderHelpers.ts, G7CoreGlobals.ts, DynamicRenderer.tsx, SlotContext.tsx)
-- 레이아웃 편집기 미리보기에서 CSS 폭 `@media` 와 `vw` 가 브라우저 창 폭으로 판정돼, 창 1440 에서 모바일 미리보기를 골라도 `md:` 규칙이 켜지고 창 700 에서 데스크톱 미리보기를 골라도 손으로 쓴 `max-width` 규칙이 표를 숨기던 문제를 고쳤습니다(#141). 편집기 생존 동안 문서의 스타일시트를 훑어 폭 `@media` 블록을 원본(선택자 끝 `:where(:not(.g7le-preview-frame *))` 가드 — 프레임 밖 전용) + 바로 뒤 `@container g7le-preview` 복제본으로 나누고, `vw` 규칙은 프레임 폭 변수(`--g7le-vw`) 복제본을 만듭니다. 선택자 이름이 아니라 조건식만 보므로 CSS 제작 도구와 무관하며, 같은 인덱스에 넣어 캐스케이드 순서·`@layer` 소속·우선순위가 그대로입니다. rem/em 조건은 `@media` 기준 px 로 바꿉니다. 새 `<style>`·`<link>`·CSS-in-JS 규칙도 감시해 처리하고, 언마운트 때 원문 그대로 되돌립니다. 미리보기 프레임 테두리는 `box-shadow` 로 바꿔 내용 폭이 기기 폭과 같아졌습니다(종전 390 → 389). 계측은 `window.__g7lePreviewMediaIsolation`. 소유 노드에 `data-g7le-no-media-isolation` 을 단 시트는 건너뜁니다 (previewMediaIsolation/*, usePreviewMediaIsolation.ts, PreviewCanvas.tsx, LayoutEditorChrome.tsx)
-- 레이아웃 편집기 스타일 탭의 분기 판정(`resolveBranchSeparationMode`)이 폭을 넘겨받지 못하면 브라우저 창 폭으로 폴백하던 것을 사용자 지정 기본 폭(`DEFAULT_PREVIEW_CUSTOM_WIDTH` 1024)·기기 기본 폭으로 바꿨습니다(#141). 유일한 호출부는 늘 폭을 넘겨 화면 동작은 같습니다 (styleScope.ts, deviceList.ts, LayoutEditorContext.tsx)
+- 레이아웃 편집기 미리보기에서 CSS 폭 `@media` 와 `vw` 가 브라우저 창 폭으로 판정돼, 창 1440 에서 모바일 미리보기를 골라도 `md:` 규칙이 켜지고 창 700 에서 데스크톱 미리보기를 골라도 손으로 쓴 `max-width` 규칙이 표를 숨기던 문제를 고쳤습니다(공개#141). 편집기 생존 동안 문서의 스타일시트를 훑어 폭 `@media` 블록을 원본(선택자 끝 `:where(:not(.g7le-preview-frame *))` 가드 — 프레임 밖 전용) + 바로 뒤 `@container g7le-preview` 복제본으로 나누고, `vw` 규칙은 프레임 폭 변수(`--g7le-vw`) 복제본을 만듭니다. 선택자 이름이 아니라 조건식만 보므로 CSS 제작 도구와 무관하며, 같은 인덱스에 넣어 캐스케이드 순서·`@layer` 소속·우선순위가 그대로입니다. rem/em 조건은 `@media` 기준 px 로 바꿉니다. 새 `<style>`·`<link>`·CSS-in-JS 규칙도 감시해 처리하고, 언마운트 때 원문 그대로 되돌립니다. 미리보기 프레임 테두리는 `box-shadow` 로 바꿔 내용 폭이 기기 폭과 같아졌습니다(종전 390 → 389). 계측은 `window.__g7lePreviewMediaIsolation`. 소유 노드에 `data-g7le-no-media-isolation` 을 단 시트는 건너뜁니다 (previewMediaIsolation/*, usePreviewMediaIsolation.ts, PreviewCanvas.tsx, LayoutEditorChrome.tsx)
+- 레이아웃 편집기 스타일 탭의 분기 판정(`resolveBranchSeparationMode`)이 폭을 넘겨받지 못하면 브라우저 창 폭으로 폴백하던 것을 사용자 지정 기본 폭(`DEFAULT_PREVIEW_CUSTOM_WIDTH` 1024)·기기 기본 폭으로 바꿨습니다(공개#141). 유일한 호출부는 늘 폭을 넘겨 화면 동작은 같습니다 (styleScope.ts, deviceList.ts, LayoutEditorContext.tsx)
 
 ## [engine-v1.75.1] - 2026-10-01
 
@@ -964,7 +970,7 @@
   경고로 남고, 방문자는 아무 차이를 느끼지 않는다.
 - 내려받기 중 받아 둔 내용을 임시 링크로 저장시키는 `blob:`·`data:` 주소는 `target` 없이
   표시 이름만 보낸다. 게시판 첨부가 이 방식이라, 그 주소를 실으면 서버가 URL 이 아니라며
-  거절해 첨부 내려받기가 통째로 빠졌다(브라우저 실측 이슈 #682 §8 M1-T7).
+  거절해 첨부 내려받기가 통째로 빠졌다(브라우저 실측에서 발견).
 - 같은 화면(주소 + 라우트 경로)으로의 되풀이 이동이 1초 안에 다시 오면 페이지뷰를 한 번만
   보낸다. 라우터는 같은 주소로의 이동도 매번 알려, 메뉴 더블클릭 한 번이 페이지뷰 2건이 됐다
   (§8 M1-T10). 창은 링크 클릭 중복 억제와 같은 1초다.
@@ -984,7 +990,7 @@
 
 - `fallback` 은 **아직 한 번도 못 받았을 때**의 첫 그림이다. 종전에는 이미 값을 그리고 있는 소스가
   다시 부르다 실패해도 `fallback` 으로 되돌아가, 30초마다 도는 실시간 화면이 서버 오류 한 번에
-  「지금 0명」이라는 거짓을 띄웠다(이슈 #682 §8 M4-T4). 이제 한 번이라도 성공한 소스는 마지막 값을
+  「지금 0명」이라는 거짓을 띄웠다(브라우저 실측에서 발견). 이제 한 번이라도 성공한 소스는 마지막 값을
   그대로 두고, 실패는 종전처럼 `errorHandling`·토스트로 알린다. 성공한 적이 없으면 종전대로
   `fallback` 을 쓴다. 세 경로(첫 그림·결과 추적·백그라운드)와 방송 수신이 같은 규칙을 따른다.
 
@@ -992,7 +998,7 @@
 
 - 허용 전역에 `encodeURIComponent` 를 더했다. 레이아웃이 검색어처럼 사용자가 넣은 값을 주소에
   실을 때 필요하다 — 없으면 호출이 「non-function」으로 실패해 식 전체가 비고, 방문자 통계 리포트는
-  검색어가 있는 동안 CSV 주소가 사라져 내려받기 버튼이 숨었다(이슈 #682 §8 M3). 인자를 문자열로
+  검색어가 있는 동안 CSV 주소가 사라져 내려받기 버튼이 숨었다(브라우저 실측에서 발견). 인자를 문자열로
   바꿔 돌려줄 뿐 전역이나 프로토타입에 닿지 않는다. 역함수는 잘못된 입력에 예외를 던지므로 넣지 않았다.
 
 ## [engine-v1.71.1] - 2026-09-21
@@ -1035,7 +1041,7 @@
 - 본인인증 제공자처럼 **현재 탭에서 나갔다가 돌아오는** 흐름을 적을 수단이 없었다. `navigate` 는 SPA 경로용이라 절대 주소를 라우트로 해석하고, `openWindow` 는 새 창이라 팝업 차단에 걸린다.
 - `<redirect url="…"/>` 로 적는다. `replace: true` 를 주면 뒤로가기 이력을 남기지 않는다. 주소가 비면 아무 데도 가지 않는다.
 - 미리보기에서는 실행되지 않는다 — 미리보기 창이 사라지기 때문이다(`navigate` 계열과 같은 규칙).
-- `auth/identity_challenge` 레이아웃은 #297 부터 `handler="redirect"` 를 적고 있었으나 **엔진에 소비처가 없어 한 번도 동작하지 않았다**(전 이력 조사: `case 'redirect'` 0건 · 매니페스트 0건 · 확장 등록 0건). 미등록 핸들러는 조용히 무동작이라 콘솔·네트워크에 흔적이 남지 않는다.
+- `auth/identity_challenge` 레이아웃은 회원 인증 인프라 도입 때부터 `handler="redirect"` 를 적고 있었으나 **엔진에 소비처가 없어 한 번도 동작하지 않았다**(전 이력 조사: `case 'redirect'` 0건 · 매니페스트 0건 · 확장 등록 0건). 미등록 핸들러는 조용히 무동작이라 콘솔·네트워크에 흔적이 남지 않는다.
 
 ### Fixed
 
@@ -1296,7 +1302,7 @@
 
 - 자동바인딩(`performStateUpdate`)이 `__g7PendingLocalState` 에 **저장소 A 기반 전체 스냅샷**을 그대로 대입했다. 그 base(`parentFormContext.state`)는 `extendedDataContext` useMemo 의 결과라, `setLocal({ render:false, selfManaged:true })`(CKEditor5 등)이 저장소 B 에만 쓴 뒤 memo 가 재계산되지 않은 구간에서는 **편집 이전 스냅샷으로 고정**된다. 이어지는 `setLocal` 이 `currentSnapshot = pendingState || baseLocal` 로 그것을 채택해 저장소 B 를 통째 교체하면서 편집분이 사라졌다.
 - 이제 pending 은 렌더러가 화면을 만드는 순서(`dataContext._local → dynamicState → __g7ForcedLocalFields`)와 같게 합성한다(`composeAutoBindingPendingSnapshot`). pending 은 `getLocal()` 이 읽는 "화면과 같은 전체 스냅샷" 이므로 이 정합이 맞다. 방금 입력한 경로는 마지막에 다시 얹어, 오버레이의 직전 값이 입력을 되돌리지 못하게 한다.
-- 성립 조건에는 **memo deps 와 무관한 리렌더**가 선행해야 한다(브라우저 실측: 폭 변경). 그것이 없으면 손실이 없다 — 리사이즈 없는 대조군은 정상이다. engine-v1.63.3(#130)이 저장 클릭 경로를 고쳤다면 이번 수정은 **그 앞의 키입력 경로**를 고친다.
+- 성립 조건에는 **memo deps 와 무관한 리렌더**가 선행해야 한다(브라우저 실측: 폭 변경). 그것이 없으면 손실이 없다 — 리사이즈 없는 대조군은 정상이다. engine-v1.63.3(공개#130)이 저장 클릭 경로를 고쳤다면 이번 수정은 **그 앞의 키입력 경로**를 고친다.
 - 작성 화면은 `내용은 필수입니다` 422 로, **수정 화면은 성공 토스트와 함께 서버 원본이 저장되어** 편집분이 조용히 사라졌다. 화면의 편집기에는 고친 내용이 그대로 보이고 콘솔 에러도 없었다.
 - 저장소 A 경로(`parentFormContext.setState`)와 `setLocal` 의 base 우선순위는 **건드리지 않는다**. 전자는 2026-04-22 에 로그인 폼 email 손실로 철회된 수정의 자리이고, 후자는 `_localInit`(engine-v1.49.2)이 초기 데이터를 pending 에만 실어 두는 구간을 깨뜨린다.
 
@@ -1304,7 +1310,7 @@
 
 ### Fixed
 
-#### 리사이즈 후 저장 시 편집기 본문이 저장소 B 와 sequence 반환값에서 함께 사라지던 문제 (#130)
+#### 리사이즈 후 저장 시 편집기 본문이 저장소 B 와 sequence 반환값에서 함께 사라지던 문제 (공개#130)
 
 - `handleSetState` 의 COMPONENT 분기가 `_global._local`(저장소 B)을 동기화할 때, base 를 저장소 A 계열 전체 스냅샷 대신 **live B + 변경 키**로 삼는다. `setGlobalState` 는 `_local` 을 얕게 병합하므로 이 동기화는 patch 가 아니라 **통째 교체**였고, A 가 아직 받지 못한 값이 조용히 사라졌다. 정답 선례는 같은 파일의 dot-notation 경로(engine-v1.58.2)이며 그 주석이 이 경로를 위험으로 지목하고 있었다.
 - **같은 분기의 반환값도 live B 기반으로 신선화한다.** 요청 body 는 저장소 B 를 읽지 않는다 — sequence 의 `currentState`(= 이 반환값)에서 온다. B 쓰기만 고치면 B 는 지켜지지만 저장은 여전히 422 가 났다.
@@ -1326,7 +1332,7 @@
 
 ### Fixed
 
-#### 정적 게시본이 200 인데 본문이 손상된 경우 폴백하지 못하던 문제 (#122)
+#### 정적 게시본이 200 인데 본문이 손상된 경우 폴백하지 못하던 문제 (공개#122)
 
 - `fetchStaticFirst()` 가 정적 응답의 본문이 **JSON 으로 파싱되는지까지** 확인한 뒤 돌려준다. 종전에는 `response.ok` 만 보았는데, 디스크가 가득 찼거나 quota 를 넘긴 상태에서 만들어진 게시본은 내용이 중간에 잘린 채로도 웹서버가 정상 200 으로 서빙한다. 그러면 폴백이 걸리지 않은 채 호출부의 `response.json()` 이 예외를 던지고, 그 지점에는 폴백 계층이 없어 화면 전체가 뜨지 않았다 — 정적·API·태그 3층 폴백이 유일하게 개입하지 못하던 경로다. 이제 손상이 확인되면 종전 API 로 폴백하고, 폴백 사실을 콘솔 경고 한 줄로 남긴다(조용한 폴백 금지).
 - 검증을 위해 본문을 읽더라도 호출부가 그대로 다시 소비할 수 있다 — 응답 본문은 1회용 스트림이라, 읽고 그대로 돌려주면 호출부에서 빈 본문이 된다.
@@ -1335,7 +1341,7 @@
 
 ### Fixed
 
-#### 정적 게시 미스에서 운영자 추가 자산이 복구되지 않던 문제 (#123)
+#### 정적 게시 미스에서 운영자 추가 자산이 복구되지 않던 문제 (공개#123)
 
 - `staticToLegacy()` 가 세 확장 타입을 모두 역변환한다 — 종전에는 `templates/{id}/assets/**` 만 처리했다. 모듈·플러그인의 `custom/**` 도 같은 형태(`{type}/{id}/assets/**`)로 게시되는데 그 규칙이 없어, 게시본이 GC(현재+직전 1개 보존)로 사라지면 되돌릴 주소를 만들지 못했다. blade 인라인 복구기(`partials/asset-url-recovery.blade.php`)도 동형으로 갱신했다 — 두 구현이 갈리면 코어 번들 로드 전 경로만 조용히 다르게 동작한다.
 - `ModuleAssetLoader.loadCustomAssets()` 가 정적 → 종전 API 폴백 계층을 갖는다. 형제 경로(`loadBundleCss`)는 이미 갖고 있었고 이 경로만 비어 있었다: 정적 URL 이 404 가 확정된 뒤에도 같은 URL 을 3회 재시도할 뿐이라 복구가 원리상 불가능했고, 화면은 정상 렌더되면서 운영자가 덧붙인 스타일만 조용히 빠졌다.
@@ -1345,12 +1351,12 @@
 
 ### Added
 
-#### 서버가 심은 템플릿 externals 의 로드 실패 표면화 (#123)
+#### 서버가 심은 템플릿 externals 의 로드 실패 표면화 (공개#123)
 
 - `drainExternalAssetFailures()` 신설 — 템플릿 `externals`(아이콘 폰트 CSS·웹폰트·부팅 스크립트)는 서버가 HTML 에 직접 심으므로 엔진 번들보다 먼저 평가된다. 실패해도 자바스크립트에는 아무 신호가 오지 않아, engine-v1.62.0 이 세운 실패 표면화 계층이 **이 경로만 통째로 비어 있었다**: 아이콘 58개가 0×0 으로 사라진 화면이 배너도 로그도 없이 남았고(아이콘만으로 조작하는 버튼이 있는 화면에서는 곧 조작 불능), 자체 서버 로그에도 흔적이 없어 운영자가 원인을 특정할 수 없었다. 이제 각 태그의 `onerror` 가 부트스트랩 대기열에 쌓이고, 엔진이 뜨면 그 대기열을 배너로 흘려보낸 뒤 이후 실패용 sink 를 건다. 배너의 [다시 시도]는 해당 태그를 캐시 무효화 쿼리와 함께 다시 심어 복구되면 배너를 해제한다.
 - 힌트(`preload`/`preconnect`/`dns-prefetch`)는 대상에서 제외한다 — 실패해도 화면 기능이 사라지지 않으므로, 여기까지 알리면 안내가 잡음이 되어 정작 조작 불능을 만드는 실패가 묻힌다.
 
-#### 커스텀 자산 관리가 모듈·플러그인까지 확장 (#123)
+#### 커스텀 자산 관리가 모듈·플러그인까지 확장 (공개#123)
 
 - 편집기 [커스텀 자산] 모달이 **대상 선택기**를 갖는다 — 편집 중인 템플릿과 활성 모듈·플러그인을 오간다. 같은 기능이 확장 타입에 따라 화면에서 되고 안 되면 운영자는 그 이유를 알 수 없고, 모듈·플러그인 `custom/` 은 그동안 FTP 말고 경로가 없었다.
 - 관리 API 가 확장 공통 엔드포인트(`/api/admin/extensions/{type}/{id}/custom-assets`)로 재편됐다. 타입별로 나누면 같은 검증·문서·테스트가 세 벌로 갈리고, 그중 하나만 약해지면 그 경로가 조용한 우회로가 된다.
@@ -1358,7 +1364,7 @@
 
 ### Changed
 
-#### 레이아웃 편집기 번들 로드의 재시도 계층 + 실패 문구 정리 (#123)
+#### 레이아웃 편집기 번들 로드의 재시도 계층 + 실패 문구 정리 (공개#123)
 
 - `loadLayoutEditorBundle()` 이 `loadScriptWithRetry` 를 쓴다 — 이 경로만 재시도 계층이 없어(원시 `<script>` + `onerror` 1회), 일시적 네트워크 유실 한 번에 편집기가 통째로 열리지 않았다. 다른 모든 자산 경로(레이아웃 스크립트·확장 병합 번들·CSS)가 이미 이 로더를 쓰고 있었다.
 - 실패 화면 문구에서 번들 경로를 걷어냈다. 종전에는 `편집기 번들 로드 실패: /build/core/layout-editor.min.js` 처럼 내부 배치 구조가 그대로 노출됐는데, 사용자가 고칠 수 있는 정보가 아니다. 경로는 콘솔 로그로만 남기고, 화면에는 다음 행동(네트워크 확인 · 새로고침)을 안내한다.
@@ -1367,7 +1373,7 @@
 
 ### Added
 
-#### 구동 자산 자체 제공 seam + 로드 실패 표면화 (#123)
+#### 구동 자산 자체 제공 seam + 로드 실패 표면화 (공개#123)
 
 - `networkResilience.loadStylesheetWithRetry()` 신설 — `loadScriptWithRetry` 와 동형(3시도·지수 백오프·재시도 전 element 제거·**최종 실패 시 reject**). CSS 경로만 이 계층이 없어 실패가 통째로 무음이었다: `onerror` 를 아예 걸지 않거나 `resolve()` 로 삼켜, 스타일이 붙지 않은 화면(아이콘 소실·본문 서식 붕괴)이 오류 없이 남았다.
 - `G7Core.asset.{template,templateDir,module,plugin,convertToCurrentMode,loadScript,loadStylesheet}` 신설 — 확장 IIFE 번들은 코어의 `assetUrl.ts` 를 import 할 수 없어 URL 을 문자열로 조립하는 수밖에 없었고, 그 조립은 자산 URL 이중 모드(확장자를 정적 location 이 가로채는 서버)에서 그 자산만 404 로 만든다.
@@ -1384,7 +1390,7 @@
 
 ### Added
 
-#### 부트스트랩 리소스 정적 게시(bake) 우선 로더 + API 폴백 (#122)
+#### 부트스트랩 리소스 정적 게시(bake) 우선 로더 + API 폴백 (공개#122)
 
 - 서버가 병합 결과물(routes/lang/components)을 캐시 버전 디렉토리(`/build/ext/{v}/…`)에 실파일로 게시하면, blade 가 `window.G7Config.staticBase` 를 주입하고 프론트 로더가 그 정적 경로를 **우선** 시도한다. 정적 응답이 `!ok`(부분 게시·GC 직후 404 포함)이거나 네트워크 실패면 **즉시** 종전 API URL 로 폴백한다 (`fetchStaticFirst` — legacy 측은 기존 `fetchWithRetry` 네트워크 복원력 유지, 폴백 발생은 console.warn 1줄로 관측 가능).
 - `assetUrl.ts` 에 `extStaticBase()`/`extStaticVersion()`/`extStaticUrl()`/`staticToLegacy()` 추가 — 서버측 `AssetUrl` 의 게시 트리 규약과 경로 규칙 1:1. `staticBase` 미주입(비프로덕션/kill-switch/미게시)이면 전 리소스가 종전 API 직행으로, 기존 동작과 바이트 동일하다.
@@ -1395,7 +1401,7 @@
 
 ### Fixed
 
-#### stale 캐시버전 재방문의 부트 이중 로드 (#122)
+#### stale 캐시버전 재방문의 부트 이중 로드 (공개#122)
 
 - localStorage `g7_cache_version` 이 stale 이면 첫 burst 가 구버전 `?v` 로 나가고, config 핸드셰이크가 routes 재로드 + lang(ko·en) `_=` 버스터 재다운로드를 유발했다 (~500KB 중복, 부트 ~1.3s 연장). blade 는 이미 현재 버전을 `G7Config.cache_version` 으로 주입하고 있었으므로, TemplateApp 의 캐시 버전 시드를 **blade 주입값 우선**(부재 시 localStorage 폴백)으로 교체하고, 핸드셰이크 재로드 판정 기준을 "이번 burst 가 실제 사용한 버전" 으로 바꿨다. 렌더~부트 사이 bump 는 종전대로 핸드셰이크가 복구한다.
 - `ComponentRegistry.loadComponents()` 에 옵셔널 `cacheVersion` 파라미터를 추가해 components.json 요청에 `?v` 를 부착하고, 정적 manifestCache 키에 버전을 포함해 확장 라이프사이클 전후의 stale 매니페스트 교차 오염을 막았다 (편집기 경로는 버전 미전달 — v0 캐시 키 + 무버전 URL 하위 호환).
@@ -2052,7 +2058,7 @@ engine-v1.54.3 이 파이프 분기를 `resolveBindings(\`{{식}}\`)` 위임으�
 - `createChangeEvent`(EventHelpers.ts) 가 checkbox/radio 이벤트의 `target.value` 를 `String(checked)`("true"/"false") 로 문자열화하던 버그 수정. Toggle/Checkbox 가 명시적 `value` 없이 `createChangeEvent({checked})` 로 만든 이벤트가 Form 자동바인딩의 **value 바인딩 경로**(currentValue 가 boolean 이 아닐 때 — 예: 폼 초기값이 아직 채워지지 않은 시점)로 처리되면, boolean 필드에 문자열 `"true"` 가 저장되어 백엔드 boolean 검증이 422 로 거부되었다(예: 이커머스 환경설정 "취소 시 재고 복구" 토글 ON 저장 실패). 이제 checkbox/radio 의 기본 `value` 를 boolean(`checked`) 으로 두어, checked 바인딩 경로(`target.checked`)는 기존과 동일하게 동작하고 value 바인딩 경로도 boolean 을 저장한다. 명시적 `value` 를 받는 호출(PermissionTree, HtmlEditor 의 textarea/multilingual)과 checked 만 읽는 호출(HtmlEditor isHtmlMode)은 영향 없음. (배경: troubleshooting-components-form.md 사례 5 — "엔진이 boolean 을 올바르게 처리, 문자열 변환 우회 불필요" 설계 의도와 정합.)
 - 컴포넌트 `setState`(`target: "_local"`)가 canonical source(`_global._local`)에 동기화되지 않아, 검색(`navigate replace:true`) 직후 사용자가 선택한 필터가 풀리던 버그 수정. 목록 화면에서 필터(라디오/체크박스 등)를 선택하면 `ActionDispatcher.handleSetState` 의 COMPONENT path 가 컴포넌트 React 상태(저장소 A: `localDynamicState`)만 갱신하고 `_global._local`(저장소 B)은 갱신하지 않았다. 이후 검색 → `updateQueryParams` refetch → `updateTemplateData` 가 `currentDataContext._local` 을 stale 한 `_global._local`(init 기본값)로 되돌려, 선택한 필터 일부가 검색 직후 초기값으로 풀렸다(새로고침은 `handleRouteChange` 가 `query` 기반으로 `_global._local` 을 재구성하므로 정상). Form 자동바인딩은 이미 `setLocal(render:false)` 로 양쪽 저장소를 동기화하지만 명시적 `setState target:"_local"` 은 그렇지 않던 비대칭이 원인. 이제 COMPONENT path 도 GLOBAL STATE UPDATER path 와 동일하게 `globalStateUpdater({ _local }, { render: false })` 로 `_global._local` 을 동기화한다. `render: false` 이므로 추가 React 렌더는 발생하지 않으며(클릭당 렌더 횟수 불변), `scope: 'parent'|'root'` 및 isolated 타깃은 이 분기에 도달하기 전에 분리 처리되어 모달 상태 오염에 영향이 없다. (배경: 쿠폰·주문·배송정책 등 목록 화면 공통 결함.)
 - `emitEvent` 액션의 결과(`_local._eventResult`)가 **같은 sequence 의 후속 액션에 전파되지 않던** 버그 수정. `handleSequence` 는 비-setState 핸들러 실행 후 `currentState` 를 `__g7SequenceLocalSync`(setLocal 이 설정)에서만 갱신하는데, `emitEvent` 는 `globalStateUpdater` 로만 `_local` 을 갱신해 `__g7SequenceLocalSync` 를 비워둔 채였다. 그 결과 emit 직후의 `setState`/`apiCall` 이 `_eventResult` 와 리스너가 갱신한 `_local`(예: 업로드된 `form.images`)을 보지 못하고 emit 이전 stale 스냅샷을 사용했다. 이제 `emitEvent` 가 `globalStateUpdater` 갱신과 동일한 시점에 `__g7SequenceLocalSync` 에 `_eventResult` 를 병합한 `_local` 스냅샷을 실어, `handleSequence` 가 이를 픽업한다. base 는 sequence 가 추적 중인 `context.state` 우선이라 in-flight `setState` 변경(예: `isSaving`)을 보존하며, sequence 밖(standalone emitEvent)에서는 글로벌 `_local` 로 폴백한다. 글로벌 `_local` 갱신 동작 자체는 종전과 동일하게 유지된다. (배경: 상품 수정 화면에서 이미지를 추가하고 저장하면 — 저장 sequence 가 `emitEvent(업로드)` → `apiCall(PUT)` 순서인데 — 업로드는 성공해도 PUT body 의 `form.images` 가 업로드 전 스냅샷이라 백엔드 `syncImages` 가 방금 올린 이미지를 삭제하던 회귀.)
-- IME(한글·일본어·중국어) 조합 중 Enter 가 액션 키 필터에 매칭되어 **글자누락·이중제출** 이 발생하던 버그 수정. `ActionDispatcher` 의 key 필터(`action.key` 지정 keydown 액션)는 비교 전에 IME 조합 상태를 전혀 검사하지 않아, 한글 입력 후 Enter 로 조합을 확정하는 순간 그 Enter keydown 이 `key:"Enter"` 액션(검색·제출 등)을 조합 확정 *전* 값으로 발화시켰다. 결과적으로 (1) 조합 중 마지막 글자가 input 에 커밋되기 전 액션이 실행되어 글자가 누락되고, (2) 액션 실행 후 글자가 커밋되며 두 번째 keydown 으로 재실행되어 이중 제출이 일어났다. 이제 `isImeComposing` 헬퍼(`event.isComposing === true` 또는 legacy `event.keyCode === 229` 검사 — 브라우저별 조합 종료 keydown 차이 흡수)로 조합 중 keydown 은 key 필터 매칭에서 제외한다. 가드는 `action.key` 가 지정된 keydown 액션에만 적용되어, key 필터 없는 매 입력 setState 류 액션은 조합 중에도 종전대로 동작한다(회귀 0). 모달 오버레이 ESC 닫기 리스너에도 동일 가드를 적용해 조합 중 ESC 가 모달을 닫지 않도록 일관화했다. (배경: 상품·게시판 검색창에서 한글 검색어 입력 후 Enter 시 마지막 글자가 빠지거나 검색이 두 번 실행되던 결함 — gnuboard/g7 #54.)
+- IME(한글·일본어·중국어) 조합 중 Enter 가 액션 키 필터에 매칭되어 **글자누락·이중제출** 이 발생하던 버그 수정. `ActionDispatcher` 의 key 필터(`action.key` 지정 keydown 액션)는 비교 전에 IME 조합 상태를 전혀 검사하지 않아, 한글 입력 후 Enter 로 조합을 확정하는 순간 그 Enter keydown 이 `key:"Enter"` 액션(검색·제출 등)을 조합 확정 *전* 값으로 발화시켰다. 결과적으로 (1) 조합 중 마지막 글자가 input 에 커밋되기 전 액션이 실행되어 글자가 누락되고, (2) 액션 실행 후 글자가 커밋되며 두 번째 keydown 으로 재실행되어 이중 제출이 일어났다. 이제 `isImeComposing` 헬퍼(`event.isComposing === true` 또는 legacy `event.keyCode === 229` 검사 — 브라우저별 조합 종료 keydown 차이 흡수)로 조합 중 keydown 은 key 필터 매칭에서 제외한다. 가드는 `action.key` 가 지정된 keydown 액션에만 적용되어, key 필터 없는 매 입력 setState 류 액션은 조합 중에도 종전대로 동작한다(회귀 0). 모달 오버레이 ESC 닫기 리스너에도 동일 가드를 적용해 조합 중 ESC 가 모달을 닫지 않도록 일관화했다. (배경: 상품·게시판 검색창에서 한글 검색어 입력 후 Enter 시 마지막 글자가 빠지거나 검색이 두 번 실행되던 결함 — 공개#54.)
 - 본인인증(IDV) challenge 가 **부가 목적(성인인증 등) 미달**로 실패할 때 토스트가 **2개 중복 표출**되던 버그 수정. 본인확인 자체는 성공했으나 부가 조건(만 19세 이상)을 충족하지 못해 challenge 가 실패하면, provider 가 "성인 인증이 필요합니다" 같은 고유 사유를 토스트로 표출한다. 그 직후 코어가 원 428 응답을 onError 로 흘려보내, 원 요청(글쓰기 등)의 generic 가드 토스트("본인 확인이 필요합니다")가 한 번 더 떴다. 이제 `IdentityGuardInterceptor` 에 1회성 도메인 안내 신호(`markDomainNoticeShown()` / `consumeDomainNoticeShown()`)를 신설하고, provider 가 "본인확인 성공 + 부가목적 미달" 실패를 안내한 직후 이 신호를 남기면, 코어 `handleToast` 가 동일 사이클의 generic IDV 가드 토스트(error 타입 + `error_code='identity_verification_required'`) 1건을 skip 한다. 일반 본인인증 실패/취소(본인확인 자체 실패)는 신호가 없어 가드 토스트가 그대로 유지된다 — provider 무지식의 범용 신호이므로 부가 목적이 추가되어도 코어 수정 없이 동작한다. onError 정리 액션(`setState{isSaving:false}` 등)은 그대로 실행되어 버튼 잠금 해제 등 후속 처리는 보존된다. `handle()` 진입 시 이전 사이클의 미소비 신호를 정리해 stale skip 을 방지한다. `ErrorContext` 에 `error_code` 필드를 추가하고 onError 컨텍스트에 응답의 `error_code` 를 노출한다. (배경: 성인인증이 필요한 게시판 글쓰기에서 미성년자가 인증 시 "성인 인증이 필요한 서비스입니다"와 "본인 확인이 필요합니다"가 동시에 뜨던 결함.)
 - 레이아웃 편집기 **공통(base) 레이아웃 편집 모드**에서 모듈이 슬롯에 주입한 UI(예: 헤더 통화·배송국가 셀렉터)가 **소비처(SlotContainer) 위치가 아니라 주입 앵커 원위치에 표시**되던 결함 수정. `slot` 노드는 SlotContext 활성 시 원위치에서 렌더되지 않고 SlotContainer 가 떙겨 렌더하는데, base 단독 편집 캔버스는 슬롯이 통째로 사라지는 것을 막으려 모든 `slot` 노드를 표시 마커(`__editorSlotName`)로 치환해 원위치에 렌더했다. 주입 앵커는 보통 헤더 밖 최상단 등 SlotContainer 와 다른 자리라, 통화 셀렉터가 헤더 위 별도 박스로 떠 운영 화면과 어긋났다. 이제 변환 로직(`buildBaseEditorComponents`)이 **같은 base 레이아웃 안에 소비처(`SlotContainer` props.slotId) 가 있는 슬롯은 치환하지 않고 `slot` 키를 보존**해 슬롯 메커니즘에 위임한다 → SlotContainer 가 실제 위치(헤더 안)에서 렌더한다. 소비처가 없는 슬롯(자식 라우트 레이아웃이 채우는 `content` 등)만 종전대로 원위치 마커로 치환해 점선 박스로 표시한다. 동일 슬롯을 쓰는 SlotContainer JSON 노드가 하나라도 있으면(데스크톱/모바일 페어 등) 통짜 TSX 컴포넌트 내부 SlotContainer 도 정상 수신하므로, 어떤 템플릿/모듈이 어떤 슬롯에 주입하든 코어 차원에서 동일하게 동작한다. route 편집 모드는 조기 반환이라 영향 0. (배경: 관리자/사용자 템플릿 공통 레이아웃 편집에서 통화·배송국가 선택기가 헤더 위 별도 박스로 분리 표시되던 결함.)
 - iteration(반복 렌더링) 안의 노드 `id` 에 쓴 표현식(`id: "item_{{$idx}}"` 등)이 **보간되지 않고 리터럴 그대로 DOM 에 출력**되어, 반복 행마다 같은 HTML id 가 중복되던 결함 수정. 노드의 최상위 `id` 필드는 `props` 가 아니라 props 바인딩 경로를 타지 않아, `DynamicRenderer` 의 두 DOM 출력 지점(Fragment 컨테이너 div / 일반 컴포넌트 props)이 `effectiveComponentDef.id` 를 보간 없이 그대로 내보냈다. 이제 `id` 에 `{{` 가 포함될 때만 iteration 컨텍스트(`$idx`/`item_var` 포함)로 문자열 보간한 `resolvedComponentId` 를 두 DOM 출력 지점이 사용한다(정적 id 는 원본 그대로 — 무영향). slot 등록 키·React remount 키·DevTools 식별자 등 내부 식별에는 원본 `effectiveComponentDef.id` 를 계속 사용해 격리한다. 코드베이스 전역 68개 레이아웃이 id 표현식을 이미 쓰고 있었으나 보간 부재로 깨져 있었고, 본 수정으로 일괄 정상화된다. (배경: 관리자 대시보드의 활동 로그·모듈/플러그인/템플릿 카드 등 반복 목록에서 같은 HTML id 가 행마다 중복 마운트되던 결함.)

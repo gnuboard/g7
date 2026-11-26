@@ -124,6 +124,8 @@ effects:
   - claim_item_bulk_bar_present_for_refund_render
   # 구조만 맞고 렌더가 비면 운영자에게는 아무 글자도 나오지 않는다.
   - claim_item_no_common_transition_notice_render
+  # 셀렉트·안내가 둘 다 숨은 처음 화면에서 묶음 칸만 남으면 0×0 칸에 gap 이 한 번 더 붙어 버튼 간격이 두 배가 된다.
+  - claim_item_bulk_bar_leaves_no_empty_status_group
   - claim_item_bulk_bar_absent_for_cancel_render
   - claim_item_apply_routes_through_the_quantity_modal
   - claim_item_bulk_status_uses_server_path_segment

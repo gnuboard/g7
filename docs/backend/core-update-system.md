@@ -282,7 +282,7 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
    · 단, targets 에 더 구체적으로 명시된 경로는 상위 protected 를 오버라이드(아래 주석)
 ```
 
-> **protected_paths 오버라이드 (공개 #64 / 내부 #452)**: `protected_paths` 에는 확장 부모(`modules`·`plugins`·`templates`·`lang-packs`)가 포함되지만, `targets` 에는 `{domain}/_bundled` 가 명시된다. 3-way 산출(`computeApplyList`)과 신규 파일 manifest(`writeNewFilesManifest`)는 "targets 에 더 구체적(하위)으로 명시된 경로가 상위 protected 를 오버라이드"하도록 판정한다. 이로써 코어 배포본에 포함된 번들 확장의 갱신 파일(`_bundled/{id}/composer.json`·`vendor-bundle.json` 등)이 코어 업데이트로 정상 반영된다. 오버라이드는 target 이 protected 보다 **더 깊을 때만** 적용되므로, `storage`(target) == `storage`(protected) 같은 동일 경로는 여전히 제외된다. 확장 부모를 protected 에 둔 원래 의도(자동 발견 폴백이 활성 서브디렉토리 `modules/sirsoft-*` 를 삭제하는 #347 방어)는 그대로 유지된다 — 자동 발견 폴백은 targets 순회가 아니므로 오버라이드 영향을 받지 않는다.
+> **protected_paths 오버라이드 (공개 #64)**: `protected_paths` 에는 확장 부모(`modules`·`plugins`·`templates`·`lang-packs`)가 포함되지만, `targets` 에는 `{domain}/_bundled` 가 명시된다. 3-way 산출(`computeApplyList`)과 신규 파일 manifest(`writeNewFilesManifest`)는 "targets 에 더 구체적(하위)으로 명시된 경로가 상위 protected 를 오버라이드"하도록 판정한다. 이로써 코어 배포본에 포함된 번들 확장의 갱신 파일(`_bundled/{id}/composer.json`·`vendor-bundle.json` 등)이 코어 업데이트로 정상 반영된다. 오버라이드는 target 이 protected 보다 **더 깊을 때만** 적용되므로, `storage`(target) == `storage`(protected) 같은 동일 경로는 여전히 제외된다. 확장 부모를 protected 에 둔 원래 의도(자동 발견 폴백이 활성 서브디렉토리 `modules/sirsoft-*` 를 삭제하는 사고 방어)는 그대로 유지된다 — 자동 발견 폴백은 targets 순회가 아니므로 오버라이드 영향을 받지 않는다.
 
 ### Step 7: 파일 적용
 
@@ -297,7 +297,7 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 - targets 전체 무조건 덮어쓰기 + orphan 삭제 (기존 동작)
 - 백업 부재 시 base 가 없어 3-way 불가 → 안전하게 전체 덮어쓰기로 회귀 + 안내 출력
 - `public/storage` symlink 는 orphan 삭제에서 보호됨 — `public` 타깃 정리 시
-  `preserveLinkPaths: ['storage']` 화이트리스트로 링크/junction 을 보존 (#43, 아래 §참조)
+  `preserveLinkPaths: ['storage']` 화이트리스트로 링크/junction 을 보존 (공개 #43, 아래 §참조)
 
 공통:
 - 미배치 공식 번들 건너뛰기(7.1.1+): 위 「공식 번들 배치 판정」의 U 경로(`plugins/_bundled/{id}` 등)를
@@ -346,7 +346,7 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 > - **자식 청소**: 부모는 구버전 클래스를 메모리에 들고 있어 이 수정이 다음 업데이트부터 효력이 있으므로, 신버전 코드로 도는 두 자식(`core:execute-upgrade-steps`, `core:execute-bundled-updates`)이 종료 직전 `sweepEmptyStagingDirectories()` 로 **파일이 하나도 없는** `core_*` 디렉토리만 치운다. 부모가 쓰는 중인 격리 디렉토리는 파일을 갖고 있어 술어상 제외된다. 구버전 부모에서 올라오는 업데이트(7.0.9→7.0.10)는 번들 일괄 업데이트 자식이 부모 정리 뒤에 돌므로 그 자리에서 껍데기가 사라진다.
 > - **스냅샷 제외**: 항목별 소유권 스냅샷은 격리 디렉토리가 생긴 **뒤에** 찍힌다. 제외하지 않으면 root 가 만든 추출본이 "원본 소유권" 으로 기록되고 복원이 잔존물을 다시 root 로 되돌리므로, 부모는 `snapshotOwnershipDetailed(..., excludes: [격리 디렉토리 루트])` 로 이번 실행의 것을 뺀다. 그러면 잔존물이 생겨도 상위 `storage/app/core_pending` 의 재귀 chown 이 운영자 계정·웹서버 그룹으로 맞춰 지울 수 있다.
 
-> **`public/storage` symlink 보존 + 종료 시 복구 (#43)**: 심층 방어 2층 구조로 `--prune` 실행 후에도 `public/storage` symlink 가 정상 유지된다.
+> **`public/storage` symlink 보존 + 종료 시 복구 (공개 #43)**: 심층 방어 2층 구조로 `--prune` 실행 후에도 `public/storage` symlink 가 정상 유지된다.
 > - **층 1 (예방)**: `--prune` 은 `public` 타깃에서 orphan(릴리즈 소스에 없는 항목)을 삭제하는데, 런타임 symlink 인 `public/storage` 는 릴리즈 소스에 없어 orphan 으로 판정되어 삭제되던 결함이 있었다(업로드 파일 404). `applyUpdate` 가 `public` 타깃 처리 시 `FilePermissionHelper::copyDirectory(..., preserveLinkPaths: ['storage'])` 로 화이트리스트를 전달해, 매칭되는 orphan symlink/junction 만 삭제에서 제외한다. 화이트리스트 밖 orphan 링크는 기존대로 삭제된다(정밀 보호 — 무조건 보존 아님).
 > - **층 2 (복구)**: 업데이트 종료 시점(정상 Step 11 + 핸드오프 catch)에 `StorageLinkHelper::ensurePublicStorageLink()` 를 호출해 `public/storage` 가 정상 링크인지 확인하고, 부재/손상이면 `storage/app/public` 을 가리키는 링크를 (필요 시 `.broken.{YmdHis}` rename 백업 후) 재생성한다. 버전 무관 매 업데이트 실행. Windows `SeCreateSymbolicLink` 권한 부족 시 junction(`mklink /J`) 폴백까지 시도하고, 그래도 실패하면 rename 원복 + 수동 `storage:link` 안내(데이터 손실 없음). 롤백 catch 경로는 백업 복원이 링크를 원상 회복하므로 대상 아님.
 >   - **소유권 상속**: `symlink()` 은 소유권 인자가 없어 sudo 실행 시 링크가 root:root 로 생성된다. 재생성 직후 부모 `public/` 의 owner/group 을 기준으로 `lchown`/`lchgrp`(링크 자체 대상 — `chown` 은 target 을 따라감) 보정해 원래 앱 실행 유저 소유를 유지한다. 이 프로젝트의 "신규 항목은 부모 소유권 상속"(`FilePermissionHelper`) 컨벤션과 일치. 비-POSIX/함수 부재/권한 부족 시 무해하게 skip.
@@ -405,7 +405,7 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 3. syncCoreMenus() — config/core.php의 menus 동기화
 ```
 
-> **변경 이력 (7.0.0-beta.2)**: `syncCoreMailTemplates()` 단계는 알림 시스템 통합(#146)으로 제거되었습니다. 메일 템플릿은 `notification_definitions` + `notification_templates` 로 통합되었으며, `Upgrade_7_0_0_beta_2` 가 운영 환경 데이터 이관과 알림 정의 시드를 처리합니다.
+> **변경 이력 (7.0.0-beta.2)**: `syncCoreMailTemplates()` 단계는 알림 시스템 통합으로 제거되었습니다. 메일 템플릿은 `notification_definitions` + `notification_templates` 로 통합되었으며, `Upgrade_7_0_0_beta_2` 가 운영 환경 데이터 이관과 알림 정의 시드를 처리합니다.
 
 > 역할/권한/메뉴 동기화는 `user_overrides` 패턴을 사용하여 사용자 커스터마이징 보존.
 > 상세: [extension-update-system.md § 13](../extension/extension-update-system.md#13-역할권한메뉴-동기화)
@@ -446,7 +446,7 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 
 점검 모드를 켜고 끄는 수단은 `php artisan down` / `php artisan up` 뿐이다. 환경설정에 있던 `general.maintenance_mode` 는 어떤
 코드도 읽지 않아 켜 두어도 사이트가 막히지 않았다 — 7.2.0 에서 기본값·저장 검증에서 지웠고, 저장 파일에 남은 값은 7.2.0 업그레이드
-데이터 스텝 `10_RemoveMaintenanceModeSetting` 이 지운다(#888).
+데이터 스텝 `10_RemoveMaintenanceModeSetting` 이 지운다.
 
 `core:update` 는 번들 확장 일괄 업데이트가 끝난 뒤에 점검 모드를 푼다 — 일괄 업데이트가 실패하거나 예외로 멈춰도 그 호출을 감싼 `finally` 에서 푼다.
 종전에는 코어 마무리 직후 풀어, 새 코어와 옛 확장이 섞인 사이트가 일괄 업데이트 동안 열려 있었다. 웹 경로는 단계 순서(번들 → 마무리)가 이미 같다.
@@ -477,7 +477,7 @@ config 캐시와 같은 문제가 **패키지 매니페스트**(`bootstrap/cache
 | ① 부모 선정리 | `CoreUpdateCommand::spawnUpgradeStepsProcess()` 가 `proc_open` 직전 `PackageManifestCacheHelper::clear()`. 지우지 못한 파일이 있으면 그 경로를 업그레이드 로그에 경고로 남긴다 — 권한·소유권 불일치면 자식의 계층 ② 도 같은 이유로 실패해 증상은 제보와 같은 「Class not found」 인데, 이 경고가 원인을 가리키는 유일한 흔적이다 | 7.0.11+ 부모가 띄우는 자식의 부팅 실패 | `CoreUpdateCommandStalePackageManifestTest` |
 | ② 자식 자가 치유 | `bootstrap/app.php` 가 `G7_UPDATE_IN_PROGRESS=1`(또는 명령줄 SAPI 에서의 업데이트 argv)이면 두 파일을 스스로 삭제 | **이미 배포된** 7.0.9·7.0.10 부모 아래에서 도는 신버전 자식 — 그 부모 코드는 고칠 수 없다 | 같은 테스트 (플래그 유·무 대조군 포함) |
 | ③ 버전 판독 범위 | `CoreVersionChecker::getCoreVersion()` 의 env 우선은 `CoreUpdateContext::isInProgress()` 트리 안에서만 | 업데이트 **전에** 뜬 `php artisan serve`·큐 워커가 옛 `APP_VERSION` 을 물고 확장을 `incompatible_core` 로 끄는 것 | `CoreVersionCheckerEnvPriorityTest` · `CoreUpdateContextTest` |
-| ④ APP_VERSION 정합 | `bootstrap/app.php` 가 계층 ②와 같은 조건에서 `bootstrap/g7-update-env.php` 의 `g7_reconcile_update_app_version()` 을 불러, 프로세스 env 의 `APP_VERSION` 이 디스크 `.env` 값보다 낮으면 `$_ENV`·`$_SERVER`·`putenv` 를 디스크 값으로 **올린다**(낮추지 않는다 — 업그레이드 스텝 자식은 `.env` 보다 높은 toVersion 을 받는다) | **이미 배포된** 7.0.0~7.0.10 부모는 `.env` 만 바꾸고 자기 env 는 옛 버전으로 둔다. 그 env 를 물려받은 자식과 부모 안의 `config:cache` 일회용 앱이 옛 버전을 config/hooks 캐시에 구워, 업데이트 뒤 첫 프로세스가 새 코어를 요구하는 확장을 `incompatible_core` 로 끄던 것(공개 #145·#137) | `UpdateAppVersionReconcileTest` · `UpdateAppVersionReconcileProcessTest` |
+| ④ APP_VERSION 정합 | `bootstrap/app.php` 가 계층 ②와 같은 조건에서 `bootstrap/g7-update-env.php` 의 `g7_reconcile_update_app_version()` 을 불러, 프로세스 env 의 `APP_VERSION` 이 디스크 `.env` 값보다 낮으면 `$_ENV`·`$_SERVER`·`putenv` 를 디스크 값으로 **올린다**(낮추지 않는다 — 업그레이드 스텝 자식은 `.env` 보다 높은 toVersion 을 받는다) | **이미 배포된** 7.0.0~7.0.10 부모는 `.env` 만 바꾸고 자기 env 는 옛 버전으로 둔다. 그 env 를 물려받은 자식과 부모 안의 `config:cache` 일회용 앱이 옛 버전을 config/hooks 캐시에 구워, 업데이트 뒤 첫 프로세스가 새 코어를 요구하는 확장을 `incompatible_core` 로 끄던 것(공개 #145·공개 #137) | `UpdateAppVersionReconcileTest` · `UpdateAppVersionReconcileProcessTest` |
 | ⑤ 자식 env 고정 | 번들 일괄 업데이트 자식·언어팩 단계 새 프로세스·훅 캐시 새 프로세스의 env 를 `UpdateChildEnv::build()` 로 만든다 — 업데이트 트리 안이면 `APP_VERSION=getCoreVersion()`·`G7_UPDATE_IN_PROGRESS=1` 을 명시(트리 밖은 상속 그대로) | 부모 env 에만 기대 옛 버전이 다시 캐시에 구워지는 것 | `BundledSpawnPinsAppVersionTest` |
 
 계층 ②·④는 `config:cache`/`route:cache` 가 만드는 in-process 일회용 앱에도 발동한다 — 그 부팅도 `bootstrap/app.php` 를 다시 require 하고 플래그를 상속하기 때문이다. 웹 요청·`queue:work`·운영자 셸은 플래그가 없어 no-op 이다.
@@ -953,14 +953,14 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 |--------|---------|------|
 | `createBackup()` | `(?Closure $onProgress): string` | CoreBackupHelper로 백업 생성 |
 | `restoreFromBackup()` | `(string $backupPath, ?Closure $onProgress): void` | 백업에서 파일 복원 |
-| `CoreBackupHelper::computeApplyList()` | `(string $backupPath, string $sourcePath, array $targets, array $protectedPaths, array $excludes): array` | 3-way 판정으로 증분 적용 대상(added/changed) 산출 (`apply`, `added_count`, `changed_count`, `has_symlink`). targets 에 명시된 `{domain}/_bundled` 는 상위 protected(`modules` 등)를 오버라이드해 목록에 포함 (공개 #64 / 내부 #452) |
+| `CoreBackupHelper::computeApplyList()` | `(string $backupPath, string $sourcePath, array $targets, array $protectedPaths, array $excludes): array` | 3-way 판정으로 증분 적용 대상(added/changed) 산출 (`apply`, `added_count`, `changed_count`, `has_symlink`). targets 에 명시된 `{domain}/_bundled` 는 상위 protected(`modules` 등)를 오버라이드해 목록에 포함 (공개 #64) |
 
 ### 적용 및 설치
 
 | 메서드 | 시그니처 | 설명 |
 |--------|---------|------|
-| `applyUpdate()` | `(string $sourcePath, ?Closure $onProgress, bool $prune = false, ?array $applyList = null): void` | _pending → base_path 적용. `$applyList` 지정 + `!$prune` 이면 증분(코어 변경분만), 그 외 전체 덮어쓰기 + orphan 삭제. `public` 타깃은 `copyDirectory(..., preserveLinkPaths: ['storage'])` 로 `public/storage` symlink/junction 을 orphan 삭제에서 보호 (#43) |
-| `StorageLinkHelper::ensurePublicStorageLink()` | `(?\Psr\Log\LoggerInterface $logger = null): void` | `public/storage` 멱등 복구. 정상 링크면 no-op, 부재/손상이면 `storage/app/public` 링크 재생성(부재 시 신규, 손상 디렉토리는 `.broken.{YmdHis}` 백업 후). 재생성 링크는 부모 `public/` 의 소유자/그룹을 `lchown`/`lchgrp` 상속(sudo 후 root:root 잔존 차단). Windows junction 폴백. `CoreUpdateCommand` 종료 시점 + migration 05 가 호출 (#43) |
+| `applyUpdate()` | `(string $sourcePath, ?Closure $onProgress, bool $prune = false, ?array $applyList = null): void` | _pending → base_path 적용. `$applyList` 지정 + `!$prune` 이면 증분(코어 변경분만), 그 외 전체 덮어쓰기 + orphan 삭제. `public` 타깃은 `copyDirectory(..., preserveLinkPaths: ['storage'])` 로 `public/storage` symlink/junction 을 orphan 삭제에서 보호 (공개 #43) |
+| `StorageLinkHelper::ensurePublicStorageLink()` | `(?\Psr\Log\LoggerInterface $logger = null): void` | `public/storage` 멱등 복구. 정상 링크면 no-op, 부재/손상이면 `storage/app/public` 링크 재생성(부재 시 신규, 손상 디렉토리는 `.broken.{YmdHis}` 백업 후). 재생성 링크는 부모 `public/` 의 소유자/그룹을 `lchown`/`lchgrp` 상속(sudo 후 root:root 잔존 차단). Windows junction 폴백. `CoreUpdateCommand` 종료 시점 + migration 05 가 호출 (공개 #43) |
 | `runComposerInstallInPending()` | `(string $pendingPath, ?Closure $onProgress): void` | _pending에서 composer install (--no-scripts) |
 | `isComposerUnchangedForCore()` | `(string $pendingPath): bool` | composer.json/lock MD5 비교 |
 | `runComposerInstall()` | `(?Closure $onProgress): void` | base_path에서 composer install |

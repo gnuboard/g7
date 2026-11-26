@@ -261,7 +261,7 @@ notification_definitions 레코드:
 | `specific_users` | 특정 사용자 | user UUID 배열 | ["uuid1", "uuid2"] |
 | `site_admin_email` | 사이트 관리자 이메일 (환경설정 > 일반 `general.admin_email`) | - | 운영 담당 메일함 |
 
-> `site_admin_email`(7.2.0, #888)은 설정의 관리자 이메일 한 곳을 **비회원 수신자**(`GuestNotifiable::fromSiteAdminEmail()`)로 만든다 — 비회원을 허용하는 채널(메일)만 받고, 사이트 알림처럼 회원 계정이 필요한 채널은 건너뛴다. 권한을 묻는 치환(관리자 화면 주소 등)은 `NotificationRecipientCapability` 가 거짓으로 판정한다. 값이 비었거나 형식이 틀리면 그 규칙은 0명이고 `Log::warning` 을 남긴다.
+> `site_admin_email`(7.2.0)은 설정의 관리자 이메일 한 곳을 **비회원 수신자**(`GuestNotifiable::fromSiteAdminEmail()`)로 만든다 — 비회원을 허용하는 채널(메일)만 받고, 사이트 알림처럼 회원 계정이 필요한 채널은 건너뛴다. 권한을 묻는 치환(관리자 화면 주소 등)은 `NotificationRecipientCapability` 가 거짓으로 판정한다. 값이 비었거나 형식이 틀리면 그 규칙은 0명이고 `Log::warning` 을 남긴다.
 
 > `trigger_user` 는 회원/비회원을 동일 규칙으로 처리합니다. context 에 `trigger_user_id` 가 있으면 회원(User), 없고 표준 키 `guest_recipient` 가 있으면 비회원([비회원 발송](#비회원게스트-알림-발송) 참조)으로 해석됩니다.
 
@@ -457,7 +457,7 @@ use App\Helpers\TimezoneHelper;
 
 ### 코어 정의
 
-전수는 `config/core.php` 의 `notification_definitions` 가 단독으로 소유한다 — 아래는 그중 인증·휴면 계열이다. 비밀번호 만료 2종(#736)은 `auth:process-password-expiry` 가 발행하며, 변경 화면 주소(`{action_url}`)가 수신자에 따라 다르다 — 관리자는 관리자 회원 수정 화면·관리자 로그인, 회원은 마이페이지 비밀번호 변경·로그인.
+전수는 `config/core.php` 의 `notification_definitions` 가 단독으로 소유한다 — 아래는 그중 인증·휴면 계열이다. 비밀번호 만료 2종은 `auth:process-password-expiry` 가 발행하며, 변경 화면 주소(`{action_url}`)가 수신자에 따라 다르다 — 관리자는 관리자 회원 수정 화면·관리자 로그인, 회원은 마이페이지 비밀번호 변경·로그인.
 
 > 알림 변수의 화면 주소(`{action_url}`·`{site_url}`, 확장의 `{post_url}`·`{order_url}` 등)는 화면 주소 헬퍼 `ScreenUrl` 로 만든다(7.2.0+). 회원에게 가는 링크는 환경설정 「사용자 화면 URL」(비면 사이트 주소), 운영자에게 가는 링크는 사이트 주소 기준이고, 경로는 필터 `core.screen_url.filter_path` 로 바꿀 수 있다. `.env` 의 `G7_PUBLIC_LINK_URL` 을 정하면 「사이트 주소」 자리가 그 주소로 바뀐다 — 공개 주소와 다른 주소로 띄운 서버가 보내는 링크도 공개 주소를 가리키게 하는 값이다. 알림 링크는 링크 변형(`ScreenUrl::absoluteForLinks()`·`toAbsoluteForLinks()`, 회원용 `{site_url}` 은 `ScreenUrl::userLinkBase()`, 운영자용 `{site_url}` 은 `SiteUrl::forOutboundLinks()`)으로 만든다 — 기본 변형(`ScreenUrl::absolute()`·`toAbsolute()`)은 결제·본인인증 뒤 브라우저 복귀용이라 이 값을 따르지 않는다. 확장이 새 알림 변수에 화면 주소를 넣을 때도 같은 헬퍼를 쓴다 — [라우팅 「절대 URL」](routing.md), [개발자 화면 가이드 5절](../custom-development.md#5-화면-주소-키와-주소-필터).
 
@@ -1073,7 +1073,7 @@ via()
 
 게스트 + database → 게이트 제외 → 발송 안 됨. database 가 차단되므로 `notifications` morph 테이블에 null-id 행이 생기지 않습니다.
 
-## 수신자 분할 발송과 중복 방지 (#139)
+## 수신자 분할 발송과 중복 방지 (공개 #139)
 
 수신자가 많을 때(운영자가 「역할 기반 → 전 회원」을 고른 경우 등) 발송을 훅 잡 하나 안의 동기 루프로 돌리면, 잡이 연결의 `retry_after` 를 넘겨 다시 예약되거나 재시도될 때 처음부터 다시 돌아 같은 회원에게 같은 알림이 또 간다. 그래서 두 가지를 한다.
 
@@ -1098,7 +1098,7 @@ via()
 
 ### 발송 로깅
 
-발송 성공·실패 로그(`core.notification.after_channel_send`·`channel_send_failed` 를 구독하는 `NotificationLogListener`)는 **발송 프로세스 안에서 동기**로 기록한다(#139). 큐로 돌리면 이력이 늦게 보이고, 그 로그에 자기 발송건을 잇는 확장(비즈뿌리오 등)이 발송 때 남긴 프로세스 내 표식을 워커에서 찾지 못해 연결이 늘 실패했다. `core.mail.send_skipped` 는 종전대로 큐다.
+발송 성공·실패 로그(`core.notification.after_channel_send`·`channel_send_failed` 를 구독하는 `NotificationLogListener`)는 **발송 프로세스 안에서 동기**로 기록한다(공개 #139). 큐로 돌리면 이력이 늦게 보이고, 그 로그에 자기 발송건을 잇는 확장(비즈뿌리오 등)이 발송 때 남긴 프로세스 내 표식을 워커에서 찾지 못해 연결이 늘 실패했다. `core.mail.send_skipped` 는 종전대로 큐다.
 
 비회원 발송도 기존 `notification_logs` 에 정상 기록됩니다 (`NotificationDispatcher::buildContext`).
 

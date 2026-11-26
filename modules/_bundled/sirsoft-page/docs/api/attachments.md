@@ -212,7 +212,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-> 업로드 계약을 받는 표준 길은 아래 `GET admin/content-media/target` 입니다(#887). `GET admin/attachments/settings` 응답의
+> 업로드 계약을 받는 표준 길은 아래 `GET admin/content-media/target` 입니다. `GET admin/attachments/settings` 응답의
 > `data.content_media` 는 같은 값을 계속 싣는 호환 별칭이며 폐기 예정입니다.
 
 ---
@@ -223,7 +223,7 @@ HTTP/1.1 200
 - **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageContentMediaController@target`
 - **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false` · `throttle:600,1`
 
-편집기 본문 미디어 업로드 계약을 돌려주는 **표준 계약 엔드포인트**입니다(#887 — 모든 확장이 `…/content-media/target` 한 가지 길로
+편집기 본문 미디어 업로드 계약을 돌려주는 **표준 계약 엔드포인트**입니다(모든 확장이 `…/content-media/target` 한 가지 길로
 계약을 냅니다, 코어 [본문 미디어 계약](../../../../../docs/extension/content-media.md)). 페이지 작성·수정 화면의 데이터 소스
 `contentMediaTarget` 이 읽어 `html_editor` 확장점의 `mediaUpload` 로 넘기고, 화면이 `fields.temp_key` 에 폼 임시 키를 더합니다.
 값은 페이지 모듈 설정 `content_media`(비면 첨부 정책으로 만든 대체 정책)이고, 동영상·오디오는 코어 「본문 콘텐츠」의 업로드 허용
@@ -281,7 +281,7 @@ HTTP/1.1 200
 
 **요청 파라미터**: `hash`(path, `[A-Za-z0-9]{12}`) · `expires`·`signature`(query, 선택) · `Range`(header, 한 구간)
 
-**응답**: 파일 본문(그 행에 기록된 디스크에서 읽는다 — 기본 디스크를 바꾼 뒤에도 옛 행은 제자리에서 서빙, #887). 래스터 이미지는 inline, 동영상·오디오는 정책·코어 후보가 켜졌을 때 inline + `media-src 'self'` CSP, 그 밖에는 다운로드. `nosniff`·`Accept-Ranges: bytes`. 발행 페이지는 `Cache-Control: public, max-age=3600`, 미발행·임시 업로드는 `private, max-age=300`.
+**응답**: 파일 본문(그 행에 기록된 디스크에서 읽는다 — 기본 디스크를 바꾼 뒤에도 옛 행은 제자리에서 서빙). 래스터 이미지는 inline, 동영상·오디오는 정책·코어 후보가 켜졌을 때 inline + `media-src 'self'` CSP, 그 밖에는 다운로드. `nosniff`·`Accept-Ranges: bytes`. 발행 페이지는 `Cache-Control: public, max-age=3600`, 미발행·임시 업로드는 `private, max-age=300`.
 
 - 상태: `200`·`206` · `403` · `404` · `416`
 <!-- @generated:end -->

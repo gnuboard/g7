@@ -9,7 +9,7 @@ use Illuminate\Support\Collection;
 use Plugins\Sirsoft\MessageBizppurio\Models\BizppurioTemplate;
 
 /**
- * 비즈뿌리오 알림 템플릿 Repository 인터페이스 (#597).
+ * 비즈뿌리오 알림 템플릿 Repository 인터페이스.
  */
 interface BizppurioTemplateRepositoryInterface
 {
@@ -81,6 +81,7 @@ interface BizppurioTemplateRepositoryInterface
      * 템플릿 행을 삭제합니다.
      *
      * @param  BizppurioTemplate  $template  대상 행
+     * @return void
      */
     public function delete(BizppurioTemplate $template): void;
 

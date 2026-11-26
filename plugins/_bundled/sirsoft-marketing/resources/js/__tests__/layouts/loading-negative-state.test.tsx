@@ -28,6 +28,7 @@ import {
 } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { dataBindingEngine } from '@core/template-engine/DataBindingEngine';
 import { evaluateIfCondition } from '@core/template-engine/helpers/RenderHelpers';
+import { findBlurBranchesInLayoutRows } from '@core/template-engine/__tests__/utils/blurBranchRowUtils';
 
 type Node = Record<string, any>;
 
@@ -756,5 +757,25 @@ describe('마케팅 — 받는 중 노출 전수', () => {
     }
     expect(layouts.size).toBeGreaterThan(0);
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('마케팅 — 흐림 래퍼가 배치 행의 자식 모양을 갈래마다 바꾸지 않는다', () => {
+  /**
+   * `blur_until_loaded` 는 대상을 `<div>` 래퍼로 감싸 그린다. 흐림을 `if` 분기 노드에 두고 그 부모가 flex·grid·space·gap·
+   * justify 계열 컨테이너면, 흐림을 선언한 갈래는 래퍼 div 로·선언하지 않은 갈래는 값 요소로 행에 들어가 받기 전·뒤에 행의
+   * 자식 모양이 바뀐다(engine-v1.99.2 전에는 거짓 갈래의 빈 래퍼까지 남아 양 끝 정렬의 값이 가운데로 밀렸다). 위 전수는
+   * 흐림 **선언 여부**만 보므로, 흐림이 **어디에** 선언됐는지를 여기서 함께 잠근다 — 흐림은 분기들을 감싸는 하나의 노드(또는
+   * 분기 없는 값 노드 자체)에 둔다.
+   */
+  /** 배치 행 자식인 흐림 분기 노드로 남겨 둔 자리 — [`파일#노드`, 사유] (같은 표기가 여럿이면 그 수만큼) */
+  const BLUR_BRANCH_ALLOW: Array<[string, string]> = [];
+
+  /**
+   * @scenario load_state=loading
+   * @effects blur_wraps_branches_not_row_branch
+   */
+  it('흐림을 선언한 조건 분기 노드가 배치 컨테이너의 자식이 아니다(허용 목록과 같다)', () => {
+    expect(findBlurBranchesInLayoutRows(PKG_ROOT, ['resources/layouts', 'resources/extensions'])).toEqual(BLUR_BRANCH_ALLOW.map(([label]) => label).sort());
   });
 });

@@ -51,11 +51,11 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `157` | 기본 키 (내부 식별자) |
-| identifier | string | `i492_scope_self` | 역할명 (예: admin, user, manager) |
-| name | string | `#492 스코프검증(self)` | 역할 이름 (다국어 JSON) |
-| name_raw | object | `{"ko":"#492 스코프검증(self)","en":"#492 Scope Self"}` | `name` 의 원본 값 (현재 로케일 미해석 원본 JSON/문자열) |
-| description | string | `#492 브라우저 실측 G10 전용` | 역할 설명 (다국어 JSON) |
-| description_raw | object | `{"ko":"#492 브라우저 실측 G10 전용","en":"for #492 G10"}` | `description` 의 원본 값 (현재 로케일 미해석 원본 JSON/문자열) |
+| identifier | string | `editor` | 역할명 (예: admin, user, manager) |
+| name | string | `편집자` | 역할 이름 (다국어 JSON) |
+| name_raw | object | `{"ko":"편집자","en":"Editor"}` | `name` 의 원본 값 (현재 로케일 미해석 원본 JSON/문자열) |
+| description | string | `콘텐츠 편집 담당` | 역할 설명 (다국어 JSON) |
+| description_raw | object | `{"ko":"콘텐츠 편집 담당","en":"Content editor"}` | `description` 의 원본 값 (현재 로케일 미해석 원본 JSON/문자열) |
 | extension_type | string | `core` | 확장 소유 타입: core(코어), module(모듈), plugin(플러그인), NULL(사용자 정의) |
 | extension_identifier | string | `core` | 확장 식별자 (예: core, sirsoft-board, sirsoft-payment) |
 | extension_name | string | `게시판` | 이 리소스를 소유한 확장의 표시 이름 (manifest name) |
@@ -82,16 +82,16 @@ HTTP/1.1 200
         "data": [
             {
                 "id": 157,
-                "identifier": "i492_scope_self",
-                "name": "#492 스코프검증(self)",
+                "identifier": "editor",
+                "name": "편집자",
                 "name_raw": {
-                    "ko": "#492 스코프검증(self)",
-                    "en": "#492 Scope Self"
+                    "ko": "편집자",
+                    "en": "Editor"
                 },
-                "description": "#492 브라우저 실측 G10 전용",
+                "description": "콘텐츠 편집 담당",
                 "description_raw": {
-                    "ko": "#492 브라우저 실측 G10 전용",
-                    "en": "for #492 G10"
+                    "ko": "콘텐츠 편집 담당",
+                    "en": "Content editor"
                 },
                 "extension_type": "core",
                 "extension_identifier": "core",
@@ -189,7 +189,7 @@ HTTP/1.1 200
 | name | body | string | 예 | — | 대상의 이름/명칭 |
 | description | body | string | 아니오 | — | 설명 |
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
-| password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 (사이트 설정 따름·적용·제외 — 회원 개별 설정이 우선, 역할끼리 부딪치면 적용, #736) |
+| password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 (사이트 설정 따름·적용·제외 — 회원 개별 설정이 우선, 역할끼리 부딪치면 적용) |
 | permissions | body | array | 아니오 | — | 역할에 부여할 권한 목록. 각 원소는 `{id, scope_type}` (id=권한 식별자, scope_type=적용 범위: null 전체 / role 역할 범위 / self 본인 범위). 전달된 목록 기준으로 역할의 권한 집합이 재설정됨 |
 | menu_ids | body | array\<integer\> | 아니오 | 존재하는 메뉴 ID | 이 역할이 접근할 관리자 메뉴 ID 목록. 보내면 요청자가 관리할 수 있는 메뉴 범위 안에서 그 목록으로 맞추고(하위를 고르면 상위도 포함, 상위를 빼면 하위도 제외), 관리 밖 메뉴의 기존 할당은 그대로 둔다. 생략하면 메뉴 할당을 건드리지 않는다. 보낼 때는 `core.menus.update` 권한이 필요하다(없으면 403). 관리자 역할은 관리할 수 있는 메뉴 전부를 포함해야 한다(빠지면 422) |
 
@@ -593,7 +593,7 @@ HTTP/1.1 200
 | name | body | string | 예 | — | 대상의 이름/명칭 |
 | description | body | string | 아니오 | — | 설명 |
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
-| password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 (사이트 설정 따름·적용·제외 — 회원 개별 설정이 우선, 역할끼리 부딪치면 적용, #736) |
+| password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 (사이트 설정 따름·적용·제외 — 회원 개별 설정이 우선, 역할끼리 부딪치면 적용) |
 | permissions | body | array | 아니오 | — | 역할에 부여할 권한 목록. 각 원소는 `{id, scope_type}` (id=권한 식별자, scope_type=적용 범위: null 전체 / role 역할 범위 / self 본인 범위). 전달된 목록 기준으로 역할의 권한 집합이 재설정됨 |
 | menu_ids | body | array\<integer\> | 아니오 | 존재하는 메뉴 ID | 이 역할이 접근할 관리자 메뉴 ID 목록. 보내면 요청자가 관리할 수 있는 메뉴 범위 안에서 그 목록으로 맞추고(하위를 고르면 상위도 포함, 상위를 빼면 하위도 제외), 관리 밖 메뉴의 기존 할당은 그대로 둔다. 생략하면 메뉴 할당을 건드리지 않는다. 보낼 때는 `core.menus.update` 권한이 필요하다(없으면 403). 관리자 역할은 관리할 수 있는 메뉴 전부를 포함해야 한다(빠지면 422) |
 

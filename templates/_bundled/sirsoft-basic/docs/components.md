@@ -47,7 +47,7 @@
 ## 이관 원문 상세
 
 > 아래는 코어 `docs/frontend/templates/sirsoft-basic/components.md` 에 있던 원문을 이 문서로
-> 옮긴 것입니다(#601). 이관 시점 그대로 보존하되, **코드가 SSoT 인 값과 어긋나는 부분에는
+> 옮긴 것입니다. 이관 시점 그대로 보존하되, **코드가 SSoT 인 값과 어긋나는 부분에는
 > 정정 주석**을 달았습니다 — 실측 총계는 위 「제공 컴포넌트」 블록이 SSoT 입니다.
 
 ### sirsoft-basic 컴포넌트
@@ -55,7 +55,7 @@
 > **템플릿 식별자**: `sirsoft-basic` (type: user, v0.4.16)
 > **관련 문서**: [핸들러](handlers.md) | [레이아웃](layouts.md) | [컴포넌트 Props 레퍼런스](../../../../docs/frontend/component-props.md)
 
-> **정정(#601)**: 위 버전(v0.4.16)은 이관 시점 문서 값입니다. 현재 버전은 `template.json` 이
+> **정정**: 위 버전(v0.4.16)은 이관 시점 문서 값입니다. 현재 버전은 `template.json` 이
 > SSoT 입니다.
 
 ---
@@ -66,7 +66,7 @@
 1. Basic 26개: HTML 래핑 (Div, Button, Input, Select, Form, A, H1~H4, PasswordInput 등)
 2. Composite 27개: UI 패턴 캡슐화 (Header, Footer, Modal, ProductCard, Pagination 등)
 3. Layout 5개: 페이지 구조 (Container, Grid, Flex, SectionLayout, ThreeColumnLayout)
-   (정정(#601): 개수는 이관 시점 값 — 실측은 위 「제공 컴포넌트」 블록이 SSoT)
+   (정정: 개수는 이관 시점 값 — 실측은 위 「제공 컴포넌트」 블록이 SSoT)
 4. 사용자(User) 템플릿 전용 — 모듈 레이아웃(user/ 하위)에서 사용
 5. features: dark_mode, responsive, multi_language, multi_currency 지원
 ```
@@ -85,7 +85,7 @@
 
 ### 컴포넌트 개요
 
-> **정정(#601)**: 아래 개수는 이관 시점 문서 값입니다. 코드 실측은 basic 38 · composite 36 ·
+> **정정**: 아래 개수는 이관 시점 문서 값입니다. 코드 실측은 basic 38 · composite 36 ·
 > layout 5 = **79종**이며 위 「제공 컴포넌트」 블록이 SSoT 입니다. 아래 목록에 없는 컴포넌트가
 > 있습니다(basic 의 `Code` · `FileInput` · `I` · `Ol` · `Optgroup` · `Section` · `Svg` ·
 > `Tbody` · `Td` · `Th` · `Thead` · `Tr`, composite 의 `BrandMark` · `NotificationCenter` ·
@@ -105,7 +105,7 @@
 
 ### Basic Components (26개)
 
-> **정정(#601)**: 제목의 개수는 이관 시점 문서 값입니다(코드 실측 38종). 목록 자체는 원문 그대로입니다.
+> **정정**: 제목의 개수는 이관 시점 문서 값입니다(코드 실측 38종). 목록 자체는 원문 그대로입니다.
 
 HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
@@ -162,7 +162,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 ---
 
-#### PasswordInput 검증 규칙 (#736)
+#### PasswordInput 검증 규칙
 
 `enableRules` 는 「규칙:값」 목록입니다(`minLength:N`·`maxLength:N`·`hasUppercase`·`hasLowercase`·`hasNumber`·`hasSpecial`·`noSpaces`·`minTypes:N`).
 `hasSpecial` 은 서버(`PasswordPolicy`·`PasswordComposition`)와 같은 유니코드 구두점·기호·공백 범주로 판정하고, `minTypes` 는 **영문(대·소문자 한 종류)·숫자·특수문자**
@@ -172,7 +172,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 ### Composite Components (27개)
 
-> **정정(#601)**: 제목의 개수는 이관 시점 문서 값입니다(코드 실측 36종). 목록 자체는 원문 그대로입니다.
+> **정정**: 제목의 개수는 이관 시점 문서 값입니다(코드 실측 36종). 목록 자체는 원문 그대로입니다.
 
 기본 컴포넌트를 조합하여 UI 패턴을 캡슐화한 복합 컴포넌트입니다.
 
@@ -272,7 +272,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | `ThemeToggle` | 테마 전환 토글 (auto/light/dark) | autoText, lightText, darkText |
 
 - `Modal` 의 `footer` 는 본문 스크롤 밖 고정 하단에 그린다. 레이아웃 편집기에서는 엔진이 준 Modal 노드 경로(`__componentContext.componentPath`)로 footer 단추마다 `{경로}.props.footer.{i}` 를 넘겨, 본문 children 과 같게 고르고 고칠 수 있다(경로가 없는 일반 화면에서는 넘기지 않음). 회귀 테스트: `src/components/composite/__tests__/Modal.footer.test.tsx`.
-- `Modal` 의 `footer` 는 `components.json` 의 `skipBindingKeys` 로 선언한다 — 엔진이 Modal 노드에서 그 안의 `{{…}}` 를 미리 풀지 않고 원문 정의를 넘겨, 고정 하단 렌더러가 본문 children 과 같은 데이터 문맥(`__componentContext.parentDataContext`, 상태 범위 `__componentContext`)과 같은 격리 범위에서 평가한다. 종전에는 Modal 노드 렌더러가 미리 풀어 Modal 자신의 `isolatedState` 처럼 본문만 보는 값이 고정 하단에서 비었다(#869). 회귀 테스트: `__tests__/layouts/modalFooterContextParity.test.tsx`
+- `Modal` 의 `footer` 는 `components.json` 의 `skipBindingKeys` 로 선언한다 — 엔진이 Modal 노드에서 그 안의 `{{…}}` 를 미리 풀지 않고 원문 정의를 넘겨, 고정 하단 렌더러가 본문 children 과 같은 데이터 문맥(`__componentContext.parentDataContext`, 상태 범위 `__componentContext`)과 같은 격리 범위에서 평가한다. 종전에는 Modal 노드 렌더러가 미리 풀어 Modal 자신의 `isolatedState` 처럼 본문만 보는 값이 고정 하단에서 비었다. 회귀 테스트: `__tests__/layouts/modalFooterContextParity.test.tsx`
 - `Modal` 의 Esc 는 **창 안에 펼친 팝업이 있으면 팝업만 닫는다**(관리자 템플릿과 같은 규칙). 펼친 팝업은 `aria-haspopup` 과 `aria-expanded="true"` 를 함께 단 요소로 판정하므로, 창 안 드롭다운·메뉴는 이 두 속성을 트리거에 달고 자기 Esc 처리로 닫아야 한다. 키를 누른 순간(캡처 단계)의 펼침 여부로 판정하고, `aria-haspopup` 없는 펼침과 창 밖 팝업은 창 닫기를 막지 않는다. 회귀 테스트: `src/components/composite/__tests__/Modal.popupEscape.test.tsx`.
 - `Toast` 는 항목의 만든 시각(`createdAt`, 엔진 toast 핸들러가 넣음)부터 표시 시간(`duration`, 항목의 `duration` 이 우선)을 센다. 화면이 바뀌어 Toast 가 새로 마운트돼도 남은 시간만 보이고, 이미 지난 항목은 그리지 않고 `_global.toasts` 에서 지운다. 떠나는 Toast 는 타이머를 거둔다. 만든 시각이 없는 항목은 처음 받은 시각부터 센다. 회귀 테스트: `src/components/composite/__tests__/Toast.lifetime.test.tsx`.
 - **아이콘 단추와 상태 영역의 접근 이름**: `ThemeToggle` 단추는 `common.theme_select`(펼침 여부는 `aria-expanded`), `NotificationCenter` 항목 삭제 단추는 `common.delete_notification`, `PageSkeleton` 상태 영역은 `common.loading` 을 이름으로 단다. 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다. 이 이름을 영문 문자열로 되돌려 박지 않는다(한국어, 일본어 화면에서 영어로 읽힌다). 회귀 테스트: `src/components/composite/__tests__/AccessibleNameI18n.test.tsx`.
@@ -374,7 +374,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 AdminSidebar, AdminHeader, AdminFooter, PageHeader, DataGrid, CodeEditor, DynamicFieldList, MultilingualInput, TagInput, Toggle, RadioGroup, FormField, SlotContainer, FilterGroup 등 관리자 전용 컴포넌트 39개+
 
-> **정정(#601)**: `SlotContainer` 는 이 템플릿에도 있습니다(`src/components/composite/SlotContainer.tsx`).
+> **정정**: `SlotContainer` 는 이 템플릿에도 있습니다(`src/components/composite/SlotContainer.tsx`).
 > 나머지 항목은 이관 시점 그대로입니다.
 
 ---

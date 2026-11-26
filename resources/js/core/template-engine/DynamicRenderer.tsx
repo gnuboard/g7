@@ -5584,7 +5584,9 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         route={dataContext?.route}
         query={dataContext?.query}
       >
-        {effectiveComponentDef.blur_until_loaded ? (
+        {/* 그릴 내용이 없으면(`if` 거짓 등) 흐림 래퍼도 그리지 않는다 — 빈 div 가 flex 자식으로 남아
+            양 끝 정렬의 값이 가운데로 밀렸다(환경설정 정보 탭 메모리·디스크, engine-v1.99.2) */}
+        {effectiveComponentDef.blur_until_loaded && renderComponent != null ? (
           <div className={[
             getBlurWrapperClasses.wrapperClasses,
             shouldApplyBlur ? "opacity-50 blur-sm transition-all duration-300 pointer-events-none" : undefined

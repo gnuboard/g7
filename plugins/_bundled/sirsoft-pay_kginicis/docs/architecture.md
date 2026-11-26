@@ -41,7 +41,7 @@ Listeners (RegisterPgProviderListener 등 — 이커머스 레지스트리 등�
            레이아웃 확장 주입, 설정 검증)
 ```
 
-**이커머스 접근 경계(#916)**: 이 플러그인은 이커머스 내부 클래스(Service·Repository·Model 정적 조회·테이블)를
+**이커머스 접근 경계**: 이 플러그인은 이커머스 내부 클래스(Service·Repository·Model 정적 조회·테이블)를
 쓰지 않습니다. 주문·결제 조회와 쓰기는 이커머스 `public_api` 의 결제 계약
 `Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge`(하위 `PaymentLookup`·`OrderAccess`·
 `ClaimPaymentLookup`·`PaymentLifecycle`)를 생성자로 주입받아 하고, 결과는 DTO(`OrderRecord`·`PaymentRecord`·

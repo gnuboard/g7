@@ -85,7 +85,7 @@ Listener (RegisterKcpProviderListener 등)
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
 
-## 마이페이지 카드 라우트의 상태 게이트 (이슈 #636 S4)
+## 마이페이지 카드 라우트의 상태 게이트
 
 카드 조회 라우트는 `auth:sanctum` + `check.user_status` 를 씁니다. 종전 표기 `check.user_status:active` 의
 `:active` 는 **아무 일도 하지 않았습니다** — 이 미들웨어는 파라미터를 받지 않고 Laravel 이 초과 인자를

@@ -38,7 +38,7 @@
 개수는 본문 미디어를 빼고, `Page::contentMedia()` 가 따로 봅니다. 일반 첨부 업로드는 이 컬렉션 이름을 쓸 수 없습니다.
 
 흐름(업로드·저장 동기화·서명·서빙·영구 삭제·정리)은 코어 골격 `AbstractContentMediaService` 를 상속한 `PageContentMediaFlow` 가 돌리고,
-페이지 몫은 어댑터 `Services/ContentMedia/PageContentMediaStore`(코어 계약 `ContentMediaStore`)가 답합니다(#887). 호출자는 #883 부터의
+페이지 몫은 어댑터 `Services/ContentMedia/PageContentMediaStore`(코어 계약 `ContentMediaStore`)가 답합니다. 호출자는 기존
 진입점 `PageContentMediaService` 를 그대로 씁니다. 페이지 저장 트랜잭션 안에서 본문(로케일마다)을 **연결 → 복제 → 제거** 순서로 맞춥니다.
 
 - 연결: 본문이 참조한 임시 행 중 같은 임시 키 + 올린 관리자 본인 것만 잇습니다.

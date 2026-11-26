@@ -27,7 +27,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 동기화)·반응 유형 목록(DB 행)처럼 설정 파일에 두지 않는 항목은 「관리자 화면 전용」으로 거부됩니다.
 `settingsSaveRequestClass()` 를 지우거나 다른 FormRequest 로 바꾸면 터미널 경로의 검증도 함께 바뀝니다.
 
-### 개인정보 보유기간 (`privacy_retention`, 이슈 #636)
+### 개인정보 보유기간 (`privacy_retention`)
 
 모듈 환경설정의 「개인정보 보유기간」 탭(`?tab=privacy_retention`, 저장 `_tab=privacy_retention`)이 저장하는
 전역 카테고리입니다(`config/settings/defaults.json`). 코어 개인정보 탭·쇼핑몰 보유기간 탭·gdpr 통지 탭처럼

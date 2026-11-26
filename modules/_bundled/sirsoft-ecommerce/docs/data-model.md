@@ -172,7 +172,7 @@
 닿습니다. 이 컬럼 전에 만든 행은 기본값 `modules` 로 채워집니다(그때는 언제나 `modules` 에 저장했으므로 백필 없음). 컬럼 값이 config 에서 사라진
 디스크면 주입 저장소로 대신해 「파일 없음」(404)이 됩니다 — 500 이 나지 않습니다.
 본문 미디어(1.3.4, `ContentMedia`)는 상품 설명·상품 공통 정보 편집기 본문에 넣은 이미지·동영상·오디오입니다. 이 모듈의 **범용 첨부 표
-`ecommerce_attachments`**(게시판 `board_attachments`·페이지 `page_attachments` 와 같은 모양, #887)에 `collection = content_media` 로 둡니다 —
+`ecommerce_attachments`**(게시판 `board_attachments`·페이지 `page_attachments` 와 같은 모양)에 `collection = content_media` 로 둡니다 —
 `EcommerceAttachment` 가 그 표의 범용 모델이고, `ContentMedia` 는 본문 미디어 컬렉션만 보는 범위 모델입니다(다른 쓰임새가 생기면 컬렉션을 나눠
 같은 표를 씁니다). 소유 종류(product|common_info)는 `attachmentable_type`(상품·공통 정보 모델), 소유자는 `attachmentable_id`, 종류(image·video·audio)는
 `mime_type` 으로 판정합니다. 저장 전에는 `attachmentable_id` null + `temp_key` 이고, 저장 트랜잭션 안에서 본문(로케일마다)이 참조한 것을 연결 →
@@ -309,7 +309,7 @@
 씁니다. 목록 쿼리를 새로 만들 때 `withTrashed()` 를 습관적으로 붙이면 취소·삭제된 행이 매출
 집계에 섞이므로 주의합니다.
 
-**개인정보 보유기간 처리(이슈 #636)의 흔적**: 익명화된 주문은 `order_meta` 에 `privacy_anonymized_at`
+**개인정보 보유기간 처리의 흔적**: 익명화된 주문은 `order_meta` 에 `privacy_anonymized_at`
 (ISO 8601)을 남깁니다 — 스키마를 바꾸지 않고 멱등 표지로 쓰며, 주소 테이블의 NOT NULL 칸에는
 `***` 가 들어갑니다. 교환·반품·환불 신청서의 환불 계좌 명의·번호·상세 사유·관리자 메모도 NULL 이 되고, 교환의
 `redelivery_address_snapshot` 은 모양을 유지한 채 같은 기준으로 가려집니다 — 받는 분·연락처·우편번호·주소는 치환값, 상세 주소와 해외 주소의 도시·주(`city`·`state`)는 NULL(주문 주소의 `address_detail`·`intl_city`·`intl_state` 와 같은 처리). 삭제 모드는 주문과 참조 행을 **영구 삭제**합니다(소프트 삭제가 아님). 이때
@@ -615,8 +615,8 @@ Enum 49종이 이 도메인의 **어휘 전체**입니다. 상태·분류를 문
 <!-- @generated:repositories START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 클래스 | 종류 | 설명 |
 |---|---|---|
-| `BirthdayMemberRepository` | 구현 | 생일 회원 조회 Repository 구현체 (#952) |
-| `BirthdayMemberRepositoryInterface` | 인터페이스 | 생일 회원 조회 Repository 인터페이스 (#952) |
+| `BirthdayMemberRepository` | 구현 | 생일 회원 조회 Repository 구현체 |
+| `BirthdayMemberRepositoryInterface` | 인터페이스 | 생일 회원 조회 Repository 인터페이스 |
 | `BrandRepository` | 구현 | 브랜드 Repository 구현체 |
 | `BrandRepositoryInterface` | 인터페이스 | 브랜드 Repository 인터페이스 |
 | `CartRepository` | 구현 | 장바구니 Repository 구현체 |
@@ -668,8 +668,8 @@ Enum 49종이 이 도메인의 **어휘 전체**입니다. 상태·분류를 문
 | `OrderOptionRepositoryInterface` | 인터페이스 | 주문 옵션 리포지토리 인터페이스 |
 | `OrderPaymentRepository` | 구현 | 주문 결제 Repository 구현체 |
 | `OrderPaymentRepositoryInterface` | 인터페이스 | 주문 결제 Repository 인터페이스 |
-| `OrderPrivacyRetentionRepository` | 구현 | 종결 주문 개인정보 보유기간 처리 Repository (이슈 #636) |
-| `OrderPrivacyRetentionRepositoryInterface` | 인터페이스 | 종결 주문 개인정보 보유기간 처리 Repository 인터페이스 (이슈 #636) |
+| `OrderPrivacyRetentionRepository` | 구현 | 종결 주문 개인정보 보유기간 처리 Repository |
+| `OrderPrivacyRetentionRepositoryInterface` | 인터페이스 | 종결 주문 개인정보 보유기간 처리 Repository 인터페이스 |
 | `OrderRefundOptionRepository` | 구현 | 주문 환불 옵션 리포지토리 구현체 |
 | `OrderRefundOptionRepositoryInterface` | 인터페이스 | 주문 환불 옵션 리포지토리 인터페이스 |
 | `OrderRefundRepository` | 구현 | 주문 환불 리포지토리 구현체 |
@@ -683,8 +683,8 @@ Enum 49종이 이 도메인의 **어휘 전체**입니다. 상태·분류를 문
 | `OrderShippingRepository` | 구현 | 주문 배송 리포지토리 구현체 |
 | `OrderShippingRepositoryInterface` | 인터페이스 | 주문 배송 리포지토리 인터페이스 |
 | `PaginatesBuyerClaimList` | 구현 | 구매자 클레임 목록 페이지네이션 공용 트레이트 (회원 신청내역 · 비회원 주문상세 섹션) |
-| `PaymentGatewayRepository` | 구현 | 결제사 플러그인 공개 계약 구현 전용 저장소 (#916) |
-| `PaymentGatewayRepositoryInterface` | 인터페이스 | 결제사 플러그인 공개 계약(PaymentGatewayBridge) 구현 전용 저장소 (#916) |
+| `PaymentGatewayRepository` | 구현 | 결제사 플러그인 공개 계약 구현 전용 저장소 |
+| `PaymentGatewayRepositoryInterface` | 인터페이스 | 결제사 플러그인 공개 계약(PaymentGatewayBridge) 구현 전용 저장소 |
 | `ProductAdditionalOptionValueRepository` | 구현 | 상품 추가옵션 선택지 Repository 구현체 |
 | `ProductAdditionalOptionValueRepositoryInterface` | 인터페이스 | 상품 추가옵션 선택지 Repository 인터페이스 |
 | `ProductCommonInfoRepository` | 구현 | 공통정보 Repository 구현체 |

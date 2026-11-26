@@ -950,7 +950,7 @@ const srcSet = typeof thumbnail?.contentSrcsetWithin === 'function'
   : undefined;
 ```
 
-**원본 직접 주소가 따로 오는 이미지(공개 자산 디스크, #878)** — 응답이 썸네일 기준 주소(`url`·`preview_url`, 같은 출처 서빙 경로)와 원본 직접 주소(`direct_url`, CDN·`/storage`)를 함께 주면, 후보는 서빙 경로로 만들고 **마지막 원본 후보와 `src` 만** 직접 주소로 바꾼다. 직접 주소는 등록된 서빙 경로가 아니라 `contentSrcsetWithin` 에 넘기면 빈 문자열이다.
+**원본 직접 주소가 따로 오는 이미지(공개 자산 디스크)** — 응답이 썸네일 기준 주소(`url`·`preview_url`, 같은 출처 서빙 경로)와 원본 직접 주소(`direct_url`, CDN·`/storage`)를 함께 주면, 후보는 서빙 경로로 만들고 **마지막 원본 후보와 `src` 만** 직접 주소로 바꾼다. 직접 주소는 등록된 서빙 경로가 아니라 `contentSrcsetWithin` 에 넘기면 빈 문자열이다.
 
 ```ts
 const tail = `${image.url.replace(/ /g, '%20')} ${Math.floor(image.width)}w`;

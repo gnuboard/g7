@@ -26,7 +26,7 @@
 동의 granted/revoked 두 훅은 `?GdprUserConsent $consent, string $source, string $consentKey, ?int $userId, ?string $sessionId`
 를 넘깁니다. **`$consent` 는 null 일 수 있습니다** — 게스트(회원 상태 행이 없다)와 필수 항목의 변경이 그렇습니다.
 무엇이 바뀌었는지는 `$consentKey` 로, 누구의 동의인지는 `$userId`(회원) 또는 `$sessionId`(게스트)로 판단하세요.
-뒤 세 인자는 #639 에서 덧붙였고, 앞 두 인자만 받는 기존 구독자는 그대로 동작합니다. `$source` 값은
+뒤 세 인자는 1.1.0 에서 덧붙였고, 앞 두 인자만 받는 기존 구독자는 그대로 동작합니다. `$source` 값은
 `banner`/`mypage`/`mypage_renew_all`/`register`/`withdraw` 중 하나이며, 어떤 화면에서 동의가
 바뀌었는지 구분해야 하는 리스너(예: 배너 동의만 특정 방식으로 처리하고 싶은 경우)는 이 값으로
 분기합니다. `revoked` 는 명시적 철회(마이페이지)뿐 아니라 회원탈퇴로 인한 일괄 철회

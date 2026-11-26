@@ -637,7 +637,7 @@ exclusions:
 
 ### 대규모 시나리오 축(scale)
 
-큐/스케줄러/배치 생성처럼 데이터가 누적되면 붕괴할 수 있는 기능은 대용량(scale) 축을 매니페스트에 선언하고, 규모 의존 결함(유계 메모리·분할 정확성·전량 적재 회피 등)을 회귀 가드로 고정한다. 배경: 사이트맵 생성 잡이 1.4M 게시글을 전량 in-memory 적재해 반복 OOM 붕괴한 사례(#79).
+큐/스케줄러/배치 생성처럼 데이터가 누적되면 붕괴할 수 있는 기능은 대용량(scale) 축을 매니페스트에 선언하고, 규모 의존 결함(유계 메모리·분할 정확성·전량 적재 회피 등)을 회귀 가드로 고정한다. 배경: 사이트맵 생성 잡이 1.4M 게시글을 전량 in-memory 적재해 반복 OOM 붕괴한 사례(공개 #79).
 
 **스키마** (`scale` = block-array of flow objects — 내장 YAML fallback 파서가 flow 객체만 중첩 파싱하므로 `- { ... }` 형태):
 
@@ -820,7 +820,7 @@ php artisan test tests/Feature/Installation/BoardFreshInstallTest.php
 ```text
 필수: 버그 수정 작업은 4단계 순서 준수 (스킵 불가)
 금지: 회귀 테스트 없이 로직만 수정하고 완료 선언
-이유: 테스트 없는 수정은 동일 회귀를 반복 발생시킴 (beta.2 #11 사례)
+이유: 테스트 없는 수정은 동일 회귀를 반복 발생시킴 (beta.2 공개 #11 사례)
 ```
 
 ### 단순 UI/UX 수정은 무거운 테스트를 돌리지 않는다
@@ -854,7 +854,7 @@ php artisan test tests/Feature/Installation/BoardFreshInstallTest.php
 | 훅/카운터 동기화 버그 | `tests/Unit/Listeners/*Test.php` |
 | 마이그레이션–Repository 결합 버그 | `tests/Feature/Installation/*Test.php` (스모크 스위트 포함) |
 
-### 예시 — #11 회귀 테스트 패턴
+### 예시 — 공개 #11 회귀 테스트 패턴
 
 ```php
 // ❌ 버그 수정만 하고 끝내는 패턴 (금지)

@@ -266,11 +266,11 @@
 **로그인 리다이렉트를 여기서 구현하지 않습니다** — 코어 `TemplateApp.showRouteError` 가드가
 처리하므로, 이 레이아웃에서 다시 이동시키면 이중 리다이렉트가 됩니다.
 
-**휴면 해제 안내(이슈 #636 S4)**: `partials/auth/_login_form` 은 로그인 응답에 `dormancy_restored` 가
+**휴면 해제 안내**: `partials/auth/_login_form` 은 로그인 응답에 `dormancy_restored` 가
 실렸을 때만 안내 토스트를 띄웁니다(`auth.dormancy_restored`). 서버는 **해제됐을 때만** 그 키를 보내므로
 키의 존재 자체가 조건입니다 — `false` 를 늘 보내는 형태로 바꾸면 매 로그인마다 안내가 뜹니다.
 1단계(2FA 없는 사이트)와 2단계 완료 경로 **둘 다**에 같은 토스트를 둡니다. 한쪽만 두면 사이트의 2FA
-설정에 따라 해제 사실이 보이기도 하고 안 보이기도 합니다. 비밀번호 변경 단계(#736)의 완료·연기 경로에도 같은 토스트를 둡니다.
+설정에 따라 해제 사실이 보이기도 하고 안 보이기도 합니다. 비밀번호 변경 단계의 완료·연기 경로에도 같은 토스트를 둡니다.
 엔진이 engine-v1.76.0 전에는 이 키를 핸들러 응답에서 버려 토스트가 한 번도 뜨지 않았습니다 — 이 레이아웃 조건은 그대로이고
 엔진이 키를 전달하도록 고쳐졌습니다.
 
@@ -530,7 +530,7 @@ API 를 부르지도, 갈 곳 없는 링크를 그리지도 않는다. 판정은
 
 ## 이관 원문 상세
 
-> 아래는 코어 `docs/frontend/templates/sirsoft-basic/layouts.md` 에 있던 원문을 이 문서로 옮긴 것입니다(#601). 이관 시점 그대로
+> 아래는 코어 `docs/frontend/templates/sirsoft-basic/layouts.md` 에 있던 원문을 이 문서로 옮긴 것입니다. 이관 시점 그대로
 > 보존하되, **코드가 SSoT 인 값과 어긋나는 부분에는 정정 주석**을 달았습니다.
 
 ### sirsoft-basic 레이아웃
@@ -540,7 +540,7 @@ API 를 부르지도, 갈 곳 없는 링크를 그리지도 않는다. 판정은
 >
 > **마크업 형식**: 아래 파일 트리는 소스 SSoT 인 `.g7.html`([레이아웃 마크업](../../../../docs/frontend/layout-markup.md)) 기준입니다. 설치 시 서버가 각 `.g7.html` 을 메모리로 JSON 컴파일해 DB(`template_layouts`)에 등록합니다. 산출 JSON 키 계약은 [layout-json.md](../../../../docs/frontend/layout-json.md) 가 SSoT 이며 불변입니다. 디스크에는 진단·복구용 짝 `.json` 이 병존합니다.
 
-> **정정(#601)**: 아래 페이지 맵·개수는 이관 시점 값입니다. 실측 총계와 그룹별 분포는 위
+> **정정**: 아래 페이지 맵·개수는 이관 시점 값입니다. 실측 총계와 그룹별 분포는 위
 > 「레이아웃 목록」 블록이 SSoT 이며, 이관 이후 추가·삭제된 레이아웃이 있을 수 있습니다.
 
 ---
@@ -588,14 +588,14 @@ _user_base.g7.html (베이스 레이아웃)
 │       ├── _board_summary.g7.html (게시판 요약)
 │       ├── _community_guide.g7.html (커뮤니티 가이드)
 │       ├── _shop_promo.g7.html (쇼핑 프로모션)
-│       └── _visitor_counter.g7.html (방문자 카운터 — 설정을 켰을 때만, 공개 요약 API #682 S3)
+│       └── _visitor_counter.g7.html (방문자 카운터 — 설정을 켰을 때만, 공개 요약 API)
 │
 ├── 인증 (auth/)
 │   ├── login.g7.html (로그인)
 │   ├── register.g7.html (회원가입)
 │   ├── forgot_password.g7.html (비밀번호 찾기)
 │   ├── reset_password.g7.html (비밀번호 재설정)
-│   ├── identity_challenge.g7.html (2단계 인증 챌린지 — #657)
+│   ├── identity_challenge.g7.html (2단계 인증 챌린지)
 │   ├── identity_verify.g7.html (본인인증 메일 링크 착지 — 확인만, 결과는 인증을 시작한 화면이 받음)
 │   └── partials/auth/
 │       ├── _login_form.g7.html (로그인 폼)
@@ -635,7 +635,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _parent_post.g7.html (원글 표시)
 │   │       ├── _type_renderer.g7.html (타입별 렌더러 분기)
 │   │       └── _password_verify_modal.g7.html (비밀번호 확인)
-│   ├── partials/board/_guest_fields.g7.html (비회원 작성자 항목 반복 조각 — 운영자가 게시판 설정에서 켠 이메일, 추가 항목, 확장이 보탠 항목을 항목 계약대로 그림. 글쓰기 폼, 댓글, 답글 입력칸이 `data-each="boardGuestFieldGroup in …"` 안에서 부름, #490)
+│   ├── partials/board/_guest_fields.g7.html (비회원 작성자 항목 반복 조각 — 운영자가 게시판 설정에서 켠 이메일, 추가 항목, 확장이 보탠 항목을 항목 계약대로 그림. 글쓰기 폼, 댓글, 답글 입력칸이 `data-each="boardGuestFieldGroup in …"` 안에서 부름)
 │   ├── popular.g7.html (인기글)
 │   │   └── partials/board/popular/
 │   │       ├── _popular_list.g7.html (인기글 리스트)
@@ -719,7 +719,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   ├── scrap.g7.html (스크랩 — 일괄 삭제 확인 조각 포함)
 │   ├── profile.g7.html (프로필 보기)
 │   ├── profile-edit.g7.html (프로필 수정)
-│   ├── required-info.g7.html (추가 정보 입력 — 기존 회원에게도 입력을 요구한 필수 항목이 비어 있는 회원이 로그인 뒤 거치는 화면, 저장하면 redirect 로, 없으면 홈으로, #490)
+│   ├── required-info.g7.html (추가 정보 입력 — 기존 회원에게도 입력을 요구한 필수 항목이 비어 있는 회원이 로그인 뒤 거치는 화면, 저장하면 redirect 로, 없으면 홈으로)
 │   │   └── partials/mypage/profile/
 │   │       ├── _view.g7.html (프로필 보기 섹션 — 국가는 응답의 country_name 으로 이름 표시)
 │   │       ├── _edit.g7.html (프로필 수정 섹션 — 국가 선택은 profile-edit 의 countryList define)
@@ -803,8 +803,8 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _modal_scrap_delete.g7.html (스크랩 삭제)
 │   │       └── _modal_scrap_bulk_delete.g7.html (스크랩 일괄 삭제)
 │   ├── partials/member/
-│   │   ├── _member_fields.g7.html (회원 항목 입력 반복 조각 — 가입, 내 정보 수정, 추가 정보 입력이 `data-each="memberFieldGroup in …"` 안에서 부름, #490)
-│   │   └── _member_fields_view.g7.html (회원 항목 보기 조각 — 내 정보 보기가 카드마다 부름, 값이 없으면 「-」, #490)
+│   │   ├── _member_fields.g7.html (회원 항목 입력 반복 조각 — 가입, 내 정보 수정, 추가 정보 입력이 `data-each="memberFieldGroup in …"` 안에서 부름)
+│   │   └── _member_fields_view.g7.html (회원 항목 보기 조각 — 내 정보 보기가 카드마다 부름, 값이 없으면 「-」)
 │   └── partials/mypage/
 │       └── _tab_navigation.g7.html (마이페이지 공통 탭)
 │           hiddenTabIds: inquiries 탭은 sirsoft-ecommerce inquiry 설정 시에만 노출
@@ -836,8 +836,8 @@ _user_base.g7.html (베이스 레이아웃)
 ├── 공통 Partial
 │   ├── partials/common/
 │   │   └── _currency_selector.g7.html (통화 선택기)
-│   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달 — #657)
-│   ├── partials/_modal_required_info_pending.g7.html (추가 정보 필요 안내 — 쓰기 요청이 403 `required_fields_pending` 으로 거절되면 템플릿 오류 처리가 열고 「입력하러 가기」로 추가 정보 입력 화면에 보냄, #490)
+│   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달)
+│   ├── partials/_modal_required_info_pending.g7.html (추가 정보 필요 안내 — 쓰기 요청이 403 `required_fields_pending` 으로 거절되면 템플릿 오류 처리가 열고 「입력하러 가기」로 추가 정보 입력 화면에 보냄)
 │   └── partials/_modal_notification_delete_all_confirm.g7.html (알림 전체 삭제 확인)
 │
 └── 에러 페이지 (errors/)
@@ -914,7 +914,7 @@ slots.content:
   남겨 두면 눌러도 아무 일이 없는 것처럼 보입니다. 백업 코드(`xxxxx-xxxxx`)도 같은 칸에
   받으므로 `maxLength` 를 넓힙니다. 그 외 수단(메일 등)은 종전 화면 그대로입니다.
 
-**비밀번호 변경 단계 (#736, engine-v1.77.0)**
+**비밀번호 변경 단계 (engine-v1.77.0)**
 
 비밀번호가 만료됐거나 관리자가 정해 준 비밀번호면 로그인·인증번호 확인 응답이 토큰 대신 변경 단계를 돌려줍니다
 (`response.password_change_required`). `_login_form` 은 이를 2단계 인증과 같은 짜임으로 **같은 카드 안의 3단계**로 처리합니다.
@@ -934,7 +934,7 @@ slots.content:
 - 새 비밀번호 칸은 `PasswordInput` 규칙을 보안 환경설정 값으로 바인딩하고(아래 「비밀번호 규칙 바인딩」), 서버만 확인하는 규칙
   (재사용·아이디·반복·연속·현재 비밀번호와 같은 값)은 작은 글로 알립니다.
 
-**비밀번호 규칙 바인딩 (#736)**
+**비밀번호 규칙 바인딩**
 
 가입(`_register_form`)·재설정(`auth/reset_password`)·마이페이지 변경(`mypage/change-password`)·로그인 변경 단계의 새 비밀번호 칸은
 `enableRules` 를 리터럴(`minLength:8`)이 아니라 `_global.settings.security.*`(코어가 공개하는 작성 규칙 10키)로 만든 식에 바인딩합니다 —

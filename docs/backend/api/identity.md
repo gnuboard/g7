@@ -1233,7 +1233,7 @@ HTTP/1.1 201
 
 **설명** 본인인증 challenge(인증 시도) 를 시작합니다. `auth:sanctum` + `core.identity.request` 권한이 필요합니다. 로그인 사용자는 인증 대상이 자동으로 본인이 되며, 비로그인 게스트(Mode B 가입 흐름) 는 `target.email` 또는 `target.phone` 을 반드시 제공해야 하고 없으면 422(missing_target) 를 반환합니다. `provider_id` 미지정 시 목적에 매핑된 기본 프로바이더가 선택됩니다. `IdentityVerificationService::start` 가 IP·User-Agent 등 컨텍스트와 함께 challenge 를 생성하고 성공 시 201 로 challenge 리소스(render_hint 등 포함) 를 반환합니다. 확장은 `core.identity.request_validation_rules` 필터 훅으로 파라미터를 추가할 수 있습니다. 메일 프로바이더로 같은 수신 이메일·같은 목적의 인증 메일을 60초 안에 다시 요청하면 새 challenge 를 만들지 않고 429 와 남은 시간을 돌려줍니다(7.1.6 — 한 주소에 인증 메일을 계속 보내는 것 방지). 직전 발송이 실패로 끝났으면 바로 다시 요청할 수 있고, 로그인 2단계 인증·가입 직후 자동 발송처럼 서버가 직접 발행하는 경로는 이 대기의 대상이 아닙니다.
 
-**발송 실패는 성공으로 포장하지 않습니다(#599 세션A).** challenge 생성과 코드 전달은 다른 일이라, 전달이 실패해도 challenge 행은 남습니다. 그대로 201 을 주면 화면이 「전송된 코드를 입력하세요」와 카운트다운을 띄워 사용자가 오지 않을 코드를 기다리게 됩니다. 그래서 생성 직후 `IdentityVerificationService::getStatus()`(공개 폴링과 같은 판정)로 상태를 확인하고, `failed` 이면 **502** 와 `identity.errors.challenge_dispatch_failed` 를 반환합니다. 요청 자체는 올바르고 권한도 있으므로 4xx 가 아니라 바깥 전달 경로의 실패를 뜻하는 5xx 를 씁니다.
+**발송 실패는 성공으로 포장하지 않습니다.** challenge 생성과 코드 전달은 다른 일이라, 전달이 실패해도 challenge 행은 남습니다. 그대로 201 을 주면 화면이 「전송된 코드를 입력하세요」와 카운트다운을 띄워 사용자가 오지 않을 코드를 기다리게 됩니다. 그래서 생성 직후 `IdentityVerificationService::getStatus()`(공개 폴링과 같은 판정)로 상태를 확인하고, `failed` 이면 **502** 와 `identity.errors.challenge_dispatch_failed` 를 반환합니다. 요청 자체는 올바르고 권한도 있으므로 4xx 가 아니라 바깥 전달 경로의 실패를 뜻하는 5xx 를 씁니다.
 
 
 **가입 인증 재요청의 대상(7.2.1).** 비로그인 화면이 `purpose=signup` 과 `target.email` 만 보냈을 때 그 이메일이 가입 후 본인인증 대기(`pending_verification`) 회원이면 그 회원을 대상으로 challenge 를 만든다 — 확인하면 계정이 활성화된다(다른 브라우저·다음 날 [코드 다시 받기]). 그 밖의 이메일은 종전처럼 받은 대상 그대로이고, 응답은 어느 쪽이든 같아 계정 존재가 드러나지 않는다.

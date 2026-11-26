@@ -63,7 +63,7 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 | banners[].link_url | string\|null | `/shop` | 이동할 주소(사이트 경로 또는 http(s), 없으면 null) |
 | banners[].link_new_window | boolean | `false` | 새 창 열기 |
 | banners[].images.pc | object | `{"url":"/api/plugins/sirsoft-hero_section/images/FCm6p4tn…` | PC 이미지 `url`·`direct_url`·`width`·`height`. `url` 은 사이트 마운트 접두사 포함(하위 폴더 설치면 `/g7/api/plugins/…`, 영상 `videos.*.url` 도 같다) |
-| banners[].images.pc.direct_url | string\|null | `null` | 원본 직접 주소(#878) — 공개 자산 디스크(public·CDN)에 올린 행만 채워지고 접두사 없는 절대 주소다. 슬라이더는 `<img src>`·srcset 의 원본 후보에만 쓰고 축소 후보는 `url?size=` 다. 영상 `videos.*.direct_url` 도 같고, 있으면 그 주소로 재생한다 |
+| banners[].images.pc.direct_url | string\|null | `null` | 원본 직접 주소 — 공개 자산 디스크(public·CDN)에 올린 행만 채워지고 접두사 없는 절대 주소다. 슬라이더는 `<img src>`·srcset 의 원본 후보에만 쓰고 축소 후보는 `url?size=` 다. 영상 `videos.*.direct_url` 도 같고, 있으면 그 주소로 재생한다 |
 | abilities.can_update | boolean | `false` | 요청한 회원이 배너를 수정할 수 있는지(`sirsoft-hero_section.banners.update`). 로그인하지 않았으면 false. 공개 캐시에 담지 않고 요청마다 판정한다 |
 | banners[].images.mobile | object | `{"url":"/api/plugins/sirsoft-hero_section/images/KrjUXDR7…` | 모바일 이미지(없으면 null — PC 를 쓴다) |
 

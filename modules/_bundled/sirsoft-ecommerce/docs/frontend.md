@@ -8,6 +8,8 @@
 
 완료 요약의 선택 변경은 debounce 예약 시점부터 이전 응답을 무효화한다. 다음 요청이 아직 전송되지 않았더라도 이전 성공/실패 응답이 최신 선택이나 실행 잠금을 바꾸면 안 된다. 반응형 버튼 라벨은 내부 `Span.responsive`에 둔다. Button 자체의 `responsive.text`는 `children`보다 우선하므로 함께 둔 스피너를 가린다. 회귀 검증은 예약 사이 응답 경합과 desktop/portable의 대기 표시·기존 라벨을 포함한다.
 
+`gap` 을 쓰는 flex 줄 안에서 자식이 모두 `if` 로 숨을 수 있는 묶음 칸은 자식 조건의 합(OR)을 자기 `if` 로도 건다. 묶음 칸만 남으면 0×0 이어도 `gap` 은 한 번 더 붙는다 — 클레임 상세 일괄 바(`claim_item_bulk_bar`)의 상태 셀렉트·안내 묶음이 처음 화면에서 「선택 0건」 뒤 간격을 12→24px 로 벌렸고, 세로 배치 줄에서는 빈 칸 아래로 같은 만큼 늘어난다. 축 전체가 없는 유형이면(취소 탭의 「추가 조건」 필터 줄처럼) 묶음이 아니라 줄째로 뺀다. 렌더 회귀는 바의 직계 자식 중 내용 없는 칸이 없는지로 잰다(`flex-1` 여백 칸은 의도된 빈 칸이라 뺀다).
+
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 레이아웃 256개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
@@ -383,7 +385,7 @@
 
 ### 클레임 추가결제의 결제 플러그인 실패
 
-클레임 결제 진입(`payClaimOutstanding`·`submitClaim`·`saveClaimEdit`)은 결제 시작 API 가 지목한 결제 플러그인 핸들러를 `resources/js/utils/claimPgDispatch.ts` 의 `claimPgDispatchAction()` 으로 만든 동작으로 부른다 — 이 동작은 디스패처의 기본 오류 처리를 `suppress` 로 막아 내부 문구(「Failed to execute action: …」) 토스트가 뜨지 않게 한다. 결제 플러그인은 결제창을 열기 전에 실패하면 사용자 문구를 담은 오류를 던지고(계약: `docs/api/claim-payments.md` 「결제 플러그인 연동 계약」), 디스패처는 그 오류를 `{ success: false, error }` 로 돌려준다. 핸들러는 `claimPgDispatchFailureMessage()` 로 문구를 꺼내(원래 오류 `error.originalError.message`, 비면 `user.claim.pay.failed`) 신청서 상세는 `isPayingClaim` 을 내리고 `claimPayError`(버튼 아래)에 남기며, 신청·수정 직후의 결제는 토스트로 알린 뒤 신청서 상세로 옮긴다(1.4.0, #855). 결과를 보지 않으면 결제창이 열리지 않았는데도 진행 표시가 「결제 진행 중…」에 멈춘다 — 결제창이 열리는 동안 일부러 끄지 않기 때문이다.
+클레임 결제 진입(`payClaimOutstanding`·`submitClaim`·`saveClaimEdit`)은 결제 시작 API 가 지목한 결제 플러그인 핸들러를 `resources/js/utils/claimPgDispatch.ts` 의 `claimPgDispatchAction()` 으로 만든 동작으로 부른다 — 이 동작은 디스패처의 기본 오류 처리를 `suppress` 로 막아 내부 문구(「Failed to execute action: …」) 토스트가 뜨지 않게 한다. 결제 플러그인은 결제창을 열기 전에 실패하면 사용자 문구를 담은 오류를 던지고(계약: `docs/api/claim-payments.md` 「결제 플러그인 연동 계약」), 디스패처는 그 오류를 `{ success: false, error }` 로 돌려준다. 핸들러는 `claimPgDispatchFailureMessage()` 로 문구를 꺼내(원래 오류 `error.originalError.message`, 비면 `user.claim.pay.failed`) 신청서 상세는 `isPayingClaim` 을 내리고 `claimPayError`(버튼 아래)에 남기며, 신청·수정 직후의 결제는 토스트로 알린 뒤 신청서 상세로 옮긴다(1.4.0). 결과를 보지 않으면 결제창이 열리지 않았는데도 진행 표시가 「결제 진행 중…」에 멈춘다 — 결제창이 열리는 동안 일부러 끄지 않기 때문이다.
 
 ## 액션 핸들러
 
@@ -662,7 +664,7 @@ store 를, 그것도 없으면 취소 여부만 봅니다. 구매자 신청서 �
 | 배송정책·주소 | `testShippingApi` · `updateExtraFeeField` · `changeShippingAddress` | 외부 배송비 API 시험 호출과 주소 변경 |
 | 클레임 | `claimHandlers.ts` · `claimListHandlers.ts` · `claimApplyHandlers.ts` · `claimImageHandlers.ts` 의 핸들러 | 관리자 일괄 전이·완료 모달, **신청서 단위 전이**(`executeClaimStatusTransition`), 환불신청서 수동 접수(`storeClaimRefundRequest`), 운영자 대리 첨부(업로드는 `composite/FileUploader` 가 직접 하고 핸들러는 `refreshClaimAttachments` · `clearClaimImages` 로 목록만 되읽는다), 구매자 신청서 작성(교환 상품 선택·실시간 요약)·첨부 업로드 — 템플릿 화면도 이 핸들러를 쓴다 |
 
-취소·환불 축에서 유의할 계약 둘이 있습니다(#599 후속).
+취소·환불 축에서 유의할 계약 둘이 있습니다.
 
 - **접수 후 이동 주소는 서버가 정합니다.** `submitClaim` 은 응답에 실린 신청서의 `claim_type`
   으로 `successPath` 의 `type` 을 덮어씁니다(`resolveClaimSuccessPath`). 화면이 주문 전체 기준

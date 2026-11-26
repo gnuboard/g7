@@ -57,7 +57,7 @@ composer test-smoke-ci
 ```
 
 - `composer test-smoke`는 `tests/Feature/Installation/` 및 각 번들 확장의 `tests/Feature/Installation/` 디렉토리를 실행합니다.
-- 스모크 통과 없이 릴리스 태깅을 진행하면 beta.2 #12 유형(마이그레이션–Repository 결합 누락) 회귀를 놓칠 수 있습니다.
+- 스모크 통과 없이 릴리스 태깅을 진행하면 beta.2 공개 #12 유형(마이그레이션–Repository 결합 누락) 회귀를 놓칠 수 있습니다.
 - 상세: [testing-guide.md#pre-release-smoke-suite](../testing-guide.md#pre-release-smoke-suite)
 
 ### 버전 섹션 형식
@@ -298,7 +298,7 @@ setState(selectedX) → apiCall(changelog)
 | 문구 정정 | 잘못된 안내(예: 실제 입력 한도와 다른 글자 수)가 고쳐진다 |
 | 오탈자 정정 | 화면 용어가 바뀐다 |
 
-이들 변경은 diff 상 `lang/` 아래에만 남아 CHANGELOG 를 쓰는 시점에 눈에 띄지 않는다. 실제로 이슈 #78 에서 코어·이커머스·게시판·kginicis 4개 호스트의 문구 수정이 기록 없이 누락됐고, 그중에는 로그인/역할 권한 거절 응답에 원문 키가 노출되던 사용자 관점 결함도 있었다.
+이들 변경은 diff 상 `lang/` 아래에만 남아 CHANGELOG 를 쓰는 시점에 눈에 띄지 않는다. 실제로 코어·이커머스·게시판·kginicis 4개 호스트의 문구 수정이 기록 없이 누락됐고, 그중에는 로그인/역할 권한 거절 응답에 원문 키가 노출되던 사용자 관점 결함도 있었다.
 
 ### 기재 예시
 

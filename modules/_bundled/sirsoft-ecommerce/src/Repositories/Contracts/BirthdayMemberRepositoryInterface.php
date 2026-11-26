@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 /**
- * 생일 회원 조회 Repository 인터페이스 (#952)
+ * 생일 회원 조회 Repository 인터페이스
  */
 interface BirthdayMemberRepositoryInterface
 {

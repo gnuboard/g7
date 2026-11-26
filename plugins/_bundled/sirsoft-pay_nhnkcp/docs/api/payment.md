@@ -209,7 +209,7 @@ JSON 이 아니라 **HTML** 이다(`Cache-Control: no-store`). SDK `<script src>
 
 **설명**
 
-PC 표준결제(`requestPayment` 핸들러)가 투명 iframe 으로 여는 결제창 프레임이다(1.1.2, #158). 종전에는 주문 화면이 빈 iframe 에 `document.write` 로 SDK 와 인라인 스크립트를 써 넣었는데, 사이트가 `Content-Security-Policy: script-src 'self'` 를 걸면 그 인라인 코드가 실행되지 않아 결제가 시간 초과로 끝났다. 이제 브리지가 같은 출처 부모 창의 `window.__g7KcpFrame` 에서 주문 값(`fields`)을 받아 폼을 채우고 `KCP_Pay_Execute` 를 부르며, KCP 가 돌려주는 결과 폼(`m_Completepayment`)을 부모의 `complete` 로 넘긴다. 부모 객체가 없으면(다른 출처·주소 직접 열기) 아무 것도 하지 않는다.
+PC 표준결제(`requestPayment` 핸들러)가 투명 iframe 으로 여는 결제창 프레임이다(1.1.2, 공개 #158). 종전에는 주문 화면이 빈 iframe 에 `document.write` 로 SDK 와 인라인 스크립트를 써 넣었는데, 사이트가 `Content-Security-Policy: script-src 'self'` 를 걸면 그 인라인 코드가 실행되지 않아 결제가 시간 초과로 끝났다. 이제 브리지가 같은 출처 부모 창의 `window.__g7KcpFrame` 에서 주문 값(`fields`)을 받아 폼을 채우고 `KCP_Pay_Execute` 를 부르며, KCP 가 돌려주는 결과 폼(`m_Completepayment`)을 부모의 `complete` 로 넘긴다. 부모 객체가 없으면(다른 출처·주소 직접 열기) 아무 것도 하지 않는다.
 
 ## POST /plugins/sirsoft-pay_nhnkcp/payment/callback
 

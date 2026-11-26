@@ -36,7 +36,7 @@
 주문 상세·신청서 상세(회원·비회원), 주문 완료, 관리자 주문 상세에 붙는 KG이니시스 결제 정보는 모두 레이아웃 조각이 그린다.
 예전에는 주입 스크립트 넷(`mypageOrderShowInjector`·`vbankInfoInjector`·`orderCompleteReceiptInjector`·`adminOrderPaymentDisplayInjector`)이
 화면 주소 글자를 맞추고 DOM 을 폴링해 끼웠고, 로그인 토큰을 저장소에서 직접 읽어 Bearer 를 붙였으며 `history.pushState` 를 덮어썼다.
-쇼핑몰 경로를 바꾼 설치본에서는 조용히 빠졌다(#639 에서 조각으로 옮김).
+쇼핑몰 경로를 바꾼 설치본에서는 조용히 빠졌다(1.2.0 에서 조각으로 옮김).
 
 | 화면 | 조각 | 붙는 자리 | 데이터 |
 |---|---|---|---|
@@ -156,14 +156,14 @@ Tailwind 빌드로, 템플릿에서 가져온 의미 클래스는 `pay-kginicis-
 서버 리스너 `RestrictPaymentMethodsForCurrencyListener` 가 이커머스 훅 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency`
 에 답해 정한다. 주문서 응답의 `allowed_payment_methods` 로 템플릿이 버튼을 거르고, 주문 생성 검증도 같은 판정을 쓴다.
 예전 브라우저 제한기(`checkoutJpyPaymentMethodRestrictor`)는 주문서 응답을 `window.fetch` 덮어쓰기로 고치고 그려진 버튼을 숨겼는데,
-직접 POST 로 우회됐고 쇼핑몰 경로가 `/shop` 이 아니면 동작하지 않았다(#639 에서 삭제).
+직접 POST 로 우회됐고 쇼핑몰 경로가 `/shop` 이 아니면 동작하지 않았다(1.2.0 에서 삭제).
 
 ### 관리자 결제수단 설정의 브랜드 마크는 카탈로그가 내려 준다
 
 간편결제 6종(네이버페이·삼성페이·L.pay·카카오페이·PayPay·일본 편의점)의 브랜드 마크(SVG)는 결제수단 카탈로그 리스너
 (`RegisterEasyPayMethodsListener`)가 `brand_mark` 로 실어 보내고, 이커머스가 저장 항목에 `_cached_brand_mark` 로 옮겨 둔다.
 화면은 그 값을 그린다 — 주문서는 이미 `brand-mark` 컴포넌트로 그린다. 관리자 쇼핑몰 설정의 결제수단 목록(이커머스 소유)도
-같은 값으로 그려야 하며, 예전처럼 화면 스크립트가 그려진 아이콘을 바꿔 끼우지 않는다(`adminPaymentMethodBrandInjector` 는 #639 에서 삭제).
+같은 값으로 그려야 하며, 예전처럼 화면 스크립트가 그려진 아이콘을 바꿔 끼우지 않는다(`adminPaymentMethodBrandInjector` 는 1.2.0 에서 삭제).
 
 ## 결제창 닫힘 보고의 소유자 증명
 

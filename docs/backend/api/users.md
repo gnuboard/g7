@@ -249,8 +249,8 @@ HTTP/1.1 200
 | custom_fields.{키} | body | 항목 유형에 따름 | 항목 설정에 따름 | 항목 설정에 따름 | 운영자가 추가한 회원 항목의 값. 범위가 관리자만 수정, 관리자만 열람인 항목도 받는다. 파일, 이미지 항목은 이 본문이 아니라 항목 파일 API 로 올린다. 폼 경로와 오류 키는 폼 항목 API 의 `fields[].name` 이다 |
 | email | body | email | 예 | max 255 | 이메일 주소. 항목이 아닌 고정 칸이라 늘 필수다 |
 | create_without_password | body | boolean | 아니오 | — | 비밀번호 없이 만들기(7.2.0 — 외부 인증 전용 회원). 참이면 `password` 를 보내면 422(`prohibited`), 회원은 `has_password=false` 로 만들어진다 |
-| password | body | string | `create_without_password` 가 거짓이면 예 | 보안 설정의 작성 규칙 | 비밀번호 — 관리자가 정해 준 비밀번호라 재사용 검사를 하지 않고, 회원은 다음 로그인 때 바꿔야 한다(#736) |
-| password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 개별 설정 (따름·적용·제외, 미지정 시 따름 — #736) |
+| password | body | string | `create_without_password` 가 거짓이면 예 | 보안 설정의 작성 규칙 | 비밀번호 — 관리자가 정해 준 비밀번호라 재사용 검사를 하지 않고, 회원은 다음 로그인 때 바꿔야 한다 |
+| password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 개별 설정 (따름·적용·제외, 미지정 시 따름) |
 | language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
@@ -955,7 +955,7 @@ HTTP/1.1 200
 응답 도착 시점의 입력칸을 다시 읽어 도장을 찍으면 한 글자가 부른 가장 큰 응답(전체 회원)이
 가장 늦게 와서 현재 키워드의 것으로 둔갑합니다 — 2026-09-22 실측에서 `MEAS599T-S2` 를 친
 관리자 마일리지 수동 지급 모달에 전체 회원 83행이 떴고, 그 목록에서 고르면 **엉뚱한 회원에게
-돈이 지급됩니다**(#599 실측).
+돈이 지급됩니다**.
 
 **요청 예시**
 
@@ -1286,7 +1286,7 @@ _단건 응답: `data` 객체의 필드._
 | locked_permanently | boolean | `false` | 영구 잠금 여부. true 면 `locked_until` 과 무관하게 잠금이 유지되며, 해제는 성공 로그인 또는 관리자의 잠금 해제로만 이뤄진다 (잠금 시간 설정이 `0`= 무기한일 때 세워진다) |
 | locked_until | null | `null` | 계정 잠금 해제 시각 (NULL = 잠금 없음) |
 | is_locked | boolean | `false` | locked 여부 |
-| password_expiry_policy | string | `inherit` | 비밀번호 만료 개별 설정 (`inherit` 따름 · `apply` 적용 · `exempt` 제외 — #736) |
+| password_expiry_policy | string | `inherit` | 비밀번호 만료 개별 설정 (`inherit` 따름 · `apply` 적용 · `exempt` 제외) |
 | password_status | object | `{"applies":true, …}` | 비밀번호 상태 — 상세 응답에만 실린다(목록은 회원마다 역할 판정이 들어 제외) |
 | password_status.has_password | boolean | `true` | 비밀번호가 있는지 — false 면 만료 정책 대상이 아니고 나머지 만료 값은 비어 있다 |
 | password_status.can_set | boolean | `true` | 이 화면을 보는 관리자가 이 회원의 비밀번호를 정할 수 있는지 — 비밀번호 인증 정책(남의 회원은 `admin_set_password`, 자기 계정은 `set_password`)이 막으면 false. 저장 403 `auth.password_auth_disabled` 와 같은 판정 (7.2.0) |
@@ -1483,10 +1483,10 @@ HTTP/1.1 200
 | nickname | body | string | 항목 설정에 따름 (기본값 아니오) | max 50 | 닉네임. 닉네임 정책(중복 금지, 금지어)에 걸리면 422. 관리자 저장은 변경 주기의 제한을 받지 않는다 |
 | custom_fields.{키} | body | 항목 유형에 따름 | 항목 설정에 따름 | 항목 설정에 따름 | 운영자가 추가한 회원 항목의 값. 범위가 관리자만 수정, 관리자만 열람인 항목도 받는다. 파일, 이미지 항목은 이 본문이 아니라 항목 파일 API 로 올린다. 폼 경로와 오류 키는 폼 항목 API 의 `fields[].name` 이다 |
 | email | body | email | 예 | max 255 | 이메일 주소. 항목이 아닌 고정 칸이라 늘 필수다 |
-| password | body | string | 아니오 | 보안 설정의 작성 규칙 | 비밀번호 — **다른 회원**이면 재사용 검사 없이 정하고 그 회원은 다음 로그인 때 바꿔야 하며 모든 기기가 로그아웃된다. **본인**이면 재사용 금지가 걸리고 현재 기기만 남는다(#736) |
-| current_password | body | string | 본인 계정에 password 를 보낼 때 | — | 현재 비밀번호 — 수정 대상이 요청자 본인일 때만 요구한다(#736 D19). 본인에게 비밀번호가 없으면(외부 인증 전용) 대조할 값이 없어 버린다. 이때 값을 채워 보내고(옛 화면) `verification_token` 이 없으면 422 대신 **428** 본인인증 요구(목적 `sensitive_action`, `return_request` = 이 요청)로 답한다(7.2.0) |
+| password | body | string | 아니오 | 보안 설정의 작성 규칙 | 비밀번호 — **다른 회원**이면 재사용 검사 없이 정하고 그 회원은 다음 로그인 때 바꿔야 하며 모든 기기가 로그아웃된다. **본인**이면 재사용 금지가 걸리고 현재 기기만 남는다 |
+| current_password | body | string | 본인 계정에 password 를 보낼 때 | — | 현재 비밀번호 — 수정 대상이 요청자 본인일 때만 요구한다. 본인에게 비밀번호가 없으면(외부 인증 전용) 대조할 값이 없어 버린다. 이때 값을 채워 보내고(옛 화면) `verification_token` 이 없으면 422 대신 **428** 본인인증 요구(목적 `sensitive_action`, `return_request` = 이 요청)로 답한다(7.2.0) |
 | verification_token | body | string | 비밀번호 없는 본인 계정에 password 를 보낼 때 | 최대 128자 | 비밀번호가 없는 관리자가 자기 비밀번호를 처음 정할 때의 본인 확인 — 코어 본인인증(`purpose: sensitive_action`)으로 확인해 받은 토큰(본인 것·1회, 검증을 모두 통과하면 소비) (7.2.0) |
-| password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 개별 설정 (따름·적용·제외, 미지정 시 따름 — #736) |
+| password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 개별 설정 (따름·적용·제외, 미지정 시 따름) |
 | language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |

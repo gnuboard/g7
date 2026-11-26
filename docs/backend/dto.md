@@ -39,14 +39,14 @@ DTO 는 계층 간 데이터 전달용 객체로, **Eloquent 모델이 아닌 �
 | 위치 | 개수 | 패턴 | 용도 |
 |------|------|------|------|
 | `app/Extension/IdentityVerification/DTO/` | 2 | Value Object | 본인인증 challenge/result — provider 가 만들어 한 번 전달 |
-| `app/Extension/Layout/DTO/` | 2 | Value Object | 레이아웃 3자 병합 결과(`LayoutMergeResult`)·행별 동기화 결과(`LayoutSyncEntry`) — 병합기·동기화기가 만들어 보고서·활동 로그로 전달 (#727) |
-| `app/Thumbnails/DTO/` | 4 | Value Object | 썸네일 규격·원본·결과·잘라낼 영역 — 레지스트리·제공자가 만들어 생성기·엔진으로 전달 (#869) |
-| `app/Auth/DTO/` | 1 | Value Object | 로그인 관문의 비밀번호 변경 요구(`PasswordChangeRequirement` — 사유·연기 가능 여부·만료일) — 만료 정책 서비스가 만들어 로그인 관문으로 전달 (#736) |
+| `app/Extension/Layout/DTO/` | 2 | Value Object | 레이아웃 3자 병합 결과(`LayoutMergeResult`)·행별 동기화 결과(`LayoutSyncEntry`) — 병합기·동기화기가 만들어 보고서·활동 로그로 전달 |
+| `app/Thumbnails/DTO/` | 4 | Value Object | 썸네일 규격·원본·결과·잘라낼 영역 — 레지스트리·제공자가 만들어 생성기·엔진으로 전달 |
+| `app/Auth/DTO/` | 1 | Value Object | 로그인 관문의 비밀번호 변경 요구(`PasswordChangeRequirement` — 사유·연기 가능 여부·만료일) — 만료 정책 서비스가 만들어 로그인 관문으로 전달 |
 | `modules/_bundled/sirsoft-ecommerce/src/DTO/` | 21 | Data Carrier | 주문 9단계 계산 파이프라인 — 단계마다 변형/누적, 캐시·스냅샷 재구성 |
-| `app/Extension/Integrity/` | 4 | Value Object | 패키지 무결성 — 검증 결과(`PackageVerification`, 설치 응답·진행 기록에 실려 `toArray()` 있음)·검증 기대값(`PackageExpectation`)·검증 옵션(`PackageIntegrityOptions`)·받은 패키지(`AcquiredPackage`). 영역 전용 값이라 영역 폴더에 둔다 (#916) |
+| `app/Extension/Integrity/` | 4 | Value Object | 패키지 무결성 — 검증 결과(`PackageVerification`, 설치 응답·진행 기록에 실려 `toArray()` 있음)·검증 기대값(`PackageExpectation`)·검증 옵션(`PackageIntegrityOptions`)·받은 패키지(`AcquiredPackage`). 영역 전용 값이라 영역 폴더에 둔다 |
 | `app/CoreUpdate/` | 1 | Value Object | 코어 업데이트 실행 옵션(`CoreUpdateOptions`) — 단계 사이 진행 기록에 실려 `toArray()` 있음. 영역 전용 값이라 영역 폴더에 둔다 |
-| `modules/_bundled/sirsoft-ecommerce/src/Contracts/{Payment,Catalog,Currency}/Data/` | 26 | Value Object | 다른 확장(PG·히어로·환율 플러그인)에 공개하는 결제·카탈로그·환율 계약의 반환·요청 값. 응답·로그에 통째로 실리지 않아 `toArray()` 없음. 같은 폴더의 `MetaEncoding` 은 계약 전용 Enum (#916) |
-| `modules/_bundled/sirsoft-board/src/Contracts/Data/` | 1 | Value Object | 게시판 공개 계약 `BoardDirectory` 의 게시판 요약(`BoardSummary`) (#916) |
+| `modules/_bundled/sirsoft-ecommerce/src/Contracts/{Payment,Catalog,Currency}/Data/` | 26 | Value Object | 다른 확장(PG·히어로·환율 플러그인)에 공개하는 결제·카탈로그·환율 계약의 반환·요청 값. 응답·로그에 통째로 실리지 않아 `toArray()` 없음. 같은 폴더의 `MetaEncoding` 은 계약 전용 Enum |
+| `modules/_bundled/sirsoft-board/src/Contracts/Data/` | 1 | Value Object | 게시판 공개 계약 `BoardDirectory` 의 게시판 요약(`BoardSummary`) |
 
 ---
 

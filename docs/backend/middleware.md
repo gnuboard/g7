@@ -82,7 +82,7 @@ api 그룹 전체에 `EnsureActiveUser` 가 붙어 인증된 회원의 상태(�
 ### HTTPS 강제 이동 (7.2.0)
 
 관리자 환경설정 > 보안의 「HTTPS 강제 적용」(`security.force_https`)이 켜져 있으면 `ForceHttps` 가 http 요청을 같은 호스트·경로·쿼리의
-https 주소로 보낸다(#888). GET·HEAD 는 301, 그 밖의 메서드는 308(메서드·본문 유지)이다.
+https 주소로 보낸다. GET·HEAD 는 301, 그 밖의 메서드는 308(메서드·본문 유지)이다.
 
 - web·api 그룹 **맨 앞**에 있다 — `prependToGroup` 은 나중에 부른 것이 앞에 놓이므로 확장 before_core 게이트 등록 뒤에 부른다.
   점검 모드(`MaintenanceModePage`)·신뢰 프록시·신뢰 Host 는 전역이라 이보다 먼저 판정된다.

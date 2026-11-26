@@ -505,8 +505,10 @@
                             "text": "$t:sirsoft-ecommerce.admin.claim.bulk.selected_count|count={{(_local.selectedClaimItems ?? []).length}}"
                         },
                         {
+                            "comment": "셀렉트·안내 묶음 칸은 자식 조건의 합으로 자신도 숨는다 — 둘 다 숨은 처음 화면(선택 0건)에 칸만 남으면 0×0 인데도 바의 gap 이 한 번 더 붙어 「선택 0건」과 다음 버튼 사이가 두 배로 벌어진다. 셀렉트(교집합 1건 이상) ∨ 안내(선택 1건 이상 ∧ 교집합 0건) = 교집합 1건 이상 ∨ 선택 1건 이상.",
                             "type": "basic",
                             "name": "Div",
+                            "if": "{{(_local.itemTransitionOptions ?? []).length > 0 || (_local.selectedClaimItems ?? []).length > 0}}",
                             "props": {
                                 "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2"
                             },

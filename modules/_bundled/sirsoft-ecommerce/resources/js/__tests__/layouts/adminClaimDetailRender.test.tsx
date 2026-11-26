@@ -1,3 +1,4 @@
+// e2e:allow 시험·시험 헬퍼 파일 — 런타임 동작을 바꾸지 않는다. 대상 화면(정보 탭·회원 목록·TagInput 두 화면·클레임 상세)은 headless 브라우저로 수정 전·후를 실측했고 정보 탭·추정 건수는 E2E settings-info-value-alignment.spec.ts 가 잠근다
 /**
  * @file adminClaimDetailRender.test.tsx
  * @description 관리자 클레임 상세 골격 — 유형별 렌더 (S9a · D17·D14·D24)
@@ -909,6 +910,68 @@ describe('신청 정보 섹션 — 스텝퍼·상품·완료 카드', () => {
     expect(notice).not.toBeNull();
     expect(notice!.textContent?.trim()).not.toBe('');
     utils.cleanup();
+  });
+
+  /**
+   * 상태 셀렉트·교집합 안내를 감싼 묶음 칸은 두 자식이 모두 숨으면 **칸째로** 사라져야 한다.
+   *
+   * 아무것도 고르지 않은 처음 화면이 바로 그 상태다(선택 0건 → 교집합도 0건). 묶음 칸만 남으면
+   * 크기는 0×0 인데 바의 `gap` 이 한 번 더 붙어 「선택 0건」과 그다음 버튼 사이가 두 배로 벌어진다
+   * (브라우저 실측 12→24px, 3폭 공통). jsdom 은 배치를 재지 않으므로 **자식 없는 빈 칸이 바의
+   * 직계로 서는지**로 잰다 — 바의 `flex-1` 여백 칸은 버튼을 오른쪽으로 미는 의도된 빈 칸이라 뺀다.
+   *
+   * @scenario claim_type=exchange, claim_stage=in_progress
+   * @effects claim_item_bulk_bar_leaves_no_empty_status_group
+   */
+  it('셀렉트·안내가 모두 숨으면 일괄 바에 빈 묶음 칸이 남지 않고, 하나라도 서면 칸이 선다', async () => {
+    const emptyDirectChildren = () =>
+      Array.from(document.getElementById('claim_item_bulk_bar')!.children).filter(
+        (el) => el.childElementCount === 0 && (el.textContent ?? '').trim() === '' && !el.className.includes('flex-1')
+      );
+
+    // 유형마다(교환·반품·환불) 처음 화면 — 고른 행이 없다.
+    for (const [claim_type, segment] of [
+      ['exchange', 'exchanges'],
+      ['return', 'returns'],
+      ['refund', 'refunds'],
+    ] as const) {
+      const utils = await renderProbe(
+        itemsSection as Node,
+        claimResponse({ claim_type }, { claim_path_segment: segment }),
+        { selectedClaimItems: [], itemTransitionOptions: [] }
+      );
+      expect(document.getElementById('claim_item_bulk_bar'), claim_type).not.toBeNull();
+      expect(document.getElementById('ci_002_item_status'), claim_type).toBeNull();
+      expect(document.getElementById('ci_003_no_common_transition'), claim_type).toBeNull();
+      expect(emptyDirectChildren().map((el) => el.outerHTML), claim_type).toEqual([]);
+      utils.cleanup();
+    }
+
+    // 정상 대조 ① 교집합이 있으면 셀렉트가 묶음 칸 안에 그대로 선다.
+    {
+      const utils = await renderProbe(itemsSection as Node, claimResponse(), {
+        selectedClaimItems: [101],
+        itemTransitionOptions: [{ value: 'collected', label: '회수완료' }],
+      });
+      const select = document.getElementById('ci_002_item_status');
+      expect(select).not.toBeNull();
+      expect(select!.parentElement!.parentElement!.id).toBe('claim_item_bulk_bar');
+      expect(emptyDirectChildren()).toEqual([]);
+      utils.cleanup();
+    }
+
+    // 정상 대조 ② 고른 행은 있는데 교집합이 0건이면 안내가 묶음 칸 안에 선다.
+    {
+      const utils = await renderProbe(itemsSection as Node, claimResponse(), {
+        selectedClaimItems: [101, 102],
+        itemTransitionOptions: [],
+      });
+      const notice = document.getElementById('ci_003_no_common_transition');
+      expect(notice).not.toBeNull();
+      expect(notice!.parentElement!.parentElement!.id).toBe('claim_item_bulk_bar');
+      expect(emptyDirectChildren()).toEqual([]);
+      utils.cleanup();
+    }
   });
 
   /**
