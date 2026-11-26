@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 상품 행 송장 스키마 형태 잠금 (#599 후속 §3-1 — 구조는 실행 세션이 바꾸지 않는다)
+ * 상품 행 송장 스키마 형태 잠금 (구조는 실행 세션이 바꾸지 않는다)
  *
  * 스키마를 **읽기만** 한다(`Schema::hasColumn`·`hasIndex`·`getForeignKeys`·`getTables`) — DDL 을 돌리지
  * 않으므로 테스트 트랜잭션을 깨지 않는다.

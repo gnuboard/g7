@@ -64,7 +64,7 @@ sub_flows:
   - id: preview_fit_zoom
     description: |
       맞춤 줌 — 캔버스가 미리보기 기기 폭보다 좁으면 미리보기를 남는 폭에 맞춰 줄이고(줌 슬라이더 값은
-      배율 상한, 100% 포함) 레이아웃 폭도 줄인 폭으로 잡는다(#869 P3, 창 1280 문서 폭 1608px).
+      배율 상한, 100% 포함) 레이아웃 폭도 줄인 폭으로 잡는다(창 1280 문서 폭 1608px).
       미리보기 안 반응형 판정(frame 폭, ResponsiveProvider)은 기기 폭 그대로다.
       축: editor_preview_fit(canvas_narrower_than_device·canvas_wider_than_device) ×
           editor_window_width(1024_to_1920) × editor_canvas_resize(observer: shrink·grow_below_threshold·grow_above_threshold) ×
@@ -132,7 +132,7 @@ effects:
   - resize_px_change
   - edit_preserved_on_route_switch
   - unload_warning
-  # 2026-11-09 #869 κ2: 효과 짝 없이 조합만 달던 Footer.responsive.test.tsx 가 실제로 재는 명제
+  # 2026-11-09: 효과 짝 없이 조합만 달던 Footer.responsive.test.tsx 가 실제로 재는 명제
   - template_component_follows_engine_responsive_width   # 편집 가능 템플릿 컴포넌트(Footer)가 useResponsive 폭으로 그리드 열과 flex 방향을 고른다 — 프리뷰 기기 전환에 반응
   - template_component_avoids_viewport_media_query_classes   # 그 컴포넌트 마크업에 viewport 미디어쿼리 분기 클래스(md:grid-cols, lg:grid-cols, sm:flex-row)가 없다
 test_files:

@@ -1,4 +1,4 @@
-feature: 게시판 개인정보 보유기간 파기 (이슈 #636 트랙4 확장 — 게시판)
+feature: 게시판 개인정보 보유기간 파기 (트랙4 확장 — 게시판)
 
 description: |
   코어 보유기간 계약(`core.privacy.retention_handlers`)에 게시판이 두 축을 기여한다.

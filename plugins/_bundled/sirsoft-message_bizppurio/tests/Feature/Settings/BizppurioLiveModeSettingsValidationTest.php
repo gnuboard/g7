@@ -337,7 +337,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
         ])->assertStatus(200);
 
         // 저장 파일에 평문이 남지 않아야 한다 (sensitive 암호화).
-        // PluginTestCase 가 'plugins' 디스크를 테스트 전용 경로로 격리(#458)하므로 실제
+        // PluginTestCase 가 'plugins' 디스크를 테스트 전용 경로로 격리하므로 실제
         // storage_path 가 아니라 격리된 디스크를 통해 파일을 조회한다.
         $relativePath = self::IDENTIFIER.'/settings/setting.json';
         $this->assertTrue(

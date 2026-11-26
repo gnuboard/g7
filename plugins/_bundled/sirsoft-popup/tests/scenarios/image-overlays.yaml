@@ -89,7 +89,7 @@ effects:
   - boxes_follow_image_scale
   - image_link_and_swipe_unchanged
   - validation_messages_fully_translated
-  # 관리자 편집기 (#869 κ2 — 시험마다 단언하는 동작)
+  # 관리자 편집기 (시험마다 단언하는 동작)
   - editor_requires_pc_image   # PC 이미지가 없으면 캔버스 없이 안내만 보인다
   - editor_adds_centered_box_in_default_locale   # 「글 상자 추가」가 기본 언어 글이 든 상자를 가운데 놓고 고른다
   - editor_limits_ten_boxes   # 10개면 추가 단추가 잠기고 한도를 알린다
@@ -113,7 +113,7 @@ effects:
   - editor_warns_low_contrast   # 바탕 깔기 상자의 글자·바탕 대비를 보이고 4.5:1 미만이면 알린다
   - editor_backdrop_matches_popup_background   # 미리 볼 바탕(투명 표시·라이트·다크)이 사용자 레이어 팝업 바탕색과 같다
   - editor_layout_follows_engine_width   # 크기·색 칸 배치가 엔진 폭으로 갈리고 Tailwind 폭 접두를 쓰지 않는다
-  # 등록·수정 폼 (#869 κ2)
+  # 등록·수정 폼
   - overlay_editor_placed_and_bound_in_form   # 편집기가 이미지형 칸 안 정해진 자리에서 폼 값·이미지·언어를 받는다
   - save_body_carries_overlays   # 저장 본문에 overlays 를 싣는다(없으면 null)
   - overlays_reset_on_create   # 처음 값과 등록 진입 초기화가 overlays 를 null 로 둔다

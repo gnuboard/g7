@@ -588,7 +588,7 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
         });
     });
 
-    describe('옵션 과세 종류 (#612)', () => {
+    describe('옵션 과세 종류', () => {
         /**
          * @scenario case=c22
          * @effects option_generate_combinations

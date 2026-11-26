@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 상품 설명 저장 정화 — 모드를 보내지 않은 수정은 저장된 모드를 따른다 (#887)
+ * 상품 설명 저장 정화 — 모드를 보내지 않은 수정은 저장된 모드를 따른다
  *
  * 종전 `sanitizeDescription` 은 요청의 `description_mode` 만 봐서, 모드를 빼고 설명만 보낸 수정(관리자 API 부분 수정)은
  * HTML 모드 상품의 설명을 저장 정화 없이 저장했다(스크립트가 남음). 이제 요청에 모드가 없으면 저장된 모드로 판정한다 — 공통 정보

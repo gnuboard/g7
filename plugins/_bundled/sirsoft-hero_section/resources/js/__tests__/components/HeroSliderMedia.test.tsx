@@ -299,7 +299,7 @@ describe('HeroSlider 영상 배너', () => {
 });
 
 /**
- * 공개 자산 디스크 영상(#878) — `direct_url` 이 있으면 `<video src>` 와 대표 이미지(poster)를 직접 주소로 둔다. 범위 요청(탐색·이어받기)을
+ * 공개 자산 디스크 영상 — `direct_url` 이 있으면 `<video src>` 와 대표 이미지(poster)를 직접 주소로 둔다. 범위 요청(탐색·이어받기)을
  * PHP 가 아니라 웹서버·CDN 이 받는다. (매니페스트 public-asset-disk.yaml)
  */
 describe('HeroSlider 공개 자산 디스크 영상', () => {

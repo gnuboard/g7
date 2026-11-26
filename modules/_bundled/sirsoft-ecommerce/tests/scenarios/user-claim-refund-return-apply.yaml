@@ -1,4 +1,4 @@
-feature: 구매자 클레임 신청서 작성 — 반품 · 취소/환불 유형 고유 축 (#599 S12)
+feature: 구매자 클레임 신청서 작성 — 반품 · 취소/환불 유형 고유 축
 
 description: |
   S11 이 세 유형을 모두 여는 작성 셸을 놓았고, 이 세션은 그 셸에서 **유형이 갈리는 지점**만
@@ -100,7 +100,7 @@ effects:
   - claim_refund_auto_approval_gate_declared_by_server
   # 자동 전이 분기가 구매자 첨부를 지우지 않는다
   - auto_branch_keeps_the_buyer_attachments
-  # (#599 실측) — 계좌가 빈 채로는 신청 자체를 누를 수 없다
+  # — 계좌가 빈 채로는 신청 자체를 누를 수 없다
   - claim_apply_submit_blocked_until_the_refund_account_is_filled
   - claim_apply_refund_account_never_prefills_masked_values
   - claim_refund_account_prefills_the_registered_account
@@ -121,7 +121,7 @@ effects:
   - claim_withdraw_error_channel_splits_by_fixability
   - claim_withdraw_modal_states_consequences
 
-  # 주문금액 비교 섹션 (#599 후속 — 옛 취소 모달 비교표 복구)
+  # 주문금액 비교 섹션 (옛 취소 모달 비교표 복구)
   - claim_apply_comparison_table_renders_sixteen_rows
   - claim_apply_comparison_highlights_changed_after_values
   - claim_apply_cancel_blocked_locks_submit_inline
@@ -184,7 +184,7 @@ notes: |
 
 validation:
   audit_rule: frontend-change-requires-e2e
-  browser_check: Playwright MCP   # #599 실측 — 실제 주문·신청으로 재실측
+  browser_check: Playwright MCP   # 실제 주문·신청으로 재실측
   note: |
     T2-D5(계좌가 비면 [환불 신청하기]가 잠긴다)의 브라우저 축은 Playwright MCP 재실측이 덮는다.
     Playwright spec 을 새로 두지 않는 이유는 이 축이 **주문 → 결제(무통장) → 배송완료 → 환불신청**

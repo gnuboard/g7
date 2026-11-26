@@ -11,7 +11,7 @@
  * - spinner 스타일: 대상 안에 빈 컨테이너(#g7-skeleton-overlay)를 넣고 기본 스피너를 그린다.
  *   기본 스피너 모양·색은 코어 정적 CSS(g7-core.css)의 클래스가 준다 — 요소에 style 속성이 없다 (#163)
  *
- * #869: 종전에는 TemplateApp 의 덮개 로직을 이 파일 안에 베껴 두고 그 사본만 검사했다. 원본이 깨져도 통과했고,
+ * 종전에는 TemplateApp 의 덮개 로직을 이 파일 안에 베껴 두고 그 사본만 검사했다. 원본이 깨져도 통과했고,
  * 스피너 사본은 원본과 이미 달랐다(원본은 ::after 배경과 position:fixed 를 쓰지 않고, 색은 CSS 변수로 받는다).
  * 지금은 실제 TemplateApp 의 showTransitionOverlay 와 hideTransitionOverlay 를 부른다.
  * (매니페스트 core-transition-overlay-nu2.yaml, strict-style-csp-compat.yaml)
@@ -498,7 +498,7 @@ describe('transition_overlay', () => {
             expect(coreCss()).toContain('var(--g7-spinner-color, #9ca3af)');
         });
 
-        // 정의하는 곳이 없는 CSS 변수에만 맡겨, 다크 모드에서도 밝은 회색 덮개가 그려졌다(#869).
+        // 정의하는 곳이 없는 CSS 변수에만 맡겨, 다크 모드에서도 밝은 회색 덮개가 그려졌다.
         // 다른 덮개(opaque, blur, target CSS)와 같이 다크 모드 기본값은 gray-900 이다. 변수가 있으면 변수가 이긴다.
         // @scenario area=dark_mode
         // @effects overlay_style_colors, overlay_dark_mode_colors

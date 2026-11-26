@@ -1,7 +1,7 @@
 // e2e:allow 노드 id 이름 바꾸기만 하는 정적 레이아웃 계약 — 화면 DOM id 중복 0 은 코어 크롤 E2E(all-routes-dom-id-unique.spec.ts)와 Chrome MCP 실측이 잰다
 /**
  * @file admin-ecommerce-screen-dom-id-unique-408.test.ts
- * @description 이커머스 관리자 화면의 노드 id 유일성 (#408)
+ * @description 이커머스 관리자 화면의 노드 id 유일성
  *
  * @scenario-manifest tests/scenarios/screen-dom-id-unique-408.yaml
  *

@@ -13,7 +13,7 @@ use Tests\TestCase;
  * undefined 를 내므로 콘솔 오류도 500 도 없다. 조건이 늘 거짓이 되어 노드가 나타나지 않거나,
  * 반대로 의도치 않게 나타난다.
  *
- * 2026-09-17 #599 실측에서 `sirsoft-pay_kginicis` 의 테스트결제 배지가 이 형태였다.
+ * 실측에서 `sirsoft-pay_kginicis` 의 테스트결제 배지가 이 형태였다.
  * 자기는 `kginicis_test_map` 하나만 선언하면서 `nicepay_test_map` · `nhnkcp_test_map`
  * 까지 OR 로 묶어 봤다. KG이니시스만 설치한 사이트에서는 두 id 가 미정의였고, 셋 다
  * 설치한 사이트에서는 **남의 PG 로 결제한 테스트 주문에도 「KG이니시스」 배지 문구**가 붙었다

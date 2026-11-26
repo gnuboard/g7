@@ -289,7 +289,7 @@ describe('가입 화면 — 운영자 설정을 따르는 항목', () => {
       for (const key of ['email', 'password', 'password_confirmation', 'agree_terms', 'agree_privacy', 'display_name_kind']) {
         const line = formNodes.find((node) => typeof node.if === 'string' && node.if === `{{_local.errors?.${key}}}`);
         expect(line, `${key} 오류 줄`).toBeDefined();
-        // #399 R-1 — 오류 줄 묶음이 의미 클래스 `form-error` 로 바뀐 줄은 템플릿 CSS 정의(block mt-1 text-xs …)까지 펼쳐 본다
+        // 오류 줄 묶음이 의미 클래스 `form-error` 로 바뀐 줄은 템플릿 CSS 정의(block mt-1 text-xs …)까지 펼쳐 본다
         expect(expandSemanticTokens(line!.props?.className as string | undefined)).toContain('text-xs');
       }
       for (const input of formNodes.filter((node) => node.name === 'PasswordInput')) {
@@ -347,7 +347,7 @@ describe('가입 화면 — 운영자 설정을 따르는 항목', () => {
     });
   });
 
-  describe('표시 이름 종류 선택 (#490 8단계)', () => {
+  describe('표시 이름 종류 선택', () => {
     const byId = (id: string) => formNodes.find((node) => node.id === id)!;
     const options = [
       { value: 'name', label: '이름', preview: '홍길동', requires_nickname: false, is_default: true },
@@ -469,7 +469,7 @@ describe('가입 화면 — 운영자 설정을 따르는 항목', () => {
     });
   });
 
-  describe('본인인증 채움 (#490 11단계)', () => {
+  describe('본인인증 채움', () => {
     const onSuccess = (Array.isArray(dataSource.onSuccess) ? dataSource.onSuccess : [dataSource.onSuccess]) as Node[];
     const fill = onSuccess.find((action) => action.handler === 'setState' && action.params?.registerForm !== undefined)!;
     const notices = onSuccess.filter((action) => action.handler === 'setState' && action.params?.registerError !== undefined);

@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\TestCase;
 
 /**
- * 답을 받을 수 없는 실행(콘솔 없음)에서 질문을 띄우지 않는다 — 확인 외의 질문(선택·입력·비밀값)도 같은 판정을 쓴다 (#888).
+ * 답을 받을 수 없는 실행(콘솔 없음)에서 질문을 띄우지 않는다 — 확인 외의 질문(선택·입력·비밀값)도 같은 판정을 쓴다.
  *
  * Windows PHP 처럼 비대화 감지가 없는 환경에서는 콘솔이 없어도 `isInteractive()` 가 참으로 남아 `choice()`·`ask()`·`secret()` 이
  * 오지 않을 응답을 무한히 기다렸다. 판정은 `HasUnifiedConfirm::canAnswerConfirmation()` 하나이고, 테스트는 단위 테스트에서 늘

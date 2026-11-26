@@ -1,5 +1,5 @@
 /**
- * E2E: 템플릿 설정 메뉴 편집기 — 끌어서 놓아 짠 2단 메뉴가 사용자 화면 헤더 펼침 메뉴로 나간다 (#434 §12.14)
+ * E2E: 템플릿 설정 메뉴 편집기 — 끌어서 놓아 짠 2단 메뉴가 사용자 화면 헤더 펼침 메뉴로 나간다
  *
  * 배경: 편집기의 끌어서 놓기(dnd-kit 포인터 끌기 → 가로 거리로 깊이 결정)와 저장 → 사용자 화면 헤더는 단위 시험이 잇지 못한다.
  *
@@ -17,7 +17,7 @@ const SETTINGS_API = `/api/admin/templates/${TEMPLATE}/settings`;
 
 // @scenario case=menu_editor
 // @effects menu_editor_add_edit, menu_saved_normalized, header_menu_renders_tree
-test('#434 - 메뉴 편집기에서 끌어서 놓아 짠 2단 메뉴가 사용자 화면 헤더 펼침 메뉴로 나간다', async ({ page, request }) => {
+test('메뉴 편집기에서 끌어서 놓아 짠 2단 메뉴가 사용자 화면 헤더 펼침 메뉴로 나간다', async ({ page, request }) => {
   test.setTimeout(240_000);
   const token = issueToken('core.templates.read', 'core.templates.settings');
   const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' };

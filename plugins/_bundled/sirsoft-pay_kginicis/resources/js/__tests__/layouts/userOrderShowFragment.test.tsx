@@ -4,7 +4,7 @@
  *
  * 예전에는 주입 스크립트 두 개(mypageOrderShowInjector·vbankInfoInjector)가 화면 주소 글자(`/mypage/orders/…`·
  * `/shop/guest/…`)를 보고 DOM 에 영수증 행·입금 안내를 끼웠다. 쇼핑몰 경로를 바꾼 설치본에서는 조용히 빠졌고,
- * fetch·history 를 덮어써 다른 확장과 순서 다툼을 했다(#639). 이제 결제 정보 카드의 공용 슬롯에 조각이 붙고,
+ * fetch·history 를 덮어써 다른 확장과 순서 다툼을 했다. 이제 결제 정보 카드의 공용 슬롯에 조각이 붙고,
  * 마운트 때 플러그인 영수증 API 를 한 번 불러 그 응답으로 간편결제 이름·입금 안내·결제확인서 버튼을 그린다.
  * 같은 슬롯을 회원·비회원 주문 상세와 신청서 상세가 함께 쓰므로 주소를 보지 않는다.
  *
@@ -202,7 +202,7 @@ describe('주문 상세 KG이니시스 결제 블록 조각', () => {
 
     // @scenario case=zero_rated_only
     // @effects zero_rated_row_in_tax_breakdown
-    it('영세만 든 주문도 부가세 내역을 그리고 「영세금액」 줄을 보이며 면세 줄은 숨긴다 (#612)', async () => {
+    it('영세만 든 주문도 부가세 내역을 그리고 「영세금액」 줄을 보이며 면세 줄은 숨긴다', async () => {
         await mount({
             order: {
                 data: {

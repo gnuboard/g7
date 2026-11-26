@@ -15,7 +15,7 @@ use ReflectionMethod;
 use Tests\TestCase;
 
 /**
- * 검수 서버(stage)의 확장 업데이트 — 공유 상태에 `updating` 을 쓰지 않고, 선언형 정리는 대장에 미뤄 운영 서버가 실행한다 (#888).
+ * 검수 서버(stage)의 확장 업데이트 — 공유 상태에 `updating` 을 쓰지 않고, 선언형 정리는 대장에 미뤄 운영 서버가 실행한다.
  *
  * @scenario-manifest tests/scenarios/stage-extension-update.yaml
  */
@@ -75,7 +75,7 @@ class StageExtensionUpdateTest extends TestCase
     }
 
     /**
-     * 운영 서버의 실행은 지우기 전에 무엇을 몇 건 정리하는지 먼저 알린다 — 「정리」라는 이름이 메뉴·권한 등을 지운다는 것을 가렸다 (#888).
+     * 운영 서버의 실행은 지우기 전에 무엇을 몇 건 정리하는지 먼저 알린다 — 「정리」라는 이름이 메뉴·권한 등을 지운다는 것을 가렸다.
      * `--json` 출력에는 섞지 않는다(스크립트가 파싱한다).
      *
      * @scenario case=deferred_cleanup

@@ -21,7 +21,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 고정하는 계약:
  *  - 중단 확정은 롤백 **직후 다시 읽은** 상태 위에 얹는다.
  *  - 중단 두 경로가 같은 확정 함수를 쓴다 — 규칙이 갈리면 한쪽에서만 기록이 사라진다.
- *  - 무기한 잔존하는 중단 상태에는 두 경로 모두 비밀이 남지 않는다 (이슈 #465).
+ *  - 무기한 잔존하는 중단 상태에는 두 경로 모두 비밀이 남지 않는다.
  *
  * 커버 축: task_outcome aborted / resume_point abort_then_resume
  *

@@ -48,7 +48,7 @@ export interface MenuItem {
   name: string | { ko: string; en: string };
   slug: string;
   url?: string | null;
-  /** 호환 문자열 아이콘 — FA 클래스일 때만 값, 이미지·SVG 는 null (#381) */
+  /** 호환 문자열 아이콘 — FA 클래스일 때만 값, 이미지·SVG 는 null */
   icon?: string | null;
   /** 구조형 아이콘 (class·image·svg) — 있으면 icon 보다 우선 */
   icon_spec?: MenuIconSpecData | null;
@@ -292,7 +292,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
    * 모바일에서는 페이지 로드 완료 후 사이드바를 닫음
    */
   const handleNavigate = (event: React.MouseEvent, url: string) => {
-    // 메뉴는 `<a href>` 다 — 보통 클릭만 SPA 로 옮기고, Ctrl·가운데·Shift 클릭은 브라우저가 새 탭·새 창으로 연다(#757)
+    // 메뉴는 `<a href>` 다 — 보통 클릭만 SPA 로 옮기고, Ctrl·가운데·Shift 클릭은 브라우저가 새 탭·새 창으로 연다
     if (G7Core()?.dispatch) {
       if (!handleLinkClick(event, () => {})) return;
       // G7Core.dispatch가 있으면 SPA 방식 네비게이션

@@ -14,7 +14,7 @@ use Tests\PureTestCase;
  *
  * 배송비 과세 분류는 상품 분류(단계 2-b)와 달리 배송비 할인이 확정된 뒤에 계산된다.
  * 정책 3종 × 과세/면세/복합 = 9케이스 + 안분 반올림 잔차의 합계 보존을 검증한다.
- * #612 — 영세 갈래가 더해진 세 갈래 분류(정책 3종 × 영세 조합)도 함께 검증한다.
+ * 영세 갈래가 더해진 세 갈래 분류(정책 3종 × 영세 조합)도 함께 검증한다.
  */
 class ShippingFeeTaxPolicyTest extends PureTestCase
 {
@@ -267,7 +267,7 @@ class ShippingFeeTaxPolicyTest extends PureTestCase
     }
 
     /**
-     * 영세 갈래가 섞인 주문의 배송비 분류 — 정책 3종 × 영세 조합 (#612).
+     * 영세 갈래가 섞인 주문의 배송비 분류 — 정책 3종 × 영세 조합.
      *
      * @effects shipping_split_three_ways_with_zero_rated
      *

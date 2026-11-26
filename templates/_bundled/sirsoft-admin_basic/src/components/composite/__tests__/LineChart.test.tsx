@@ -1,6 +1,6 @@
 /**
  * @file LineChart.test.tsx
- * @description 방문자 추이 선 차트 — 계열·색·높이 매핑과 빈 데이터 내성 (이슈 #682 S3)
+ * @description 방문자 추이 선 차트 — 계열·색·높이 매핑과 빈 데이터 내성
  */
 
 /**

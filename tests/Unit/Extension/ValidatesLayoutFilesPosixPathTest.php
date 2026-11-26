@@ -128,7 +128,7 @@ class ValidatesLayoutFilesPosixPathTest extends TestCase
     }
 
     /**
-     * JSON 문서의 없는 조각은 "layouts 밖" 이 아니라 파일 부재로 판정돼 빈 자리로 관용된다 (#712).
+     * JSON 문서의 없는 조각은 "layouts 밖" 이 아니라 파일 부재로 판정돼 빈 자리로 관용된다.
      *
      * @scenario case=posix_missing_partial_tolerated
      *

@@ -1,6 +1,6 @@
 /**
  * @file adminSettingsPromotionTab.test.tsx
- * @description 쇼핑몰 설정 쿠폰 탭 (#952) — 생일 항목 선택(후보는 서버 `_meta`), 후보가 없을 때 안내, 만료 임박 알림 켜기·일수.
+ * @description 쇼핑몰 설정 쿠폰 탭 — 생일 항목 선택(후보는 서버 `_meta`), 후보가 없을 때 안내, 만료 임박 알림 켜기·일수.
  */
 
 import fs from 'node:fs';
@@ -36,7 +36,7 @@ const tab = load('partials/admin_ecommerce_settings/_tab_promotion.json');
 const settingsPage = fs.readFileSync(path.join(adminDir, 'admin_ecommerce_settings.json'), 'utf-8');
 const t = (key: string) => key;
 
-describe('쇼핑몰 설정 — 쿠폰 탭 (#952)', () => {
+describe('쇼핑몰 설정 — 쿠폰 탭', () => {
   // @scenario case=admin_ecommerce_settings_promotion
   // @effects promotion_tab_registered
   it('설정 화면에 쿠폰 탭이 있고, 탭 내용은 그 탭일 때만 보인다', () => {

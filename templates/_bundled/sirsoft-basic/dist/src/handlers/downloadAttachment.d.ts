@@ -1,7 +1,7 @@
 /**
  * downloadAttachment 핸들러
  *
- * 게시판 첨부파일을 토큰 동반 요청으로 다운로드한다 (이슈 #413 item 58b).
+ * 게시판 첨부파일을 토큰 동반 요청으로 다운로드한다 (item 58b).
  *
  * 배경: 기존 다운로드는 레이아웃의 <a href="{{download_url}}"> 브라우저 직접 링크(GET)였다.
  * G7 은 Sanctum 토큰 전용 인증인데 <a> 네비게이션에는 Authorization 헤더(토큰)가 실리지 않아,

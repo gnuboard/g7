@@ -1,4 +1,4 @@
-feature: 게시판 시험 설정 저장소 복원 (#789 P17)
+feature: 게시판 시험 설정 저장소 복원
 
 description: |
   테스트 환경의 게시판 설정 저장소(storage/framework/testing/modules/sirsoft-board/settings)는 DB 트랜잭션

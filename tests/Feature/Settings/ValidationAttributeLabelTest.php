@@ -174,7 +174,7 @@ class ValidationAttributeLabelTest extends TestCase
     }
 
     /**
-     * 사이트 파비콘(#434) 칸과 그 항목 문구가 「사이트 파비콘」 라벨을 쓴다.
+     * 사이트 파비콘 칸과 그 항목 문구가 「사이트 파비콘」 라벨을 쓴다.
      *
      * @return void 반환값 없음
      *

@@ -121,7 +121,7 @@ class InstallerDropConfirmTest extends TestCase
     }
 
     /**
-     * 소비된 확인은 같은 토큰·접두사의 재시도에서 테이블 변동·만료와 무관하게 허용된다 (이슈 #319 —
+     * 소비된 확인은 같은 토큰·접두사의 재시도에서 테이블 변동·만료와 무관하게 허용된다 (
      * 부분 drop/migrate 후 폴링 재시도).
      *
      * @effects drop_confirm_consumed_allows_owner_retry

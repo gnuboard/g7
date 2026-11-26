@@ -1,5 +1,5 @@
 /**
- * 관리자 템플릿과 번들 확장 레이아웃 전수 — 클릭을 받는 비대화형 노드는 키보드로도 같은 일을 할 수 있다 (#869, 설계 확정 2026-11-08)
+ * 관리자 템플릿과 번들 확장 레이아웃 전수 — 클릭을 받는 비대화형 노드는 키보드로도 같은 일을 할 수 있다 (설계 확정 2026-11-08)
  *
  * 클릭 동작(`<on type="click">`)만 달린 div·span·li·tr·td·img 는 Tab 이 닿지 않고 Enter·Space 로 눌리지 않는다. 사용자 템플릿은
  * `templates/_bundled/sirsoft-basic/src/__tests__/layouts/click-only-keyboard.test.tsx` 가 같은 판정을 잠근다. 이 시험은 관리자 템플릿과 모듈·플러그인
@@ -107,7 +107,7 @@ const roots = [
   ),
 ];
 
-describe('클릭을 받는 비대화형 노드의 키보드 수단 — 관리자 템플릿과 번들 확장 (#869)', () => {
+describe('클릭을 받는 비대화형 노드의 키보드 수단 — 관리자 템플릿과 번들 확장', () => {
   // @scenario surface=admin_and_extension_layouts
   // @effects click_only_regions_have_keyboard_path
   it('클릭만 받고 키보드로는 닿지 않는 노드가 없다(덮개, 라디오, 펼침 단추, 대리 단추, 같은 일의 링크 제외)', () => {

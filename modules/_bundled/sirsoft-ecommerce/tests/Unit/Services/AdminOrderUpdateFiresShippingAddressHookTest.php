@@ -7,7 +7,7 @@ use ReflectionClass;
 use Tests\PureTestCase;
 
 /**
- * 관리자 주문 수정 경로의 배송지 변경 로그 (S2-D6 · #599 통합실측 세션2)
+ * 관리자 주문 수정 경로의 배송지 변경 로그 (S2-D6)
  *
  * `OrderActivityLogListener` 는 `order.after_update_shipping_address` 를 구독해
  * **「배송지 변경 (:order_number)」** 줄과 전/후값을 남긴다. 회원·비회원 경로

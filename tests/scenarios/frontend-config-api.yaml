@@ -1,4 +1,4 @@
-feature: 공개 설정 API — 셸(window.G7Config)과 같은 값 (#792 D8)
+feature: 공개 설정 API — 셸(window.G7Config)과 같은 값
 
 description: |
   GET /api/frontend-config(공개, optional.sanctum)·GET /api/admin/frontend-config(관리자 인증)는 셸과 같은 함수

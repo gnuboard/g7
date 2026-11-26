@@ -1,5 +1,5 @@
 /**
- * E2E: 환경설정 > SEO/고급 — Sitemap 생성 설정 칸 (#481)
+ * E2E: 환경설정 > SEO/고급 — Sitemap 생성 설정 칸
  *
  * @scenario sitemap-generation
  * 케이스(마커 아님 — 평문): admin_settings_sitemap_generation_fields
@@ -95,7 +95,7 @@ async function restoreSettingViaApi(
 
 // @scenario tab=seo, permitted=yes
 // @effects fields_mounted
-test('@smoke #481 - SEO 탭에 Sitemap 분할 기준/압축 칸이 번역문과 함께 마운트된다', async ({ page }) => {
+test('@smoke SEO 탭에 Sitemap 분할 기준/압축 칸이 번역문과 함께 마운트된다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -128,7 +128,7 @@ test('@smoke #481 - SEO 탭에 Sitemap 분할 기준/압축 칸이 번역문과 
 
 // @scenario tab=seo, permitted=yes
 // @effects fields_persisted
-test('#481 - hreflang 토글을 바꿔 저장하면 성공하고 재진입 시 유지된다', async ({ page }) => {
+test('hreflang 토글을 바꿔 저장하면 성공하고 재진입 시 유지된다', async ({ page }) => {
   test.setTimeout(SAVE_ROUNDTRIP_TIMEOUT);
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
@@ -188,7 +188,7 @@ test('#481 - hreflang 토글을 바꿔 저장하면 성공하고 재진입 시 �
 
 // @scenario tab=seo, permitted=yes
 // @effects fields_persisted
-test('#481 - 분할 기준을 바꿔 저장하면 성공하고 재진입 시 유지된다', async ({ page }) => {
+test('분할 기준을 바꿔 저장하면 성공하고 재진입 시 유지된다', async ({ page }) => {
   test.setTimeout(SAVE_ROUNDTRIP_TIMEOUT);
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
@@ -243,7 +243,7 @@ test('#481 - 분할 기준을 바꿔 저장하면 성공하고 재진입 시 유
 
 // @scenario tab=advanced, permitted=yes
 // @effects fields_mounted, fields_persisted
-test('#481 - 고급 탭 Sitemap 캐시 기준값 칸이 마운트되고 기본값이 저장된다', async ({ page }) => {
+test('고급 탭 Sitemap 캐시 기준값 칸이 마운트되고 기본값이 저장된다', async ({ page }) => {
   test.setTimeout(SAVE_ROUNDTRIP_TIMEOUT);
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
@@ -302,7 +302,7 @@ test('#481 - 고급 탭 Sitemap 캐시 기준값 칸이 마운트되고 기본�
 
 // @scenario tab=seo, permitted=yes
 // @effects regenerate_is_async, progress_visible
-test('#481 - "지금 생성" 클릭이 큐에 예약되고 진행상황이 화면에 표시된다', async ({ page }) => {
+test('"지금 생성" 클릭이 큐에 예약되고 진행상황이 화면에 표시된다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -345,7 +345,7 @@ test('#481 - "지금 생성" 클릭이 큐에 예약되고 진행상황이 화�
 
 // @scenario tab=seo, permitted=yes
 // @effects status_endpoint
-test('#481 - SEO 탭 진입 시 sitemap 상태 API 가 진행상황/실시간 여부를 반환한다', async ({ page }) => {
+test('SEO 탭 진입 시 sitemap 상태 API 가 진행상황/실시간 여부를 반환한다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -367,7 +367,7 @@ test('#481 - SEO 탭 진입 시 sitemap 상태 API 가 진행상황/실시간 �
 
 // @scenario tab=seo, permitted=yes
 // @effects regenerate_is_async
-test('#481 - 재생성 후 실시간/폴링 모드에 맞게 진행상황이 갱신된다', async ({ page }) => {
+test('재생성 후 실시간/폴링 모드에 맞게 진행상황이 갱신된다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -437,7 +437,7 @@ test('#481 - 재생성 후 실시간/폴링 모드에 맞게 진행상황이 갱
 //     ② 관측 대상을 `<head>` 의 `#g7-skeleton-overlay-style` 로. 이 스타일 엘리먼트는 렌더 영향을
 //        받지 않고, 오버레이 해제(`hideTransitionOverlay`)가 이것을 명시적으로 제거한다 —
 //        "오버레이가 살아 있는가" 의 안정적인 신호다.
-test('#481 - SEO 탭 콘텐츠 노출 시점에 sitemap 상태가 이미 채워져 있다', async ({ page }) => {
+test('SEO 탭 콘텐츠 노출 시점에 sitemap 상태가 이미 채워져 있다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 

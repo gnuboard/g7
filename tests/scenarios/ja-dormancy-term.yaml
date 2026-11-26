@@ -1,4 +1,4 @@
-feature: ja 언어팩의 휴면 용어 단일성 (이슈 #636 S4)
+feature: ja 언어팩의 휴면 용어 단일성
 
 description: |
   ko 는 「휴면」, en 은 「dormant」 한 낱말로 일관됐는데 ja 만 「休眠」과 「休止」로 갈려 있었다.

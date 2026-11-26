@@ -67,7 +67,7 @@ class Upgrade_7_0_0_beta_3Test extends TestCase
      * 동결된 TARGETS 는 살아있는 config 기본값과 의도적으로 갈라진다 (동결 규정 §7).
      *
      * beta.3 스텝은 실행 당시의 동작을 100% 보존해야 하므로 TARGETS 는 동결되어 있다.
-     * 반면 config('app.update.restore_ownership_group_writable') 기본값은 #326 에서
+     * 반면 config('app.update.restore_ownership_group_writable') 기본값은 이후
      * storage/app 사용자 데이터 보존을 위해 storage → storage/logs + storage/framework 로
      * 세분화되고 lang-packs 등이 추가되며 정당하게 진화했다.
      *
@@ -87,9 +87,9 @@ class Upgrade_7_0_0_beta_3Test extends TestCase
             '동결 TARGETS 가 살아있는 config 와 동일해졌다면 동결 규정 위반이거나 config 가 되돌려진 것이다'
         );
 
-        // 동결 스텝은 세분화 이전 — storage 를 통째로 다뤘다. config 는 #326 에서 세분화됨.
+        // 동결 스텝은 세분화 이전 — storage 를 통째로 다뤘다. config 는 이후 세분화됨.
         $this->assertContains('storage', $targets, '동결 TARGETS 는 세분화 이전의 storage 전체 항목을 유지한다');
-        $this->assertNotContains('storage/logs', $targets, '동결 TARGETS 에는 #326 의 세분화 항목이 유입되면 안 된다');
+        $this->assertNotContains('storage/logs', $targets, '동결 TARGETS 에는 이후 세분화 항목이 유입되면 안 된다');
     }
 
     /**

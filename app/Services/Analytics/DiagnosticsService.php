@@ -87,7 +87,7 @@ class DiagnosticsService
             'trusted_proxy' => TrustedProxyDiagnostic::forRequest($request),
             'broadcasting' => [
                 // 화면은 이 값으로 폴링 폴백을 켤지 정한다 — 서버가 실제로 방송하는 조건과 같은 식이어야
-                // 「소켓이 있다고 믿고 폴링을 껐는데 방송은 없는」 구멍이 생기지 않는다(#682 S3 라운드 3).
+                // 「소켓이 있다고 믿고 폴링을 껐는데 방송은 없는」 구멍이 생기지 않는다.
                 'configured' => HookManager::broadcastingEnabled(),
             ],
             'cloud_ranges' => $this->cloudRangeStatus($config),
@@ -95,7 +95,7 @@ class DiagnosticsService
             // 화면이 「이 시각은 사이트 기준」을 알릴 때 쓴다. 비교는 **서버가** 한다 —
             // 표현식 화이트리스트에 `Intl` 이 없어 화면이 견주면 조건이 조용히 거짓이 되고,
             // 사용자 시간대 해석은 이미 `SetTimezone` 미들웨어의 4단계 규약이 갖고 있다
-            // (#682 S3 라운드 6, 설계 결정 「보는 사람과 다를 때만」).
+            // (설계 결정 「보는 사람과 다를 때만」).
             'timezone' => AnalyticsClock::siteTimezone(),
             'timezone_differs' => $this->viewerTimezone($request) !== AnalyticsClock::siteTimezone(),
             // 확장이 잘못 선언해 버려진 목표·차원의 사유. 여기 말고는 볼 곳이 없다 — 비워 두면
@@ -139,7 +139,7 @@ class DiagnosticsService
      * `SetTimezone` 미들웨어는 그룹 미들웨어라 Sanctum 인증(라우트 미들웨어)보다 먼저 돕니다 —
      * API 경로에서는 `Auth::check()` 가 아직 거짓이라 계정에 저장한 시간대가 읽히지 않습니다.
      * 그래서 인증이 끝난 뒤의 요청 사용자를 직접 보고, 없으면 공통 해석에 맡깁니다
-     * (#682 S3 라운드 6 — 이 자리를 헬퍼에만 맡겼다가 안내가 영영 안 뜨는 것을 실측으로 잡았다).
+     * (이 자리를 헬퍼에만 맡겼다가 안내가 영영 안 뜨는 것을 실측으로 잡았다).
      *
      * @param  Request|null  $request  현재 요청
      * @return string 보는 사람의 시간대
@@ -210,7 +210,7 @@ class DiagnosticsService
             'backlogged' => $stats['pending_jobs'] >= self::QUEUE_BACKLOG_THRESHOLD,
             // 방문 수집은 큐를 타지 않는다 — 여기 쌓이는 것은 집계·익명화 같은 배치다.
             // 워커가 안 돌면 그 배치가 영영 안 돌아 화면 숫자가 멈춘 채 남는다
-            // (#682 S3 라운드 6 — 예전에는 이 힌트가 「수집이 통째로 유실 중」을 뜻했다).
+            // (예전에는 이 힌트가 「수집이 통째로 유실 중」을 뜻했다).
             'worker_hint' => $stats['pending_jobs'] > 0,
         ]);
     }
@@ -249,7 +249,7 @@ class DiagnosticsService
      * 클라우드 대역 목록 상태를 모읍니다.
      *
      * 목록 파일의 갱신 시각은 ISO8601 로 적혀 있습니다 — 설정 응답과 **같은 기준**으로
-     * 사이트 표준시로 바꿔 내보냅니다(#682 S3 라운드 7). 두 응답이 같은 값을 다른 형식으로
+     * 사이트 표준시로 바꿔 내보냅니다. 두 응답이 같은 값을 다른 형식으로
      * 내면 설정 화면과 진단 화면에 서로 다른 시각이 보입니다.
      *
      * @param  AnalyticsConfig  $config  설정

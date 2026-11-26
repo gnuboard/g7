@@ -172,16 +172,16 @@ class CoreActivityLogListenerTest extends TestCase
         // 65 에서 멈춰 있던 동안 방문자 통계(core.analytics.* 9)·개인정보 보유기간(core.privacy.* 2)·
         // 회원 알림함·커스텀 자산·설정 등이 더해졌다 — 2026-09-26 실측 81(접두어별: auth 9 · analytics 9 ·
         // user 7 · menu 6 · schedule 6 · modules 6 · templates 6 · role 5 · plugins 5 · layout 5 · 그 외 17).
-        // #708 회원 역할 일괄 변경(core.user.after_bulk_update_roles) +1 → 82.
-        // #736 비밀번호 정책 — after_password_changed 구독을 password_change_recorded 로 옮기고(±0)
+        // 회원 역할 일괄 변경(core.user.after_bulk_update_roles) +1 → 82.
+        // 비밀번호 정책 — after_password_changed 구독을 password_change_recorded 로 옮기고(±0)
         // password_change_postponed·password_expired 를 더함 +2 → 84.
-        // #736 D23 회원 등록·수정의 역할 변경(core.user.after_update_roles) +1 → 85.
-        // #798 외부 인증 — 회원 차단·차단 해제·모든 기기 로그아웃(core.user.after_block·after_unblock·
+        // 회원 등록·수정의 역할 변경(core.user.after_update_roles) +1 → 85.
+        // 외부 인증 — 회원 차단·차단 해제·모든 기기 로그아웃(core.user.after_block·after_unblock·
         // after_sessions_revoked) +3 → 88.
-        // #609 코어 업데이트 웹 단계 실행(core.core_update.started·completed·failed) +3 → 91.
-        // #434 템플릿 환경설정 저장·기본값 되돌리기(core.template_settings.after_save·after_reset) +2 → 93.
-        // #490 회원 추가 항목 값 변경(core.user.fields.after_update) +1 → 94.
-        // #916 확장 신뢰 키 등록·삭제(core.extension_trust_keys.after_create·after_delete) +2 → 96.
+        // 코어 업데이트 웹 단계 실행(core.core_update.started·completed·failed) +3 → 91.
+        // 템플릿 환경설정 저장·기본값 되돌리기(core.template_settings.after_save·after_reset) +2 → 93.
+        // 회원 추가 항목 값 변경(core.user.fields.after_update) +1 → 94.
+        // 확장 신뢰 키 등록·삭제(core.extension_trust_keys.after_create·after_delete) +2 → 96.
         $this->assertCount(96, $hooks);
         foreach ([
             'core.extension_trust_keys.after_create' => 'handleExtensionTrustKeyAfterCreate',
@@ -721,7 +721,7 @@ class CoreActivityLogListenerTest extends TestCase
     // @effects auth_events_are_logged_with_log_type_by_route
     public function test_handle_auth_reset_password_logs_activity(): void
     {
-        // #736 — 비밀번호 변경 로그는 경로를 아는 기록 훅에서 남긴다. 메일 재설정(source=reset)은 종전 문구 그대로다.
+        // 비밀번호 변경 로그는 경로를 아는 기록 훅에서 남긴다. 메일 재설정(source=reset)은 종전 문구 그대로다.
         $this->app->instance('request', Request::create('/api/auth/reset-password'));
         $user = $this->createUserMock(5);
 
@@ -883,7 +883,7 @@ class CoreActivityLogListenerTest extends TestCase
     }
 
     /**
-     * 확장 신뢰 키 등록 훅이 key_id·서명자 이름·vendor 범위와 모델 참조를 담아 기록하는지 확인합니다 (#916).
+     * 확장 신뢰 키 등록 훅이 key_id·서명자 이름·vendor 범위와 모델 참조를 담아 기록하는지 확인합니다 .
      *
      * @scenario request_area=admin
      *
@@ -913,7 +913,7 @@ class CoreActivityLogListenerTest extends TestCase
     }
 
     /**
-     * 확장 신뢰 키 삭제 훅이 지운 키의 key_id·서명자 이름·vendor 범위를 기록하는지 확인합니다 (#916).
+     * 확장 신뢰 키 삭제 훅이 지운 키의 key_id·서명자 이름·vendor 범위를 기록하는지 확인합니다 .
      *
      * 지운 행이라 모델 참조(loggable)는 싣지 않는다 — 역할·스케줄 삭제와 같다.
      *
@@ -2492,7 +2492,7 @@ class CoreActivityLogListenerTest extends TestCase
     }
 
     /**
-     * 모듈 업데이트 기록에 레이아웃 처리 요약(카운트)과 운영자 관련 행마다 변경 내역 한 줄이 담기는지 확인합니다 (#727 D2).
+     * 모듈 업데이트 기록에 레이아웃 처리 요약(카운트)과 운영자 관련 행마다 변경 내역 한 줄이 담기는지 확인합니다.
      *
      * @scenario request_area=admin
      *
@@ -2591,7 +2591,7 @@ class CoreActivityLogListenerTest extends TestCase
     }
 
     /**
-     * 템플릿 버전 업데이트 기록에도 레이아웃 처리 요약(카운트)·겹친 조각·운영자 관련 행마다 변경 내역 한 줄이 담긴다 (#727 D2).
+     * 템플릿 버전 업데이트 기록에도 레이아웃 처리 요약(카운트)·겹친 조각·운영자 관련 행마다 변경 내역 한 줄이 담긴다.
      *
      * @scenario request_area=admin
      *
@@ -2623,7 +2623,7 @@ class CoreActivityLogListenerTest extends TestCase
     }
 
     /**
-     * 플러그인 업데이트 기록도 레이아웃 처리 보고가 있으면 카운트·변경 내역을 싣는다 (#727 D2 — 모듈과 같은 모양).
+     * 플러그인 업데이트 기록도 레이아웃 처리 보고가 있으면 카운트·변경 내역을 싣는다 (모듈과 같은 모양).
      *
      * @scenario request_area=admin
      *

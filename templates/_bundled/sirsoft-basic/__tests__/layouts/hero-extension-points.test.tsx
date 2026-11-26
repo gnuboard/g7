@@ -2,7 +2,7 @@
  * @file hero-extension-points.test.tsx
  * @description 사이트 홈·쇼핑몰 메인 상단의 히어로 확장점(`home_hero`·`shop_hero`) — 자리가 본문 상자 밖 전폭 슬롯
  * (`_user_base` 의 page_top, 본문 상자 앞)에 있고 본문 상자 클래스를 확장점 속성으로 넘기며, 주입이 없으면 아무것도 그리지
- * 않아 지금 화면과 같다(#810). 확장점 이름은 다른 템플릿도 따르는 공개 계약이다.
+ * 않아 지금 화면과 같다. 확장점 이름은 다른 템플릿도 따르는 공개 계약이다.
  *
  * @scenario-manifest tests/scenarios/hero-extension-points.yaml
  */

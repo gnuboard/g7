@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * `.json` 단독 레이아웃 소스의 빈 객체 보존 테스트 (#758)
+ * `.json` 단독 레이아웃 소스의 빈 객체 보존 테스트
  *
  * `.g7.html` 짝이 없는 `.json` 조각과 플러그인 설정 레이아웃 `.json` 은 `json_decode(true)` 로 읽혀,
  * 등록·응답하는 순간부터 `{}` 가 `[]` 였다. 번들은 모두 `.g7.html` 짝이 있어 0건이지만 외부 확장에서 잠복한다.

@@ -21,9 +21,9 @@ use Modules\Sirsoft\Page\Repositories\Contracts\PageVersionRepositoryInterface;
 use Modules\Sirsoft\Page\Support\AttachmentLimits;
 
 /**
- * 페이지 본문 미디어 어댑터 — 코어 골격(`AbstractContentMediaService`)에 페이지의 저장소·권한을 답한다 (#887)
+ * 페이지 본문 미디어 어댑터 — 코어 골격(`AbstractContentMediaService`)에 페이지의 저장소·권한을 답한다
  *
- * 저장 표는 `page_attachments` 의 `collection = content_media` 행이다. 행 모양은 #883 그대로다 — 파일은 처음부터
+ * 저장 표는 `page_attachments` 의 `collection = content_media` 행이다. 행 모양은 처음 그대로다 — 파일은 처음부터
  * `content-media/Y/m/d/{uuid}.ext`(저장소 카테고리 `attachments`), 페이지에 잇기 전까지 `page_id = null` + 임시 키,
  * meta 는 `{kind, width?, height?}`.
  *
@@ -180,7 +180,7 @@ class PageContentMediaStore implements ContentMediaStore
     }
 
     /**
-     * 이을 임시 행 — 올린 관리자 본인 것만. 요청자가 없는 실행(콘솔 시더 등)은 같은 임시 키면 잇는다(#883 그대로).
+     * 이을 임시 행 — 올린 관리자 본인 것만. 요청자가 없는 실행(콘솔 시더 등)은 같은 임시 키면 잇는다(그대로).
      *
      * @param  ContentMediaContext  $context  문맥
      * @param  Collection<int, Model>  $rows  같은 임시 키의 임시 행

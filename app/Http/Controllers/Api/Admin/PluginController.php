@@ -303,7 +303,7 @@ class PluginController extends AdminBaseController
                     return $this->withIntegrationNotices($this->success('plugins.activate_success', [
                         'plugin' => (new PluginResource($pluginInfo))->resolve(),
                         'pending_language_packs' => $pendingLanguagePacks,
-                        // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 — 화면이 경고 토스트로 알린다 (#712)
+                        // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 — 화면이 경고 토스트로 알린다
                         'layout_warnings' => $result['layout_warnings'] ?? [],
                     ]), IntegrationNotices::forExtension('plugin', $pluginName));
                 }
@@ -519,7 +519,7 @@ class PluginController extends AdminBaseController
             $file = $request->file('file');
             $plugin = $this->pluginService->installFromZipFile($file, $request->packageIntegrityOptions());
 
-            // 파일·GitHub 설치도 일반 설치와 같이 연동 안내를 싣는다 (#822 §3.3)
+            // 파일·GitHub 설치도 일반 설치와 같이 연동 안내를 싣는다
             return $this->withIntegrationNotices(
                 $this->successWithResource('plugins.install_success', new PluginResource($plugin), 201),
                 $this->buildIntegrationNotices('plugin', (string) data_get($plugin, 'identifier', ''))
@@ -551,7 +551,7 @@ class PluginController extends AdminBaseController
             $githubUrl = $request->validated()['github_url'];
             $plugin = $this->pluginService->installFromGithub($githubUrl, $request->packageIntegrityOptions());
 
-            // 파일·GitHub 설치도 일반 설치와 같이 연동 안내를 싣는다 (#822 §3.3)
+            // 파일·GitHub 설치도 일반 설치와 같이 연동 안내를 싣는다
             return $this->withIntegrationNotices(
                 $this->successWithResource('plugins.install_success', new PluginResource($plugin), 201),
                 $this->buildIntegrationNotices('plugin', (string) data_get($plugin, 'identifier', ''))
@@ -689,10 +689,10 @@ class PluginController extends AdminBaseController
                 if ($layoutSync !== null) {
                     $data['layout_sync'] = $layoutSync;
                 }
-                // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+                // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고
                 $data['layout_warnings'] = $result['layout_warnings'] ?? [];
 
-                // 새 판 manifest 기준 연동 안내도 싣는다 — 매니저 결과에만 있고 화면에 닿지 않았다 (#822 D10)
+                // 새 판 manifest 기준 연동 안내도 싣는다 — 매니저 결과에만 있고 화면에 닿지 않았다
                 return $this->withIntegrationNotices($this->successWithResource(
                     $messageKey,
                     (new JsonResource($data))->additional(['search_index' => $searchIndex]),
@@ -780,7 +780,7 @@ class PluginController extends AdminBaseController
                     'updated' => $result['updated'],
                     'deleted' => $result['deleted'],
                     'unchanged' => $result['unchanged'],
-                    // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+                    // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고
                     'layout_warnings' => $result['layout_warnings'] ?? [],
                     // 판정별 개수·충돌 화면과 운영자 관련 행 보고
                     'layout_preview' => $result['layout_preview'] ?? null,

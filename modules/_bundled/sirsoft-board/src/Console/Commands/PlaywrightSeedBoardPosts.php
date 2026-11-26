@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Services\BoardPermissionService;
 
 /**
- * Playwright E2E · 브라우저 실측용 「쪽이 여럿인 게시판」 시드 커맨드 (#757).
+ * Playwright E2E · 브라우저 실측용 「쪽이 여럿인 게시판」 시드 커맨드.
  *
  * 게시판 목록의 페이지 번호·게시글 행·글쓰기 링크를 재려면 **두 쪽 이상인 공개 게시판**이 있어야 한다.
  * 설치본마다 글 수가 달라 시험이 건너뛰어지고, 화면·API 로 글을 여러 건 만들면 게시판 글 쿨다운

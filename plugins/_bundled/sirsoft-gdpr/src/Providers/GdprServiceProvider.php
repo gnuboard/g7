@@ -38,7 +38,7 @@ class GdprServiceProvider extends BasePluginServiceProvider
     protected string $pluginIdentifier = 'sirsoft-gdpr';
 
     /**
-     * 요청 단위(scoped)로 공유하는 객체 (#860).
+     * 요청 단위(scoped)로 공유하는 객체.
      *
      * 동의 조회 메모 보관함 — 한 요청 안의 미들웨어·동의 제공자·리소스가 정책 버전·동의 행을 한 번만 읽는다.
      * 큐 워커·상주 프로세스에서는 작업·요청마다 새로 만들어져 옛 값이 남지 않는다. 서비스 자체는 지금처럼
@@ -83,8 +83,8 @@ class GdprServiceProvider extends BasePluginServiceProvider
         // 게스트 동의 식별 쿠키는 API 응답이 서명값 그대로(암호화 없이) 심는다. web 그룹의 쿠키
         // 암호화가 그 값을 복호화하다 버리면, 문서 요청에서는 동의한 게스트도 「식별 불가 = 미동의」로
         // 읽힌다 — 방문자 통계의 서버 폴백이 동의자의 진입 화면을 버리던 원인이다. 값의 위변조는
-        // 이 플러그인이 서명으로 검증하므로 암호화 대상에서 뺀다(#682 S3 라운드 13).
-        // 요청·큐 처리에 끼어드는 부수효과는 활성일 때만 건다 (#730 게이트, #860)
+        // 이 플러그인이 서명으로 검증하므로 암호화 대상에서 뺀다.
+        // 요청·큐 처리에 끼어드는 부수효과는 활성일 때만 건다
         if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
             EncryptCookies::except(self::GUEST_SESSION_COOKIE);
 
@@ -103,7 +103,7 @@ class GdprServiceProvider extends BasePluginServiceProvider
      * 큐 작업이 끝날 때 동의 변경 중계 버퍼를 비우도록 큐 이벤트를 구독합니다.
      *
      * 동의 변경 중계는 웹 요청 종료 때 모아서 알린다. 큐 워커는 요청이 끝나지 않으므로 작업 종료(`JobProcessed`)에
-     * 모은 변경을 알리고, 작업이 예외로 끝나면(`JobExceptionOccurred`) 버린다(#724). sync 연결 작업은 웹 요청
+     * 모은 변경을 알리고, 작업이 예외로 끝나면(`JobExceptionOccurred`) 버린다. sync 연결 작업은 웹 요청
      * 안에서 돌므로 요청 종료 1회 알림을 그대로 쓴다.
      *
      * @return void 반환값 없음

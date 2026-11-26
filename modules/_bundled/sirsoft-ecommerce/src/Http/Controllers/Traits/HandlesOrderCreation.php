@@ -108,7 +108,7 @@ trait HandlesOrderCreation
 
             // PG 결제 필요 여부 판단 — 확장 결제수단(간편결제)도 카탈로그 선언으로 올바르게 판정된다.
             // enum 으로 판정하면 확장 ID 가 null → PG 불필요로 오인되어 관리자 알림이 오발송되고
-            // TempOrder 가 즉시 삭제되어 재결제가 막힌다(#475).
+            // TempOrder 가 즉시 삭제되어 재결제가 막힌다.
             $pgProvider = $this->orderProcessingService->determinePgProvider(
                 $order->payment->paymentMethodId()
             );
@@ -356,7 +356,7 @@ trait HandlesOrderCreation
         // **전액 과세**로 등록해 두었다가 면세분이 실린 취소를 **「취소 할 수 없는 금액 입니다」**
         // 로 거절한다 — 면세 상품이 섞인 주문의 부분환불이 통째로 막힌다.
         // 환산은 청구액과 같은 스냅샷 규칙을 쓴다(둘이 다른 환율을 타면 PG 가 합을 못 맞춘다).
-        // 영세(세율 0%)는 부가세가 없으므로 PG 에는 면세에 합산해 넘긴다(#612 P2) — 쇼핑몰 장부에는
+        // 영세(세율 0%)는 부가세가 없으므로 PG 에는 면세에 합산해 넘긴다 — 쇼핑몰 장부에는
         // `total_zero_rated_amount` 로 따로 남는다. 계산식은 Order::pgTaxFreeAmount()/pgTaxableAmount() 한 곳.
         $taxFreeBase = $order->pgTaxFreeAmount();
         $taxFreeCharge = $taxFreeBase > 0
@@ -403,7 +403,7 @@ trait HandlesOrderCreation
             // 선택된 결제수단 ID (확장 수단이면 확장 ID 그대로 — 예: 'kginicis_lpay').
             // PG 플러그인의 결제 진입 핸들러가 이 값으로 결제창의 결제수단을 결정한다
             // (예: kginicis_lpay → gopaymethod=LPAY). 서버가 확장 ID 를 1급 시민으로
-            // 저장하게 되면서 프론트 인터셉터가 원본 수단을 따로 전달할 필요가 없어졌다(#475).
+            // 저장하게 되면서 프론트 인터셉터가 원본 수단을 따로 전달할 필요가 없어졌다.
             'payment_method' => $order->payment?->paymentMethodId(),
             // 에스크로 결제(가상계좌·계좌이체) 시 필수인 상품 상세 배열. PG 가 사용 여부를
             // 프론트에서 결정하므로 provider-agnostic 하게 항상 조립한다 (비에스크로는 무시).

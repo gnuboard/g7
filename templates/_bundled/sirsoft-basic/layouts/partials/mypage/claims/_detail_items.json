@@ -213,7 +213,7 @@
                                             "text": "$t:claim.detail.item_refund_amount|amount={{item.refund_amount_formatted ?? ''}}"
                                         },
                                         {
-                                            "comment": "이 상품의 운송장 — 송장은 상품 행마다 있다(#599). 같은 신청서의 다른 상품은 다른 상자로 오갈 수 있어, 상품 줄에 그 행의 값을 그대로 적는다. 조회 URL 은 서버가 만든다.",
+                                            "comment": "이 상품의 운송장 — 송장은 상품 행마다 있다. 같은 신청서의 다른 상품은 다른 상자로 오갈 수 있어, 상품 줄에 그 행의 값을 그대로 적는다. 조회 URL 은 서버가 만든다.",
                                             "type": "basic",
                                             "name": "Div",
                                             "if": "{{!!item.collection_tracking_number}}",

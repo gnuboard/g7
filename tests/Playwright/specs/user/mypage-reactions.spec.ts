@@ -1,5 +1,5 @@
 /**
- * 마이페이지 「내 반응」 서브탭 (#525 WP-B).
+ * 마이페이지 「내 반응」 서브탭.
  *
  * 실브라우저로 세 갈래를 잰다:
  *   ① 세 상태의 행(정상 · 반응 꺼짐/게시판 삭제됨 · 대상 삭제됨)이 한 목록에 서고,
@@ -57,7 +57,7 @@ function tableRows(page: Page) {
   return page.locator('table tbody [data-testid^="my-reaction-row-"]');
 }
 
-test.describe('마이페이지 내 반응 (#525 WP-B)', () => {
+test.describe('마이페이지 내 반응', () => {
   // @scenario case=subtab_lists_rows_in_three_states
   // @effects mypage_reactions_rows_split_into_three_states
   test('세 상태의 행이 한 목록에 서고 어느 갈래든 해제 버튼이 남는다', async ({ page, reactionSeed }) => {

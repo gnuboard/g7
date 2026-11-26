@@ -1,7 +1,7 @@
-// e2e:allow Vitest 컴포넌트 렌더 테스트(Header·Footer 모듈 활성 props). 실제 조합별 화면은 총괄 Chrome MCP 매트릭스(#822 §11)에서 측정한다.
+// e2e:allow Vitest 컴포넌트 렌더 테스트(Header·Footer 모듈 활성 props). 실제 조합별 화면은 총괄 Chrome MCP 매트릭스에서 측정한다.
 /**
  * @file HeaderFooterModuleFlags.test.tsx
- * @description 데스크톱 Header·Footer 가 모듈 활성 props 로 꺼진 모듈의 링크를 숨기는지 검증 (#822).
+ * @description 데스크톱 Header·Footer 가 모듈 활성 props 로 꺼진 모듈의 링크를 숨기는지 검증.
  *
  * 레이아웃(_user_base)은 `_global.activeModules` 로 판정한 값을 boardEnabled·shopEnabled·searchEnabled(Header),
  * boardEnabled·pageEnabled(Footer) 로 넘긴다. 값이 오지 않으면(루트 레이아웃을 keep 으로 업데이트해 새 바인딩이
@@ -51,7 +51,7 @@ const member = { uuid: 'u-1', name: '회원' } as any;
 /** 문서에서 href 로 링크 수를 센다. */
 const countHref = (container: HTMLElement, href: string) => container.querySelectorAll(`a[href="${href}"]`).length;
 
-describe('Header — 모듈 활성 props (#822)', () => {
+describe('Header — 모듈 활성 props', () => {
   // @scenario surface=header_footer_component
   // @effects header_footer_module_props
   it('props 를 넘기지 않으면(옛 레이아웃) 인기글·쇼핑·장바구니·검색칸·게시판 탭·비회원 주문조회를 모두 그린다', () => {
@@ -119,7 +119,7 @@ describe('Header — 모듈 활성 props (#822)', () => {
   });
 });
 
-describe('Footer — 모듈 활성 props (#822)', () => {
+describe('Footer — 모듈 활성 props', () => {
   // @scenario surface=header_footer_component
   // @effects header_footer_module_props
   it('props 를 넘기지 않으면 커뮤니티·정보·정책 세 묶음을 그린다', () => {

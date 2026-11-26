@@ -168,7 +168,7 @@ class EcommerceSettingsAdminService
         // 죽은 키가 설정 파일에 생긴다 — 나중에 그 키를 믿는 코드는 빈 카탈로그를 본다.
         // 삭제는 `{type}_reasons_deleted` 에 운영자가 휴지통으로 지목한 id 로만 일어난다 —
         // 페이로드에 없는 행을 삭제로 읽으면 다른 탭에서 만든 사유가 저장 한 번에 사라진다
-        // (#599 S0-D2). 이 키도 DB 전용이라 JSON 에서 뺀다.
+        //. 이 키도 DB 전용이라 JSON 에서 뺀다.
         $claimReasons = [];
         $claimReasonDeletions = [];
         foreach (ClaimReasonTypeEnum::cases() as $reasonType) {

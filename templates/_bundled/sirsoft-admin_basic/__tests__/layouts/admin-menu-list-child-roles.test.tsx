@@ -2,7 +2,7 @@
  * @file admin-menu-list-child-roles.test.tsx
  * @description 메뉴 관리 — 하위 메뉴 선택 시 역할 보강 회귀 테스트
  *
- * 회귀 배경 (#518 / 공개 #76):
+ * 회귀 배경 (공개 #76):
  * 목록 응답에서 `children[].roles` 를 프루닝한 뒤, 화면이 목록 행을 그대로 `_global.selectedMenu`
  * 로 쓰면 하위 메뉴의 역할 배지가 "모든 역할" 로 표시되고, 편집 폼이 빈 역할 배열을 저장에 실어
  * 보내 그 메뉴의 역할 제한이 전부 해제된다.

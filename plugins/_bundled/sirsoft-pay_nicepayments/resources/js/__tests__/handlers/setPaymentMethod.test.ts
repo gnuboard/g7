@@ -16,7 +16,6 @@
  *
  * 시나리오: plugins/_bundled/sirsoft-pay_nicepayments/tests/scenarios/public-core-api-only.yaml
  *
- * @see https://github.com/gnuboard/dev-g7/issues/475
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
@@ -68,7 +67,7 @@ describe('setPaymentMethodHandler', () => {
             ['카카오페이', 'nicepay_kakaopay'],
             ['애플페이', 'nicepay_applepay'],
         ])('%s 는 확장 ID 그대로 저장된다', (_label, method) => {
-            // 애플페이는 iOS 에서만 고를 수 있다(#933) — 아이폰에서 고른 경우를 본다.
+            // 애플페이는 iOS 에서만 고를 수 있다 — 아이폰에서 고른 경우를 본다.
             vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
                 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
             );
@@ -80,7 +79,7 @@ describe('setPaymentMethodHandler', () => {
         });
 
         /**
-         * iOS 가 아닌 기기에서 애플페이를 고르면 저장하지 않고 안내만 띄운다 (#933 — NHN KCP 와 같은 선택 단계 확인).
+         * iOS 가 아닌 기기에서 애플페이를 고르면 저장하지 않고 안내만 띄운다 (NHN KCP 와 같은 선택 단계 확인).
          */
         // @scenario concern=payment_method_selection
         // @effects apple_pay_blocked_off_ios_before_config

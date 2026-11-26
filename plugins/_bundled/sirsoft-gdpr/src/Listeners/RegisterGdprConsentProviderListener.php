@@ -6,7 +6,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use Plugins\Sirsoft\Gdpr\Consent\GdprConsentProvider;
 
 /**
- * 이 플러그인의 동의 제공자를 코어 동의 매니저에 등록하는 필터 리스너 (#639)
+ * 이 플러그인의 동의 제공자를 코어 동의 매니저에 등록하는 필터 리스너
  *
  * `core.consent.registered_providers` 필터에 제공자 인스턴스를 더합니다(본인인증 제공자 등록과 같은 방식).
  * 플러그인을 비활성화하면 리스너가 부팅되지 않아 제공자도 사라지고, 코어는 운영자 선택에 따라

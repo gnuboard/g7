@@ -1,5 +1,5 @@
 /**
- * #682 라운드 4 — 브라우저 검수에서 짚은 일곱 가지를 잠근다.
+ * 브라우저 검수에서 짚은 일곱 가지를 잠근다.
  *
  * 합성 입력이 아니라 구운 `.json`·실제 CSS·실제 PHP 설정을 읽는다. 모집단은 저장소에서 파생한다 —
  * 「고친 한 곳」만 세면 같은 결함이 다른 화면에 남아도 초록이다.
@@ -43,7 +43,7 @@ function unwrap(expression: string): string {
 }
 
 /**
- * 조건 식을 화면 계산값까지 풀어 평가한다 — 부분문자열 검사는 뒤집힌 조건도 통과시킨다(#682 S3 R6-D1).
+ * 조건 식을 화면 계산값까지 풀어 평가한다 — 부분문자열 검사는 뒤집힌 조건도 통과시킨다.
  *
  * @returns 평가값, 평가기에서 실패하면 `'error'`
  */
@@ -159,7 +159,7 @@ describe('③ 봇 최근 요청은 통째로 펼치지 않는다', () => {
   // @effects stat_cards_never_total_a_paged_list
   it('통계 화면의 KPI 는 쪽으로 잘린 목록을 더하거나 세지 않는다', () => {
     // 봇 「봇 요청」·「봇 종류」가 목록 한 쪽(25행)을 더하고 세어, 봇 종류가 한 쪽보다 많은 기간에는
-    // 첫 쪽의 합만 보이고 쪽을 넘기면 KPI 가 그 쪽의 합으로 바뀌었다(#682 S3 라운드 14). 기간 숫자는
+    // 첫 쪽의 합만 보이고 쪽을 넘기면 KPI 가 그 쪽의 합으로 바뀌었다. 기간 숫자는
     // 서버가 쪽과 무관하게 센 값(`totals`)을 읽는다. 모집단은 통계 레이아웃·조각 전부의 StatCard 다.
     const layoutsDir = path.join(TEMPLATE_DIR, 'layouts');
     const files = [
@@ -241,7 +241,7 @@ describe('⑤ 알림 정의 유형은 이름으로 나온다', () => {
     }
 
     // 값이 들어 있기만 해서는 모자란다 — 영어 원문을 ko 에 그대로 붙여 넣는 실수는 키 검사를
-    // 통과한다. ko 는 한글을 한 글자라도 품어야 한다(#682 라운드 4에서 실제로 낸 실수).
+    // 통과한다. ko 는 한글을 한 글자라도 품어야 한다(라운드 4에서 실제로 낸 실수).
     const ko = loadLang('ko', 'admin')?.settings?.notification_definitions?.types ?? {};
     const notKorean = types.filter((t) => !/[가-힣]/.test(String(ko[t] ?? '')));
     expect(notKorean, 'ko 인데 한글이 없는 이름').toEqual([]);
@@ -281,7 +281,7 @@ describe('⑥ 전체 유입 주소를 볼 길이 있다', () => {
   // @effects referrer_drilldown_follows_in_page_tab_moves
   it('화면 안에서 탭·주소 목록을 옮겨도 라벨 링크 여부가 새 자리를 따른다', () => {
     // `replace` 이동은 `<init>` 을 다시 돌리지 않는다 — 링크 여부를 `<init>` 에서만 정하면 「유형 → 사이트」로
-    // 옮긴 표가 글자로만 남고 「사이트 → 검색어」로 옮긴 표가 갈 곳 없는 링크로 남았다(#682 S3 라운드 14, 실측).
+    // 옮긴 표가 글자로만 남고 「사이트 → 검색어」로 옮긴 표가 갈 곳 없는 링크로 남았다.
     // 모집단은 손으로 적지 않는다 — `tab`·`host` 를 바꾸는 `replace` 이동을 레이아웃에서 전부 뽑는다.
     const layout = loadLayout('admin_analytics_referrers.json');
     const sequences = collectObjects(layout).filter((o) => o.handler === 'sequence' && Array.isArray(o.actions));
@@ -289,7 +289,7 @@ describe('⑥ 전체 유입 주소를 볼 길이 있다', () => {
       (o) => o.handler === 'navigate' && o.params?.replace === true
         && o.params?.query && ('tab' in o.params.query || o.params.query.host === '{{undefined}}'),
     );
-    // 「사이트 목록으로」는 링크(#757) — 주소는 href 한 곳(host 를 싣지 않음), navigate 는 path·query 없이 그 href 로 간다
+    // 「사이트 목록으로」는 링크 — 주소는 href 한 곳(host 를 싣지 않음), navigate 는 path·query 없이 그 href 로 간다
     const backLink = collectObjects(layout).find((o) => o.name === 'A' && o.id === 'referrer_urls_back');
     expect(backLink, '사이트 목록으로 링크').toBeTruthy();
     expect(String(backLink?.props?.href)).toMatch(/^\/admin\/analytics\/referrers\?/);
@@ -381,7 +381,7 @@ describe('⑦ 회원 방문자는 이름으로 알아본다', () => {
     expect(menus.length, '이름을 눌렀을 때 뜨는 메뉴가 있어야 한다').toBeGreaterThanOrEqual(1);
 
     const menuJson = stringify(menus);
-    // 회원 화면은 새 창으로 — 보던 목록을 잃지 않는다(활동 로그와 같은 규약). #757 부터는 항목이 새 창 링크다
+    // 회원 화면은 새 창으로 — 보던 목록을 잃지 않는다(활동 로그와 같은 규약). 이제는 항목이 새 창 링크다
     // (`href` + `target="_blank"` — 가운데 클릭·주소 복사도 된다).
     const viewMember = menus.flatMap((m: any) => (Array.isArray(m.props?.items) ? m.props.items : [])).find((it: any) => it?.id === 'view_member');
     expect(viewMember?.href).toMatch(/^\/admin\/users\//);
@@ -478,7 +478,7 @@ describe('⑧ 설치 현황 칩은 상태 카드 곁에 선다', () => {
     const layout = loadLayout('admin_dashboard.json');
 
     // 구운 JSON 을 문자열로 훑어 두 블록의 등장 순서를 본다 — 칩이 화면 맨 위에 떨어져 있으면
-    // 「3/3」이 무엇의 3인지 알 수 없다(#682 라운드 4, 검수 지적 ⑧).
+    // 「3/3」이 무엇의 3인지 알 수 없다.
     const json = stringify(layout);
     const chips = json.indexOf('"secondary_stats_badges"');
     const cards = json.indexOf('"extension_status_grid"');
@@ -503,7 +503,7 @@ describe('⑨ 통계 화면 안의 이동은 기간을 데리고 간다', () => 
     // §4.10 은 「모든 통계 화면이 같은 키를 쓰고 navigate 는 mergeQuery:true 라 탭·화면을 옮겨도
     // 기간이 유지되고 URL 공유가 그대로 열린다」고 못박았다. 라운드 4 까지 정보주체 화면의 방문자
     // 드릴다운 한 자리만 이 모집단에서 사유 없이 빠져 있었다 — 기간을 좁혀 찾은 뒤 상세로 들어가면
-    // 기간이 떨어지고 그 화면의 단건 CSV 도 다른 기간을 내려줬다(#682 S3 라운드 5).
+    // 기간이 떨어지고 그 화면의 단건 CSV 도 다른 기간을 내려줬다.
     // 모집단을 레이아웃 디렉터리에서 파생한다 — 화면이 늘면 그 화면의 이동도 자동으로 검사 대상이다.
     const dir = path.join(TEMPLATE_DIR, 'layouts');
     const files = fs.readdirSync(dir).filter((f) => /^admin_analytics_.+\.json$/.test(f));
@@ -542,7 +542,7 @@ describe('⑩ 주소를 그리는 화면은 그 주소가 마스킹된 값임을
   it('방문자 주소를 그리는 통계 화면 전량이 ip_mask_octets 로 마스킹 사실을 보인다', () => {
     // §4.10 은 방문자 상세 카드를 「IP(마스킹 표시)」로 적었다. 설정이 뒤 옥텟을 지운 값을
     // 원본으로 읽으면 정보주체가 「내 접속 기록이 맞느냐」 물었을 때 그 주소로 잘못 답한다
-    // (#682 S3 라운드 6). 모집단을 레이아웃에서 파생한다 — 주소를 그리는 화면이 늘면 같이 걸린다.
+    //. 모집단을 레이아웃에서 파생한다 — 주소를 그리는 화면이 늘면 같이 걸린다.
     const dir = path.join(TEMPLATE_DIR, 'layouts');
     const files = fs.readdirSync(dir).filter((f) => /^admin_analytics_.+\.json$/.test(f));
     expect(files.length, '통계 화면 레이아웃').toBeGreaterThanOrEqual(14);
@@ -618,12 +618,12 @@ describe('⑪ 회원 화면으로 건너뛰는 자리는 목적지 권한을 먼
       const computeds = (layout.computed ?? {}) as Record<string, unknown>;
       // 이동 액션마다 조상 사슬의 조건(노드 `if` 와 메뉴 항목 `if`)을 모아, 그중 하나가 목적지 권한으로
       // 실제로 갈리는지 평가한다 — 권한 없는 계정에서 거짓, 있는 계정에서 참. 문자열 포함으로 재면
-      // 뒤집힌 가드(`!…`)도 통과한다(#682 S3 R6-D1).
+      // 뒤집힌 가드(`!…`)도 통과한다.
       const walk = (value: unknown, chain: Record<string, any>[]): void => {
         if (Array.isArray(value)) { value.forEach((v) => walk(v, chain)); return; }
         if (!value || typeof value !== 'object') return;
         const node = value as Record<string, any>;
-        // 이동은 액션(openWindow·navigate)이거나 링크(#757 — `A` 의 href, 메뉴 항목의 href)다
+        // 이동은 액션(openWindow·navigate)이거나 링크(`A` 의 href, 메뉴 항목의 href)다
         const jumpPath = node.handler === 'openWindow' || node.handler === 'navigate'
           ? String(node.params?.path ?? '')
           : node.name === 'A' ? String(node.props?.href ?? '') : typeof node.href === 'string' && node.id !== undefined ? node.href : '';

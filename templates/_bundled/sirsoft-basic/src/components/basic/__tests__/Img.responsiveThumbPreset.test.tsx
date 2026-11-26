@@ -1,6 +1,6 @@
 /**
  * @file Img.responsiveThumbPreset.test.tsx
- * @description 이미지 썸네일 규격(`thumbPreset`)이 반응형 문법 전체에서 화면 폭대로 바뀌는지 (#869)
+ * @description 이미지 썸네일 규격(`thumbPreset`)이 반응형 문법 전체에서 화면 폭대로 바뀌는지
  *
  * 레이아웃은 `responsive` 로 폭마다 다른 규격을 줄 수 있다(카드 칸이 넓어지는 휴대폰 화면은 큰 규격, 표 칸은 작은 규격).
  * 규격이 폭을 따라가지 않으면 화면은 멀쩡하고 흐린 이미지나 큰 원본 전송으로만 드러나므로, 렌더된 `<img>` 의

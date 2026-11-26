@@ -43,7 +43,7 @@ class AdjustEcommercePaymentMethodsLayoutListenerTest extends PluginTestCase
      */
     public function test_does_not_string_substitute_pg_branch_expressions(): void
     {
-        // 코어 레이아웃은 이제 pg_locked / needs_pg 로 직접 분기한다(#475).
+        // 코어 레이아웃은 이제 pg_locked / needs_pg 로 직접 분기한다.
         // 리스너가 표현식을 치환하면 코어의 분기 로직을 훼손하고, 플러그인이 여럿 설치되면
         // 서로의 치환 결과 위에 누적 적용되어 충돌한다 (과거 이 테스트의 fixture 에
         // kginicis / nhnkcp 의 ID 가 이미 섞여 있던 것이 그 증거다).
@@ -146,7 +146,7 @@ class AdjustEcommercePaymentMethodsLayoutListenerTest extends PluginTestCase
     }
 
     /**
-     * 주입한 테스트모드 경고는 폭 분기를 엔진 responsive 로 한다 — Tailwind 폭 접두(`paynicepayments:sm:` 등) 금지(#869).
+     * 주입한 테스트모드 경고는 폭 분기를 엔진 responsive 로 한다 — Tailwind 폭 접두(`paynicepayments:sm:` 등) 금지.
      *
      * 모집단은 주입된 경고 노드 아래 모든 className(responsive 구간 포함)이다.
      *

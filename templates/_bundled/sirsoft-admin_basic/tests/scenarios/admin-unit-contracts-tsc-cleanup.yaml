@@ -1,7 +1,7 @@
 feature: sirsoft-admin_basic 공통 컴포지트와 핸들러의 단위 계약 — 소유 매니페스트가 없던 시험 파일을 묶는다
 
 description: |
-  #869 타입 오류 정리에서 손댄 시험 파일 가운데 소유 시나리오 매니페스트가 없던 것들을 컴포넌트 축으로 묶는다.
+  타입 오류 정리에서 손댄 시험 파일 가운데 소유 시나리오 매니페스트가 없던 것들을 컴포넌트 축으로 묶는다.
   다국어 탭 패널, 풍부한 선택 상자, 검색 막대, 정렬 가능한 메뉴 항목과 목록, 사용자 프로필, 테마 설정 핸들러,
   편집기 아이콘 고르개의 기존 단위 계약을 그대로 소유한다(시험 본문은 바꾸지 않았다). 첨부 내려받기 핸들러 시험
   (handlers/__tests__/downloadAttachment.test.ts)은 board-attachment-download-actor.yaml(sirsoft-board)이 소유한다.

@@ -65,7 +65,7 @@ class PublicProductResource extends BaseApiResource
             'selling_price_formatted' => $this->formatBaseCurrency($this->selling_price),
             'discount_rate' => $this->getDiscountRate(),
 
-            // 과세 종류 (#612) — 상품 상세의 면세·영세 표시용. 옵션별 지정은 options[].tax_status
+            // 과세 종류 — 상품 상세의 면세·영세 표시용. 옵션별 지정은 options[].tax_status
             'tax_status' => $this->tax_status?->value,
             'tax_status_label' => $this->tax_status?->label(),
 
@@ -125,8 +125,8 @@ class PublicProductResource extends BaseApiResource
             // 설명 (다국어)
             'short_description' => $this->short_description,
             'short_description_localized' => $this->resolveLocalizedField($this->short_description),
-            // 본문 미디어 — 전시 중 상품은 정식 주소, 아니면 서명 주소(관리자 화면·미리보기의 <img>·<video> 는 인증 헤더가 없다) (#883).
-            // 서명은 이 상품이 소유한 미디어만 — 다른 상품 해시는 정식 주소로 두어 원본 상품의 게이트를 따른다 (#887)
+            // 본문 미디어 — 전시 중 상품은 정식 주소, 아니면 서명 주소(관리자 화면·미리보기의 <img>·<video> 는 인증 헤더가 없다).
+            // 서명은 이 상품이 소유한 미디어만 — 다른 상품 해시는 정식 주소로 두어 원본 상품의 게이트를 따른다
             'description' => app(ContentMediaService::class)->presentContent(
                 $this->description,
                 $this->resource instanceof Product && ContentMediaService::isPublicProduct($this->resource),

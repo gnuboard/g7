@@ -143,7 +143,7 @@ describe('사이트 이름 폴백 하드코딩 리터럴 0 (굽기 산출 정적
    * @effects empty_site_name_falls_back_to_localized_site_title
    */
   it('_user_base 의 사이트 이름 폴백 6곳이 모두 user.base_layout_title 키를 쓴다', () => {
-    // 6번째는 푸터 기본 저작권 문구(`defaultCopyrightText`, #434 — 템플릿 설정 저작권 칸을 비웠을 때)
+    // 6번째는 푸터 기본 저작권 문구(`defaultCopyrightText` — 템플릿 설정 저작권 칸을 비웠을 때)
     const raw = fs.readFileSync(path.join(ROOT, 'layouts/_user_base.json'), 'utf8');
     expect(raw.split("site_name ?? $t('user.base_layout_title')").length - 1).toBe(6);
   });

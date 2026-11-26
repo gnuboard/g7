@@ -1,7 +1,7 @@
 feature: guest_order_token_tamper
 
 description: |
-  비회원 조회 토큰의 **만료시각 파트를 고쳐도 통하지 않는가** (#599 계획서 1011 · 2-C ⑤)
+  비회원 조회 토큰의 **만료시각 파트를 고쳐도 통하지 않는가** (계획서 1011 · 2-C ⑤)
 
   토큰 형식은 `{expiresTs}|{HMAC-SHA256}` 2-파트이고 **만료시각이 평문으로 노출된다**
   (`GuestOrderAuthService` 독블록 — 주문번호·주문ID·비밀번호 해시는 HMAC 입력으로만

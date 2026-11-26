@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Models\TempOrder;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 해외 배송 주문의 상세주소 필수 검증 회귀 테스트 (#703)
+ * 해외 배송 주문의 상세주소 필수 검증 회귀 테스트
  *
  * 회귀 배경: 주문 생성 검증이 `shipping.address_detail` 을 국가와 무관하게 필수로 요구했다.
  * 해외 배송 폼에는 상세주소 칸이 없고(주소 1·2행으로 대체) 배송국가를 바꾸면 이 값이 비워지므로,

@@ -1,4 +1,4 @@
-feature: 알림 수신자 권한 판정 메모의 수명 — 요청·큐 잡 하나 (#599 validate)
+feature: 알림 수신자 권한 판정 메모의 수명 — 요청·큐 잡 하나
 
 description: |
   NotificationRecipientCapability 는 수신자 수만큼 같은 권한을 다시 조회하지 않도록 판정을 메모한다.

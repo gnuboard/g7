@@ -1,7 +1,7 @@
 // e2e:allow Vitest 컴포넌트 렌더 테스트(템플릿 설정 props → 실제 Header·Footer·ThemeToggle 렌더). 사용자 화면 반영은 Playwright·Chrome MCP 실측으로 별도 검증.
 /**
  * @file TemplateSettingsProps.test.tsx
- * @description 템플릿 설정(#434)이 넘기는 props 가 실제 Header·Footer·ThemeToggle 출력에 반영되는지 잠근다.
+ * @description 템플릿 설정이 넘기는 props 가 실제 Header·Footer·ThemeToggle 출력에 반영되는지 잠근다.
  *
  * - Header: 다크 로고(어두운 화면 전용 img), 테마 단추 끄기, 메뉴 링크(언어별 이름·사이트 안 경로·새 창)
  * - Footer: 소셜 링크 7종(상표 아이콘 묶음), 「Powered by」 끄기, 운영자 저작권 문구 → 없으면 기본 문구
@@ -44,7 +44,7 @@ afterEach(() => {
   localStorage.clear();
 });
 
-describe('Header — 템플릿 설정 props (#434)', () => {
+describe('Header — 템플릿 설정 props', () => {
   // @scenario case=settings_layout
   // @effects template_settings_exposed_to_global
   it('다크 로고가 있으면 어두운 화면 전용 img 를 더하고 사이트 로고는 어두운 화면에서 숨긴다', () => {
@@ -110,7 +110,7 @@ describe('Header — 템플릿 설정 props (#434)', () => {
   });
 });
 
-describe('Footer — 템플릿 설정 props (#434)', () => {
+describe('Footer — 템플릿 설정 props', () => {
   // @scenario case=settings_layout
   // @effects template_settings_exposed_to_global
   it('소셜 링크는 값이 있는 것만, 상표 아이콘(fab) 묶음으로 새 창에 연다', () => {
@@ -145,7 +145,7 @@ describe('Footer — 템플릿 설정 props (#434)', () => {
   });
 });
 
-describe('기본 화면 모드 (#434)', () => {
+describe('기본 화면 모드', () => {
   // @scenario case=settings_layout
   // @effects standard_attributes_rendered
   it('저장값이 없으면 <html data-g7-color-scheme-default> 를 따른다 — system 은 auto', () => {

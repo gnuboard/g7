@@ -217,7 +217,7 @@ export function I18nTextField({
   //    조건 노드 + 분기별 리프(=I18nTextField 재귀)를 그린다. 트리 변경은 serializeValueNode 로 새
   //    node.text 문자열을 만들어 onChange. 못 푸는 식(함수/산술 등)은 현행 읽기전용 배지(손상 0).
   if (cls.binding) {
-    // 템플릿 설정에 연결된 값(#434) — 그 템플릿의 「설정」 화면이 유일한 주인이다. 분해 트리·[데이터 바꾸기]를
+    // 템플릿 설정에 연결된 값 — 그 템플릿의 「설정」 화면이 유일한 주인이다. 분해 트리·[데이터 바꾸기]를
     //   열지 않고 원문 + 어디서 바꾸는지 안내만 보인다(이미지·숫자 칸의 BoundValueNotice 와 같은 문구).
     //   이 블록은 어느 갈래든 반환하므로 앞에 두어도 훅 수는 같다.
     if (isTemplateSettingsBinding(value)) {

@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 게시글 이전/다음 네비게이션 API 회귀 테스트 (이슈 #269)
+ * 게시글 이전/다음 네비게이션 API 회귀 테스트
  *
  * PostController::navigation() 이 어떤 상황에서도 500 응답을 내지 않고
  * graceful degradation 으로 `{prev, next}` 또는 404 만 반환하도록 보장합니다.

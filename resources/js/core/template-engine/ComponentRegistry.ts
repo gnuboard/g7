@@ -191,7 +191,7 @@ export class ComponentRegistryError extends Error {
  * 렌더러가 컴포넌트 레지스트리에서 쓰는 조회 면
  *
  * DynamicRenderer 와 렌더 환경은 이름으로 컴포넌트·메타데이터를 찾는 일만 한다. 시험 도구의 모의 레지스트리와
- * 레이아웃 편집기의 격리 레지스트리도 이 면만 갖추면 렌더러에 넘길 수 있다(#869).
+ * 레이아웃 편집기의 격리 레지스트리도 이 면만 갖추면 렌더러에 넘길 수 있다.
  */
 export interface ComponentLookup {
   /** 이름으로 컴포넌트를 찾는다 — 없으면 null */
@@ -312,7 +312,7 @@ export class ComponentRegistry {
    * @param templateId 템플릿 식별자
    * @param templateType 템플릿 타입 (admin 또는 user)
    * @param cacheVersion 확장 캐시 버전 — 0(기본)이면 무버전 URL(편집기 경로,
-   *   서버는 `?v` 생략 시 현재 버전 폴백 #588). 매니페스트 캐시 키에도 포함되어
+   *   서버는 `?v` 생략 시 현재 버전 폴백). 매니페스트 캐시 키에도 포함되어
    *   버전 간 교차 오염을 막는다 (#122, @since engine-v1.61.0)
    */
   public async loadComponents(templateId: string, templateType: string, cacheVersion: number = 0): Promise<void> {

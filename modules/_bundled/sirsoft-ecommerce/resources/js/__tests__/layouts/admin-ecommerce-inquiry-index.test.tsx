@@ -1,6 +1,6 @@
 /**
  * @file admin-ecommerce-inquiry-index.test.tsx
- * @description 관리자 상품 문의 관리 목록 (#524 WP-E) — 레이아웃 JSON 계약 회귀.
+ * @description 관리자 상품 문의 관리 목록 — 레이아웃 JSON 계약 회귀.
  *
  * 네 이커머스 관리자 목록(찜·장바구니·배송지·문의)은 같은 뼈대를 쓴다 — 조건은 주소에서 읽고,
  * 검색 조립은 명명 액션 한 자리에 모이며, 선택은 보이는 쪽에만 걸리고, 삭제는 `can_manage`
@@ -40,7 +40,7 @@ const namedAction = layout.named_actions['searchadmin_ecommerce_inquiry_index'];
 const grid = flattenNodes(layout).find((n: any) => n?.name === 'DataGrid');
 const modals: Record<string, any> = Object.fromEntries(asArray(layout.modals).map((m: any) => [m.id, m]));
 
-describe('관리자 상품 문의 관리 목록 (#524 WP-E)', () => {
+describe('관리자 상품 문의 관리 목록', () => {
     // @scenario list=inquiry
     // @effects ecommerce_admin_list_datasource_passes_all_filters
     it('목록 데이터소스가 검색·회원·기간 조건을 주소에서 읽는다', () => {

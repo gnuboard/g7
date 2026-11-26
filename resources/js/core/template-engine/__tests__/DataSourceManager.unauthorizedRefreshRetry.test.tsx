@@ -1,7 +1,7 @@
 // e2e:allow 실물 ApiClient 401 인터셉터(토큰 갱신 → 재시도) · AuthManager.refreshToken · DataSourceManager · ErrorHandlingResolver · ActionDispatcher 로 데이터 요청 401 의 결말을 잰다(전송층만 axios 어댑터로 대신) — 브라우저 축은 총괄의 엔진 회귀 단계(관리자 목록 데이터 요청 401 을 매번 / 한 번만 대체)가 덮는다
 /**
  * @file DataSourceManager.unauthorizedRefreshRetry.test.tsx
- * @description 데이터 요청이 401 을 받으면 ApiClient 가 토큰을 갱신해 다시 묻고, 그래도 401 이거나 갱신이 실패할 때만 로그인으로 간다 (#869)
+ * @description 데이터 요청이 401 을 받으면 ApiClient 가 토큰을 갱신해 다시 묻고, 그래도 401 이거나 갱신이 실패할 때만 로그인으로 간다
  *
  * 레이아웃에 401 처리가 없을 때의 설계상 기본 동작을 잠근다. 401 은 곧바로 로그인 이동이 아니다 — ApiClient 가 먼저 토큰을 갱신해 같은
  * 요청을 한 번 다시 보낸다. 다시 보낸 요청이 성공하면 화면은 그대로다(로그인 이동·토스트 없음). 다시 보낸 요청도 401 이면 오류 처리

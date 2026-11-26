@@ -1,6 +1,6 @@
 /**
  * @file userScreenUrlField.test.ts
- * @description 환경설정 > 일반 「사용자 화면 URL」 칸 계약 (#792 WP-U1)
+ * @description 환경설정 > 일반 「사용자 화면 URL」 칸 계약
  *
  * 잠그는 것: 칸이 `general.user_screen_url` 로 자동 바인딩되고 url 입력이며, 칸 오류가 서버 검증 오류를 그대로 보여 주고,
  * 도움말·라벨 키가 모든 로케일에 있는 것.

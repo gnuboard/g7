@@ -1,5 +1,5 @@
 {
-    "comment": "내보내기 요청 창 — 상품·주문·마일리지 목록이 함께 쓰는 공용 창(#787). 목록의 [내보내기] 버튼이 열 때 깐\n  `_global.ecommerceExportContext`(목록 조건)·`ecommerceExportForm`(입력값)을 읽고, 예상 건수는 목록 레이아웃의 데이터 소스\n  (`ecommerceExportEstimateSource`)가, 요청은 아래 [내보내기]가 보낸다. 카탈로그·예상 건수 데이터 소스는 레이아웃 최상위에만\n  둘 수 있어 세 목록 레이아웃이 같은 선언을 갖는다.",
+    "comment": "내보내기 요청 창 — 상품·주문·마일리지 목록이 함께 쓰는 공용 창. 목록의 [내보내기] 버튼이 열 때 깐\n  `_global.ecommerceExportContext`(목록 조건)·`ecommerceExportForm`(입력값)을 읽고, 예상 건수는 목록 레이아웃의 데이터 소스\n  (`ecommerceExportEstimateSource`)가, 요청은 아래 [내보내기]가 보낸다. 카탈로그·예상 건수 데이터 소스는 레이아웃 최상위에만\n  둘 수 있어 세 목록 레이아웃이 같은 선언을 갖는다.",
     "meta": {
         "is_partial": true,
         "description": "Ecommerce Export - Request Modal",

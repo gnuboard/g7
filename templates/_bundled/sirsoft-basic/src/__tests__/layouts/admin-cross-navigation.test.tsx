@@ -1,6 +1,6 @@
 /**
  * @file admin-cross-navigation.test.tsx
- * @description 유저 화면 → 관리자 화면 크로스링크 노출 게이트 회귀 테스트 (이슈 #450)
+ * @description 유저 화면 → 관리자 화면 크로스링크 노출 게이트 회귀 테스트
  *
  * 검증 항목:
  * 1. 게시판: can_access_admin = true  → 관리자 진입 링크 2개(게시물 조회 + 게시판 관리) 렌더
@@ -145,7 +145,7 @@ const productAdminEditLayout = {
 // 테스트
 // ============================================================
 
-describe('이슈 #450 — 유저→관리자 크로스링크 게이트', () => {
+describe('유저→관리자 크로스링크 게이트', () => {
   beforeEach(() => {
     setupTestRegistry();
   });

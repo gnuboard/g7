@@ -19,7 +19,7 @@ use Tests\Support\Identity\TestIdentityProvider;
 use Tests\TestCase;
 
 /**
- * 목적별 본인인증 수단의 회원별 폴백 (#798 K17 · W17)
+ * 목적별 본인인증 수단의 회원별 폴백
  *
  * 받을 메일이 없는 회원(대체 주소 `…@….invalid`)에게는 메일 인증번호를 보낼 수 없다. 대상 회원을 아는 경로에서 해석된 수단이 그 회원에게
  * 쓸 수 없으면(`UserScopedIdentityProviderInterface::canChallengeUser()` 거짓) 같은 목적을 지원하는 다음 수단으로 넘어간다.

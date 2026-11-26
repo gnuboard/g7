@@ -33,15 +33,15 @@ final class SettingShapeRules
     public static function all(): array
     {
         return [
-            // 웹 크론 호출을 허용할 IP·CIDR 목록 (#609) — 접근 게이트라 오타가 그대로
+            // 웹 크론 호출을 허용할 IP·CIDR 목록 — 접근 게이트라 오타가 그대로
             // 저장되면 "넣었는데 막힌다" 가 되고 운영자는 원인을 알 수 없다.
             'system.cron_allowed_ips' => [new ValidIpAllowList],
 
-            // 신뢰 프록시 목록 (#609) — 벌크(`advanced.trusted_proxies`)와 같은 형태.
+            // 신뢰 프록시 목록 — 벌크(`advanced.trusted_proxies`)와 같은 형태.
             // 문자열을 받으면 항목 검증(`value.*`)이 걸리지 않아 아무 값이나 저장된다.
             'debug.trusted_proxies' => ['array', 'max:50'],
 
-            // 썸네일 서버 보호 값 (#869) — 기본값이 비운 값(null)이라 단건 경로는 선언 타입으로 정수를 강제하지 못한다.
+            // 썸네일 서버 보호 값 — 기본값이 비운 값(null)이라 단건 경로는 선언 타입으로 정수를 강제하지 못한다.
             // 범위는 화면 칸과 같은 `core.settings_limits` 이고, 근거는 config/core.php 「이미지 썸네일」 절에 있다.
             ...self::thumbnailServerLimitRules(),
         ];

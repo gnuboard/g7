@@ -66,7 +66,7 @@ class UpdateLayoutContentRequest extends FormRequest
 
         $content = $this->input('content');
 
-        // content 가 JSON 문자열이거나 JSON 객체 본문이면 빈 객체 `{}` 를 보존해 다시 읽는다 (#758).
+        // content 가 JSON 문자열이거나 JSON 객체 본문이면 빈 객체 `{}` 를 보존해 다시 읽는다.
         // 파싱 실패 시 원본 유지 (검증에서 'array' 규칙으로 실패 처리)
         if ($this->input('format') !== 'markup' && $content !== null) {
             $content = $this->decodeContentPreserving();
@@ -77,7 +77,7 @@ class UpdateLayoutContentRequest extends FormRequest
         // 클라이언트 1차 마스킹(`stripInheritedFromLayoutContent`)이 누락/우회되어도 백엔드가
         // 최종 방어선으로 같은 정책을 적용한다. 정책 상세는 클라이언트 동명 함수 주석 참조.
         if (is_array($content)) {
-            // 빈 동작 오류 코드 정리도 클라이언트 저장 직렬화와 같은 정책으로 다시 적용한다 (#869).
+            // 빈 동작 오류 코드 정리도 클라이언트 저장 직렬화와 같은 정책으로 다시 적용한다.
             $this->merge(['content' => LayoutErrorHandlingPrune::prune($this->stripInheritedFromLayoutContent($content))]);
         }
 
@@ -271,7 +271,7 @@ class UpdateLayoutContentRequest extends FormRequest
      */
     public function validated($key = null, $default = null): mixed
     {
-        // 검증은 빈 객체 표식을 배열로 낮춘 사본으로 했으므로 원문의 `{}` 자리를 먼저 되살린다 (#758)
+        // 검증은 빈 객체 표식을 배열로 낮춘 사본으로 했으므로 원문의 `{}` 자리를 먼저 되살린다
         $validated = $this->restoreValidatedContent(parent::validated($key, $default), $key);
 
         if ($key !== null || ! is_array($validated) || ! isset($validated['content']) || ! is_array($validated['content'])) {
@@ -777,7 +777,7 @@ class UpdateLayoutContentRequest extends FormRequest
         $layout = app(LayoutRepositoryInterface::class)->findByName($template->id, $name);
         $sourceKind = $layout?->source_type instanceof LayoutSourceType ? $layout->source_type->value : null;
 
-        // 다섯째 원소 — 저장본(미등록 템플릿 컴포넌트 허용 기준, #712)
+        // 다섯째 원소 — 저장본(미등록 템플릿 컴포넌트 허용 기준)
         $baseline = $layout !== null ? app(LayoutMarkupService::class)->decodeStoredContent((string) $layout->getRawOriginal('content')) : null;
 
         return [$templateName, $sourceKind, $layout?->source_identifier ?? $templateName, "{$name}.g7.html", $baseline];

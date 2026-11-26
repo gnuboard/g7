@@ -4,7 +4,7 @@
 #   격리 검증하고, 장부 누적은 수단·왕복 축만 곱한다. 조합의 실체는 클레임 접수 경로
 #   (mp02-order-cancellation · user-claim-refund-return-apply)가 화면·통합에서 잰다.
 #   effects 축은 면제하지 않는다 — 여기 적은 effect 는 전부 실제 검증 메서드에 매핑한다.
-feature: 환불 실행 서비스 — PG 왕복 · 복원 훅 · 장부 누적 (#599)
+feature: 환불 실행 서비스 — PG 왕복 · 복원 훅 · 장부 누적
 
 description: |
   `RefundExecutionService` 는 `OrderCancellationService` 에서 뽑아낸 **환불이 실제로 나가는

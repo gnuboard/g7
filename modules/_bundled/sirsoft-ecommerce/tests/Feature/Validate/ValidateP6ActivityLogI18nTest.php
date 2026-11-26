@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\ActivityLogDescriptionResolver;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 활동 로그 표시 문구의 다국어 결함 수정 검증 (#599 validate P6)
+ * 활동 로그 표시 문구의 다국어 결함 수정 검증
  *
  * - 클레임 사유 로그의 `:reason_type` 을 표시 시점 로케일 라벨로 해석한다
  * - 이름을 되찾지 못한 엔티티의 `ID:` 표기를 다국어 키로 옮긴다(ko·en·ja 세 벌)

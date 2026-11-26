@@ -3,7 +3,7 @@ feature: 폼 제출 진행 중 재제출 차단 — 저장 버튼 연타가 요�
 description: |
   저장 버튼을 `disabled="{{_global.isSaving}}"` 으로 잠그는 폼은 같은 틱의 두 번째 클릭을 막지 못한다.
   첫 submit 의 `set-state isSaving=true` 가 렌더되기 전에 두 번째 submit 이 이미 들어오기 때문이다
-  (#708 실측: 역할 폼 저장 더블클릭 → PUT 2건). `sequence :debounce` 는 submit 이벤트의 기본 동작
+  (역할 폼 저장 더블클릭 → PUT 2건). `sequence :debounce` 는 submit 이벤트의 기본 동작
   (페이지 이동)과 폼 요소를 잃어 쓸 수 없다.
 
   엔진은 그래서 **같은 폼의 submit 액션이 끝나기 전에 들어온 새 submit 이벤트**를 기본 동작만 막고

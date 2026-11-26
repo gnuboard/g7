@@ -5,7 +5,7 @@ namespace App\Support\ContentMedia;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 본문 HTML 이 참조하는 본문 미디어 해시를 뽑습니다 (#883 4단계)
+ * 본문 HTML 이 참조하는 본문 미디어 해시를 뽑습니다
  *
  * `img`·`video`·`audio`·`source` 의 `src` 와 `video` 의 `poster` 가운데 서빙 주소 정규식에 맞는 것의 `hash` 그룹을 모은다.
  * DOM 파싱은 `HtmlImageExtractor` 와 같은 방식이다(본문을 래퍼로 감싸 loadHTML). 본문 미디어 연결·문서당 개수 판정에 쓴다.

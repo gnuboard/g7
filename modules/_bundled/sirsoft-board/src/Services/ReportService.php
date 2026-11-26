@@ -132,7 +132,7 @@ class ReportService
      */
     public function getReport(int $id): Report
     {
-        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다(#789)
+        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다
         return $this->reportRepository->findOrFail($id);
     }
 
@@ -147,7 +147,7 @@ class ReportService
      */
     public function getGroupedReportDetail(int $id): array
     {
-        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다(#789)
+        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다
         $report = $this->reportRepository->findOrFail($id);
 
         // 신고자 로그 목록 로드 (reporter 관계 eager load)
@@ -312,7 +312,7 @@ class ReportService
      */
     public function updateReportStatus(int $id, array $data): Report
     {
-        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다(#789)
+        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다
         $report = $this->reportRepository->findOrFail($id);
 
         // deleted 상태에서는 다른 상태로 변경 불가 (2차 방어선).
@@ -546,7 +546,7 @@ class ReportService
      */
     public function deleteReport(int $id): bool
     {
-        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다(#789)
+        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다
         $report = $this->reportRepository->findOrFail($id);
 
         // 훅: before_delete

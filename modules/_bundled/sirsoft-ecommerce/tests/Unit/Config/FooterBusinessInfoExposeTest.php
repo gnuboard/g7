@@ -8,7 +8,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 푸터 사업자 정보 노출 테스트 (#434)
+ * 푸터 사업자 정보 노출 테스트
  *
  * 쇼핑몰이 사용자 템플릿 공용 자리(user_global_footer)에 사업자 정보를 그리려면 조각이 그리는 항목이 프론트 설정
  * (`_global.modules['sirsoft-ecommerce'].basic_info`)에 실려야 한다. 조각이 그리지 않는 항목(상점 이름·업종·업태·내부 설정)은 계속 숨긴다.

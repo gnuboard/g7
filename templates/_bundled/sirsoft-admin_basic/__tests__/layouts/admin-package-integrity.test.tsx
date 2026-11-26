@@ -1,6 +1,6 @@
 /**
  * @file admin-package-integrity.test.tsx
- * @description 패키지 무결성(#916) 관리자 화면 레이아웃 테스트
+ * @description 패키지 무결성 관리자 화면 레이아웃 테스트
  *
  * 테스트 대상:
  * - layouts/partials/_package_integrity_notice.json (설치·업데이트 창 공용 거절 안내)
@@ -337,7 +337,7 @@ describe.each(MANUAL_INSTALL)('수동 설치 창 무결성 — $type', ({ type, 
     expect(first.file).toBeInstanceOf(File);
     expect(first.signature).toBeInstanceOf(File);
     expect(second.allow_unsigned).toBe('1');
-    // 서명 확인을 아는 화면의 표식 — 첫 요청부터 늘 싣는다(서버가 옛 화면과 구별, #916 옛 화면 호환)
+    // 서명 확인을 아는 화면의 표식 — 첫 요청부터 늘 싣는다(서버가 옛 화면과 구별해 옛 화면도 호환)
     expect(first.integrity_aware).toBe('1');
     expect(second.integrity_aware).toBe('1');
     expect(second.file).toBe(first.file);
@@ -441,7 +441,7 @@ describe.each(UPDATE)('업데이트 창 무결성 — $type', ({ type, selected,
         [errorKey]: null,
         packageIntegrity: null,
         packageIntegrityMessage: null,
-        // 업데이트 미리보기가 끝난 상태(#888) — 실행 버튼은 미리보기가 준비돼야 풀리고, GitHub 판은 준비본 토큰을 싣는다
+        // 업데이트 미리보기가 끝난 상태 — 실행 버튼은 미리보기가 준비돼야 풀리고, GitHub 판은 준비본 토큰을 싣는다
         layoutPreviewState: 'ready',
         layoutSyncStrategy: 'keep',
         layoutDecisions: {},
@@ -479,9 +479,9 @@ describe.each(UPDATE)('업데이트 창 무결성 — $type', ({ type, selected,
     const second = bodyOf(calls[1].init);
     expect(first.allow_unsigned).toBeNull();
     expect(second.allow_unsigned).toBe(1);
-    // 서명 확인을 아는 화면의 표식 — 첫 요청부터 늘 싣는다(#916 옛 화면 호환)
+    // 서명 확인을 아는 화면의 표식 — 첫 요청부터 늘 싣는다
     expect(String(first.integrity_aware)).toBe('1');
-    // 「미서명으로 계속」 재요청도 미리보기 준비본 토큰을 그대로 싣는다 — 서버는 확인이 필요해 멈춘 준비본을 남겨 두고 이 재요청에 넘긴다(#888)
+    // 「미서명으로 계속」 재요청도 미리보기 준비본 토큰을 그대로 싣는다 — 서버는 확인이 필요해 멈춘 준비본을 남겨 두고 이 재요청에 넘긴다
     expect(first.pending_token).toBe(PENDING_TOKEN);
     expect(second.pending_token).toBe(PENDING_TOKEN);
     const { allow_unsigned: _a, ...firstRest } = first;
@@ -668,7 +668,7 @@ describe('언어팩 업데이트 창 무결성', () => {
     await waitFor(() => expect(calls).toHaveLength(2));
 
     expect(calls[0].url).toContain('/api/admin/language-packs/7/update');
-    // 서명 확인을 아는 화면의 표식 — 첫 요청부터 늘 싣는다(#916 옛 화면 호환)
+    // 서명 확인을 아는 화면의 표식 — 첫 요청부터 늘 싣는다
     expect(bodyOf(calls[0].init)).toEqual({ allow_unsigned: null, integrity_aware: '1' });
     expect(bodyOf(calls[1].init)).toEqual({ allow_unsigned: 1, integrity_aware: '1' });
   });

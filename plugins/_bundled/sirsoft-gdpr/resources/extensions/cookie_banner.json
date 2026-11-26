@@ -27,7 +27,7 @@
     ],
     "components": [
         {
-            "comment": "GDPR 쿠키 동의 배너 (W-1) — banner_enabled 토글 기반. 환경설정은 모달 대신 배너 내부 인라인 펼침으로 처리. 동의 완료 여부는 gdprMyConsent (서버) 가 우선이며, 사용자 클릭 직후 즉시 사라지도록 _global.gdprBannerDismissedFor 도 함께 검사 — 닫은 시점의 사용자 식별자(uuid 또는 'guest')를 저장해 현재 사용자와 비교. 로그인으로 사용자가 바뀌면(uuid 불일치) 다시 노출되어, 게스트로 닫은 뒤 미동의 계정으로 로그인해도 배너가 계속 숨겨지는 회귀를 방지. 받는 중 — 동의 상태(gdprMyConsent)를 받기 전(undefined)에는 띄우지 않는다. 새로고침 때 설정 응답이 먼저 오면 동의를 마친 방문자에게도 배너가 잠깐 보였다. 실패 — 동의 상태를 받지 못하면(null) 동의 여부를 모르므로 배너를 띄워 동의를 다시 받는다. 신원 일치 — 동의 상태의 is_member 가 지금 로그인 여부와 같을 때만 판정한다(로그인 직후 앞 게스트의 값을 이어 쓰는 동안, 사용자 정보를 받는 중인 동안은 숨김).\n       id 명시 — 팝업 플러그인 PopupLayer 가 getElementById('gdpr_cookie_banner') 로 배너 위치를 잰다. 확장점 조각의 정적 노드 id 는 엔진이 {id}__{호스트 id} 로 바꾸므로(#408) DOM id 를 고정하려고 id 속성을 직접 단다.",
+            "comment": "GDPR 쿠키 동의 배너 (W-1) — banner_enabled 토글 기반. 환경설정은 모달 대신 배너 내부 인라인 펼침으로 처리. 동의 완료 여부는 gdprMyConsent (서버) 가 우선이며, 사용자 클릭 직후 즉시 사라지도록 _global.gdprBannerDismissedFor 도 함께 검사 — 닫은 시점의 사용자 식별자(uuid 또는 'guest')를 저장해 현재 사용자와 비교. 로그인으로 사용자가 바뀌면(uuid 불일치) 다시 노출되어, 게스트로 닫은 뒤 미동의 계정으로 로그인해도 배너가 계속 숨겨지는 회귀를 방지. 받는 중 — 동의 상태(gdprMyConsent)를 받기 전(undefined)에는 띄우지 않는다. 새로고침 때 설정 응답이 먼저 오면 동의를 마친 방문자에게도 배너가 잠깐 보였다. 실패 — 동의 상태를 받지 못하면(null) 동의 여부를 모르므로 배너를 띄워 동의를 다시 받는다. 신원 일치 — 동의 상태의 is_member 가 지금 로그인 여부와 같을 때만 판정한다(로그인 직후 앞 게스트의 값을 이어 쓰는 동안, 사용자 정보를 받는 중인 동안은 숨김).\n       id 명시 — 팝업 플러그인 PopupLayer 가 getElementById('gdpr_cookie_banner') 로 배너 위치를 잰다. 확장점 조각의 정적 노드 id 는 엔진이 {id}__{호스트 id} 로 바꾸므로 DOM id 를 고정하려고 id 속성을 직접 단다.",
             "id": "gdpr_cookie_banner",
             "type": "basic",
             "name": "Div",
@@ -163,7 +163,7 @@
                                     },
                                     "children": [
                                         {
-                                            "comment": "동의하지 않고 계속하기 (거부, 이슈 #430) — 텍스트/링크형(배경 없음). required 카테고리만 true 로 저장 + intent:'reject' 신호로 선택형 미동의 항목을 is_rejected=true 로 기록 후 배너 닫기. 기존 '필수만 사용'(reject_all) 버튼을 대체. 식별자 reject 로 정리.",
+                                            "comment": "동의하지 않고 계속하기 (거부) — 텍스트/링크형(배경 없음). required 카테고리만 true 로 저장 + intent:'reject' 신호로 선택형 미동의 항목을 is_rejected=true 로 기록 후 배너 닫기. 기존 '필수만 사용'(reject_all) 버튼을 대체. 식별자 reject 로 정리.",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [
@@ -208,7 +208,7 @@
                                                                     "handler": "refreshConsent"
                                                                 },
                                                                 {
-                                                                    "comment": "거부 전용 토스트 (이슈 #430) — 거부인데 '동의가 저장' 문구가 뜨던 오표기 수정.",
+                                                                    "comment": "거부 전용 토스트 — 거부인데 '동의가 저장' 문구가 뜨던 오표기 수정.",
                                                                     "handler": "toast",
                                                                     "params": {
                                                                         "type": "success",
@@ -268,7 +268,7 @@
                                             ]
                                         },
                                         {
-                                            "comment": "선택 동의 토글 (이슈 #430 라벨 변경: 환경설정→선택 동의) — 배너 내부 인라인 펼침 영역을 열고 닫음. 버튼 순서: 거부 다음, 모두 동의 앞 (제보자 예시/업계 관행 — 거부 → 선택 → 전체). banner.preferences 키 유지, 값만 '선택 동의' 로 변경(STEP6).",
+                                            "comment": "선택 동의 토글 (라벨 변경: 환경설정→선택 동의) — 배너 내부 인라인 펼침 영역을 열고 닫음. 버튼 순서: 거부 다음, 모두 동의 앞 (제보자 예시/업계 관행 — 거부 → 선택 → 전체). banner.preferences 키 유지, 값만 '선택 동의' 로 변경(STEP6).",
                                             "id": "gdpr_preferences_toggle_button",
                                             "type": "basic",
                                             "name": "Button",

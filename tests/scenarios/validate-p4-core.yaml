@@ -1,4 +1,4 @@
-feature: 코어 알림 수신 정책 단일화 · 파일 크기 표시 공지 · 역할 수신자 eager load 상한 (#599 validate P4 코어)
+feature: 코어 알림 수신 정책 단일화 · 파일 크기 표시 공지 · 역할 수신자 eager load 상한 (validate P4 코어)
 
 description: |
   세 결함을 닫는다.

@@ -715,7 +715,7 @@ function routeQueryKey(route: unknown, query: unknown): string | null {
  *   끝났으면 곧바로, 아니면 받기 끝 알림(`transitionManager`, 그 상태의 경계만 구독) 때 전환 갱신(`React.startTransition`)으로 다시
  *   그린다. 같은 화면 쿼리 이동(`handleRouteChange` 의 같은 화면 판정)은 첫 렌더에 앞 화면의 progressive 값을 이어 그린다. 그 렌더는
  *   전환 렌더라 응답이 빠르면 렌더가 끝나기 전에 응답이 모두 와 받는 중 표시가 꺼진다 — 렌더 중에 지금의 표시를 보고 다시 그리면
- *   이 렌더의 옛 값으로 던지고, React 가 예약된 새 값으로 루트를 동기로 다시 그려 회복 오류(#520)를 알린다. 커밋 뒤의 전환 갱신은
+ *   이 렌더의 옛 값으로 던지고, React 가 예약된 새 값으로 루트를 동기로 다시 그려 회복 오류를 알린다. 커밋 뒤의 전환 갱신은
  *   받는 중 표시가 꺼지기 전에 예약된 화면 갱신(전환 갱신)과 같은 렌더에서 그려진다.
  * - 받기가 끝난 뒤(받는 중 표시가 꺼진 때)의 실패는 확정이다 — 다음 경로·쿼리 변경 전까지 다시 시도하지 않는다(루프 없음).
  * - 판정은 주소(`window.location`)가 아니라 렌더 문맥 값으로 한다 — 쿼리 갱신은 주소를 먼저 바꾸고 데이터를 받은 뒤 새 `query` 를
@@ -1539,7 +1539,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     componentPath,
     layoutKey,
   }) => {
-    // 번역 문맥이 빠진 렌더러는 부모 렌더러의 렌더 환경에서 이어받는다 (engine-v1.95.0, #869).
+    // 번역 문맥이 빠진 렌더러는 부모 렌더러의 렌더 환경에서 이어받는다 (engine-v1.95.0).
     // 컴포넌트가 배열 prop 의 정의를 엔진 렌더러로 직접 그릴 때(Modal 고정 하단 등) 번역 문맥을 못 넘기면, 식 안의 `$t:` 를 풀다가
     // getTranslation 이 templateId 를 구조 분해하며 던져 그 칸이 「컴포넌트 로드 실패」 로 그려졌다. 정의를 skipBindingKeys 로 원문 그대로
     // 넘기게 되면서(부모가 미리 풀지 않음) 드러났다
@@ -1553,7 +1553,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     // React 문맥 값도 함께 본다(engine-v1.81.1, 7.1.1). 훅은 최상위에 무조건 둔다.
     const slotContextForRender = useContext(SlotContext);
 
-    // 가장 가까운 확장점 호스트의 DOM id — 주입 조각의 정적 노드 id 를 DOM 에서 구분하는 데 쓴다 (engine-v1.99.0, #408).
+    // 가장 가까운 확장점 호스트의 DOM id — 주입 조각의 정적 노드 id 를 DOM 에서 구분하는 데 쓴다 (engine-v1.99.0).
     // 훅은 최상위에 무조건 둔다.
     const extensionIdScope = useContext(ExtensionIdScopeContext);
 
@@ -1990,7 +1990,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
             // 이 effect 는 마운트 후(렌더 커밋 뒤)에 실행되는데, 그 사이에 init_actions 가 URL query 로
             // _local 을 시드해 두었다면(목록 화면의 필터·정렬 컨트롤) 렌더 시점 스냅샷을 base 로 쓴 교체가
             // 그 시드를 통째로 되돌린다 — 뒤로가기 복귀 시 URL·목록은 필터가 걸린 상태인데 필터 컨트롤만
-            // 기본값으로 표시되는 결함(#492 D-20). 함수형 업데이트로 prev 를 읽어 그 역전을 제거한다.
+            // 기본값으로 표시되는 결함. 함수형 업데이트로 prev 를 읽어 그 역전을 제거한다.
             dataContext._globalSetState((prev: Record<string, any>) => {
               const currentGlobalLocal = (prev as any)?._local || {};
               let globalLocalUpdate: Record<string, any>;
@@ -2447,7 +2447,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               devToolsForComputed.trackComputedProperty?.(
                 key,
                 typeof expression === 'string' ? expression : JSON.stringify(expression),
-                // 의존성 종류는 DevTools 계약 값(state)이고 경로가 `_local` 이다(#869)
+                // 의존성 종류는 DevTools 계약 값(state)이고 경로가 `_local` 이다
                 [{ type: 'state', path: '_local', value: result._local }],
                 value,
                 duration ?? 0,
@@ -3007,7 +3007,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // 액션 정의 객체는 미리 번역하지 않는다 — props 바인딩(DataBindingEngine.resolveObject)과 반복 렌더
         // (RenderHelpers.resolveValue)가 이미 건너뛰는 규칙을 번역 단계에도 맞춘다. 컴포넌트 정의를 담은 prop
         // (Modal `footer`·`titlePrefix` 등)의 단추 액션까지 내려가면 `$t:키|이름={{response…}}` 를 응답이 오기 전
-        // 렌더 문맥(response 없음)으로 번역해 인자 자리가 빈 글자로 굳었다(설치 창 「(서명자: )」, #916).
+        // 렌더 문맥(response 없음)으로 번역해 인자 자리가 빈 글자로 굳었다(설치 창 「(서명자: )」).
         // 액션 안의 `$t:` 는 실행 시점에 디스패처가 번역한다(toast·setError·showAlert·confirm, `$t:` 를 내는 식).
         // 번역은 하지 않되 원문 표식은 벗긴다 — `{{raw:식}}` 결과가 액션 모양 객체면 handler 이름까지 감싸여 있어,
         // 반복 렌더 경로(RenderHelpers 의 `stripRawDeep(finalProps)`)와 같게 표식만 걷는다.
@@ -3440,7 +3440,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * 문자열 보간한다. 표현식이 없는 정적 id 는 원본을 그대로 반환하여 비용을 회피한다.
      * 이 값은 DOM 출력 전용이며, slot 등록·DevTools 등 내부 식별에는 원본 id 를 계속 사용한다.
      *
-     * 확장점 호스트 아래의 정적 id 는 `{id}__{호스트 DOM id}` 로 스코프한다 (engine-v1.99.0, #408 D2·D3).
+     * 확장점 호스트 아래의 정적 id 는 `{id}__{호스트 DOM id}` 로 스코프한다 (engine-v1.99.0).
      * 같은 조각이 호스트 여러 곳에 주입돼도 DOM id 가 겹치지 않는다. 보간 id 와 명시 props.id 는 그대로다.
      */
     const resolvedComponentId = useMemo(() => {
@@ -4131,7 +4131,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       mountedRef.current = true;
 
       // DevTools 마운트 추적 — id 가 있는 컴포넌트만 알린다. id 는 선택이라 없는 컴포넌트를 알리면
-      // `undefined` 한 칸에 서로 덮어쓴다(#869)
+      // `undefined` 한 칸에 서로 덮어쓴다
       const devTools = getDevTools();
       if (componentDef.id && devTools?.isEnabled()) {
         devTools.trackMount(componentDef.id, {
@@ -4193,7 +4193,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
                 };
 
                 // 액션 정의를 통째로 넘긴다(event 키만 뺀다) — 키를 골라 담으면 암묵 sequence·conditions·
-                // switch·if·actionRef·target·resultTo 가 경고 없이 버려졌다(engine-v1.80.0, #753).
+                // switch·if·actionRef·target·resultTo 가 경고 없이 버려졌다(engine-v1.80.0).
                 const { event: _eventName, ...actionDef } = eventDef;
                 const handler = actionDispatcher.createHandler(
                   { ...actionDef, type: 'click' } as ActionDefinition,
@@ -4420,7 +4420,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      */
     const autoBindingFlushedForNavRef = useRef(false);
     /**
-     * 이 칸의 마지막 대기 쓰기에 change 동작(onChange)이 붙어 있었는지 (engine-v1.95.0, #869).
+     * 이 칸의 마지막 대기 쓰기에 change 동작(onChange)이 붙어 있었는지 (engine-v1.95.0).
      *
      * 동작이 없는 칸의 쓰기는 경로를 바꿀 수 없다 — 그 칸의 「이미 쓴」 대기 값을 다른 경로의 렌더가 만났다면 그 쓰기를 확정하는 렌더가
      * 커밋되기 전에 다른 곳에서 경로가 바뀐 것이다. 입력 중 렌더러는 칸을 다시 그리지 않아(칸 지역 표시값만 친 값) 칸이 받은 value 는
@@ -4430,7 +4430,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      */
     const autoBindingWriteHadChangeActionRef = useRef(false);
     /**
-     * 칸이 마지막으로 커밋된 렌더에서 받은 value 의 표시 글자 (engine-v1.95.0, #869).
+     * 칸이 마지막으로 커밋된 렌더에서 받은 value 의 표시 글자 (engine-v1.95.0).
      *
      * 입력 중에는 렌더러가 칸을 다시 그리지 않아 칸은 친 값을 지역 표시값으로만 든다. 대기 값을 「다른 값으로 다시 쓰였다」고 보고 버릴 때
      * 새 값이 이 글자와 같으면 React 가 바꿀 것이 없어 칸이 따라오지 않는다(화면 ≠ 상태) — 그때만 버림 기록을 남겨 다시 마운트한다.
@@ -4907,7 +4907,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               const rewritten = (liveValue !== undefined && String(liveValue ?? '') !== pendingText)
                 || (seen !== null && !seen.has(currentText));
               if (rewritten) {
-                // engine-v1.95.0 (#869): 새 값이 칸이 마지막으로 받은 value 와 같으면 칸이 따라오지 않는다 — 쓰기를 확정하는 렌더보다
+                // engine-v1.95.0: 새 값이 칸이 마지막으로 받은 value 와 같으면 칸이 따라오지 않는다 — 쓰기를 확정하는 렌더보다
                 // 같은 칸을 되돌리는 쓰기(주소만 바꾼 이동의 다시 받기 initLocal 등)가 먼저 커밋되면, 칸이 받은 value 는 입력 전 값 그대로라
                 // 되돌린 값과 같아 친 값이 칸에 남았다. 그때만 버림 기록을 남겨 다시 마운트한다. 새 값이 받은 value 와 다르면(포맷팅 등)
                 // React 가 칸을 바꾸므로 종전대로 두어 입력 중인 칸의 포커스를 지킨다
@@ -5113,7 +5113,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // className·data-*·aria-* 의 `{{…}}` 가 식 원문 그대로 붙었다(게시판 관리자 글 상세 본문 래퍼, engine-v1.94.0).
         const host = buildExtensionPointHostProps(stableResolvedProps);
 
-        // 주입 조각의 정적 노드 id 는 이 호스트 id 로 스코프한다 (engine-v1.99.0, #408).
+        // 주입 조각의 정적 노드 id 는 이 호스트 id 로 스코프한다 (engine-v1.99.0).
         // 호스트 id 가 없으면 Provider 를 두지 않아 바깥 scope 를 그대로 물려준다. 중첩 확장점은 가장 가까운 호스트가 이긴다.
         return (
           <div
@@ -5361,7 +5361,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       effectiveComponentDef.type,
       effectiveComponentDef.name,
       effectiveComponentDef.id,
-      // DOM id (보간·확장점 scope 반영) — scope 가 바뀌면 다시 그린다 (engine-v1.99.0, #408)
+      // DOM id (보간·확장점 scope 반영) — scope 가 바뀌면 다시 그린다 (engine-v1.99.0)
       resolvedComponentId,
       effectiveComponentDef.props,
       effectiveComponentDef.isolatedState,

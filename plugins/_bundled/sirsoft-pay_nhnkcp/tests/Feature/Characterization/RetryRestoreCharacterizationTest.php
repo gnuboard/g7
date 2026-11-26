@@ -14,7 +14,7 @@ use Plugins\Sirsoft\PayNhnkcp\Concerns\RecordsPaymentWindowClosure;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
 /**
- * 재결제 복구 특성화 대조 — NHN KCP (#916, 부록 A5-1)
+ * 재결제 복구 특성화 대조 — NHN KCP
  *
  * 계약 전환 전의 KCP 복구 코드로 녹화한 결과(이커머스 `tests/Fixtures/payment-retry-restore/nhnkcp-*.json`)와
  * 전환 뒤 이 플러그인의 복구 경로(재시도 가능 판정 → 이커머스 계약 `restoreForRetry`)가 남기는 DB 원문이 바이트 단위로

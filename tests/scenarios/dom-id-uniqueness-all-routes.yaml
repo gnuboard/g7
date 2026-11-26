@@ -1,4 +1,4 @@
-feature: 관리자·사용자 전 화면의 실제 DOM 에서 같은 id 가 두 번 이상 나오지 않는다 (#408)
+feature: 관리자·사용자 전 화면의 실제 DOM 에서 같은 id 가 두 번 이상 나오지 않는다
 
 description: |
   HTML id 는 한 문서에 하나여야 한다. 같은 id 가 둘 이상이면 getElementById, label for, aria-* 연결과

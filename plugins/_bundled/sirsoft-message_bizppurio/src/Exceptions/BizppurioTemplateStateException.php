@@ -7,7 +7,7 @@ namespace Plugins\Sirsoft\MessageBizppurio\Exceptions;
 use RuntimeException;
 
 /**
- * 비즈뿌리오 알림 템플릿 상태 전이 위반 예외 (#597).
+ * 비즈뿌리오 알림 템플릿 상태 전이 위반 예외.
  *
  * 허용되지 않은 상태에서의 수정·삭제·검수 신청 등 라이프사이클 규칙 위반을 담는다.
  * 컨트롤러는 이 예외를 도메인 실패로 구분해 422 로 응답하고, 그 외 예외는 서버

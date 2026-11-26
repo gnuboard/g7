@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentLookup;
 /**
  * 주문 결제 요청의 청구액·구매자 대조 공용 조각.
  *
- * 청구액은 이커머스 공개 계약 {@see PaymentLookup::resolveChargeAmount()} 로 얻는다(#916).
+ * 청구액은 이커머스 공개 계약 {@see PaymentLookup::resolveChargeAmount()} 로 얻는다.
  * 호스트 요건: 생성자에서 `PaymentGatewayBridge`(또는 `PaymentLookup`)를 `$bridge` 로 주입받는다.
  */
 trait ValidatesCbtOrderContext

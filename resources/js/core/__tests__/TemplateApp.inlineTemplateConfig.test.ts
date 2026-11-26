@@ -1,5 +1,5 @@
 /**
- * TemplateApp 첫 화면 요청 사슬 — 템플릿 설정 인라인(`G7Config.templateConfig`)과 레이아웃 미리 요청 (#879)
+ * TemplateApp 첫 화면 요청 사슬 — 템플릿 설정 인라인(`G7Config.templateConfig`)과 레이아웃 미리 요청
  *
  * 비로그인 첫 방문이 첫 글자까지 PHP 왕복을 줄줄이 기다리던 것 중 두 단계를 걷는다.
  *  - 템플릿 설정(config) API 1왕복: 서버가 template.json 의 `expose` 선언 키만 셸 HTML 에 싣고, 엔진은 부팅이 읽는 키
@@ -151,7 +151,7 @@ function shell(templateConfig?: Record<string, unknown>): void {
     (window as any).G7Config = templateConfig === undefined ? { cache_version: 7 } : { cache_version: 7, templateConfig };
 }
 
-describe('TemplateApp 템플릿 설정 인라인 (#879)', () => {
+describe('TemplateApp 템플릿 설정 인라인', () => {
     beforeEach(() => {
         document.body.innerHTML = '<div id="app"></div>';
         vi.clearAllMocks();
@@ -261,7 +261,7 @@ describe('TemplateApp 템플릿 설정 인라인 (#879)', () => {
     });
 });
 
-describe('TemplateApp 레이아웃 미리 요청 (#879)', () => {
+describe('TemplateApp 레이아웃 미리 요청', () => {
     beforeEach(() => {
         document.body.innerHTML = '<div id="app"></div>';
         vi.clearAllMocks();

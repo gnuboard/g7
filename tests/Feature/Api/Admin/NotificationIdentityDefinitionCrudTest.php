@@ -15,7 +15,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * 알림 설정 > 본인인증 「정책별 문구」 추가·삭제·목록 API 테스트 (#699)
+ * 알림 설정 > 본인인증 「정책별 문구」 추가·삭제·목록 API 테스트
  *
  * 7.0.x 의 본인인증 메시지 전용 API(`/api/admin/identity/messages/*`)를 알림 정의 API 로 옮겼다.
  * 옛 API 테스트(AdminIdentityMessageDefinitionAdminCrudTest)가 지키던 살아 있는 계약 —
@@ -334,7 +334,7 @@ class NotificationIdentityDefinitionCrudTest extends TestCase
     }
 
     /**
-     * 꺼 둔 본인인증 템플릿을 편집·저장해도 다시 켜지지 않는다 (옛 본인인증 메시지 API 의 #727 W13 계약 이식).
+     * 꺼 둔 본인인증 템플릿을 편집·저장해도 다시 켜지지 않는다 (옛 본인인증 메시지 API 의 계약 이식).
      *
      * @scenario surface=admin_api
      *

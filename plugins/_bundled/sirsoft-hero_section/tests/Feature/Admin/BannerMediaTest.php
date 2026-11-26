@@ -186,7 +186,7 @@ class BannerMediaTest extends PluginTestCase
 
         $public = $this->getJson($this->api('/hero?position=home_hero'))->json('data.banners.0');
         $this->assertSame('video', $public['media_type']);
-        // 공개 영상 정보는 주소·직접 주소(#878, 공개 자산 디스크가 아니면 null)·MIME 만 싣는다 — 저장 경로 등 내부 값은 없다
+        // 공개 영상 정보는 주소·직접 주소(공개 자산 디스크가 아니면 null)·MIME 만 싣는다 — 저장 경로 등 내부 값은 없다
         $this->assertSame(['url', 'direct_url', 'mime'], array_keys($public['videos']['pc']));
         $this->assertSame('video/mp4', $public['videos']['pc']['mime']);
         $this->assertNotNull($public['videos']['mobile']);
@@ -303,7 +303,7 @@ class BannerMediaTest extends PluginTestCase
     }
 
     /**
-     * 업로드 응답은 주소 필드 넷을 싣는다 — 기본 디스크면 직접 주소는 null 이고 원본 주소는 공개 API 다 (#878).
+     * 업로드 응답은 주소 필드 넷을 싣는다 — 기본 디스크면 직접 주소는 null 이고 원본 주소는 공개 API 다.
      *
      * @scenario surface=download_url
      *
@@ -322,7 +322,7 @@ class BannerMediaTest extends PluginTestCase
     }
 
     /**
-     * 직접 URL 디스크(로컬 드라이버) 행의 영상도 공개 API 주소로 범위 요청(206)을 받는다 — 행 disk 의 절대 경로로 파일 응답 (#878).
+     * 직접 URL 디스크(로컬 드라이버) 행의 영상도 공개 API 주소로 범위 요청(206)을 받는다 — 행 disk 의 절대 경로로 파일 응답.
      *
      * @scenario surface=serve
      *

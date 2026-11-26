@@ -1,5 +1,5 @@
 /**
- * E2E: 코어 동의 런타임이 로그인·로그아웃 경계에서 주체를 바꿔 다시 읽는다 (#639)
+ * E2E: 코어 동의 런타임이 로그인·로그아웃 경계에서 주체를 바꿔 다시 읽는다
  *
  * @scenario case=e2e_login_boundary
  * @effects consent_snapshot_follows_member_after_spa_login, consent_snapshot_returns_to_guest_after_logout
@@ -35,7 +35,7 @@ function isConsentRequest(request: Request): boolean {
 
 // @scenario case=e2e_login_boundary
 // @effects consent_snapshot_follows_member_after_spa_login, consent_snapshot_returns_to_guest_after_logout
-test('#639 게스트 동의 → 회원 로그인 → 로그아웃 경계마다 동의 스냅샷이 주체를 따라간다', async ({ page, gdprGuestLoginSeed }) => {
+test('게스트 동의 → 회원 로그인 → 로그아웃 경계마다 동의 스냅샷이 주체를 따라간다', async ({ page, gdprGuestLoginSeed }) => {
   const consentRequests: Array<{ authorized: boolean }> = [];
   page.on('request', (request) => {
     if (isConsentRequest(request)) {

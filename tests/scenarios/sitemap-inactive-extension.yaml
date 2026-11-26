@@ -1,4 +1,4 @@
-feature: 꺼진 확장의 사이트맵 기여자 제외 (#822)
+feature: 꺼진 확장의 사이트맵 기여자 제외
 
 description: |
   모듈·플러그인의 서비스 프로바이더는 비활성 상태여도 등록되므로, 꺼진 쇼핑몰·페이지 모듈의 사이트맵 기여자도
@@ -20,4 +20,4 @@ effects:
 test_files:
   - tests/Feature/Seo/SitemapInactiveExtensionContributorTest.php
 
-# E2E axis 없음: 라이브 사이트맵 건수는 Chrome MCP 매트릭스(#822 계획서 §11 T6)에서 잰다.
+# E2E axis 없음: 라이브 사이트맵 건수는 Chrome MCP 매트릭스에서 잰다.

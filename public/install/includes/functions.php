@@ -26,7 +26,7 @@ require_once __DIR__.'/env-value.php';
  */
 if (! function_exists('installer_favicon_tags')) {
     /**
-     * 설치 마법사 화면의 파비콘 `<link>` 태그 (#434).
+     * 설치 마법사 화면의 파비콘 `<link>` 태그.
      *
      * 설치기는 Laravel 밖이라 코어 헬퍼(`g7_favicon_tags_static()`)를 쓸 수 없다. 설치 전에는 DB·설정이 없으므로
      * 코어 번들 아이콘만 링크한다. 설치기는 `{public 기준}/install` 에 있으므로 번들 아이콘은 그 부모 기준이다
@@ -1572,7 +1572,7 @@ function checkDirectoryPermissions(array $directories): array
 /**
  * 디렉토리의 하위를 재귀적으로 체크하여 권한이 없는 경로와 권한 정보 반환
  *
- * 깊이 제한(maxDepth)을 둔다 (dev-g7#445 후속): storage 처럼 하위에 수만 개
+ * 깊이 제한(maxDepth)을 둔다: storage 처럼 하위에 수만 개
  * 디렉토리가 누적되는 경로(예: storage/framework/testing/)를 무한 재귀로 순회하면
  * 인스톨러 2단계(요구사항 검증) 응답이 수 초 이상 지연된다. 쓰기 권한 문제는 트리
  * 상위 얕은 깊이에서 결정되므로(상위가 쓰기 가능하면 하위도 통상 상속), 제한 깊이까지만
@@ -1658,7 +1658,7 @@ function checkSubdirectoriesRecursive(string $path, int $maxDepth = 1, int $curr
 
         // 재귀적으로 하위 디렉토리 체크 (권한 없어도 계속 진행)
         // 깊이 제한 도달 시 더 내려가지 않는다 — storage/framework/testing 등에 누적된
-        // 수만 개 하위 디렉토리를 순회해 인스톨러 2단계가 지연되던 문제 차단 (dev-g7#445 후속).
+        // 수만 개 하위 디렉토리를 순회해 인스톨러 2단계가 지연되던 문제 차단.
         if ($currentDepth < $maxDepth) {
             try {
                 $subFailed = checkSubdirectoriesRecursive($itemPath, $maxDepth, $currentDepth + 1);

@@ -1,4 +1,4 @@
-feature: 페이지 첨부 미리보기 이미지 썸네일 (#869)
+feature: 페이지 첨부 미리보기 이미지 썸네일
 
 description: |
   첨부 미리보기(`/api/modules/sirsoft-page/pages/attachment/{hash}/preview`)에 `?size={규격}`·`?w={숫자}` 를

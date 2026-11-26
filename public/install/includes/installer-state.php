@@ -334,7 +334,7 @@ function getInstallationState(): array
     // 저장을 막는다 — 진행이 멈추는 대신 데이터가 남는다.
     if (json_last_error() !== JSON_ERROR_NONE || ! is_array($state)) {
         // 원문은 싣지 않는다 — 길이와 digest 만. 비밀은 상태 파일에 없어야 하지만
-        // (이슈 #465) 레거시 상태 파일이 남아 있을 수 있고, 종전에는 앞 200 바이트가 무마스킹으로
+        // 레거시 상태 파일이 남아 있을 수 있고, 종전에는 앞 200 바이트가 무마스킹으로
         // 진행 기록과 PHP 오류 로그에 실렸다. digest 는 보존 사본 이름의 접미사와 같은 값이라
         // 로그와 사본을 대조할 수 있다.
         $contentLen = strlen($content);
@@ -785,7 +785,7 @@ if (! function_exists('installerSecretConfigKeys')) {
      *
      * 이 키들의 값은 storage/installer/runtime.php (0600) 로만 전달한다.
      * state.json 은 0664 라 웹 서버 그룹 전체가 읽을 수 있고, 설치 실패/중단 시
-     * 무기한 잔존하므로 평문 비밀의 보관처로 부적합하다 (이슈 #465).
+     * 무기한 잔존하므로 평문 비밀의 보관처로 부적합하다.
      *
      * @return array<int, string> 비밀 config 키 목록
      */
@@ -807,7 +807,7 @@ if (! function_exists('sanitizeConfigForState')) {
     /**
      * state.json 에 저장하기 전 config 배열을 정제한다.
      *
-     * 1) 비밀 5종 제거 (이슈 #465 — GitHub 토큰 포함)
+     * 1) 비밀 5종 제거 (GitHub 토큰 포함)
      * 2) use_read_db 미사용 시 read 접속 필드 잔존값 제거 (이슈 #63 2단계 방어)
      *    — use_read_db=false 인데 db_read_host 등이 남아 있으면 하류
      *      (installer-runtime.php) 로 유입되어 잘못된 read 커넥션을 만들 수 있다.
@@ -1418,7 +1418,7 @@ if (! function_exists('installerFinalizeAbortedState')) {
      * 진행이 되감긴다. 실패 경로(handleInstallationTaskFailure)는 같은 이유로 이미 재로드한다.
      *
      * 중단 상태는 무기한 잔존할 수 있으므로 보존되는 config 의 비밀도 함께 지운다
-     * (이슈 #465) — 두 경로 모두. 종전에는 API 경로에만 있어 연결 끊김 경로가 비대칭이었다.
+     * — 두 경로 모두. 종전에는 API 경로에만 있어 연결 끊김 경로가 비대칭이었다.
      *
      * @param  array<string, mixed>  $abortedState  중단 전이가 적용된 상태 (재로드본 기준)
      * @param  array<string, mixed>|null  $rollbackFailure  롤백 실패 정보 (없으면 null)
@@ -2126,7 +2126,7 @@ function installerResetNeedsDbNotice(array $state): bool
  * runInstallationTasks() 는 completed 마커만 보고 건너뛰므로, 마커를 함께 제거하지 않으면
  * 그 확장은 파일만 있고 DB 등록은 없는 유령 상태로 설치가 끝난다.
  *
- * 회귀 (이슈 #599 후속): 1차 시도에서 sirsoft-board 가 db_cleanup 보다 먼저 설치·활성화된 뒤
+ * 회귀: 1차 시도에서 sirsoft-board 가 db_cleanup 보다 먼저 설치·활성화된 뒤
  * 사용자가 재시도하면서 drop_tables 를 선택 → g7_modules 가 DROP 되어 board 행이 소멸.
  * 그러나 module_install:sirsoft-board 마커는 살아남아 재설치가 스킵됨 → 뒤이은 사용자 템플릿
  * 설치가 "필수 의존성 sirsoft-board (module)이 충족되지 않았습니다" 로 실패.

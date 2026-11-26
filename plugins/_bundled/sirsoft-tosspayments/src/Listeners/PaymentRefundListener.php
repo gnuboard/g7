@@ -235,7 +235,7 @@ class PaymentRefundListener implements HookListenerInterface
                 'handled' => true,
                 'error_code' => 'PG_API_ERROR',
                 // 이 사유는 쇼핑몰이 「PG 환불 처리에 실패했습니다. (…)」 안내에 끼워 회원·비회원·관리자 응답으로 낸다 —
-                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다(#858).
+                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다.
                 'error_message' => $this->refundFailureReason($e),
                 'transaction_id' => null,
             ];
@@ -286,7 +286,7 @@ class PaymentRefundListener implements HookListenerInterface
      * 취소 금액 중 면세 금액을 산출합니다. (R2)
      *
      * 면세/과세 분류의 비율은 주문에서 온다 — 면세는 면세+영세(`Order::pgTaxFreeAmount()`), 과세는 영세를 뺀
-     * 과세 합계(`Order::pgTaxableAmount()`). 영세(세율 0%)는 결제 때 면세로 넘겼으므로 취소도 면세로 나눈다(이커머스 1.3.3, #612).
+     * 과세 합계(`Order::pgTaxableAmount()`). 영세(세율 0%)는 결제 때 면세로 넘겼으므로 취소도 면세로 나눈다(이커머스 1.3.3).
      * 부분취소면 취소 비율만큼 면세분을 안분한다. 면세분이 없으면 null 을 반환해
      * 요청 본문에서 taxFreeAmount 자체를 생략시킨다.
      *

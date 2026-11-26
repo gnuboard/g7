@@ -22,7 +22,7 @@ use Tests\TestCase;
 
 /**
  * 코어가 만드는 화면 주소가 화면 주소 헬퍼를 거치는지 — 알림·비밀번호 재설정·메일 본인인증·본인인증 복귀·관리자 링크
- * (#792 WP-U2 — F1-1·F1-2·F1-3·F1-19·F1-20)
+ * (F1-1·F1-2·F1-3·F1-19·F1-20)
  */
 class CoreScreenUrlConsumersTest extends TestCase
 {
@@ -170,7 +170,7 @@ class CoreScreenUrlConsumersTest extends TestCase
     }
 
     /**
-     * 메일 본인인증 메일의 {site_url} 은 회원이 여는 화면 주소(「사용자 화면 URL」)입니다 (#792). 관리자에게만 적용되는 정책의 메일은 사이트 주소입니다.
+     * 메일 본인인증 메일의 {site_url} 은 회원이 여는 화면 주소(「사용자 화면 URL」)입니다. 관리자에게만 적용되는 정책의 메일은 사이트 주소입니다.
      *
      * @scenario case=mail_identity
      *

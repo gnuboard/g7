@@ -74,7 +74,7 @@ class StoreBoardRequest extends FormRequest
             'secret_reply_visibility' => $settings['secret_reply_visibility'] ?? SecretReplyVisibility::ThreadPath->value,
             'max_comment_depth' => $settings['max_comment_depth'] ?? 10,
             'use_file_upload' => $settings['use_file_upload'] ?? false,
-            // 본문 미디어 정책 기본값 (null: 첨부 정책을 따름, #883)
+            // 본문 미디어 정책 기본값 (null: 첨부 정책을 따름)
             'content_media_policy' => $settings['content_media_policy'] ?? null,
             'comment_order' => $settings['comment_order'] ?? 'ASC',
             'notify_admin_on_post' => $settings['notify_admin_on_post'] ?? true,
@@ -127,7 +127,7 @@ class StoreBoardRequest extends FormRequest
             }
         }
 
-        // 본문 미디어 정책: 「직접 정하기」 스위치가 꺼져 있으면 null(첨부 정책을 따름)로, 스위치 문자열은 불리언으로 (#883)
+        // 본문 미디어 정책: 「직접 정하기」 스위치가 꺼져 있으면 null(첨부 정책을 따름)로, 스위치 문자열은 불리언으로
         if (array_key_exists('content_media_policy', $data)) {
             $data['content_media_policy'] = ContentMediaPolicyRules::normalizeInput($data['content_media_policy']);
         }
@@ -261,7 +261,7 @@ class StoreBoardRequest extends FormRequest
             'blocked_keywords' => ['nullable', 'array'],
             'blocked_keywords.*' => ['string', 'max:100'],
 
-            // 본문 미디어 정책 (null: 첨부 정책을 따름, #883) — 형식은 코어가 정한다
+            // 본문 미디어 정책 (null: 첨부 정책을 따름) — 형식은 코어가 정한다
             ...ContentMediaPolicyRules::settingsRules('content_media_policy'),
 
             // 작성자 표시 이름(방식과 종류)과 비회원 작성자 항목의 게시판별 사용, 필수
@@ -305,7 +305,7 @@ class StoreBoardRequest extends FormRequest
         // 「new display hours 필드는…」처럼 필드 키가 그대로 보인다
         $attributes = array_merge($attributes, $this->boardSettingAttributes());
 
-        // 본문 미디어 정책 하위 칸 (#883) — 수정·일괄 적용 요청과 같은 이름
+        // 본문 미디어 정책 하위 칸 — 수정·일괄 적용 요청과 같은 이름
         $attributes = array_merge($attributes, $this->contentMediaPolicyAttributes('content_media_policy'));
 
         // 작성자 표시 이름 칸과 비회원 작성자 항목 표

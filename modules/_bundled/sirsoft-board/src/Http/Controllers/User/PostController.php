@@ -68,7 +68,7 @@ class PostController extends PublicBaseController
      * @param  CommentService  $commentService  댓글 서비스
      * @param  ReportService  $reportService  신고 서비스
      * @param  SecretViewTokenService  $secretViewTokens  비밀글 열람 토큰 서비스
-     * @param  PostContentMediaService  $contentMediaService  본문 미디어 서비스 (폼 메타의 업로드 계약, #883)
+     * @param  PostContentMediaService  $contentMediaService  본문 미디어 서비스 (폼 메타의 업로드 계약)
      */
     public function __construct(
         private PostService $postService,
@@ -160,7 +160,7 @@ class PostController extends PublicBaseController
             }
 
             // 게시글 조회 (댓글/첨부파일/답글 관계 + 스코프 접근 검사).
-            // 권한 판정과 응답 조립이 같은 인스턴스를 공유해 같은 행을 다시 읽지 않는다 (#519 F3).
+            // 권한 판정과 응답 조립이 같은 인스턴스를 공유해 같은 행을 다시 읽지 않는다.
             // 이미 조회한 Board 를 넘겨 게시판 재조회와 board 관계 적재도 함께 생략한다.
             $post = $this->postService->getPostWithCounts($slug, $id, board: $board, context: 'user');
 
@@ -329,7 +329,7 @@ class PostController extends PublicBaseController
             $files = $request->file('files');
 
             // `attachment_ids` 도 같은 이유로 넘긴다 — 종전에는 검증만 하고 넘기지 않아 201 이어도 첨부가 이어지지 않았다
-            // (사용자 수정·관리자 경로는 넘김). 번호로 잇는 경로도 서비스가 소유 규칙(본인 업로드만)으로 거른다 (#883 후속)
+            // (사용자 수정·관리자 경로는 넘김). 번호로 잇는 경로도 서비스가 소유 규칙(본인 업로드만)으로 거른다
             $attachmentIds = $data['attachment_ids'] ?? [];
             unset($data['attachment_ids']);
 
@@ -352,7 +352,7 @@ class PostController extends PublicBaseController
                 201
             );
         } catch (ContentMediaLimitExceededException $e) {
-            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다 (#883)
+            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다
             return $this->error(
                 $e->getMessageKey(),
                 422,
@@ -398,7 +398,7 @@ class PostController extends PublicBaseController
 
             // 수정 권한 확인
             if (! $this->canModifyPost($post, $request)) {
-                // 만료 토큰 회원이면 세션 만료(401) (#883 후속)
+                // 만료 토큰 회원이면 세션 만료(401)
                 return $this->ownershipDenied($request, 'sirsoft-board::messages.posts.modify_permission_denied');
             }
 
@@ -448,7 +448,7 @@ class PostController extends PublicBaseController
                 new PostResource($post)
             );
         } catch (ContentMediaLimitExceededException $e) {
-            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다 (#883)
+            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다
             return $this->error(
                 $e->getMessageKey(),
                 422,
@@ -755,9 +755,9 @@ class PostController extends PublicBaseController
                 // 로그인한 회원이 이 게시판에서 어떤 이름으로 보이는지 (작성자 자리의 안내 줄). 비회원이면 모두 null
                 ...$this->boardService->authorDisplayFor($board, Auth::user()),
                 'board' => $boardData,
-                // 편집기 본문 미디어 업로드 계약 (#883) — 이 게시판 업로드 권한이 있고 받는 종류가 있을 때만. 「파일 첨부 사용」과
+                // 편집기 본문 미디어 업로드 계약 — 이 게시판 업로드 권한이 있고 받는 종류가 있을 때만. 「파일 첨부 사용」과
                 // 무관하다(D26). 이 값을 읽지 않는 복제 템플릿은 현행 동작(관리자만 편집기 자체 업로드).
-                // 표준 계약 엔드포인트 `GET boards/{slug}/content-media/target`(#887)과 같은 값 — 옛 화면 호환으로 계속 싣는다(폐기 예정)
+                // 표준 계약 엔드포인트 `GET boards/{slug}/content-media/target`과 같은 값 — 옛 화면 호환으로 계속 싣는다(폐기 예정)
                 'content_media' => $this->checkBoardPermission($slug, 'attachments.upload', PermissionType::User)
                     ? $this->contentMediaService->uploadTarget($board, admin: false)
                     : null,

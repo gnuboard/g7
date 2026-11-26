@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Tests\TestCase;
 
 /**
- * 본문 미디어 서빙 응답 — Range(로컬·원격)·인라인 판정·보안 헤더, `harden()` 불변 (#883 5단계, D14)
+ * 본문 미디어 서빙 응답 — Range(로컬·원격)·인라인 판정·보안 헤더, `harden()` 불변
  *
  * @scenario-manifest tests/scenarios/content-render-policy.yaml
  */
@@ -93,7 +93,7 @@ class ContentMediaResponderTest extends TestCase
     }
 
     /**
-     * 로컬 디스크 + 웹서버 파일 위임(#878) — 본문·Range 는 웹서버 몫이라 앱은 200 과 위임 헤더만 낸다.
+     * 로컬 디스크 + 웹서버 파일 위임 — 본문·Range 는 웹서버 몫이라 앱은 200 과 위임 헤더만 낸다.
      * 게이트 콘텐츠의 `Cache-Control: private` 와 재생 헤더는 그대로다. 위임을 끄면 종전처럼 206.
      *
      * @return void 반환값 없음

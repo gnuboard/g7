@@ -17,7 +17,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\ReadsReturnRefundLink;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 반품 흐름의 다통화 계약 — 결제 통화 ≠ 기준 통화 (#599 세션2 다통화 축)
+ * 반품 흐름의 다통화 계약 — 결제 통화 ≠ 기준 통화 (세션2 다통화 축)
  *
  * KRW 단일 통화 주문만으로는 **어느 값을 읽든 통과한다** — 기준 통화 금액과 결제 통화 금액이
  * 같은 숫자이기 때문이다. 픽스처 `foreignPaidClaimOrder(rate: 0.001, paidLocal: 50)` 은
@@ -45,7 +45,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *   ⓓ 상점 기본 통화가 비KRW — 원화를 하드코딩한 자리가 드러나고, 과거 주문의 표기 통화가
  *                              상점 설정 변경에 **불변**인지 잰다.
  *
- * #599 통합실측 세션2 브라우저 실측(주문 754 · KRW 단일)이 남긴 값:
+ * 브라우저 실측(주문 754 · KRW 단일)이 남긴 값:
  *   returns.currency_code          = 'KRW'
  *   returns.mc_claim_shipping_fee  = {KRW:3000, USD:3, JPY:345, CNY:17.4, EUR:2.34}
  *   returns.mc_total_charge_amount = 동일 (접수 시점 스냅샷)

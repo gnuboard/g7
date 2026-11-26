@@ -1,4 +1,4 @@
-feature: sirsoft-basic Icon — 이름 속 Font Awesome 스타일 토큰을 한 번만 읽는다 (#381)
+feature: sirsoft-basic Icon — 이름 속 Font Awesome 스타일 토큰을 한 번만 읽는다
 
 description: |
   사용자 템플릿 Icon 은 종전에 이름 속 스타일 토큰을 읽지 않아 `fas fa-x` 를 `fas fa-fas fa-x` 로, `far fa-x` 를

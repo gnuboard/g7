@@ -1,10 +1,10 @@
 <!-- 보안 탭 — 로그인 시도 제한 같은 값과 함께 **IP 접근 제한**과 **앱 키**를 보여 준다.
   키를 다시 만드는 것은 여기서 곧바로 하지 않고 비밀번호 확인 창을 거친다.
-  비밀번호 작성 규칙·재사용 금지·만료(#736)는 별도 조각(`_tab_security_password_policy`)이 보안 설정 카드 뒤에 그린다 —
+  비밀번호 작성 규칙·재사용 금지·만료는 별도 조각(`_tab_security_password_policy`)이 보안 설정 카드 뒤에 그린다 —
   최소 길이·특수문자 두 칸도 그 조각으로 옮겼다(data-ref 유지).
-  활동 로그(접속기록) 보관 기간(#736 D14)은 별도 조각(`_tab_security_activity_log`)이 접근 제한 카드 뒤에 그린다.
+  활동 로그(접속기록) 보관 기간은 별도 조각(`_tab_security_activity_log`)이 접근 제한 카드 뒤에 그린다.
   콘텐츠 보안 정책(CSP, #158)은 별도 조각(`_tab_security_csp`)이 활동 로그 카드 뒤에 그린다.
-  확장 신뢰 키(#916)는 별도 조각(`_tab_security_extension_trust`)이 CSP 카드 뒤·앱 키 카드 앞에 그린다 — 키 추가·삭제는 탭 저장과 분리된
+  확장 신뢰 키는 별도 조각(`_tab_security_extension_trust`)이 CSP 카드 뒤·앱 키 카드 앞에 그린다 — 키 추가·삭제는 탭 저장과 분리된
   전용 API 이고, 「미서명 패키지 차단」 스위치만 이 탭 저장에 실린다.
   IP 접근 제한 카드는 별도 조각(`_tab_security_ip_restriction`)이다 — 프리셋 혼용 린트가 **문서 단위**로
   재고(`LayoutLinter::lintResponsiveMix`), `<include>` 는 굽기 뒤에도 참조로 남아 두 문서의 프리셋이 섞이지
@@ -42,7 +42,7 @@
               <span class="text-red-600 dark:text-red-400 ml-1">*</span>
             </div>
             <p class="text-label-subtle">$t:admin.settings.security.force_https_desc</p>
-            <!-- 켜는 순간 http 요청이 https 로 이동한다 — 인증서가 없거나 프록시 뒤에서 https 를 알리지 못하면 관리자도 들어올 수 없으므로, 끄는 명령을 함께 보인다(#888). -->
+            <!-- 켜는 순간 http 요청이 https 로 이동한다 — 인증서가 없거나 프록시 뒤에서 https 를 알리지 못하면 관리자도 들어올 수 없으므로, 끄는 명령을 함께 보인다. -->
             <p data-ref="force_https_notice" class="text-warning-soft mt-1">$t:admin.settings.security.force_https_notice</p>
             <span data-if="{{_local.errors?.['security.force_https']}}" class="form-error">{{_local.errors?.['security.force_https']?.[0] ?? ''}}</span>
           </div>

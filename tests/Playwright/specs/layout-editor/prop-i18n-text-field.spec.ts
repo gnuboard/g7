@@ -97,7 +97,7 @@ async function addEmptyDiv(page: Page, sandbox = false): Promise<string> {
   // 첫 세그먼트는 베이스 레이아웃 루트 인덱스라 베이스에 컴포넌트가 추가되면 밀린다 —
   // 리터럴 대신 id 로 해석한다. 시드 화면은 컨테이너 자체가 고정 id 다.
   // 홈은 본문 슬롯(`main_content`)의 첫 자식이 페이지 본문 루트다. 본문 영역 앞에 전폭 슬롯
-  // `page_top` 이 들어와(#810) `main_content_area` 의 자식 인덱스가 0 → 1 로 밀렸으므로 인덱스를 세지 않는다.
+  // `page_top` 이 들어와 `main_content_area` 의 자식 인덱스가 0 → 1 로 밀렸으므로 인덱스를 세지 않는다.
   const contentRoot = sandbox
     ? await resolveEditorPath(page, '', SANDBOX_ROOT_ID)
     : await resolveEditorPath(page, 'children.0', MAIN_CONTENT_SLOT_ID);

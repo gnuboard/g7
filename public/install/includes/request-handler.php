@@ -19,7 +19,7 @@ function validateInstallationFlow(int $currentStep, array $state): void
 {
     // 설치 완료 시 홈으로 리다이렉트
     if (isInstallationCompleted()) {
-        // 세션에 남은 설치 config (DB/관리자 비밀번호 포함) 를 정리한다 (이슈 #465).
+        // 세션에 남은 설치 config (DB/관리자 비밀번호 포함) 를 정리한다.
         // 설치가 끝나면 세션 config 는 소비처가 없으므로 세션 파일에 평문이 잔존할 이유가
         // 없다. 완료 후 인스톨러에 재접근하는 모든 경로가 이 지점을 통과한다.
         unset(
@@ -293,7 +293,7 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
             // 롤백 기준선·실패 로그가 소거된다. 판정은 installerConfigSaveStatusPatch 가 소유한다.
             $currentLifecycleStatus = $state['installation_status'] ?? null;
 
-            // state.json 에는 비밀(DB/관리자 비밀번호) 을 저장하지 않는다 (이슈 #465).
+            // state.json 에는 비밀(DB/관리자 비밀번호) 을 저장하지 않는다.
             // read 필드 정리(이슈 #63 2단계 방어) 도 sanitizeConfigForState 가 함께 수행.
             $state['config'] = sanitizeConfigForState($formData);
             $state['current_step'] = 4;

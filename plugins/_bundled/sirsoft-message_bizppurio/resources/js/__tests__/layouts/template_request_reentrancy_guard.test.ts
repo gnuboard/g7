@@ -1,6 +1,6 @@
 /**
  * @file template_request_reentrancy_guard.test.ts
- * @description 검수 신청 체인 재진입(더블 클릭) 가드 회귀 테스트 (#597 §6.3 10c)
+ * @description 검수 신청 체인 재진입(더블 클릭) 가드 회귀 테스트 (§6.3 10c)
  *
  * 배경: 검수 신청(POST …/request)은 kapi add/update 를 동반하므로 더블 클릭이
  * 두 체인을 발화하면 카카오측 중복 등록·중복 채번이 발생할 수 있다. disabled
@@ -108,7 +108,7 @@ function collectRequestClickActions(file: string): ClickAction[] {
     return found;
 }
 
-describe('검수 신청 체인 재진입 가드 (#597 10c)', () => {
+describe('검수 신청 체인 재진입 가드 (10c)', () => {
     const all = FILES.flatMap(collectRequestClickActions);
 
     /**
@@ -164,7 +164,7 @@ describe('검수 신청 체인 재진입 가드 (#597 10c)', () => {
     });
 });
 
-describe('저장 체인 재진입 가드 (#597 라운드 5 §6.3 10c 실측 파생)', () => {
+describe('저장 체인 재진입 가드 (라운드 5 §6.3 10c 실측 파생)', () => {
     /**
      * 브라우저 실측에서 [저장] 더블 클릭 시 PUT 이 **2회** 나갔다.
      *

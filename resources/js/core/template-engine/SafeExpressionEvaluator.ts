@@ -331,7 +331,7 @@ function buildSafeNativeFunctions(): Set<unknown> {
 
     // 식별자로 노출되는 전역 함수·변환 함수 (`arr.filter(Boolean)` · `Number(x)`)
     // encodeURIComponent 는 WHITELIST_GLOBALS 가 노출하는 전역이라 호출 허용목록에도 있어야 한다 —
-    // 두 목록이 따로 자라 한쪽에만 들면 식별자는 풀리고 호출은 막힌다(#695 ← develop-7.1.0 병합에서 실측).
+    // 두 목록이 따로 자라 한쪽에만 들면 식별자는 풀리고 호출은 막힌다(← develop-7.1.0 병합에서 실측).
     [parseInt, parseFloat, isNaN, isFinite, Number, String, Boolean, Array, Date, encodeURIComponent].forEach(fn => out.add(fn));
 
     // 원시·컨테이너 프로토타입 메서드

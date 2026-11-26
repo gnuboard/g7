@@ -1,4 +1,4 @@
-// e2e:allow 가상계좌 결제창은 외부 나이스페이먼츠 테스트 결제창으로 이어져 공용 E2E 로 재현하지 않는다. 대체 검증: Vitest 바이트 절단 단언 2건 + 브라우저 실측(한글 6자 주문자 → 결제창 예금주명 5자 「남궁홍길동」, 주문 입금대기) / #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
+// e2e:allow 가상계좌 결제창은 외부 나이스페이먼츠 테스트 결제창으로 이어져 공용 E2E 로 재현하지 않는다. 대체 검증: Vitest 바이트 절단 단언 2건 + 브라우저 실측(한글 6자 주문자 → 결제창 예금주명 5자 「남궁홍길동」, 주문 입금대기) / 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
 /**
  * requestPayment 핸들러 테스트
  *
@@ -8,7 +8,7 @@
  * "초기 가드 + catch 블록 정상 호출" 두 축에 집중합니다.
  *
  * 결제수단은 액션 인자(`paymentMethod` → `pgPaymentData.payment_method`)로만 받고, SignData 발급은 G7Core.api 로
- * 보낸다 — 엔진 내부 화면 상태(`window.__templateApp`)·로그인 토큰 직접 읽기·원시 fetch 를 쓰지 않는다(#639).
+ * 보낸다 — 엔진 내부 화면 상태(`window.__templateApp`)·로그인 토큰 직접 읽기·원시 fetch 를 쓰지 않는다.
  *
  * 시나리오: plugins/_bundled/sirsoft-pay_nicepayments/tests/scenarios/public-core-api-only.yaml
  */
@@ -67,7 +67,7 @@ describe('requestPaymentHandler', () => {
     });
 
     /**
-     * 애플페이는 iOS 기기에서만 결제된다 — 데스크톱이면 결제 설정 조회 전에 토스트로 멈춘다 (#933).
+     * 애플페이는 iOS 기기에서만 결제된다 — 데스크톱이면 결제 설정 조회 전에 토스트로 멈춘다.
      */
     // @scenario concern=payment_entry
     // @effects apple_pay_blocked_off_ios_before_config
@@ -145,7 +145,7 @@ describe('requestPaymentHandler', () => {
 
     /**
      * 클레임 추가결제는 신청서 화면에서 열린다 — 토스트만 띄우면 신청서의 [결제하기]가 「결제 진행 중…」에 멈췄다.
-     * 문구를 담아 던져 이커머스 신청서 핸들러가 dispatch 결과로 받아 진행 표시를 내리고 버튼 아래에 보이게 한다 (#855).
+     * 문구를 담아 던져 이커머스 신청서 핸들러가 dispatch 결과로 받아 진행 표시를 내리고 버튼 아래에 보이게 한다.
      */
     // @scenario concern=payment_entry
     // @effects claim_payment_entry_failure_is_handed_to_the_claim_screen
@@ -312,7 +312,7 @@ describe('requestPaymentHandler', () => {
         });
 
         /**
-         * 아이폰에서는 애플페이 결제 시점 확인을 통과해 애플페이 직결 코드(E025)로 결제창을 연다 (#933).
+         * 아이폰에서는 애플페이 결제 시점 확인을 통과해 애플페이 직결 코드(E025)로 결제창을 연다.
          *
          * @scenario concern=pay_method_mapping
          * @effects apple_pay_blocked_off_ios_before_config
@@ -543,7 +543,7 @@ describe('requestPaymentHandler', () => {
 
         /**
          * 결제창 과세 필드는 나이스 사양 이름(SupplyAmt·GoodsVat·ServiceAmt·TaxFreeAmt)으로, 네 필드 합 = Amt 로 싣는다.
-         * 종전에는 사양에 없는 TaxAmt·VatAmt 에 마일리지 차감 전 주문 합계를 넣어 합이 결제액보다 컸다(#820).
+         * 종전에는 사양에 없는 TaxAmt·VatAmt 에 마일리지 차감 전 주문 합계를 넣어 합이 결제액보다 컸다.
          *
          * @scenario tax=mixed
          * @effects tax_fields_use_spec_names_and_sum_to_amt
@@ -745,7 +745,7 @@ describe('클레임 추가결제 창 닫힘 → 신청서 상세 복귀', () => 
                         useEscrow: false,
                     } })
                     : Promise.resolve({ data: {} })),
-                // SignData 는 G7Core.api 로 받는다(#639 — 원시 fetch 를 쓰지 않는다). 그 밖의 POST(닫힘 보고)는 성공만 돌려준다.
+                // SignData 는 G7Core.api 로 받는다(원시 fetch 를 쓰지 않는다). 그 밖의 POST(닫힘 보고)는 성공만 돌려준다.
                 post: vi.fn((url: string) => url.includes('sign-data')
                     ? Promise.resolve({ ediDate: '20260101000000', signData: 'sig', mid: 'nicepay00m' })
                     : Promise.resolve({ success: true })),

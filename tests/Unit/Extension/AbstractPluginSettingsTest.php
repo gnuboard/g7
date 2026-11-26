@@ -221,7 +221,7 @@ class AbstractPluginSettingsTest extends TestCase
         $result = $plugin->getSettingsLayout();
 
         $this->assertNotNull($result);
-        // 저작 원본(.g7.html)이 있으면 그것이, 없으면 산출 JSON 이 반환된다(layoutSourceCandidates — #476)
+        // 저작 원본(.g7.html)이 있으면 그것이, 없으면 산출 JSON 이 반환된다(layoutSourceCandidates)
         $this->assertMatchesRegularExpression('/plugin_settings\.(g7\.html|json)$/', $result);
         // 원본 .g7.html 이 있으면 그것을 먼저 돌려준다 — 산출물 .json 은 원본이 없을 때만
         $source = $pluginPath.'/resources/layouts/admin/plugin_settings.g7.html';

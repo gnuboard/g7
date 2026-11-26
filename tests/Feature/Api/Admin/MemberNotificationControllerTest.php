@@ -15,7 +15,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
- * 관리자 회원 알림함 API 테스트 (이슈 #524 §4.1)
+ * 관리자 회원 알림함 API 테스트
  *
  * 결함: 회원이 받은 in-app 알림(수신함)에 관리자 표면이 없었다. `admin/notifications` 는
  * **관리자 본인의 수신함**이고 `admin/notification-logs` 는 발송 이력이라, "이 회원에게 무엇이

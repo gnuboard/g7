@@ -38,7 +38,7 @@ describe('확장 업데이트 모달 — 검색 인덱스 재생성 옵트인', 
     { name: '플러그인', layout: pluginList, modal: pluginUpdateModal, selectedKey: 'selectedPlugin', rebuildKey: 'pluginRebuildSearchIndex' },
   ];
 
-  /** 업데이트 창을 여는 시드 — 업데이트 미리보기 요청(…/update/preview)을 함께 정한다(#888). */
+  /** 업데이트 창을 여는 시드 — 업데이트 미리보기 요청(…/update/preview)을 함께 정한다. */
   const isUpdateOpenerSeed = (params: Json): boolean =>
     typeof params.layoutPreviewRequest === 'string' && params.layoutPreviewRequest.includes('/update/preview');
 

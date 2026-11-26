@@ -7,7 +7,7 @@ description: |
   규칙 정본은 CreateUserRequest · UpdateUserRequest 다.
     - mobile·phone: nullable, 숫자·하이픈·플러스·괄호·공백만 (두 요청이 같은 정규식을 쓴다)
     - timezone: nullable, PHP 시간대 식별자만
-    - 역할: 생성은 생략·빈 배열이면 서비스가 기본 역할(user)을 배정한다(#703 — 역할 칸은 역할 부여
+    - 역할: 생성은 생략·빈 배열이면 서비스가 기본 역할(user)을 배정한다(역할 칸은 역할 부여
       권한이 있어야 열리므로 필수로 두면 생성 권한만 가진 운영자의 등록이 늘 422 였다).
       수정은 roles/role_ids 중 하나가 1개 이상 필수다.
     - 폼은 응답에서 읽은 roles(빈 배열)와 선택한 role_ids 를 함께 보낼 수 있다 — prepareForValidation 이

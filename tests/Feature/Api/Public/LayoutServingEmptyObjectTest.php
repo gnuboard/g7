@@ -222,7 +222,7 @@ class LayoutServingEmptyObjectTest extends TestCase
     }
 
     /**
-     * 이슈 #758 원 시나리오 — `init_actions[].params` 의 `filters: {}`·`items: []` 가 그대로 나간다.
+     * 원 시나리오 — `init_actions[].params` 의 `filters: {}`·`items: []` 가 그대로 나간다.
      *
      * @scenario position=params_fallback_value
      *

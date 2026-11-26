@@ -1,4 +1,4 @@
-feature: sirsoft-admin_basic 입력칸 접근 가능한 이름 (#757)
+feature: sirsoft-admin_basic 입력칸 접근 가능한 이름
 
 description: |
   관리자 화면 입력칸 일부가 화면 낭독기에서 이름 없이 「편집 가능 텍스트」·「체크박스」·「스위치, 켬」으로만 읽히거나,

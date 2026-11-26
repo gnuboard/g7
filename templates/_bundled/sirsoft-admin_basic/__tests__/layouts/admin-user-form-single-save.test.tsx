@@ -114,7 +114,7 @@ describe('회원 수정 폼 — 코어 회원 저장 한 번에 주입 칸까지
             name: '회원',
             ecommerce_preferred_currency: 'USD',
             ecommerce_preferred_shipping_country: 'US',
-            // 운영자가 추가한 회원 항목의 값(#490) — 공용 조각의 칸이 폼 경로 `custom_fields.{키}` 로 폼 상태에 담는다
+            // 운영자가 추가한 회원 항목의 값 — 공용 조각의 칸이 폼 경로 `custom_fields.{키}` 로 폼 상태에 담는다
             custom_fields: { job: 'worker', period: { start: '2026-01-01', end: '2026-01-31' } },
           },
         },

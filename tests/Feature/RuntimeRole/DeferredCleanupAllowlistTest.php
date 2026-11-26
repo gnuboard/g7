@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 /**
- * 미뤄 둔 선언 정리 대장 — DB 에서 읽은 대상은 정해 둔 것만 실행하고, 소유는 정해 둔 인자 자리에서 읽는다 (#888).
+ * 미뤄 둔 선언 정리 대장 — DB 에서 읽은 대상은 정해 둔 것만 실행하고, 소유는 정해 둔 인자 자리에서 읽는다.
  *
  * @scenario-manifest tests/scenarios/deferred-cleanup-allowlist.yaml
  */

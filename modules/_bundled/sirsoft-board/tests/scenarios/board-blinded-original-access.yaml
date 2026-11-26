@@ -8,7 +8,7 @@ description: |
   목록 제목·블라인드 안내·사유(trigger_type) 문구는 그대로 노출(투명성) — 차단 대상은 원문뿐.
   목록 미리보기(content_preview)도 블라인드 글은 빈 문자열로 응답해 우회 노출을 차단한다.
 
-  수정 이력 (이슈 #413 item 34):
+  수정 이력 (item 34):
     - 34-1 (목록 제목 마스킹 누락): 오류 아님 — 블라인드 제목 노출은 일반 게시판 관례.
       현 설계(아이콘+원제목) 유지, 코드 변경 없음.
     - 34-2 (원문 접근 차단 누락): 결함 수정.
@@ -34,7 +34,7 @@ effects:
   - blinded_guest_authored_content_null_for_guest
   - blinded_post_preview_empty_in_list
   - blinded_comment_content_matrix
-  # #609 docblock 정리 때 사후 등재 — 블라인드 안내 박스는 status 만 보고 content 에 기대지 않는다(레이아웃 테스트 단언)
+  # docblock 정리 때 사후 등재 — 블라인드 안내 박스는 status 만 보고 content 에 기대지 않는다(레이아웃 테스트 단언)
   - blinded_notice_shown_regardless_of_content
 
 test_files:

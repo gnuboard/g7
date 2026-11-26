@@ -1,5 +1,5 @@
 /**
- * sirsoft-admin_basic — 관리자 메뉴 구조형 아이콘(icon_spec) 브라우저 계약 (#381).
+ * sirsoft-admin_basic — 관리자 메뉴 구조형 아이콘(icon_spec) 브라우저 계약.
  *
  * 결함(수정 전): 메뉴 아이콘은 FA 클래스 문자열만 그려 이미지·SVG 는 저장돼도 사이드바·메뉴 관리 화면에 빈 칸이었고,
  *   메뉴 관리 화면의 Icon 은 `fas fa-x` 를 `fas fa-fas fa-x` 로 조합했다. 구현 중 실측에서는 직접 입력에 외부 주소를
@@ -57,7 +57,7 @@ async function api(page: Page, method: string, path: string, body?: unknown): Pr
   );
 }
 
-test.describe('관리자 메뉴 구조형 아이콘 (#381)', () => {
+test.describe('관리자 메뉴 구조형 아이콘', () => {
   test.describe.configure({ timeout: 90_000 });
 
   /**
@@ -127,7 +127,7 @@ test.describe('관리자 메뉴 구조형 아이콘 (#381)', () => {
 
   /**
    * 편집 폼 미리보기는 32px 로 그려지고, 편집하던 메뉴에서 다른 메뉴로 바꿔 편집하면 「직접 입력」 칸이 새 메뉴 값으로
-   * 다시 맞춰진다(이전 메뉴 클래스 글자 잔존 0 — #381 validate-plan O3).
+   * 다시 맞춰진다(이전 메뉴 클래스 글자 잔존 0).
    *
    * @scenario surface=form_field, icon_type=class, icon_type=svg
    * @effects form_inputs_follow_external_value

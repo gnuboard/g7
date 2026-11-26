@@ -105,7 +105,7 @@ effects:
   # 탭 전환 (환경설정 ↔ 알림 템플릿 관리) — query.tab 변경 시 if 조건부 패널 재평가 필요
   - tab_buttons_use_navigate_not_replaceurl  # replaceUrl 은 URL만 바꿔 if 재평가 없음 → 화면 미전환 회귀
   # 구 '알림톡 템플릿'(kapi 실시간 목록 조회) 탭의 오류 배너 effect 는 제거했다 — 그 화면 자체가
-  # #597 §3.5 에서 DB 기반 라이프사이클로 대체돼 사라졌고, 남겨 두면 존재하지 않는 화면을
+  # 5 에서 DB 기반 라이프사이클로 대체돼 사라졌고, 남겨 두면 존재하지 않는 화면을
   # 서술하는 계약이 된다. 현 오류 표면화 계약은 bizppurio-template-lifecycle.yaml 이 소유한다.
   # 다국어
   - all_referenced_i18n_keys_exist_in_ko_and_en
@@ -123,7 +123,7 @@ effects:
   - password_is_not_stored_as_plaintext_in_settings_file
   - report_url_requires_authentication_returns_401
   - report_url_returns_absolute_url_built_from_app_url
-  # 설치 선언, 발송 Enum, 토큰 서비스와 연결 확인 세부 (PHPUnit 이 이미 재던 것을 #609 에서 명시)
+  # 설치 선언, 발송 Enum, 토큰 서비스와 연결 확인 세부 (PHPUnit 이 이미 재던 것을 명시)
   - plugin_identifier_and_vendor_match_directory_name
   - settings_schema_marks_credentials_sensitive
   - defaults_json_frontend_schema_exposes_no_fields

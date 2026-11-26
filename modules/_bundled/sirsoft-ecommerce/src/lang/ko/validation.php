@@ -1439,7 +1439,7 @@ return [
         'apply_mileage_deduction' => '사용 마일리지 차감',
         'record_paid_amount' => '결제금액 기록',
 
-        // 관리자 회원 목록 확장 필터 (#705)
+        // 관리자 회원 목록 확장 필터
         'user_filter_mileage_min' => '마일리지 잔액 최소',
         'user_filter_mileage_max' => '마일리지 잔액 최대',
         'user_filter_shipping_country' => '배송지 국가',
@@ -1520,7 +1520,7 @@ return [
         'basic_info.privacy_officer_email' => '개인정보 책임자 이메일',
         'basic_info.mail_order_number' => '통신판매업 신고번호',
         'basic_info.telecom_number' => '부가통신 사업자번호',
-        // 내보내기(#787)
+        // 내보내기
         'basic_info.export_retention_days' => '내보내기 파일 보관 기간',
 
         // 언어/통화 설정
@@ -1733,7 +1733,7 @@ return [
                 'string' => '부가통신 사업자번호는 문자열이어야 합니다.',
                 'max' => '부가통신 사업자번호는 최대 100자까지 입력 가능합니다.',
             ],
-            // 내보내기(#787)
+            // 내보내기
             'export_retention_days' => [
                 'integer' => '내보내기 파일 보관 기간은 숫자여야 합니다.',
                 'min' => '내보내기 파일 보관 기간은 최소 :min일이어야 합니다.',
@@ -2324,14 +2324,14 @@ return [
             'item_min' => '상품 ID는 1 이상이어야 합니다.',
         ],
     ],
-    // 개인정보 보유기간 설정 필드 라벨 (이슈 #636) — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
+    // 개인정보 보유기간 설정 필드 라벨 — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
     'privacy_retention_attributes' => [
         'section' => '개인정보 보유기간 설정',
         'enabled' => '주문 개인정보 보유기간 자동 파기',
         'retention_years' => '주문 개인정보 보유기간',
         'mode' => '보유기간 경과 주문 처리 방식',
     ],
-    // 요청 필드 라벨 (이슈 #599) — 클레임·주문 목록·배송정책·주문서 FormRequest 의 attributes() 가 키별로 읽는다
+    // 요청 필드 라벨 — 클레임·주문 목록·배송정책·주문서 FormRequest 의 attributes() 가 키별로 읽는다
     'request_attributes' => [
         'claim_type' => '클레임 유형',
         'items' => '대상 상품',
@@ -2436,7 +2436,7 @@ return [
         'completion' => '완료 처리 옵션',
         'unreturned_reasons' => '미회수 사유',
     ],
-    // 클레임 정책 설정 필드 라벨 (이슈 #599) — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
+    // 클레임 정책 설정 필드 라벨 — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
     'claim_settings_attributes' => [
         'cancellable_statuses' => '취소 가능 주문 상태',
         'exchange_requestable_statuses' => '교환 신청 가능 상태',
@@ -2466,7 +2466,7 @@ return [
         'target_not_owned' => '이커머스 본인인증 정책은 이커머스 지점만 대상으로 할 수 있습니다. 훅·사용자 지정 범위는 「sirsoft-ecommerce.」, 경로 범위는 「api.modules.sirsoft-ecommerce.」로 시작해야 합니다.',
         'nothing_to_update' => '변경할 항목이 없습니다.',
     ],
-    // 내보내기(#787)
+    // 내보내기
     'export' => [
         'type_invalid' => '지원하지 않는 내보내기 유형입니다.',
         'format_invalid' => '지원하지 않는 파일 형식입니다.',

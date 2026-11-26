@@ -352,7 +352,7 @@ class StoreBoardSettingsRequest extends FormRequest
             'attachment_settings.purge_enabled' => ['nullable', 'boolean'],
             'attachment_settings.purge_retention_days' => ['nullable', 'integer', 'min:'.$limits['attachment_purge_retention_days_min'], 'max:'.$limits['attachment_purge_retention_days_max']],
 
-            // 개인정보 보유기간 (이슈 #636) — 되돌릴 수 없는 파기라 하한을 서버가 강제한다.
+            // 개인정보 보유기간 — 되돌릴 수 없는 파기라 하한을 서버가 강제한다.
             // IP 축은 게시물·댓글 전체(회원 글 포함)의 작성 IP 를, 비회원 축은 비회원 글의 작성자
             // 정보를 다룬다. 비회원 기간 0 은 「그 축을 쓰지 않음」이다.
             'privacy_retention.enabled' => ['nullable', 'boolean'],
@@ -429,12 +429,12 @@ class StoreBoardSettingsRequest extends FormRequest
         $attributes = __('sirsoft-board::validation.attributes.settings');
 
         return array_merge(is_array($attributes) ? $attributes : [], [
-            // 개인정보 보유기간 (이슈 #636) — 키별로 명시해 오류 문구에 필드 키가 노출되지 않게 한다
+            // 개인정보 보유기간 — 키별로 명시해 오류 문구에 필드 키가 노출되지 않게 한다
             'privacy_retention.enabled' => __('sirsoft-board::validation.privacy_retention_attributes.enabled'),
             'privacy_retention.ip_retention_days' => __('sirsoft-board::validation.privacy_retention_attributes.ip_retention_days'),
             'privacy_retention.guest_retention_days' => __('sirsoft-board::validation.privacy_retention_attributes.guest_retention_days'),
             'privacy_retention.guest_mode' => __('sirsoft-board::validation.privacy_retention_attributes.guest_mode'),
-            // 비회원 작성자 항목 기본값 (#490) — 게시판별 설정과 같은 라벨
+            // 비회원 작성자 항목 기본값 — 게시판별 설정과 같은 라벨
             'basic_defaults.guest_author_fields' => __('sirsoft-board::validation.attributes.board.guest_author_fields'),
             'basic_defaults.guest_author_fields.*' => __('sirsoft-board::validation.attributes.board.guest_author_fields'),
             'basic_defaults.guest_author_fields.*.post' => __('sirsoft-board::validation.attributes.board.guest_author_fields'),

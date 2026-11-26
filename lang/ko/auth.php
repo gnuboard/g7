@@ -14,7 +14,7 @@ return [
     'two_factor_resend_cooldown' => '방금 인증번호를 보냈습니다. :seconds초 후 다시 요청할 수 있습니다.',
     'password_reconfirm_throttled' => '비밀번호 확인을 너무 여러 번 실패했습니다. :seconds초 후 다시 시도해 주세요.',
     'two_factor_delivery_failed' => '인증번호를 보내지 못했습니다. 관리자에게 문의해주세요.',
-    // 비밀번호 변경 단계 (#736) — 비밀번호·2단계 인증을 통과했지만 비밀번호를 바꿔야 로그인이 끝난다
+    // 비밀번호 변경 단계 — 비밀번호·2단계 인증을 통과했지만 비밀번호를 바꿔야 로그인이 끝난다
     'password_change_required' => '비밀번호 사용 기간이 지났습니다. 새 비밀번호를 설정해 주세요.',
     'password_change_required_admin_assigned' => '관리자가 정해 준 비밀번호입니다. 새 비밀번호를 설정해 주세요.',
     'password_change_success' => '비밀번호를 바꾸고 로그인했습니다.',

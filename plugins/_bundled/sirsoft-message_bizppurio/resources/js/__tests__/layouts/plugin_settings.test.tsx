@@ -69,7 +69,7 @@ describe('plugin_settings.json — 레이아웃 메타/권한', () => {
     });
 
     /** @effects layout_meta_extends_admin_base_with_plugins_update_permission */
-    it('진입은 보기 권한(core.plugins.read) — 수정 권한이 없으면 읽기 전용으로 연다(#434 W18, 저장은 서버가 막는다)', () => {
+    it('진입은 보기 권한(core.plugins.read) — 수정 권한이 없으면 읽기 전용으로 연다(저장은 서버가 막는다)', () => {
         expect((root as { permissions?: string[] }).permissions).toEqual(['core.plugins.read']);
     });
 
@@ -483,8 +483,8 @@ describe('plugin_settings.json — 탭 전환', () => {
     });
 });
 
-describe('plugin_settings.json — templates 탭 readiness 게이트 (#597 재편)', () => {
-    // 구 조회 전용 목록(alimtalk_templates + templateListError 배너)은 #597 에서
+describe('plugin_settings.json — templates 탭 readiness 게이트 (재편)', () => {
+    // 구 조회 전용 목록(alimtalk_templates + templateListError 배너)은 알림톡 템플릿 개편에서
     // DB 목록 관리 화면(bizppurio_templates_list)으로 교체됐다. 관리 화면 상세 배선은
     // plugin_settings_manage.test.tsx 가 담당하고, 여기서는 탭 골격만 잠근다.
     /** @effects templates_tab_readiness_gate_mutually_exclusive */

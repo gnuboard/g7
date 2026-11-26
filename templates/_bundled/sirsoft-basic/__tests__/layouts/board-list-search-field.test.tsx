@@ -1,6 +1,6 @@
 /**
  * @file board-list-search-field.test.tsx
- * @description 게시판 목록 검색 구분 (#524 WP-B) — 세 가지 형(기본·카드·갤러리)이 같은 계약을 쓴다.
+ * @description 게시판 목록 검색 구분 — 세 가지 형(기본·카드·갤러리)이 같은 계약을 쓴다.
  *
  * 고치기 전에는 검색이 언제나 제목과 내용을 함께 훑었다. 「제목에 그 말이 든 글만」을 고를 수
  * 없어, 본문에 흔한 낱말이 들어간 글까지 걸려 나왔다. 그래서 `title_content` · `title` ·
@@ -51,7 +51,7 @@ function searchNavigate(layout: any): any {
     return out[0] ?? null;
 }
 
-describe('게시판 목록 검색 구분 (#524 WP-B)', () => {
+describe('게시판 목록 검색 구분', () => {
     // @scenario surface=board_list, search_field=title_content
     // @effects board_list_datasource_passes_search_field
     it('목록 데이터소스가 search_field 를 주소에서 읽어 서버로 보낸다', () => {
@@ -98,7 +98,7 @@ describe('게시판 목록 검색 구분 (#524 WP-B)', () => {
      * 이 그렇게 적어 두었고, 그래서 레이아웃이 쓰는 클래스는 `safelist.txt` 에 있어야만 CSS 가
      * 만들어진다. 빠지면 **오류 없이 조용히** 스타일만 사라진다.
      *
-     * 실측(#524 4차 검증): 검색 줄을 오른쪽으로 미는 `sm:ml-auto` 가 목록에 없어 PC·태블릿에서
+     * 실측(4차 검증): 검색 줄을 오른쪽으로 미는 `sm:ml-auto` 가 목록에 없어 PC·태블릿에서
      * 줄이 왼쪽에 붙었다. 레이아웃 검사도 vitest 도 전부 초록이었다 — 아무도 이 축을 재지 않았다.
      *
      * 모집단은 세 조각 파일에서 **직접 뽑는다**(손으로 적지 않는다). 조각이 늘거나 새 반응형
@@ -110,7 +110,7 @@ describe('게시판 목록 검색 구분 (#524 WP-B)', () => {
     const TAILWIND_BREAKPOINT_PREFIX = /^(sm|md|lg|xl|2xl|max-[a-z0-9]+|min-\[[^\]]+\]|max-\[[^\]]+\]):/;
 
     /**
-     * 이 검사가 만들어지기 전부터 빠져 있던 것들. #524 가 들인 것이 아니라(diff 에 없다) 고치면
+     * 이 검사가 만들어지기 전부터 빠져 있던 것들. 이번 변경이 들인 것이 아니라(diff 에 없다) 고치면
      * 이 계획이 건드리지 않은 자리의 모양이 바뀌므로, 사유를 적어 두고 별건으로 남긴다.
      * 여기에 새 이름을 더하는 것은 «검사를 통과시키려는 것» 이므로 하지 않는다.
      * (`min-w-48` 은 반응형 접두를 걷기 전 `sm:min-w-48` 로 적혀 있던 그 자리다.)
@@ -176,7 +176,7 @@ describe('게시판 목록 검색 구분 (#524 WP-B)', () => {
         // 모집단이 비면 이 검사는 아무것도 재지 않는다 — 그 상태를 통과로 읽지 않는다.
         expect(tokens.length).toBeGreaterThan(0);
 
-        // 검색 줄을 오른쪽으로 미는 자리(#524 브라우저 실측)가 모집단에 들어 있다.
+        // 검색 줄을 오른쪽으로 미는 자리가 모집단에 들어 있다.
         expect(tokens).toContain('ml-auto');
 
         const missing = tokens.filter((t) => !safelist.has(t) && !PRE_EXISTING_GAPS.has(t));

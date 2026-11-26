@@ -12,7 +12,7 @@ use Tests\Support\Docs\HeaderAuthExample;
 use Tests\TestCase;
 
 /**
- * 공개 문서의 헤더 인증 예제가 실제로 동작하는지 돌린다 (docs/backend/authentication.md 「예제: 헤더 인증 확장」, #798 D24)
+ * 공개 문서의 헤더 인증 예제가 실제로 동작하는지 돌린다 (docs/backend/authentication.md 「예제: 헤더 인증 확장」)
  *
  * 예제 확장(`Tests\Support\Docs\HeaderAuthExample`)을 등록하고 프록시 헤더 → 회원 생성 → 인계 코드 302 → 로그인 화면의 교환 →
  * 토큰까지 한 바퀴 돈다. 회사 도메인의 비밀번호 로그인이 막히는지도 본다.

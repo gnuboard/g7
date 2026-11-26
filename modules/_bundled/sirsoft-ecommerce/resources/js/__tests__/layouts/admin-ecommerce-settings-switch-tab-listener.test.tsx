@@ -1,6 +1,6 @@
 // e2e:allow 이커머스 환경설정 탭 전환 이벤트 받기 — 실제 렌더 실행 흐름(탭 클릭·창 [이동] → emit → 이벤트 받기). 브라우저 흐름은 이력의 Chrome MCP 매트릭스 R1 행으로 확인한다.
 /**
- * 이커머스 환경설정 — 탭 전환을 탭 본문 틀의 이벤트 받기 한 곳이 맡는다 (#753 X1)
+ * 이커머스 환경설정 — 탭 전환을 탭 본문 틀의 이벤트 받기 한 곳이 맡는다
  *
  * 종전에는 `<on listen>` 안의 연속 실행이 엔진에서 버려져(키 4개만 옮겨 담음) 탭 줄(변경 없음 갈래)과 확인 창
  * [이동] 두 곳에 정리 목록을 복제했고, 확인 창은 `$parent._local`·전역 `_local` 두 자리에 같은 값을 썼다.
@@ -100,7 +100,7 @@ async function flush() {
 
 const DIRTY_LOCAL = { hasChanges: false, isAddingExchangeReason: true, exchangeReasonForm: { name: 'x' }, errors: { name: ['err'] }, claimReasonTab: 'refund' };
 
-describe('이커머스 환경설정 — 탭 전환 이벤트 받기 실행 흐름 (#753)', () => {
+describe('이커머스 환경설정 — 탭 전환 이벤트 받기 실행 흐름', () => {
   /**
    * @scenario case=clean_other_tab_switches
    * @effects tab_switch_without_confirm

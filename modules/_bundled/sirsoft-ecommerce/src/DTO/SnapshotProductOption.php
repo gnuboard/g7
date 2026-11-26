@@ -30,7 +30,7 @@ class SnapshotProductOption
 
     public string|array|null $option_name;
 
-    /** @var ProductTaxStatus|null 옵션에 지정한 과세 종류 (null = 상품 따름, 해석 불가도 null) — #612 */
+    /** @var ProductTaxStatus|null 옵션에 지정한 과세 종류 (null = 상품 따름, 해석 불가도 null)*/
     public ?ProductTaxStatus $tax_status;
 
     /** @var float 상품 판매가 (ProductOption::getFinalPrice() = product.selling_price + price_adjustment) */

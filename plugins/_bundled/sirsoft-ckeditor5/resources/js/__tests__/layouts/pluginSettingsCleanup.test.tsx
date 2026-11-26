@@ -200,7 +200,7 @@ describe('미사용 이미지 정리 섹션 — 계약', () => {
     it('업로드 관리 화면으로 가는 링크가 있다', () => {
         const button = findNode(cleanupCard, (n) => n.id === 'open_uploads_button');
 
-        // 링크(#757) — 목적지는 href 한 곳, path 없는 navigate 가 클릭한 링크의 href 로 간다
+        // 링크 — 목적지는 href 한 곳, path 없는 navigate 가 클릭한 링크의 href 로 간다
         expect(button.name).toBe('A');
         expect(actionsOf(button)[0].params?.path ?? button.props.href).toBe('/admin/plugins/sirsoft-ckeditor5/uploads');
     });

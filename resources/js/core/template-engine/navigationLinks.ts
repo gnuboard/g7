@@ -141,7 +141,7 @@ export function resolveInternalHref(href: unknown): string | null {
 /**
  * 새 창 링크의 rel 을 정합니다 — `target="_blank"` 면 `noopener`·`noreferrer` 중 빠진 것만 덧붙이고 넘겨받은 토큰은 남깁니다.
  *
- * 새 창이 `window.opener` 로 이 화면을 바꾸거나 주소를 넘겨받지 못하게 하는 보호다(#757). 새 창이 아니면 받은 값을 그대로
+ * 새 창이 `window.opener` 로 이 화면을 바꾸거나 주소를 넘겨받지 못하게 하는 보호다. 새 창이 아니면 받은 값을 그대로
  * 돌려준다(없으면 undefined — rel 속성을 달지 않는다). 대소문자는 가리지 않고 판정한다. 템플릿 링크 컴포넌트의 rel 규칙이
  * 세 갈래(빠진 토큰마다 추가·`noopener` 가 있으면 그대로·늘 둘 다 추가)였던 것을 하나로 둔다(sirsoft-basic 규칙이 정본).
  *

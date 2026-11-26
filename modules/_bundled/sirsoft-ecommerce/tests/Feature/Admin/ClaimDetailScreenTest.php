@@ -1024,7 +1024,7 @@ class ClaimDetailScreenTest extends ModuleTestCase
     public function test_detail_refund_methods_are_present_only_for_a_refund_request(): void
     {
         // PG 환불에 응답할 리스너를 둔다 — 없으면 이 카드 주문은 실행이 계좌 환불로 떨어져(P14)
-        // 선택지에서 PG 가 빠진다(저장·실행 게이트와 같은 판정 — #599 validate P2-A 후속).
+        // 선택지에서 PG 가 빠진다(저장·실행 게이트와 같은 판정).
         HookManager::addFilter('sirsoft-ecommerce.payment.refund', fn (array $default) => $default);
         // 「마일리지로 환불」은 회원 주문이고 마일리지 기능이 켜진 상점에서만 선택지에 선다(Q21 — 저장·실행
         // 게이트와 같은 술어 pointsRefundAllowed). 세 수단이 모두 서는 조건을 명시한다.

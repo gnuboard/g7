@@ -1,5 +1,5 @@
 /**
- * E2E: 환경설정 > 드라이버 — S3 리전 자유입력·엔드포인트·path-style (#99/#563)
+ * E2E: 환경설정 > 드라이버 — S3 리전 자유입력·엔드포인트·path-style (#99)
  *
  * 시나리오 매니페스트: tests/scenarios/s3-storage-driver.yaml — 마킹은 각 테스트의
  * scenario(k=v 조합)·effects 주석이 담당하며, 헤더 요약 마킹은 파서 형식이 아니다

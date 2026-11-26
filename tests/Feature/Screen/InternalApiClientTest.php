@@ -15,7 +15,7 @@ use Tests\Concerns\LoadsCustomRoutes;
 use Tests\TestCase;
 
 /**
- * 내부 API 도구(InternalApiClient) 테스트 (#792 WP-A1 §5-3)
+ * 내부 API 도구(InternalApiClient) 테스트
  *
  * 개발자 화면이 같은 프로세스에서 API 를 비회원·로그인 회원 자격으로 부르고, 상태 코드를 그대로 돌려받으며,
  * 세션을 여는 인증 API·재호출·비 API 경로는 거부하고, 끝나면 가드·로케일·`request()` 가 원래대로인지 잠근다.

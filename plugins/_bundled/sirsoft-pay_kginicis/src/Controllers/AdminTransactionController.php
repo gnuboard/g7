@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
-// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 결제 행 직접 조회를 이커머스 공개 결제 계약으로 바꾼 내부 전환 (#916)
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 결제 행 직접 조회를 이커머스 공개 결제 계약으로 바꾼 내부 전환 
 
 use App\Helpers\ResponseHelper;
 use App\Helpers\TimezoneHelper;
@@ -39,7 +39,7 @@ class AdminTransactionController extends AdminBaseController
      * 거래번호의 이 결제사 결제 기록을 화면 보강용 행으로 읽습니다.
      *
      * 아래 보강 코드는 DB 행 모양(snake_case, 금액은 소수 2자리 문자열, 시각은 `Y-m-d H:i:s` 문자열)을 읽으므로
-     * 계약 DTO 를 같은 모양으로 옮긴다. 이 결제사 결제 행만 본다(#916 — 다른 결제사의 같은 거래번호는 보강에 쓰지 않는다).
+     * 계약 DTO 를 같은 모양으로 옮긴다. 이 결제사 결제 행만 본다.
      *
      * @param  string  $tid  거래번호
      * @return object|null 로컬 결제 행 (없으면 null)

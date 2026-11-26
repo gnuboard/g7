@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentLookup;
  * 실행되어 중복 처리될 위험이 있다 (예: 결제완료 알림 중복, 마일리지 중복 적립).
  *
  * 본 트레이트는 콜백 진입 시점에 이 결제사의 결제 행이 이미 `paid` 상태인지 이커머스 공개 계약
- * {@see PaymentLookup::isTransactionPaid()} 로 확인해 멱등 분기로 조기 리턴하도록 한다(#916).
+ * {@see PaymentLookup::isTransactionPaid()} 로 확인해 멱등 분기로 조기 리턴하도록 한다.
  * 호스트 요건: 생성자에서 `PaymentGatewayBridge`(또는 `PaymentLookup`)를 `$bridge` 로 주입받는다.
  */
 trait PreventsReplayCallback

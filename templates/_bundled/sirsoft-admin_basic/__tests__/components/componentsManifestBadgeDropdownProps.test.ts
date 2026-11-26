@@ -1,5 +1,5 @@
 /**
- * components.json — Badge·SearchableDropdown 이 실제로 받는 props 를 매니페스트에 싣는다 (#599 validate P7)
+ * components.json — Badge·SearchableDropdown 이 실제로 받는 props 를 매니페스트에 싣는다
  *
  * 레이아웃 작성자·레이아웃 편집기는 매니페스트만 읽는다. 소스 인터페이스에 prop 을 더하고
  * 매니페스트를 두면 작성자는 그 prop 이 없는 줄 알고(예: Badge `icon`), 편집기는 그 prop 을

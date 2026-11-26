@@ -1,5 +1,5 @@
 /*
- * sirsoft-admin_basic 의미 클래스·테마·Tailwind 스캔 앵커 — main.css(템플릿 전체)와 settings.css(설정 화면 묶음, #434)가 함께 쓴다.
+ * sirsoft-admin_basic 의미 클래스·테마·Tailwind 스캔 앵커 — main.css(템플릿 전체)와 settings.css(설정 화면 묶음)가 함께 쓴다.
  * 화면 초기화(preflight)와 `@layer base` 는 main.css 에만 둔다.
  */
 /* Pretendard 폰트를 기본 sans-serif 폰트로 설정 */
@@ -489,14 +489,14 @@
   .button {
     @apply inline-flex items-center justify-center cursor-pointer;
     @apply disabled:cursor-not-allowed;
-    /* 링크(<a>)로 그린 단추의 비활성 — <a> 에는 :disabled 가 없어 aria-disabled 로 같은 꾸밈 (#757) */
+    /* 링크(<a>)로 그린 단추의 비활성 — <a> 에는 :disabled 가 없어 aria-disabled 로 같은 꾸밈 */
     @apply aria-disabled:cursor-not-allowed;
   }
 
   /* Base Button */
   .btn {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
-    /* 링크(<a>)로 그린 단추의 비활성 — <a> 에는 :disabled 가 없어 aria-disabled 로 같은 꾸밈 (#757) */
+    /* 링크(<a>)로 그린 단추의 비활성 — <a> 에는 :disabled 가 없어 aria-disabled 로 같은 꾸밈 */
     @apply aria-disabled:opacity-50 aria-disabled:cursor-not-allowed;
   }
 
@@ -510,7 +510,7 @@
     @apply px-3 py-1.5;
   }
 
-  /* 큰 버튼 — Button size="lg" 가 붙인다 (#399, 7.2.1) */
+  /* 큰 버튼 — Button size="lg" 가 붙인다 (7.2.1) */
   .btn-lg {
     @apply px-6 py-3 text-base;
   }
@@ -1109,7 +1109,7 @@
     @apply border-gray-300 bg-white text-gray-700;
     @apply hover:bg-gray-100;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
-    /* 링크로 그린 페이지 번호(pageHref)의 비활성 — <a> 에는 :disabled 가 없어 aria-disabled 로 같은 꾸밈 (#757) */
+    /* 링크로 그린 페이지 번호(pageHref)의 비활성 — <a> 에는 :disabled 가 없어 aria-disabled 로 같은 꾸밈 */
     @apply aria-disabled:opacity-50 aria-disabled:cursor-not-allowed;
     @apply dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300;
     @apply dark:hover:bg-gray-700;
@@ -1476,7 +1476,7 @@
   }
 
   .card-clickable {
-    /* 눌러 쓰는 카드라 손 모양 커서를 준다(#869 κ) */
+    /* 눌러 쓰는 카드라 손 모양 커서를 준다 */
     @apply rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden cursor-pointer;
     @apply dark:bg-gray-800 dark:border-gray-700;
   }
@@ -2170,7 +2170,7 @@
   /* Icon Sizes
      상자 크기(w/h)와 글리프 크기(font-size)를 함께 정한다. 아이콘은 FontAwesome `<i>` 웹폰트로
      그려지므로 w-* 와 h-* 만 주면 상자만 커지고 글리프는 본문에서 물려받은 14px 에 머문다 — KPI 카드의
-     48px 상자 안에서 아이콘이 14px 로 그려지던 원인이다(#682 라운드 4, 검수 지적 ②). `leading-none` 은
+     48px 상자 안에서 아이콘이 14px 로 그려지던 원인이다. `leading-none` 은
      h- 와 줄 높이를 맞춰 상자가 세로로 3px 늘어나지 않게 하고, `text-center` 는 글리프가 상자보다
      좁을 때 가운데 두기 위함이다. `<svg>` 로 쓰는 자리에서는 이 세 값이 무해하다. */
   /* deprecated(7.3.0 제거 예정): 레이아웃/컴포넌트 미사용 */
@@ -2553,7 +2553,7 @@
 
   /*
    * Key-Value List — 「라벨 값」 짝을 세로로 나열하는 목록 자산.
-   * 라벨마다 폭이 달라 값이 들쭉날쭉 시작하던 것을(#682 S4 라운드 8) 라벨 칸을 가장 긴 라벨
+   * 라벨마다 폭이 달라 값이 들쭉날쭉 시작하던 것을 라벨 칸을 가장 긴 라벨
    * 폭(max-content)으로 맞춘 격자로 바로잡는다. `items-baseline` 은 라벨(xs)과 값(sm)의 글자 크기가
    * 달라도 첫 줄 기준선을 맞춘다. 행은 `.kv-row`(display: contents)로 감싸 라벨·값이 격자 칸에 바로
    * 앉게 한다. `.kv-list-2` 는 sm 이상에서 짝 두 개를 한 줄에 둔다(열마다 라벨 칸을 따로 맞춤).
@@ -2832,7 +2832,7 @@
     @apply aria-disabled:opacity-50 aria-disabled:cursor-not-allowed;
   }
 
-  /* 덮는 링크 카드 (CardGrid cardHref, #757) — 링크 안에 단추를 넣지 않으려고 카드 내용은 그대로 두고 카드 전체를
+  /* 덮는 링크 카드 (CardGrid cardHref) — 링크 안에 단추를 넣지 않으려고 카드 내용은 그대로 두고 카드 전체를
      덮는 링크(`data-ref="card_link"`, 마지막 자식)를 내용 아래층(-z, isolate 로 카드 배경 위)에 깐다. 글자 칸은 클릭을 받지 않아
      아래 링크로 흘려 보내고, 안쪽 상호작용 요소(단추·스위치·메뉴·입력칸)만 클릭을 받는다. 내용을 감싸지 않으므로 카드
      클래스의 flex·space-y 배치와 hover 꾸밈이 그대로다. */
@@ -3237,7 +3237,7 @@
   }
 
   /*
-   * 메뉴 아이콘 이미지·인라인 SVG (#381, MenuIcon) — 글리프처럼 1em 정사각.
+   * 메뉴 아이콘 이미지·인라인 SVG (MenuIcon) — 글리프처럼 1em 정사각.
    * 호출부 크기 클래스(w-5 h-5 등)가 이긴다. SVG fill 은 강제하지 않는다(stroke 아이콘의 fill="none" 보존).
    */
   .menu-icon-media {
@@ -3294,7 +3294,7 @@
     @apply dark:hover:bg-slate-700;
   }
 
-  /* 탭이 넘치면 단추째 다음 줄로 감긴다 — 단추를 찌그러뜨려 글자를 꺾지 않는다(#869, 설계 확정 2026-11-08) */
+  /* 탭이 넘치면 단추째 다음 줄로 감긴다 — 단추를 찌그러뜨려 글자를 꺾지 않는다(설계 확정 2026-11-08) */
   .tab-nav-default {
     @apply flex flex-wrap gap-2;
   }
@@ -3738,7 +3738,7 @@
   }
 }
 
-/* 포인트 색 (#434) — 템플릿 설정 표준 키 `branding.accent` 를 코어가 `<html data-g7-accent>` 로 싣는다.
+/* 포인트 색 — 템플릿 설정 표준 키 `branding.accent` 를 코어가 `<html data-g7-accent>` 로 싣는다.
  * 이 템플릿은 강조색으로 파랑(blue) 한 벌을 쓰므로(버튼·링크·안내 상자) 파랑 변수 묶음만 고른 색으로 바꾼다 —
  * 레이아웃·컴포넌트의 `*-blue-*` 클래스는 그대로다(Tailwind v4 는 `bg-blue-600` 을 `var(--color-blue-600)` 로 굽는다).
  * 층 없는 규칙이라 테마 층(`@layer theme`)의 기본값보다 우선한다. 파랑(기본)은 덮지 않는다. */

@@ -659,7 +659,7 @@ class LanguagePackSeedInjector
      * 필드를 포함한 리스트를 넘긴다. 양쪽 형태를 모두 수용한다 —
      * 문자열 키가 있으면 그것이 type 이고, 아니면 항목의 type 필드를 본다.
      * (형태 불일치 시 예외 없이 전 항목이 스킵되어 ja 가 조용히 주입되지 않는
-     * 회귀가 있었다 — 2026-08-24 #597 보완 실측. NotificationSeedInjectionTest 가 고정.)
+     * 회귀가 있었다 — NotificationSeedInjectionTest 가 고정.)
      *
      * @param  int|string  $defIdx  정의 배열의 키
      * @param  mixed  $def  정의 항목

@@ -1,4 +1,4 @@
-feature: 선택 연동(integrations) 버전 제약·생명주기 안내·설치 창 연동 목록 (#822, 코어 7.1.4)
+feature: 선택 연동(integrations) 버전 제약·생명주기 안내·설치 창 연동 목록 (코어 7.1.4)
 
 description: |
   7.1.4 부터 `integrations` 는 모듈·플러그인·템플릿 공통 스펙으로 `dependencies` 와 같은 수준이다. 객체형

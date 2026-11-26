@@ -136,7 +136,7 @@ class ClaimActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.claim.cancel.option_status_changed' => ['method' => 'handleOptionStatusChanged', 'priority' => 20, 'sync' => true],
 
             // ─── 금액 수정 (AdminClaimService — D18) ───
-            // ─── 상품 행 송장 · 운송장 단위 도착 · 진행 방식 (#599 후속 — 상품별 송장·선교환) ───
+            // ─── 상품 행 송장 · 운송장 단위 도착 · 진행 방식 (상품별 송장·선교환) ───
             'sirsoft-ecommerce.claim.exchange.after_tracking_update' => ['method' => 'handleTrackingUpdated', 'priority' => 20],
             'sirsoft-ecommerce.claim.return.after_tracking_update' => ['method' => 'handleTrackingUpdated', 'priority' => 20],
             'sirsoft-ecommerce.claim.exchange.after_tracking_deliver' => ['method' => 'handleTrackingDelivered', 'priority' => 20],
@@ -214,7 +214,7 @@ class ClaimActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 취소신청서 생성을 기록합니다. (#599 후속 §7-1 해결책 2 — B3)
+     * 취소신청서 생성을 기록합니다. (1 해결책 2 — B3)
      *
      * 취소신청서는 환불이 완료되는 순간에 생긴다(D3). 그래서 접수와 완료 사이에 사람이
      * 개입할 틈은 없지만, **두 줄을 모두 남긴다** — 한 줄만 남기면 운영자는 이 취소가

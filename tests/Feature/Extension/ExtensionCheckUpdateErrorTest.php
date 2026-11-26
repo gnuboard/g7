@@ -18,7 +18,7 @@ use Tests\Support\Concerns\BuildsLayoutMergeFixtures;
 use Tests\TestCase;
 
 /**
- * GitHub 최신 판 조회 실패가 「업데이트 없음」으로 숨지 않는다 (#888).
+ * GitHub 최신 판 조회 실패가 「업데이트 없음」으로 숨지 않는다.
  *
  * 업데이트 확인(check*Update)은 조회에 실패하면 응답에 `check_error` 를 싣는다. `{type}:update --source=github` 는 종료 코드 1,
  * 소스 자동은 번들 판정 + 경고 한 줄, `{type}:check-updates` 는 실패 표 + 종료 코드 1 이고 DB 의 업데이트 정보를 덮지 않는다.

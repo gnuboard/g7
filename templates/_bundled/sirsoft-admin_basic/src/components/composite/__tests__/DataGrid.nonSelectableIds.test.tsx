@@ -1,6 +1,6 @@
 /**
  * @file DataGrid.nonSelectableIds.test.tsx
- * @description 선택할 수 없는 행(nonSelectableIds) — 회원 목록의 본인 행 (#703)
+ * @description 선택할 수 없는 행(nonSelectableIds) — 회원 목록의 본인 행
  *
  * 회원 일괄 상태 변경은 로그인한 본인이 대상에 섞이면 서버가 요청 전체를 422 로 거절한다
  * (ExcludeCurrentUser). 화면이 본인 행을 고를 수 있게 두면 운영자는 누를 수 있는 버튼으로

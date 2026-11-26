@@ -209,7 +209,7 @@ class SeedChannelTemplatesListenerTest extends PureTestCase
 
     /**
      * 코어 [기본값 복원] 경로(getDefaultTemplateData)가 통과하는 필터에도 같은 증강을 건다
-     * (#597 §18.7 C2 — 시드만 하고 복원 출처에 빠져 있어 "기본 템플릿 데이터를 찾을 수 없습니다" 로 실패했다).
+     * (시드만 하고 복원 출처에 빠져 있어 "기본 템플릿 데이터를 찾을 수 없습니다" 로 실패했다).
      *
      * @effects core_reset_restores_seeded_channel_template_defaults
      *

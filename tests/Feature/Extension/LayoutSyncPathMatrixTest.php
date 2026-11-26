@@ -29,7 +29,7 @@ use Tests\Support\Concerns\BuildsLayoutMergeFixtures;
 use Tests\TestCase;
 
 /**
- * 레이아웃 동기화 경로 × 출처(템플릿·모듈·플러그인) × 병합 단위 매트릭스 (#727 계획 §6.3·§6.4).
+ * 레이아웃 동기화 경로 × 출처(템플릿·모듈·플러그인) × 병합 단위 매트릭스.
  *
  * 업데이트 keep·백업 기준·기준 없음·overwrite·수동 갱신·활성화·템플릿 활성화·다른 확장 활성화·새 버전에서 빠짐·
  * 꺼 둔 채 업데이트 후 켜기 경로를 가짜 템플릿·모듈·플러그인 파일로 실제 실행한다. 경로 코드가 출처마다 대칭이라
@@ -413,7 +413,7 @@ class LayoutSyncPathMatrixTest extends TestCase
 
     /**
      * 덮어쓰기 전략을 명시한 「레이아웃 갱신」(`--layout-strategy=overwrite`·모달 「모두 교체」)은 파일이 그대로여도 운영자
-     * 수정을 파일 판으로 되돌린다 (L12). 전략을 생략한 갱신은 keep 이 기본이다(#888 — RefreshLayoutStrategyTest).
+     * 수정을 파일 판으로 되돌린다 (L12). 전략을 생략한 갱신은 keep 이 기본이다(RefreshLayoutStrategyTest).
      *
      * @scenario source=template, path=manual_refresh, unit=partial
      *
@@ -673,7 +673,7 @@ class LayoutSyncPathMatrixTest extends TestCase
         $this->assertTrue(LayoutContentComparator::sameDocument($fresh->getRawOriginal('content'), $edited), '충돌이면 운영자 판을 남긴다');
         $this->assertSame($this->computeContentHash($theirs), $fresh->original_content_hash, '충돌 뒤 원본 해시는 새 판');
         $this->assertStringContainsString('A-new', (string) $fresh->getRawOriginal('original_content'), '충돌 뒤 원본 본문은 새 판');
-        // 본문이 그대로인 충돌은 되돌릴 판이 없어 버전을 남기지 않는다 — 충돌은 위 결과(업데이트 보고·활동 로그)로 알린다 (#888)
+        // 본문이 그대로인 충돌은 되돌릴 판이 없어 버전을 남기지 않는다 — 충돌은 위 결과(업데이트 보고·활동 로그)로 알린다
         $this->assertFalse(
             TemplateLayoutVersion::where('layout_id', $row->id)->get()->contains(fn ($v) => ($v->changes_summary['source'] ?? null) === 'extension_update'),
             '본문이 그대로인 충돌은 같은 내용 버전을 남기지 않는다'

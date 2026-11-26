@@ -81,7 +81,7 @@ class OrderOption extends Model
         'subtotal_cash_equivalent_amount',
         'subtotal_tax_amount',
         'subtotal_tax_free_amount',
-        // 주문 시점 확정 과세 종류 (#612)
+        // 주문 시점 확정 과세 종류
         'tax_status',
         'subtotal_earned_points_amount',
         'product_snapshot',
@@ -280,7 +280,7 @@ class OrderOption extends Model
     /**
      * 이 주문상품에 확정된 과세 종류를 반환합니다.
      *
-     * 주문 시점에 기록한 값(`tax_status` 컬럼, #612)을 쓰고, 그 컬럼이 없던 시절의 행은 상품 스냅샷의
+     * 주문 시점에 기록한 값(`tax_status` 컬럼)을 쓰고, 그 컬럼이 없던 시절의 행은 상품 스냅샷의
      * 과세 종류로 떨어진다. 둘 다 읽을 수 없으면 과세로 본다(「없으면 과세」 규약).
      *
      * @return ProductTaxStatus 확정 과세 종류

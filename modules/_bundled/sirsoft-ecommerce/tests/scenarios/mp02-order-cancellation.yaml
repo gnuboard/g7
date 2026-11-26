@@ -43,12 +43,12 @@ axes:
     - vbank_paid          # 가상계좌 결제완료 (PAID)
     - points_used         # 포인트 일부 사용
   refund_branch:
-    # #599 후속 D2 — 두 값 모두 환불신청서를 만든다. 다른 것은 전이 방식뿐이다.
+    # 두 값 모두 환불신청서를 만든다. 다른 것은 전이 방식뿐이다.
     - auto                # 접수 후 승인·완료까지 자동 전이 (구 cancel)
     - request             # 접수 후 정지, 운영자 승인 대기 (구 refund)
     - none                # 취소·환불 신청 축이 아닌 경로 (관리자 취소·만료 자동취소)
   payment_method:
-    # #599 후속 §7-2 — 수단마다 취소·환불이 다른 경로를 타고 다른 기록을 남긴다.
+    # 수단마다 취소·환불이 다른 경로를 타고 다른 기록을 남긴다.
     - card                # PG (리스너 있음 / 없음 두 상태)
     - vbank_settled       # PG · 입금완료 (환불받을 계좌 필수)
     - vbank_awaiting      # PG · 미입금 (계좌 불필요)
@@ -78,7 +78,7 @@ effects:
   - refund_branch_matrix_covers_every_refund_method      # 수단 모집단을 enum 에서 파생해 전수 검산
   - refund_branch_matrix_covers_every_configured_status  # 상태 모집단을 설정에서 파생해 전수 검산
   - refund_branch_terminus_is_decided_by_the_refund_method  # PG·POINTS 완료 / BANK 승인
-  # (#599 실측) — 돈이 계좌로 돌아가는데 받을 계좌가 없으면 접수 자체를 막는다
+  # — 돈이 계좌로 돌아가는데 받을 계좌가 없으면 접수 자체를 막는다
   - refund_request_requires_a_bank_account_when_money_returns_by_transfer
   - refund_branch_is_decided_by_the_item_status          # 상품 상태가 auto/request 를 정한다
   # U2/U20② — 0원·미입금 부분취소 허용 (PHPUnit Unit + DTO)
@@ -120,10 +120,10 @@ effects:
   - partial_cancel_after_a_prior_refund_compares_against_the_amount_still_paid # 일부 환불 뒤 「취소 전 실결제」·보조 통화는 남은 결제액(S3-D14)
   - zero_refund_closed_row_is_not_refunded_again # 0원으로 닫힌 행은 마지막 상품 취소에서 다시 환불되지 않는다(S3-D18)
 
-  # 치환 입력이 없는 취소·반품·교환 미리보기는 변경 전과 바이트 단위로 같다 (#599 후속 등가성 픽스처)
+  # 치환 입력이 없는 취소·반품·교환 미리보기는 변경 전과 바이트 단위로 같다 (후속 등가성 픽스처)
   - cancel_preview_output_unchanged_with_empty_substitutions
 
-  # ── #599 후속 — 취소·환불 프로세스 재설계 ──────────────────────────────
+  # ── 취소·환불 프로세스 재설계 ──────────────────────────────
   # 취소신청서 생성 지점 이동 (D3) + 자동 전이 엔진 (§4-2)
   - cancellation_record_is_created_only_on_refund_completion     # 환불완료 순간에만 취소신청서 생성
   - bank_refund_stops_at_requested_without_cancellation_record   # 계좌 환불은 접수에서 멈추고 취소신청서도 없다 (P16)
@@ -169,7 +169,7 @@ effects:
   - frontend_auto_advance_defaults_to_off                        # D7 — 기본 꺼짐
   - order_item_checkbox_follows_claimable_types_only             # U-3 — 미결제 주문의 헛 체크박스 제거
 
-  # ── #599 후속 2회차 — 전면 일원화 (§12-D·§12-E) ────────────────────────
+  # ── 전면 일원화 ────────────────────────
   - second_partial_refund_returns_only_the_remaining_share       # N13 — 이미 돌려준 몫을 다시 세지 않는다 (과다 환불)
   - order_ledger_is_settled_exactly_once_per_intake              # DoD 2 — 합계 재계산·취소 기록은 한 번
   - item_status_after_a_refund_is_decided_by_the_source          # D13 — 출처가 상품 상태를 정한다
@@ -237,7 +237,7 @@ effects:
   - item_coupon_applied_once_in_recalculation                    # S1-D2 — 상품쿠폰이 재계산에서 두 번 먹지 않는다
   - item_coupon_applied_once_when_present_in_both_snapshot_keys  # S1-D2 — 운영 스냅샷 형식에서도 한 번만
   - partial_cancel_refund_equals_line_amount                     # 쿠폰 걸린 라인 부분취소 환불액 = 그 라인 금액
-  # 소급 매핑 (#747) — 기존 OrderCancellationServiceTest 테스트별 효과. 마일리지 미차감 주문의 환불 0 처리(Q15)로
+  # 소급 매핑 — 기존 OrderCancellationServiceTest 테스트별 효과. 마일리지 미차감 주문의 환불 0 처리(Q15)로
   # 픽스처 3건을 고치며 이 파일 전 케이스에 매핑을 달았다(test-scenario-reverse-mapping).
   - full_cancel_creates_cancel_record
   - full_cancel_updates_order_status

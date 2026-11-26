@@ -3,7 +3,7 @@
  *
  * 상한 논리는 훅(useLayoutVersions.loadMore.test.tsx)이 잰다. 여기서는 훅 상태를 고정해 모달이 그 상태대로
  * 단추를 보이고, 누르면 loadMore 를 부르고, 조회 중에는 막는지만 잰다. 행을 상한만큼 그리지 않아 동시 실행
- * 부하에도 가볍다(#869).
+ * 부하에도 가볍다.
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest';

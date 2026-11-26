@@ -1,4 +1,4 @@
-feature: 전역 상태 공개 계약 (state_contracts) — 선언·집계·충돌 검사·조회 (#639)
+feature: 전역 상태 공개 계약 (state_contracts) — 선언·집계·충돌 검사·조회
 
 description: |
   다른 확장이 읽는 전역 상태(`_global.{이름}`)만 소유자가 manifest `state_contracts` 로 선언한다(화면 전용 임시 값은

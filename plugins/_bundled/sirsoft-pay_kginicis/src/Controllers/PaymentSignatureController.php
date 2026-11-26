@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// audit:allow api-doc-coverage reason: 이커머스 내부 서비스·저장소 대신 공개 결제 계약(PaymentGatewayBridge)을 생성자로 주입한 내부 전환이다(#916). 응답은 공통 형식(ResponseHelper: success, message, data)으로 나가고 결제 화면이 읽는 data 항목과 오류 message 키는 그대로다. 오류 문구는 영어 고정에서 번역 키로 바뀌었다(#916). 이 엔드포인트의 API 문서는 원래 없다(`api:docgen --scope=plugin:sirsoft-pay_kginicis --check` drift 없음).
+// audit:allow api-doc-coverage reason: 이커머스 내부 서비스·저장소 대신 공개 결제 계약(PaymentGatewayBridge)을 생성자로 주입한 내부 전환이다. 응답은 공통 형식(ResponseHelper: success, message, data)으로 나가고 결제 화면이 읽는 data 항목과 오류 message 키는 그대로다. 오류 문구는 영어 고정에서 번역 키로 바뀌었다. 이 엔드포인트의 API 문서는 원래 없다(`api:docgen --scope=plugin:sirsoft-pay_kginicis --check` drift 없음).
 
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 

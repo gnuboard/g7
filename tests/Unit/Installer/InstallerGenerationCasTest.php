@@ -11,7 +11,7 @@ use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
  * - 상태변경 요청은 읽은 세대와 디스크 세대가 같을 때만 커밋하고 세대를 올린다
  * - 뒤늦은(옛 세대) 상태변경은 거부된다
  * - 설치 워커의 진행 쓰기(비-CAS)는 세대를 올리지 않고, 옛 사본을 저장해도 소유권 필드를 되돌리지 않는다
- *   (이슈 #319 SSE↔폴링 경합 회귀 가드)
+ *   (SSE↔폴링 경합 회귀 가드)
  */
 class InstallerGenerationCasTest extends TestCase
 {

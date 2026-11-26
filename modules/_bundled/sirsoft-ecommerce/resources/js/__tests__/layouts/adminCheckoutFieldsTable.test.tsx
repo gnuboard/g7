@@ -1,6 +1,6 @@
 /**
  * @file adminCheckoutFieldsTable.test.tsx
- * @description 쇼핑몰 설정 주문 설정 탭의 「주문서 항목」 구획(#490 D1, D23) — 표, 좁은 화면 카드, 항목 추가·수정 창, 삭제 확인 창
+ * @description 쇼핑몰 설정 주문 설정 탭의 「주문서 항목」 구획 — 표, 좁은 화면 카드, 항목 추가·수정 창, 삭제 확인 창
  *
  * 표의 스위치는 누르자마자 코어 항목 API 로 나가고 `checkoutFieldDefs` 만 다시 받는다. 설정 폼(`_local.form`)과 「변경 있음」
  * (`hasChanges`)은 건드리지 않아야 한다 — 건드리면 화면 하단 「저장」과 탭 전환 확인 창이 이 표 때문에 켜진다.

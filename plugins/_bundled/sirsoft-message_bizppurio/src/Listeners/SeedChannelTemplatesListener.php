@@ -22,7 +22,7 @@ use App\Contracts\Extension\HookListenerInterface;
  * - core.notification.filter_default_definitions (코어 [기본값 복원] 경로 —
  *   NotificationTemplateService::getDefaultTemplateData). 시딩과 같은 증강을 적용해야
  *   우리가 시드한 sms·alimtalk 행의 [기본값 복원]이 "기본 템플릿 데이터를 찾을 수 없습니다" 로
- *   끝나지 않는다 — 시드 출처와 복원 출처가 같은 함수여야 한다(#597 §18.7 C2 실측 결함).
+ *   끝나지 않는다 — 시드 출처와 복원 출처가 같은 함수여야 한다(§18.7 C2 실측 결함).
  *   도메인이 자기 정의를 이 필터에 보태는 priority 20 뒤(50)에 돌아야 도메인 정의도 증강된다.
  *
  * 종전에는 도메인별 언어팩 시딩 훅(seed.{도메인}.notifications.translations)을 이름으로 골라
@@ -36,7 +36,7 @@ use App\Contracts\Extension\HookListenerInterface;
  * 문자/알림톡 대상이 아니므로 건너뛴다. 기본 body 는 그 알림의 database 채널 body(짧은 평문)를
  * 재활용하고, 없으면 mail body 의 HTML 을 제거해 만든다.
  *
- * #597 이후에도 이 시딩은 존치한다. 발송 본문의 SSoT 는 bizppurio_templates 로 옮겨졌지만
+ * 알림톡 템플릿 개편 이후에도 이 시딩은 존치한다. 발송 본문의 SSoT 는 bizppurio_templates 로 옮겨졌지만
  * (SmsChannelDriver 는 sms_body, AlimtalkChannelDriver 는 approved_content 를 읽는다),
  * 알림 설정 화면이 여전히 이 template 행을 그리기 때문이다
  * (채널 서브탭의 행 제목·수신자 표시, 행이 없으면 "no_template_for_channel" 문구).

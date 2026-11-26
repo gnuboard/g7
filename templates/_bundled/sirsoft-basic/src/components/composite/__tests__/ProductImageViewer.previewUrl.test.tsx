@@ -1,6 +1,6 @@
 // e2e:allow 메인·썸네일 줄·확대 창에 넘기는 주소 선택만 단위로 잠근다 — 실제 상품 상세의 썸네일 요청은 계획 §8 Chrome MCP 실측으로 확인한다.
 /**
- * ProductImageViewer — 공개 자산 디스크(CDN) 행의 두 주소 (#878)
+ * ProductImageViewer — 공개 자산 디스크(CDN) 행의 두 주소
  *
  * 서버는 상품 이미지마다 원본 `download_url`(CDN 직접 주소일 수 있다)과 썸네일 기준 `preview_url`(항상 API 서빙
  * 주소)을 내린다. 직접 주소에는 썸네일 규격이 붙지 않으므로 메인(lg)·썸네일 줄(xs)·확대 창 아래 썸네일 줄(sm)은

@@ -804,7 +804,7 @@ describe('LayoutLoader', () => {
      * @scenario phase=unauthorized
      * @effects layout_loader_401_retries_without_token_once
      */
-    it('재시도 후에도 401이면 LayoutLoaderError.details.status === 401 이 포함되어야 한다 (Issue #301)', async () => {
+    it('재시도 후에도 401이면 LayoutLoaderError.details.status === 401 이 포함되어야 한다', async () => {
       // TemplateApp.showRouteError 가드가 details.status 로 분기하므로 이 계약은 회귀 방지 필수
       mockGetToken
         .mockReturnValueOnce('invalid-token')
@@ -839,7 +839,7 @@ describe('LayoutLoader', () => {
      * @scenario phase=unauthorized
      * @effects layout_loader_401_retries_without_token_once
      */
-    it('토큰 보유 + 재시도 후 401 시 details.hadToken=true 가 마킹되어야 한다 (Issue #301 후속)', async () => {
+    it('토큰 보유 + 재시도 후 401 시 details.hadToken=true 가 마킹되어야 한다', async () => {
       // 가드(TemplateApp.showRouteError) 진입 시점에는 LayoutLoader 가 이미 토큰을
       // 제거한 상태라 apiClient.getToken() 만으로 토큰 보유 여부를 알 수 없다.
       // LayoutLoader 가 첫 401 시 토큰을 보유했음을 details.hadToken 으로 마킹해야

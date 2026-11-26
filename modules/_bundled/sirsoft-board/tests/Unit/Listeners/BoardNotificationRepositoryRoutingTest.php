@@ -24,9 +24,9 @@ use Modules\Sirsoft\Board\Services\UserNotificationSettingService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 게시판 알림 데이터 리스너가 조회를 Repository 로만 한다 (#599 validate board minor)
+ * 게시판 알림 데이터 리스너가 조회를 Repository 로만 한다 (validate board minor)
  *
- * 리스너는 Repository 경유가 규정이다(board AGENTS.md — Model·DB 직접 접근 금지). #599 가
+ * 리스너는 Repository 경유가 규정이다(board AGENTS.md — Model·DB 직접 접근 금지). 이전 변경이
  * 게시판 관리자 해석을 헬퍼로 뽑으면서 `$role->users()->get()` · `User::superAdmins()` 를
  * 그대로 옮겼고, 신고 알림은 `$report->logs()` 를 직접 셌다.
  */

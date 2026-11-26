@@ -845,7 +845,7 @@ class PublicStorageServeTest extends TestCase
     }
 
     /**
-     * 웹서버 파일 위임(#878)을 켜도 활성 문서는 내려받기다 — 위임 헤더와 `attachment` 가 함께 나가고 본문은 웹서버 몫이다.
+     * 웹서버 파일 위임을 켜도 활성 문서는 내려받기다 — 위임 헤더와 `attachment` 가 함께 나가고 본문은 웹서버 몫이다.
      *
      * 이 통로의 실행 가능한 문서 보정(`InlineMediaPolicy::harden`)은 응답 헤더라 위임과 무관하게 실려야 한다.
      * 웹서버가 위임 응답의 헤더를 어떻게 전달하는지는 문서(docs/backend/file-serving-delegation.md)가 다룬다.

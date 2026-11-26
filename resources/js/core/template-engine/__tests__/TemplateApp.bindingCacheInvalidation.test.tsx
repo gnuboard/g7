@@ -269,7 +269,7 @@ describe('화면 전환 없는 데이터 갱신 뒤 단순 경로 바인딩은 �
 
     /**
      * 경로 없음(404)은 TemplateApp 처리기(handleRouteNotFound)가 오류 화면 처리기를 거쳐 그린다 — 그 경로도 그리기 직전에
-     * 바인딩 값 캐시를 비워야 한다(cache 사례 24 규칙, #869 N4). 비우지 않으면 앞 오류 화면의 `{{errorCode}}` 가 남는다.
+     * 바인딩 값 캐시를 비워야 한다(cache 사례 24 규칙). 비우지 않으면 앞 오류 화면의 `{{errorCode}}` 가 남는다.
      * 인증 확인 불가는 템플릿 레이아웃을 그리지 않고 코어 기본 오류 표시를 쓴다(바인딩 없음, TemplateApp.authUnavailable.test.ts).
      *
      * @scenario path=error_page

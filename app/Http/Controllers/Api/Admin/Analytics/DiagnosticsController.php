@@ -77,7 +77,7 @@ class DiagnosticsController extends AdminBaseController
                 // 그 주소가 지금 설정대로 가려진 값인지 — 설정 전에 남은 행은 원래 주소다(7.1.0 실측).
                 $row['ip_masked'] = IpAddress::isMaskedBy(is_string($row['ip'] ?? null) ? $row['ip'] : null, $maskOctets);
 
-                // 실패 시각도 같은 화면의 다른 시각과 같은 기준이어야 한다(#682 S3 라운드 6).
+                // 실패 시각도 같은 화면의 다른 시각과 같은 기준이어야 한다.
                 if (isset($row['occurred_at'])) {
                     $row['occurred_at'] = AnalyticsClock::toSiteDateTimeString(Carbon::parse($row['occurred_at']));
                 }

@@ -62,7 +62,7 @@ test('1920 화면 본문 폭 배너의 첫 장 이미지는 칸 폭과 화면 �
 
 // @scenario surface=hidden_slides_load_only_current_and_next
 // @effects hidden_slide_media_deferred
-test('fade 3장 첫 방문은 지금 장·다음 장 이미지 2장만 받고, 다음으로 넘기면 셋째 장을 그때 받는다(#879)', async ({ page }) => {
+test('fade 3장 첫 방문은 지금 장·다음 장 이미지 2장만 받고, 다음으로 넘기면 셋째 장을 그때 받는다', async ({ page }) => {
   // 효과·장 수는 공개 응답을 가로채 정한다(DB 를 바꾸지 않는다). fade 는 모든 장이 화면 안에 겹쳐 있어 loading=lazy 로는 막히지 않던 경우다
   await hidePopups(page);
   const fetched: string[] = [];

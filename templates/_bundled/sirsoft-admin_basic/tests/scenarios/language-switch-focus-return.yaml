@@ -2,7 +2,7 @@ feature: 언어를 고른 뒤 포커스가 언어 단추로 돌아온다(Languag
 
 description: |
   언어 전환은 엔진을 다시 띄워 같은 화면을 새로 마운트한다(TemplateApp.changeLocale → destroyTemplate → 다시 그리기).
-  고른 항목이 사라지고 화면이 다시 마운트되며 포커스가 body 로 빠졌다(#869 8차 5부 실측). 고를 때 여는 단추로 포커스를
+  고른 항목이 사라지고 화면이 다시 마운트되며 포커스가 body 로 빠졌다(8차 5부 실측). 고를 때 여는 단추로 포커스를
   옮기고, 전환 중 언마운트될 때 단추에 포커스가 있었으면 엔진 인계 저장소(`G7Core.locale.handoff`)에 맡겼다가 새로
   마운트되면 같은 단추로 돌린다. 그 사이 사용자가 다른 곳으로 옮겼으면 건드리지 않는다.
 
@@ -13,7 +13,7 @@ axes:
 
 effects:
   - language_switch_returns_focus_to_trigger   # 언어 전환으로 다시 마운트된 뒤 포커스가 같은 언어 단추에 있다
-  - language_switch_reopen_lands_in_options    # 고르면 목록이 바로 닫히고 전환 중에는 다시 열리지 않으며, 다시 그린 뒤 열면 선택지로 들어간다(#869 8차 7부)
+  - language_switch_reopen_lands_in_options    # 고르면 목록이 바로 닫히고 전환 중에는 다시 열리지 않으며, 다시 그린 뒤 열면 선택지로 들어간다(8차 7부)
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/LanguageSelector.focusAfterSwitch.test.tsx

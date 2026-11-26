@@ -22,7 +22,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Tests\Helpers\MocksChannelReadiness;
 
 /**
- * 쿠폰별 발급 알림 (#952 P6·P19·P24)
+ * 쿠폰별 발급 알림
  */
 class CouponIssuedNotificationTest extends ModuleTestCase
 {

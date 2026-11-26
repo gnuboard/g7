@@ -10,7 +10,7 @@ use Tests\Concerns\BuildsZipFixtures;
 use Tests\TestCase;
 
 /**
- * 확장 GitHub 내려받기(`downloadAndExtractFromGitHub`)가 푼 결과에서 소스 루트를 고르는 규칙 회귀 테스트 (#971).
+ * 확장 GitHub 내려받기(`downloadAndExtractFromGitHub`)가 푼 결과에서 소스 루트를 고르는 규칙 회귀 테스트.
  *
  * 예전에는 해제 결과의 **첫 폴더**를 개수 확인 없이 소스로 골랐다. 감싸지 않은(평탄) ZIP 이면 manifest 가 있는
  * 루트 대신 첫 하위 폴더(`src/`)를, Mac 재압축 ZIP 이면 `__MACOSX/` 를 골랐다. 이제 `--zip` 경로와 같은

@@ -84,7 +84,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
             .'시드 DB 행 `content` 에 그대로 싣는 것이 전부라, 소스로 옮겨도 곧바로 같은 배열로 '
             .'되돌려야 한다 — 규약 위반이 아니라 **테스트 자료의 의도된 예외**이며, 등재 목적은 '
             .'"다음 사람이 이것을 사본으로 오인해 고치지 않게" 다 (설계 판정, 5차 병합 후속).',
-        // ── #525(`221beb3a4`) 에서 `app/Extension/AbstractPlugin.php` 가 이 목록에서 빠졌다.
+        // ── 커밋 `221beb3a4` 에서 `app/Extension/AbstractPlugin.php` 가 이 목록에서 빠졌다.
         //
         // 등재 사유는 "`getSettingsLayout()` 의 `plugin_settings.json` 경로 하드코딩 — 플러그인 설정 UI 는
         // 파일에서 직접 읽으므로 짝 `.json` 이 디스크에 있어야 한다" 는 명문 설계였다. 반응 레이아웃 복원

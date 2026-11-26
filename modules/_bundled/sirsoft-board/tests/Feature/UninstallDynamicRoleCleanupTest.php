@@ -199,7 +199,7 @@ class UninstallDynamicRoleCleanupTest extends ModuleTestCase
 
     /**
      * 외래키 검사를 끈 채 모듈을 제거해도 동적 역할의 메뉴 연결(`role_menus`)·메뉴 권한(`menu_permissions`)이
-     * 고아로 남지 않는다 — 역할 삭제가 DB 외래키 연쇄에 기대지 않는다 (#888).
+     * 고아로 남지 않는다 — 역할 삭제가 DB 외래키 연쇄에 기대지 않는다.
      *
      * @scenario case=menu_links_without_fk
      *

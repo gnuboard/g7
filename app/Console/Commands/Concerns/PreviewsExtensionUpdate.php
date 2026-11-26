@@ -42,7 +42,7 @@ trait PreviewsExtensionUpdate
 
         $preview = app(ExtensionUpdatePreviewService::class)->preview($type, $identifier, $source, LayoutSyncMode::from($layoutStrategy), $decisions);
 
-        // GitHub 를 명시했는데 조회에 실패했으면 미리보기도 실패로 끝낸다 — 「업데이트 없음」으로 읽히지 않게(#888)
+        // GitHub 를 명시했는데 조회에 실패했으면 미리보기도 실패로 끝낸다 — 「업데이트 없음」으로 읽히지 않게
         $checkFailed = $source === 'github' && ($preview['check_error'] ?? null) !== null;
 
         if ($this->option('json')) {

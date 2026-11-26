@@ -132,7 +132,7 @@ class CoreUpdateCommand extends Command
 
         // `putenv` 는 하드닝 프로필의 표준 차단 대상이다. 막힌 환경에서 무가드로 부르면
         // 업데이트가 시작하자마자 `Error` 로 죽는다 — 위 두 줄이 이미 같은 사실을 심었고
-        // 소비처(`CoreServiceProvider::isCoreUpdateInProgress`)도 그 둘을 먼저 본다 (#609 D34).
+        // 소비처(`CoreServiceProvider::isCoreUpdateInProgress`)도 그 둘을 먼저 본다.
         if (ExecutionEnvironment::hasFunction('putenv')) {
             putenv('G7_UPDATE_IN_PROGRESS=1');
         }
@@ -359,7 +359,7 @@ class CoreUpdateCommand extends Command
                 }
             }
 
-            // ── custom 자리 사전 검사 (#792) ──
+            // ── custom 자리 사전 검사 ──
             // 배포본이 custom 예약 자리에 파일을 싣거나 개발자 패키지(custom/composer.lock)가 새 코어와 맞지 않으면
             // 유지보수 모드·백업·파일 적용 전에 멈춘다. --source 는 디렉터리, --zip 은 풀지 않고 읽는다.
             // GitHub 다운로드·zip 을 못 읽은 경우는 Step 4 직후에 같은 검사를 한다. --local 은 배포본이 아니라
@@ -810,7 +810,7 @@ class CoreUpdateCommand extends Command
                 $log('vendor 디렉토리 복사 완료');
             }
 
-            // 개발자 전용 composer(custom/, #792) — 코어 vendor 와 별개라 코어가 건드리지 않는다. 설치본이
+            // 개발자 전용 composer(custom/) — 코어 vendor 와 별개라 코어가 건드리지 않는다. 설치본이
             // custom/composer.lock 과 어긋나 있을 때만(첫 배포·묶음 교체 등) 같은 vendor 모드로 맞춘다.
             $customVendorResult = app(CustomVendorService::class)->ensureInstalled($vendorMode);
             if ($customVendorResult !== 'skipped:no-composer') {
@@ -828,7 +828,7 @@ class CoreUpdateCommand extends Command
             // 호출한다. 디스크는 Step 7(applyUpdate) 에서 이미 신버전으로 교체되어 있다.
             //
             // syncCoreRolesAndPermissions / syncCoreMenus 직접 호출 금지 — 부모 메모리의
-            // 구버전 config 로 sync 가 돌면 신규 권한/메뉴가 누락된다 (#326 회귀).
+            // 구버전 config 로 sync 가 돌면 신규 권한/메뉴가 누락된다.
             $bar->setMessage(__('settings.core_update.step_migration'));
             $coreLock?->keepAlive();
             $bar->advance();
@@ -903,7 +903,7 @@ class CoreUpdateCommand extends Command
             // sudo 실행 시 composer 등 외부 프로세스가 root 로 생성한 파일의 소유권을
             // 백업 직후 수집한 원본 스냅샷 기준으로 복원 (각 경로 고유 소유자 유지).
             // detailedSnapshot 동시 전달 — PHP-FPM 쓰기 영역의 owner/group/perms 를 항목별
-            // 정확 복원하여 #282 (sudo update 후 traversal 비트 손실) 회귀 차단.
+            // 정확 복원하여 sudo update 후 traversal 비트가 사라지는 회귀를 차단.
             $service->restoreOwnership($ownershipSnapshot, $onProgress, $detailedOwnershipSnapshot);
             $this->surfacePermissionWarnings($service, $log);
             $log('업데이트 경로 소유권 복원 완료');
@@ -926,7 +926,7 @@ class CoreUpdateCommand extends Command
             $committed = true;
 
             // 점검 모드는 번들 확장 일괄 업데이트까지 끝난 뒤에 푼다(아래 finally) — 종전에는 여기서 풀어, 새 코어와 옛 확장이
-            // 섞인 사이트가 일괄 업데이트 동안 열려 있었다(#888). 그 사이 마무리 단계가 실패하면
+            // 섞인 사이트가 일괄 업데이트 동안 열려 있었다. 그 사이 마무리 단계가 실패하면
             // reportPostCommitFailure() 가 아직 켜진 점검 모드를 푼다.
 
             // 모든 파일(코어 config/lang/vendor)이 안착한 뒤 config 캐시를 재생성한다.
@@ -1127,7 +1127,7 @@ class CoreUpdateCommand extends Command
             // 전면 500 차단 (7.0.9→7.0.10 실사례)
             app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
-            // 스텝이 남았다 — 성공(0)으로 끝내면 스크립트가 재개 명령을 건너뛴다(#888)
+            // 스텝이 남았다 — 성공(0)으로 끝내면 스크립트가 재개 명령을 건너뛴다
             return $this->handoffExitCode();
 
         } catch (\Throwable $e) {
@@ -1312,7 +1312,7 @@ class CoreUpdateCommand extends Command
     private function spawnUpgradeStepsProcess(string $fromVersion, string $toVersion, bool $force, \Closure $log): bool
     {
         // 가용성 판정은 SSoT 한 곳이 소유한다 — `function_exists` 만으로는 `disable_functions`
-        // 로 이름만 남겨 둔 호스팅을 구분하지 못한다 (#609 D34 이관 완료).
+        // 로 이름만 남겨 둔 호스팅을 구분하지 못한다.
         if (! ExecutionEnvironment::hasFunction('proc_open')) {
             return $this->failSpawnWithMode(
                 __('settings.core_update.console.spawn.proc_open_disabled'),
@@ -1563,7 +1563,7 @@ class CoreUpdateCommand extends Command
      *  - discovered 신호 부재 (`null`, 구버전 자식) + executed=0 + from<to → 레거시 판정 유지
      *    (fail-fast). 신버전 자식은 항상 discovered 를 발행하므로 이 경로는 구버전 자식 한정.
      *  - executed=0 이고 skipped>0 이며 skipped >= discovered → 정상 통과. DB 를 함께 쓰는 다른 서버·실행이
-     *    범위 안 스텝을 이미 끝내 실행 대장이 건너뛴 경우다(#888). 실패로 읽고 `--force` 재개를 안내하면 안내를
+     *    범위 안 스텝을 이미 끝내 실행 대장이 건너뛴 경우다. 실패로 읽고 `--force` 재개를 안내하면 안내를
      *    따른 운영자가 끝난 스텝을 다시 돌린다.
      *
      * @param  int  $exitCode  자식 프로세스 종료 코드
@@ -2178,7 +2178,7 @@ class CoreUpdateCommand extends Command
      *  - `root_web_unknown`   : root 실행 + 웹서버 계정 추정 실패 (스냅샷/추정 불가).
      *
      * 판정은 `FilePermissionHelper::describeWebServerAccount()` 가 소유한다 — 정적 게시 상태·게시
-     * 명령(`ext-static:*`)의 root 경고와 같은 4분기를 공유하기 위해 옮겼다(#651 C1). 이 메서드는
+     * 명령(`ext-static:*`)의 root 경고와 같은 4분기를 공유하기 위해 옮겼다. 이 메서드는
      * 그 결과를 종전 반환 형태(`[모드, 계정명]`)로 바꿔 주는 위임만 한다.
      *
      * @return array{0: string, 1: string|null} [모드, 웹서버 계정명 또는 null]

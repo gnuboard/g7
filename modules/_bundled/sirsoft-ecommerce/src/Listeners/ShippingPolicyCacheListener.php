@@ -36,7 +36,7 @@ class ShippingPolicyCacheListener implements HookListenerInterface
             'after_set_default',
         ] as $event) {
             // sync: 요청 안 메모리를 비우는 리스너는 그 요청 안에서 돌아야 의미가 있다 —
-            // 큐로 가면 워커의 사본만 비우고 웹 요청의 해석기는 옛 기본 배송정책을 계속 돌려준다(#724).
+            // 큐로 가면 워커의 사본만 비우고 웹 요청의 해석기는 옛 기본 배송정책을 계속 돌려준다.
             $hooks['sirsoft-ecommerce.shipping_policy.'.$event] = [
                 'method' => 'onShippingPolicyChanged',
                 'priority' => 5,

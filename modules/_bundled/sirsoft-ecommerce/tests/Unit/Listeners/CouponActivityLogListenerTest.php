@@ -60,7 +60,7 @@ class CouponActivityLogListenerTest extends ModuleTestCase
     {
         $hooks = CouponActivityLogListener::getSubscribedHooks();
 
-        // 자동발급·자동발급 회수 2종이 더해졌다 (#952)
+        // 자동발급·자동발급 회수 2종이 더해졌다
         $this->assertCount(8, $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.coupon.after_auto_issue', $hooks);
         $this->assertArrayHasKey('sirsoft-ecommerce.coupon.after_auto_issue_revoke', $hooks);

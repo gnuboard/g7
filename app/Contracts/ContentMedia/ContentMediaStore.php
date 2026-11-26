@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 /**
- * 본문 미디어 어댑터 계약 — 확장(모듈·플러그인)이 구현하는 저장소·권한 부분 (#887)
+ * 본문 미디어 어댑터 계약 — 확장(모듈·플러그인)이 구현하는 저장소·권한 부분
  *
  * 업로드·저장 동기화(연결 → 복제 → 제거)·서명·서빙·정리 흐름은 코어 골격(`AbstractContentMediaService`)이 한 곳에서 돌리고,
  * 확장은 이 계약으로 「어디에 어떤 모양으로 저장하나」와 「누가 볼 수 있나」만 답한다. 확장마다 행 표(게시판

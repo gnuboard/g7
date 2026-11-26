@@ -7,7 +7,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 환불수단 거절 안내 문구의 단일 출처 (S0-D3 후속 · #599 validate P6)
+ * 환불수단 거절 안내 문구의 단일 출처 (S0-D3 후속)
  *
  * [환불하기] 실행 게이트(`ExecuteRefundRequest`)는 한때 결제행과 어긋난 수단을
  * `validation.claims.refund_method.payment_mismatch`(`:expected` 에 수단 라벨을 끼우는 문구)로

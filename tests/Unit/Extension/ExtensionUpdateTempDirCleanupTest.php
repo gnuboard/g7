@@ -25,7 +25,7 @@ use Mockery\MockInterface;
 use Tests\TestCase;
 
 /**
- * 확장 업데이트가 백업 단계에서 실패해도 받아 둔 소스 임시 디렉토리를 지운다 (#916)
+ * 확장 업데이트가 백업 단계에서 실패해도 받아 둔 소스 임시 디렉토리를 지운다 
  *
  * ZIP(`--zip`)·GitHub 소스는 백업보다 먼저 받아 검증하고 `storage/app/temp/{type}_update_*` 에 풀어 둔다. 그 디렉토리는
  * 스테이징 단계의 finally 가 지우는데, 그보다 앞(백업 생성·진행 기록·상태 변경)에서 실패하면 바깥 catch 로 가서 남았다.

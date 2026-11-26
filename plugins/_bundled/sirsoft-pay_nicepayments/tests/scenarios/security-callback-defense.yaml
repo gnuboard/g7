@@ -205,7 +205,7 @@ notes: |
 
   Phase 3 침투 PoC 에서 본 manual_verification 항목을 자동화 PoC 스크립트로 변환 예정.
 
-  원장(pending_effects) 정리 (#916):
+  원장(pending_effects) 정리 :
    - 8건은 테스트로 재서 effects 로 옮겼다 — PaymentCallbackControllerTest(같은 거래번호 재전송 멱등·재생 로그,
      60초 안 재전송 멱등·로그, 망취소 TxTid·전액), PreventsReplayCallbackTest(거래번호 유일 제약).
    - net_cancel_uses_browser_fetch_to_bypass_interceptor 는 뺐다 — 망취소는 서버가 직접 보낸다

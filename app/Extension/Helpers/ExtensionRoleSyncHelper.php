@@ -75,7 +75,7 @@ class ExtensionRoleSyncHelper
 
         // 기존 역할 업데이트 — 판정은 모델 공통 규칙(HasUserOverrides::planUpgrade)이 한다({@see planRoleUpgrade()}). 운영자 수정 기록은
         // 다국어 dot-path(`name.ko`)라 종전의 `in_array('name', …)` 정확 일치 판정은 늘 "미수정" 이었다 —
-        // 역할 이름·설명 수정이 업데이트마다 되돌아간 원인(#727 D5-①). is_active 도 여기서 함께 보존된다(W10).
+        // 역할 이름·설명 수정이 업데이트마다 되돌아간 원인. is_active 도 여기서 함께 보존된다(W10).
         $updateData = array_merge([
             'extension_type' => $extensionType,
             'extension_identifier' => $extensionIdentifier,

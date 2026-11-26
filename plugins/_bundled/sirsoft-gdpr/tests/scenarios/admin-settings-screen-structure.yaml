@@ -4,7 +4,7 @@ description: |
   관리자 환경설정 화면(admin/plugin_settings.g7.html)의 레이아웃 구조 회귀를 영역별로 잠근다. 필수 저장 항목 카드는
   necessary-storage-allowlist.yaml, 처리방침 주소 칸과 정책 스냅숏 모달은 settings-api.yaml 이 따로 소유한다.
 
-  배경(#869 κ2): admin_plugin_settings.test.tsx 의 시험 71개가 무엇을 단언하든 necessary-storage-allowlist.yaml 의
+  배경: admin_plugin_settings.test.tsx 의 시험 71개가 무엇을 단언하든 necessary-storage-allowlist.yaml 의
   조합 하나와 레이아웃 효과 8개를 일괄로 달고 있었다. 그 매니페스트는 cross product 와 effects 축을 면제받아 이 거짓
   커버가 드러나지 않았다. 필수 저장 항목 카드 밖 시험 60여 개가 실제로 재는 명제를 이 매니페스트가 선언한다.
 

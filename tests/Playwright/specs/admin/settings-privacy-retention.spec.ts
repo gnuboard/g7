@@ -1,5 +1,5 @@
 /**
- * E2E: 환경설정 > 개인정보 — 보유기간 파기·휴면 계정 카드 (#636 트랙 4 / S4)
+ * E2E: 환경설정 > 개인정보 — 보유기간 파기·휴면 계정 카드
  *
  * 검증:
  *  1. 개인정보 탭이 **전 기능 꺼진 채** 마운트되고, 켜기 전 처리방침 고지가 번역문으로 보인다
@@ -9,7 +9,7 @@
  *     이 교차 검증이 없으면 사전 안내 없이 전환·통지가 같은 날 일어난다(법정 사전 안내 소실)
  *  4. 화면의 dry-run 건수는 커맨드와 **같은 판정**을 지난 값이다 — 미리보기 API 와 화면이 어긋나면
  *     운영자가 규모를 오판한 채 되돌릴 수 없는 파기를 켠다
- *  5. (#636 §1-E) 건수는 **꺼져 있어도** 보이고, 「대상 보기」가 명단 창을 연다. 창은 한 쪽 20건을
+ *  5. (E) 건수는 **꺼져 있어도** 보이고, 「대상 보기」가 명단 창을 연다. 창은 한 쪽 20건을
  *     먼저 보이고 스크롤 끝에서 다음 쪽을 이어 붙인다. 닫았다 다시 열면 첫 쪽부터다.
  *     회원 읽기 권한이 없는 관리자는 건수만 보고 버튼·명단 API(403)는 막힌다.
  *
@@ -197,7 +197,7 @@ test('사전 안내 기간이 전환 기간보다 짧지 않으면 저장되지 
 test('dry-run 건수 API 는 꺼짐과 대상 0건을 구분해 돌려준다', async ({ page }) => {
   test.skip(alreadyInUse, '이 사이트는 이미 개인정보 기능을 쓰고 있어 설정을 건드리지 않는다');
 
-  // 전부 꺼진 상태: 건수는 **그래도 센다**(켜기 전에 규모를 본다 — #636 §1-E), 꺼짐은 enabled 로 알린다.
+  // 전부 꺼진 상태: 건수는 **그래도 센다**(켜기 전에 규모를 본다), 꺼짐은 enabled 로 알린다.
   const off = await api(page, '/api/admin/settings/privacy-preview');
   expect(off.status).toBe(200);
   expect(off.body?.data?.retention?.['user-withdrawn']?.enabled).toBe(false);
@@ -271,7 +271,7 @@ test('화면에서 기간을 바꿔 저장하면 새로고침 없이 뱃지가 �
     const dormantBadge = page.locator('#dormant_target_row_convert .badge');
     await expect(convertButton).toBeVisible({ timeout: 20_000 });
 
-    // 저장 버튼을 실제로 눌러 저장한다 — API 로 저장하고 새로고침하면 이 결함이 보이지 않는다(#636 브라우저 실측).
+    // 저장 버튼을 실제로 눌러 저장한다 — API 로 저장하고 새로고침하면 이 결함이 보이지 않는다.
     await page.locator(`${DORMANT_ROW} .toggle-switch-wrapper`).first().click();
     await page.locator(DORMANT_DAYS).fill('3650');
 
@@ -292,7 +292,7 @@ test('화면에서 기간을 바꿔 저장하면 새로고침 없이 뱃지가 �
     await convertButton.click();
     await expect(page.locator('#privacy_targets_empty')).toBeVisible({ timeout: 20_000 });
     await expect(page.locator('#privacy_targets_list tbody tr')).toHaveCount(0);
-    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다(#869 P1)
+    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다
     await page.getByRole('dialog').locator('.modal-footer-bar button').click();
   } finally {
     seedDormant('--purge-users');
@@ -366,7 +366,7 @@ test('「대상 보기」 명단 창은 꺼진 상태에서도 열리고 스크�
     await expect(rows).toHaveCount(Math.min(total, 40), { timeout: 20_000 });
 
     // 닫고 다시 열면 첫 쪽부터다(목록 상태를 되돌린다).
-    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다(#869 P1)
+    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다
     await page.getByRole('dialog').locator('.modal-footer-bar button').click();
     await expect(modal).toHaveCount(0);
     await openButton.click();
@@ -415,7 +415,7 @@ test('회원 읽기 권한이 없으면 건수는 보이되 「대상 보기」�
 
 // @scenario toggle=off, row_age=beyond_retention, run_mode=real_run
 // @effects manual_run_is_queued_and_processed_by_the_job, manual_run_ignores_the_disabled_toggle, confirm_modal_recounts_before_queueing, card_shows_active_status_and_last_result
-test('(#636 후속) 「지금 실행」은 꺼진 상태에서도 확인 창의 건수만큼 직권 실행하고 카드에 결과를 남긴다', async ({ browser }) => {
+test(' 「지금 실행」은 꺼진 상태에서도 확인 창의 건수만큼 직권 실행하고 카드에 결과를 남긴다', async ({ browser }) => {
   // 실행은 되돌릴 수 없는 파기다 — 이 spec 이 심은 시험 계정만 대상일 때만 돌린다(사이트의 실제 탈퇴 회원 보호).
   const runner = issueToken('core.settings.read', 'core.settings.update', 'core.users.read', 'core.users.update');
   seedDormant('--purge-users');

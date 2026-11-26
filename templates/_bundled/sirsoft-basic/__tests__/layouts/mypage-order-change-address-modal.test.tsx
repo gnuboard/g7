@@ -78,7 +78,7 @@ function flatten(node: Node | undefined, acc: Node[] = []): Node[] {
   if (Array.isArray(node.children)) {
     for (const child of node.children) flatten(child, acc);
   }
-  // 고정 하단(props.footer)의 단추도 걷는다(#869 — 적용·취소 단추가 Modal 고정 하단으로 옮김)
+  // 고정 하단(props.footer)의 단추도 걷는다(적용·취소 단추가 Modal 고정 하단으로 옮김)
   const footer = (node as any).props?.footer;
   if (Array.isArray(footer)) {
     for (const child of footer) flatten(child, acc);
@@ -505,7 +505,7 @@ describe('저장된 배송지 카드는 키보드로 고를 수 있는 단추다
 });
 
 // ── 창을 여는 트리거: _shipping.json 의 「배송지 변경」 단추 ──
-// 매니페스트 member-order-change-address.yaml 이 선언한 트리거 효과 둘은 #55 이후 어느 시험도 재지 않았다(#869 κ2).
+// 매니페스트 member-order-change-address.yaml 이 선언한 트리거 효과 둘은 #55 이후 어느 시험도 재지 않았다.
 describe('배송지 변경 트리거 (_shipping.json)', () => {
   const shipping: Node = JSON.parse(
     fs.readFileSync(path.resolve(__dirname, '../../layouts/partials/mypage/orders/_shipping.json'), 'utf8')
@@ -566,7 +566,7 @@ describe('배송지 변경 트리거 (_shipping.json)', () => {
     expect(mode(member, [{ id: 1 }])).toBe('saved');
     expect(mode(null, [])).toBe('manual');
     expect(mode(null, [{ id: 1 }])).toBe('manual');
-    // 저장된 배송지가 0건인 회원은 saved 로 열면 고를 것이 없어 적용이 address_id 없이 나갔다(#703)
+    // 저장된 배송지가 0건인 회원은 saved 로 열면 고를 것이 없어 적용이 address_id 없이 나갔다
     expect(mode(member, [])).toBe('manual');
   });
 });

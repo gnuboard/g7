@@ -1,4 +1,4 @@
-// e2e:allow Vitest 레이아웃 계약 — #869 브라우저 실측(2026-11-05)에서 Playwright 로 접힌 답글·원글 미리보기의 img computed display 와 이미지 요청 수를 재측정했다.
+// e2e:allow Vitest 레이아웃 계약 — 브라우저 실측(2026-11-05)에서 Playwright 로 접힌 답글·원글 미리보기의 img computed display 와 이미지 요청 수를 재측정했다.
 /**
  * 게시글 보기의 「접힌」 본문 미리보기 — 답글 목록의 답글 본문과 답글 보기 위에 붙는 원글 인용 — 는
  * 펼치기 전까지 본문의 이미지·표를 숨긴다(`[&_img]:hidden [&_table]:hidden`).
@@ -7,7 +7,7 @@
  * 문서에 넣는 덮어쓰기 스타일 `.ck-content img { display: inline }`·`.ck-content figure.table { display: table }` 은
  * **레이어 밖**(unlayered) 규칙이다. Tailwind v4 유틸리티는 `@layer utilities` 안에 있어, 명시도와 무관하게
  * 레이어 밖 규칙이 이긴다 — 실측: 접힌 답글의 img computed display `inline`, 768×768 로 보이고 `?size=lg` 요청 1건.
- * 숨긴 본문 이미지를 내려받지 않는다는 #869 D35 의 전제(본문 img `loading=lazy` + 숨김이면 요청 0)가 깨진다.
+ * 숨긴 본문 이미지를 내려받지 않는다는 전제(본문 img `loading=lazy` + 숨김이면 요청 0)가 깨진다.
  *
  * 레이어 밖 일반 규칙을 이기는 것은 레이어 안의 `!important` 다. 그래서 접힘 상태의 숨김은 `!hidden` 으로 쓴다.
  * 소스(`.g7.html`)와 굽힌 짝 `.json` 양쪽을 잠근다.

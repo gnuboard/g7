@@ -20,7 +20,7 @@ const BUILTIN_TEXT: Record<string, Record<'ko' | 'en' | 'ja', string>> = {
         en: 'Checking your sign-in status. Please wait a moment.',
         ja: 'ログイン状態を確認しています。しばらくお待ちください。',
     },
-    // 인증 확인 불가 화면(서버 일시 오류) — 번역 파일마저 받지 못하는 순간에도 문구가 보여야 한다 (engine-v1.95.0, #869 N5)
+    // 인증 확인 불가 화면(서버 일시 오류) — 번역 파일마저 받지 못하는 순간에도 문구가 보여야 한다 (engine-v1.95.0)
     'core.errors.api_request_failed': {
         ko: '요청을 처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요.',
         en: 'The request could not be processed. Please try again in a moment.',

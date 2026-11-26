@@ -10,7 +10,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Modules\Sirsoft\Ecommerce\Upgrades\Upgrade_1_3_3;
 
 /**
- * 1.3.3 주문상품 과세 종류 백필 업그레이드 스텝 테스트 (#612)
+ * 1.3.3 주문상품 과세 종류 백필 업그레이드 스텝 테스트
  *
  * 1.3.3 이 주문 시점 과세 종류를 주문상품 행에 기록하기 시작했다. 그 전 행은 비어 있으므로 상품 스냅샷 값으로
  * 채우고, 값이 없거나 읽을 수 없으면 과세로 채운다(1.3.2 까지 계산기가 과세로 분류했다). 이미 값이 있는 행은

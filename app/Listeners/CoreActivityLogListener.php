@@ -76,7 +76,7 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.user.after_search' => ['method' => 'handleUserAfterSearch', 'priority' => 20],
             'sirsoft-core.user.after_bulk_update' => ['method' => 'handleUserAfterBulkUpdate', 'priority' => 20],
             'core.user.after_bulk_update_roles' => ['method' => 'handleUserAfterBulkUpdateRoles', 'priority' => 20],
-            // 회원 등록·수정 화면에서 역할·최고관리자 지정이 바뀐 경우(#736 D23) — 권한 부여·변경 기록이라 3년 보관 대상
+            // 회원 등록·수정 화면에서 역할·최고관리자 지정이 바뀐 경우 — 권한 부여·변경 기록이라 3년 보관 대상
             'core.user.after_update_roles' => ['method' => 'handleUserAfterUpdateRoles', 'priority' => 20],
             // 회원 차단·해제·강제 로그아웃 공개 진입점(7.2.0) — 행위자 없는 시스템 경로(프로비저닝 등)도 남긴다
             'core.user.after_block' => ['method' => 'handleUserAfterBlock', 'priority' => 20, 'sync' => true],
@@ -91,7 +91,7 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.auth.after_register' => ['method' => 'handleAuthRegister', 'priority' => 20],
             // 두 번째 인자에 재설정 토큰이 든 URL 이 실린다 — 큐로 보내면 토큰이 작업 테이블에 한 부 더 저장되므로 동기 실행
             'core.auth.after_reset_password_request' => ['method' => 'handleAuthForgotPassword', 'priority' => 20, 'sync' => true],
-            // 비밀번호 변경은 경로·행위자를 아는 기록 훅에서 남긴다(#736). 종전 `after_password_changed` 구독은
+            // 비밀번호 변경은 경로·행위자를 아는 기록 훅에서 남긴다. 종전 `after_password_changed` 구독은
             // 인자가 회원뿐이라 관리자 지정·로그인 단계 변경까지 전부 "비밀번호 재설정" 으로 적었다.
             'core.auth.password_change_recorded' => ['method' => 'handlePasswordChangeRecorded', 'priority' => 20],
             'core.auth.password_change_postponed' => ['method' => 'handlePasswordChangePostponed', 'priority' => 20],
@@ -132,7 +132,7 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.settings.after_save' => ['method' => 'handleSettingsAfterSave', 'priority' => 20],
             'core.settings.after_set' => ['method' => 'handleSettingsAfterSet', 'priority' => 20],
 
-            // Extension Trust Key 훅 (환경설정 > 보안 「확장 신뢰 키」·extension:trust-key, #916)
+            // Extension Trust Key 훅 (환경설정 > 보안 「확장 신뢰 키」·extension:trust-key)
             'core.extension_trust_keys.after_create' => ['method' => 'handleExtensionTrustKeyAfterCreate', 'priority' => 20],
             'core.extension_trust_keys.after_delete' => ['method' => 'handleExtensionTrustKeyAfterDelete', 'priority' => 20],
 
@@ -140,7 +140,7 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.privacy.manual_run_queued' => ['method' => 'handlePrivacyManualRunQueued', 'priority' => 20],
             'core.privacy.manual_run_finished' => ['method' => 'handlePrivacyManualRunFinished', 'priority' => 20],
 
-            // ─── Core update (#609 D23 — 실행·성공·실패) ───
+            // ─── Core update (실행·성공·실패) ───
             'core.core_update.started' => ['method' => 'handleCoreUpdateStarted', 'priority' => 20],
             'core.core_update.completed' => ['method' => 'handleCoreUpdateCompleted', 'priority' => 20],
             'core.core_update.failed' => ['method' => 'handleCoreUpdateFailed', 'priority' => 20],
@@ -197,7 +197,7 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.plugin_settings.after_save' => ['method' => 'handlePluginSettingsAfterSave', 'priority' => 20],
             'core.plugin_settings.after_reset' => ['method' => 'handlePluginSettingsAfterReset', 'priority' => 20],
 
-            // ─── Template Settings (#434) ───
+            // ─── Template Settings ───
             'core.template_settings.after_save' => ['method' => 'handleTemplateSettingsAfterSave', 'priority' => 20],
             'core.template_settings.after_reset' => ['method' => 'handleTemplateSettingsAfterReset', 'priority' => 20],
 
@@ -479,7 +479,7 @@ class CoreActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 회원 등록·수정으로 역할·최고관리자 지정이 바뀐 뒤 로그 기록 (#736 D23)
+     * 회원 등록·수정으로 역할·최고관리자 지정이 바뀐 뒤 로그 기록
      *
      * 붙은·떨어진 역할은 식별자로 남긴다 — 역할 ID 는 역할을 지우고 다시 만들면 다른 역할을 가리킨다.
      * 지금은 없는 역할(기록 사이에 삭제)은 ID 문자열로 남긴다.
@@ -1105,7 +1105,7 @@ class CoreActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 확장 신뢰 키(제작자 공개키) 등록 후 로그 기록 (#916)
+     * 확장 신뢰 키(제작자 공개키) 등록 후 로그 기록 
      *
      * 이 키로 서명한 확장·언어팩이 「서명 확인됨」이 되는 보안 설정 변경이다. 누가 어떤 vendor 범위로 믿기 시작했는지 남긴다.
      *
@@ -1125,7 +1125,7 @@ class CoreActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 확장 신뢰 키(제작자 공개키) 삭제 후 로그 기록 (#916)
+     * 확장 신뢰 키(제작자 공개키) 삭제 후 로그 기록 
      *
      * 지운 행이라 모델 참조는 싣지 않고 식별 값만 남긴다(역할·스케줄 삭제와 같다).
      *
@@ -1220,7 +1220,7 @@ class CoreActivityLogListener implements HookListenerInterface
     }
 
     // ═══════════════════════════════════════════
-    // 코어 업데이트 핸들러 (#609 D23)
+    // 코어 업데이트 핸들러
     // ═══════════════════════════════════════════
 
     /**
@@ -1974,7 +1974,7 @@ class CoreActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 템플릿 설정 저장 후 로그 기록 (#434)
+     * 템플릿 설정 저장 후 로그 기록
      *
      * 저장이 실패한 경우는 남기지 않는다 — 설정이 바뀌지 않았다.
      *
@@ -1997,7 +1997,7 @@ class CoreActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 템플릿 설정 기본값 되돌리기 후 로그 기록 (#434)
+     * 템플릿 설정 기본값 되돌리기 후 로그 기록
      *
      * @param  string  $identifier  템플릿 식별자
      * @param  string|null  $section  되돌린 섹션 (null 이면 전체)
@@ -2163,7 +2163,7 @@ class CoreActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 확장 업데이트 결과의 레이아웃 처리 요약을 활동 로그 properties 로 만듭니다 (#727 D2).
+     * 확장 업데이트 결과의 레이아웃 처리 요약을 활동 로그 properties 로 만듭니다.
      *
      * 카운트만 싣고 행 목록은 `changes` 로 보낸다. 겹친 조각 이름은 `layout_sync_conflicts` 에 최대 50건.
      *

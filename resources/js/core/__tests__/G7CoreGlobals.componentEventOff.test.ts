@@ -1,6 +1,6 @@
 /**
  * @file G7CoreGlobals.componentEventOff.test.ts
- * @description `G7Core.componentEvent.off` 가 다른 주인의 구독까지 지우던 결함 (engine-v1.94.0, #816 S1 F6·D6)
+ * @description `G7Core.componentEvent.off` 가 다른 주인의 구독까지 지우던 결함 (engine-v1.94.0)
  *
  * 결함:
  *   `off(name)` 은 이름 하나에 걸린 리스너 Set 을 통째로 지웠다. 같은 이벤트를 두 컴포넌트·확장이 구독하면

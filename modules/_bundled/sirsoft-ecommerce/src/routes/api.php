@@ -151,7 +151,7 @@ Route::prefix('products')->middleware(['optional.sanctum', 'permission:user,sirs
         ->name('products.inquiries.store');
 });
 
-// 쿠폰존 — 받을 수 있는 쿠폰 목록 (비로그인 공개, #952)
+// 쿠폰존 — 받을 수 있는 쿠폰 목록 (비로그인 공개)
 // GET /api/modules/sirsoft-ecommerce/coupons/downloadable
 Route::get('coupons/downloadable', [PublicCouponController::class, 'zone'])
     ->middleware(['optional.sanctum', 'throttle:sirsoft-ecommerce.public-coupons', 'permission:user,sirsoft-ecommerce.user-products.read'])
@@ -702,7 +702,7 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
     // POST   /api/modules/sirsoft-ecommerce/user/reviews/{review}/images - 이미지 업로드
     // DELETE /api/modules/sirsoft-ecommerce/user/reviews/{review}/images/{image} - 이미지 삭제
     Route::prefix('reviews')->group(function () {
-        // GET /api/modules/sirsoft-ecommerce/user/reviews - 내 리뷰 목록 (마이페이지 내 리뷰, #952) — 문의 목록과 같게 별도 권한 없이 인증만
+        // GET /api/modules/sirsoft-ecommerce/user/reviews - 내 리뷰 목록 (마이페이지 내 리뷰) — 문의 목록과 같게 별도 권한 없이 인증만
         Route::get('/', [UserProductReviewController::class, 'index'])
             ->name('user.reviews.index');
 
@@ -818,7 +818,7 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
 | Admin API Routes (관리자 인증 필요)
 |--------------------------------------------------------------------------
 */
-// 본문 미디어 서빙 (#883) — 권한 미들웨어 없음(<img>·<video> 는 Bearer 없음). 게이트는 서비스가 맡는다:
+// 본문 미디어 서빙 — 권한 미들웨어 없음(<img>·<video> 는 Bearer 없음). 게이트는 서비스가 맡는다:
 // 상품은 「전시 중 또는 관리자 또는 서명」, 공통 정보는 공개
 Route::get('content-media/{hash}', [PublicContentMediaController::class, 'show'])
     ->middleware(['optional.sanctum', 'throttle:600,1'])
@@ -828,7 +828,7 @@ Route::get('content-media/{hash}', [PublicContentMediaController::class, 'show']
 // 관리자 영역 라우트
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
 
-    // 본문 미디어 업로드 계약·업로드 (#883) — 상품 설명·공통 정보 편집기. 소유 종류별 권한은 컨트롤러가 다시 본다
+    // 본문 미디어 업로드 계약·업로드 — 상품 설명·공통 정보 편집기. 소유 종류별 권한은 컨트롤러가 다시 본다
     Route::get('content-media/target', [AdminContentMediaController::class, 'target'])
         ->middleware('permission:admin,sirsoft-ecommerce.products.create|sirsoft-ecommerce.products.update|sirsoft-ecommerce.product-common-infos.create|sirsoft-ecommerce.product-common-infos.update,false')
         ->name('admin.content-media.target');
@@ -878,7 +878,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
         ->name('admin.settings.seo-cache-info');
 
-    // GET  /api/modules/sirsoft-ecommerce/admin/settings/privacy-retention-preview - 보유기간 처리 대상 건수 (이슈 #636)
+    // GET  /api/modules/sirsoft-ecommerce/admin/settings/privacy-retention-preview - 보유기간 처리 대상 건수
     Route::get('settings/privacy-retention-preview', [EcommerceSettingsController::class, 'privacyRetentionPreview'])
         ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
         ->name('admin.settings.privacy-retention-preview');
@@ -2000,7 +2000,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     | 회원 소유 데이터 관리자 목록 (찜 · 장바구니 · 배송지)
     |--------------------------------------------------------------------------
     |
-    | 회원이 만든 데이터인데 관리자 표면이 없던 축을 채운다(#524 §4.1). 세 목록 모두
+    | 회원이 만든 데이터인데 관리자 표면이 없던 축을 채운다. 세 목록 모두
     | 같은 모양이다 — 조회는 read, 삭제는 manage. `/bulk` 는 `/{id}` 보다 먼저 선언해야
     | "bulk" 가 id 로 잡히지 않는다.
     |
@@ -2051,7 +2051,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     });
 
     Route::prefix('inquiries')->group(function () {
-        // 목록·일괄 삭제 (#524 §4.1) — `/bulk` 는 `/{inquiryId}` 패턴보다 먼저 선언한다
+        // 목록·일괄 삭제 — `/bulk` 는 `/{inquiryId}` 패턴보다 먼저 선언한다
         Route::get('/', [AdminInquiryController::class, 'index'])
             ->middleware('permission:admin,sirsoft-ecommerce.inquiries.read')
             ->name('admin.inquiries.index');
@@ -2081,7 +2081,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.inquiries.destroy');
     });
 
-    // 내보내기 API — 주문·상품·마일리지 목록의 내보내기 요청과 「내보내기 관리」(#787)
+    // 내보내기 API — 주문·상품·마일리지 목록의 내보내기 요청과 「내보내기 관리」
     // 데이터 범위는 그 유형의 조회 권한(주문=orders.read …)이 정하고, exports.* 는 작업(파일)에 대한 권한이다.
     // 작업 번호(`{export}`)를 찾지 못하면(없거나 이미 지움) 다른 관리 API 와 같은 꼴의 404 를 돌려준다 — 프레임워크 기본 문구는
     // 영어에 내부 모델 경로가 들어 있어 화면 안내로 쓸 수 없다. 라우트 모델 바인딩은 권한 범위 판정(resource_route_key)이 쓰므로 유지한다.

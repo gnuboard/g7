@@ -465,7 +465,7 @@
                                                                 "text": "{{row.option_name}}"
                                                             },
                                                             {
-                                                                "comment": "품목 과세 종류 — 주문 시점에 확정한 값(옵션 지정 ?? 상품 기본값). 과세 회색·면세 파랑·영세 초록 (#612)",
+                                                                "comment": "품목 과세 종류 — 주문 시점에 확정한 값(옵션 지정 ?? 상품 기본값). 과세 회색·면세 파랑·영세 초록",
                                                                 "type": "composite",
                                                                 "name": "Badge",
                                                                 "if": "{{row.tax_status}}",
@@ -775,7 +775,7 @@
                                                         "text": "{{row.final_amount_formatted}}"
                                                     },
                                                     {
-                                                        "comment": "품목별 과세 구분 — 과세 행은 과세 금액·부가세, 영세 행은 영세 금액(부가세 0)을 보인다 (#612 S7: 종전엔 리소스 미노출로 늘 숨었다)",
+                                                        "comment": "품목별 과세 구분 — 과세 행은 과세 금액·부가세, 영세 행은 영세 금액(부가세 0)을 보인다 (종전엔 리소스 미노출로 늘 숨었다)",
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "if": "{{row.tax_status === 'taxable' && row.subtotal_tax_amount > 0}}",
@@ -1190,7 +1190,7 @@
                                                         "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.vat: {{order.data?.total_vat_amount_formatted}}"
                                                     },
                                                     {
-                                                        "comment": "합계 줄 영세 금액 — 과세 금액에 포함된 몫(부가세 0) (#612)",
+                                                        "comment": "합계 줄 영세 금액 — 과세 금액에 포함된 몫(부가세 0)",
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "if": "{{order.data?.total_zero_rated_amount > 0}}",
@@ -1477,7 +1477,7 @@
                                                                             "text": "{{order.data?.orderer_name}} ({{order.data?.orderer_email ?? order.data?.user_login_id ?? ''}})"
                                                                         },
                                                                         {
-                                                                            "comment": "실명 보조 줄(#490) — 서버가 회원의 실명 키를 줄 때만(회원 조회 권한이 있고 표시 이름과 다를 때) 그린다. 주문서에 적힌 주문자 이름이 실명과 같으면 같은 글자를 두 번 적지 않는다.",
+                                                                            "comment": "실명 보조 줄 — 서버가 회원의 실명 키를 줄 때만(회원 조회 권한이 있고 표시 이름과 다를 때) 그린다. 주문서에 적힌 주문자 이름이 실명과 같으면 같은 글자를 두 번 적지 않는다.",
                                                                             "id": "orderer_real_name_sub",
                                                                             "type": "basic",
                                                                             "name": "Span",
@@ -2377,7 +2377,7 @@
                     ]
                 },
                 {
-                    "comment": "주문서 추가 항목(#490) — 운영자가 주문서에 더한 항목과 다른 확장이 기여한 항목 가운데 값이 있는 것만 서버가 준다(`order.data.extra_fields`). 없으면 구획을 그리지 않는다. 읽기 전용이다.",
+                    "comment": "주문서 추가 항목 — 운영자가 주문서에 더한 항목과 다른 확장이 기여한 항목 가운데 값이 있는 것만 서버가 준다(`order.data.extra_fields`). 없으면 구획을 그리지 않는다. 읽기 전용이다.",
                     "id": "admin_order_extra_fields",
                     "type": "basic",
                     "name": "Div",

@@ -10,7 +10,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      *
-     * board_posts.ip_address 를 NOT NULL → nullable 로 바꿉니다 (이슈 #636 개인정보 보유기간).
+     * board_posts.ip_address 를 NOT NULL → nullable 로 바꿉니다 (개인정보 보유기간).
      * 보유기간이 지난 게시글의 작성 IP 를 지우려면 NULL 이 들어갈 수 있어야 하고,
      * board_comments.ip_address 는 처음부터 nullable 이라 두 테이블이 비대칭이었습니다.
      *

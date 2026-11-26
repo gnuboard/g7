@@ -187,7 +187,7 @@ class AnalyticsNotificationDataListener implements HookListenerInterface
      */
     private function adminUrl(string $path): string
     {
-        // 관리자 화면 주소는 화면 주소 헬퍼의 관리자 범위(베이스 = 밖으로 나가는 링크의 주소, 비면 사이트 주소)로 만든다(#792)
+        // 관리자 화면 주소는 화면 주소 헬퍼의 관리자 범위(베이스 = 밖으로 나가는 링크의 주소, 비면 사이트 주소)로 만든다
         return ScreenUrl::absoluteForLinks('admin.analytics', $path, [], ScreenUrl::SCOPE_ADMIN);
     }
 

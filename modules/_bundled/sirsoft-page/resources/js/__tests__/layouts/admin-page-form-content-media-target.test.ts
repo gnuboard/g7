@@ -1,5 +1,5 @@
 /**
- * 관리자 페이지 작성 화면 — 편집기 본문 미디어 업로드 계약을 표준 계약 엔드포인트에서 받는다 (#887 G10)
+ * 관리자 페이지 작성 화면 — 편집기 본문 미디어 업로드 계약을 표준 계약 엔드포인트에서 받는다
  *
  * 계약을 전하는 길을 확장마다 `GET …/content-media/target` 하나로 맞췄다. 페이지 폼은 데이터 소스 `contentMediaTarget` 으로
  * 받아 `html_editor` 의 `mediaUpload` 에 넘기고, 폼 임시 키를 `fields.temp_key` 에 더한다(옛 첨부 설정 응답의 `content_media` 는

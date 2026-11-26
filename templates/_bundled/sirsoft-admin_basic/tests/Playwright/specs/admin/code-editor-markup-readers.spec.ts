@@ -1,5 +1,5 @@
 /**
- * sirsoft-admin_basic — 코드 편집기: `_global.editorMarkup` 을 **읽는 6곳** 1:1 (#476, 계획서 §13)
+ * sirsoft-admin_basic — 코드 편집기: `_global.editorMarkup` 을 **읽는 6곳** 1:1
  *
  * 편집 버퍼의 소유권이 전역에서 `<code-workspace>` 로 넘어가면서(파일별 버퍼), 전역 `editorMarkup`
  * 은 활성 버퍼가 `onChange` 로 밀어 넣는 **파생값**이 됐다. 그 값을 읽는 자리가 여섯이다 —

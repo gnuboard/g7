@@ -34,6 +34,6 @@ validation:
   note: |
     엔진 원인 두 갈래는 engine-v1.81.2(7.1.1)에서 고쳤다 — 저장소 A 함수형 갱신이 shallow·replace 를 지키고(handleLocalSetState
     의 표지 판정), 루트 렌더 병합이 늦은 B 사본에만 남은 키를 뺀다(dropLaggingRenderBaseKeys). 핸들러의 null 선행(회피 수정)은 그대로 두었다(무해).
-    옵션 선택 섹션은 노드 id 가 아니라 `data-testid="option-select"` 로 찾는다(#408) — 구매 카드와 바텀시트가 같은 조각을 함께
+    옵션 선택 섹션은 노드 id 가 아니라 `data-testid="option-select"` 로 찾는다 — 구매 카드와 바텀시트가 같은 조각을 함께
     포함해 id 를 두면 시트를 연 화면에서 DOM id 가 겹친다.
     *_after_rerender 축은 회피 수정만으로는 red(엔진 렌더 병합 장치를 끄면 2 failed — 「색상」 칸 앞 값).

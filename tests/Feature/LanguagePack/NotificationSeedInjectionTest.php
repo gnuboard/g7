@@ -116,7 +116,7 @@ class NotificationSeedInjectionTest extends TestCase
     /**
      * 실경로 회귀 — 코어 시더(loadConfigSeed)는 config/core.php 원형(연관 배열,
      * 항목에 type 키 없음)을 그대로 필터에 넘긴다. injector 가 $def['type'] 만 보면
-     * 전 항목이 스킵되어 ja 가 조용히 주입되지 않는다 (2026-08-24 실측 — #597 보완 실측).
+     * 전 항목이 스킵되어 ja 가 조용히 주입되지 않는다 (2026-08-24 실측).
      *
      * @scenario domain=notification, entry=seeder_filter
      *
@@ -179,7 +179,7 @@ class NotificationSeedInjectionTest extends TestCase
      * [기본값 복원] 경로 회귀 — NotificationTemplateService::getDefaultTemplateData 는
      * core.notification.filter_default_definitions 필터만 타고 언어팩 주입에는 참여하지
      * 않아, 복원을 누르면 팩이 주입해 둔 로케일(ja)이 ko/en 대체로 영구 소실됐다
-     * (실사례: 2026-08-23 복원 실측이 welcome ja 를 지움 — #597 보완 실측에서 확정).
+     * (실사례: 2026-08-23 복원 실측이 welcome ja 를 지움).
      * 복원 기본값에도 활성 팩 seed 로케일이 병합되어야 한다.
      *
      * @scenario domain=notification, entry=reset_default

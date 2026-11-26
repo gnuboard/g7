@@ -231,7 +231,7 @@ describe('Input 컴포넌트', () => {
     // autoFocus는 jsdom 환경에서 제대로 테스트되지 않으므로 생략
   });
 
-  // composeSemanticClassName 회귀 테스트 (#369)
+  // composeSemanticClassName 회귀 테스트
   // 호출처가 이미 시맨틱 토큰을 명시한 경우 컴포넌트가 무조건 prepend 하여
   // "input input ..." 으로 중복되던 결함 해소를 검증한다.
   describe('디폴트 시맨틱 클래스 머지', () => {
@@ -455,7 +455,7 @@ describe('Input 컴포넌트', () => {
 
     /**
      * 포커스가 남은 채 같은 화면끼리 이동해 폼이 바뀌면(외부에서 값을 비움) 화면도 따라간다 — 종전에는 포커스 중
-     * 동기화를 통째로 건너뛰어 이전 회원 수정 화면에서 치던 비밀번호가 다음 회원 화면 칸에 남았다(#736 S2).
+     * 동기화를 통째로 건너뛰어 이전 회원 수정 화면에서 치던 비밀번호가 다음 회원 화면 칸에 남았다.
      *
      * @scenario focus=kept, external=reset
      * @effects focused_input_follows_external_reset

@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * 모듈·플러그인 소유 레이아웃 행의 역변환 캐시 (#712 F6b).
+ * 모듈·플러그인 소유 레이아웃 행의 역변환 캐시.
  *
  * 참조 점검(`findReferences` — 삭제·이름 변경 전)은 그 행을 역변환할 때 행의 `source_identifier`(모듈 식별자)를
  * 템플릿 자리에 넘긴다. 역변환이 템플릿 표에 의존하던 때는 그 호출이 실패해 빈 마크업이 캐시에 남았고, 같은 행의

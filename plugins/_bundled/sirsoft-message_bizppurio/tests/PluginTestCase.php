@@ -147,7 +147,7 @@ abstract class PluginTestCase extends TestCase
      * 테스트가 실제 로컬 런타임 설정 파일을 덮어써 검수 모드/자격증명이 오염된다
      * (RefreshDatabase 는 DB 만 롤백하고 파일시스템은 되돌리지 않음). 디스크 root 를
      * 임시 경로로 바꾸고 resolved 인스턴스를 purge 하여 실제 파일을 원천적으로 못
-     * 건드리게 한다. (회귀 배경: #458)
+     * 건드리게 한다.
      *
      * @return void 반환값 없음
      */

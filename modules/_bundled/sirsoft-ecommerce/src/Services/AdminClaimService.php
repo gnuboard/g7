@@ -182,7 +182,7 @@ class AdminClaimService
     }
 
     /**
-     * 상세의 신청서 단위 전이 바가 제공할 선택지를 만듭니다. (#599 후속 F1)
+     * 상세의 신청서 단위 전이 바가 제공할 선택지를 만듭니다.
      *
      * 두 축의 **교집합**이다 — ⓐ 운영자가 직접 지정할 수 있는 상태(`adminAssignableValues()`)와
      * ⓑ 지금 상태에서 갈 수 있는 상태(`allowedTransitions()`). ⓐ 만 보면 이미 승인된 건에
@@ -191,7 +191,7 @@ class AdminClaimService
      *
      * 그 교집합에서 **심사 선택지**(결제 요청·승인·보류·반려)만 남긴다 — 회수·발송 단계는 상품
      * 칸의 몫이고 완료는 [완료 처리] 가 유일한 입구다(`ClaimTransitionVocabulary::reviewOptionsFrom()`).
-     * 남은 선택지 중 **눌러도 `transition()` 이 거절할 것**은 싣지 않는다(#599 후속 운영 결정):
+     * 남은 선택지 중 **눌러도 `transition()` 이 거절할 것**은 싣지 않는다(후속 운영 결정):
      *
      *  - 결제대기 — 고객이 더 낼 돈이 없으면 `requestPayment()` 가 `claim_payment_not_required` 로 거절한다.
      *  - 승인 — 신청 시점 결제의 미수납 건은 `divertApprovalToPayment()` 가 `claim_payment_outstanding` 으로 거절한다.
@@ -532,7 +532,7 @@ class AdminClaimService
         // **이미 반려된 신청서에 구매자가 돈을 낼 수 있다**: 결제 가드가 보는 것은 결제행의
         // `isPending()` 뿐이고 신청서 상태가 아니다(`ClaimPaymentService::pay():250`). 그렇게 들어온
         // 돈은 되돌릴 경로도 없다 — 반려는 이미 끝난 전이라 환급을 부를 자리가 남지 않는다.
-        // (2026-09-22 #599 실측: 반려 직후 구매자 상세에 [결제하기]가 그대로 서 있었고
+        // (2026-09-22 실측: 반려 직후 구매자 상세에 [결제하기]가 그대로 서 있었고
         //  누르자 PG 결제창이 열렸다.)
         //
         // 고아 정리 배치도 이 정리를 전제로 적혀 있다 — `CancelOrphanClaimPaymentsCommand` 헤더의
@@ -550,7 +550,7 @@ class AdminClaimService
      *
      * 신청서 단위 승인과 상품 단위 승인이 **같은 게이트**를 지나야 한다. 상품 행 승인이 이
      * 판정을 건너뛰면 헤더가 `payment_pending → approved` 로 따라가(`syncHeaderFromOptions`)
-     * 돈을 받지 않은 채 승인된다(#599 validate P2 #1).
+     * 돈을 받지 않은 채 승인된다(validate P2 #1).
      *
      * - `pay_on_approval`: 결제 건을 만들고 결제대기로 옮긴다 — 결제 확정이 승인을 잇는다.
      * - `pay_on_request`: 결제 통로가 이미 열려 있으므로 `claim_payment_outstanding` 로 거절한다.
@@ -584,8 +584,8 @@ class AdminClaimService
      *
      * **종결은 돈을 닫는 자리다.** 결제 가드가 보는 것은 결제행의 `isPending()` 뿐이고 신청서
      * 상태가 아니라(`ClaimPaymentService::pay()`), 종결 경로가 대기 건을 닫지 않으면 이미 끝난
-     * 신청서에 구매자가 돈을 낼 수 있고 그 돈을 되돌릴 자리도 남지 않는다(#599 실측).
-     * 신청서 단위 반려와 상품 단위 전량 반려·철회가 모두 이 한 곳을 지난다(#599 validate P2 #2).
+     * 신청서에 구매자가 돈을 낼 수 있고 그 돈을 되돌릴 자리도 남지 않는다.
+     * 신청서 단위 반려와 상품 단위 전량 반려·철회가 모두 이 한 곳을 지난다(validate P2 #2).
      * 고아 정리 배치(`CancelOrphanClaimPaymentsCommand`)도 이 정리를 전제로 적혀 있다.
      *
      * @param  OrderExchange|OrderReturn  $claim  전이된 신청서
@@ -720,7 +720,7 @@ class AdminClaimService
                 // 부분 성공 계약은 **예상하지 못한 실패**에도 적용된다. 반려 직후의 환급(PG 호출)이나
                 // 리스너 장애처럼 도메인 예외가 아닌 실패가 한 건에서 나면, 예전에는 그 한 건이
                 // 요청 전체를 500 으로 끊어 앞서 처리된 건의 결과까지 운영자가 알 수 없었다
-                // (#599 validate P2 #11). 원인은 로그에 남기고 응답에는 원문을 싣지 않는다.
+                // (validate P2 #11). 원인은 로그에 남기고 응답에는 원문을 싣지 않는다.
                 Log::error('[claim.bulk] 일괄 전이 중 건별 처리 실패 — skip 으로 보고', [
                     'claim_id' => $claim->id,
                     'claim_number' => $this->claimNumberOf($claim),
@@ -989,7 +989,7 @@ class AdminClaimService
      * @param  int|null  $processedBy  처리 관리자 ID
      * @return OrderExchange|OrderReturn|OrderRefund 갱신된 신청서
      *
-     * 금액 갱신과 청구 정산(`settleChargeDifference()`)은 **한 트랜잭션**이다(#599 validate P2 #12).
+     * 금액 갱신과 청구 정산(`settleChargeDifference()`)은 **한 트랜잭션**이다(validate P2 #12).
      * 정산이 실패하면(결제 수단 해석 불가 등) 금액도 함께 되돌아간다 — 예전에는 금액만 바뀐 채
      * 남아 화면은 미수납을 적는데 낼 자리가 없었다. 수정 훅은 커밋 뒤에 나간다.
      *
@@ -1038,7 +1038,7 @@ class AdminClaimService
         // 예전에는 금액 컬럼만 갱신하고 결제행을 그대로 뒀다. 그래서 운영자가 회수비 3,000원을
         // 0원으로 낮춰도 구매자 화면에는 3,000원 결제 버튼이 남아 **안 받기로 한 돈을 받을 수**
         // 있었고, 반대로 청구 0원 신청서를 4,000원으로 올리면 화면은 「미수납 4,000원」이라 적는데
-        // 결제행이 없어 **낼 자리가 없었다**(2026-09-22 #599 실측).
+        // 결제행이 없어 **낼 자리가 없었다**(2026-09-22).
         //
         // **이미 결제한 건은 건드리지 않는다**(운영 결정 2026-09-23). 초과 수납이 생겨도 자동
         // 환급하지 않고 운영이 처리한다 — 관리자 금액 수정에 자동 환급을 하기로 한 합의가 없고
@@ -1546,7 +1546,7 @@ class AdminClaimService
      * 방어적 폴백이며 현재 스키마에서는 도달하지 않는다 — `order_exchanges.currency_code` ·
      * `order_returns.currency_code` 가 NOT NULL(기본값 보유)이라 호출부의 `?:` 좌변이 항상
      * 참이다. 판정 규칙은 클레임 서비스 공용 헬퍼
-     * (`CurrencyConversionService::resolveOrderBaseCurrency()`) 하나가 소유한다(#599 validate P2 #14).
+     * (`CurrencyConversionService::resolveOrderBaseCurrency()`) 하나가 소유한다(validate P2 #14).
      *
      * @param  Order|null  $order  주문
      * @return string 기준 통화 코드
@@ -1963,7 +1963,7 @@ class AdminClaimService
      *
      * 「적립 차감」 예고(완료 모달 요약 · 상세 정산 카드)의 근거다. 반품·교환을 완료하면 주문옵션
      * 상태가 바뀌어 적립 대상 조회에서 빠지므로, 적립 **전**인 상품은 예정분이 나가지 않는다 —
-     * 예고가 맞다. 반면 이미 적립이 나간 상품은 되돌리지 않는다(#599 T2-D13 · 운영 결정 2026-09-23
+     * 예고가 맞다. 반면 이미 적립이 나간 상품은 되돌리지 않는다(운영 결정 2026-09-23
      * — `UserMileageService::cancelEarnForOption()`). 예전 판정(회원 주문 + 완료 대상 존재)은 그
      * 결정 뒤에도 남아, 120원이 이미 적립된 상품의 반품에 **일어나지 않을 차감**을 예고했다
      * (2026-09-23 재실측: 반품 완료 뒤 `earn_cancel` 0건 · 적립 lot 그대로).

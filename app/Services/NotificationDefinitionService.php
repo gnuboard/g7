@@ -339,7 +339,7 @@ class NotificationDefinitionService
      */
     public function getDefinitions(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        // 확장이 자기 화면에서만 편집하는 알림 종류(예: 쿠폰별 발급 알림 `coupon_issued.{id}`)는 목록에서 뺀다 (7.2.1, #952).
+        // 확장이 자기 화면에서만 편집하는 알림 종류(예: 쿠폰별 발급 알림 `coupon_issued.{id}`)는 목록에서 뺀다 (7.2.1).
         // 숨긴 종류도 단건 조회·수정·미리보기·기본값 복원은 그대로 된다 — 목록에서만 빠진다.
         if (empty($filters['include_hidden'])) {
             $prefixes = HookManager::applyFilters('core.notification_definition.filter_hidden_type_prefixes', [], $filters);

@@ -116,7 +116,7 @@ abstract class AbstractExtensionServiceProvider extends ServiceProvider
     }
 
     /**
-     * 이 확장이 지금 활성 상태인지 판정합니다 — boot 부수효과 게이트(#730 결정, #860).
+     * 이 확장이 지금 활성 상태인지 판정합니다 — boot 부수효과 게이트.
      *
      * 비활성 확장도 provider 는 등록된다(바인딩·번역은 설치 시더·관리 화면이 쓴다). 다만 요청 처리에 끼어드는
      * boot 부수효과(레이트리미터·쿠키 암호화 예외·큐 훅·사이트맵 기여자 등)는 활성일 때만 건다:

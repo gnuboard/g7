@@ -1,4 +1,4 @@
-feature: 쇼핑몰 설정 주문 설정 탭의 주문서 항목 구획 (#490 D1, D23)
+feature: 쇼핑몰 설정 주문 설정 탭의 주문서 항목 구획
 
 description: |
   주문 설정 탭 맨 아래의 「주문서 항목」 구획은 주문서 항목 집합(`sirsoft-ecommerce.order_contact`)의 항목을 표로 그리고,

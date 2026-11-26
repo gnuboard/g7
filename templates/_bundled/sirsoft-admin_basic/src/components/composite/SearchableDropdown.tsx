@@ -59,7 +59,7 @@ export interface SearchableDropdownProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
-  /** 트리거 단추 이름 — 단추는 「{이름} {현재 값}」으로 읽힌다. 없으면 곁 라벨을 잇는다(#757) */
+  /** 트리거 단추 이름 — 단추는 「{이름} {현재 값}」으로 읽힌다. 없으면 곁 라벨을 잇는다 */
   'aria-label'?: string;
   /** 트리거 단추 이름이 될 요소 id — 단추는 「{그 요소 글자} {현재 값}」으로 읽힌다 */
   'aria-labelledby'?: string;
@@ -141,7 +141,7 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
     return selected?.label || triggerLabel;
   }, [selectedValues, options, multiple, triggerLabel, selectedCountLabel]);
 
-  // 트리거 이름 — 종전에는 고른 값만 읽혀 무엇을 고르는 칸인지 알 수 없었다(회원 국가·작성자·수신자, #757).
+  // 트리거 이름 — 종전에는 고른 값만 읽혀 무엇을 고르는 칸인지 알 수 없었다(회원 국가·작성자·수신자).
   // 이름 span + 현재 값 span 을 aria-labelledby 로 이어 「{이름} {현재 값}」으로 읽힌다. 이름 prop 이 없으면 곁 라벨 + 단추 글자.
   const domId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const nameId = `${domId}-name`;

@@ -21,7 +21,7 @@
  *   3. 게스트 사이트 언어(g7_locale) 기반 통화 추정 — currencies[].locales 매핑
  *      (회원가입 통화 부여 SignupCurrencyResolver 와 동일 입력·동일 우선순위).
  *      관리자 화면(인증 종류 admin)에서는 돌리지 않는다 — 관리자 화면 언어가 표시 통화를 바꾸지 않게
- *      한다(#869 S13).
+ *      한다.
  *   4. params.defaultCurrency(관리자 설정 default_currency)
  *   5. 'KRW' 최종 폴백
  */
@@ -133,7 +133,7 @@ function resolveCurrencyByLocale(locale: string | null): string | null {
  * 보는 금액 표기일 뿐이고, 관리자 레이아웃은 current_user 를 전역(currentUser)으로 올리지 않아
  * 계정 통화도 읽지 못한다. 그래서 관리자 화면에서 추정을 돌리면 관리자 화면 언어를 바꿀 때마다
  * 표시 통화가 따라 바뀐다(ko 는 KRW 하나에 매칭, en 은 여러 통화에 걸려 기본 통화로 떨어지는 식,
- * #869 S13). 인증 종류는 셸이 첫 렌더 전에 미리 받아 두므로 init_actions 시점에 이미 정해져 있다.
+ *). 인증 종류는 셸이 첫 렌더 전에 미리 받아 두므로 init_actions 시점에 이미 정해져 있다.
  *
  * @return 관리자 인증 문맥이면 true
  */

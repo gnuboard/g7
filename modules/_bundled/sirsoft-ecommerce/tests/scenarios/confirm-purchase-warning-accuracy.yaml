@@ -11,7 +11,7 @@ description: |
   그대로 신청할 수 있다. 닫히는 것은 취소·환불뿐이다 —
   `branchForStatus(confirmed)` 가 null 이라 refund 가 유형 목록에서 빠진다.
 
-  #599 통합실측 세션2 에서 주문 107 의 사과(옵션 231)를 구매확정한 직후
+  실측에서 주문 107 의 사과(옵션 231)를 구매확정한 직후
   `claimable-options` 가 `claimable_types: ["exchange","return"]` 을 그대로 돌려주는 것을
   확인했다 — 화면 경고와 정반대다.
 

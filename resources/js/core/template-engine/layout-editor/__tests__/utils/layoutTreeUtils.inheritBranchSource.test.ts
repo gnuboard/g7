@@ -1,5 +1,5 @@
 /**
- * inheritSourceIntoBranches — 잠긴 공통 레이아웃 노드의 분기 자식·footer 에 출처 메타를 잇는다 (#869)
+ * inheritSourceIntoBranches — 잠긴 공통 레이아웃 노드의 분기 자식·footer 에 출처 메타를 잇는다
  *
  * 결함: 화면 편집에서 공통 레이아웃(base) 헤더 단추의 portable 분기 자식에 드래그 핸들이 생겼는데 놓을 칸이 없었다.
  * 서버는 출처 메타를 children 에만 달아 분기 자식은 「잠금 없음」(classifyLockKind = none)이었다. 메타를 이으면

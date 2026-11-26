@@ -327,10 +327,10 @@ describe('SortableMenuItem', () => {
 });
 
 /**
- * 구조형 메뉴 아이콘 (#381) — 메뉴 관리 목록 항목은 iconSpec(class·image·svg)을 MenuIcon 으로 그리고,
+ * 구조형 메뉴 아이콘 — 메뉴 관리 목록 항목은 iconSpec(class·image·svg)을 MenuIcon 으로 그리고,
  * spec 이 없으면 호환 문자열 icon(이커머스 분류·브랜드 목록의 맨 이름 포함)을 Icon 으로, 그것도 없으면 `file` 을 그린다.
  */
-describe('SortableMenuItem — 구조형 메뉴 아이콘 (#381)', () => {
+describe('SortableMenuItem — 구조형 메뉴 아이콘', () => {
   const ICON_CLASSES = 'w-4 h-4 text-gray-600 dark:text-gray-400';
 
   /**

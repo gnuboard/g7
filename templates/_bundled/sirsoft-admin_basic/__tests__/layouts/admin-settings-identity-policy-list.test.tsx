@@ -2,7 +2,7 @@
  * @file admin-settings-identity-policy-list.test.tsx
  * @description 환경설정 > 본인인증 정책 목록 (S1d) 회귀 테스트
  *
- * 회귀 사례 (#297):
+ * 회귀 사례:
  * 1. PC 는 기존 테이블 그대로 유지, 모바일에서만 카드 목록 (계획서 1281~1305 라인)
  *    — 분기 방식은 G7 `responsive` 속성으로 처리 (tailwind `hidden md:block` 금지)
  * 2. 활성 상태(enabled) 가 토글로 즉시 변경 가능해야 함 (모든 디바이스 공통)
@@ -47,7 +47,7 @@ function collectNodes(node: any, predicate: (n: any) => boolean): any[] {
   return result;
 }
 
-describe('S1d 정책 목록 — PC 테이블 + 모바일 카드 (G7 responsive) (#297)', () => {
+describe('S1d 정책 목록 — PC 테이블 + 모바일 카드 (G7 responsive)', () => {
   describe('responsive 속성 분기 (tailwind hidden md:block 금지)', () => {
     it('tailwind hidden md:block / md:hidden 디바이스 분기 패턴은 사용하지 않는다', () => {
       const partialStr = JSON.stringify(policiesPartial);
@@ -146,7 +146,7 @@ describe('S1d 정책 목록 — PC 테이블 + 모바일 카드 (G7 responsive) 
     });
   });
 
-  describe('삭제 버튼 — confirm 핸들러 미사용, 모달 + 스피너 패턴 (#297)', () => {
+  describe('삭제 버튼 — confirm 핸들러 미사용, 모달 + 스피너 패턴', () => {
     /**
      * 회귀 사례: confirm 핸들러는 등록되어 있지 않아 "Unknown action handler: confirm" 에러로 삭제 자체 실행 불가.
      * 기존 admin_role_list/_modal_delete.g7.html 과 동일한 setState + openModal 패턴으로 교체 + 모달 측에서 스피너/disabled 처리.

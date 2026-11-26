@@ -10,7 +10,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * 코어 업데이트 「custom 예약 자리」 보호 단위 테스트 (#792 F0-1)
+ * 코어 업데이트 「custom 예약 자리」 보호 단위 테스트
  *
  * 업데이트 대상 폴더(`routes`·`resources`·`app`…) 안쪽에 개발자가 둔 custom 파일이 증분·prune·백업 없음
  * 세 모드 어디에서도 덮이거나 지워지지 않는지, 롤백 manifest·prune 이 건드리지 않는지 잠근다.

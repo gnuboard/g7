@@ -1,5 +1,5 @@
 /**
- * E2E: 엔진이 액션 정의를 옮겨 담을 때 키를 버리지 않는다 (배포 번들 기준, #753 / engine-v1.80.0)
+ * E2E: 엔진이 액션 정의를 옮겨 담을 때 키를 버리지 않는다 (배포 번들 기준, engine-v1.80.0)
  *
  * `<on listen>`·단일 `<fail>`·`<on-code>`·데이터소스 오류 처리·`<init>` 안의 sequence·conditions·switch·if·
  * action-ref·target 이 경고 없이 버려졌다(키 4개만 옮겨 담음). 단위 시험은 React 커밋·실제 네트워크 실패를

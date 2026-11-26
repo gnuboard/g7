@@ -11,7 +11,7 @@ use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
 /**
  * 사용자 화면 공개 응답(`hero` API)의 배너 미디어가 `url`(API·썸네일 기준)과 `direct_url`(행 disk 직접 주소)을 함께 싣는지
- * 고정한다 (#878). 혼재 운용에서 행마다 정확해야 한다 — 공개 디스크 행은 직접 주소, 기본 디스크 행은 null.
+ * 고정한다. 혼재 운용에서 행마다 정확해야 한다 — 공개 디스크 행은 직접 주소, 기본 디스크 행은 null.
  */
 class PublicBannerPresenterDirectUrlTest extends PluginTestCase
 {

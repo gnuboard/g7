@@ -1,5 +1,5 @@
 /**
- * 구매자 클레임 신청서 작성 — 교환 (#599 S11 · S15b 확장 · D29·D6·D12·P13)
+ * 구매자 클레임 신청서 작성 — 교환 (S15b 확장 · D29·D6·D12·P13)
  *
  * 브라우저로만 드러나는 축을 본다:
  *
@@ -397,7 +397,7 @@ test.describe('구매자 클레임 신청서 작성 — 교환', () => {
 
   // @scenario exchange_mode=change, preview_result=ok
   // @effects claim_apply_exchange_after_column_reflects_substitution, claim_apply_exchange_substituted_rows_render
-  test('교환 후 열은 옵션 치환을 반영한 값이고 교환 대상 행(old→new)이 선다 (#599 후속 P5)', async ({ page, memberToken }) => {
+  test('교환 후 열은 옵션 치환을 반영한 값이고 교환 대상 행(old→new)이 선다', async ({ page, memberToken }) => {
     await grantFunctionalConsent(page);
     await authenticatePage(page, memberToken);
     await mockOrder(page);

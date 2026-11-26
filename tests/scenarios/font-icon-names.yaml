@@ -6,7 +6,7 @@ description: |
 
   배경:
     - 관리자 화면(이커머스·결제 플러그인·코어 설정·스케줄)에 Lucide 식 이름(`x-circle`·`refresh-cw`·
-      `more-horizontal`·`alert-circle` 등)이 섞여 35개 파일 126곳의 아이콘이 비어 있었다(#682 실측 후속 4).
+      `more-horizontal`·`alert-circle` 등)이 섞여 35개 파일 126곳의 아이콘이 비어 있었다(실측 후속 4).
     - 사용자 템플릿 `Icon` 은 변환표(`iconNameMap`)로 몇몇 별칭을 FA 이름으로 바꾸지만 관리자 템플릿
       `Icon` 은 변환표를 쓰지 않는다 — 같은 이름이 한쪽에서만 그려진다.
 
@@ -16,7 +16,7 @@ description: |
       어느 템플릿이 그릴지 모르므로 풀리는 FA 이름이어야 한다. 새 백엔드 표면은 의미 토큰(`status-*`)을 내고 템플릿이
       해석하므로 그 토큰은 판정에서 뺀다.
     - 관리자 메뉴 선언(`config/core.php` menus · 번들 모듈 `module.php` · 플러그인 `plugin.php`)의 class 아이콘 —
-      메뉴 아이콘이 이미지·SVG 도 받게 된 뒤에도(#381) class 형은 FA 글꼴로 그리므로 모든 토큰이 FA 이름이어야 한다.
+      메뉴 아이콘이 이미지·SVG 도 받게 된 뒤에도 class 형은 FA 글꼴로 그리므로 모든 토큰이 FA 이름이어야 한다.
 
 axes:
   source: [layout, server, menu_declaration]

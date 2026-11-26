@@ -397,7 +397,7 @@ class UserControllerValidationTest extends TestCase
      * 사용자 생성 시 역할을 생략하면 기본 역할(user)로 만들어진다.
      *
      * 역할 칸은 역할 부여 권한(core.users.update)이 있어야 열리므로, 회원 생성 권한만 가진
-     * 운영자는 역할 없이 등록한다 — 역할을 필수로 두면 그 등록이 늘 422 였다(#703).
+     * 운영자는 역할 없이 등록한다 — 역할을 필수로 두면 그 등록이 늘 422 였다.
      *
      * @scenario operation=store,input=roles_omitted
      *

@@ -14,7 +14,7 @@ use Plugins\Sirsoft\HeroSection\Database\Factories\BannerImageFactory;
  * 배너 파일 — 기기(PC·모바일)·종류(이미지·영상)마다 1개. 테이블 이름은 이미지만 받던 때 그대로다.
  *
  * 공개 주소는 무작위 해시(`hash`)로 만들고 원본 경로는 응답에 싣지 않는다. 행 disk 가 직접 URL 을 내는 디스크(공개 자산
- * 디스크 — public·CDN)면 원본 한 장은 그 주소로도 받을 수 있다(`directUrl()`, #878).
+ * 디스크 — public·CDN)면 원본 한 장은 그 주소로도 받을 수 있다(`directUrl()`).
  */
 class BannerImage extends Model
 {
@@ -93,7 +93,7 @@ class BannerImage extends Model
     private static array $storageByDisk = [];
 
     /**
-     * 원본 파일의 직접 주소를 반환합니다 — 행 disk 가 직접 URL 을 내지 않으면 null (#878).
+     * 원본 파일의 직접 주소를 반환합니다 — 행 disk 가 직접 URL 을 내지 않으면 null.
      *
      * 행에 기록된 disk 의 드라이버 `url()` 이 주소를 주면 그것을 쓴다. 공개 자산 디스크 설정을 나중에 꺼도 그 디스크에
      * 남은 행은 계속 직접 주소를 낸다(제품 결정 — 확장 선례와 같음). 이 주소는 **원본 한 장**에만 쓴다 — 썸네일(`?size=`)과

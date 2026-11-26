@@ -334,7 +334,7 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
     }
 
     /**
-     * 사이트 기본 공유 이미지(SEO 탭)도 설정이 직접 참조하는 첨부라 보호된다 (#434 결함 ①).
+     * 사이트 기본 공유 이미지(SEO 탭)도 설정이 직접 참조하는 첨부라 보호된다 (결함 ①).
      *
      * 보호 목록이 사이트 로고 하나로 손으로 적혀 있어, 뒤에 생긴 같은 모양의 설정(og_image_default)이 빠졌다.
      *
@@ -357,7 +357,7 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
     }
 
     /**
-     * 코어 일반 탭 파비콘도 보호된다 (#434).
+     * 코어 일반 탭 파비콘도 보호된다.
      *
      * @scenario age=past_retention, owner_state=no_owner, protected=current_site_favicon, source_owner=core
      *
@@ -378,7 +378,7 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
     }
 
     /**
-     * 템플릿 설정이 참조하는 첨부(템플릿 파비콘)는 보호되고, 템플릿을 지웠어도 설정 파일이 남아 있으면 보호된다 (#434).
+     * 템플릿 설정이 참조하는 첨부(템플릿 파비콘)는 보호되고, 템플릿을 지웠어도 설정 파일이 남아 있으면 보호된다.
      *
      * 「데이터도 삭제」를 고르지 않은 삭제는 설정을 남겨 재설치 때 복원한다 — 그 사이에 첨부가 정리되면 복원된 설정이 사라진 첨부를 가리킨다.
      *

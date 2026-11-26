@@ -1,6 +1,6 @@
 /**
  * @file admin-role-form-guest-scope.test.ts
- * @description 역할 폼 — 비회원 역할의 권한 범위 숨김·저장 정규화·안내 구조 회귀 테스트 (#789)
+ * @description 역할 폼 — 비회원 역할의 권한 범위 숨김·저장 정규화·안내 구조 회귀 테스트
  *
  * 비회원은 글의 주인을 가릴 수 없어 범위(본인만·소유역할)가 적용되지 않는다. 그래서 역할 응답이
  * `supports_permission_scope === false` 를 실어 주는 수정 화면에서는
@@ -30,7 +30,7 @@ function flattenActions(actions: any): any[] {
 
 const nodes = flatten((roleForm as any).slots?.content ?? (roleForm as any).components);
 
-describe('역할 폼 — 비회원 역할 권한 범위 (#789)', () => {
+describe('역할 폼 — 비회원 역할 권한 범위', () => {
   // @scenario role=guest, support=scope_supported
   // @effects scope_dropdown_hidden_for_guest_role
   it('권한 트리에 scopeDisabled 가 수정 모드 + supports_permission_scope === false 로 걸린다', () => {

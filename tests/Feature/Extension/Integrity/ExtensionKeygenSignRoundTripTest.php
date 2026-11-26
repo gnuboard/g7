@@ -11,7 +11,7 @@ use Tests\Concerns\PackageSignatureFixtures;
 use Tests\TestCase;
 
 /**
- * 공개 제작자 명령 `extension:keygen` → `extension:sign` → 검증 왕복 (#916 ④, D21)
+ * 공개 제작자 명령 `extension:keygen` → `extension:sign` → 검증 왕복
  *
  * 키 파일은 권한 0600·덮어쓰기 거부, 디렉터리 서명은 결정적 ZIP(같은 내용이면 같은 바이트)을 만들고, 만든 서명은 그 공개키를
  * 신뢰 키로 등록한 사이트에서 「서명 확인됨」이다.

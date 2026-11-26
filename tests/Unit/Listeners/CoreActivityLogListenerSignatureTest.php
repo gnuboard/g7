@@ -11,7 +11,7 @@ use Tests\TestCase;
  * 회귀: 매니저(Module/Plugin/TemplateManager)의 after_deactivate 훅 발화 시그니처와
  * Listener 핸들러 메서드 시그니처가 일치해야 한다.
  *
- * 이슈 #302 자동 비활성화 경로(부팅 시 validateAndDeactivateIncompatible*) 가
+ * 자동 비활성화 경로(부팅 시 validateAndDeactivateIncompatible*) 가
  * 트리거될 때 다음 TypeError 가 발생하던 회귀 차단:
  *
  *   handleTemplateAfterDeactivate(): Argument #1 ($templateInfo) must be of type

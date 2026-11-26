@@ -1,5 +1,5 @@
 /**
- * E2E: 환경설정 > 보안 — "내부 네트워크 주소 호출 허용" 토글 (#466)
+ * E2E: 환경설정 > 보안 — "내부 네트워크 주소 호출 허용" 토글
  *
  * @scenario admin_settings_security_outbound_toggle
  * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): toggle_mounted, toggle_interactive, password_limit_binding_resolved
@@ -25,7 +25,7 @@ async function gotoSecurityTab(page: import('@playwright/test').Page): Promise<v
 
 // @scenario tab=security, permitted=yes
 // @effects toggle_mounted
-test('@smoke #466 - 보안 탭에 "내부 네트워크 주소 호출 허용" 토글이 번역문과 함께 마운트된다', async ({ page }) => {
+test('@smoke 보안 탭에 "내부 네트워크 주소 호출 허용" 토글이 번역문과 함께 마운트된다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -46,7 +46,7 @@ test('@smoke #466 - 보안 탭에 "내부 네트워크 주소 호출 허용" 토
 
 // @scenario tab=security, permitted=yes
 // @effects toggle_interactive
-test('#466 - 토글을 클릭하면 상태가 바뀌고 저장 버튼이 활성화된다', async ({ page }) => {
+test('토글을 클릭하면 상태가 바뀌고 저장 버튼이 활성화된다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 
@@ -68,7 +68,7 @@ test('#466 - 토글을 클릭하면 상태가 바뀌고 저장 버튼이 활성�
 
 // @scenario tab=security, permitted=yes
 // @effects password_limit_binding_resolved
-test('#493 - 비밀번호 최소 길이의 경계값이 서버 한계값에서 실제로 해석된다', async ({ page }) => {
+test('비밀번호 최소 길이의 경계값이 서버 한계값에서 실제로 해석된다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 

@@ -1,10 +1,10 @@
 feature: 템플릿 환경설정 (선언 파일·설정 API·설정 화면 교차 등록·명령줄)
 
 description: |
-  #434. 템플릿은 PHP 클래스가 없어 `config/settings/defaults.json` 한 벌에서 기본값·검증·노출을 파생한다.
+  템플릿은 PHP 클래스가 없어 `config/settings/defaults.json` 한 벌에서 기본값·검증·노출을 파생한다.
   모듈 설정과 같은 섹션 구조(`_meta.categories`·섹션별 저장 파일·섹션/키 2단 노출·비밀값 암호화)이고,
   설정 화면은 템플릿이 자기 레이아웃(`templates/{id}/settings/template_settings.g7.html`)과 부품 묶음(`dist/settings/*`)으로 공급한다 —
-  공용 화면은 없다(#434 D28·D32). 관리자 화면은 설치된 템플릿(꺼진 것 포함)의 묶음과 문구(`{id}.{묶음}`)를 싣고,
+  공용 화면은 없다. 관리자 화면은 설치된 템플릿(꺼진 것 포함)의 묶음과 문구(`{id}.{묶음}`)를 싣고,
   켜진 관리자 템플릿은 `layouts/overrides/{id}/template_settings.*`·부품 `overrides` 로 그 화면을 덮어쓸 수 있다.
   설정 화면(`templates/{id}/settings/template_settings.g7.html`)은 코어가 켜진 관리자 템플릿에 `{id}.template_settings` 로 교차 등록하고,
   `/admin/templates/{id}/settings` 라우트를 만든다. 보기는 core.templates.read, 저장은 core.templates.settings.
@@ -50,7 +50,7 @@ effects:
   - plugin_settings_readable_with_view_permission
   - template_settings_bound_text_shows_owner_notice
   - field_type_controls_rendered
-  - settings_toggle_input_id_unique_per_instance   # 설정 화면 스위치(boolean 칸)가 같은 name 으로 여럿이어도 안쪽 checkbox id 가 겹치지 않는다 (#408)
+  - settings_toggle_input_id_unique_per_instance   # 설정 화면 스위치(boolean 칸)가 같은 name 으로 여럿이어도 안쪽 checkbox id 가 겹치지 않는다
   - multilingual_field_language_tabs
   - admin_logo_prefers_template_setting
   - accent_palette_defined_per_option

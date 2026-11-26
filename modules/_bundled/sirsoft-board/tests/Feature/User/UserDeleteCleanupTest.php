@@ -15,7 +15,7 @@ use Modules\Sirsoft\Board\Module;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 회원 삭제 시 게시판 소유 회원 데이터의 명시 삭제와 집계 재계산 (#888)
+ * 회원 삭제 시 게시판 소유 회원 데이터의 명시 삭제와 집계 재계산
  *
  * 회원 행에 삭제 연쇄 외래키로 걸린 게시판 테이블(`board_user_notification_settings`·`board_reactions`·
  * `board_post_scraps`)을 코어 회원 삭제가 `core.user.before_delete` 훅으로 게시판에 맡기고, 게시판은

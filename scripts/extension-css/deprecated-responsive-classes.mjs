@@ -24,7 +24,7 @@
  *   node scripts/extension-css/deprecated-responsive-classes.mjs utilities
  *       두 템플릿의 출시본 빌드 CSS 에 있던 반응형 아닌 클래스 중 지금 빌드 CSS 에 없는 것(레이아웃이 더 쓰지 않아 빠진
  *       일반 유틸리티)을 픽스처의 `utilities` 에 더한다. 이미 적힌 이름은 지우지 않는다 — 보존 블록을 넣은 뒤에 다시
- *       돌리면 차집합이 비므로 줄어들지 않게 합친다. 템플릿을 빌드한 뒤에 돌린다(#869 P8).
+ *       돌리면 차집합이 비므로 줄어들지 않게 합친다. 템플릿을 빌드한 뒤에 돌린다.
  *   node scripts/extension-css/deprecated-responsive-classes.mjs inject
  *       픽스처의 기준 집합을 각 Tailwind 입력 CSS 의 폐지 예정 블록(`DEPRECATED-RESPONSIVE-START`~`END`)에 쓴다.
  *       블록이 있으면 그 안만 바꾸고, 없으면 템플릿은 마지막 최상위 `@source` 뒤, 확장은 생성 블록

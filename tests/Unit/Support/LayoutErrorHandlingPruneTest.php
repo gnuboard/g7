@@ -8,7 +8,7 @@ use stdClass;
 use Tests\TestCase;
 
 /**
- * LayoutErrorHandlingPrune 단위 테스트 (#869)
+ * LayoutErrorHandlingPrune 단위 테스트
  *
  * 빈 동작의 세 가지 표현(EmptyMap 표식, stdClass, 빈 배열)을 모두 빈 동작으로 보고, 오류 처리 밖의 값과
  * 동작이 있는 코드는 건드리지 않는지 잰다.

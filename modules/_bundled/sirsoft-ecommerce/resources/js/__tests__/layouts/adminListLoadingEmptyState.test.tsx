@@ -87,7 +87,7 @@ const CASES: GridCase[] = [
   { screen: '상품 후기 목록', layout: reviewIndex, source: 'reviews', emptyKey: 'sirsoft-ecommerce.admin.product_review.table.empty' },
   // 환경설정 「스케줄」 탭(7.2.0) — develop-7.2.0 병합(2026-10-21)에서 전수 시험이 처음 만난 표
   { screen: '환경설정 스케줄 탭', layout: schedulesTab, source: 'ecommerceSchedules', emptyKey: 'sirsoft-ecommerce.admin.settings.schedules.empty' },
-  // 내보내기 관리(#787) — develop-7.2.0 위 리베이스(2026-10-22)에서 전수 시험이 처음 만난 표
+  // 내보내기 관리 — develop-7.2.0 위 리베이스(2026-10-22)에서 전수 시험이 처음 만난 표
   { screen: '내보내기 관리', layout: exportGrid, source: 'exports', emptyKey: 'sirsoft-ecommerce.admin.export.table.empty' },
 ];
 

@@ -1,7 +1,7 @@
 // e2e:allow 레이아웃 정적 구조(A·href·pageHref·탭 href) 단언 전용 — 브라우저 축(Ctrl·가운데 클릭 새 탭, 보통 클릭 SPA)은 admin-navigation-links.spec.ts 와 M1 링크 행 실측이 덮는다(시나리오 navigation-links.yaml).
 /**
  * @file navigation-links.test.ts
- * @description 관리자 템플릿 화면의 「다른 화면으로 옮기는」 자리가 링크(`<a href>`)인지 (#757 WP-L)
+ * @description 관리자 템플릿 화면의 「다른 화면으로 옮기는」 자리가 링크(`<a href>`)인지
  *
  * 화면 이동이 단추·span 에 `navigate` 액션을 붙인 구조라 렌더 시점에 주소가 없어 가운데 클릭·Ctrl+클릭·우클릭
  * 「새 탭에서 열기」가 되지 않았다. 이동은 `.g7.html` 에 `<a href>` 로 직접 쓰고(D10), 보통 클릭은 지금처럼 navigate 가
@@ -487,7 +487,7 @@ const result = scan();
 const innerMoves = innerMovePaths;
 const lines = (xs: Finding[]): string[] => xs.map((x) => x.what);
 
-describe('관리자 템플릿 화면 이동은 링크 (#757 WP-L)', () => {
+describe('관리자 템플릿 화면 이동은 링크', () => {
     // @scenario component=layout_lock
     // @effects layout_moves_are_links
     it('모집단이 레이아웃 전체에서 파생된다', () => {

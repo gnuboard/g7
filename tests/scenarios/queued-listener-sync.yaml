@@ -25,8 +25,8 @@ axes:
 effects:
   - log_written_in_send_cycle               # 발송 로그가 발송과 같은 자리에서 기록된다
   - shared_cache_invalidated_without_worker # 워커 없이 저장 직후 SEO 캐시가 비워진다
-  - seo_cache_cleared_on_general_save # 일반 탭(사이트 이름·로고·파비콘) 저장도 SEO 캐시를 비운다 (#434)
-  - seo_cache_cleared_on_save # 템플릿 설정(파비콘) 저장이 SEO 캐시를 비운다 (#434)
+  - seo_cache_cleared_on_general_save # 일반 탭(사이트 이름·로고·파비콘) 저장도 SEO 캐시를 비운다
+  - seo_cache_cleared_on_save # 템플릿 설정(파비콘) 저장이 SEO 캐시를 비운다
   - invalidation_deferred_until_commit      # 트랜잭션 안 발화는 커밋 뒤에 비운다
   - version_bumped_on_save                  # 설정 저장마다 버전(저장 시각)이 바뀐다
   - version_failure_does_not_block_save     # 버전 저장 실패가 설정 저장을 막지 않는다

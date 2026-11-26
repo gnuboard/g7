@@ -9,7 +9,7 @@
 
 /// <reference lib="es2021.weakref" />
 // WeakRef 는 ES2021 표준이라 코어 lib(ES2020)에 없다. DevTools 를 켠 개발 환경에서만 이 추적기가 돌므로
-// 이 파일에서만 WeakRef 타입을 싣는다(#869).
+// 이 파일에서만 WeakRef 타입을 싣는다.
 import { G7DevToolsCore } from './G7DevToolsCore';
 import type { ComponentStyleInfo, StyleIssue } from './types';
 import { breakpointVariantOf } from './TailwindValidator';

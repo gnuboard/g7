@@ -1,5 +1,5 @@
 /**
- * 플러그인 sirsoft-gdpr 레이아웃 — 입력칸 접근 가능한 이름 잠금 시험 (#757)
+ * 플러그인 sirsoft-gdpr 레이아웃 — 입력칸 접근 가능한 이름 잠금 시험
  *
  * @description
  * 화면 낭독기가 입력칸을 이름 없이 「편집 가능 텍스트」·「체크박스」·「스위치」로만 읽거나,
@@ -307,7 +307,7 @@ function judgeDataGrids(json, rel) {
     });
 }
 
-describe('플러그인 sirsoft-gdpr — 입력칸 접근 가능한 이름 (#757)', () => {
+describe('플러그인 sirsoft-gdpr — 입력칸 접근 가능한 이름', () => {
     const files = ROOTS.flatMap((r) => collectJson(path.join(ROOT, r)));
     const judged = files.flatMap((f) =>
         judgeLayout(JSON.parse(fs.readFileSync(f, 'utf8')), path.relative(ROOT, f).split(path.sep).join('/')),

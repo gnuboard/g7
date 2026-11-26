@@ -59,7 +59,7 @@ class Coupon extends Model implements FulltextSearchable
         'notify_marketing_only' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.notify_marketing_only', 'type' => 'boolean'],
     ];
 
-    /** 쿠폰별 발급 알림 종류의 접두 (#952) */
+    /** 쿠폰별 발급 알림 종류의 접두 */
     public const NOTIFICATION_TYPE_PREFIX = 'coupon_issued.';
 
     protected $table = 'ecommerce_promotion_coupons';
@@ -93,7 +93,7 @@ class Coupon extends Model implements FulltextSearchable
     ];
 
     /**
-     * 직렬화에서 숨기는 컬럼 (#952)
+     * 직렬화에서 숨기는 컬럼
      *
      * 회원 받기 목록(`UserCouponService::getDownloadableCoupons()`)이 모델을 그대로 회원에게 직렬화하므로
      * 운영 설정(첫구매 발급 시점·알림 사용·광고성 여부)을 내보내지 않는다. 관리자 응답은 `CouponResource` 가 명시해 싣는다.
@@ -228,7 +228,7 @@ class Coupon extends Model implements FulltextSearchable
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // ==================== Auto issue / Notification (#952) ====================
+    // ==================== Auto issue / Notification ====================
 
     /**
      * 첫구매 쿠폰의 발급 시점을 반환합니다. 저장값이 비어 있으면 구매확정입니다.
@@ -243,7 +243,7 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * 활동 로그 변경 비교용 스냅샷을 반환합니다. 응답에서 숨긴 칸(`$hidden`)도 담는다.
      *
-     * `toArray()` 는 `$hidden` 을 빼므로 그대로 쓰면 발급 시점·발급 알림 칸의 이전 값이 null 로 기록된다(#952 실측).
+     * `toArray()` 는 `$hidden` 을 빼므로 그대로 쓰면 발급 시점·발급 알림 칸의 이전 값이 null 로 기록된다.
      *
      * @return array<string, mixed> 스냅샷
      */

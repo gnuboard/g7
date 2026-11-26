@@ -26,7 +26,7 @@ class PageVersionResource extends BaseApiResource
             'version' => $this->version,
             'title' => $this->title,
             // 버전 이력 미리보기도 페이지 응답과 같은 규칙 — 미발행 페이지면 이 페이지 소유 본문 미디어만 서명 주소로
-            // (관리자 화면의 <img>·<video> 요청에는 인증 헤더가 없어 서명 없는 주소는 403 으로 깨진다, #887)
+            // (관리자 화면의 <img>·<video> 요청에는 인증 헤더가 없어 서명 없는 주소는 403 으로 깨진다)
             'content' => app(PageContentMediaService::class)->presentContent(
                 $this->content,
                 (bool) ($this->page?->published ?? false),

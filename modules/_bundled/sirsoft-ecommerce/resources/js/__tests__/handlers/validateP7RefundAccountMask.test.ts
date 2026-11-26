@@ -1,5 +1,5 @@
 /**
- * #599 validate P7-B — 가린 등록 계좌 프리필과 환불 계좌 입력
+ * B — 가린 등록 계좌 프리필과 환불 계좌 입력
  *
  * @description
  * `claimable-options` 의 `refund_account.prefill` 은 이제 가린 모양이다

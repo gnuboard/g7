@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 쓰이지 않는 옛 메일 표(`mail_templates`, `mail_send_logs`)를 드랍합니다 (#699 B1).
+ * 쓰이지 않는 옛 메일 표(`mail_templates`, `mail_send_logs`)를 드랍합니다.
  *
  * 7.0.0-beta.2 에서 메일 템플릿·발송 이력이 알림 시스템(`notification_templates` · `notification_logs`)으로
  * 일원화된 뒤에도 생성 마이그레이션이 남아 신규 설치에 빈 표가 생겼습니다. 7.1.0 은 생성 마이그레이션을

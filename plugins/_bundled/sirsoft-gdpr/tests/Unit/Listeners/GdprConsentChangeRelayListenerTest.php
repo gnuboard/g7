@@ -14,7 +14,7 @@ use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 
 /**
- * 동의 변경 중계 리스너 테스트 (#639, 결정 D11)
+ * 동의 변경 중계 리스너 테스트
  *
  * 코어는 이 플러그인의 훅 이름을 모른다. 이 리스너가 쿠키 동의 변경을 카테고리 이름으로 바꿔 모으고, 요청이
  * 끝날 때 주체마다 한 번만 코어 액션 `core.consent.changed` 로 알린다 — 배너 「모두 거부」 한 번이 항목 수만큼

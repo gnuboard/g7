@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\RegistersTestCashReceiptProvider;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 현금영수증 환경설정 저장 (W-5 / #454 S3)
+ * 현금영수증 환경설정 저장 (W-5)
  *
  * 관리자 환경설정 UI 가 저장하는 3키가 실제로 DB 에 반영되는지 검증한다.
  * FormRequest 에 rules 를 명시하지 않으면 validated() 가 키를 떨궈 저장이 조용히 무효화된다 —

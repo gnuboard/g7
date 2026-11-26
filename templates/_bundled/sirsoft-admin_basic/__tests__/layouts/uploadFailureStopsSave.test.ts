@@ -1,5 +1,5 @@
 /**
- * 업로드가 실패하면 저장하지 않는다 — 저장 흐름 6곳 (#869 브라우저 실측)
+ * 업로드가 실패하면 저장하지 않는다 — 저장 흐름 6곳
  *
  * 저장 단추는 `emit-event upload:*` 로 업로더를 돌린 뒤 저장 요청을 보낸다. 업로드가 모두 실패해도 저장이 이어져
  * (관리자 환경설정 `POST /api/admin/settings` 의 `site_logo: []`) 올리려던 파일 없이 저장됐다. 업로더가 신호 결과에
@@ -46,7 +46,7 @@ function writeRequests(urlPart: string): number {
   ).length;
 }
 
-describe('업로드가 실패하면 저장하지 않는다 (#869 브라우저 실측)', () => {
+describe('업로드가 실패하면 저장하지 않는다', () => {
   let testUtils: ReturnType<typeof createLayoutTest> | null = null;
 
   afterEach(() => {

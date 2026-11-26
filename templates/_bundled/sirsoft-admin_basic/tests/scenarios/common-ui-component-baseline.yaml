@@ -41,7 +41,7 @@ effects:
   - toggle_awaiting_confirmation_ignores_repeat_clicks
   - toggle_applies_size_disabled_and_dark_styles
   - toggle_exposes_switch_role_name_and_keyboard
-  - toggle_input_id_unique_per_instance               # 같은 name 의 스위치가 여럿이어도 안쪽 checkbox id 가 겹치지 않고, 공백·한글 name 은 id 에서 걷힌다 (#408)
+  - toggle_input_id_unique_per_instance               # 같은 name 의 스위치가 여럿이어도 안쪽 checkbox id 가 겹치지 않고, 공백·한글 name 은 id 에서 걷힌다
   # 폼 (609 docblock 정리 — 소유 매니페스트가 하위 폴더 접두사 축뿐이던 기본 렌더 계약을 이 축으로 묶는다)
   - form_renders_element_and_children                 # form 요소와 자식, 여러 입력, 중첩 label 을 그린다
   - form_dispatches_submit_reset_change_handlers      # 제출, 초기화, 변경 이벤트가 각 콜백에 닿는다

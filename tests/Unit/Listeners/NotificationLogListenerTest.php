@@ -260,7 +260,7 @@ class NotificationLogListenerTest extends TestCase
      * 채널 발송 두 훅은 발송 프로세스 안에서 동기로 기록된다 — 큐 드라이버가 database 여도 잡을 쌓지 않는다 (#139).
      *
      * 큐로 돌면 발송 이력이 늦게 보이고, 그 로그에 자기 발송건을 잇는 확장이 발송 때 남긴 프로세스 내 표식을
-     * 워커에서 찾지 못해 연결이 늘 실패했다. `core.mail.send_skipped` 도 동기다(#724 — 마스킹 전 본문이 큐 인자로 남지 않게).
+     * 워커에서 찾지 못해 연결이 늘 실패했다. `core.mail.send_skipped` 도 동기다(마스킹 전 본문이 큐 인자로 남지 않게).
      *
      * @scenario recipients=within_chunk, rerun=none
      *

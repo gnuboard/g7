@@ -9,7 +9,7 @@ use Predis\Client;
 use Tests\TestCase;
 
 /**
- * DriverRegistryService 드라이버 가용성 판정 테스트 (공개 #99 / 내부 #563, A7)
+ * DriverRegistryService 드라이버 가용성 판정 테스트 (공개 #99)
  *
  * isDriverUsable()/usabilityFailureReason() 의 런타임 능력 판정과
  * a5(CONFIG_KEYS 로그 키 정정)·a6(websocket 설정 키 제외) 회귀를 검증합니다.
@@ -103,7 +103,7 @@ class DriverRegistryServiceUsabilityTest extends TestCase
     }
 
     /**
-     * 이미지 엔진(gd·imagick)의 가용성이 PHP 확장 유무를 따르고, 없으면 사유를 냅니다 (#869).
+     * 이미지 엔진(gd·imagick)의 가용성이 PHP 확장 유무를 따르고, 없으면 사유를 냅니다.
      *
      * 사유는 저장 422 문구(`validation.settings.driver_unusable` 의 :reason)로 나간다.
      *

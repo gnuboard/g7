@@ -1,4 +1,4 @@
-# 시나리오 매니페스트 — 컴포넌트 정의를 담은 prop 안 액션 정의의 렌더 시점 번역 (engine-v1.96.1, #916)
+# 시나리오 매니페스트 — 컴포넌트 정의를 담은 prop 안 액션 정의의 렌더 시점 번역 (engine-v1.96.1)
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 
 feature: engine_prop_action_translation

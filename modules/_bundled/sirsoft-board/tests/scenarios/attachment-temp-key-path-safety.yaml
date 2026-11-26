@@ -32,7 +32,7 @@ effects:
   - legacy_temp_key_accepted
   - empty_temp_link_deletes_nothing
   - owned_temp_attachments_moved_and_temp_dir_cleaned
-  # 임시 디렉토리 정리는 부수 작업 — 실패해도 옮긴 첨부의 연결과 글 저장은 끝까지 간다(#703 실측).
+  # 임시 디렉토리 정리는 부수 작업 — 실패해도 옮긴 첨부의 연결과 글 저장은 끝까지 간다.
   - temp_dir_cleanup_failure_does_not_abort_link
   - foreign_temp_attachments_not_linked_or_deleted
   # attachment_ids 로 잇는 경로(회원 수정·관리자 작성/수정)도 자기가 올린 임시 첨부만 잇는다(2026-10-07 실측 K4-D1).
@@ -53,7 +53,7 @@ effects:
   - admin_delete_rejects_missing_or_forbidden
   - admin_reorder_requires_permission
   - admin_download_by_hash_requires_permission
-  # #609 docblock 정리 때 사후 등재 — AttachmentServiceTest 의 임시 첨부 이동 단언
+  # docblock 정리 때 사후 등재 — AttachmentServiceTest 의 임시 첨부 이동 단언
   - temp_link_move_uses_row_disk
   - unreadable_temp_file_skips_link_without_path_update
   - zero_byte_temp_file_moved

@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 /**
  * storage 경로 분류(`config/g7-storage.php`)와 코어 업데이트 보호 경로가 서로 모순되지 않는지, 분류 목록과
- * `storage:paths` 출력이 맞는지 잠근다 (#888).
+ * `storage:paths` 출력이 맞는지 잠근다.
  */
 class StoragePathsConfigTest extends TestCase
 {

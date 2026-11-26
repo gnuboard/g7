@@ -1,5 +1,5 @@
 /**
- * 회원 주문상세 '이 주문의 클레임' 섹션 — 신청번호 새 창 링크 · 썸네일 자리표시 · 서브탭 왕복 (#599)
+ * 회원 주문상세 '이 주문의 클레임' 섹션 — 신청번호 새 창 링크 · 썸네일 자리표시 · 서브탭 왕복
  *
  * 브라우저로만 드러나는 축을 본다.
  *
@@ -73,7 +73,7 @@ test.describe('회원 주문상세 클레임 섹션', () => {
       } }) });
     });
     await openOrderDetail(page, 'EX-PAGE-1');
-    // 회원 주문 상세의 페이지 번호는 링크다(#757 WP-L — pageHref). 보통 클릭은 같은 화면 안 교체라 아래 단언이 그대로 선다.
+    // 회원 주문 상세의 페이지 번호는 링크다(pageHref). 보통 클릭은 같은 화면 안 교체라 아래 단언이 그대로 선다.
     const second = page.getByRole('link', { name: '페이지 2', exact: true });
     await second.scrollIntoViewIfNeeded();
     await second.focus();
@@ -149,7 +149,7 @@ test.describe('회원 주문상세 클레임 섹션', () => {
     await expect(link).toHaveCount(1);
     expect(await link.getAttribute('href')).toBe('/mypage/claims/EX20260902-0900');
     // 번호가 곧 링크라 푸터 [상세보기] 는 없다
-    // 푸터 [상세보기]는 링크로 그린다(#757 WP-L) — 단추·링크 어느 쪽으로도 서지 않아야 한다.
+    // 푸터 [상세보기]는 링크로 그린다 — 단추·링크 어느 쪽으로도 서지 않아야 한다.
     await expect(page.getByRole('link', { name: '상세보기' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: '상세보기' })).toHaveCount(0);
 

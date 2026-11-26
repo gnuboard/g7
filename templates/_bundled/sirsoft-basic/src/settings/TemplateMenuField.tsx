@@ -1,5 +1,5 @@
 /**
- * TemplateMenuField — 템플릿 설정 `menu` 칸 편집기: 사용자 화면 메뉴를 끌어서 놓아 짠다 (#434)
+ * TemplateMenuField — 템플릿 설정 `menu` 칸 편집기: 사용자 화면 메뉴를 끌어서 놓아 짠다
  *
  * 관리자 메뉴 관리와 같은 두 판이다. 왼쪽은 끌어서 놓는 트리(가로로 끌면 하위 메뉴로 들어가고, 왼쪽으로 끌면 상위로 나온다),
  * 오른쪽은 고른 항목의 편집 판(이름·주소·새 창·보이기·사용). 값은 칸 값 그대로(항목 트리)이고 바뀌면 `onChange(next)` 로 올린다.
@@ -191,7 +191,7 @@ export const TemplateMenuField: React.FC<TemplateMenuFieldProps> = ({
   errors,
   disabled = false,
 }) => {
-  // 폭 분기는 엔진 폭으로 고른다 — Tailwind 반응형 접두는 창 폭으로 판정되어 편집기 미리보기·엔진 responsive 와 경계가 갈린다(#869).
+  // 폭 분기는 엔진 폭으로 고른다 — Tailwind 반응형 접두는 창 폭으로 판정되어 편집기 미리보기·엔진 responsive 와 경계가 갈린다.
   const viewportWidth = useViewportWidth();
   const sideBySide = viewportWidth >= BREAKPOINTS.lg;
   const roleColumns = viewportWidth >= BREAKPOINTS.sm;

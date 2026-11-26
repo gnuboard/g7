@@ -341,7 +341,7 @@ describe('PasswordInput 컴포넌트', () => {
       expect(rule.validate('has@Special')).toBe(true);
     });
 
-    // #736 — 서버(`symbols()`·`PasswordComposition`: 유니코드 P·S·Z 범주)와 같은 집합이어야 화면 체크와 서버 판정이 갈리지 않는다.
+    // 서버(`symbols()`·`PasswordComposition`: 유니코드 P·S·Z 범주)와 같은 집합이어야 화면 체크와 서버 판정이 갈리지 않는다.
     /** @effects password_input_rules_match_backend */
     it.each(['a-b', 'a_b', 'a~b', 'a+b', 'a=b', 'a/b', 'a[b', 'a b', 'a😀b', 'a※b'])(
       'hasSpecial 이 서버가 특수문자로 세는 %s 를 인정한다',

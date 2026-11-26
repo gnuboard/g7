@@ -11,7 +11,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use Tests\Concerns\InstallsCustomExample;
 
 /**
- * `php artisan custom:example board` 가 만든 견본 화면 테스트 (#792 WP-S)
+ * `php artisan custom:example board` 가 만든 견본 화면 테스트
  *
  * 견본은 게시판 공개 API 를 서버 안에서 그 회원 자격으로 불러 Blade 로 그린다. 그누보드7 셸(#app) 없이
  * 목록·글보기가 API 와 같은 글을 보여 주고, 비밀글·없는 글은 그 상태 코드의 견본 오류 화면,

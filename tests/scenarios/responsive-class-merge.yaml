@@ -1,10 +1,10 @@
-feature: responsive 구간 classMerge — 폭별로 바뀐 클래스만 덧붙이기, 구간 classMap 적용 (7.2.1, engine-v1.98.0, #399)
+feature: responsive 구간 classMerge — 폭별로 바뀐 클래스만 덧붙이기, 구간 classMap 적용 (7.2.1, engine-v1.98.0)
 
 description: |
   레이아웃 노드의 `responsive.{key}.classMerge`(마크업 `<responsive on="…" class-merge="…">`)는 그 구간에서
   바뀐 클래스만 기본 className 에 충돌 교체형으로 덧붙인다(mergeClasses 규칙, 바인딩·classMap 해석 뒤).
-  종전에는 구간 className 이 기본 className 을 통째로 교체해 패딩 하나만 바꿔도 클래스 전체를 다시 적어야 했고
-  (#399 F10), 레이아웃 편집기도 디바이스 탭 편집 때 기본 className 전체를 복사했다. 같은 노드의 구간 classMap 은
+  종전에는 구간 className 이 기본 className 을 통째로 교체해 패딩 하나만 바꿔도 클래스 전체를 다시 적어야 했고,
+  레이아웃 편집기도 디바이스 탭 편집 때 기본 className 전체를 복사했다. 같은 노드의 구간 classMap 은
   엔진 두 경로와 SEO 가 무시했다(F11). 브라우저 렌더러(DynamicRenderer·셀 렌더)와 봇 렌더러(ComponentHtmlMapper)는
   공용 픽스처로 같은 병합 결과를 증명한다. 봇 HTML 쪽 효과는 seo-component-html-mapper.yaml, 편집기 디바이스 탭 저장 효과는
   layout-editor-style-scope.yaml 이 소유한다.

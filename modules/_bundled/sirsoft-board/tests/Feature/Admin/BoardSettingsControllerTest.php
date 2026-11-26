@@ -297,7 +297,7 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     /**
-     * 저장만 되고 쓰이지 않던 신고 알림 채널 키(1.3.1 에서 제거)는 보내도 저장되지 않는다 (#952 P16)
+     * 저장만 되고 쓰이지 않던 신고 알림 채널 키(1.3.1 에서 제거)는 보내도 저장되지 않는다
      *
      * 채널은 알림 템플릿이 정한다 — 이 키는 화면도 읽는 코드도 없었다. 종전에는 허용 채널 검증만 있었다.
      *
@@ -649,11 +649,11 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     // ========================================
-    // StoreBoardSettingsRequest 검증 경계값 테스트 (회귀: issue#413)
+    // StoreBoardSettingsRequest 검증 경계값 테스트 (회귀)
     // ========================================
 
     /**
-     * basic_defaults.max_reply_depth 는 config max_reply_depth_max(10)까지 허용 (회귀: issue#413)
+     * basic_defaults.max_reply_depth 는 config max_reply_depth_max(10)까지 허용 (회귀)
      *
      * @scenario case=settings_request_max_reply_depth_allows_up_to_config_max
      *
@@ -672,7 +672,7 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     /**
-     * basic_defaults.max_reply_depth 가 config max(10) 초과 시 422 (회귀: issue#413)
+     * basic_defaults.max_reply_depth 가 config max(10) 초과 시 422 (회귀)
      *
      * @scenario case=settings_request_max_reply_depth_rejects_above_config_max
      *
@@ -692,7 +692,7 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     /**
-     * basic_defaults.per_page 는 config per_page_min(5) 미만 시 422 (회귀: issue#413)
+     * basic_defaults.per_page 는 config per_page_min(5) 미만 시 422 (회귀)
      *
      * @scenario case=settings_request_per_page_rejects_below_config_min
      *
@@ -712,7 +712,7 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     /**
-     * basic_defaults.per_page 는 config per_page_min(5) 이상 허용 (회귀: issue#413)
+     * basic_defaults.per_page 는 config per_page_min(5) 이상 허용 (회귀)
      *
      * @scenario case=settings_request_per_page_allows_config_min
      *
@@ -731,7 +731,7 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     /**
-     * basic_defaults.per_page_mobile 는 config per_page_min(5) 미만 시 422 (회귀: issue#413)
+     * basic_defaults.per_page_mobile 는 config per_page_min(5) 미만 시 422 (회귀)
      *
      * @scenario case=settings_request_per_page_mobile_rejects_below_config_min
      *
@@ -751,7 +751,7 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     /**
-     * basic_defaults.max_file_count 는 config max_file_count_max(20)까지 허용 (#493 B2)
+     * basic_defaults.max_file_count 는 config max_file_count_max(20)까지 허용
      *
      * @scenario case=settings_request_max_file_count_allows_config_max
      *
@@ -770,7 +770,7 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     /**
-     * basic_defaults.max_file_count 가 config max(20) 초과 시 422 (#493 B2)
+     * basic_defaults.max_file_count 가 config max(20) 초과 시 422
      *
      * @scenario case=settings_request_max_file_count_rejects_above_config_max
      *
@@ -790,7 +790,7 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     /**
-     * 제한값 설정을 바꾸면 저장 규칙이 따라오는지 확인 (#493 B2 — config 가 SSoT)
+     * 제한값 설정을 바꾸면 저장 규칙이 따라오는지 확인 (config 가 SSoT)
      *
      * 규칙이 리터럴로 되돌아가면 설정을 바꿔도 경계가 그대로라 이 테스트가 먼저 깨진다.
      *
@@ -819,7 +819,7 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     /**
-     * report_policy.auto_hide_threshold 는 0(자동 숨김 비활성)을 저장할 수 있다 (#493 B4)
+     * report_policy.auto_hide_threshold 는 0(자동 숨김 비활성)을 저장할 수 있다
      *
      * 화면 안내가 "0=비활성" 이므로 서버가 0 을 거부하면 비활성으로 되돌릴 방법이 없다.
      *
@@ -846,7 +846,7 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     /**
-     * report_policy.auto_hide_threshold 가 config max(100) 초과 시 422 (#493 B4)
+     * report_policy.auto_hide_threshold 가 config max(100) 초과 시 422
      *
      * @scenario case=settings_request_auto_hide_threshold_rejects_above_config_max
      *
@@ -904,13 +904,13 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     // ========================================
-    // bulkApply 원자적 롤백 (회귀: issue#413-26)
+    // bulkApply 원자적 롤백
     // ========================================
 
     // (board-settings-bulk-apply-rollback 매니페스트의 failure_point 축 — docblock 은 @scenario 를 1건만 읽으므로 라인 주석으로 병기)
     // @scenario failure_point=permission
     /**
-     * 권한 적용이 중간 게시판에서 실패하면 전체 변경이 롤백되는지 확인 (회귀: issue#413-26)
+     * 권한 적용이 중간 게시판에서 실패하면 전체 변경이 롤백되는지 확인
      *
      * 3개 게시판 중 2번째에서 권한 적용 실패를 강제하면:
      * - 응답은 HTTP 200 + data.rolled_back=true + board(실패 게시판) 포함
@@ -973,7 +973,7 @@ class BoardSettingsControllerTest extends ModuleTestCase
     // (board-settings-bulk-apply-rollback 매니페스트의 failure_point 축 — docblock 은 @scenario 를 1건만 읽으므로 라인 주석으로 병기)
     // @scenario failure_point=column
     /**
-     * 컬럼 일괄 업데이트가 실패하면 전체 롤백되고 generic 안내가 반환되는지 확인 (회귀: issue#413-26)
+     * 컬럼 일괄 업데이트가 실패하면 전체 롤백되고 generic 안내가 반환되는지 확인
      *
      * 컬럼 업데이트(bulkUpdate)는 단일 쿼리라 특정 게시판을 짚을 수 없음:
      * - 응답은 HTTP 200 + data.rolled_back=true + board=null

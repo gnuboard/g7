@@ -13,7 +13,7 @@ description: |
 
   핵심 동작:
     - 정적 규칙은 코어 CSS 파일 두 개로만 싣는다 — `g7-core.css`(셸, 전역 선택자·@layer 없음) · `g7-standalone.css`(오류·점검·DB 오류 화면)
-    - 셸의 확장 CSS 층 순서 선언(#816)은 순서 선언 한 줄만 담은 `g7-layers.css`(사용자)·`g7-layers-admin.css`(관리자)를
+    - 셸의 확장 CSS 층 순서 선언은 순서 선언 한 줄만 담은 `g7-layers.css`(사용자)·`g7-layers-admin.css`(관리자)를
       템플릿 CSS 링크 뒤에 싣는다(층 순서는 층 이름이 처음 나온 자리로 정해진다)
     - 런타임에 만드는 규칙은 `RuntimeStyleSheet`(생성형 시트 + `<head>` 표식 `<meta id=key>`)로 붙인다.
       생성형 시트가 없는 환경(구형 브라우저·jsdom)에서만 `<style id=key>` 로 내려간다
@@ -41,7 +41,7 @@ axes:
     - core_views_no_inline_style         # resources/views 원본 전수
     - admin_shell_no_inline_style        # 관리자 셸 HTML
     - user_shell_no_inline_style         # 사용자 셸 HTML
-    - shell_layer_order_static_file      # 확장 CSS 층 순서 선언(#816)이 템플릿 CSS 뒤의 정적 파일 링크(g7-layers*.css)
+    - shell_layer_order_static_file      # 확장 CSS 층 순서 선언이 템플릿 CSS 뒤의 정적 파일 링크(g7-layers*.css)
     - standalone_pages_no_inline_style   # 오류 5종·묶음(4xx·5xx)과 402·419·429·IP 제한 403·점검·DB 계정 오류
     # 엔진 런타임 UI
     - error_screen_no_inline_style       # 오류 화면·레이아웃 오류 UI·시스템 배너
@@ -110,7 +110,7 @@ effects:
   - editor_toolbar_rules_removed_on_unmount
   - editor_slot_label_via_css_variable
   - editor_empty_cell_rules_attached_once
-  - editor_entry_fab_rules_via_runtime_sheet           # 운영 화면 편집 진입 단추 규칙은 보이는 동안만 런타임 시트로 붙고 숨으면 떨어진다(7.2.0 #869 × #163)
+  - editor_entry_fab_rules_via_runtime_sheet           # 운영 화면 편집 진입 단추 규칙은 보이는 동안만 런타임 시트로 붙고 숨으면 떨어진다(7.2.0, #163)
   - editor_media_isolation_excludes_own_sheet
   - editor_guarded_css_via_runtime_sheet
   - editor_public_css_stays_link                       # 공개·외부 CSS 는 종전대로 <link>

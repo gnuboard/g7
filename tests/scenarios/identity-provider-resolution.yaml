@@ -1,7 +1,7 @@
 # audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 IDV provider 해석 우선순위 매트릭스 SSoT. 회귀 가드는 test_files 의 Unit/Feature 테스트로 커버.
 # audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
-feature: IDV provider 해석 우선순위 — `provider_id` 명시 전달 (refs #275)
+feature: IDV provider 해석 우선순위 — `provider_id` 명시 전달 (refs)
 
 description: |
   본인인증 challenge 발행 시 어떤 IdentityVerification provider 가 선택되는지를 결정하는
@@ -16,7 +16,7 @@ description: |
        → 정책 resolve 후 $policy->provider_id 를 Service::start 에 전달
        → Manager::resolveForPurpose($purpose, $policy->provider_id)
 
-  결함 배경 (이슈 #275):
+  결함 배경:
     - 코어 Controller / Service / Manager 가 `provider_id` 를 전달할 통로 자체가 없었음
     - signup_after_create 정책에 inicis 매핑해도 항상 mail fallback 발생
     - 결과: 프론트 모달은 KG이니시스 UI 인데 백엔드는 mail challenge 를 만들어 검증 불일치

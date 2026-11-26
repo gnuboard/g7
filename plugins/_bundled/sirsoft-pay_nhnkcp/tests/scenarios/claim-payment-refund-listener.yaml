@@ -5,7 +5,7 @@ feature: nhnkcp_claim_payment_refund_listener
 
 description: |
   클레임 추가결제 환급은 이커머스의 `claim_payment.refund` 필터를 KCP 환급 리스너가 받아 처리한다.
-  리스너는 컨테이너에서 풀려 이커머스 공개 계약을 주입받는다(#916 ②, 훅 인자 Model 은 읽기만).
+  리스너는 컨테이너에서 풀려 이커머스 공개 계약을 주입받는다.
   승인 쪽은 `claim-payment-approve-listener.yaml` 이 소유한다.
 
   - 환급 훅을 필터로 구독하고, 다른 PG 의 결제 건은 처리하지 않는다. 거래번호(tno)가 없으면 거절한다.

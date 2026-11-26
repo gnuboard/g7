@@ -1,5 +1,5 @@
 /**
- * E2E: 회원관리 목록 필터 — 적용·복원·검색편집·초기화·목록 문맥·확장 필터 (#705)
+ * E2E: 회원관리 목록 필터 — 적용·복원·검색편집·초기화·목록 문맥·확장 필터
  *
  * 회원관리 필터를 쿠폰·상품·주문과 같은 슬롯 기반(기본/상세 + 검색편집)으로 바꿨다. 단위 테스트는
  * 레이아웃 선언과 서버 필터를 각각 잠그지만, "화면에서 고른 조건 → URL → 서버 요청 → 새로고침 복원" 의
@@ -302,7 +302,7 @@ test.describe('회원관리 목록 필터', () => {
     await clickRowMenuItem(page, '삭제');
     const [deleted] = await Promise.all([
       page.waitForResponse((r) => r.url().includes(`/api/admin/users/${uuid}`) && r.request().method() === 'DELETE'),
-      page.locator('.modal-footer-bar button.bg-red-600').click(), // 고정 하단(#869 P1)
+      page.locator('.modal-footer-bar button.bg-red-600').click(), // 고정 하단
     ]);
     expect(deleted.status()).toBe(200);
     await expect(page.locator('#users_data_grid__body tbody tr', { hasText: tag })).toHaveCount(0, { timeout: 20_000 });

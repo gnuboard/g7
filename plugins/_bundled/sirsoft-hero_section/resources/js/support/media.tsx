@@ -5,7 +5,7 @@ export interface HeroVideo {
   /** 공개 영상 주소 (범위 요청을 받는다) */
   url: string;
 
-  /** 영상 직접 주소 (공개 자산 디스크 행만, 아니면 null) — 있으면 이 주소로 재생해 범위 요청을 웹서버·CDN 이 받는다 (#878) */
+  /** 영상 직접 주소 (공개 자산 디스크 행만, 아니면 null) — 있으면 이 주소로 재생해 범위 요청을 웹서버·CDN 이 받는다 */
   direct_url?: string | null;
 
   /** MIME (video/mp4·video/webm) */

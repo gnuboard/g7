@@ -436,7 +436,7 @@ describe('주문 목록 visibleColumns 검증', () => {
 
     /**
      * 기본 컬럼 묶음의 출처가 셋이다 — 레이아웃 `state`, 표시 컬럼 복원 핸들러
-     * (`sirsoft-ecommerce.loadVisibleColumns`, #639 ⑩ 회원 uuid 키)의 `defaultColumns`, ColumnSelector 의
+     * (`sirsoft-ecommerce.loadVisibleColumns`, 회원 uuid 키)의 `defaultColumns`, ColumnSelector 의
      * `defaultColumns`. 저장값이 없는 브라우저에서는 복원 핸들러가 state 의 씨앗을 덮어쓰므로, 그 목록이 어긋나면 신규 운영자
      * 화면에서만 컬럼이 빠진다(오류·로그 없음). DataGrid 는 `required` 를 보지 않고
      * `visibleColumns.includes(col.field)` 로만 거르므로 필드명이 하나만 틀려도 그 컬럼이
@@ -448,7 +448,7 @@ describe('주문 목록 visibleColumns 검증', () => {
         const restore = ((orderList as any).init_actions ?? [])
             .find((a: any) => a.handler === 'sirsoft-ecommerce.loadVisibleColumns' && a.resultTo?.key === 'visibleColumns');
         expect(restore).toBeDefined();
-        // 공용 키를 직접 읽는 옛 경로가 되살아나면 다른 관리자의 설정이 실린다(#639 ⑩).
+        // 공용 키를 직접 읽는 옛 경로가 되살아나면 다른 관리자의 설정이 실린다.
         expect(findNodes(orderList as any, (n: any) => n.handler === 'loadFromLocalStorage' && n.params?.key === 'g7_order_visible_columns')).toEqual([]);
 
         const selector = findNodes(filterSection, (n: any) => n.props?.defaultColumns !== undefined)[0];

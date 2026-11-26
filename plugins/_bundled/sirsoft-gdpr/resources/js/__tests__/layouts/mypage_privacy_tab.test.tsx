@@ -170,9 +170,9 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
         // @scenario area=operator_meta
         // @effects mypage_card_operator_meta_line
         it('시각적 무게 최소화 — 작은 보조 텍스트 (공통 Tailwind 코어 클래스)', () => {
-            // 이슈 #430 — 이 카드는 user 페이지(sirsoft-basic)에 렌더되므로 admin 전용 시맨틱(.text-tertiary)은
+            // 이 카드는 user 페이지(sirsoft-basic)에 렌더되므로 admin 전용 시맨틱(.text-tertiary)은
             // CSS 미해석. 동등한 공통 Tailwind 코어 클래스로 치환 (회귀 수정).
-            // #399 R-2 — 인라인 짝(gray-500 / 다크 gray-400)이 플러그인 의미 클래스 사본 `gdpr-text-muted` 로 묶였다.
+            // 인라인 짝(gray-500 / 다크 gray-400)이 플러그인 의미 클래스 사본 `gdpr-text-muted` 로 묶였다.
             // 이름만 보지 않고 플러그인 생성 CSS 가 같은 두 색을 정의하는지까지 확인한다.
             const className = (meta?.props as { className?: string })?.className ?? '';
             expect(className).toContain('text-xs');
@@ -193,7 +193,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
 
         // @scenario area=modals
         // @effects mypage_card_confirm_modals_registered
-        it('이슈 #430 — grant_confirm_modal(동의 확인 모달)이 modals 배열에 포함', () => {
+        it('grant_confirm_modal(동의 확인 모달)이 modals 배열에 포함', () => {
             const modal = (root.modals ?? []).find((m) => m.id === 'grant_confirm_modal');
             expect(modal).toBeTruthy();
             expect(modal?.name).toBe('Modal');
@@ -268,7 +268,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             // raw key (cookie_functional 등) 대신 사용자 친화 description 을 모달에 표시하기 위해
             // 행 핸들러에서 consent_description 을 _global 에 세팅한다.
             expect(text).toContain('"gdprRevokeTargetDescription": "{{consent?.consent_description ?? \'\'}}"');
-            // 이슈 #430 — 철회 모달에서 마지막 동의일을 보여주기 위해 status_at_formatted 를 _global 로 전달.
+            // 철회 모달에서 마지막 동의일을 보여주기 위해 status_at_formatted 를 _global 로 전달.
             expect(text).toContain('"gdprRevokeTargetDate": "{{consent?.status_at_formatted ?? \'\'}}"');
         });
 
@@ -308,7 +308,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
 
         // @scenario area=revoke_modal
         // @effects mypage_revoke_modal_confirms_and_posts
-        it('이슈 #430 — 모달에 철회 대상의 마지막 동의일 노출 (gdprRevokeTargetDate 있을 때만)', () => {
+        it('모달에 철회 대상의 마지막 동의일 노출 (gdprRevokeTargetDate 있을 때만)', () => {
             const text = serializeForSearch(modal);
             // 사용자가 언제 동의한 것을 철회하는지 인지하도록 마지막 동의일을 표시.
             expect(text).toContain('_global.gdprRevokeTargetDate');
@@ -355,7 +355,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
         });
     });
 
-    describe('토글 UI 구조 (이슈 #430 재설계 — 업계 표준 CMP 패턴)', () => {
+    describe('토글 UI 구조 (재설계 — 업계 표준 CMP 패턴)', () => {
         const section = card ? findById(card, 'gdpr_section_consents') : null;
 
         /**
@@ -374,8 +374,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
          * @scenario entry=reject, subject=member, category=optional
          * @effects mypage_status_date_line_consented_only
          */
-        it('이슈 #430/#509 — 동의·철회 이력이 있는 항목만 날짜 줄 노출 (서버가 status_at_formatted 제공)', () => {
-            // 프로젝트 결정(2026-07-20) + 이슈 #509 16번 갱신: 날짜는 "동의한 항목" + "철회 이력이 있는 항목".
+        it('동의·철회 이력이 있는 항목만 날짜 줄 노출 (서버가 status_at_formatted 제공)', () => {
+            // 프로젝트 결정(2026-07-20, 이후 갱신): 날짜는 "동의한 항목" + "철회 이력이 있는 항목".
             // 거부·신규 미설정은 서버가 status_at_formatted 를 null 로 내려주므로 날짜 줄이 렌더되지 않는다.
             // 프론트는 status_label && status_at_formatted 가 둘 다 있을 때만 날짜 줄을 그리며, 값 자체는
             // 서버가 상태별(동의일/철회일)로 계산해 내려주므로 프론트 조건식은 상태 무관 동일하게 유지된다.
@@ -390,7 +390,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
          * @scenario entry=reject, subject=member, category=optional
          * @effects mypage_status_date_line_revoked_color_distinction
          */
-        it('이슈 #509 16번 — 동의·철회 날짜 줄을 서로 다른 색으로 균형있게 강조 (동의=초록/철회=빨강, 배지·관리자 이력 화면과 동일 톤)', () => {
+        it('동의·철회 날짜 줄을 서로 다른 색으로 균형있게 강조 (동의=초록/철회=빨강, 배지·관리자 이력 화면과 동일 톤)', () => {
             // 철회만 강조되고 동의는 밋밋해 보인다는 사용성 피드백 반영 — 동의도 철회와 대등하게 강조한다.
             // status === 'revoked' 면 text-red-600/dark:text-red-400, 그 외(동의)는 text-green-700/dark:text-green-400.
             // 초록은 흰 바탕 대비 4.5 를 넘기려고 600 → 700 으로 짙게 했다(600 은 3.22).
@@ -448,7 +448,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
 
         // @scenario area=consent_rows
         // @effects mypage_consent_row_badge_on_label_line
-        it('이슈 #430 (3안) — 상태 배지는 라벨 줄에, 날짜 줄은 날짜+동의 순서 (배지↔날짜 동의 중복 제거)', () => {
+        it('상태 배지는 라벨 줄에, 날짜 줄은 날짜+동의 순서 (배지↔날짜 동의 중복 제거)', () => {
             const text = serializeForSearch(section);
             // 배지가 라벨 옆 flex-wrap 줄에 위치 (라벨 label_suffix 와 같은 컨테이너)
             expect(text).toContain('gdpr:items-center gdpr:gap-2 gdpr:flex-wrap');
@@ -578,7 +578,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
         });
     });
 
-    // 「최신 정책으로 갱신」 항목별 amber 분기(#21)는 토글 재설계(#430)로 제거됨.
+    // 「최신 정책으로 갱신」 항목별 amber 분기(#21)는 토글 재설계로 제거됨.
     // 정책 갱신은 카드 상단 amber 박스(gdpr_needs_renewal_banner)의 「전체 항목 다시 동의」로 통합되고,
     // 개별 항목은 단순 on/off 토글로 켜면 최신 정책 버전으로 grant 된다. (grant 는 항상 현재 정책 버전 기록)
 });

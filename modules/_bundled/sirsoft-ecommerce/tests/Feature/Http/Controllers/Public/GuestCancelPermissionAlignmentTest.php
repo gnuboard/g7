@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 비회원 주문 취소의 권한 정합 회귀 테스트 (#703)
+ * 비회원 주문 취소의 권한 정합 회귀 테스트
  *
  * 회귀 배경: 비회원 주문 상세의 취소 가능 여부(can_cancel)는 주문 상태만 보고, 취소 창이 여는 사유 목록
  * API 는 guest 역할의 「주문 취소」 권한을 요구했다. 운영자가 비회원의 주문 취소 권한을 거두면 취소 버튼은

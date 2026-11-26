@@ -173,7 +173,7 @@ class ImageUploadAdminControllerTest extends PluginTestCase
     {
         $upload = $this->makeUpload('bbbbbbbbbbbb');
 
-        // 코어 참조 소스(알림 템플릿 본문). 옛 mail_templates 는 7.1.0 신규 설치에 없다(#699).
+        // 코어 참조 소스(알림 템플릿 본문). 옛 mail_templates 는 7.1.0 신규 설치에 없다.
         $definitionId = DB::table('notification_definitions')->insertGetId([
             'type' => 'admin-list-test',
             'hook_prefix' => 'core.test',
@@ -215,7 +215,7 @@ class ImageUploadAdminControllerTest extends PluginTestCase
         $this->makeUpload('cccccccccccc');
         $referenced = $this->makeUpload('dddddddddddd');
 
-        // 코어 참조 소스(알림 템플릿 본문). 옛 mail_templates 는 7.1.0 신규 설치에 없다(#699).
+        // 코어 참조 소스(알림 템플릿 본문). 옛 mail_templates 는 7.1.0 신규 설치에 없다.
         $definitionId = DB::table('notification_definitions')->insertGetId([
             'type' => 'admin-filter-test',
             'hook_prefix' => 'core.test',

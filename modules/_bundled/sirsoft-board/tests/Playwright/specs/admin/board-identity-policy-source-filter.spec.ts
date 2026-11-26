@@ -1,5 +1,5 @@
 /**
- * 게시판 환경설정 "본인인증 정책" 탭 — 출처 필터 정리 (이슈 #413 item 11-1).
+ * 게시판 환경설정 "본인인증 정책" 탭 — 출처 필터 정리 (item 11-1).
  *
  * 결함: 이 탭은 게시판 정책 전용(데이터소스가 source_identifier=sirsoft-board 고정)인데
  * 출처(source_type) 필터 드롭다운이 남아 있어, "코어"/"플러그인" 등을 골라도 항상 빈 결과만
@@ -25,7 +25,7 @@ import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 
 const IDV_TAB_URL = '/admin/boards/settings?tab=identity_policies';
 
-test.describe.skip('게시판 환경설정 본인인증 정책 — 출처 필터 정리 (#413-11-1)', () => {
+test.describe.skip('게시판 환경설정 본인인증 정책 — 출처 필터 정리 (11-1)', () => {
   // @scenario element=source_type_filter
   // @effects source_type_filter_removed_from_dom
   test('출처(source_type) 필터 Select 가 화면에 없다', async ({ page, settingsToken }) => {

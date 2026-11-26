@@ -89,7 +89,7 @@ effects:
   - e2e_open_history_shows_result_column
   - e2e_result_cell_shows_status_reason_and_badges
   - e2e_member_recipient_links_to_user_detail
-  # 결과 조회 API, 최근 결과, 리포지토리 세부 (PHPUnit 이 이미 재던 것을 #609 에서 명시)
+  # 결과 조회 API, 최근 결과, 리포지토리 세부 (PHPUnit 이 이미 재던 것을 명시)
   - lookup_rejects_unauthenticated_with_401
   - recent_lookup_requires_messaging_view_permission
   - recent_lookup_returns_result_map_without_params

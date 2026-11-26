@@ -177,7 +177,7 @@ class ClaimEnumsTest extends ModuleTestCase
     }
 
     /**
-     * 회수·재발송 단계는 앞으로 건너뛸 수 있다(#599 후속 운영 결정) — 송장이 있으면 승인에서 곧바로 회수중,
+     * 회수·재발송 단계는 앞으로 건너뛸 수 있다(후속 운영 결정) — 송장이 있으면 승인에서 곧바로 회수중,
      * 고객이 직접 보낸 물건은 곧바로 회수도착, 발송중인 교환품은 완료할 수 있다.
      *
      * @effects exchange_logistics_stages_can_be_skipped_forward
@@ -260,7 +260,7 @@ class ClaimEnumsTest extends ModuleTestCase
                 ExchangeStatusEnum::REDELIVERED,
             ],
             ExchangeStatusEnum::REDELIVERY_READY->value => [ExchangeStatusEnum::REDELIVERING, ExchangeStatusEnum::REDELIVERED],
-            // 발송중인 교환품도 완료할 수 있다(#599 후속 운영 결정) — 도착 기록은 완료 시각으로 남는다.
+            // 발송중인 교환품도 완료할 수 있다(후속 운영 결정) — 도착 기록은 완료 시각으로 남는다.
             ExchangeStatusEnum::REDELIVERING->value => [ExchangeStatusEnum::REDELIVERED, ExchangeStatusEnum::COMPLETED],
             ExchangeStatusEnum::REDELIVERED->value => [ExchangeStatusEnum::COMPLETED],
             ExchangeStatusEnum::COMPLETED->value => [],
@@ -381,7 +381,7 @@ class ClaimEnumsTest extends ModuleTestCase
     }
 
     /**
-     * 반품은 회수도착에서 곧바로 완료이고, 회수중인 물건도 완료(선환불)할 수 있다(#599 후속 운영 결정).
+     * 반품은 회수도착에서 곧바로 완료이고, 회수중인 물건도 완료(선환불)할 수 있다(후속 운영 결정).
      * 회수가 시작되기 전(회수준비중)에는 완료할 수 없다.
      *
      * @effects return_completion_can_come_while_collecting
@@ -535,7 +535,7 @@ class ClaimEnumsTest extends ModuleTestCase
     public function test_return_status_collection_stages_only_move_forward(): void
     {
         // 회수 3단계는 행 전체를 고정한다 — 승인 후에는 반려·철회·역행이 없고 앞으로만 간다.
-        // 앞 단계는 건너뛸 수 있다(#599 후속 운영 결정): 회수준비중에서 곧바로 회수도착, 회수중에서 곧바로 완료.
+        // 앞 단계는 건너뛸 수 있다(후속 운영 결정): 회수준비중에서 곧바로 회수도착, 회수중에서 곧바로 완료.
         $this->assertSame([ReturnStatusEnum::COLLECTING, ReturnStatusEnum::COLLECTED], ReturnStatusEnum::COLLECTION_READY->allowedTransitions());
         $this->assertSame([ReturnStatusEnum::COLLECTED, ReturnStatusEnum::COMPLETED], ReturnStatusEnum::COLLECTING->allowedTransitions());
         $this->assertSame([ReturnStatusEnum::COMPLETED], ReturnStatusEnum::COLLECTED->allowedTransitions());
@@ -595,7 +595,7 @@ class ClaimEnumsTest extends ModuleTestCase
                 ReturnStatusEnum::COLLECTED,
             ],
             ReturnStatusEnum::COLLECTION_READY->value => [ReturnStatusEnum::COLLECTING, ReturnStatusEnum::COLLECTED],
-            // 회수중인 물건도 완료(선환불)할 수 있다(#599 후속 운영 결정).
+            // 회수중인 물건도 완료(선환불)할 수 있다(후속 운영 결정).
             ReturnStatusEnum::COLLECTING->value => [ReturnStatusEnum::COLLECTED, ReturnStatusEnum::COMPLETED],
             // 반품은 회수도착에서 곧바로 완료다 — 재발송 3단계가 없다(§4-2).
             ReturnStatusEnum::COLLECTED->value => [ReturnStatusEnum::COMPLETED],
@@ -1072,7 +1072,7 @@ class ClaimEnumsTest extends ModuleTestCase
     }
 
     // ========================================
-    // 상품 행 송장 · 선교환 Enum (#599 후속 §3-1 · §3-3)
+    // 상품 행 송장 · 선교환 Enum
     // ========================================
 
     /**

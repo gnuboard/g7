@@ -147,7 +147,7 @@ class BoardSampleSeederConsistencyTest extends ModuleTestCase
      *
      * 테스트 환경의 모듈 설정 저장소는 프로세스·세션 사이에서 공유되는 실제 디렉터리라, 다른 시험
      * (신고 알림 시험의 `auto_hide_threshold = 100` 등)이 남긴 값이 시더와 단언으로 새어 「대량 신고 케이스」
-     * 기준이 준비한 회원 수보다 커지면 이 시험이 환경에 따라 실패했다(#789 V8). 기본값으로 고정해 전제를 지킨다.
+     * 기준이 준비한 회원 수보다 커지면 이 시험이 환경에 따라 실패했다. 기본값으로 고정해 전제를 지킨다.
      *
      * @return \Closure 원래 상태로 되돌리는 함수
      */
@@ -189,7 +189,7 @@ class BoardSampleSeederConsistencyTest extends ModuleTestCase
         $this->assertSame(['like'], json_decode($boards['gallery']->active_reaction_types, true));
         $this->assertSame(0, (int) $boards['notice']->use_reaction);
         $this->assertSame('block', $boards['qna']->reply_delete_policy);
-        // 비밀 답변 열람 범위(#789 D19): qna 는 답변마다 따로, 지정하지 않은 게시판은 기본값 경로 규칙
+        // 비밀 답변 열람 범위: qna 는 답변마다 따로, 지정하지 않은 게시판은 기본값 경로 규칙
         $this->assertSame('per_post', $boards['qna']->secret_reply_visibility);
         $this->assertSame('thread_path', $boards['free']->secret_reply_visibility);
         $this->assertSame(0, (int) $boards['qna']->use_comment_reaction);

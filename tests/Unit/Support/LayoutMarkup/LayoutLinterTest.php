@@ -794,7 +794,7 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     {
         $linter = $this->linterFor('sirsoft-basic');
 
-        // `footer` 는 #869 에서 sirsoft-basic Modal 이 고정 하단으로 선언했다 — 그 prop 만 경고하지 않는다.
+        // `footer` 는 sirsoft-basic Modal 이 고정 하단으로 선언했다 — 그 prop 만 경고하지 않는다.
         $this->assertNoLint(LayoutMarkupLintCode::HoistPropNotSupportedByTemplate, $this->modalJson('footer'), linter: $linter);
 
         foreach (['titlePrefix', 'titleSuffix'] as $prop) {
@@ -970,7 +970,7 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 이벤트 받기·데이터소스 오류 처리·레이아웃 오류 처리·첫 진입 동작의 **루트** 액션도 진입점이 아니다 (#753).
+     * 이벤트 받기·데이터소스 오류 처리·레이아웃 오류 처리·첫 진입 동작의 **루트** 액션도 진입점이 아니다.
      *
      * 이 자리는 사용자가 누르는 순간이 없어 엔진이 debounce 를 읽지 않는다. 종전 ⑫ 는 다른 액션의 안쪽만
      * 보아 이 루트들을 놓쳤다.
@@ -1013,7 +1013,7 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     }
 
     // ---------------------------------------------------------------------
-    // ⑭ 진입점 전용 키(key·stopPropagation)를 진입점 밖에 적음 (#753)
+    // ⑭ 진입점 전용 키(key·stopPropagation)를 진입점 밖에 적음
     // ---------------------------------------------------------------------
 
     /**

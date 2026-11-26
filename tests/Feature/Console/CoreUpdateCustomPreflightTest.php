@@ -17,7 +17,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * core:update 의 custom 자리 사전 검사 Feature 테스트 (#792 WP-K1·WP-K3, D26)
+ * core:update 의 custom 자리 사전 검사 Feature 테스트
  *
  * 배포본이 custom 예약 자리에 파일을 싣거나 개발자 패키지(custom/composer.lock)가 새 코어 패키지와 맞지 않으면
  * 유지보수 모드·백업·파일 적용 전에 멈추고, 그 결과를 관리자 확인 창용 기록으로 남기는지 잠근다.
@@ -156,7 +156,7 @@ class CoreUpdateCustomPreflightTest extends TestCase
      * 항목 이름을 역슬래시로 저장한 zip(Windows 압축 도구)도 zip 안의 새 코어 버전으로 문구·기록을 남깁니다.
      *
      * 원본 이름(`g7-7.9.0\config\app.php`)과 다른 정규화 이름으로 읽으면 버전을 못 읽고 현재 버전으로 남겨,
-     * 관리자 확인 창에 충돌 표가 뜨지 않았다(#971).
+     * 관리자 확인 창에 충돌 표가 뜨지 않았다.
      *
      * @scenario case=command_blocks_zip_with_new_version
      *

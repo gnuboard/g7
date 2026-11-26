@@ -260,7 +260,7 @@
                                                     "name": "Button",
                                                     "responsive": {
                                                         "portable": {
-                                                            "comment": "audit:allow layout-inline-semantic-duplicate reason: row-stack 의 유일한 자식이라 `.ecommerce-row-stack>:first-child` padding 0 이 .ecommerce-btn 패딩을 이긴다 — 유틸리티 py-2 로 세로 여백을 지킨다(#399 지문 X2)",
+                                                            "comment": "audit:allow layout-inline-semantic-duplicate reason: row-stack 의 유일한 자식이라 `.ecommerce-row-stack>:first-child` padding 0 이 .ecommerce-btn 패딩을 이긴다 — 유틸리티 py-2 로 세로 여백을 지킨다(지문 X2)",
                                                             "props": {
                                                                 "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-secondary ecommerce:w-full ecommerce:py-2 ecommerce:text-xs"
                                                             }

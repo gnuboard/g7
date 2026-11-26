@@ -68,13 +68,13 @@ class CoreScheduleRegistrationTest extends TestCase
             'notification-delivery:prune' => '52 4 * * *',
             'attachments:prune-orphans' => '55 4 * * *',
             'storage:prune-leftovers' => '0 5 * * *',
-            // 같은 블록의 개인정보·통계 정리도 주기를 고정한다(이 표에서 빠져 있던 행 — #736 에서 함께 채움)
+            // 같은 블록의 개인정보·통계 정리도 주기를 고정한다(이 표에서 빠져 있던 행)
             'privacy:process-retention' => '5 5 * * *',
             'privacy:process-dormant' => '10 5 * * *',
             'analytics:prune' => '10 5 * * *',
             'auth:process-password-expiry' => '15 5 * * *',
             'identity:expire-challenges' => '0 * * * *',
-            // 썸네일 파생본 정리 (7.2.0 신규, #869) — 04:00~05:15 칸이 차 있어 05:20
+            // 썸네일 파생본 정리 (7.2.0 신규) — 04:00~05:15 칸이 차 있어 05:20
             'thumbnails:prune' => '20 5 * * *',
         ];
 
@@ -118,7 +118,7 @@ class CoreScheduleRegistrationTest extends TestCase
      * 카탈로그의 artisan 명령은 전부 실행 시점 허용목록(옵션 포함)을 통과한다.
      *
      * 실행기가 실행 직전에 허용목록을 다시 적용하므로, 카탈로그에 허용목록 밖 명령·옵션이
-     * 하나라도 있으면 그 예약은 등록돼도 매번 「거부」로 실패한다(`--scheduled` 옵션 포함 — #720).
+     * 하나라도 있으면 그 예약은 등록돼도 매번 「거부」로 실패한다(`--scheduled` 옵션 포함).
      *
      * @effects new_commands_are_in_schedule_security_allowlist
      *

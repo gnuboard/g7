@@ -32,11 +32,11 @@ enum CacheScope: string
     public const CODE_PATTERNS = [
         '/^ext\.cache_version$/',
         '/^layout\./',
-        // 레이아웃 해석 캐시 — 값이 이 서버 역할의 레이아웃 표 행 ID 다(검수 서버 전용 행은 10억 이상) (#888)
+        // 레이아웃 해석 캐시 — 값이 이 서버 역할의 레이아웃 표 행 ID 다(검수 서버 전용 행은 10억 이상)
         '/^layout_resolver\./',
-        // 역변환 마크업 캐시 — 검수 서버 표는 운영 행을 ID·lock_version 그대로 복사한 뒤 따로 고친다 (#888)
+        // 역변환 마크업 캐시 — 검수 서버 표는 운영 행을 ID·lock_version 그대로 복사한 뒤 따로 고친다
         '/^layout:markup:/',
-        // 시스템 정보 — 판·설치 경로·PHP 등 그 서버의 값이다 (#888)
+        // 시스템 정보 — 판·설치 경로·PHP 등 그 서버의 값이다
         '/^settings\.system_info\./',
         '/^template\.\d+\.(layout\.|components_manifest)/',
         '/^template\.(routes|language|config|editor_css)\./',

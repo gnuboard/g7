@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 상품코드 규칙(`StoreProductRequest::PRODUCT_CODE_PATTERN` = `^[A-Za-z0-9_-]+$`)은 하이픈·밑줄을 받는데
  * 라우트 제약은 영숫자(`[0-9a-zA-Z]+`)만 받아, 그런 코드의 상품은 수정 화면이 상세 조회 405·활동 로그 404 로
- * 비었다(#736 S2 E2E 실측 — `CBT-TEST-…`).
+ * 비었다(`CBT-TEST-…`).
  */
 class ProductRouteCodeCharactersTest extends ModuleTestCase
 {

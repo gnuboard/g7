@@ -164,7 +164,7 @@ describe('방문자 통계 레이아웃 식의 구문', () => {
   it('액션의 조건은 `if` 로 적는다 — `data-if` 는 노드 렌더 조건이라 액션에 붙이면 평가되지 않고 모든 갈래가 돈다', () => {
     // [case:components-misc-action-data-if-ignored]
     // 정보주체 삭제 창이 `<navigate data-if>` 로 적어, 구운 JSON 에서 조건이 `params["data-if"]` 로 들어갔다.
-    // 엔진은 `action.if` 만 보므로 삭제 뒤 목록 이동과 결과 재조회가 둘 다 돌았다(#682 S3 라운드 15).
+    // 엔진은 `action.if` 만 보므로 삭제 뒤 목록 이동과 결과 재조회가 둘 다 돌았다.
     const actions = analyticsLayoutFiles().flatMap((file) =>
       collectObjects(loadLayout(file))
         .filter((node) => typeof node.handler === 'string')
@@ -209,7 +209,7 @@ describe('방문자 통계 레이아웃 식의 구문', () => {
   // @scenario screen=privacy_requests, state=normal
   // @effects privacy_screen_reads_only_fields_the_server_sends
   it('정보주체 화면이 방문 항목에서 읽는 필드는 서버가 싣는 필드 안에 있다 — 없는 필드를 세면 늘 0 이다', () => {
-    // 결과 요약이 `v.actions` 배열 길이를 셌는데 서버는 `actions_count` 만 싣는다 — 「액션 0건」 고정(#682 S3 라운드 15).
+    // 결과 요약이 `v.actions` 배열 길이를 셌는데 서버는 `actions_count` 만 싣는다 — 「액션 0건」 고정.
     const controller = fs.readFileSync(
       path.resolve(TEMPLATE_DIR, '../../..', 'app/Http/Controllers/Api/Admin/Analytics/PrivacyController.php'),
       'utf8',

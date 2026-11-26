@@ -1,6 +1,6 @@
 /**
  * @file template-settings-bindings.test.ts
- * @description sirsoft-basic 템플릿 설정(#434)이 레이아웃에 연결되는 자리를 잠근다.
+ * @description sirsoft-basic 템플릿 설정이 레이아웃에 연결되는 자리를 잠근다.
  *
  * - 모든 바인딩은 `_global.templateSettings?.…  ?? 기본값` — 저장하지 않았거나 옛 코어면 지금 화면과 같다
  * - 편집기와 겹치는 값(게시판 개수·저작권 문구·홈 섹션·상품 개수)은 템플릿 설정이 유일한 주인이다
@@ -40,7 +40,7 @@ const home = read('layouts/home.json');
 const declaration = read('config/settings/defaults.json');
 const TS = '_global.templateSettings';
 
-describe('_user_base — 헤더·푸터 (#434)', () => {
+describe('_user_base — 헤더·푸터', () => {
     const all = nodes(base);
     const header = all.find((n) => n.name === 'Header')!;
     const footer = all.find((n) => n.name === 'Footer')!;
@@ -80,7 +80,7 @@ describe('_user_base — 헤더·푸터 (#434)', () => {
     });
 });
 
-describe('홈 — 섹션 보이기·상품 개수 (#434)', () => {
+describe('홈 — 섹션 보이기·상품 개수', () => {
     // @scenario case=settings_layout
     // @effects template_settings_exposed_to_global
     it('인기·신상품 데이터소스 개수는 템플릿 설정(기본 8)이고 섹션을 숨기면 부르지 않는다', () => {
@@ -123,7 +123,7 @@ describe('홈 — 섹션 보이기·상품 개수 (#434)', () => {
     });
 });
 
-describe('선언·편집기 샘플·봇 화면이 같은 이름을 쓴다 (#434)', () => {
+describe('선언·편집기 샘플·봇 화면이 같은 이름을 쓴다', () => {
     // @scenario case=settings_layout
     // @effects template_settings_exposed_to_global
     it('레이아웃이 읽는 설정 경로는 모두 선언에 있고 노출된다', () => {

@@ -6,7 +6,7 @@
  * - templates/.../layouts/partials/mypage/orders/_history.json
  * - templates/.../lang/partial/{ko,en}/mypage.json
  *
- * 배경 (#599 통합실측 세션2 · S2-D8):
+ * 배경:
  *   주문의 생애주기는 주문 → 결제 → 배송완료 → **구매확정** → (취소) 로 간다.
  *   그런데 「주문 이력」 섹션은 **구매확정일시만 빠뜨렸다** — 확정이 끝난 주문인데도
  *   이력에 「주문일시 · 결제일시」 두 줄만 섰다.

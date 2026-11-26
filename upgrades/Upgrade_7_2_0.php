@@ -34,7 +34,7 @@ use App\Extension\AbstractUpgradeStep;
  *         없는 설치본에 현재 디스크(사이드카 없는 조각 = 릴리즈 판본)의 해시로 원장을 씨앗한다.
  *         원장이 없으면 다음 업데이트가 전 조각을 「판정 불가 → 보존 + .dist」 로 본다.
  *       06_RegisterTemplateSettingsLayouts.php
- *         설치된 템플릿의 환경설정 화면(`{템플릿}.template_settings`, #434)을 켜진 관리자 템플릿에 등록한다.
+ *         설치된 템플릿의 환경설정 화면(`{템플릿}.template_settings`)을 켜진 관리자 템플릿에 등록한다.
  *         코어만 올리고 템플릿 갱신·관리자 템플릿 활성화를 하지 않은 사이트에서 템플릿 「설정」 화면이 비지 않게 한다.
  *       07_BackfillNicknameNormalized.php
  *         기존 회원의 닉네임 정규화 값(`users.nickname_normalized`)을 동결한 정규화 규칙으로 채운다. 7.2.0 의 닉네임 중복
@@ -47,7 +47,7 @@ use App\Extension\AbstractUpgradeStep;
  *         저장된 회원 설정(`member.json`)의 표시 이름 영역 묶음(`display_name_areas`)이 있을 때, 빠진 기본 영역만 기본값으로
  *         더한다. 이미 있는 영역의 값과 파일의 다른 키는 그대로 두고, 파일이나 묶음이 없으면 로그만 남긴다(멱등).
  *       10_RemoveMaintenanceModeSetting.php
- *         저장된 일반 설정에서 읽히지 않던 점검 모드 키(`general.maintenance_mode`)를 지운다(#888). 점검 모드는
+ *         저장된 일반 설정에서 읽히지 않던 점검 모드 키(`general.maintenance_mode`)를 지운다. 점검 모드는
  *         `php artisan down` / `php artisan up` 이 맡는다. 키가 없으면 아무것도 쓰지 않는다(멱등).
  *
  *   아래 11~13 은 7.1.x 부모 프로세스의 파일 적용(Step 7)이 남긴 결과를 바로잡는다 — 그 적용은 7.1.x 코드가 해서

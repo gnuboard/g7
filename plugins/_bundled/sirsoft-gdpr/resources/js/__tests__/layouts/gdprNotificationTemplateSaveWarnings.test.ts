@@ -1,6 +1,6 @@
 /**
  * @file gdprNotificationTemplateSaveWarnings.test.ts
- * @description 개인정보 플러그인 알림 템플릿 편집 창의 저장 경고와 회원 항목 변수 묶음 (#490)
+ * @description 개인정보 플러그인 알림 템플릿 편집 창의 저장 경고와 회원 항목 변수 묶음
  *
  * @scenario-manifest tests/scenarios/notification-template-save-warnings.yaml
  *

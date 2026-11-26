@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 개발자 전용 composer(custom/) vendor 설치 테스트 (#792 WP-K3 — F0-4·F0-5)
+ * 개발자 전용 composer(custom/) vendor 설치 테스트 (F0-4·F0-5)
  *
  * composer 가 없는 서버(vendor 묶음 모드)에서 custom/vendor-bundle.zip 을 무결성 검사 후 풀고, 설치본이
  * lock 과 맞으면 건너뛰며, 묶음이 lock 과 어긋나면 설치하지 않는지 잠근다. custom/ 이 없으면 아무 일도 없다.

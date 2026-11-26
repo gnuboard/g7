@@ -1,6 +1,6 @@
 /**
  * @file DisplayNameComponents.test.tsx
- * @description 헤더, 모바일 메뉴, 작성자 표시 컴포넌트가 표시 이름을 쓰는지 (#490 8단계)
+ * @description 헤더, 모바일 메뉴, 작성자 표시 컴포넌트가 표시 이름을 쓰는지
  *
  * 로그인 사용자 응답은 실명(`name`)을 그대로 두고 그 화면에서 보일 이름을 `display_name` 으로 따로 싣는다.
  * 헤더(Header)와 모바일 메뉴(MobileNav)는 `display_name ?? name ?? ''` 순서로 읽는다. 이름 항목을 쓰지 않는 사이트는

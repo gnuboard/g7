@@ -10,7 +10,7 @@ use Modules\Sirsoft\Board\Support\GuestUploadOwnerCookie;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 개인정보 동의 플러그인에 비밀글 열람 토큰 키를 필수 저장 키로 제공하는 리스너 검증 (#789)
+ * 개인정보 동의 플러그인에 비밀글 열람 토큰 키를 필수 저장 키로 제공하는 리스너 검증
  *
  * 동의 플러그인은 동의 전에는 허용목록 밖의 저장 키를 부팅마다 지운다. 이 모듈이 열람 토큰 키를
  * 그 플러그인의 필터 훅에 덧붙이지 않으면, 비밀번호를 맞힌 방문자의 토큰이 저장되지 않아 답변 링크
@@ -81,7 +81,7 @@ class ProvideNecessaryStorageKeysListenerTest extends ModuleTestCase
         }
         $this->assertContains('g7_guest_order_token', $result['sessionStorage']);
         $this->assertSame(['other_ext_key'], $result['localStorage']);
-        // 쿠키 스코프에는 앞선 값을 지키고 비회원 업로드 소유 쿠키만 더한다(#883)
+        // 쿠키 스코프에는 앞선 값을 지키고 비회원 업로드 소유 쿠키만 더한다
         $this->assertSame(['other_cookie', 'g7_board_guest_upload'], $result['cookie']);
         $this->assertSame(1, count(array_keys($result['sessionStorage'], $firstKey, true)));
     }
@@ -155,7 +155,7 @@ class ProvideNecessaryStorageKeysListenerTest extends ModuleTestCase
     }
 
     /**
-     * 비회원 업로드 소유 쿠키를 필수 쿠키로 제공합니다 (#883 2단계 실측 결함).
+     * 비회원 업로드 소유 쿠키를 필수 쿠키로 제공합니다 (2단계 실측 결함).
      *
      * 동의 플러그인은 기능 쿠키에 동의하지 않은 방문자의 응답에서 허용목록 밖 쿠키를 모두 걷어낸다. 이 쿠키가
      * 빠지면 비회원은 자기가 방금 올린 임시 첨부를 지우지 못하고(403) 순서도 못 바꾼다 — 쿠키 배너를 고르지 않은

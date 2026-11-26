@@ -411,7 +411,7 @@ describe('문의내역 목록 partial 구조 검증 (_list.json)', () => {
         });
     });
 
-    describe('수정됨 표시 (Issue #208 개편)', () => {
+    describe('수정됨 표시 (개편)', () => {
         // @scenario area=list_card
         // @effects edited_label_when_updated_after_created
         it('item.updated_at 필드를 사용해야 함', () => {
@@ -431,7 +431,7 @@ describe('문의내역 목록 partial 구조 검증 (_list.json)', () => {
         });
     });
 
-    describe('삭제 모달 방식 (Issue #208 개편)', () => {
+    describe('삭제 모달 방식 (개편)', () => {
         // @scenario area=item_actions
         // @effects delete_opens_confirm_modal_with_context
         it('삭제 버튼이 apiCall confirm 방식을 사용하지 않아야 함', () => {
@@ -469,7 +469,7 @@ describe('문의내역 목록 partial 구조 검증 (_list.json)', () => {
         });
     });
 
-    describe('수정 버튼 모달 방식 (Issue #208 개편)', () => {
+    describe('수정 버튼 모달 방식 (개편)', () => {
         // @scenario area=item_actions
         // @effects edit_opens_write_modal_with_context
         it('수정 버튼이 qna_write_modal을 열어야 함', () => {
@@ -489,7 +489,7 @@ describe('문의내역 목록 partial 구조 검증 (_list.json)', () => {
         });
     });
 
-    describe('카드 UI 구조 (Issue #208 개편)', () => {
+    describe('카드 UI 구조 (개편)', () => {
         // @scenario area=list_card
         // @effects inquiry_rendered_as_card_with_header_actions
         it('개별 카드 레이아웃으로 rounded 클래스를 사용해야 함', () => {

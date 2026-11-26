@@ -45,7 +45,7 @@ class StoreLayoutExtensionPreviewRequest extends FormRequest
         // `format=markup` 이면 마크업을 프로덕션 컴파일해 JSON 배열로 바꾼다 — 그 뒤는 기존 규칙 그대로.
         $this->compileMarkupContentIfRequested();
 
-        // JSON 문자열·JSON 객체 본문 모두 빈 객체 `{}` 를 보존해 다시 읽는다 (#758). 파싱 실패 시 원본 유지.
+        // JSON 문자열·JSON 객체 본문 모두 빈 객체 `{}` 를 보존해 다시 읽는다. 파싱 실패 시 원본 유지.
         if ($this->input('format') !== 'markup' && $this->input('content') !== null) {
             $this->merge(['content' => $this->decodeContentPreserving()]);
         }
@@ -103,7 +103,7 @@ class StoreLayoutExtensionPreviewRequest extends FormRequest
             return [null, null, null, 'extension.g7.html'];
         }
 
-        // 다섯째 원소 — 저장본(미등록 템플릿 컴포넌트 허용 기준, #712)
+        // 다섯째 원소 — 저장본(미등록 템플릿 컴포넌트 허용 기준)
         $baseline = app(LayoutMarkupService::class)->decodeStoredContent((string) $extension->getRawOriginal('content'));
 
         return [$templateName, $extension->source_type?->value, $extension->source_identifier, "{$extension->target_name}.g7.html", $baseline];

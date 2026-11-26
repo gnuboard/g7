@@ -339,7 +339,7 @@ class ClaimReasonSeeder extends Seeder implements TranslatableSeederInterface
             $preserved += count($inUse);
 
             // 정리 대상은 시더가 만든 행(created_by IS NULL)뿐이다 — 운영자가 설정 화면에서 만든 미사용 사유까지
-            // 지우면 언어팩을 켜고 끌 때마다 사라진다(#727).
+            // 지우면 언어팩을 켜고 끌 때마다 사라진다.
             $totalDeleted += $helper->cleanupStale(
                 ClaimReason::class,
                 ['type' => $type, 'created_by' => null],

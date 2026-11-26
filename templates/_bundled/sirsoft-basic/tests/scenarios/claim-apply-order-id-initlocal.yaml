@@ -1,4 +1,4 @@
-feature: 클레임 신청서 — 주문 데이터소스 initLocal 이 주문 ID 를 실제로 읽는다 (#869)
+feature: 클레임 신청서 — 주문 데이터소스 initLocal 이 주문 ID 를 실제로 읽는다
 
 description: |
   엔진은 데이터소스 initLocal 의 경로를 응답 본문을 한 겹 벗긴 값(주문 객체)에 대고 읽는다. 회원 신청 셸은 claimOrderId 를

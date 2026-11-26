@@ -77,7 +77,7 @@
                     "handler": "suppress"
                 }
             },
-            "comment": "연간 통지 대상 건수 — 발송 판정과 같은 조건이며 꺼져 있어도 센다(켜기 전에 규모를 본다, #636). 저장 뒤 다시 받는다"
+            "comment": "연간 통지 대상 건수 — 발송 판정과 같은 조건이며 꺼져 있어도 센다(켜기 전에 규모를 본다). 저장 뒤 다시 받는다"
         },
         {
             "id": "privacyManualRuns",
@@ -1194,7 +1194,7 @@
                                                                                                         "text": "{{gdprPolicyVersionCurrent?.data?.data?.publisher?.name ? (gdprPolicyVersionCurrent?.data?.data?.publisher?.email ? gdprPolicyVersionCurrent.data.data.publisher.name + ' (' + gdprPolicyVersionCurrent.data.data.publisher.email + ')' : gdprPolicyVersionCurrent.data.data.publisher.name) : (gdprPolicyVersionCurrent?.data?.data?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}"
                                                                                                     },
                                                                                                     {
-                                                                                                        "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490)",
+                                                                                                        "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다",
                                                                                                         "type": "basic",
                                                                                                         "name": "Span",
                                                                                                         "if": "{{!!gdprPolicyVersionCurrent?.data?.data?.publisher?.real_name}}",
@@ -1483,7 +1483,7 @@
                                                                                                                         "text": "{{row?.publisher?.name ? (row?.publisher?.email ? row.publisher.name + ' (' + row.publisher.email + ')' : row.publisher.name) : (row?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}"
                                                                                                                     },
                                                                                                                     {
-                                                                                                                        "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490)",
+                                                                                                                        "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다",
                                                                                                                         "type": "basic",
                                                                                                                         "name": "Span",
                                                                                                                         "if": "{{!!row?.publisher?.real_name}}",
@@ -3148,7 +3148,7 @@
                                                 ]
                                             },
                                             {
-                                                "comment": "조치 대상 — 코어 개인정보 탭과 같은 「대상 행」 양식(이름 · 건수 배지 · 오른쪽 끝 대상 보기·지금 실행 · 그 행의 결과 줄).\n                 건수는 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 「대상 보기」는 회원 읽기 권한이 있으면 0명이어도 그린다(빈 명단은 창이 안내한다).\n                 되돌릴 수 없는 발송은 채운 강조색을 쓰지 않는다(2026-09-26 결정).",
+                                                "comment": "조치 대상 — 코어 개인정보 탭과 같은 「대상 행」 양식(이름 · 건수 배지 · 오른쪽 끝 대상 보기·지금 실행 · 그 행의 결과 줄).\n                 건수는 꺼져 있어도 보인다(켜기 전에 규모를 본다). 「대상 보기」는 회원 읽기 권한이 있으면 0명이어도 그린다(빈 명단은 창이 안내한다).\n                 되돌릴 수 없는 발송은 채운 강조색을 쓰지 않는다(2026-09-26 결정).",
                                                 "id": "annual_notice_targets",
                                                 "type": "basic",
                                                 "name": "Div",

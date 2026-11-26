@@ -60,7 +60,7 @@ class MaintenanceModePage
         $data = $this->downData();
 
         // `php artisan down --secret=…` 의 비밀 경로 — 우회 쿠키를 발급하고 첫 화면으로 보낸다.
-        // Laravel 기본 점검 미들웨어를 이 미들웨어로 바꾼 뒤로는 쿠키를 검증만 하고 발급하지 않아, 안내된 비밀 주소가 503 이었다(#888).
+        // Laravel 기본 점검 미들웨어를 이 미들웨어로 바꾼 뒤로는 쿠키를 검증만 하고 발급하지 않아, 안내된 비밀 주소가 503 이었다.
         if (isset($data['secret']) && is_string($data['secret']) && $data['secret'] !== '' && $request->path() === trim($data['secret'], '/')) {
             return redirect(SiteUrl::absolute('/'))->withCookie(MaintenanceModeBypassCookie::create($data['secret']));
         }

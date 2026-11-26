@@ -243,7 +243,7 @@ describe('D10 — 좁은 화면에서 탭 바가 본문 안쪽 여백과 같은 
             });
             keys.sort((a, b) => Number(a in presets) - Number(b in presets)
                 || (rangeOf(a)[1] - rangeOf(a)[0]) - (rangeOf(b)[1] - rangeOf(b)[0]));
-            // 고른 구간의 실효값 — 구간 class(통째 교체, 없으면 기본 class) 위에 구간 class-merge 를 엔진 규칙으로 덧붙인다 (#399)
+            // 고른 구간의 실효값 — 구간 class(통째 교체, 없으면 기본 class) 위에 구간 class-merge 를 엔진 규칙으로 덧붙인다
             const value = keys.length
                 ? applyResponsiveClassMerge(node.responsive[keys[0]]?.props?.className ?? node.props?.className, node.responsive[keys[0]]?.classMerge)
                 : node.props?.className;

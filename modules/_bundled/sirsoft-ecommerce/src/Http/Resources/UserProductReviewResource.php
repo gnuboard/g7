@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use Illuminate\Http\Request;
 
 /**
- * 마이페이지 내 리뷰 리소스 (#952)
+ * 마이페이지 내 리뷰 리소스
  *
  * 리뷰 리소스에 「본인이 지울 수 있는가」(`is_deletable`)를 더한다. 관리자 능력(`abilities.can_delete`)은 관리자 권한
  * 기준이라 회원 화면이 쓰지 않는다.

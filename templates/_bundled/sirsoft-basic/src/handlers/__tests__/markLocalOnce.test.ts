@@ -1,6 +1,6 @@
 /**
  * @file markLocalOnce.test.ts
- * @description 데이터소스 onSuccess 의 「한 번만」 가드 핸들러 (#599 validate 2026-09-23)
+ * @description 데이터소스 onSuccess 의 「한 번만」 가드 핸들러 (validate 2026-09-23)
  *
  * 데이터소스 onSuccess 컨텍스트에는 `_local` 이 실리지 않는다(`response` 만 있다) — 그래서 레이아웃
  * 표현식으로는 「이미 채웠는가」 를 판정할 수 없다. 주문서의 기본 배송지 채움이 그 때문에 배송지 관리

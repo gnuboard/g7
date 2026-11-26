@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Laravel\Sanctum\PersonalAccessToken;
 
 /**
- * 개발자 화면(custom 예약 자리, #792)의 로그인 회원 판정 — 서버 세션 + 그 로그인 때 발급된 토큰의 생존.
+ * 개발자 화면(custom 예약 자리)의 로그인 회원 판정 — 서버 세션 + 그 로그인 때 발급된 토큰의 생존.
  *
  * G7 화면의 로그인은 API 가 Bearer 토큰을 발급하고, 같은 요청에서 서버 세션(웹 가드)에도 로그인을 남긴다.
  * 이때 발급한 토큰 ID 를 세션 `g7.screen_token_id` 에 묶어 둔다(「짝」). 개발자 화면은 웹 세션 회원이 있고
@@ -180,7 +180,7 @@ class ScreenAuth
             && ($token->expires_at === null || $token->expires_at->isFuture());
 
         if (! $alive) {
-            // 짝 토큰이 회수·만료되면 웹 세션 로그인도 정식 로그아웃으로 끝낸다(Logout 이벤트 포함 — #792
+            // 짝 토큰이 회수·만료되면 웹 세션 로그인도 정식 로그아웃으로 끝낸다(Logout 이벤트 포함
             // 결정). 세션 자체는 무효화하지 않는다 — 같은 세션의 CSRF 토큰·다른 값은 그대로 둔다.
             Auth::guard('web')->logout();
             $request->session()->forget(self::SESSION_KEY);

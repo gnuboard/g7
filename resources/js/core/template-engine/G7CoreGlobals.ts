@@ -721,7 +721,7 @@ function initReactGlobals(): void {
 }
 
 /**
- * 방문자 동의 파사드 초기화 — `G7Core.consent` (engine-v1.78.0, #639)
+ * 방문자 동의 파사드 초기화 — `G7Core.consent` (engine-v1.78.0)
  *
  * 다른 확장이 동의를 관리하는 확장의 경로를 몰라도 동의 상태를 읽고 구독할 수 있게 한다. 런타임은 코어
  * 동의 런타임(`resources/js/core/consent`) 하나이고, 이 파사드는 그것을 감싸기만 한다.
@@ -747,7 +747,7 @@ function initConsentAPI(G7Core: any): void {
 }
 
 /**
- * 본문 콘텐츠 규칙 API 초기화 — `G7Core.contentPolicy` (engine-v1.90.0, #883).
+ * 본문 콘텐츠 규칙 API 초기화 — `G7Core.contentPolicy` (engine-v1.90.0).
  *
  * 코어 환경설정 「본문 콘텐츠」 규칙(`_global.settings.content.render_policy`)으로 본문을 정화하고 외부 영상을 플레이어로 바꾼다.
  * 템플릿 HtmlContent·편집기 플러그인이 쓰며, 규칙이 없으면 `sanitize` 가 null 을 돌려 호출자가 종전 경로를 쓴다.
@@ -766,7 +766,7 @@ function initContentPolicyAPI(G7Core: any): void {
 }
 
 /**
- * 본문 미디어 업로드 파사드 초기화 — `G7Core.contentMedia` (engine-v1.89.0, #883)
+ * 본문 미디어 업로드 파사드 초기화 — `G7Core.contentMedia` (engine-v1.89.0)
  *
  * 확장(게시판·페이지·이커머스)이 확장점 `html_editor` 의 prop `mediaUpload` 로 넘긴 업로드 계약을 편집기 플러그인이
  * 확장의 API 경로를 모른 채 쓰게 한다. 런타임은 코어 본문 미디어 런타임(`resources/js/core/contentMedia`) 하나다.
@@ -834,7 +834,7 @@ function initSearchHistoryAPI(G7Core: any): void {
 }
 
 /**
- * 전역 상태 공개 계약 조회 API 초기화 — `G7Core.stateContracts` (engine-v1.78.0, #639)
+ * 전역 상태 공개 계약 조회 API 초기화 — `G7Core.stateContracts` (engine-v1.78.0)
  *
  * 서버가 인라인한 `G7Config.stateContracts`(코어 예약 + 활성 확장이 manifest `state_contracts` 로 선언한
  * 공개 전역 상태)를 읽기 전용으로 노출한다. 다른 확장이 읽는 `_global.{이름}` 의 소유자·모양·쓰기 허용 주체를
@@ -3261,7 +3261,7 @@ function initToastAPI(G7Core: any): void {
  * 모달 상태(activeModal·modalStack)를 담은 전역 상태를 읽습니다.
  *
  * `G7Core.state.get()` 은 `_global` 의 **내용물**을 바로 돌려준다(`TemplateApp.getGlobalState()`). 예전 구현은
- * `state._global?.modalStack` 을 읽어 화면에서는 isOpen 이 늘 false·getStack 이 늘 [] 였다(#712 실측). 감싼 모양을
+ * `state._global?.modalStack` 을 읽어 화면에서는 isOpen 이 늘 false·getStack 이 늘 [] 였다. 감싼 모양을
  * 돌려주는 호스트도 읽도록 `_global` 이 있으면 그쪽을 쓴다.
  *
  * @param G7Core G7Core 전역 객체

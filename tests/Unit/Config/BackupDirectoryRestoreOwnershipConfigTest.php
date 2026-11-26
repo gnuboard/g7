@@ -34,7 +34,7 @@ class BackupDirectoryRestoreOwnershipConfigTest extends TestCase
     }
 
     /**
-     * 정적 게시 트리(`public/build/ext`)가 두 목록에 포함된다 (#651 F22).
+     * 정적 게시 트리(`public/build/ext`)가 두 목록에 포함된다.
      *
      * root 프로세스는 자동 게시를 예약하지 않으므로 이 항목의 목적은 "terminating 게시가 만든 root
      * 디렉토리" 가 아니라 **실존하는** 게시 트리(웹 계정이 게시한 사이트)의 소유권을 코어 업데이트

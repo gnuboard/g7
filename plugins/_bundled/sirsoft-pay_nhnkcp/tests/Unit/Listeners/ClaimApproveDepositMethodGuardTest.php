@@ -10,7 +10,7 @@ use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
 /**
- * KCP 클레임 추가결제의 가상계좌 판정이 클라이언트 값에 기대지 않는지 (#599 validate C2)
+ * KCP 클레임 추가결제의 가상계좌 판정이 클라이언트 값에 기대지 않는지
  *
  * 클레임 결제는 입금 대기 상태가 없어 가상계좌를 받지 않는다. 그런데 거절 판정이 **브라우저가
  * 보낸** `use_pay_method` 하나였다 — 그 값을 빼거나 바꿔 보내면 계좌만 발급됐는데(입금 전)
@@ -144,7 +144,7 @@ class ClaimApproveDepositMethodGuardTest extends PluginTestCase
      *
      * 브라우저 값은 청구액과 같아도(3000) 응답 금액(2500)이 다르면 승인분을 취소하고 거절한다 —
      * 대조를 모듈에 넘기면 그 거절의 보상은 서버 콜백 경로에만 있어 클라이언트 승인 API 경로에서는
-     * 청구된 채 남는다(#599 validate 07 #8 로 판정을 리스너로 옮겼다).
+     * 청구된 채 남는다(validate 07 #8 로 판정을 리스너로 옮겼다).
      *
      * @return void 반환값 없음
      *

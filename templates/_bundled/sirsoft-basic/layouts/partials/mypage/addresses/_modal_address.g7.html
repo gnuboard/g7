@@ -29,7 +29,7 @@
         <span data-if="{{_local.addressErrors?.name}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.addressErrors?.name?.[0] ?? ''}}</span>
       </div>
       <!-- 배송국가 (D10 — 해외배송 활성 시에만 표시. _global.editingAddress.country_code 저장. 선택에 따라 국내/해외 주소 입력 분기. 체크아웃 배송지 관리 모달과 동형.)
-           선택 칸과 주소 칸이 같은 값(editingAddress.country_code, 없으면 KR)을 본다 — 새 배송지의 기본 국가는 「추가」 버튼이 채운다(#703). -->
+           선택 칸과 주소 칸이 같은 값(editingAddress.country_code, 없으면 KR)을 본다 — 새 배송지의 기본 국가는 「추가」 버튼이 채운다. -->
       <div data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}">
         <label class="form-label">$t:shop.checkout.shipping_country</label>
         <select name="country_code" aria-label="$t:shop.checkout.shipping_country" value="{{_global.editingAddress?.country_code ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full">
@@ -173,7 +173,7 @@
         <label for="address_is_default" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">$t:mypage.addresses.form.set_default</label>
       </div>
       <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <!-- 이 줄은 저장 단추가 폼 제출이라 고정 하단으로 옮기지 않는다. 640px 이하에서는 세로로 쌓고 폭을 채운다(Modal 고정 하단과 같은 경계, #869) -->
+        <!-- 이 줄은 저장 단추가 폼 제출이라 고정 하단으로 옮기지 않는다. 640px 이하에서는 세로로 쌓고 폭을 채운다(Modal 고정 하단과 같은 경계) -->
         <responsive on="-640" class="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"/>
         <responsive on="641-1023" class="flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"/>
         <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">

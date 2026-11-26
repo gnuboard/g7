@@ -1,6 +1,6 @@
 /**
  * @file login-password-change-step.test.tsx
- * @description 사용자 로그인 폼 비밀번호 변경 단계 구조 회귀 테스트 (#736, sirsoft-basic)
+ * @description 사용자 로그인 폼 비밀번호 변경 단계 구조 회귀 테스트 (sirsoft-basic)
  *
  * 관리자 화면(`admin-login-password-change-step.test.tsx`)과 평행한 검증이며 상태 네임스페이스만 `_global` 이다 —
  * 로그인 폼 조각이 바깥 화면과 상태를 나눠 쓰기 때문이다. 세 단계의 블록 `if`·제출 액션 `if` 가 상호배타여야 하고,

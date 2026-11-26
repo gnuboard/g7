@@ -2,7 +2,7 @@
  * @file admin-role-form-create-mode-reset.test.ts
  * @description 역할 폼 — 같은 레이아웃 재사용(수정 → 등록) 시 form 잔존 제거 (레이아웃 JSON 구조 검증)
  *
- * 배경(브라우저 실측 2026-09-14, #599): 엔진은 layout_name 이 바뀔 때만 `_local` 을 비운다.
+ * 배경(브라우저 실측 2026-09-14): 엔진은 layout_name 이 바뀔 때만 `_local` 을 비운다.
  * 역할 수정 → 역할 등록은 둘 다 admin_role_form 이라 `_local.form` 이 남고, 레이아웃 `state.form`
  * 기본값은 기존 키가 있으면 다시 적용되지 않아 등록 화면의 식별자 칸에 직전 역할(admin)이 그대로
  * 보였다. sirsoft-page admin_page_form 선례처럼 생성 모드 init_actions 에서 `form: null` 로 비운

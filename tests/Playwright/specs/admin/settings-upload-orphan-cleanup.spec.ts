@@ -92,7 +92,7 @@ test('#115 - 보존기간 0 은 항목명이 드러난 안내와 함께 거절�
     { timeout: 20_000 },
   );
 
-  // 이름으로 찾으면 업로드 탭의 「… 썸네일 저장 디스크」 선택 버튼이 먼저 잡힌다(#869) — 하단 저장 버튼을 ref 로 누른다
+  // 이름으로 찾으면 업로드 탭의 「… 썸네일 저장 디스크」 선택 버튼이 먼저 잡힌다 — 하단 저장 버튼을 ref 로 누른다
   const saveButton = page.locator('#save_button');
   await expect(saveButton).toBeEnabled({ timeout: 10_000 });
   await saveButton.click();

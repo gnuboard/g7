@@ -192,7 +192,7 @@ class AdminBladeTemplateLoadingTest extends TestCase
     /**
      * Font Awesome 이 로드되는지 테스트.
      *
-     * 7.1.0(#616)부터 관리자 템플릿이 Font Awesome 을 자체 제공한다(`externals` 의 `asset`) — 외부 CDN 주소가 아니라
+     * 7.1.0부터 관리자 템플릿이 Font Awesome 을 자체 제공한다(`externals` 의 `asset`) — 외부 CDN 주소가 아니라
      * 같은 사이트의 템플릿 자산 주소로 실려야 한다.
      *
      * @scenario template_type=admin, css_declaration=declared_and_built

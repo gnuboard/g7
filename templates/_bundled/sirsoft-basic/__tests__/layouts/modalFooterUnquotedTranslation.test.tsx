@@ -1,6 +1,6 @@
 /**
  * @file modalFooterUnquotedTranslation.test.tsx
- * @description 고정 하단(`props.footer`)에 따옴표 없는 `$t:` 식을 쓴 번들 창을 실물 엔진·진짜 Modal 로 전부 그려, 하단이 오류 없이 번역돼 그려지는지 (#869 8차)
+ * @description 고정 하단(`props.footer`)에 따옴표 없는 `$t:` 식을 쓴 번들 창을 실물 엔진·진짜 Modal 로 전부 그려, 하단이 오류 없이 번역돼 그려지는지
  *
  * 고정 하단을 skipBindingKeys 로 원문 그대로 그리게 된 뒤, 하단 단추 글자 식 안의 `$t:` 를 하단 렌더러가 번역 문맥 없이 풀다가
  * getTranslation 이 templateId 를 구조 분해하며 던졌다(관리자 회원 목록 「활성화」 확인 창 — 확인 단추가 「컴포넌트 로드 실패 [Button]」).

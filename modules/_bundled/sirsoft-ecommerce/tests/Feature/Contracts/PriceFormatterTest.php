@@ -6,7 +6,7 @@ use Modules\Sirsoft\Ecommerce\Contracts\Currency\PriceFormatter;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 금액 표시 형식 공개 계약 (#916)
+ * 금액 표시 형식 공개 계약 
  *
  * 결제사 플러그인은 이커머스 전역 헬퍼 대신 이 계약으로 금액 문자열을 만든다. 결과는 헬퍼와 같아야 한다.
  */

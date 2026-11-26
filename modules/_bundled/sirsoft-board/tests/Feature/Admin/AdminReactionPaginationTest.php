@@ -9,7 +9,7 @@ use Modules\Sirsoft\Board\Models\ReactionType;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 관리자 반응 목록 — deferred join 페이지네이션 회귀 (#525 WP-C).
+ * 관리자 반응 목록 — deferred join 페이지네이션 회귀.
  *
  * `AdminReactionTest` 가 권한·필터·검색·삭제를 잠근다. 이 파일은 그쪽이 다루지 않는
  * **페이지네이션 기계**를 잠근다 — [ReactionRepository::paginateForAdmin()](modules/_bundled/sirsoft-board/src/Repositories/ReactionRepository.php)

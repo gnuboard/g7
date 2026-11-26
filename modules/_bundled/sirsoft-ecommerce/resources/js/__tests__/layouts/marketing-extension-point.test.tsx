@@ -4,7 +4,7 @@
  *
  * - 관리자 사용자 상세: 동의 이력 테이블 iteration
  *
- * 회원가입 폼과 마이페이지 프로필 overlay 묶음은 지웠다(#490). 그 overlay 조각
+ * 회원가입 폼과 마이페이지 프로필 overlay 묶음은 지웠다. 그 overlay 조각
  * (`user-marketing-register`, `user-marketing-profile`, `user-marketing-profile-view`, `user-marketing-form`)이
  * 지워지고 마케팅 동의가 회원 항목(약관 묶음)으로 옮겨갔기 때문이다. 같은 동작(부모, 자식 종속, 약관 보기, 캡션)은
  * 마케팅 플러그인의 항목 선언 시험과 사용자 템플릿 공용 항목 조각의 약관 묶음 시험이 잠근다.

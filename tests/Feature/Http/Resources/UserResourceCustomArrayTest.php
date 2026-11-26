@@ -9,7 +9,7 @@ use Illuminate\Http\Resources\MissingValue;
 use Tests\TestCase;
 
 /**
- * UserResource 의 커스텀 배열 메서드가 when()/whenLoaded() 의 빈 값 객체를 흘리지 않는지 검증합니다 (#703).
+ * UserResource 의 커스텀 배열 메서드가 when()/whenLoaded() 의 빈 값 객체를 흘리지 않는지 검증합니다.
  *
  * toArray() 안의 when()/whenLoaded() 는 Laravel 이 응답을 만들 때만 걸러진다. 커스텀 메서드가 toArray() 를
  * 직접 부르면 걸러지지 않은 MissingValue 가 남아 JSON 에 `{}` 로 나갔다 — 로그인 사용자 응답

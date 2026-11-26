@@ -69,7 +69,7 @@ export const Toggle: React.FC<ToggleProps> = ({
   id,
   editorAttrs,
 }) => {
-  // 안쪽 checkbox 의 DOM id — 같은 name 의 스위치가 화면에 여럿이면 name 을 그대로 쓰면 id 가 겹친다(#408).
+  // 안쪽 checkbox 의 DOM id — 같은 name 의 스위치가 화면에 여럿이면 name 을 그대로 쓰면 id 가 겹친다.
   // 인스턴스마다 다른 useId 를 앞에 붙이고, name 에 섞인 공백·한글은 id 에서 걷어 낸다. 짝 참조(label for)는 없다.
   const reactId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const safeName = name ? name.replace(/[^a-zA-Z0-9_-]/g, '') : '';

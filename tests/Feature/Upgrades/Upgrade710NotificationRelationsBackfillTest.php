@@ -13,7 +13,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * 7.1.0 업그레이드 — 알림 정의 `relations` 백필과 미백필 정의의 저장 호환 (#599 validate).
+ * 7.1.0 업그레이드 — 알림 정의 `relations` 백필과 미백필 정의의 저장 호환.
  *
  * 7.1.0 은 알림 템플릿의 「관련 사용자」 수신자(`related_user.relation`)를 정의가 선언한 키로만
  * 받는다. 그런데 `relations` 컬럼은 추가만 하고 기존 정의는 채우지 않아, 확장이 다시 동기화되기

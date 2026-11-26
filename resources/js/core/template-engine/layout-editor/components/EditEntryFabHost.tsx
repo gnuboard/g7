@@ -1,7 +1,7 @@
 /**
  * EditEntryFabHost.tsx
  *
- * 운영 화면(관리자·사용자 사이트 공통)에 편집 진입 단추를 붙이는 호스트 (#869, 설계 확정 2026-11-09).
+ * 운영 화면(관리자·사용자 사이트 공통)에 편집 진입 단추를 붙이는 호스트 (설계 확정 2026-11-09).
  *
  * `template-engine.ts` 의 일반 렌더 트리(renderTemplate·updateTemplateData)가 모달 묶음 뒤 형제로 렌더한다.
  * 편집기 셸 분기는 이 트리를 그리지 않고, 편집기 미리보기 캔버스는 DynamicRenderer 를 직접 쓰므로 둘 다 이 호스트가 없다.
@@ -148,7 +148,7 @@ export function EditEntryFabHost(props: EditEntryFabHostProps): React.ReactEleme
     };
   }, [manager]);
 
-  // 로그인 응답으로 세운 세션에는 판정이 없다 — 그 사용자에 대해 한 번만 받아 온다(로그인 뒤 SPA 이동, #869)
+  // 로그인 응답으로 세운 세션에는 판정이 없다 — 그 사용자에 대해 한 번만 받아 온다(로그인 뒤 SPA 이동)
   const [fetchedAbility, setFetchedAbility] = useState<{ uuid: string; can: boolean } | null>(null);
   // 묻는 중이거나 물은 사용자 — 인증 스냅샷이 새 객체로 바뀌어도 같은 사용자를 두 번 묻지 않는다
   const requestedUuidRef = useRef<string | null>(null);
@@ -162,7 +162,7 @@ export function EditEntryFabHost(props: EditEntryFabHostProps): React.ReactEleme
   // 로그인 세션 세대 — 로그아웃마다 올린다. 그 전에 나간 조회가 늦게 돌아와도 새 세션 판정으로 쓰지 않는다.
   const sessionGenerationRef = useRef(0);
   // 로그아웃하면 받아 온 판정과 「물은 사용자」를 비운다 — 새로고침 없이 같은 계정으로 다시 로그인했을 때
-  // 그사이 바뀐 역할을 다시 받아야 한다(종전에는 예전 판정이 남았다, #869 독립 검토 σ)
+  // 그사이 바뀐 역할을 다시 받아야 한다(종전에는 예전 판정이 남았다)
   useEffect(() => {
     if (auth.isAuthenticated) return;
     sessionGenerationRef.current += 1;

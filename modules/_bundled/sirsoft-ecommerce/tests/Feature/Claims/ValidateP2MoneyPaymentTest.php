@@ -22,7 +22,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 클레임 추가결제 금액·동시성 결함 수정 검증 — 승인 대조·조건부 갱신·망취소·환급 잠금·반올림 (#599 validate P2-B)
+ * 클레임 추가결제 금액·동시성 결함 수정 검증 — 승인 대조·조건부 갱신·망취소·환급 잠금·반올림 (B)
  *
  * 검증 축:
  * - 승인 금액을 돌려주지 않은 승인은 확정하지 않는다(#11).

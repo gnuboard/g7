@@ -115,7 +115,7 @@ import { registerSirsoftBasicIdentityLauncher } from './handlers/identityLaunche
 // 서버 기기 감지값(appConfig.isIos) 클라이언트 보정 (iPadOS 데스크탑 UA 케이스)
 import { correctIosDeviceState } from './handlers/deviceCorrection';
 
-// 인증 경계 비회원 저장값 정리 (#639 ⑦)
+// 인증 경계 비회원 저장값 정리
 import { installAuthBoundaryStorageCleanup } from './handlers/authBoundaryStorage';
 
 // 레이아웃 편집기 커스텀 위젯(icon-picker 등) 등록
@@ -132,7 +132,7 @@ const TEMPLATE_IDENTIFIER = 'sirsoft-basic';
 if (typeof window !== 'undefined' && isPageTemplate(TEMPLATE_IDENTIFIER)) {
   (window as any).G7TemplateHandlers = handlerMap;
   // 장바구니 키 발급을 번들이 실릴 때 시작한다 — 레이아웃 요청과 겹쳐 첫 화면 전 PHP 왕복 한 단계를 줄인다.
-  // 렌더 전 대기는 그대로다(init_actions 의 initCartKey 가 이 결과를 기다린다). 다른 템플릿 페이지(편집기)에서는 하지 않는다 (#879)
+  // 렌더 전 대기는 그대로다(init_actions 의 initCartKey 가 이 결과를 기다린다). 다른 템플릿 페이지(편집기)에서는 하지 않는다
   prefetchCartKey();
 }
 
@@ -183,7 +183,7 @@ export function initTemplate(): void {
         // 애플페이 iOS 게이팅(체크아웃 레이아웃 iteration 필터)이 이 값을 참조한다.
         correctIosDeviceState();
 
-        // 로그인·로그아웃 경계에서 카트키·비회원 주문 토큰을 정리·재발급한다(#639 ⑦). 다시 불려도 구독은 하나다.
+        // 로그인·로그아웃 경계에서 카트키·비회원 주문 토큰을 정리·재발급한다. 다시 불려도 구독은 하나다.
         installAuthBoundaryStorageCleanup();
       } else {
         retryCount++;

@@ -35,5 +35,5 @@ return [
     LanguagePackServiceProvider::class,
     ScoutServiceProvider::class,
     SeoServiceProvider::class,
-    CustomReservedServiceProvider::class,  // custom 예약 자리(#792) — 반드시 마지막. 개발자 App\Custom\CustomServiceProvider 를 가장 늦게 등록
+    CustomReservedServiceProvider::class,  // custom 예약 자리 — 반드시 마지막. 개발자 App\Custom\CustomServiceProvider 를 가장 늦게 등록
 ];

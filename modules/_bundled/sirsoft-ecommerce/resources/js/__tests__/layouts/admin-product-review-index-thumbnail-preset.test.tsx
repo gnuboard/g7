@@ -1,7 +1,7 @@
 // e2e:allow 굽힌 레이아웃 JSON 의 미리보기 주소 식과 코어 규격 유틸만 평가한다 — 실제 목록의 썸네일 요청은 계획 §8 Chrome MCP 실측으로 확인한다.
 /**
  * @file admin-product-review-index-thumbnail-preset.test.tsx
- * @description 관리자 리뷰 목록 — 리뷰 사진 칸은 썸네일 기준 주소(`preview_url`)에 sm 규격을 건다 (#878)
+ * @description 관리자 리뷰 목록 — 리뷰 사진 칸은 썸네일 기준 주소(`preview_url`)에 sm 규격을 건다
  *
  * 배경: 공개 자산 디스크(CDN)에 올라간 리뷰 사진의 `download_url` 은 직접 주소라 같은 출처 `/api/` 패턴 밖이다 —
  * `thumbPreset="sm"` 을 들고 있어도 `?size=` 가 붙지 않아 80px 칸마다 원본이 내려갔다. 서버가 함께 내리는

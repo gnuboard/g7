@@ -134,7 +134,7 @@ class TemplateLayoutRegistrationTest extends TestCase
      */
     public function test_activate_deactivate_template_does_not_affect_layouts(): void
     {
-        // 템플릿 설정 화면(`{id}.template_settings`, #434)은 활성 관리자 템플릿에 교차 등록되는 행이라 source_type 이
+        // 템플릿 설정 화면(`{id}.template_settings`)은 활성 관리자 템플릿에 교차 등록되는 행이라 source_type 이
         // template 이어도 템플릿 자체 레이아웃이 아니다. 꺼진 채 설치하면 등록할 관리자 템플릿이 없어 빠지고, 활성화하면
         // 자기 자신에게 등록된다(TemplateManager::registerSettingsLayoutsForAllInstalled). 자체 레이아웃 수에서 빼고 따로 본다.
         $settingsName = TemplateLayout::templateSettingsLayoutName('sirsoft-admin_basic');

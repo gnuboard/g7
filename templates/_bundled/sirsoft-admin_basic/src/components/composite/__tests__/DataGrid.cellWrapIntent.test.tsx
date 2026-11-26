@@ -19,7 +19,7 @@ import { DataGrid } from '../DataGrid';
 
 const css = readFileSync(resolve(__dirname, '../../../styles/semantic.css'), 'utf-8');
 
-/** semantic.css(main.css 가 가져온다, #434) 에서 `@layer components { … }` 블록 본문만 꺼낸다(중괄호 짝을 센다). */
+/** semantic.css(main.css 가 가져온다) 에서 `@layer components { … }` 블록 본문만 꺼낸다(중괄호 짝을 센다). */
 function componentsLayer(source: string): string {
   const start = source.indexOf('@layer components {');
   expect(start, '@layer components 블록이 없습니다').toBeGreaterThanOrEqual(0);

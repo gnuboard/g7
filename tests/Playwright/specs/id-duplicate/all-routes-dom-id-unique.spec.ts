@@ -1,5 +1,5 @@
 /**
- * 전 화면 DOM id 유일성 크롤 (이슈 #408 5.2절, 결정 D6)
+ * 전 화면 DOM id 유일성 크롤 (5.2절, 결정 D6)
  *
  * HTML `id` 는 한 문서에 하나여야 한다. 같은 id 가 둘 이상이면 `getElementById`·`<label for>`·`aria-*`
  * 연결과 확장 주입(target_id)이 첫 요소에만 걸린다. 이 spec 은 실행 중인 서버가 내주는 **활성 확장 병합
@@ -37,7 +37,7 @@
  *   networkidle·마운트·안정 대기가 시간 안에 끝나지 않아도 그 시점 DOM 을 재고 보고서에 표시한다.
  *
  * 한계: 모달·BottomSheet·드롭다운처럼 **사용자 조작으로 열리는 영역은 열지 않는다**(닫힌 상태에서는
- *   마운트되지 않는다). 그 부분의 중복(#408 3.1절 B2 무통장 일괄 매칭 모달, B3 구매 시트, C3 주소형 항목 2개
+ *   마운트되지 않는다). 그 부분의 중복(3.1절 B2 무통장 일괄 매칭 모달, B3 구매 시트, C3 주소형 항목 2개
  *   이상인 회원 폼 등)은 계획서 8절 Chrome MCP 시나리오가 맡는다. 데이터 조건(표본 행의 값)에 따라 그려지지
  *   않는 분기도 이 크롤로는 확인되지 않는다.
  *
@@ -53,7 +53,7 @@ import { fileURLToPath } from 'node:url';
 import type { APIRequestContext, Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
-test.skip(process.env.G7_E2E_ID_CRAWL !== '1', 'G7_E2E_ID_CRAWL=1 일 때만 실행하는 전 화면 크롤이다 (#408 D6)');
+test.skip(process.env.G7_E2E_ID_CRAWL !== '1', 'G7_E2E_ID_CRAWL=1 일 때만 실행하는 전 화면 크롤이다');
 
 // ESM 환경(package.json "type": "module")에서는 __dirname 이 없으므로 import.meta.url 로 만든다.
 const specDir = dirname(fileURLToPath(import.meta.url));

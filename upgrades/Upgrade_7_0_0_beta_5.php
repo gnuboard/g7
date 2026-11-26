@@ -13,9 +13,9 @@ use App\Extension\AbstractUpgradeStep;
  *   - manifest.json + permissions.delta.json — IDV 권한 식별자 rename 카탈로그
  *   - appliers/PermissionsApplier.php — 카탈로그 단순 적용기
  *   - migrations/
- *       01_RecoverActiveExtensionDirs.php          — #347 회귀: 활성 확장 디렉토리 복구
- *       02_RecoverPendingStubFiles.php             — #347 회귀: _pending stub 재생성
- *       03_VerifyBundledLangPacksFallback.php      — #347 회귀: lang-packs/_bundled fallback
+ *       01_RecoverActiveExtensionDirs.php          — 회귀: 활성 확장 디렉토리 복구
+ *       02_RecoverPendingStubFiles.php             — 회귀: _pending stub 재생성
+ *       03_VerifyBundledLangPacksFallback.php      — 회귀: lang-packs/_bundled fallback
  *       04_IdentityPermissionPivotMerge.php        — IDV 권한 rename 충돌 경로 피벗 병합
  *       05_RecoverPublicStorageSymlink.php         — public/storage symlink 복구
  *

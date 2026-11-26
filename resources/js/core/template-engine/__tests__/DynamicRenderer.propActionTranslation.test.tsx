@@ -1,7 +1,7 @@
-// e2e:allow 엔진 렌더 경로 단위 잠금 — 브라우저 동작은 #916 엔진 회귀 브라우저 실측(구·신 번들 대조, 서명자·분석 삭제·게시판 일괄·연동 안내 footer 토스트 4종)으로 확인했고 관리자 템플릿 Vitest admin-install-toast-footer 가 실제 Modal footer 클릭을 잠근다
+// e2e:allow 엔진 렌더 경로 단위 잠금 — 브라우저 동작은 엔진 회귀 브라우저 실측(구·신 번들 대조, 서명자·분석 삭제·게시판 일괄·연동 안내 footer 토스트 4종)으로 확인했고 관리자 템플릿 Vitest admin-install-toast-footer 가 실제 Modal footer 클릭을 잠근다
 /**
  * @file DynamicRenderer.propActionTranslation.test.tsx
- * @description 컴포넌트 정의를 담은 prop 안의 액션 정의는 렌더 시점에 미리 번역하지 않는다 (engine-v1.96.1, #916)
+ * @description 컴포넌트 정의를 담은 prop 안의 액션 정의는 렌더 시점에 미리 번역하지 않는다 (engine-v1.96.1)
  *
  * 렌더러는 props 를 ① 바인딩(`DataBindingEngine.resolveObject`) ② 번역(`resolveTranslationsDeep`) 순서로 푼다. ①은 액션
  * 정의를 건너뛰고(engine-v1.56.0 콜백 prop 선평가 방지), 반복 렌더(`RenderHelpers.resolveValue`)도 건너뛰는데 ②만 그 안까지

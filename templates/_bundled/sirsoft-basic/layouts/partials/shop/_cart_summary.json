@@ -246,7 +246,7 @@
                                             ]
                                         },
                                         {
-                                            "comment": "영세 금액 — 과세 금액에 포함된 세율 0% 몫(부가세 없음), 있을 때만 (#612)",
+                                            "comment": "영세 금액 — 과세 금액에 포함된 세율 0% 몫(부가세 없음), 있을 때만",
                                             "type": "basic",
                                             "name": "Div",
                                             "if": "{{(cartItems.data.calculation?.summary?.zero_rated_amount ?? 0) > 0}}",

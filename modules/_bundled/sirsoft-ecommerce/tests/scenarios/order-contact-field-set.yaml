@@ -1,4 +1,4 @@
-feature: 주문서 항목 집합 (#490 11단계)
+feature: 주문서 항목 집합
 
 description: |
   주문서에서 받는 주문자와 배송지 항목을 항목 집합 sirsoft-ecommerce.order_contact 으로 선언한다. 운영자는 이커머스 환경설정의

@@ -14,7 +14,7 @@ use Plugins\Sirsoft\Ckeditor5\Services\ImageUploadService;
 use Plugins\Sirsoft\Ckeditor5\Tests\PluginTestCase;
 
 /**
- * 업로드 응답의 반응형 후보 `urls` (#878)
+ * 업로드 응답의 반응형 후보 `urls`
  *
  * 공개 자산 디스크(CDN)에 저장된 본문 이미지는 `<img src>` 에 직접 주소가 박혀 썸네일 파이프를 지나지 않는다.
  * 업로드 응답이 `urls`(`default` = 직접 주소, 숫자 키 = API 주소 + `?size=`)를 함께 내리면 편집기가 본문에

@@ -16,18 +16,18 @@ description: |
     - 간편결제 원 수단 라벨은 서버 필터 훅 `sirsoft-ecommerce.order.filter_payment_method_display_label` 로
       플러그인이 자기 결제에만 채운다. 화면은 `payment_method_display_label ?? payment_method_label`.
     - 같은 훅이 주문 결제 리소스(`OrderPaymentResource`)의 `payment_method_display_label` 도 채운다 — 관리자 주문 상세·
-      관리자 클레임 상세의 주문 결제 카드·마이페이지 주문 상세가 목록과 같은 이름을 보인다(#933 S5). 해석은
+      관리자 클레임 상세의 주문 결제 카드·마이페이지 주문 상세가 목록과 같은 이름을 보인다. 해석은
       `OrderPayment::paymentMethodDisplayLabel()` 한 곳이다.
     - 자기 간편결제 id(`nicepay_kakaopay`·`nhnkcp_kakaopay`)로 저장된 결제는 기본 라벨 자리에 원시 id 대신 PG 이름을
-      쓴다 — 「카카오페이 (나이스페이먼츠)」(#933 S7). 토스는 코어 값(`card`)으로 저장하므로 결제 결과 간편결제사
-      (`embedded_pg_provider`)로 「카카오페이 (토스페이먼츠)」를 만든다(#933 S4).
-    - 플러그인 업데이트 뒤에는 코어 재등록이 overlay 뿐 아니라 확장점 조각도 활성 템플릿에 다시 등록한다(#725 — 플러그인마다
+      쓴다 — 「카카오페이 (나이스페이먼츠)」. 토스는 코어 값(`card`)으로 저장하므로 결제 결과 간편결제사
+      (`embedded_pg_provider`)로 「카카오페이 (토스페이먼츠)」를 만든다.
+    - 플러그인 업데이트 뒤에는 코어 재등록이 overlay 뿐 아니라 확장점 조각도 활성 템플릿에 다시 등록한다(플러그인마다
       두던 복원 리스너는 꺼진 템플릿까지 행을 만들어 지웠다).
 
 axes:
   payment_plugin: [none, kginicis, nhnkcp, nicepayments, tosspayments]
   # 표시 라벨을 그리는 화면(관리자 목록·관리자 주문 상세·관리자 클레임 상세 주문 결제 카드·마이페이지 주문 상세)은 축이 아니라
-  # effect order_detail_screens_prefer_display_label 로 화면별 테스트가 잰다 (#933 S5)
+  # effect order_detail_screens_prefer_display_label 로 화면별 테스트가 잰다
 
 effects:
   - order_list_payment_method_cell_opens_a_badge_slot
@@ -37,10 +37,10 @@ effects:
   - display_label_comes_from_the_payment_plugin_filter
   - display_label_listener_subscribes_to_the_ecommerce_filter
   - display_label_listener_labels_only_its_own_easy_pay_payments
-  - easy_pay_display_label_from_provider                     # 토스: 결제 결과 간편결제사(embedded_pg_provider)로 「카카오페이 (토스페이먼츠)」, 옛 「토스결제」 는 토스페이, 맵 밖은 「{원문} (토스페이먼츠)」 (#933 S4)
-  - display_label_uses_pg_name_for_own_easy_pay_method_id   # 자기 id 로 저장된 간편결제는 「카카오페이 (PG 이름)」 — 원시 id 노출 없음 (#933 S7)
-  - order_payment_resource_carries_display_label            # 주문 결제 리소스에도 표시 라벨 — 구독자 없음·빈 값·배열이면 null (#933 S5)
-  - order_detail_screens_prefer_display_label               # 관리자 주문 상세·클레임 상세 주문 결제 카드·마이페이지 상세가 표시 라벨 우선, 없으면 기본 라벨 (#933 S5)
+  - easy_pay_display_label_from_provider                     # 토스: 결제 결과 간편결제사(embedded_pg_provider)로 「카카오페이 (토스페이먼츠)」, 옛 「토스결제」 는 토스페이, 맵 밖은 「{원문} (토스페이먼츠)」
+  - display_label_uses_pg_name_for_own_easy_pay_method_id   # 자기 id 로 저장된 간편결제는 「카카오페이 (PG 이름)」 — 원시 id 노출 없음
+  - order_payment_resource_carries_display_label            # 주문 결제 리소스에도 표시 라벨 — 구독자 없음·빈 값·배열이면 null
+  - order_detail_screens_prefer_display_label               # 관리자 주문 상세·클레임 상세 주문 결제 카드·마이페이지 상세가 표시 라벨 우선, 없으면 기본 라벨
   - extension_point_fragment_is_restored_after_plugin_update
 
 test_files:
@@ -60,5 +60,5 @@ test_files:
 
 limitations:
   - "셀 템플릿 안 확장점은 서빙 조립에서 채워진다. 위지윅 편집기의 확장점 시각 편집은 `children` 트리만 다루므로 셀 안 확장점은 편집기 캔버스에서 조각 편집 대상으로 잡히지 않는다."
-  - "KG이니시스는 간편결제 원 수단 표시 라벨을 제공하지 않는다(종전에도 제공하지 않았다) — 필터 구독자는 NHN KCP·나이스페이먼츠·토스페이먼츠 셋이다(토스는 #933 에서 추가)."
-  - "클레임 추가결제(`claimPayment`)·마이페이지 클레임 청구 결제수단은 별도 리소스라 이 표시 라벨 대상이 아니다(#933 범위 밖)."
+  - "KG이니시스는 간편결제 원 수단 표시 라벨을 제공하지 않는다(종전에도 제공하지 않았다) — 필터 구독자는 NHN KCP·나이스페이먼츠·토스페이먼츠 셋이다(토스는 나중에 추가)."
+  - "클레임 추가결제(`claimPayment`)·마이페이지 클레임 청구 결제수단은 별도 리소스라 이 표시 라벨 대상이 아니다(범위 밖)."

@@ -1,12 +1,12 @@
 /**
  * @file mypageCurrencySettings.test.tsx
- * @description 마이페이지 결제 통화, 배송 국가 = 회원정보 저장 한 번에 함께 가는 확장 항목 (A3, A5 + D8, D9, #490 7단계)
+ * @description 마이페이지 결제 통화, 배송 국가 = 회원정보 저장 한 번에 함께 가는 확장 항목
  *
  * 설계: 통화는 별도 저장 단추가 아니라 회원정보 수정 때 함께 저장한다(결정 2026-09-28).
  * 종전에는 그 통화 선택칸(name=ecommerce_preferred_currency)과 배송 국가 선택칸이 코어 쪽 사용자 템플릿에 박혀 있었고,
  * 선택지도 화면이 이커머스 모듈의 전역 설정(_global.modules['sirsoft-ecommerce'])에서 직접 읽었다.
  *
- * 지금 계약(#490 7단계):
+ * 지금 계약:
  * - 사용자 템플릿에는 박힌 통화 칸, 배송 국가 칸과 모듈 전역 참조가 없다.
  * - 이커머스가 두 값을 회원 항목으로 선언하면 서버가 항목 계약(GET /api/me/fields 의 fields[])에 실어 주고,
  *   화면은 계산값 profileExtensionGroups 로 확장마다 묶어 확장별 카드에서 공용 조각으로 그린다.
@@ -150,7 +150,7 @@ describe('D9 — 마이페이지 결제 통화: 회원정보 통합저장 (확�
      * @effects core_template_has_no_hardcoded_ecommerce_preference
      */
     it('수정 화면에 박힌 통화 선택칸, 배송 국가 선택칸과 이커머스 모듈 전역 참조가 없다', () => {
-      // 이름이 박힌 입력은 표시 이름 종류 선택 칸 하나뿐이다(회원의 선택이라 이 조각이 직접 그린다, #490 8단계) — 값이 실리는 나머지 칸은 공용 조각이 항목 계약의 name 으로 그린다
+      // 이름이 박힌 입력은 표시 이름 종류 선택 칸 하나뿐이다(회원의 선택이라 이 조각이 직접 그린다) — 값이 실리는 나머지 칸은 공용 조각이 항목 계약의 name 으로 그린다
       const named = flatten(edit).filter((n) => n.name !== 'Icon' && typeof n.props?.name === 'string');
       expect(named.map((n) => n.props.name)).toEqual(['display_name_kind']);
       // 선택지를 모듈이 내놓는 전역 설정(language_currency.currencies 등)에서 읽지 않는다
@@ -260,7 +260,7 @@ describe('D9 — 마이페이지 결제 통화: 회원정보 통합저장 (확�
       const form = flatten(edit).find((n) => n.name === 'Form')!;
       const calls = actionsIn(form.actions).filter((action) => action.handler === 'apiCall');
       expect(calls.map((action) => [action.params.method, action.target])).toEqual([['PUT', '/api/me']]);
-      // 이 조각 전체로 보아도 쓰는 API 호출은 그 하나뿐이다(표시 이름 미리보기를 다시 받는 조회 하나가 더 있다, #490 8단계)
+      // 이 조각 전체로 보아도 쓰는 API 호출은 그 하나뿐이다(표시 이름 미리보기를 다시 받는 조회 하나가 더 있다)
       const allCalls = actionsIn(edit).filter((action) => action.handler === 'apiCall');
       expect(allCalls.filter((action) => action.params.method !== 'GET')).toHaveLength(1);
       expect(allCalls.filter((action) => action.params.method === 'GET').map((action) => String(action.target).split('?')[0])).toEqual(['/api/me/fields']);

@@ -86,7 +86,7 @@ class PostService
      * @param  CommentRepositoryInterface  $commentRepository  댓글 Repository
      * @param  CommentService  $commentService  댓글 서비스
      * @param  CacheInterface  $cache  모듈 캐시 (목록 총 건수·통계 캐시)
-     * @param  PostContentMediaService  $contentMediaService  본문 미디어 서비스 (#883)
+     * @param  PostContentMediaService  $contentMediaService  본문 미디어 서비스
      */
     public function __construct(
         private PostRepositoryInterface $postRepository,
@@ -301,7 +301,7 @@ class PostService
         $guestFields = $data[GuestAuthorFields::BUNDLE] ?? null;
         unset($data[GuestAuthorFields::BUNDLE]);
 
-        // 실패하면 정리할 것은 이 요청이 이을 수 있던 임시 첨부뿐이다 — 트랜잭션 전에 고른다 (#883 F5)
+        // 실패하면 정리할 것은 이 요청이 이을 수 있던 임시 첨부뿐이다 — 트랜잭션 전에 고른다
         $rollbackIds = $this->attachmentService->filterLinkableAttachmentIds($attachmentIds, $slug, $tempKey);
 
         DB::beginTransaction();
@@ -320,7 +320,7 @@ class PostService
             // 훅: filter_create_data
             $data = HookManager::applyFilters('sirsoft-board.post.filter_create_data', $data, $slug);
 
-            // 본문 미디어 서명 주소를 정식 주소로 (편집기가 받은 서명 주소를 그대로 저장하지 않게, #883)
+            // 본문 미디어 서명 주소를 정식 주소로 (편집기가 받은 서명 주소를 그대로 저장하지 않게)
             $data = $this->normalizeContentMedia($data, $slug);
 
             // 게시글 생성
@@ -332,18 +332,18 @@ class PostService
             // 첨부파일 연결 처리
             $this->linkAttachments($slug, $post->id, $attachmentIds, $tempKey, $files, '생성');
 
-            // 본문이 참조한 본문 미디어만 글에 잇는다 — 문서당 최대 개수를 넘으면 422 로 저장 전체를 되돌린다 (#883)
-            // 다른 글 소유 본문 미디어는 이 글 소유로 복제하고 본문 주소를 바꾼다 (#887)
+            // 본문이 참조한 본문 미디어만 글에 잇는다 — 문서당 최대 개수를 넘으면 422 로 저장 전체를 되돌린다
+            // 다른 글 소유 본문 미디어는 이 글 소유로 복제하고 본문 주소를 바꾼다
             $post = $this->applyClonedContentMedia($slug, $post,
                 $this->contentMediaService->syncWithContent($slug, $post, $tempKey, $this->contentMediaContext($post)));
 
             // 훅: before_create_commit — 트랜잭션 안·글 ID 확정·첨부 연결 뒤. 확장이 같은 트랜잭션에서 자기 데이터를
-            // 저장하는 자리다(sync 리스너만, 예외는 저장 전체를 되돌린다, 파일은 StorageTransaction). (#883)
+            // 저장하는 자리다(sync 리스너만, 예외는 저장 전체를 되돌린다, 파일은 StorageTransaction).
             HookManager::doAction('sirsoft-board.post.before_create_commit', $post, $slug, $data, $options);
 
             DB::commit();
         } catch (\Throwable $e) {
-            // Error 도 잡는다 — Exception 만 잡으면 Error 가 났을 때 롤백 없이 트랜잭션이 열린 채 남았다 (#883 F6)
+            // Error 도 잡는다 — Exception 만 잡으면 Error 가 났을 때 롤백 없이 트랜잭션이 열린 채 남았다
             DB::rollBack();
 
             // 이 요청이 이을 수 있던 임시 첨부만 정리 (롤백)
@@ -403,7 +403,7 @@ class PostService
         unset($data['attachment_ids']);
 
         // 실패하면 정리할 것은 이 요청이 이을 수 있던 임시 첨부뿐이다 — 이미 이 글에 연결된 첨부 번호(수정 화면이 함께
-        // 보낸다)까지 지우면 수정 실패 한 번에 기존 첨부가 사라진다 (#883 F5)
+        // 보낸다)까지 지우면 수정 실패 한 번에 기존 첨부가 사라진다
         $rollbackIds = $this->attachmentService->filterLinkableAttachmentIds($attachmentIds, $slug, $tempKey);
 
         DB::beginTransaction();
@@ -416,7 +416,7 @@ class PostService
             // 훅: filter_update_data
             $data = HookManager::applyFilters('sirsoft-board.post.filter_update_data', $data, $post, $slug);
 
-            // 본문 미디어 서명 주소를 정식 주소로 (#883)
+            // 본문 미디어 서명 주소를 정식 주소로
             $data = $this->normalizeContentMedia($data, $slug);
 
             // 게시글 수정
@@ -425,17 +425,17 @@ class PostService
             // 첨부파일 연결 처리
             $this->linkAttachments($slug, $updatedPost->id, $attachmentIds, $tempKey, [], '수정');
 
-            // 본문 미디어 동기화 — 본문에서 빠진 것은 소프트 삭제, 새로 참조한 임시 본문 미디어는 잇는다 (#883)
-            // 다른 글 소유 본문 미디어는 이 글 소유로 복제하고 본문 주소를 바꾼다 (#887)
+            // 본문 미디어 동기화 — 본문에서 빠진 것은 소프트 삭제, 새로 참조한 임시 본문 미디어는 잇는다
+            // 다른 글 소유 본문 미디어는 이 글 소유로 복제하고 본문 주소를 바꾼다
             $updatedPost = $this->applyClonedContentMedia($slug, $updatedPost,
                 $this->contentMediaService->syncWithContent($slug, $updatedPost, $tempKey, $this->contentMediaContext($updatedPost)));
 
-            // 훅: before_update_commit — 트랜잭션 안·첨부 연결 뒤 (생성의 before_create_commit 과 같은 규약, #883)
+            // 훅: before_update_commit — 트랜잭션 안·첨부 연결 뒤 (생성의 before_create_commit 과 같은 규약)
             HookManager::doAction('sirsoft-board.post.before_update_commit', $updatedPost, $slug, $data, $snapshot);
 
             DB::commit();
         } catch (\Throwable $e) {
-            // Error 도 잡는다 (#883 F6)
+            // Error 도 잡는다
             DB::rollBack();
 
             // 이 요청이 이을 수 있던 임시 첨부만 정리 (롤백)
@@ -529,7 +529,7 @@ class PostService
     }
 
     /**
-     * 개인정보 보유기간 처리로 게시글을 삭제합니다 (이슈 #636 — 시스템 삭제).
+     * 개인정보 보유기간 처리로 게시글을 삭제합니다 (시스템 삭제).
      *
      * 관리자·작성자의 삭제와 같은 실행 본체({@see executeDelete()})를 지나므로 답글·댓글·첨부
      * 연쇄 삭제와 after_delete 리스너(건수 동기화·연동 확장 정리·활동 로그)가 똑같이 돈다.
@@ -1012,7 +1012,7 @@ class PostService
         }
 
         // 컨텍스트가 주어지면 스코프 접근 검사를 이 인스턴스로 수행한다.
-        // 종전에는 권한 판정 전용으로 같은 행을 한 번 더 읽었다 (#519 F3).
+        // 종전에는 권한 판정 전용으로 같은 행을 한 번 더 읽었다.
         if ($context !== null) {
             $scopePermission = $context === 'admin'
                 ? "sirsoft-board.{$slug}.admin.posts.read"
@@ -1087,7 +1087,7 @@ class PostService
         }
 
         // 게시판 존재성 검증 및 조회. 이전/다음 후보에는 목록과 같은 읽기 스코프(본인만·소유역할)를 건다 —
-        // 걸지 않으면 목록에서 걸러진 남의 글 제목·ID 가 이전/다음 글로 나간다(#789).
+        // 걸지 않으면 목록에서 걸러진 남의 글 제목·ID 가 이전/다음 글로 나간다.
         if (! $board) {
             $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
         }
@@ -1221,7 +1221,7 @@ class PostService
     // =========================================================================
 
     /**
-     * 저장할 본문의 본문 미디어 서명 주소를 정식 주소로 되돌립니다 (#883).
+     * 저장할 본문의 본문 미디어 서명 주소를 정식 주소로 되돌립니다.
      *
      * @param  array<string, mixed>  $data  저장 데이터
      * @param  string  $slug  게시판 슬러그
@@ -1237,7 +1237,7 @@ class PostService
     }
 
     /**
-     * 본문 미디어 동기화가 복제한 해시로 바뀐 본문을 글에 다시 저장합니다 — 저장 트랜잭션 안 (#887).
+     * 본문 미디어 동기화가 복제한 해시로 바뀐 본문을 글에 다시 저장합니다 — 저장 트랜잭션 안.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  Post  $post  저장된 글
@@ -1292,7 +1292,7 @@ class PostService
     ): void {
         // 방안 A: 업로드 완료된 첨부파일 ID로 연결 (신규 방식)
         // 남이 올린 임시 첨부·다른 게시판 임시 첨부는 번호로도 잇지 않는다 (임시 키 경로와 같은 소유 기준).
-        // 비회원은 번호와 함께 그 첨부를 올릴 때 쓴 임시 키를 가져야 잇는다 (#883)
+        // 비회원은 번호와 함께 그 첨부를 올릴 때 쓴 임시 키를 가져야 잇는다
         $attachmentIds = $this->attachmentService->filterLinkableAttachmentIds($attachmentIds, $slug, $tempKey);
 
         if (! empty($attachmentIds)) {

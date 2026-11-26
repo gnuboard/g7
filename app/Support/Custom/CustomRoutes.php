@@ -273,7 +273,7 @@ class CustomRoutes
                 continue;
             }
             // 경로 자리는 제약(where)이 있으면 `{정규식}`, 없으면 `*` — 제약을 잃으면 `/board/{slug}/{id}`(숫자)가
-            // 엔진의 `/board/free/write` 이동까지 가로채 전체 페이지 이동으로 만든다(#792 실측). 슬래시를 받을 수 있는
+            // 엔진의 `/board/free/write` 이동까지 가로채 전체 페이지 이동으로 만든다. 슬래시를 받을 수 있는
             // 제약은 구간 비교로 표현할 수 없어 `*` 로 둔다.
             $wheres = $route->wheres;
             $pattern = '/'.ltrim((string) preg_replace_callback('/\{(\w+)\??\}/', function (array $m) use ($wheres): string {

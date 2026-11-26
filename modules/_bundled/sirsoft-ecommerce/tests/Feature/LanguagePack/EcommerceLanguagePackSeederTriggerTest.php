@@ -87,7 +87,7 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
         }
 
         // 레지스트리 싱글톤을 갈아 끼우지 않고 캐시만 비운다 — 부팅 때 등록된 번역 필터·주입기가 그 인스턴스를
-        // 쥐고 있어, 교체하면 새 활성 팩이 필터에 보이지 않는다(리스너 refreshRegistry 와 같은 규칙, #597).
+        // 쥐고 있어, 교체하면 새 활성 팩이 필터에 보이지 않는다(리스너 refreshRegistry 와 같은 규칙).
         app(LanguagePackRegistry::class)->invalidate();
     }
 

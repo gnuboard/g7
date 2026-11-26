@@ -23,7 +23,7 @@ use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 /**
  * 일본 CBT 편의점결제 입금 통보 처리와 관리자 운영(요약·시뮬레이션·만료·재확인).
  *
- * 주문·결제 조회와 쓰기는 이커머스 공개 결제 계약 {@see PaymentGatewayBridge} 로 한다(#916) — 결제 meta 누적(통보 이력)은
+ * 주문·결제 조회와 쓰기는 이커머스 공개 결제 계약 {@see PaymentGatewayBridge} 로 한다 — 결제 meta 누적(통보 이력)은
  * 결제 행 잠금 아래 계산(`mutatePaymentMetaWithLock`), 입금 기한 만료 전이는 `expireAwaitingDeposit`, 입금 완료는
  * `completePayment`(결제사 id 인수 포함)로 맡긴다.
  */

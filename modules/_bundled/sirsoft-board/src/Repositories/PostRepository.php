@@ -614,7 +614,7 @@ class PostRepository implements PostRepositoryInterface
      */
     public function findWithCounts(string $slug, int $id, ?int $boardId = null, ?Board $board = null, ?PostQueryExtensions $extensions = null): ?Post
     {
-        // 호출자가 이미 손에 쥔 Board 를 넘기면 그 인스턴스를 그대로 쓴다 (#519 F3).
+        // 호출자가 이미 손에 쥔 Board 를 넘기면 그 인스턴스를 그대로 쓴다.
         // $board 는 아래 답글 로딩에서 참조하므로 어느 경로로 오든 정의돼 있어야 한다
         // (초기화가 없으면 boardId 를 받은 경로에서 미정의 변수 경고가 난다).
         $boardId = $board?->id ?? $boardId;
@@ -826,7 +826,7 @@ class PostRepository implements PostRepositoryInterface
             $boardId = $board->id;
         }
 
-        // 목록과 같은 읽기 스코프로 이전/다음 후보를 거른다 — 서비스가 컨텍스트별 식별자를 넘긴다(#789)
+        // 목록과 같은 읽기 스코프로 이전/다음 후보를 거른다 — 서비스가 컨텍스트별 식별자를 넘긴다
         $scopePermission = $filters['scope_permission'] ?? null;
         unset($filters['scope_permission']);
 
@@ -2027,7 +2027,7 @@ class PostRepository implements PostRepositoryInterface
      * 넘겨받은 원글에서 parent_id 로 이어진 자손만 모은다. 댓글·첨부 행·반응(글·댓글)·스크랩도 함께
      * 지워 고아 행을 남기지 않는다. 첨부 파일 본문은 저장소가 다루지 않는다 — 호출하는 쪽이 먼저
      * AttachmentService::purgeByPostIds 로 파일과 행을 정리한다(남은 행은 여기서 지운다). 본문 미디어 행은 그 뒤
-     * AttachmentService::purgeContentMediaByPostIds 로 먼저 지워 core.content_media.before_delete 를 거치게 한다(#887).
+     * AttachmentService::purgeContentMediaByPostIds 로 먼저 지워 core.content_media.before_delete 를 거치게 한다.
      *
      * @param  int  $boardId  게시판 ID (다른 게시판의 같은 ID 는 지우지 않는다)
      * @param  array<int, int>  $ids  삭제할 원글 ID 목록
@@ -2500,7 +2500,7 @@ class PostRepository implements PostRepositoryInterface
      */
     public function recalculateAttachmentsCount(int $postId): int
     {
-        // 본문 미디어(예약 컬렉션)는 첨부 개수에 세지 않는다 (#883)
+        // 본문 미디어(예약 컬렉션)는 첨부 개수에 세지 않는다
         $count = Attachment::where('post_id', $postId)->whereNull('deleted_at')
             ->whereNotIn('collection', Attachment::RESERVED_COLLECTIONS)->count();
         Post::where('id', $postId)->update(['attachments_count' => $count]);

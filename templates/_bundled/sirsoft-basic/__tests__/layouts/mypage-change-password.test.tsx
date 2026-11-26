@@ -1,6 +1,6 @@
 /**
  * @file mypage-change-password.test.tsx
- * @description 마이페이지 비밀번호 변경 화면 회귀 테스트 (#736, sirsoft-basic)
+ * @description 마이페이지 비밀번호 변경 화면 회귀 테스트 (sirsoft-basic)
  *
  * - 머리 아래에 마지막 변경·만료 예정(D-n)을 `/api/me` 로 보여 준다(만료가 적용되지 않으면 만료 예정은 없다).
  * - 422 는 토스트로 뭉개지 않고 칸 아래(`error` prop)에 싣는다 — 현재 비밀번호 오류와 새 비밀번호 규칙 위반은 고칠 칸이 다르다.
@@ -35,7 +35,7 @@ const inputs = nodes.filter((n) => n.name === 'PasswordInput');
 const form = nodes.find((n) => n.name === 'Form');
 const api = flattenActions(form?.actions).find((a) => a.handler === 'apiCall');
 
-describe('마이페이지 비밀번호 변경 (#736)', () => {
+describe('마이페이지 비밀번호 변경', () => {
   /**
    * @scenario status=expiring, response=ok
    * @effects mypage_shows_password_status

@@ -61,7 +61,7 @@ class ExtensionMenuSyncHelper
         ?int $parentId = null,
     ): Menu {
         // 선언 아이콘 정규화 — 문자열(FA 클래스)·구조형(class·image 상대경로·svg path/value)을 저장 정규형으로.
-        // 잘못된 선언은 설치를 막지 않고 null + 라이프사이클 경고(menu_icon) 로 남긴다 (#381)
+        // 잘못된 선언은 설치를 막지 않고 null + 라이프사이클 경고(menu_icon) 로 남긴다
         $icon = MenuIconDeclaration::normalize($newAttributes['icon'] ?? null, $extensionType, $extensionIdentifier, $slug);
 
         $existing = $this->menuRepository->findBySlugAndExtension($slug, $extensionType, $extensionIdentifier);
@@ -116,7 +116,7 @@ class ExtensionMenuSyncHelper
         $updateData = [];
 
         // parent_id 도 운영자가 옮겼으면(user_overrides 에 기록) 보존한다 — 종전엔 무조건 정의값으로 덮어
-        // 옮긴 메뉴가 업데이트마다 원위치됐다(#727 D5-③).
+        // 옮긴 메뉴가 업데이트마다 원위치됐다.
         if (! $isFieldOverridden('parent_id')) {
             $updateData['parent_id'] = $parentId;
         }
@@ -158,7 +158,7 @@ class ExtensionMenuSyncHelper
 
         $fresh = $existing->fresh();
 
-        // 선언값이 운영자 업로드 아이콘을 덮었으면 그 첨부를 커밋 뒤 지운다 — 저장 경로(MenuService)와 같은 정리 (#381)
+        // 선언값이 운영자 업로드 아이콘을 덮었으면 그 첨부를 커밋 뒤 지운다 — 저장 경로(MenuService)와 같은 정리
         if ($fresh !== null && array_key_exists('icon', $updateData) && $fresh->getRawOriginal('icon') !== $previousIcon) {
             app(MenuIconService::class)->syncAttachmentBinding($fresh, $previousIcon);
         }

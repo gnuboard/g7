@@ -21,7 +21,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 use Tests\Helpers\MocksChannelReadiness;
 
 /**
- * 연간 개인정보 이용내역 안내의 받는 사람 이름 (#490)
+ * 연간 개인정보 이용내역 안내의 받는 사람 이름
  *
  * 안내는 회원 본인에게 간다. 알림 데이터의 받는 사람 이름(`recipient_name`)은 자리표시(`{recipient_name}`)이고, 코어가 받는
  * 사람과 채널마다 표시 이름으로 푼다. 설정을 바꾸지 않은 사이트는 수정 전과 같이 회원 이름이 나간다.

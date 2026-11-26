@@ -162,7 +162,7 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
           (isImage || !isPending) ? 'cursor-pointer' : ''
         } ${isImage && onImageClick ? FOCUS_VISIBLE_RING : ''
         }`}
-        // 이미지 크게 보기는 다른 단추가 없어 이 칸이 키보드 단추다. 다운로드는 아래 다운로드 단추가 맡는다(#869 키보드 접근)
+        // 이미지 크게 보기는 다른 단추가 없어 이 칸이 키보드 단추다. 다운로드는 아래 다운로드 단추가 맡는다(키보드 접근)
         {...(isImage && onImageClick ? { ...keyboardActivationProps(() => { if (!isUploading && !isCompressing) onImageClick(); }), 'aria-label': t('common.zoom_image_named', { name: file.original_filename }) } : {})}
         onClick={() => {
           // 업로드 중/압축 중이면 클릭 무시

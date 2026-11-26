@@ -449,11 +449,11 @@ class ProductService
 
             $product = $product->load(['activeOptions', 'categories', 'images', 'additionalOptions']);
 
-            // 상품 설명이 참조한 본문 미디어만 잇는다 — 문서당 최대 개수를 넘으면 422 로 저장 전체를 되돌린다 (#883)
+            // 상품 설명이 참조한 본문 미디어만 잇는다 — 문서당 최대 개수를 넘으면 422 로 저장 전체를 되돌린다
             $this->syncDescriptionMedia($product, $data);
 
             // 훅: before_create_commit — 트랜잭션 안·상품 ID 확정·마지막 저장 뒤. 확장이 같은 트랜잭션에서 자기 데이터를
-            // 저장하는 자리다(sync 리스너만, 예외는 저장 전체를 되돌린다, 파일은 StorageTransaction). (#883)
+            // 저장하는 자리다(sync 리스너만, 예외는 저장 전체를 되돌린다, 파일은 StorageTransaction).
             HookManager::doAction('sirsoft-ecommerce.product.before_create_commit', $product, $data);
 
             return $product;
@@ -535,12 +535,12 @@ class ProductService
 
             $product = $product->load(['activeOptions', 'categories', 'images', 'additionalOptions']);
 
-            // 본문 미디어 동기화 — 설명을 보낸 수정만 (#883)
+            // 본문 미디어 동기화 — 설명을 보낸 수정만
             if (array_key_exists('description', $data)) {
                 $this->syncDescriptionMedia($product, $data);
             }
 
-            // 훅: before_update_commit — 트랜잭션 안·마지막 저장 뒤 (생성의 before_create_commit 과 같은 규약, #883)
+            // 훅: before_update_commit — 트랜잭션 안·마지막 저장 뒤 (생성의 before_create_commit 과 같은 규약)
             HookManager::doAction('sirsoft-ecommerce.product.before_update_commit', $product, $data, $snapshot);
 
             return $product;
@@ -646,7 +646,7 @@ class ProductService
             // 7. 카테고리 연결 해제 (중간 테이블)
             $product->categories()->detach();
 
-            // 7-1. 상품 설명 본문 미디어 영구 삭제 — 본문에서 빠져 소프트 삭제된 것 포함, 파일은 커밋 뒤 (#887)
+            // 7-1. 상품 설명 본문 미디어 영구 삭제 — 본문에서 빠져 소프트 삭제된 것 포함, 파일은 커밋 뒤
             app(ContentMediaPurger::class)->purgeForOwner(ContentMediaOwnerType::Product, $product->id);
 
             // 8. 상품 레코드 완전 삭제 (SoftDeletes 무시)
@@ -1520,7 +1520,7 @@ class ProductService
     }
 
     /**
-     * 상품 설명이 참조한 본문 미디어를 맞춥니다 — 저장 트랜잭션 안 (#883).
+     * 상품 설명이 참조한 본문 미디어를 맞춥니다 — 저장 트랜잭션 안.
      *
      * @param  Product  $product  저장된 상품
      * @param  array  $data  요청 데이터 (`content_media_temp_key`)
@@ -1537,7 +1537,7 @@ class ProductService
         );
 
         // 다른 상품·공통 정보의 본문 미디어를 이 상품 소유로 복제했으면 바뀐 설명을 다시 저장한다 — 같은 인스턴스를 갱신해
-        // 불러 둔 관계(옵션·분류·이미지)를 유지한다 (#887)
+        // 불러 둔 관계(옵션·분류·이미지)를 유지한다
         if (($result['cloned'] ?? 0) > 0 && array_key_exists('content', $result) && $result['content'] !== $product->description) {
             $this->repository->update($product, ['description' => $result['content']]);
         }
@@ -1547,7 +1547,7 @@ class ProductService
      * 상품 설명 HTML을 정화합니다.
      *
      * 모드는 요청의 `description_mode` 를 따르고, 요청에 없으면 저장된 모드를 따른다 — 모드를 보내지 않은 수정이 HTML 상품의 설명을
-     * 정화 없이 저장하지 않도록(공통 정보 `sanitizeContent` 와 같은 판정, #887).
+     * 정화 없이 저장하지 않도록(공통 정보 `sanitizeContent` 와 같은 판정).
      *
      * @param  array  $data  상품 데이터
      * @param  string  $currentMode  저장된 설명 모드 (요청에 `description_mode` 가 없을 때 — 생성은 기본값 text)
@@ -1564,12 +1564,12 @@ class ProductService
             return $data;
         }
 
-        // 편집 폼이 받은 본문 미디어 서명 주소는 정식 주소로 되돌린 뒤 정화한다 — 생성·수정 공통, 정화기가 쿼리의 & 를 바꾸기 전에 (#883)
+        // 편집 폼이 받은 본문 미디어 서명 주소는 정식 주소로 되돌린 뒤 정화한다 — 생성·수정 공통, 정화기가 쿼리의 & 를 바꾸기 전에
         $data['description'] = app(ContentMediaService::class)->normalizeContent($data['description']);
 
         foreach ($data['description'] as $locale => $content) {
             if (is_string($content) && ! empty($content)) {
-                // 상품 설명은 게시판과 같은 「본문 콘텐츠」 규칙 — 그림 캡션·업로드 동영상·외부 영상이 남는다 (#883 D20)
+                // 상품 설명은 게시판과 같은 「본문 콘텐츠」 규칙 — 그림 캡션·업로드 동영상·외부 영상이 남는다
                 $data['description'][$locale] = $this->purifyHtml($content, 'content');
             }
         }
@@ -1836,7 +1836,7 @@ class ProductService
             'stock_quantity' => $product->stock_quantity,
             'safe_stock_quantity' => $product->safe_stock_quantity,
             'tax_status' => $product->tax_status->value ?? $product->tax_status,
-            // 세율도 싣는다 — 빠지면 복사 화면이 세율 없이 등록 요청을 보내 복사한 상품이 기본 세율로 바뀐다(#612 ③)
+            // 세율도 싣는다 — 빠지면 복사 화면이 세율 없이 등록 요청을 보내 복사한 상품이 기본 세율로 바뀐다
             'tax_rate' => $product->tax_rate,
             'sales_status' => $product->sales_status->value ?? $product->sales_status,
             'display_status' => $product->display_status->value ?? $product->display_status,
@@ -1848,7 +1848,7 @@ class ProductService
                 'option_values' => $opt->option_values,
                 'list_price' => $opt->list_price ?? $product->list_price,
                 'selling_price' => $opt->selling_price ?? $product->selling_price,
-                // 옵션별 과세 종류 — null 은 상품 기본값을 따른다 (#612)
+                // 옵션별 과세 종류 — null 은 상품 기본값을 따른다
                 'tax_status' => $opt->tax_status?->value,
                 'stock_quantity' => $opt->stock_quantity,
                 'safe_stock_quantity' => $opt->safe_stock_quantity,
@@ -2001,7 +2001,7 @@ class ProductService
             $data['selling_price'] = 0;
             $data['stock_quantity'] = 0;
             $data['safe_stock_quantity'] = 0;
-            // 판매 정보 미복사 = 새 상품의 기본값. 판매 상태 'active' 는 존재하지 않는 값이었다(#612 ③).
+            // 판매 정보 미복사 = 새 상품의 기본값. 판매 상태 'active' 는 존재하지 않는 값이었다.
             $data['tax_status'] = ProductTaxStatus::TAXABLE->value;
             $data['tax_rate'] = VatCalculator::DEFAULT_RATE;
             $data['sales_status'] = ProductSalesStatus::ON_SALE->value;

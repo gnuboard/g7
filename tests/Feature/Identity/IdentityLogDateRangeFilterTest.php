@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * 본인인증 이력 기간 필터 회귀 테스트 (#492 D-21).
+ * 본인인증 이력 기간 필터 회귀 테스트.
  *
  * 두 가지가 함께 어긋나 있었다.
  *

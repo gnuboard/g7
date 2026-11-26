@@ -407,7 +407,7 @@ function collectPartialRefs(node: any, out: string[] = []): string[] {
 }
 
 describe('[case:backend-43] 클레임 상세 partial 안의 partial 참조 — 같은 디렉터리 기준 상대 경로 (서버 병합기 규약)', () => {
-  // 회귀(2026-09-11 관리자 화면 실측, #599 후속): `partials/admin_ecommerce_claim_detail/…` 로 적은 참조는
+  // 회귀(2026-09-11 관리자 화면 실측): `partials/admin_ecommerce_claim_detail/…` 로 적은 참조는
   // 서버 병합기(ValidatesLayoutFiles::resolvePartialPath)가 partial 디렉터리 기준으로 못 찾고 layouts 루트
   // (admin/ 없이)로 되돌려 다시 찾다 실패한다 — 운영(APP_DEBUG=false)에서는 빈 배열로 조용히 사라져
   // 정산 카드·취소 카드의 주문금액 비교가 한 번도 그려지지 않았다. 최상위 레이아웃의 참조만 `partials/…` 다.
@@ -988,7 +988,7 @@ describe('신청 정보 섹션 — 스텝퍼·상품·완료 카드', () => {
   });
 });
 
-describe('신청서 단위 전이 바 · 진행 일시 (#599 후속 F1·F16)', () => {
+describe('신청서 단위 전이 바 · 진행 일시', () => {
   /**
    * 상세에 신청서 단위 전이 진입점이 통째로 없던 결함(F1).
    *
@@ -1402,7 +1402,7 @@ describe('결제 정보 · 환불 실행 섹션 — 유형별 렌더 (S9b · D17
   });
 
   /**
-   * 주문 결제 카드의 결제수단 칸은 간편결제 표시 이름을 먼저 보이고, 없으면 기본 이름이다 — 주문상세와 같은 식 (#933 S5).
+   * 주문 결제 카드의 결제수단 칸은 간편결제 표시 이름을 먼저 보이고, 없으면 기본 이름이다 — 주문상세와 같은 식.
    *
    * @scenario claim_type=exchange, claim_stage=in_progress
    * @effects claim_payment_reads_detail_envelope_only, order_detail_screens_prefer_display_label
@@ -1650,7 +1650,7 @@ describe('취소 상세 — 조회 전용 (취소 정보 카드 · 메모 안내
   });
 });
 
-describe('접수 시점 주문금액 비교표 — 정산 카드 · 취소 카드 (#599 후속 P8)', () => {
+describe('접수 시점 주문금액 비교표 — 정산 카드 · 취소 카드', () => {
   /** 접수 시점 비교 스냅샷(전/후) — 값은 응답에만 있고 다른 줄에서 만들 수 없는 것으로 고른다. */
   const COMPARISON = {
     original: {
@@ -1715,7 +1715,7 @@ describe('접수 시점 주문금액 비교표 — 정산 카드 · 취소 카�
     // 회귀 둘을 한 자리에서 잠근다.
     //   ⓐ 2026-09-11 관리자 화면 실측: 두 카드가 같은 비교표를 무조건 싣자 취소 상세 한 화면에
     //      같은 표가 두 번 섰다. 취소의 표는 취소 정보 카드(_partial_claim_reason)가 소유한다.
-    //   ⓑ #599 후속 F10: 카드 안쪽 블록이 전부 취소를 배제하는데 카드에는 `if` 가 없어,
+    //   ⓑ 카드 안쪽 블록이 전부 취소를 배제하는데 카드에는 `if` 가 없어,
     //      **제목만 남은 빈 카드**가 화면에 섰다. 이제 카드째 서지 않는다.
     const utils = await renderProbe(paymentSection as Node, claimResponse({
       claim_number: 'CN20260902-000009',
@@ -1962,7 +1962,7 @@ describe('신청자 출처 뱃지·요청자 링크 (계획 676)', () => {
    *
    * 되돌림 축: 링크 노드를 Span 으로 되돌리거나 링크 조건을 `requested_by` 로 바꾸면 anchor 가
    * 사라져 red. 링크 대상은 주문 주인의 **uuid**(`requester_user_uuid`)다 — 관리자 회원 화면은
-   * uuid 로 열리고, 숫자 id 로 만든 링크는 404 였다(#599 validate P7 11-#1 — 종전 이 테스트가
+   * uuid 로 열리고, 숫자 id 로 만든 링크는 404 였다(validate P7 11-#1 — 종전 이 테스트가
    * 숫자 `/admin/users/853` 을 계약으로 잠갔다).
    *
    * @scenario claim_type=exchange, claim_stage=in_progress

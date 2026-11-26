@@ -73,7 +73,7 @@ effects:
   - webhook_blocked_ip_returns_403
   - webhook_replay_is_idempotent
   - webhook_unknown_refkey_absorbed_200
-  # 모델, 리포지토리, 결과코드 사유 세부 (PHPUnit 이 이미 재던 것을 #609 에서 명시)
+  # 모델, 리포지토리, 결과코드 사유 세부 (PHPUnit 이 이미 재던 것을 명시)
   - dispatch_model_casts_channel_and_status_to_enums
   - dispatch_masked_number_hides_middle_four_digits
   - dispatch_user_relation_loads_member_by_to_user_id

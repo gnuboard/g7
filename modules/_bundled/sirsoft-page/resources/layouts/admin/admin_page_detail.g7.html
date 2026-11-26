@@ -133,7 +133,7 @@
             <span class="page-text-table-header page:shrink-0 page:w-20">$t:sirsoft-page.admin.page.detail.info.creator</span>
             <div class="page:min-w-0">
               <p class="page-text-primary page:text-sm">{{page?.data?.creator?.name ?? '-'}}</p>
-              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다 -->
               <span data-if="{{!!page?.data?.creator?.real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-page.admin.page.detail.real_name_sub', { name: page.data.creator.real_name })}}" class="page:block page:mt-0.5 page-text-tertiary">{{page.data.creator.real_name}}</span>
             </div>
           </div>
@@ -242,7 +242,7 @@
             <cell>
               <div>
                 <span class="page:block page-text-body">{{row.creator?.name ?? '-'}}</span>
-                <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+                <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다 -->
                 <span data-if="{{!!row.creator?.real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-page.admin.page.detail.real_name_sub', { name: row.creator.real_name })}}" class="page:block page-text-tertiary">{{row.creator.real_name}}</span>
               </div>
             </cell>

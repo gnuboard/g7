@@ -22,7 +22,7 @@ use Modules\Sirsoft\Board\Services\ContentMedia\BoardContentMediaService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 게시판 영구 삭제의 첨부 물리 파일 정리가 행 disk 를 따르는지 (#869 R1)
+ * 게시판 영구 삭제의 첨부 물리 파일 정리가 행 disk 를 따르는지
  *
  * 디스크를 전환한 사이트에서는 한 게시판의 첨부가 여러 디스크에 흩어진다. 종전
  * `BoardService::deleteAttachmentFiles()` 는 주입 디스크의 `{slug}` 디렉토리만 지워, 옛 디스크의
@@ -215,7 +215,7 @@ class BoardAttachmentRowDiskTest extends ModuleTestCase
     }
 
     /**
-     * 첨부·글·본문 미디어 서비스는 비공개 첨부 저장소 선택을 따르고, `.env` `SIRSOFT_BOARD_ATTACHMENT_DISK` 고정이면 선택을 무시한다(#916 D7).
+     * 첨부·글·본문 미디어 서비스는 비공개 첨부 저장소 선택을 따르고, `.env` `SIRSOFT_BOARD_ATTACHMENT_DISK` 고정이면 선택을 무시한다.
      *
      * @scenario case=private_attachment_selection
      *

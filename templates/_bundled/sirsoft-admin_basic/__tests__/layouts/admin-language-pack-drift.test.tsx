@@ -1,6 +1,6 @@
 /**
  * @file admin-language-pack-drift.test.tsx
- * @description 언어팩 목록 드리프트(files_missing) 배지 + 원클릭 재설치 배선 회귀 가드 (이슈 #496 Part B3)
+ * @description 언어팩 목록 드리프트(files_missing) 배지 + 원클릭 재설치 배선 회귀 가드 (Part B3)
  *
  * 실제 partial(_content.json)의 선언형 노드를 읽어, DB active 인데 설치본 파일이 없는
  * 드리프트 행에 대해 (1) "파일 없음" 배지, (2) install-from-bundled 모달을 재사용하는

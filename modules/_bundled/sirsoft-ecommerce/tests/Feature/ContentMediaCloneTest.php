@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 다른 상품·공통 정보의 본문 미디어를 쓴 본문 저장 — 새 소유자로 복제 (#887)
+ * 다른 상품·공통 정보의 본문 미디어를 쓴 본문 저장 — 새 소유자로 복제
  *
  * 종전에는 상품 A 설명의 본문 미디어 주소를 상품 B 설명(상품 복사·붙여넣기)이 쓰면 B 에 행이 없어, A 가 미디어를 빼면 B 가
  * 깨졌다. 이제 저장하는 사람이 원본을 볼 수 있으면(공통 정보는 공개, 상품은 전시 중이거나 상품 읽기 권한) 파일을 복사해 B 소유의
@@ -157,7 +157,7 @@ class ContentMediaCloneTest extends ModuleTestCase
 
     /**
      * 공개되지 않은 상품의 응답 본문은 그 상품이 소유한 해시만 서명한다 — 다른 상품 해시는 정식 주소로 두어 원본 상품의 게이트(전시
-     * 중·관리자·서명)를 따르게 한다. 남의 숨긴 상품 해시를 자기 설명에 넣어 서명 주소를 받아 가지 못한다 (#887 G8).
+     * 중·관리자·서명)를 따르게 한다. 남의 숨긴 상품 해시를 자기 설명에 넣어 서명 주소를 받아 가지 못한다.
      *
      * @return void 반환값 없음
      *
@@ -186,7 +186,7 @@ class ContentMediaCloneTest extends ModuleTestCase
     }
 
     /**
-     * 복제 재저장이 있어도 상품 생성·수정은 한 번으로 기록된다 — after_create·after_update 1회, 활동 로그 1건 (#887 G7).
+     * 복제 재저장이 있어도 상품 생성·수정은 한 번으로 기록된다 — after_create·after_update 1회, 활동 로그 1건.
      *
      * 복제하면 바뀐 설명을 같은 트랜잭션에서 리포지토리로 다시 저장한다. 그 재저장이 서비스 훅·활동 로그를 한 번 더 남기면 이력에
      * 같은 저장이 두 번 보인다.
@@ -227,7 +227,7 @@ class ContentMediaCloneTest extends ModuleTestCase
     }
 
     /**
-     * 복제 재저장이 있어도 공통 정보 생성·수정은 한 번으로 기록된다 — after_create·after_update 1회, 활동 로그 1건 (#887 G7).
+     * 복제 재저장이 있어도 공통 정보 생성·수정은 한 번으로 기록된다 — after_create·after_update 1회, 활동 로그 1건.
      *
      * @return void 반환값 없음
      *

@@ -64,7 +64,7 @@ export function setPaymentMethodHandler(action: any): void {
 
     // 확장 결제수단은 1급 시민 — 선택한 수단 ID 를 그대로 서버에 보낸다.
     // (과거에는 서버 검증이 확장 ID 를 422 로 막아 'card' 로 정규화한 serverPaymentMethod 를
-    //  함께 저장했으나, 소비처가 없는 죽은 코드였고 위장 자체가 결함의 원인이었다 — #475)
+    //  함께 저장했으나, 소비처가 없는 죽은 코드였고 위장 자체가 결함의 원인이었다)
     const isEasyPay = typeof paymentMethod === 'string' && paymentMethod.startsWith('nhnkcp_');
     G7Core?.state?.setLocal?.({ paymentMethod });
 

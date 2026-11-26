@@ -104,7 +104,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'priority' => 20,
                 'type' => 'filter',
             ],
-            // 쿠폰별 발급 알림(#952)은 쿠폰 화면에서만 편집한다 — 알림 설정 목록에서 뺀다
+            // 쿠폰별 발급 알림은 쿠폰 화면에서만 편집한다 — 알림 설정 목록에서 뺀다
             'core.notification_definition.filter_hidden_type_prefixes' => [
                 'method' => 'hideCouponIssuedTypes',
                 'priority' => 20,
@@ -149,7 +149,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
     }
 
     /**
-     * 알림 설정 목록에서 쿠폰별 발급 알림 종류를 숨깁니다. (#952)
+     * 알림 설정 목록에서 쿠폰별 발급 알림 종류를 숨깁니다.
      *
      * @param  array<int, string>  $prefixes  앞선 구독자가 모은 숨길 접두
      * @param  array  $filters  목록 조회 조건
@@ -185,7 +185,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             'inquiry_received' => $this->extractInquiryReceived($args),
             'inquiry_replied' => $this->extractInquiryReplied($args),
             'mileage_expiring_soon' => $this->extractMileageExpiringSoon($args),
-            // #952
+            //
             'coupon_expiring_soon' => $this->extractCouponExpiringSoon($args),
             'mileage_earned' => $this->extractMileageChange($args, true),
             'mileage_deducted' => $this->extractMileageChange($args, false),
@@ -611,7 +611,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      */
     private function customerOrderUrl(Order $order): string
     {
-        // 사람이 여는 화면 — 「사용자 화면 URL」·주소 필터를 따른다(#792)
+        // 사람이 여는 화면 — 「사용자 화면 URL」·주소 필터를 따른다
         return $order->isGuestOrder()
             ? ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::guestOrders())
             : ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::mypageOrderDetail((string) $order->order_number));
@@ -653,7 +653,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             return $data;
         }
 
-        // 운영자에게 가는 알림의 사이트 주소는 관리자 화면 기준(사이트 주소)이다 — 회원 기본값은 사용자 화면 URL(#792).
+        // 운영자에게 가는 알림의 사이트 주소는 관리자 화면 기준(사이트 주소)이다 — 회원 기본값은 사용자 화면 URL.
         $data['site_url'] = SiteUrl::forOutboundLinks();
         $data['order_url'] = ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::admin('ecommerce.admin.order', '/admin/ecommerce/orders/{order_number}', ['order_number' => $orderNumber]), ScreenUrl::SCOPE_ADMIN);
 
@@ -758,7 +758,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
     }
 
     // ──────────────────────────────────────────────
-    // #952 — 쿠폰 발급·만료 임박, 마일리지 적립·차감, 부분 취소, 리뷰 답글
+    // 쿠폰 발급·만료 임박, 마일리지 적립·차감, 부분 취소, 리뷰 답글
     // ──────────────────────────────────────────────
 
     /**

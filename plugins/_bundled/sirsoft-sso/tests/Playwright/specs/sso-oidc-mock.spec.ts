@@ -155,7 +155,7 @@ test('IdP 목록 요청이 실패하면 회사 계정 묶음만 빠지고 비밀
   await page.goto('/login');
   await dismissCookieBanner(page);
   await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 15_000 });
-  // #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+  // 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
   await expect(page.locator('[id^="sso_login_buttons_section__"]')).toHaveCount(0);
   expect(errors).toEqual([]);
 });

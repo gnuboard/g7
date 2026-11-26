@@ -40,7 +40,7 @@ async function openBasicEditor(page: Page): Promise<void> {
  * sirsoft-basic 마이페이지 «내 정보» 편집기 진입 — 화면 소유 노드(`mypage_tab_content`)에 이커머스 「기본 배송지」 카드가
  * `target_layout` 주입(append_child)으로 붙는다. 그 카드는 조건 없이 그려지는 주입 조각이다.
  *
- * 종전에는 관리자 회원 폼에 마케팅 플러그인이 주입하던 동의 구획(`ext_marketing_form_content`)을 썼는데, 회원 항목 설정(#490)으로
+ * 종전에는 관리자 회원 폼에 마케팅 플러그인이 주입하던 동의 구획(`ext_marketing_form_content`)을 썼는데, 회원 항목 설정으로
  * 마케팅 동의가 확장 조각이 아니라 코어 회원 항목 조각이 그리는 칸이 되면서 그 주입 조각이 없어졌다.
  */
 async function openProfileEditor(page: Page): Promise<void> {

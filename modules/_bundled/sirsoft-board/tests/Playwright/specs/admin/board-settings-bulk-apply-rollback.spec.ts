@@ -1,5 +1,5 @@
 /**
- * 게시판 설정 일괄 적용 — 첫 실패 시 전체 롤백 및 모달 안내 (이슈 #413 item 26).
+ * 게시판 설정 일괄 적용 — 첫 실패 시 전체 롤백 및 모달 안내 (item 26).
  *
  * 일괄 적용 도중 어느 게시판에서든 실패하면 응답이 HTTP 200 + data.rolled_back=true 로
  * 내려오고, 프론트는 모달을 닫지 않은 채 안내 박스(권한 실패=게시판명 문구 /
@@ -31,7 +31,7 @@ import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 const SETTINGS_URL = '/admin/boards/settings?tab=bulk_apply';
 const MODAL = '#bulk_apply_confirm_modal, [data-modal-id="bulk_apply_confirm_modal"]';
 
-test.describe.skip('게시판 설정 일괄 적용 — 전체 롤백 안내 (#413)', () => {
+test.describe.skip('게시판 설정 일괄 적용 — 전체 롤백 안내', () => {
   // @scenario failure_point=permission
   // @effects aborted_notice_box_shown_and_modal_stays_open,
   //          aborted_notice_uses_board_name_for_permission_failure,

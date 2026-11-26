@@ -936,7 +936,7 @@ class TemplateControllerTest extends TestCase
             'type' => 'admin',
             'status' => 'inactive',
         ]);
-        // 설치가 빈 자리로 등록한 조각 참조 경고를 꺼내 응답 `data.layout_warnings` 에 싣는다 (#712)
+        // 설치가 빈 자리로 등록한 조각 참조 경고를 꺼내 응답 `data.layout_warnings` 에 싣는다
         $mock->shouldReceive('takeLastLayoutWarnings')->andReturn([]);
         $this->app->instance(TemplateManagerInterface::class, $mock);
 
@@ -1502,7 +1502,7 @@ class TemplateControllerTest extends TestCase
     /**
      * 템플릿 비활성화 성공
      *
-     * 유형의 마지막 활성 템플릿은 끌 수 없으므로(#703, TemplateOperationGuardTest), 같은 유형의
+     * 유형의 마지막 활성 템플릿은 끌 수 없으므로(TemplateOperationGuardTest), 같은 유형의
      * 다른 활성 템플릿이 남는 배치로 비활성화 성공 경로를 확인한다.
      *
      * @scenario endpoint=deactivate

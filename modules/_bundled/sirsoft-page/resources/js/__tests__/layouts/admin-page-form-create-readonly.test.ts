@@ -135,8 +135,8 @@ describe('관리자 페이지 작성 화면 — 등록 권한 없을 때 읽기 
         expect(mounted({ createAbility: null })).toBe(true);
         expect(mounted({ route: { id: '13' }, _local: { form: {} } })).toBe(false);
         expect(mounted({ route: { id: '13' }, _local: { form: { content: { ko: '' } } } })).toBe(true);
-        // 업로드 계약을 받기(실패 포함) 전에는 세우지 않는다 — 처음 세워질 때의 계약만 쓴다(#883).
-        // 계약 출처는 표준 계약 엔드포인트 데이터 소스 contentMediaTarget 이다(#887 — 종전 attachmentSettings.content_media)
+        // 업로드 계약을 받기(실패 포함) 전에는 세우지 않는다 — 처음 세워질 때의 계약만 쓴다.
+        // 계약 출처는 표준 계약 엔드포인트 데이터 소스 contentMediaTarget 이다(종전 attachmentSettings.content_media)
         expect(mounted({ createAbility: { data: { abilities: { can_create: true } } }, contentMediaTarget: undefined })).toBe(false);
         expect(mounted({ createAbility: { data: { abilities: { can_create: true } } }, contentMediaTarget: null })).toBe(true);
     });

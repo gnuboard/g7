@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Board\Support;
 use App\Support\ScreenUrl;
 
 /**
- * 게시판 화면 주소 — 코어 화면 주소 헬퍼({@see ScreenUrl})의 게시판 래퍼 (#792).
+ * 게시판 화면 주소 — 코어 화면 주소 헬퍼({@see ScreenUrl})의 게시판 래퍼.
  *
  * 사람이 여는 주소(알림 링크·검색 결과·사이트맵)는 이 래퍼로 만들어 「사용자 화면 URL」과 주소 필터
  * `core.screen_url.filter_path` 를 따른다. G7 엔진 SEO 캐시처럼 G7 화면 자체의 주소가 필요한 곳은

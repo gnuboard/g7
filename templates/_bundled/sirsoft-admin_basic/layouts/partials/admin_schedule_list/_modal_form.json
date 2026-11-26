@@ -631,7 +631,7 @@
                             "text": "$t:admin.schedules.form.locked_hint"
                         },
                         {
-                            "comment": "패키지 무결성(#916) — 비대화형 설치·업데이트 명령은 미서명 패키지에서 `--allow-unsigned` 없이는 멈춘다(exit 1). Artisan 명령을 직접 적는 자리에서만 알린다",
+                            "comment": "패키지 무결성 — 비대화형 설치·업데이트 명령은 미서명 패키지에서 `--allow-unsigned` 없이는 멈춘다(exit 1). Artisan 명령을 직접 적는 자리에서만 알린다",
                             "id": "schedule_form_allow_unsigned_hint",
                             "type": "basic",
                             "name": "P",

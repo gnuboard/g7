@@ -1,6 +1,6 @@
 /**
  * @file iconNameParser.test.ts
- * @description 아이콘 이름 해석기 — FA5 단축형(fas·far·fab·fal·fad)과 FA6 장형(fa-solid …) 스타일 토큰을 한 번만 읽는다 (#381)
+ * @description 아이콘 이름 해석기 — FA5 단축형(fas·far·fab·fal·fad)과 FA6 장형(fa-solid …) 스타일 토큰을 한 번만 읽는다
  *
  * 종전 Icon 은 장형만 읽어 `fas fa-users` 를 `fas fa-fas fa-users` 로 조합했고 `far`·`fab` 는 스타일을 잃었다.
  * 해석기가 스타일·글리프·추가 클래스로 나누는 표를 전 행 잠근다. 같은 내용의 사본이 sirsoft-basic 에 있다.

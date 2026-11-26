@@ -126,7 +126,7 @@ enum LayoutMarkupLintCode: string
     case ExtensionComponentNotInstalled = 'extension_component_not_installed';
 
     /**
-     * 편집 대상 템플릿의 컴포넌트 목록에 없는 템플릿 컴포넌트가 저장본에 이미 있었음 (#712).
+     * 편집 대상 템플릿의 컴포넌트 목록에 없는 템플릿 컴포넌트가 저장본에 이미 있었음.
      *
      * 7.0 이 확장 조각을 모든 활성 템플릿에 등록해 그 템플릿에 없는 컴포넌트를 쓴 행이 남아 있다. 편집기는 그런
      * 행도 저장할 수 있게 저장본에 있던 개수까지 허용하고, 이 템플릿에서는 그려지지 않을 수 있다는 사실만 알린다.
@@ -154,7 +154,7 @@ enum LayoutMarkupLintCode: string
     case MixedDebounceFlushed = 'mixed_debounce_flushed';
 
     /**
-     * 진입점 전용 키(`key`·`stopPropagation`)를 진입점이 아닌 액션에 적음 (#753).
+     * 진입점 전용 키(`key`·`stopPropagation`)를 진입점이 아닌 액션에 적음.
      *
      * 엔진은 사용자가 직접 누르는 진입점 액션에서만 이 키를 읽는다(`key` 는 bindActionsToProps 의 키 필터,
      * `stopPropagation` 은 createHandler 의 DOM 이벤트 전파 차단). 이벤트 받기(`<on listen>`)·실패 처리
@@ -166,7 +166,7 @@ enum LayoutMarkupLintCode: string
     /**
      * responsive 구간 `class-merge`(classMerge) 값에 Tailwind 폭 변형(`sm:`·`md:`·`max-md:`·`min-[..]:` 등)을 적음 (engine-v1.98.0).
      *
-     * 구간 자체가 폭 조건이라 그 안에서 다시 폭 변형을 쓰면 두 체계의 경계가 갈라진다(#869 와 같은 문제).
+     * 구간 자체가 폭 조건이라 그 안에서 다시 폭 변형을 쓰면 두 체계의 경계가 갈라진다.
      * 레이아웃 클래스 값의 폭 변형 금지 규칙(감사 `layout-no-tailwind-breakpoint-variant`)과 같은 판정이다.
      */
     case ClassMergeBreakpointVariant = 'class_merge_breakpoint_variant';

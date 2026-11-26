@@ -1,6 +1,6 @@
 /**
  * @file mypage-board-search-field.test.tsx
- * @description 마이페이지 게시판 활동 검색 구분 (#524 WP-B) — 내 글과 내 댓글은 축이 다르다.
+ * @description 마이페이지 게시판 활동 검색 구분 — 내 글과 내 댓글은 축이 다르다.
  *
  * 내 글은 제목·내용을 가르는 것이 자연스럽고(제목+내용 / 제목 / 내용),
  * 내 댓글은 «댓글 내용» 과 «원글 제목» 중에서 고르는 것이 자연스럽다 — 「어떤 글에 단 댓글인지」로
@@ -23,7 +23,7 @@ function endpointOf(id: string): string {
     return layout.data_sources.find((d: any) => d.id === id).endpoint;
 }
 
-describe('마이페이지 게시판 활동 검색 구분 (#524 WP-B)', () => {
+describe('마이페이지 게시판 활동 검색 구분', () => {
     // @scenario tab=posts
     // @effects mypage_posts_search_field_offers_three_targets
     it('내 글 검색 대상이 제목+내용·제목·내용 셋이다', () => {

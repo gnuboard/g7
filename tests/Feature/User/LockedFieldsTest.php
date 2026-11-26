@@ -14,7 +14,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 회원 칸 수정 잠금 `core.user.locked_fields` (#798 K8 · D8)
+ * 회원 칸 수정 잠금 `core.user.locked_fields`
  *
  * 확장(예: 회사 IdP 가 관리하는 이름)이 잠근 칸은 마이페이지·관리자 화면·언어 변경 경로에서 「현재 값과 같아야 함」이다. 요청에 그 칸이
  * 없으면 통과하고, 허용 목록 밖 이름은 무시하며, 서비스 직접 호출(확장의 동기화)은 잠금을 받지 않는다. 회원 응답에 `locked_fields` 가 실린다.

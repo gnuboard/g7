@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
  * 게시판 반응 이력 모델.
  *
  * 사용자당 대상(게시글)에 1행. 등록=INSERT, 전환=UPDATE, 해제=DELETE
- * (이슈 #525 확정 03, 05). target_type/target_id 폴리모픽 구조 (확정 10).
+ * (확정 03, 05). target_type/target_id 폴리모픽 구조 (확정 10).
  *
  * @property int $id
  * @property int $user_id

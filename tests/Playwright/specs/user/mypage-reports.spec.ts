@@ -1,5 +1,5 @@
 /**
- * 마이페이지 「내 신고」 서브탭 (#525 WP-E).
+ * 마이페이지 「내 신고」 서브탭.
  *
  * 실브라우저로 두 갈래를 잰다:
  *   ① 내가 넣은 신고가 상태 배지와 함께 서고, 취소 버튼은 «대기 중인 건» 에만 뜬다
@@ -77,7 +77,7 @@ async function chooseEachOption(page: Page, testId: string, param: string): Prom
   return sent;
 }
 
-test.describe('마이페이지 내 신고 (#525 WP-E)', () => {
+test.describe('마이페이지 내 신고', () => {
   // @scenario case=subtab_lists_reports_with_status_badges
   // @effects lists_own_logs_with_status_and_can_cancel
   test('내가 넣은 신고가 상태 배지와 함께 선다', async ({ page, reactionSeed }) => {

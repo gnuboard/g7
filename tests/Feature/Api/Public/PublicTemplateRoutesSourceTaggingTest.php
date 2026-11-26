@@ -68,7 +68,7 @@ class PublicTemplateRoutesSourceTaggingTest extends TestCase
 
         $this->assertNotEmpty($templateRoutes, '템플릿 자체 라우트에 source.kind=template 이 부여되어야 함');
 
-        // 템플릿 설정 화면 라우트(#434, `*/admin/templates/{id}/settings`)는 코어가 설치 템플릿마다 만들어 붙이며,
+        // 템플릿 설정 화면 라우트(`*/admin/templates/{id}/settings`)는 코어가 설치 템플릿마다 만들어 붙이며,
         // 그 템플릿을 가리키도록 source.identifier 에 템플릿 식별자를 싣는다(TemplateService::loadTemplateSettingsRoutesData).
         // routes.json 에서 온 템플릿 자체 라우트만 identifier 가 null 이다.
         $settingsPattern = '#^\*/admin/templates/([^/]+)/settings$#';

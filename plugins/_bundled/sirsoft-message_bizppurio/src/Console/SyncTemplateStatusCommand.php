@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 use Plugins\Sirsoft\MessageBizppurio\Services\BizppurioTemplateService;
 
 /**
- * 알림톡 템플릿 검수 상태 동기화 커맨드 (#597 §3.4).
+ * 알림톡 템플릿 검수 상태 동기화 커맨드.
  *
  * 검수중(requested) 행이 있을 때만 카카오 관리 API 를 호출해 상태를 일괄 대조한다
  * (senderKey 별 template/list 1회 — 행별 detail 호출 없음, 레이트리밋 보호). 반려로

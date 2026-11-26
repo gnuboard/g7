@@ -304,7 +304,7 @@ class AttachmentRepositoryTest extends ModuleTestCase
     }
 
     /**
-     * 임시 키 조회·번호 연결은 이 게시판 임시 경로만 본다 — 다른 게시판 임시 첨부는 빠진다 (#883).
+     * 임시 키 조회·번호 연결은 이 게시판 임시 경로만 본다 — 다른 게시판 임시 첨부는 빠진다.
      *
      * @return void 반환값 없음
      *
@@ -326,7 +326,7 @@ class AttachmentRepositoryTest extends ModuleTestCase
     }
 
     /**
-     * 번호로 이을 수 있는 임시 첨부 — 회원은 본인 업로드, 비회원은 비회원 업로드이면서 임시 키가 같은 것 (#883).
+     * 번호로 이을 수 있는 임시 첨부 — 회원은 본인 업로드, 비회원은 비회원 업로드이면서 임시 키가 같은 것.
      *
      * @return void 반환값 없음
      *
@@ -349,7 +349,7 @@ class AttachmentRepositoryTest extends ModuleTestCase
     }
 
     /**
-     * 상한 집계는 예약 컬렉션(본문 미디어)을 뺀 모든 컬렉션을 센다 (#883).
+     * 상한 집계는 예약 컬렉션(본문 미디어)을 뺀 모든 컬렉션을 센다.
      *
      * @return void 반환값 없음
      *

@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 관리자 화면 「조작 가능 여부」 표시와 서버 수락 판정의 일치(#703) — 역할·회원 축
+ * 관리자 화면 「조작 가능 여부」 표시와 서버 수락 판정의 일치 — 역할·회원 축
  *
  * 화면은 응답의 `abilities`/`is_deletable` 로 버튼을 켜고 끈다. 그 값이 서버 가드
  * (보호 역할 가드·등급 상한·요청 검증)와 다른 판정을 내리면, 화면은 누를 수 있는데
@@ -269,7 +269,7 @@ class AdminActionGateParityTest extends TestCase
 
     /**
      * 회원 목록의 행도 상세와 같은 등급 상한을 따른다 — 목록의 수정 버튼·일괄 역할 부여가 슈퍼 관리자 행에서
-     * 켜져 있으면 누른 뒤 403 만 받는다(#703 브라우저 실측: 상세는 false, 목록은 true 로 갈렸다).
+     * 켜져 있으면 누른 뒤 403 만 받는다(상세는 false, 목록은 true 로 갈렸다).
      *
      * @scenario defect=user_edit_super_admin
      *

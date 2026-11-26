@@ -193,7 +193,7 @@ class Summary
             pointsUsed: $data['points_used'] ?? 0,
             paymentAmount: $data['payment_amount'] ?? 0,
             finalAmount: $data['final_amount'] ?? 0,
-            // 영세 도입(#612) 이전 임시주문에는 키가 없다 — 그때는 영세가 없었으므로 0 이 맞다
+            // 영세 도입 이전 임시주문에는 키가 없다 — 그때는 영세가 없었으므로 0 이 맞다
             zeroRatedAmount: $data['zero_rated_amount'] ?? 0,
             vatAmountKnown: array_key_exists('vat_amount', $data),
             multiCurrency: isset($data['multi_currency'])

@@ -237,7 +237,7 @@ export class TranslationEngine {
    *
    * `defer:` prefix 는 인라인 형태(`{{id}} — $t:defer:key|...`) 에서도 흡수되어야 하므로
    * 키 그룹 앞에 옵셔널 매칭을 둔다 — 키 문자 클래스 [a-zA-Z0-9._-] 가 콜론을 미포함하여
-   * 과거 `$t:defer` 만 매칭되고 나머지가 raw 로 남던 회귀 차단 (이슈 #302).
+   * 과거 `$t:defer` 만 매칭되고 나머지가 raw 로 남던 회귀 차단.
    */
   private static readonly TRANSLATION_PATTERN = /\$t:(?:defer:)?([a-zA-Z0-9._-]+)(\|(?:(?!\$t:).)+)?/g;
 
@@ -358,7 +358,7 @@ export class TranslationEngine {
       // 자산 URL 모드에 따라 `.json` 접미사가 붙거나 빠진다.
       // 이 경로는 편집기 전용이 아니라 **모든 페이지가 타는 런타임 공통 경로**라,
       // 여기만 확장자를 직접 조립하면 extensionless 환경에서 다국어가 통째로 404 가 되어
-      // 이슈 #486 의 원래 증상(화면이 온전히 뜨지 않음)이 다국어 계층에서 재현된다.
+      // 자산 URL 모드 문제의 원래 증상(화면이 온전히 뜨지 않음)이 다국어 계층에서 재현된다.
       const extraParams: string[] = [];
       if (bustCache) {
         extraParams.push(`_=${Date.now()}`);

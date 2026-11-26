@@ -23,7 +23,7 @@ use Tests\Concerns\PackageSignatureFixtures;
 use Tests\TestCase;
 
 /**
- * 외부 언어팩 설치의 패키지 서명 검증 — 업로드 signature·URL(checksum + signature_url)·GitHub (#916 ④, D19)
+ * 외부 언어팩 설치의 패키지 서명 검증 — 업로드 signature·URL(checksum + signature_url)·GitHub
  *
  * 언어팩 vendor 는 식별자가 아니라 manifest `vendor` 칸이라, 제작자 키의 vendor 범위는 해제 뒤(복사 전) 대조한다.
  * 설치 행에는 검증 결과(`integrity_status`·`integrity_key_id`)가 남는다.

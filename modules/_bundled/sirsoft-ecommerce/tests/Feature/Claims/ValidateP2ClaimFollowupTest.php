@@ -31,7 +31,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use ReflectionMethod;
 
 /**
- * 클레임 핵심 서비스 결함 수정 검증 — 후속 2건 (#599 validate P2-A 후속)
+ * 클레임 핵심 서비스 결함 수정 검증 — 후속 2건 (A 후속)
  *
  * 검증 축:
  * - 접수 때 고른 환불 우선순위가 신청서(교환·반품·환불)에 저장되어 응답에 실린다.

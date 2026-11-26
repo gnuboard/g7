@@ -70,7 +70,7 @@ class AbsorbLegacyDueDaysIntoAutoCancelDays implements DataMigration
         unset($settings['vbank_due_days'], $settings['dbank_due_days']);
 
         File::put($path, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-        // sudo 코어 업데이트 경로에서 root 로 실행되면 새로 만든 파일이 root 소유로 남는다 — 부모 소유권 상속 (#651)
+        // sudo 코어 업데이트 경로에서 root 로 실행되면 새로 만든 파일이 root 소유로 남는다 — 부모 소유권 상속
         FilePermissionHelper::inheritOwnershipFromParent($path);
 
         $context->logger->info('[ecommerce:1.0.0] 구 입금기한 키 정리 완료');

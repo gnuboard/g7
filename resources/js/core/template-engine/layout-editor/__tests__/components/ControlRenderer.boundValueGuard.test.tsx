@@ -150,7 +150,7 @@ describe('ControlRenderer — 데이터 연결 값 보호 공용 게이트', () 
   });
 });
 
-describe('ControlRenderer — 템플릿 설정 연결 값 (#434)', () => {
+describe('ControlRenderer — 템플릿 설정 연결 값', () => {
   const TS_EXPR = '{{_global.templateSettings?.header?.max_boards ?? 5}}';
 
   /** @effects bound_value_shows_expression_badge_and_locks_destructive_controls */

@@ -1,6 +1,6 @@
 /**
  * @file admin-menu-list-bulk-roles.test.tsx
- * @description 메뉴 관리 — 「여러 개 선택」 일괄 역할 + 행마다 부여 역할 배지 (#708)
+ * @description 메뉴 관리 — 「여러 개 선택」 일괄 역할 + 행마다 부여 역할 배지
  *
  * 실제 파셜 JSON 을 읽어, 화면이 서버에 무엇을 보내고 무엇을 보이는지를 그 식 그대로 평가한다.
  * - 목록: 선택 모드·선택 ID·역할 이름표(roleOptions)가 페이지 상태·데이터소스에 묶여 있는가
@@ -55,7 +55,7 @@ const MENUS = { data: { data: [
   { id: 20, children: [] },
 ] } };
 
-describe('메뉴 관리 — 일괄 역할·행 역할 배지 (#708)', () => {
+describe('메뉴 관리 — 일괄 역할·행 역할 배지', () => {
   // @scenario entry=menu_bulk_add, actor=super_admin, menu_shape=top_level
   // @effects menu_list_shows_assigned_roles
   it('목록은 활성 역할 목록을 이름표로 받아 행마다 부여 역할을 보인다', () => {
@@ -127,7 +127,7 @@ describe('메뉴 관리 — 일괄 역할·행 역할 배지 (#708)', () => {
     expect(disabled([11], [])).toBe(true);
     expect(disabled(undefined, undefined)).toBe(true);
     expect(disabled([11], [7])).toBe(false);
-    // #399 R-1 — 꺼짐 모양은 `btn` 의미 클래스 정의(semantic.css)가 갖는다. 이름만 보지 않고 정의를 펼쳐 같은 유틸을 확인한다
+    // 꺼짐 모양은 `btn` 의미 클래스 정의(semantic.css)가 갖는다. 이름만 보지 않고 정의를 펼쳐 같은 유틸을 확인한다
     expect(String(apply.props.className).split(/\s+/)).toContain('btn');
     expect(expandSemanticTokens(apply.props.className)).toContain('disabled:opacity-50');
     expect(expandSemanticTokens(apply.props.className)).toContain('disabled:cursor-not-allowed');

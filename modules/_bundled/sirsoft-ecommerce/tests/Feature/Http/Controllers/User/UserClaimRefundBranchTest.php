@@ -21,7 +21,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * 회원 취소·환불 접수의 **상태 × 결제수단 매트릭스** (#599 후속 §9-1)
+ * 회원 취소·환불 접수의 **상태 × 결제수단 매트릭스**
  *
  * 계획서 §9-1 이 이 파일에 요구한 것은 "상태 × 결제수단 매트릭스로 접수 결과(환불신청서 +
  * 취소신청서 유무·상태) 검증" 이다. 그 교차곱이 중요한 이유는 새 모델의 **종착점을 결제수단이
@@ -241,7 +241,7 @@ class UserClaimRefundBranchTest extends ModuleTestCase
      * 막지 않았고, 서버도 가상계좌에만 계좌를 요구해 **무통장 주문이 계좌 3칸 공란으로 접수**됐다.
      * 그렇게 접수된 건은 운영자가 [환불하기] 를 누르면 송금 없이 장부만 `completed` 로 닫히고,
      * 계좌를 채울 자리가 관리자 화면에 없어 되돌릴 수도 없었다
-     * (2026-09-22 #599 실측).
+     * (2026-09-22).
      *
      * @return void 반환값 없음
      *

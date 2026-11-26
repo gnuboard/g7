@@ -309,7 +309,7 @@ class EcommerceDashboardService
      * 부분취소는 별도 상태가 아니라 취소된 옵션(option_status=cancelled)으로 집계되므로 cancellations 에 포함됩니다.
      * returns(반품) 버킷은 취소 칸과 같은 규칙으로 반품완료 옵션(option_status=returned)을 셉니다 —
      * 반품 진행 중(return_in_progress)은 아직 돌려받지 않은 상품이라 넣지 않는다(취소 칸도 환불신청 중은 세지 않는다).
-     * #599 통합 실측 P15 ① · S0-D1: 클레임 도메인이 생긴 뒤에도 0 으로 고정돼 있어 반품 완료 38건 위에서
+     * 클레임 도메인이 생긴 뒤에도 0 으로 고정돼 있어 반품 완료 38건 위에서
      * 배지가 계속 0 이었다.
      *
      * @param  array<string, int>  $rawCounts  option_status 값 => 수량

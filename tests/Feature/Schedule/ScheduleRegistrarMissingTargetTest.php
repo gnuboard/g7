@@ -20,7 +20,7 @@ use Tests\Fixtures\ScheduleCommandExtension\src\Console\Commands\UndeclaredComma
 use Tests\TestCase;
 
 /**
- * 이 서버에 없는 명령·작업 클래스의 스케줄은 실행하지 않고 건너뛴다 (#888).
+ * 이 서버에 없는 명령·작업 클래스의 스케줄은 실행하지 않고 건너뛴다.
  *
  * 같은 DB 를 쓰는 다른 서버(검수 서버에 먼저 올린 새 판)가 설치·업데이트로 공유 `schedules` 에 새 명령의 행을 넣거나 command 를
  * 새 값으로 바꾸면, 이 서버의 스케줄러가 자기 코드에 없는 명령·작업을 매 주기 실행해 실패 이력·오류 로그·실패 알림이 쌓였다.

@@ -23,7 +23,7 @@
           <span data-ref="cbc_007_reject_reason_value" class="ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:whitespace-pre-line ecommerce:break-all ecommerce-break-all">{{_global.claimBulkConfirmData?.rejectReason ?? ''}}</span>
         </div>
       </div>
-      <!-- 회수중·발송중이면 신청서마다 택배사·운송장을 받는다 (#599 후속 운영 결정) — 송장은 신청서마다 달라 한 쌍을 여러 건에 나눠 쓸 수 없다. 저장된 송장은 핸들러가 미리 채운다. 한 건이라도 비면 [변경] 이 잠긴다(서버도 422). 선택지는 목록 응답이 나른다 — 배송사 엔드포인트는 `settings.read` 게이트다. -->
+      <!-- 회수중·발송중이면 신청서마다 택배사·운송장을 받는다 (후속 운영 결정) — 송장은 신청서마다 달라 한 쌍을 여러 건에 나눠 쓸 수 없다. 저장된 송장은 핸들러가 미리 채운다. 한 건이라도 비면 [변경] 이 잠긴다(서버도 422). 선택지는 목록 응답이 나른다 — 배송사 엔드포인트는 `settings.read` 게이트다. -->
       <div data-ref="cbc_008_trackings" data-if="{{(_global.claimBulkConfirmData?.trackings ?? []).length > 0}}" class="ecommerce:space-y-2">
         <p data-ref="cbc_009_tracking_hint" class="ecommerce:text-xs ecommerce-text-muted">$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_incomplete</p>
         <div class="ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:divide-y ecommerce:divide-gray-200 ecommerce:dark:divide-gray-700">

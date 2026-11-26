@@ -3,9 +3,9 @@
  * @file pluginSettingsSemanticClasses.test.ts
  * @description GDPR 환경설정 화면의 의미 클래스가 제자리에 붙어 있는지
  *
- * 회귀 배경: 관리자 템플릿 의미 클래스 도입(#408) 때 치환이 한 칸씩 밀렸다. 섹션 제목과 입력 줄은 앞서 바로잡혔지만 저장 오류 상자의 제목에 옅은 오류 클래스, 오류 목록 줄에 3열 그리드 클래스가 남아 있었다.
+ * 회귀 배경: 관리자 템플릿 의미 클래스 도입 때 치환이 한 칸씩 밀렸다. 섹션 제목과 입력 줄은 앞서 바로잡혔지만 저장 오류 상자의 제목에 옅은 오류 클래스, 오류 목록 줄에 3열 그리드 클래스가 남아 있었다.
  * 원래 매핑: 입력 줄 = `grid-3col-responsive`, 섹션 제목 = `section-heading-md`, 오류 제목 = `text-error-strong`,
- * 오류 목록 줄 = `text-error-soft` (7.1.0 전수 실측 #408 클래스 밀림 후속).
+ * 오류 목록 줄 = `text-error-soft` (7.1.0 전수 실측에서 드러난 클래스 밀림).
  *
  * @scenario-manifest tests/scenarios/plugin-settings-semantic-classes.yaml
  */

@@ -9,7 +9,7 @@
   확인 창을 연다. 리포트 탭의 정의 상태는 알림 정의 API 를 따로 불러 읽는다(카드가 그 API 로 편집하므로).
   이 화면은 통계 설정 권한으로 열리지만 저장소 현황은 통계 조회 권한 API 를, 알림 정의는 알림 설정 권한
   API 를 읽는다 — 권한이 없으면 403 이라 값이 비는데 0 행·빈 목록으로 그리면 거짓이 되므로 권한이 없다고
-  말한다(#682 S3 라운드 2).
+  말한다.
   동의 모드인데 실제로는 익명으로 도는 경고는 공통 조각과 같은 근거(`anonymous_fallback_reason`)를 쓴다 —
   두 자리가 서로 다른 식으로 판정하면 같은 사실을 한쪽만 말한다. 이 화면은 저장 전 라디오 선택에도
   반응해야 해서 「동의 출처가 없다」를 함께 본다(저장 전에는 서버가 아직 폴백 사유를 내지 않는다). -->
@@ -75,7 +75,7 @@
   <!-- 동의 출처·GeoIP 상태 배지(개인정보·봇 탭).
        `timezone`·`timezone_differs` 는 시간대 배지가 읽는다. 조회 권한이 없어 403 을 삼켰을 때는
        fallback 의 거짓값 때문에 배지가 뜨지 않는다 — 비교할 값이 없는 상태에서 「다르다」고 알릴
-       수는 없다(#682 S3 라운드 7). -->
+       수는 없다. -->
   <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <fallback>
       <field name="data">
@@ -99,7 +99,7 @@
     </fallback>
     <!-- 조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를
          띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을
-         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2). -->
+         열 때마다 전역 오류 토스트가 뜬다. -->
     <error-handling>
       <on-code code="403">
         <suppress/>
@@ -171,13 +171,13 @@
         <div class="flex-center gap-2 flex-wrap">
           <!-- 봇 탭의 「클라우드 대역 갱신 시각」이 사이트 표준시로 나간다. 공통 조각
             `_partial_status_alerts` 는 「설정에서 켜세요」가 순환 안내가 되어 여기 없으므로
-            같은 사실을 배지로 보인다(#682 S3 라운드 7, 설계 결정 「두 화면 모두 배지」).
+            같은 사실을 배지로 보인다(설계 결정 「두 화면 모두 배지」).
             조회 권한이 없으면 진단 API 가 403 이고 fallback 이 false 라 뜨지 않는다. -->
           <badge data-type="composite" data-ref="site_timezone_badge" data-if="{{_computed.siteTimezoneDiffers}}" color="blue" size="sm" text="$t:admin.analytics.common.site_timezone_badge|timezone={{_computed.siteTimezoneName}}"/>
           <!-- 큐 적체도 같은 자리에서 보인다. 공통 조각 `_partial_status_alerts` 가 띄우는 Alert 3종 중
             「수집 꺼짐」만 여기서 순환 안내가 되고, 큐 적체는 그렇지 않다 — 그런데 이 화면은 진단 API 의
             `queue.backlogged` 를 fallback 에 선언해 받아 두고도 읽는 자리가 없어, 잡이 밀린 사이트에서
-            설정만 연 운영자가 그 사실을 못 봤다(#682 S3 라운드 9). 진단 화면의 배지와 같은 값을 본다. -->
+            설정만 연 운영자가 그 사실을 못 봤다. 진단 화면의 배지와 같은 값을 본다. -->
           <badge data-type="composite" data-ref="queue_backlog_badge" data-if="{{_computed.queueBacklogged}}" color="red" size="sm" text="$t:admin.analytics.common.queue_backlog_badge|count={{(_computed.canReadAnalytics === true ? (analytics_status?.data?.queue?.pending_jobs ?? 0) : 0) | number}}"/>
           <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.common.refresh">
             <on type="click">
@@ -345,7 +345,7 @@
                   <icon data-if="{{_local.optOutBusy}}" name="spinner" :spin="true" class="text-sm"/>
                   <!-- 버튼 글자는 「지금 상태」가 아니라 「누르면 일어나는 일」이다. 제외 중이면 되돌리는
                        `disable`, 세는 중이면 제외를 거는 `enable` — 위 `method` 삼항(DELETE/POST)과 같은 방향이어야
-                       한다. 뒤집혀 있어 세는 중인데 「제외 끄기」(en: Count me again)가 보였다(#682 S3 라운드 8 실측). -->
+                       한다. 뒤집혀 있어 세는 중인데 「제외 끄기」(en: Count me again)가 보였다. -->
                   <span>{{analytics_opt_out?.data?.opted_out === true ? $t('admin.analytics.settings.opt_out.disable') : $t('admin.analytics.settings.opt_out.enable')}}</span>
                 </button>
               </div>
@@ -353,7 +353,7 @@
           </div>
         </div>
         <div data-ref="tab_privacy" data-if="{{(query.tab || 'collection') === 'privacy'}}" class="space-y-4">
-          <!-- 동의 출처 배지 (#639) — 코어 동의 매니저의 선택 상태(`collection.consent_selection`)로 색과 말을 고른다.
+          <!-- 동의 출처 배지 — 코어 동의 매니저의 선택 상태(`collection.consent_selection`)로 색과 말을 고른다.
             auto·selected 는 초록 제공자 이름, none 은 회색 「없음」, ambiguous·missing 은 주황 「제공자 선택 필요」와 개인정보 탭 링크.
             조회 권한이 없으면 모르는 것을 고장으로 말하지 않도록 회색 「확인 권한 없음」. -->
           <div data-ref="consent_source_row" class="flex-center gap-2 flex-wrap">
@@ -371,7 +371,7 @@
           </div>
           <!-- 세 모드 카드에는 KPI 카드와 같은 아이콘 상자를 둔다 — 글만 있으면 어느 것이 무엇을 덜 모으는
             모드인지 훑어서 구분되지 않는다. 아이콘은 장식이라 `aria-hidden` 으로 이름에서 뺀다 — 빼지 않으면
-            버튼 이름이 「users 전체 수집 …」이 된다(#682 라운드 4, 검수 지적 ④). -->
+            버튼 이름이 「users 전체 수집 …」이 된다. -->
           <div data-ref="privacy_mode_cards" role="radiogroup" aria-label="$t:admin.analytics.settings.privacy.mode_label" class="grid grid-cols-1 gap-4">
             <responsive on="768-" class="grid grid-cols-3 gap-4"/>
             <button data-ref="mode_full" type="button" role="radio" aria-checked="{{(_local.form?.settings?.privacy_mode ?? 'full') === 'full'}}" class="{{(_local.form?.settings?.privacy_mode ?? 'full') === 'full' ? 'admin-card admin-card-clickable admin-card-selected text-left' : 'admin-card admin-card-clickable text-left'}}" disabled="{{_computed.isReadOnly}}">
@@ -409,14 +409,14 @@
           </div>
           <!-- 이 화면의 권한은 update 다. 조회 권한이 없으면 analytics_status 가 403 이고 fallback 의
             consent_source 가 "none" 으로 남는다 — 그 값으로 이 경고를 띄우면 동의 연동이 멀쩡한
-            사이트에도 「익명 모드로 동작 중」이 거짓으로 뜬다(#682 S3 라운드 5). 그래서
+            사이트에도 「익명 모드로 동작 중」이 거짓으로 뜬다. 그래서
             consentFallback 은 조회 권한이 있을 때만 판정한다 — 모르는 것을 고장으로 말하지 않는다.
 
             그 위에서 두 조건을 OR 로 본다(§4.10). ① 서버가 폴백 사유를 실었으면 — 저장된 모드가
             무엇이든 지금 익명으로 모이는 중이다. 「전체 수집」으로 저장한 사이트에 동의 플러그인이
             켜져 있으면 서버는 `consent_plugin_blocks_cookies` 를 **full 모드에서만** 만들므로, 라디오
             선택을 AND 로 함께 요구하던 종전 식은 이 화면에서만 도달 불가였다 — 다른 12면과 진단은
-            사유 한 필드만 보고 안내하는데 정작 그 설정을 고치는 화면이 침묵했다(#682 S3 라운드 12).
+            사유 한 필드만 보고 안내하는데 정작 그 설정을 고치는 화면이 침묵했다.
             ② 아직 저장하지 않은 라디오가 `consent` 인데 동의 출처가 없으면 — 저장하면 익명으로
             떨어질 것을 미리 알린다. -->
           <div data-ref="consent_warning" data-if="{{analytics_status !== undefined &amp;&amp; (_computed.consentFallback)}}" class="alert-warning">
@@ -562,7 +562,7 @@
             </div>
             <!-- GeoIP 상태는 조회 권한 API 에서 온다 — 조회 권한이 없는 계정(설정 전용)에서는 403 이라 fallback 이
                  「꺼짐」으로 굳는다. 그때는 「모른다」로 두고 잠그지 않는다. 잠그면 GeoIP 가 켜진 사이트에서도
-                 국가 필터를 영영 못 고르고, 이유로 거짓 안내를 보게 된다(#682 S3 라운드 3). -->
+                 국가 필터를 영영 못 고르고, 이유로 거짓 안내를 보게 된다. -->
             <div class="grid grid-cols-1 gap-4">
               <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_country_filter_mode">

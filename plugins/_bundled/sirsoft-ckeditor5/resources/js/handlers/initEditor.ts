@@ -90,7 +90,7 @@ interface InitEditorParams {
     readOnly?: boolean | string;
     imageUpload?: boolean | string;
     /**
-     * 본문 미디어 업로드 계약 (코어 `ContentMediaUploadTarget`, #883). 화면(확장 레이아웃)이 자기 업로드 주소·정책을 넘긴다.
+     * 본문 미디어 업로드 계약 (코어 `ContentMediaUploadTarget`). 화면(확장 레이아웃)이 자기 업로드 주소·정책을 넘긴다.
      * 있으면 이 계약으로 올리고 업로드 단추도 계약 정책으로 정한다. 없으면(null·복제 템플릿) 종전 규칙 — 관리자만 이 플러그인
      * 자체 업로드다. 객체 또는 JSON 문자열.
      */
@@ -721,7 +721,7 @@ function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUplo
         );
     }
 
-    // 코어 「본문 콘텐츠」가 외부 영상 삽입을 켜면 표준 툴바에도 미디어 삽입을 싣는다 (#883)
+    // 코어 「본문 콘텐츠」가 외부 영상 삽입을 켜면 표준 툴바에도 미디어 삽입을 싣는다
     if (withMediaEmbed && toolbarType !== 'full') {
         base.push(CKEDITOR.MediaEmbed);
     }
@@ -882,7 +882,7 @@ export function viewerIsAdmin(globalState: Record<string, any>): boolean {
  * 편집기 경고 알림(업로드 실패 등)을 코어 토스트로 보냅니다.
  *
  * CKEditor 의 Notification 플러그인은 경고를 네이티브 `alert` 로 띄운다 — 탭 전체가 멈추고, 자동화 도구도
- * 대화상자에 걸려 진행하지 못했다(#883 검수 실측). 듣는 쪽이 `evt.stop()` 하면 기본 alert 가 뜨지 않는다.
+ * 대화상자에 걸려 진행하지 못했다. 듣는 쪽이 `evt.stop()` 하면 기본 alert 가 뜨지 않는다.
  * 코어 토스트가 없으면(옛 코어) 손대지 않아 종전 alert 가 그대로 뜬다.
  *
  * @param editor 방금 만든 편집기
@@ -949,7 +949,7 @@ async function createEditorInstance(
         baseToolbar = baseToolbar.filter(item => item !== 'mediaEmbed');
     }
 
-    // 계약 정책이 동영상·오디오를 켰으면 이미지 업로드 단추 옆에 단추를 더한다 (#883)
+    // 계약 정책이 동영상·오디오를 켰으면 이미지 업로드 단추 옆에 단추를 더한다
     const mediaButtons = enabledMediaButtons(options.mediaTarget ?? null);
     const mediaItems = mediaButtons.map((kind) => MEDIA_BUTTON_NAMES[kind]);
     const anchorIndex = baseToolbar.indexOf('uploadImage') >= 0 ? baseToolbar.indexOf('uploadImage') : baseToolbar.indexOf('insertTable');
@@ -1002,7 +1002,7 @@ async function createEditorInstance(
             ],
             resizeUnit: '%' as const,
             // 파일 선택 창 accept·끌어 놓기 필터를 서버가 받는 형식으로 좁힌다(기본값은 bmp·tiff 포함)
-            // 계약이 있으면 그 정책의 이미지 형식, 없으면 이 플러그인 업로드가 받는 형식 (#883)
+            // 계약이 있으면 그 정책의 이미지 형식, 없으면 이 플러그인 업로드가 받는 형식
             upload: {
                 types: options.mediaTarget
                     ? uploadTypesFromExtensions(options.mediaTarget.policy?.image?.extensions ?? [])
@@ -1030,7 +1030,7 @@ async function createEditorInstance(
             allow: [
                 { name: /.*/, attributes: true, classes: true, styles: true },
             ],
-            // 표시 규칙이 지울 태그는 편집기도 받지 않는다 — 저장 뒤 사라지는 내용을 남기지 않게 (#883)
+            // 표시 규칙이 지울 태그는 편집기도 받지 않는다 — 저장 뒤 사라지는 내용을 남기지 않게
             ...(constraints && (constraints.forbidTags ?? []).length > 0
                 ? { disallow: [{ name: new RegExp(`^(${(constraints.forbidTags as string[]).map((t) => t.replace(/[^a-z0-9-]/gi, '')).join('|')})$`) }] }
                 : {}),
@@ -1040,7 +1040,7 @@ async function createEditorInstance(
     };
 
     if (constraints) {
-        // 미디어 삽입 저장 형식은 지금과 같은 `<figure class="media"><oembed url>` — 표시기가 정해진 플레이어로 바꾼다 (#883)
+        // 미디어 삽입 저장 형식은 지금과 같은 `<figure class="media"><oembed url>` — 표시기가 정해진 플레이어로 바꾼다
         editorConfig.mediaEmbed = {
             previewsInData: false,
             providers: [],
@@ -1053,7 +1053,7 @@ async function createEditorInstance(
     const extraPlugins: any[] = [EditingViewCssomStyle];
     if (options.imageUpload) {
         // Bearer 부착·401 처리는 G7Core.api 가 맡는다 — 로그인 토큰을 여기서 읽지 않는다.
-        // 계약이 있으면 계약 경로(화면이 정한 주소·정책), 없으면 종전 경로 (#883)
+        // 계약이 있으면 계약 경로(화면이 정한 주소·정책), 없으면 종전 경로
         extraPlugins.push(options.mediaTarget
             ? createG7UploadAdapterPlugin({ target: options.mediaTarget, legacyUrl: buildUploadUrl() })
             : createG7UploadAdapterPlugin(buildUploadUrl()));
@@ -1434,10 +1434,10 @@ export async function initEditorHandler(
         ? (params.imageUpload === true || params.imageUpload === 'true')
         : (pluginSettings.imageUpload === true || pluginSettings.imageUpload === 'true');
     // 이 플러그인의 업로드 주소는 관리자 전용이다(서버 auth:sanctum + admin). 관리자가 아닌 사람에게 단추를 주면
-    // 누르는 순간 401·403 으로 실패한다(비회원은 종전에 로그인 화면으로 옮겨져 쓰던 글이 사라졌다 — #883).
+    // 누르는 순간 401·403 으로 실패한다(비회원은 종전에 로그인 화면으로 옮겨져 쓰던 글이 사라졌다).
     // 판정은 부팅 때 받아 둔 인증 사용자(AuthManager — 두 템플릿 공통)로 한다. `_global.currentUser` 는 사용자 템플릿에만
     // 있고 그마저 화면이 그려진 뒤에 도착할 수 있어, 그것만 보면 관리자 화면의 업로드 단추까지 사라진다.
-    // 화면이 본문 미디어 계약을 넘기면(#883) 업로드 여부는 계약 정책(이미지 허용)이 정한다 — 비회원·일반 회원도 그 화면의
+    // 화면이 본문 미디어 계약을 넘기면 업로드 여부는 계약 정책(이미지 허용)이 정한다 — 비회원·일반 회원도 그 화면의
     // 업로드 주소로 올린다. 계약이 없으면 종전 규칙(관리자만 이 플러그인 자체 업로드).
     const mediaTarget = resolveMediaUploadTarget(params.mediaUpload);
     const withImageUpload = mediaTarget

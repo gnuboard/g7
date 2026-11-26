@@ -278,7 +278,7 @@ class ParameterDescriber
         'image_quality' => '이미지 리사이즈 시 압축 품질 (1~100)',
         'image_max_width' => '이미지 리사이즈 최대 너비 (px)',
         'image_max_height' => '이미지 리사이즈 최대 높이 (px)',
-        // 이미지 썸네일 (근거: Settings\SaveSettingsRequest upload.thumbnail_*, #869)
+        // 이미지 썸네일 (근거: Settings\SaveSettingsRequest upload.thumbnail_*)
         'thumbnail_enabled' => '이미지 썸네일 사용 여부 (끄면 모든 이미지를 원본으로 낸다)',
         'thumbnail_presets' => '썸네일 규격 표 (고정 5행·og·켜진 확장 규격·운영자 규격, 최대 settings_limits.upload_thumbnail_presets_max 행)',
         'thumbnail_content_preset' => '본문 이미지에 쓸 썸네일 규격 이름 (사용 중인 규격만)',
@@ -389,7 +389,7 @@ class ParameterDescriber
             };
         }
 
-        // 썸네일 규격 행 (근거: SaveSettingsRequest upload.thumbnail_presets.*.*, #869) — leaf 만으로는
+        // 썸네일 규격 행 (근거: SaveSettingsRequest upload.thumbnail_presets.*.*) — leaf 만으로는
         // name·width 가 일반 「이름」「너비」로 축소된다.
         if (str_ends_with($parent, 'thumbnail_presets.*')) {
             return match ($leaf) {

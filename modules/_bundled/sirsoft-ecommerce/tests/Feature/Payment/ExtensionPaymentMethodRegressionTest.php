@@ -23,7 +23,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 확장 결제수단(간편결제) 1급화 회귀 테스트 — 이슈 #475
+ * 확장 결제수단(간편결제) 1급화 회귀 테스트
  *
  * PG 플러그인이 `filter_available_payment_methods` 로 등록하는 간편결제 수단
  * (예: `nhnkcp_naverpay`) 은 코어 `PaymentMethodEnum` 에 case 가 없다. 이 때문에
@@ -36,7 +36,6 @@ use PHPUnit\Framework\Attributes\Test;
  * enum 이 답하지 못한다. 본 테스트는 능력 해석이 결제수단 설정 카탈로그를 SSoT 로
  * 삼도록 전환된 뒤 green 이 된다.
  *
- * @see https://github.com/gnuboard/dev-g7/issues/475
  */
 class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
 {
@@ -298,7 +297,7 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
      * 위 Reflection 테스트가 판정 값만 본다면, 이 테스트는 createFromTempOrder 를
      * 끝까지 태워 호출지점(OrderProcessingService:216-217)에서 실제로
      * `order.after_admin_notify` 훅이 발화하는지를 스파이로 관측한다 — 판정과
-     * 호출지점 사이 로직이 바뀌어 오발송이 재발하면 이 테스트가 잡는다 (#475).
+     * 호출지점 사이 로직이 바뀌어 오발송이 재발하면 이 테스트가 잡는다.
      *
      * @scenario method_kind=extension, capability_declared=declared, capability=needs_pg
      *
@@ -328,7 +327,7 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
         $this->assertSame(
             0,
             $notify['count'],
-            '확장 결제수단(PG) 주문 생성 시 관리자 신규주문 알림이 발화되면 #475 오알림 재발이다',
+            '확장 결제수단(PG) 주문 생성 시 관리자 신규주문 알림이 발화되면 오알림 결함의 재발이다',
         );
         // 주문·결제 레코드가 실제로 만들어졌는지(경로가 끝까지 탔는지) 확인.
         $this->assertNotNull($order->payment);
@@ -434,7 +433,7 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
         );
 
         // 판정의 단일 출처는 `RefundExecutionService::determineRefundMethod()` 다 — 취소 서비스에
-        // 남아 있던 위임 메서드는 호출부가 없어 제거됐다(#599 validate P2 minor).
+        // 남아 있던 위임 메서드는 호출부가 없어 제거됐다(validate P2 minor).
         $this->assertSame(
             RefundMethodEnum::PG,
             app(RefundExecutionService::class)->determineRefundMethod($order),

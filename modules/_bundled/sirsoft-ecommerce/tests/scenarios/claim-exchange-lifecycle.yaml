@@ -1,7 +1,7 @@
 feature: claim_exchange_lifecycle
 
 description: |
-  교환 신청서의 금액 구성과 그 뒤의 생애 — 차액 3분기 · 청구 방식 · 추가옵션 (#599 S15a)
+  교환 신청서의 금액 구성과 그 뒤의 생애 — 차액 3분기 · 청구 방식 · 추가옵션
 
   계획서 §9-1 이 이름으로 선언해 두고 14 세션 동안 만들어지지 않았던 도메인 조합축이다.
   화면 단위 매니페스트(`user-claim-exchange-apply` · `admin-claim-detail` 등)는 "이 화면이
@@ -96,7 +96,7 @@ effects:
   - exchange_auto_approval_needs_a_zero_charge
   - exchanged_source_row_is_not_counted_twice_in_the_comparison_quantity # 교환완료 원 행은 비교 카드 상품수량에서 빠진다(S3-D16)
 
-  # 교환 옵션 치환 2-패스 재계산 · 접수 스냅샷 동결 (#599 후속 B1·B2)
+  # 교환 옵션 치환 2-패스 재계산 · 접수 스냅샷 동결
   - exchange_preview_two_pass_keeps_refund_math
   # S3-D3 재정의(2026-09-17 실측 주문 1497): 저가 옵션 교환 완료 뒤 후속 행 취소 환불액이 승계 단가로 나와
   # 차액이 두 번 나갔다. 재계산에서만 후속 행을 신규 옵션 단가로 본다 — 다른 상품 취소는 종전과 같고,
@@ -106,7 +106,7 @@ effects:
   - exchanged_successor_pricing_requires_a_refunded_difference
   - exchange_request_freezes_calculation_snapshots
   - exchange_substitution_inherits_shipping_policy_and_coupons
-  # #599 후속 D13 — 차액 환불완료 시 취소신청서가 생긴다
+  # 차액 환불완료 시 취소신청서가 생긴다
   - exchange_refund_completion_records_a_cancellation
   - exchange_refund_option_rows_announce_their_creation   # 그 취소신청서의 옵션 행도 함께 선언된다
   # 클레임 공용 어휘 (ClaimEnumsTest) — 교환·반품 도입이 공용 Enum 에 더한 유형·값·라벨
@@ -126,7 +126,7 @@ sub_flows:
       완료 처리(D26)만이 옮긴다. 상품 단위 전이는 전 항목이 같은 상태일 때만 헤더를 옮긴다.
     effects:
       - exchange_transition_follows_the_status_gate
-      - exchange_logistics_stages_can_be_skipped_forward     # 회수·재발송 단계 앞 건너뛰기 (#599 후속)
+      - exchange_logistics_stages_can_be_skipped_forward     # 회수·재발송 단계 앞 건너뛰기
       - exchange_approval_and_redelivery_order_are_not_skipped
       - tracking_save_does_not_move_the_status
       - exchange_completion_is_not_reachable_by_a_plain_transition
@@ -188,7 +188,7 @@ sub_flows:
   #    쓰던 이름들이 「소유 매니페스트에 없다」로 잡혔다. 실제로 테스트가 쓰는 것은 위
   #    `effects:` 로 올렸고(2026-09-23), 여기에는 **아직 어느 테스트도 검증하지 않는** 것만
   #    남긴다 — 올리면 그 자리에서 미검증으로 잡히므로, 테스트가 생길 때 함께 올린다.
-  #    (#599 후속 D13 활동로그 축 — 교환 완료 → 차액 환불 → 취소신청서)
+  #    (후속 D13 활동로그 축 — 교환 완료 → 차액 환불 → 취소신청서)
   - exchanged_items_keep_the_exchanged_status           # 상품 상태는 `exchanged` 를 유지한다
   - exchange_originated_refund_fires_the_requested_hook # 교환 차액 환불신청서도 접수 훅을 쏜다 (B8)
   - exchange_header_transition_logs_item_transitions    # 헤더 전이가 끌고 간 상품 전이 (C1)

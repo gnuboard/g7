@@ -91,7 +91,7 @@ describe('AdminSidebar', () => {
 
       // "이커머스" 텍스트를 포함하는 버튼 클릭
       const ecommerceLabel = screen.getByText('이커머스');
-      const navButton = ecommerceLabel.closest('a');  // URL 메뉴는 링크(#757 — 새 탭 열기)
+      const navButton = ecommerceLabel.closest('a');  // URL 메뉴는 링크(새 탭 열기)
       expect(navButton).toBeTruthy();
 
       fireEvent.click(navButton!);
@@ -155,7 +155,7 @@ describe('AdminSidebar', () => {
       render(<AdminSidebar menu={createMenu()} currentLocale="ko" />);
 
       // 대시보드 클릭
-      const dashboardButton = screen.getByText('대시보드').closest('a');  // URL 메뉴는 링크(#757 — 새 탭 열기)
+      const dashboardButton = screen.getByText('대시보드').closest('a');  // URL 메뉴는 링크(새 탭 열기)
       expect(dashboardButton).toBeTruthy();
 
       fireEvent.click(dashboardButton!);

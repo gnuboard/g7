@@ -108,7 +108,7 @@ class NotificationTemplateService
         $updated = $this->releaseOverridesMatchingDeclaration($updated);
 
         // 실제로 고친 칸이 있을 때만 「기본」 을 푼다 — 저장만 해도 기본이 풀리면 「기본값 복원」 버튼이 뜨고
-        // 새 버전 문구 교정도 막힌다(#727 D5-⑤). 수정 여부는 모델이 기록한 user_overrides 로 판정한다.
+        // 새 버전 문구 교정도 막힌다. 수정 여부는 모델이 기록한 user_overrides 로 판정한다.
         $customized = ! empty($updated->user_overrides);
         if ((bool) $updated->is_default === $customized) {
             $updated = $this->templateRepository->update($updated, ['is_default' => ! $customized]);
@@ -320,7 +320,7 @@ class NotificationTemplateService
 
         // 활성 언어팩 seed 로케일 병합 — 시딩(seed.notifications.translations)과 같은 SSoT.
         // 이 병합이 없으면 [기본값 복원]이 팩이 주입해 둔 로케일(ja 등)을 config 의
-        // ko/en 만으로 대체해 영구 소실시킨다 (2026-08-23 실사례 — #597 보완 실측).
+        // ko/en 만으로 대체해 영구 소실시킨다 (2026-08-23 실사례).
         $definitions = $this->mergeLanguagePackLocalesIntoDefaults($definitions);
 
         foreach ($definitions as $def) {

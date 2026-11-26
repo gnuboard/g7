@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Modules\Sirsoft\Ecommerce\Upgrades\Upgrade_1_0_5;
 
 /**
- * 1.0.5 주문 부가세 백필 업그레이드 스텝 테스트 (#493 E5)
+ * 1.0.5 주문 부가세 백필 업그레이드 스텝 테스트
  *
  * 부가세 쓰기 지점이 부분취소 재계산 1곳뿐이라, 부분취소를 겪은 주문만 값이 정상화되고
  * 나머지 주문은 영구 0 이었습니다. 백필은 그 0 을 메우되, 이미 값이 있는 주문(부분취소로

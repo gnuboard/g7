@@ -9,7 +9,7 @@ use Tests\Concerns\BuildsZipFixtures;
 use Tests\TestCase;
 
 /**
- * zip 배포본의 예약 자리 파일 판정(`UpdateReservedPaths::findInZip`)이 감싼 폴더가 있을 때만 첫 구간을 벗기는지 (#971).
+ * zip 배포본의 예약 자리 파일 판정(`UpdateReservedPaths::findInZip`)이 감싼 폴더가 있을 때만 첫 구간을 벗기는지.
  *
  * 예전에는 모든 항목의 첫 구간을 무조건 벗긴 경로도 함께 봐서, 감싸지 않은 zip 의 `X/custom/a.php` 를 최상위
  * 예약 자리 `custom/` 파일로 오탐할 수 있었다. 이제 모든 항목이 같은 최상위 폴더 하나를 공유할 때만 벗긴다.

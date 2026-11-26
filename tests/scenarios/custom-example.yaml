@@ -1,4 +1,4 @@
-feature: 견본 명령 custom:example (#792 WP-S)
+feature: 견본 명령 custom:example
 
 description: |
   코어 릴리스는 예약 자리에 파일을 싣지 않는다. php artisan custom:example board 가 명령 디렉터리의

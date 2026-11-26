@@ -236,7 +236,7 @@ test('첨부 — 2장을 올리면 격자·출처 스트립이 2행이 되고, 1
   const before = await counts();
 
   // 파일 입력은 업로더 안에 숨어 있다 — 보이지 않아도 `setInputFiles` 는 붙는다.
-  // #408 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+  // 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
   const fileInput = page.locator('[id^="cr_006_images_uploader__"] input[type="file"]').first();
   await fileInput.waitFor({ state: 'attached', timeout: 15_000 });
 

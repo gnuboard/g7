@@ -95,7 +95,7 @@ return [
         'security_password_reset_rate_limit_per_minute_max' => 1000,
         'security_register_rate_limit_per_minute_min' => 1,
         'security_register_rate_limit_per_minute_max' => 1000,
-        // 비밀번호 정책 (#736) — 판독부(PasswordPolicy·PasswordExpiryService)도 이 값으로 양쪽 클램프한다
+        // 비밀번호 정책 — 판독부(PasswordPolicy·PasswordExpiryService)도 이 값으로 양쪽 클램프한다
         'security_password_repeated_chars_length_min' => 3,
         'security_password_repeated_chars_length_max' => 6,
         'security_password_sequential_chars_length_min' => 3,
@@ -110,7 +110,7 @@ return [
         'security_password_expiry_remind_days_max' => 90,
         'security_password_expiry_batch_size_min' => 0,
         'security_password_expiry_batch_size_max' => 100000,
-        // 활동 로그(접속기록) 보관 기간 — 최소 365 는 개인정보의 안전성 확보조치 기준 제8조 접속기록 1년(#736 D14)
+        // 활동 로그(접속기록) 보관 기간 — 최소 365 는 개인정보의 안전성 확보조치 기준 제8조 접속기록 1년
         'security_activity_log_retention_days_min' => 365,
         'security_activity_log_retention_days_max' => 3650,
 
@@ -196,7 +196,7 @@ return [
     |--------------------------------------------------------------------------
     | 일반 로그는 환경설정 > 보안 「활동 로그 보관 기간」(security.activity_log_retention_days,
     | 365~3650일)을 따르고, 아래 액션은 그 값과 관계없이 최소 long_retention_days 일 보관합니다.
-    | 개인정보의 안전성 확보조치 기준 제5조③ — 권한 부여·변경·말소 내역 3년 보관(#736 D14).
+    | 개인정보의 안전성 확보조치 기준 제5조③ — 권한 부여·변경·말소 내역 3년 보관.
     |
     | - long_retention_actions: 역할 정의·권한 구성·회원 역할 변경 기록 (정확히 일치하는 액션 이름)
     | - long_retention_days:    그 액션의 최소 보관 일수
@@ -400,7 +400,7 @@ return [
     */
     'storage' => [
         'public_asset_disk' => '',
-        // 비공개 첨부 저장소(#916) — 권한 확인 뒤 서버가 내려주는 원본(첨부·클레임 이미지·본문 미디어·내보내기)의 디스크.
+        // 비공개 첨부 저장소 — 권한 확인 뒤 서버가 내려주는 원본(첨부·클레임 이미지·본문 미디어·내보내기)의 디스크.
         // 빈 문자열이면 「기본」(사이트 스토리지 드라이버를 따름). 관리자 환경설정(drivers.private_attachment_disk)에서 주입한다.
         'private_attachment_disk' => '',
 
@@ -604,7 +604,7 @@ return [
                     ['identifier' => 'core.templates.activate', 'type' => 'admin', 'name' => ['ko' => '템플릿 활성화', 'en' => 'Activate Templates'], 'description' => ['ko' => '템플릿을 활성화/비활성화할 수 있습니다.', 'en' => 'Can activate/deactivate templates.'], 'order' => 3],
                     ['identifier' => 'core.templates.uninstall', 'type' => 'admin', 'name' => ['ko' => '템플릿 삭제', 'en' => 'Uninstall Templates'], 'description' => ['ko' => '템플릿을 삭제할 수 있습니다.', 'en' => 'Can uninstall templates.'], 'order' => 4],
                     ['identifier' => 'core.templates.layouts.edit', 'type' => 'admin', 'name' => ['ko' => '레이아웃 편집', 'en' => 'Edit Layouts'], 'description' => ['ko' => '템플릿 레이아웃을 편집할 수 있습니다.', 'en' => 'Can edit template layouts.'], 'order' => 5],
-                    // 템플릿 환경설정 저장 (#434) — 보기는 core.templates.read, 저장만 이 권한
+                    // 템플릿 환경설정 저장 — 보기는 core.templates.read, 저장만 이 권한
                     ['identifier' => 'core.templates.settings', 'type' => 'admin', 'name' => ['ko' => '템플릿 설정', 'en' => 'Configure Templates'], 'description' => ['ko' => '템플릿 환경설정을 저장합니다.', 'en' => 'Save template settings.'], 'order' => 6],
                 ],
             ],
@@ -833,7 +833,7 @@ return [
                 ],
             ],
             [
-                // 코어 자신을 갈아 끼우는 권한은 **환경설정 묶음에 두지 않는다** (#609 D4).
+                // 코어 자신을 갈아 끼우는 권한은 **환경설정 묶음에 두지 않는다**.
                 // 설정을 고치는 것과 코어를 교체하는 것은 실패 시 되돌리는 비용이 다르고,
                 // 같은 묶음에 두면 권한 화면에서 둘이 뭉뚱그려져 별도 권한을 만든 취지를
                 // 잃는다. 이 권한이 없는 관리자에게는 환경설정의 업데이트 영역이
@@ -1344,7 +1344,7 @@ return [
             'command' => 'privacy:process-dormant --scheduled',
             'expression' => '10 5 * * *',
         ],
-        // 비밀번호 만료 사전 안내·만료일 처리(#736) — 기본 꺼짐. 1회 실행당 안내 상한을 넘는 인원은 다음 날로 넘긴다.
+        // 비밀번호 만료 사전 안내·만료일 처리 — 기본 꺼짐. 1회 실행당 안내 상한을 넘는 인원은 다음 날로 넘긴다.
         'auth-process-password-expiry' => [
             'group' => 'gc',
             'label' => ['ko' => '비밀번호 만료 처리', 'en' => 'Process password expiry'],
@@ -1368,7 +1368,7 @@ return [
             'command' => 'analytics:prune',
             'expression' => '10 5 * * *',
         ],
-        // 규격이 바뀌었거나 원본이 없어진 썸네일 파생본 정리 (7.2.0, #869) — 다시 만들 수 있는 캐시라 기본 켬.
+        // 규격이 바뀌었거나 원본이 없어진 썸네일 파생본 정리 (7.2.0) — 다시 만들 수 있는 캐시라 기본 켬.
         // 커맨드가 `--scheduled` 에서 upload.thumbnail_prune_enabled 를 재확인한다. 04:00~05:15 칸이 차 있어 05:20.
         'thumbnails-prune' => [
             'group' => 'gc',
@@ -1652,7 +1652,7 @@ return [
                 ],
             ],
         ],
-        // 비밀번호 만료 사전 안내 (#736) — `auth:process-password-expiry` 가 만료 N일 전 주기마다 1통 보낸다.
+        // 비밀번호 만료 사전 안내 — `auth:process-password-expiry` 가 만료 N일 전 주기마다 1통 보낸다.
         // action_url 은 수신자에 따라 다르다(관리자 = 회원 수정 화면, 회원 = 마이페이지 비밀번호 변경).
         'password_expiry_notice' => [
             'hook_prefix' => 'core.auth',
@@ -1703,7 +1703,7 @@ return [
                 ],
             ],
         ],
-        // 비밀번호 만료 (#736) — 만료일 처리에서 1통. '변경해야 로그인' 모드면 같은 처리에서 로그인 토큰도 폐기된다.
+        // 비밀번호 만료 — 만료일 처리에서 1통. '변경해야 로그인' 모드면 같은 처리에서 로그인 토큰도 폐기된다.
         'password_expired' => [
             'hook_prefix' => 'core.auth',
             'audience' => 'customer',

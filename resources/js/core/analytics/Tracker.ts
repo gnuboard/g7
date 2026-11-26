@@ -401,7 +401,7 @@ export class AnalyticsTracker {
       if (shouldSkip(payload.url, this.options.settings) !== null) return;
 
       // 동의를 아직 못 읽었으면 버리지 않고 들고 있는다 — 첫 화면 비콘은 동의 조회보다 먼저
-      // 나가서, 버리면 동의한 방문자의 진입 화면·새로고침이 전부 빠진다(#682 S3 라운드 13).
+      // 나가서, 버리면 동의한 방문자의 진입 화면·새로고침이 전부 빠진다.
       if (this.consent.isPending()) {
         if (this.held.length < MAX_HELD_BEACONS) {
           this.held.push({ url: payload.url, body: JSON.stringify(this.decorate(payload)) });

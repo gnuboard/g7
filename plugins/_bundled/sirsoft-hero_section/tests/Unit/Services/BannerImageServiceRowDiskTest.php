@@ -15,7 +15,7 @@ use Plugins\Sirsoft\HeroSection\Services\BannerImageService;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
 /**
- * 배너 파일의 읽기·서빙·썸네일 원본·삭제가 **행에 기록된 disk** 를 따르는지 고정한다 (#878).
+ * 배너 파일의 읽기·서빙·썸네일 원본·삭제가 **행에 기록된 disk** 를 따르는지 고정한다.
  *
  * 서비스에 주입되는 스토리지는 「지금 업로드가 갈 디스크」(공개 자산 디스크 설정 반영)다. 운영자가 디스크를 바꾸면
  * 옛 행과 새 행이 서로 다른 디스크에 섞이므로(혼재 운용), 이미 올린 파일은 주입 디스크가 아니라 행 disk 에서 찾아야 한다.

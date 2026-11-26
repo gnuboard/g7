@@ -22,7 +22,7 @@ const PUBLIC_REVIEW_TAB = path.join(
     REPO_ROOT,
     'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_reviews.json',
 );
-// 후기 한 장(작성자·본문·첨부 사진)은 7.1.6(#898)부터 공용 카드 조각이 그린다 — 상품 상세 후기 탭과
+// 후기 한 장(작성자·본문·첨부 사진)은 7.1.6부터 공용 카드 조각이 그린다 — 상품 상세 후기 탭과
 // 후기 모아보기 화면(shop/reviews)이 같이 include 한다. 탭은 목록·필터만 갖고 카드는 이 조각에 있다.
 const PUBLIC_REVIEW_CARD_PARTIAL = 'partials/shop/detail/_review_card.json';
 const PUBLIC_REVIEW_CARD = path.join(

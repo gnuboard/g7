@@ -6,7 +6,7 @@ use Modules\Sirsoft\Page\Services\PageSettingsService;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 
 /**
- * 페이지 첨부 정책의 프론트엔드 노출 회귀 테스트 (#703)
+ * 페이지 첨부 정책의 프론트엔드 노출 회귀 테스트
  *
  * 회귀 배경: 첨부 업로드 서버 검증은 모듈 설정(attachment.max_size_mb·allowed_types·max_count)을
  * 따르는데, 관리자 페이지 폼의 업로더는 10MB·확장자 7종·5개를 리터럴로 박아 두었다. 설정을 바꾸면 화면은

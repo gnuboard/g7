@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 확장 역할 동기화가 운영자의 비밀번호 만료 설정을 덮지 않는지 테스트 (#736 §4.1)
+ * 확장 역할 동기화가 운영자의 비밀번호 만료 설정을 덮지 않는지 테스트
  *
  * `password_expiry_policy` 는 운영자가 역할 수정 화면에서 고르는 값이고 확장 선언에는 없다. 코어·확장
  * 업데이트의 `syncRole()` 이 이름·설명을 갱신할 때 이 값을 기본값으로 되돌리면 운영자 설정이 사라진다.

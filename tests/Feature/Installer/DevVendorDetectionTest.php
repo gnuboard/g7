@@ -9,7 +9,7 @@ use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
- * 인스톨러 vendor 재사용 경로의 dev 패키지 감지·경고·캐시 정리 회귀 테스트 (dev-g7 #658).
+ * 인스톨러 vendor 재사용 경로의 dev 패키지 감지·경고·캐시 정리 회귀 테스트.
  *
  * 배경: `INSTALL.md`/`README.md` 가 인스톨러 **전에** `composer install`(옵션 없음)을 지시했고,
  * 인스톨러는 `vendor/autoload.php` + `composer.lock` 이 있으면 composer 단계를 통째로 건너뛰며

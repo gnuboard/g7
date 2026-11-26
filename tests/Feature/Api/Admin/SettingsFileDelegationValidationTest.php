@@ -15,7 +15,7 @@ use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
- * 환경설정 > 드라이버 「웹서버 파일 위임」 저장·카탈로그·시험·프로브 (#878)
+ * 환경설정 > 드라이버 「웹서버 파일 위임」 저장·카탈로그·시험·프로브
  *
  * 저장 게이트(SaveSettingsRequest)가 모르는 방식·접두사 누락·형식 오류를 422 로 막고, 관리자 응답이 선택지
  * (`available_drivers.file_delegation`)와 웹서버 안내용 메타(`_meta.file_delegation`)를 싣는지, 1단계 시험

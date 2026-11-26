@@ -1055,7 +1055,7 @@ class LayoutService
                 // 추측 복원하지 않고, 본 메타에서 원본 그대로 가져다 PUT 한다.
                 if ($withSourceMeta) {
                     // 원본은 빈 객체 전부를 보존한 원문이다 — 규칙 기반 디코드(`$layoutData`)는 값 자리 밖의 `{}` 를
-                    // `[]` 로 두므로, 편집기가 그것을 받아 저장하면 DB 원문에 그대로 굳는다 (#758)
+                    // `[]` 로 두므로, 편집기가 그것을 받아 저장하면 DB 원문에 그대로 굳는다
                     $mergedLayout['__editor'] = [
                         'original' => LayoutEmptyObjects::rawPreserving($layout),
                     ];
@@ -1439,7 +1439,7 @@ class LayoutService
         if ($sourceType === LayoutSourceType::Module) {
             return ['kind' => 'module', 'identifier' => $extensionId];
         }
-        // 템플릿 설정 화면(`{템플릿}.template_settings`, #434) — 템플릿이 관리자 템플릿에 교차 등록한 행이다.
+        // 템플릿 설정 화면(`{템플릿}.template_settings`) — 템플릿이 관리자 템플릿에 교차 등록한 행이다.
         // 플러그인으로 잘못 분류하면 편집기가 없는 `plugin:{id}` 샘플을 찾는다. 엔진은 template 종류를 편집 중인
         // 템플릿 스펙으로 폴백하므로, 그 관리자 템플릿 editor-spec 의 샘플이 쓰인다.
         if ($row?->isTemplateSettingsLayout()) {
@@ -1559,7 +1559,7 @@ class LayoutService
         $updateData = $data['content'] ?? $data;
 
         // 수정 전 원문 — 기준 버전·변경 요약에 쓴다. 캐스트(`$layout->content`)는 `{}` 를 `[]` 로 만들어
-        // 그 기준 버전을 복원하면 빈 객체가 사라진다 (#758)
+        // 그 기준 버전을 복원하면 빈 객체가 사라진다
         $oldContent = LayoutEmptyObjects::rawPreserving($layout);
 
         // 레이아웃 업데이트 (lock_version 1 증가)
@@ -2127,7 +2127,7 @@ class LayoutService
     private function filterDefines(array $defines, ?User $user): array
     {
         // 레이아웃의 defines 는 `이름 => 값` 맵이다(화면이 `_defines.이름` 으로 읽는다). 목록으로 다시
-        // 쌓으면 이름이 사라져 `_defines.countryList` 같은 참조가 전부 undefined 가 된다(#705 회귀).
+        // 쌓으면 이름이 사라져 `_defines.countryList` 같은 참조가 전부 undefined 가 된다.
         // 목록형(이름 없는 컴포넌트 정의 묶음)으로 들어온 경우만 종전처럼 재색인한다.
         $isList = array_is_list($defines);
         $filtered = [];

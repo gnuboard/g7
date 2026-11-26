@@ -1,5 +1,5 @@
 /**
- * DynamicRenderer — `<on listen>`(onComponentEvent) 액션 통째 실행 (engine-v1.80.0, #753)
+ * DynamicRenderer — `<on listen>`(onComponentEvent) 액션 통째 실행 (engine-v1.80.0)
  *
  * 구독 콜백이 `{handler, params, onSuccess, onError}` 4개 키만 골라 createHandler 에 넘겨,
  * `<on listen>` 안의 암묵 sequence·`<sequence>`·`<conditions>`·`<switch>`·루트 `if`·`<action-ref>`·
@@ -27,7 +27,7 @@ const TestButton: React.FC<{ children?: React.ReactNode; text?: string }> = ({ c
 /** 레이아웃 리스너 결과 표식 — helpers/componentEventResult.ts 와 같은 전역 심볼 */
 const LAYOUT_LISTENER_RESULT = Symbol.for('g7.layoutListenerResult');
 
-describe('DynamicRenderer — onComponentEvent 액션 통째 실행 (#753)', () => {
+describe('DynamicRenderer — onComponentEvent 액션 통째 실행', () => {
   let registry: ComponentRegistry;
   let bindingEngine: DataBindingEngine;
   let translationEngine: TranslationEngine;

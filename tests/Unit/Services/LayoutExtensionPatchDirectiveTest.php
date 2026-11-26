@@ -15,7 +15,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * `_patch` 가 호스트에 없는 항목을 새로 붙일 때 지시자(`_append`·중첩 `_patch`)가 풀려서 들어가는지 (#599 validate).
+ * `_patch` 가 호스트에 없는 항목을 새로 붙일 때 지시자(`_append`·중첩 `_patch`)가 풀려서 들어가는지.
  *
  * 대상 항목이 호스트에 없으면 패치 항목을 **원문 그대로** 끝에 붙였다. 그러면 `children: {"_append": […]}`,
  * `cellChildren: {"_patch": …}` 같은 지시자 객체가 리터럴로 레이아웃에 남아, 렌더러가 배열이어야 할 자리에서

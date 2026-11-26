@@ -1,4 +1,4 @@
-feature: manifest 선택 연동 선언 (integrations) — 정규화·표시·정적 검사 (#639 ⑥)
+feature: manifest 선택 연동 선언 (integrations) — 정규화·표시·정적 검사
 
 description: |
   `dependencies` 는 「없으면 설치·활성화 불가」, `integrations` 는 「있으면 연동, 없어도 동작」이다. 설치를 막지 않고

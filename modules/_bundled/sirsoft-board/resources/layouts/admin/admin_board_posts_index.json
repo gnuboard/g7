@@ -1,5 +1,5 @@
 {
-    "comment": "게시판 하나의 글 목록(관리자). 검색·필터·정렬·페이지가 전부 URL query 로 오가고 데이터소스가 그 query 를 그대로 읽으므로, 조건을 바꾸는 자리는 상태가 아니라 이동을 발화한다. 다만 날짜 두 칸만은 예외라 전역에 담아 두고 검색 버튼에서 한꺼번에 실린다\n  e2e:allow 공지 행 선택 배경(`$selected`)만 바꾼 표시 변경 — 데이터·동작 무변경이라 브라우저 계산값 실측(라이트·다크 선택·hover, #816 validate-plan 2라운드)으로 대신한다.\n  audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=\"\"` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다",
+    "comment": "게시판 하나의 글 목록(관리자). 검색·필터·정렬·페이지가 전부 URL query 로 오가고 데이터소스가 그 query 를 그대로 읽으므로, 조건을 바꾸는 자리는 상태가 아니라 이동을 발화한다. 다만 날짜 두 칸만은 예외라 전역에 담아 두고 검색 버튼에서 한꺼번에 실린다\n  e2e:allow 공지 행 선택 배경(`$selected`)만 바꾼 표시 변경 — 데이터·동작 무변경이라 브라우저 계산값 실측(라이트·다크 선택·hover)으로 대신한다.\n  audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=\"\"` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다",
     "version": "1.0.0",
     "layout_name": "admin_board_posts_index",
     "extends": "_admin_base",
@@ -1200,7 +1200,7 @@
                                                     ]
                                                 },
                                                 {
-                                                    "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490)",
+                                                    "comment": "실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다",
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "if": "{{!!row.author.real_name}}",

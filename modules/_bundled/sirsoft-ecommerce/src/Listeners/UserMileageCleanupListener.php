@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
  *   지급·사용·소멸 경위는 탈퇴 뒤에도 장부로 남아야 한다(회원 행 자체는 코어 보유기간 핸들러가 익명화한다).
  * - 삭제(회원 행 하드 삭제): 남은 마일리지를 소멸 기록한 뒤 거래 행에서 회원 연결만 끊는다(user_id NULL).
  *   잔액 캐시는 파생값이라 지운다. 이어서 회원에게 묶인 이커머스 데이터(검색 프리셋·찜·장바구니·임시 주문·쿠폰 발급·
- *   배송지·리뷰와 이미지 파일·회원 프로필)를 명시적으로 지운다(#888). DB 외래키(nullOnDelete·연쇄 삭제)는
+ *   배송지·리뷰와 이미지 파일·회원 프로필)를 명시적으로 지운다. DB 외래키(nullOnDelete·연쇄 삭제)는
  *   안전망으로만 둔다(코어 규정: CASCADE 의존 금지).
  */
 class UserMileageCleanupListener implements HookListenerInterface

@@ -7,7 +7,7 @@ namespace Tests\Unit\Docs;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 확장 필터 주입 안내 문서가 실제 규약과 어긋나지 않는지 잠급니다 (#705).
+ * 확장 필터 주입 안내 문서가 실제 규약과 어긋나지 않는지 잠급니다.
  *
  * 확장 조각은 어느 템플릿에 주입될지 모른다. 그래서 이커머스 예제 조각은 관리자 템플릿의
  * 컴포넌트 클래스(`filter-row`·`filter-label`)를 걷어내고 평범한 유틸로 행을 편다 — 다른
@@ -22,7 +22,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class AdminListFilterConventionDocTest extends TestCase
 {
-    /** 관리자 템플릿 의미 클래스 CSS (컴포넌트 클래스의 정본 — main.css 가 가져온다, #434) */
+    /** 관리자 템플릿 의미 클래스 CSS (컴포넌트 클래스의 정본 — main.css 가 가져온다) */
     private const ADMIN_CSS = 'templates/_bundled/sirsoft-admin_basic/src/styles/semantic.css';
 
     /** 사용자 템플릿 CSS — 여기에도 있는 클래스는 템플릿 공용 어휘로 본다 */

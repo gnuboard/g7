@@ -1,6 +1,6 @@
 /**
  * @file control-accessible-names.test.ts
- * @description 사용자 템플릿 레이아웃의 입력칸이 모두 접근 가능한 이름을 갖는다 (#757)
+ * @description 사용자 템플릿 레이아웃의 입력칸이 모두 접근 가능한 이름을 갖는다
  *
  * 검증 방식: 레이아웃 굽기 산출물(JSON) 전수의 정적 판정(DOM 비의존).
  *
@@ -109,7 +109,7 @@ const scan = (file: string): { total: number; hits: Hit[] } => {
   return { total: ctrls.length, hits };
 };
 
-describe('사용자 템플릿 — 입력칸 접근 가능한 이름 (#757)', () => {
+describe('사용자 템플릿 — 입력칸 접근 가능한 이름', () => {
   const results = FILES.map(scan);
   const total = results.reduce((s, r) => s + r.total, 0);
   const hits = results.flatMap((r) => r.hits);

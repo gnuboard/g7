@@ -7,7 +7,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 코어 업데이트 트리 판정 단일 SSoT 테스트 (dev-g7 #658).
+ * 코어 업데이트 트리 판정 단일 SSoT 테스트.
  *
  * 이 판정 하나가 세 가지를 게이트한다 — 확장 자동 비활성화 스킵, 코어 버전의 env 우선 판독,
  * `bootstrap/app.php` 의 패키지 매니페스트 자가 치유. 판정이 어긋나면 그중 한 경로만 조용히

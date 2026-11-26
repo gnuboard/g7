@@ -117,7 +117,7 @@ trait InvalidatesLayoutCache
         //    편집기용 병합 응답은 `.with_source_meta` 접미사 키로 별도 캐싱되므로
         //    (LayoutService::getMergedLayoutCacheKey) 두 변종을 함께 지운다 —
         //    접미사 키를 남기면 activate/deactivate/uninstall/refresh 후에도
-        //    편집기가 stale 병합 캐시를 받는다 (#588).
+        //    편집기가 stale 병합 캐시를 받는다.
         $cache->forget($this->buildLayoutCacheKey($layout->template_id, $layout->name));
         $cache->forget($this->buildLayoutCacheKey($layout->template_id, $layout->name, withSourceMeta: true));
 

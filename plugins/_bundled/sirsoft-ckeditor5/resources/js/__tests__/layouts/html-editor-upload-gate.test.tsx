@@ -1,6 +1,6 @@
 // e2e:allow 업로드 단추 노출 판정은 편집기 생성 설정(툴바·extraPlugins)으로 잠그고, 실제 툴바는 Chrome MCP 실측 T1-a·T1-b(비회원·회원·관리자)로 확인한다.
 /**
- * 회귀: 관리자가 아닌 사람에게는 편집기 이미지 업로드 단추를 주지 않는다 (#883)
+ * 회귀: 관리자가 아닌 사람에게는 편집기 이미지 업로드 단추를 주지 않는다
  *
  * 결함: 사용자 글쓰기 화면에도 「Upload image from computer」 단추가 나와, 비회원이 누르면 이 플러그인의 관리자 전용 업로드
  * 주소가 401 을 주고 코어가 세션 만료로 보고 로그인 화면으로 옮겨 쓰던 글이 사라졌다. 일반 회원은 403 으로 실패했다.
@@ -92,7 +92,7 @@ afterEach(() => {
     vi.restoreAllMocks();
 });
 
-describe('편집기 이미지 업로드 단추 — 관리자에게만 (#883)', () => {
+describe('편집기 이미지 업로드 단추 — 관리자에게만', () => {
     /**
      * @scenario case=guest_setting_on
      * @effects upload_button_hidden_for_non_admin
@@ -151,7 +151,7 @@ describe('편집기 이미지 업로드 단추 — 관리자에게만 (#883)', (
     });
 });
 
-describe('편집기 경고 알림 — 네이티브 alert 대신 코어 토스트 (#883)', () => {
+describe('편집기 경고 알림 — 네이티브 alert 대신 코어 토스트', () => {
     /**
      * @scenario case=warning_toast
      * @effects editor_warning_routed_to_toast

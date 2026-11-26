@@ -1,4 +1,4 @@
-feature: 이커머스 알림 링크 — 밖으로 나가는 링크의 주소(G7_PUBLIC_LINK_URL) (#888)
+feature: 이커머스 알림 링크 — 밖으로 나가는 링크의 주소(G7_PUBLIC_LINK_URL)
 
 description: |
   주문·클레임 알림의 회원용 링크는 코어 ScreenUrl 링크 변형(toAbsoluteForLinks()·userLinkBase())의 회원 범위

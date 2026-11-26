@@ -1,6 +1,6 @@
 <?php
 
-// changelog:allow 무CLI 실행 모드 축의 신규 키 — 사용자 노출 경로 미구현 단계라 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재 (#609)
+// changelog:allow 무CLI 실행 모드 축의 신규 키 — 사용자 노출 경로 미구현 단계라 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
 
 return [
     // 사용자 관련 예외

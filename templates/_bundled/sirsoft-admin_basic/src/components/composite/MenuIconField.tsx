@@ -158,7 +158,7 @@ function typeLabel(value: MenuIconSpecData | null | undefined): string {
 }
 
 /**
- * 관리자 메뉴 아이콘 입력 필드 (#381).
+ * 관리자 메뉴 아이콘 입력 필드.
  *
  * 미리보기 + 유형 라벨 + 탭 4개(선택·직접 입력·업로드·SVG 코드). 확장이 선언한 이미지·SVG 아이콘도
  * 미리보기로 보여 「아이콘 선택」으로 비어 보이지 않는다.
@@ -285,7 +285,7 @@ export const MenuIconField: React.FC<MenuIconFieldProps> = ({
   };
 
   // 직접 입력을 시작하기 전 값 — 한 글자씩 치는 동안 막히기 전 중간 글자(`https`·`https:/`)가 이미
-  // 내보내지므로, 입력이 막히면 이 값으로 되돌린다(#381 브라우저 실측 회귀)
+  // 내보내지므로, 입력이 막히면 이 값으로 되돌린다
   const directBaseRef = useRef<MenuIconSpecData | null>(value);
   // 입력 전 값에서 벗어난 값을 내보냈는지 — 아무것도 내보내지 않았으면 막혀도 내보낼 것이 없다
   const directDirtyRef = useRef(false);

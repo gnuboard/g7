@@ -23,7 +23,7 @@ class SettingsCliKeyResolver
         'general', 'mail', 'upload', 'seo', 'security', 'drivers', 'notifications', 'identity', 'analytics', 'privacy', 'content',
         // 시스템 탭 — 실행 방식·예약 실행(웹 크론) 설정을 자기 이름의 탭으로 저장한다
         'system',
-        // 회원 탭(#490) — 닉네임 정책과 표시 이름 설정을 자기 이름의 탭으로 저장한다
+        // 회원 탭 — 닉네임 정책과 표시 이름 설정을 자기 이름의 탭으로 저장한다
         'member',
     ];
 

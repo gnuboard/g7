@@ -182,7 +182,7 @@
                     </on>
                   </searchable-dropdown>
                 </div>
-                <!-- 사이트 관리자 이메일(#888) — 값 칸이 없다. 환경설정 > 일반의 관리자 이메일 한 곳으로 메일만 가므로 그 사실과 빈 값의 결과를 밝힌다(코어 편집 창과 같은 규칙). -->
+                <!-- 사이트 관리자 이메일 — 값 칸이 없다. 환경설정 > 일반의 관리자 이메일 한 곳으로 메일만 가므로 그 사실과 빈 값의 결과를 밝힌다(코어 편집 창과 같은 규칙). -->
                 <p data-ref="rcpt_site_admin_email_hint_{{rcptIdx}}" data-if="{{rcpt.type === 'site_admin_email'}}" class="gdpr:text-xs gdpr-text-muted">$t:admin.settings.notification_definitions.recipients.site_admin_email_hint</p>
                 <div data-if="{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}" class="gdpr-flex-center gdpr:gap-2">
                   <!-- 스위치 이름은 label 로 준다 — 옆에 따로 둔 글자(span)는 스위치와 이어지지 않아 화면 읽기 프로그램에
@@ -315,7 +315,7 @@
     <footer>
       <!-- 미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다 -->
       <button data-if="{{!((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}" type="button" class="gdpr-text-body gdpr:px-4 gdpr:py-2 gdpr:rounded-md gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:transition-colors gdpr:mr-auto" disabled="{{_global.gdpr_notification_template_form_modal?.isSaving ?? false}}">
-        <!-- 왼쪽 단추는 오른쪽 묶음과 떨어뜨린다. 640px 이하에서는 Modal 이 세로로 쌓으므로 여백을 빼고 폭을 채운다(#869) -->
+        <!-- 왼쪽 단추는 오른쪽 묶음과 떨어뜨린다. 640px 이하에서는 Modal 이 세로로 쌓으므로 여백을 빼고 폭을 채운다 -->
         <responsive on="-640" class="gdpr-text-body gdpr:px-4 gdpr:py-2 gdpr:rounded-md gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:transition-colors"/>
         <on type="click">
           <api-call :auth_required="true" target="/api/admin/notification-templates/preview" method="POST">

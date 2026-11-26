@@ -1,6 +1,6 @@
 /**
  * @file userClaimDetailRender.test.tsx
- * @description 유저 클레임 **신청서 상세** 렌더 회귀 테스트 (#599 S13)
+ * @description 유저 클레임 **신청서 상세** 렌더 회귀 테스트
  *
  * 상세는 유형에 따라 서는 섹션이 다르다(§6-2). 환불·취소에는 회수 배송이 없어 배송 카드가
  * 통째로 서지 않고, 교환에만 교환 대상과 재발송이 있다. 그 분기가 어긋나도 응답은 200 이라
@@ -142,7 +142,7 @@ const TRANSLATIONS = {
       reason_detail: '상세 사유',
       reject_reason: '반려 사유',
       images: '첨부 사진',
-      // 접수 시점 주문금액 비교표(#599 후속) — 라벨은 언어팩 원본을 그대로 쓴다(키 누락이 곧 실패).
+      // 접수 시점 주문금액 비교표 — 라벨은 언어팩 원본을 그대로 쓴다(키 누락이 곧 실패).
       comparison: JSON.parse(
         fs.readFileSync(path.resolve(__dirname, '../../lang/partial/ko/claim.json'), 'utf-8')
       ).detail.comparison,
@@ -201,7 +201,7 @@ function exchangeDetail(overrides: Record<string, any> = {}): Record<string, any
     mc_total_charge_amount: { USD: { formatted: '$6.75' } },
     charge_method_label: '신청 시 결제',
     outstanding_amount: 0,
-    // 송장은 상품 행마다 있다(#599) — 서버가 같은 운송장을 가진 행을 묶어 `tracking_groups` 로 싣는다.
+    // 송장은 상품 행마다 있다 — 서버가 같은 운송장을 가진 행을 묶어 `tracking_groups` 로 싣는다.
     tracking_groups: {
       collection: [
         {
@@ -625,7 +625,7 @@ describe('클레임 신청서 상세 — 렌더', () => {
    * 서버가 거절하는데 화면에 고를 자리가 없으면 사용자는 「미수납 ○○원 + 결제하기」를 보면서
    * 누를 때마다 같은 거절을 받고, 빠져나갈 길이 신청서 철회뿐이다.
    *
-   * 회귀 배경 (#599 실측, 2026-09-22): 카탈로그에서 `point` 를 내리자 이미 `point` 로
+   * 회귀 배경 (2026-09-22): 카탈로그에서 `point` 를 내리자 이미 `point` 로
    * 만들어진 대기 건이 계속 「포인트결제」를 안내하며 422 만 돌려줬다.
    *
    * @scenario claim_type=exchange, screen=detail, entry=none
@@ -1271,7 +1271,7 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(container.textContent ?? '').not.toContain('첨부 사진');
   });
 
-  // ── 접수 시점 주문금액 비교표 (#599 후속 P4) ─────────────────────────
+  // ── 접수 시점 주문금액 비교표 ─────────────────────────
 
   // @scenario claim_type=exchange, screen=detail, entry=none
   // @effects claim_detail_comparison_renders_from_frozen_snapshot

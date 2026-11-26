@@ -17,7 +17,7 @@ use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 /**
  * 내장 대상 해석기 — 화면 값(slug·상품 코드·id)을 저장 키(id)로 풀고, 이름·검색·사이트 주소를 준다(매니페스트 position-registry.yaml).
  *
- * 모듈이 공개한 조회 계약만 쓴다(#916 — 모듈 Model·저장소는 모듈 내부). 시험은 계약을 목으로 바꿔 시험 DB 의 모듈 설치 여부와 무관하게 돈다.
+ * 모듈이 공개한 조회 계약만 쓴다. 시험은 계약을 목으로 바꿔 시험 DB 의 모듈 설치 여부와 무관하게 돈다.
  * 경로 이름(「의류 › 남성」) 조립은 이커머스 계약 구현의 몫이라 이커머스 `CategoryDirectoryTest` 가 잠근다.
  */
 class TargetResolversTest extends PluginTestCase

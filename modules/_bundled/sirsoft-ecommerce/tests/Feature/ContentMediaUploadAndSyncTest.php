@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 이커머스 본문 미디어 — 업로드·연결·서빙 게이트·정리 (#883 4단계)
+ * 이커머스 본문 미디어 — 업로드·연결·서빙 게이트·정리
  *
  * 관리자가 상품 설명·공통 정보 편집기로 올린 본문 미디어는 임시 행으로 남았다가 저장 때 본문이 참조한 것만 소유자에 이어진다.
  * 서빙은 상품이면 「전시 중 또는 관리자 또는 서명」, 공통 정보는 공개다.
@@ -173,7 +173,7 @@ class ContentMediaUploadAndSyncTest extends ModuleTestCase
     }
 
     /**
-     * 서빙 라우트가 구간 요청을 받는다 — 1바이트 206 · 끝 기준 206 · 범위 밖 416 (#883 5단계 Responder 경유).
+     * 서빙 라우트가 구간 요청을 받는다 — 1바이트 206 · 끝 기준 206 · 범위 밖 416 (5단계 Responder 경유).
      *
      * @return void 반환값 없음
      *

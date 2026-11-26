@@ -14,7 +14,7 @@ use Plugins\Sirsoft\Ckeditor5\Models\Ckeditor5ImageUpload;
 use Plugins\Sirsoft\Ckeditor5\Tests\PluginTestCase;
 
 /**
- * 업로드 관리 목록의 「올린 사람」 이름 (#490)
+ * 업로드 관리 목록의 「올린 사람」 이름
  *
  * 관리자 화면의 회원 이름은 관리자 영역(`core:admin`) 표시 이름이다. 실명은 회원 조회 권한(`core.users.read`)이 있는 관리자에게,
  * 실명이 표시 이름과 다를 때만 별도 키 `uploader_real_name` 으로 실린다. 설정을 바꾸지 않은 사이트의 응답은 수정 전과 같다.

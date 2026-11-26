@@ -335,10 +335,10 @@ return [
         // modules,plugins,templates,lang-packs 부모 디렉토리도 보호 대상에 포함.
         // targets 에 `{modules,plugins,templates,lang-packs}/_bundled` 가 명시되어 정상 흐름에서는
         // 처리되므로 영향 없음. 자동 발견 폴백이 부모 디렉토리 단위로 base 를 통째로 복사해
-        // 활성 서브디렉토리(예: templates/sirsoft-basic) 를 잘못 삭제하는 회귀(#347) 차단용 방어 깊이.
-        // `custom`: 개발자 전용 composer(custom/composer.json·vendor) — 코어 업데이트가 건드리지 않는다(#792).
+        // 활성 서브디렉토리(예: templates/sirsoft-basic) 를 잘못 삭제하는 회귀 차단용 방어 깊이.
+        // `custom`: 개발자 전용 composer(custom/composer.json·vendor) — 코어 업데이트가 건드리지 않는다.
         'protected_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_PROTECTED_PATHS', '.env,.env.local,.env.production,.env.testing,.env.testing.example,g7-setup.php,storage,vendor,node_modules,.git,.github,.idea,.vscode,.serena,.claude,.codex,.agents,CLAUDE.md,AGENTS.override.md,.mcp.json,.phpunit.result.cache,core_pending,modules,plugins,templates,lang-packs,custom')))),
-        // 「custom 예약 자리」(#792, 7.2.0) — 업데이트 대상 폴더 *안쪽*이라도 코어 업데이트가 덮지도 지우지도
+        // 「custom 예약 자리」(7.2.0) — 업데이트 대상 폴더 *안쪽*이라도 코어 업데이트가 덮지도 지우지도
         // 않는 경로. 복사·orphan 정리(prune)·신규 파일 manifest·롤백 prune·자동 발견 폴백이 모두 건너뛴다.
         // 코어 배포본은 이 자리에 파일을 싣지 않는다 — 실리면 업데이트를 시작하지 않는다(UpdateReservedPaths).
         // 백업에는 targets 범위대로 포함되어 롤백 시 복원된다.

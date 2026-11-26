@@ -1,6 +1,6 @@
 /**
  * @file A.test.tsx
- * @description A(링크) — 새 탭 열기·보통 클릭 SPA 이동·비활성·쿼리 병합 계약 (#757 WP-L L3)
+ * @description A(링크) — 새 탭 열기·보통 클릭 SPA 이동·비활성·쿼리 병합 계약
  *
  * 보통 클릭 판정은 엔진 `G7Core.navigation.isPlainLeftClick` 하나만 쓴다(W9). 엔진이 아직 그 함수를
  * 싣지 않은 상태에서도 계약을 검증하려고 같은 이름의 함수를 주입한다.
@@ -148,7 +148,7 @@ describe('A (gnuboard7-hello_admin_template) — 링크 계약', () => {
     });
 });
 
-describe('A — 새 창 링크의 rel (#757)', () => {
+describe('A — 새 창 링크의 rel', () => {
     /**
      * @scenario click=new_window
      * @effects new_window_link_has_noopener

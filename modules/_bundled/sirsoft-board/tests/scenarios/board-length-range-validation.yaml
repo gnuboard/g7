@@ -1,7 +1,7 @@
 feature: 게시판 길이 제한 최소값 > 최대값 조합 저장 차단
 
 description: |
-  이슈 #413 item 22-3 — 제목/본문/댓글 길이의 min_*_length 가 max_*_length 보다 큰
+  제목/본문/댓글 길이의 min_*_length 가 max_*_length 보다 큰
   논리적으로 모순된 조합이 저장되던 문제를 교차 검증으로 차단한다.
 
   근본 원인: Store/UpdateBoardRequest 가 각 필드의 절대 범위(min:N, max:M)만 검증하고

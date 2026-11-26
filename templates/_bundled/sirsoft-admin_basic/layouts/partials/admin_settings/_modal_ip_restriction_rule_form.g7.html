@@ -10,7 +10,7 @@
 
   취소·적용 단추는 모달 고정 하단(`<footer>`)에 둔다. 고정 하단은 Modal 이 본문 자식과 같은 데이터
   컨텍스트·상태 범위로 그리므로 방금 친 패턴·IP 를 읽는다(종전에는 빈 컨텍스트로 그려 본문 맨 아래 줄에
-  두었다, #869 P1). 640px 이하에서는 Modal 이 단추를 세로로 쌓는다. -->
+  두었다). 640px 이하에서는 Modal 이 단추를 세로로 쌓는다. -->
 <partial description="환경설정 > 보안 탭 IP 접근 제한 규칙 추가·편집 모달. _global.ip_restriction_rule_form_modal 단일 진실 — 목록이 여는 순간 통째 set, 적용 시 $parent._local 폼 배열로 1회 커밋" editor_label="$t:admin.modal_label.admin_settings.ip_restriction_rule_form_modal">
   <modal data-type="composite" data-ref="ip_restriction_rule_form_modal" title="{{(_global.ip_restriction_rule_form_modal?.row_index ?? null) === null ? '$t:admin.settings.security.ip_restriction.modal.create_title' : '$t:admin.settings.security.ip_restriction.modal.edit_title'}}" size="md" :closeOnOverlayClick="false">
     <div class="row-stack">

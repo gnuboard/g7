@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 찜 목록의 숨김 상품 제외 테스트 (이슈 #524 §4.3)
+ * 찜 목록의 숨김 상품 제외 테스트
  *
  * 결함: 운영자가 상품을 「숨김」으로 내려도 찜 목록에는 정상 카드로 남아 클릭까지 됐다.
  * 공개 목록 8곳은 각자 display_status 조건을 리터럴로 적고 있었는데 찜 목록만 빠져 있었다.

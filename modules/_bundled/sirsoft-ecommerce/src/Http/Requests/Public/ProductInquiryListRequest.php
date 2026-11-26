@@ -27,7 +27,7 @@ class ProductInquiryListRequest extends FormRequest
      *
      * 쿼리 스트링은 언제나 문자열로 도착하는데 Laravel `boolean` 규칙은 `"true"` / `"false"` 를
      * 받지 않는다. 화면이 `exclude_secret=false` 로 보내면 목록 전체가 422 로 떨어져
-     * 문의 탭이 통째로 비어 보인다 (#492 7차 브라우저 실측 D-38).
+     * 문의 탭이 통째로 비어 보인다.
      *
      * @return void
      */

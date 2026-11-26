@@ -9,7 +9,7 @@ use Tests\PureTestCase;
 /**
  * VerificationChallenge DTO 의 maxAttempts 필드 회귀 차단.
  *
- * 이슈 #275 — DB 의 max_attempts 가 환경설정값으로 정상 저장되었음에도 응답 페이로드에
+ * DB 의 max_attempts 가 환경설정값으로 정상 저장되었음에도 응답 페이로드에
  * 노출되지 않아 프론트 launcher 가 maxAttempts:5 하드코딩으로 fallback 하여 사용자
  * 모달에 "5회 남음" 으로 표시되던 결함을 차단한다.
  *

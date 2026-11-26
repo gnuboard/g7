@@ -1,6 +1,6 @@
 // e2e:allow 진행 중 번들 선택 창·확인 창 링크·미서명 경고는 새 판으로 올라가는 실제 코어 업데이트 도중에만 나타나 E2E 로 재현할 대상 릴리스가 없다 — 레이아웃·핸들러 단위 시험이 잠그고, 개선분이 든 시험 릴리스로 서버 재시험 때 브라우저 실측
 /**
- * 코어 업데이트 웹 단계 실행 핸들러 (W6 · 이슈 #609 G6)
+ * 코어 업데이트 웹 단계 실행 핸들러 (W6)
  *
  * 서버는 **한 요청에 한 단계**만 수행한다. 그 경계가 편의가 아니라 안전 요건인 이유는
  * 파일을 교체한 프로세스가 사라진 클래스를 참조하면 fatal 이 나기 때문이다(§7 R25).
@@ -126,7 +126,7 @@ function publishBusy(busy: boolean): void {
     (window as any).G7Core?.state?.setGlobal?.({ coreUpdateBusy: busy });
 }
 
-/** 패키지 무결성 거절 표지 (#916) — 같은 409 를 작업 잠금도 쓰므로 상태 코드가 아니라 이 표지로 가른다. */
+/** 패키지 무결성 거절 표지  — 같은 409 를 작업 잠금도 쓰므로 상태 코드가 아니라 이 표지로 가른다. */
 const INTEGRITY_MARKERS = ['package_unsigned', 'package_signature_invalid', 'package_signer_untrusted'] as const;
 
 /**
@@ -417,7 +417,7 @@ async function drive(initial?: any): Promise<any> {
  * 착수 선택(`action.params`)은 레이아웃이 폼 상태에서 채워 넘긴다. **여기 없는 값은
  * 서버에도 없다** — `force`·`prune`·백업 생략은 웹 동선에 존재하지 않는 선택이다(D27).
  *
- * 서버가 미서명 패키지(409)·서명 불일치(422)로 착수를 거절하면(#916) 토스트 대신 거절 내용을 전역에 실어
+ * 서버가 미서명 패키지(409)·서명 불일치(422)로 착수를 거절하면 토스트 대신 거절 내용을 전역에 실어
  * 화면의 공용 안내 조각이 그리게 한다. 정책이 허용하면 화면의 시작 버튼이 「미서명으로 계속」이 되어
  * 같은 선택에 `allow_unsigned` 만 더해 이 핸들러를 다시 부른다(서버는 앞 요청을 보관하지 않는다).
  *
@@ -438,7 +438,7 @@ export async function startCoreUpdateHandler(action?: any): Promise<void> {
         rebuild_search_index: params.rebuild_search_index === true,
         layout_strategy: params.layout_strategy === 'keep' ? 'keep' : 'overwrite',
         // 무결성을 아는 화면의 표식 — 늘 싣는다. 서버는 이 표식이 없는 착수를 「미서명으로 계속」을 그릴 수 없는
-        // 옛 화면(7.1.x 템플릿 복사본)으로 보고 미서명 배포본을 확인 없이 허용한다(#916 옛 화면 호환).
+        // 옛 화면(7.1.x 템플릿 복사본)으로 보고 미서명 배포본을 확인 없이 허용한다.
         integrity_aware: true,
         // 진행 중 번들 선택을 그릴 수 있는 화면의 표식(7.2.1) — 서버는 이 표식이 있을 때만 명령줄처럼 멈춰 묻는다.
         // 없으면(옛 화면) 묻지 않고 종전대로 진행한다 — 옛 화면은 선택 창을 그리지 못해 멈춘 채 남기 때문이다.
@@ -451,7 +451,7 @@ export async function startCoreUpdateHandler(action?: any): Promise<void> {
         payload.zip_file = params.zip_file.trim();
     }
 
-    // 미서명 확인(#916) — 거절 안내를 본 운영자가 「미서명으로 계속」을 눌렀을 때만 싣는다.
+    // 미서명 확인 — 거절 안내를 본 운영자가 「미서명으로 계속」을 눌렀을 때만 싣는다.
     // 레이아웃 표현식이 문자열로 넘길 수도 있어 참 값을 넓게 받는다.
     if (params.allow_unsigned === true || params.allow_unsigned === 1 || params.allow_unsigned === '1' || params.allow_unsigned === 'true') {
         payload.allow_unsigned = true;

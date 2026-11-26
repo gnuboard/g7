@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Log;
  * 본 trait 는 ModuleManager::getActiveModules() / PluginManager::getActivePlugins()
  * 결과를 직접 사용해 활성 전수의 메타를 노출합니다(원본 키는 비파괴적 보존).
  *
- * 수집에 실패하면 빈 배열이 아니라 null 을 돌려줍니다(#822, 7.1.4). 빈 배열은 「켜진 확장이 없다」로 읽혀
+ * 수집에 실패하면 빈 배열이 아니라 null 을 돌려줍니다(7.1.4). 빈 배열은 「켜진 확장이 없다」로 읽혀
  * 사용자 화면의 `{{_global.activeModules?.includes('id') ?? true}}` 가드가 모든 모듈 화면을 숨기지만, null 이면
  * 엔진이 `_global.activeModules` 를 싣지 않아 옛 코어처럼 「모두 켜짐」으로 읽힙니다 — 검색봇 화면
  * (SeoRenderer 는 실패 시 키를 생략)과 같은 답입니다. G7Config 를 읽는 편집기·핸들러 대기는 모두 배열인지 먼저 본다.

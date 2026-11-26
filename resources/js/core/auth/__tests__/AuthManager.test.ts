@@ -960,13 +960,13 @@ describe('AuthManager', () => {
   });
 
   /**
-   * #639 — 구독 해제와 인증 경계 이벤트.
+   * 구독 해제와 인증 경계 이벤트.
    *
    * 확장은 엔진보다 늦게 실리므로 `on()` 이 해제 함수를 돌려주지 않으면 화면을 떠나도 리스너가
    * 남는다. 토큰 만료로 인증 확인이 실패해 비인증으로 바뀔 때 이벤트가 없으면, 인증 상태에 묶인
    * 캐시(동의 스냅샷 등)를 비울 기회가 없다.
    */
-  describe('구독 해제와 인증 경계 이벤트 (#639)', () => {
+  describe('구독 해제와 인증 경계 이벤트', () => {
     // @scenario surface=subscription
     // @effects auth_listeners_are_releasable_and_boundary_is_emitted
     it('on() 은 해제 함수를 돌려주고, 해제 뒤에는 호출되지 않는다', async () => {

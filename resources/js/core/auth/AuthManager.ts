@@ -207,7 +207,7 @@ function isTransientAuthCheckError(error: any): boolean {
   const status = error?.response?.status;
   if (typeof status === 'number') {
     // 429(요청 제한)는 서버가 「잠시 뒤 다시」 라고 답한 것이라 인증 판정이 아니다 — 5xx 처럼 다시 묻는다.
-    // 종전에는 4xx 로 보고 로그인 화면으로 보냈다(#869 λ 4부 16 관찰 4, 출시본에도 있음)
+    // 종전에는 4xx 로 보고 로그인 화면으로 보냈다(4부 16 관찰 4, 출시본에도 있음)
     return status >= 500 || status === 429;
   }
   return error?.isAxiosError === true;
@@ -334,7 +334,7 @@ const defaultConfigs: Record<AuthType, AuthConfig> = {
     loginEndpoint: '/auth/login',
     logoutEndpoint: '/auth/logout',
     // 서버 라우트는 `POST /api/user/auth/refresh` 뿐이다 — `/auth/user`·`/auth/logout` 과 달리 `/auth/refresh` 별칭이 없어
-    // 사용자 화면 갱신이 늘 404 였다(#883 후속, engine-v1.89.0)
+    // 사용자 화면 갱신이 늘 404 였다(engine-v1.89.0)
     refreshEndpoint: '/user/auth/refresh',
     twoFactorEndpoint: '/auth/login/two-factor',
     twoFactorResendEndpoint: '/auth/login/two-factor/resend',
@@ -400,7 +400,7 @@ export class AuthManager {
    * 이벤트 핸들러 등록
    *
    * 해제 함수를 돌려줍니다. 확장·템플릿은 엔진보다 늦게 실리고 화면을 오가며 구독을 걸었다 풀므로,
-   * 해제 수단이 없으면 화면을 떠나도 리스너가 남습니다(#639).
+   * 해제 수단이 없으면 화면을 떠나도 리스너가 남습니다.
    *
    * 최초 인증 확인(`preloadAuth`)은 확장 번들이 실리기 전에 끝나 그 이벤트를 놓칠 수 있습니다 —
    * 현재 상태는 {@link getState} 로 읽습니다.
@@ -1403,7 +1403,7 @@ export class AuthManager {
    * 상태 초기화
    *
    * 인증 상태에서 비인증으로 바뀔 때는 `authStateChange` 를 발행한다 — 토큰이 사라지거나 인증 확인이
-   * 실패해 비인증이 된 사실을 알리지 않으면, 인증 상태에 묶인 캐시(동의 스냅샷 등)를 비울 기회가 없다(#639).
+   * 실패해 비인증이 된 사실을 알리지 않으면, 인증 상태에 묶인 캐시(동의 스냅샷 등)를 비울 기회가 없다.
    * 비인증 → 비인증은 발행하지 않는다.
    *
    * @param emit 경계 발행 여부 (logout 처럼 호출자가 직접 발행하면 false)

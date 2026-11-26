@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MenuAccessTree, MenuAccessNode } from '../MenuAccessTree';
 
 /**
- * MenuAccessTree — 역할 폼 「접근 가능 메뉴」 트리 (#708)
+ * MenuAccessTree — 역할 폼 「접근 가능 메뉴」 트리
  *
  * 부모·자식 규칙(자식 체크 → 부모 자동 체크, 부모 해제 → 자식 해제), indeterminate 표기,
  * 관리자 역할 잠금(lockedAll), 권한 없음(disabled) 시각, 트리 밖 ID 보존, 빈 데이터 편집기 패리티를 잠근다.

@@ -86,7 +86,7 @@ describe('useDevicePreview', () => {
     });
 
     // desktop 1280px 인데 availableWidth=600 + zoom 1 → 맞춤 줌(600/1280). 종전에는 줌 100% 를
-    // 가로 스크롤 모드로 보고 1 을 돌려줘 창 1280 에서 문서 폭이 1608px 이 됐다(#869 P3).
+    // 가로 스크롤 모드로 보고 1 을 돌려줘 창 1280 에서 문서 폭이 1608px 이 됐다.
     expect(result.current.scale).toBeCloseTo(600 / 1280, 10);
 
     act(() => {

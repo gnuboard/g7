@@ -22,9 +22,9 @@ use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
- * 게시판 본문 미디어 어댑터 — 코어 골격(`AbstractContentMediaService`)에 게시판의 저장소·권한을 답한다 (#887)
+ * 게시판 본문 미디어 어댑터 — 코어 골격(`AbstractContentMediaService`)에 게시판의 저장소·권한을 답한다
  *
- * 행은 `board_attachments` 의 `collection = content_media` 이다(#883 모양 그대로).
+ * 행은 `board_attachments` 의 `collection = content_media` 이다(모양 그대로).
  *
  * | 항목 | 게시판 답 |
  * | --- | --- |
@@ -109,7 +109,7 @@ class BoardContentMediaStore implements ContentMediaStore
     }
 
     /**
-     * 게시판 첨부 정책으로 만든 대체 정책 (#883 D7·D21 — 이미지 켬, 동영상·오디오는 코어 업로드 스위치).
+     * 게시판 첨부 정책으로 만든 대체 정책 (이미지 켬, 동영상·오디오는 코어 업로드 스위치).
      *
      * @param  Board  $board  게시판
      * @return ContentMediaPolicy 대체 정책
@@ -400,7 +400,7 @@ class BoardContentMediaStore implements ContentMediaStore
      * {@inheritDoc}
      *
      * 글쓰기 폼 메타의 계약과 같은 판정이다 — 사용자 화면은 `attachments.upload`, 관리자 화면(`extra['admin']`)은
-     * `admin.attachments.upload`. 「파일 첨부 사용」은 보지 않는다(#883 D26).
+     * `admin.attachments.upload`. 「파일 첨부 사용」은 보지 않는다.
      */
     public function canUpload(ContentMediaContext $context): bool
     {

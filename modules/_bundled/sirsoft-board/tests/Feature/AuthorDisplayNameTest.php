@@ -26,7 +26,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\Concerns\CountsQueries;
 
 /**
- * 게시판의 작성자 표시 이름 (#490 9단계)
+ * 게시판의 작성자 표시 이름
  *
  * 글, 댓글, 최근글, 인기글, 스크랩과 반응 관리, 신고가 회원 이름을 `users.name` 에서 직접 읽지 않고
  * 표시 이름 계산기를 거치는지 잠근다. 수정 전에도 있던 결함 넷도 함께 잠근다.

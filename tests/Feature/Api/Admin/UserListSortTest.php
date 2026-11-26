@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
- * 회원 목록 정렬 화이트리스트 회귀 테스트 (#705 A2)
+ * 회원 목록 정렬 화이트리스트 회귀 테스트
  *
  * 목록 표는 `status`·`language`·`country` 머리글을 정렬 가능으로 그리는데 서버 규칙은 그 셋을
  * 받지 않아 머리글을 누르면 422 가 났다. 규칙과 저장소 화이트리스트를 함께 넓혔으므로 이제 실제로

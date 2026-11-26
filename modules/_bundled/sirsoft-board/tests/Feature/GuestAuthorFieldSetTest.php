@@ -28,7 +28,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 게시판 비회원 작성자 항목 집합 (#490 11단계)
+ * 게시판 비회원 작성자 항목 집합
  *
  * 집합 `sirsoft-board.guest_author` 의 선언, 게시판별(글과 댓글별) 사용과 필수, 요청 규칙, 값 저장과 파기,
  * 다른 확장이 기여한 항목, 게시판 설정 폼의 표, 그리고 추가 정보를 입력하지 않은 회원의 쓰기 차단과 허용 라우트.

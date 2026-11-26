@@ -1,5 +1,5 @@
 /**
- * 게시판 환경설정 — 관리자·스텝 일괄 지정 카드의 문구 키가 실제 언어 파일에서 풀리는가 (#708)
+ * 게시판 환경설정 — 관리자·스텝 일괄 지정 카드의 문구 키가 실제 언어 파일에서 풀리는가
  *
  * 회귀 배경(브라우저 실측): 키를 로더가 읽지 않는 `partial/{locale}/admin.json` 에만 넣어, 화면에
  * `sirsoft-board.admin.settings.bulk_members.title` 같은 키가 그대로 노출됐다. 모듈 언어는 루트
@@ -57,7 +57,7 @@ function bulkMemberKeys(): string[] {
 
 const lookup = (dictionary: any, key: string) => key.split('.').reduce((acc, part) => acc?.[part], dictionary);
 
-describe('게시판 관리자·스텝 일괄 지정 — 문구 키 해석 (#708)', () => {
+describe('게시판 관리자·스텝 일괄 지정 — 문구 키 해석', () => {
   // @scenario member_type=manager, mode=add, target=all
   // @effects bulk_members_labels_resolve_in_both_locales
   it('레이아웃이 쓰는 키를 실제로 모은다 (하네스 자체 회귀 방지)', () => {

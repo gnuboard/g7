@@ -10,7 +10,7 @@ use Plugins\Sirsoft\MessageBizppurio\Plugin;
 use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
- * bizppurio:sync-template-status 커맨드 테스트 (#597 §3.4).
+ * bizppurio:sync-template-status 커맨드 테스트.
  *
  * 검수중(requested) 행이 없으면 kapi 를 호출하지 않고, 있으면 senderKey 별
  * template/list 일괄 대조로 상태를 전이한다. 스케줄 등록은 plugin.php::getSchedules()

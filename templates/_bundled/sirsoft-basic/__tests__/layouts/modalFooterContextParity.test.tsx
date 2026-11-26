@@ -1,6 +1,6 @@
 /**
  * @file modalFooterContextParity.test.tsx
- * @description Modal 고정 하단(`props.footer`)과 본문 자식이 같은 데이터 문맥으로 그려지는지 (#869 4라운드)
+ * @description Modal 고정 하단(`props.footer`)과 본문 자식이 같은 데이터 문맥으로 그려지는지
  *
  * 본문 자식은 엔진이 Modal 노드의 확장 데이터 컨텍스트로 그리고, 고정 하단은 Modal 이 `__componentContext.parentDataContext`
  * 로 그린다. 엔진의 컴포넌트 문맥 메모는 확장 데이터 컨텍스트 전체를 의존성에 두므로 두 값은 같은 렌더의 같은 객체다.
@@ -114,7 +114,7 @@ describe('Modal 고정 하단과 본문의 데이터 문맥', () => {
     });
   }
 
-  // 회귀(#869 8차): 고정 하단을 skipBindingKeys 로 원문 그대로 그리게 된 뒤, 하단 단추 글자의 식 안 `$t:`(따옴표 없음)가 하단 렌더러에서
+  // 회귀: 고정 하단을 skipBindingKeys 로 원문 그대로 그리게 된 뒤, 하단 단추 글자의 식 안 `$t:`(따옴표 없음)가 하단 렌더러에서
   // 풀렸는데 Modal 이 넘기던 번역 문맥(`__translationContext`)은 엔진이 주지 않는 값이라 비어 있었다 — getTranslation 이 templateId 를
   // 구조 분해하다 던져 단추가 「컴포넌트 로드 실패」 로 그려졌다(관리자 회원 목록 「활성화」 확인 창)
   // @scenario open_path=direct_stack

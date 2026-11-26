@@ -111,7 +111,7 @@ export const VisitorCounter: React.FC<VisitorCounterProps> = ({
       {...editorAttrs}
     >
       {/* 라벨과 숫자를 dt/dd 로 묶는다 — span 두 개로는 스크린리더가 「오늘」과 「1,284」를 잇지 못하고
-          숫자 넷을 맥락 없이 읽는다(#682 S3 라운드 3). */}
+          숫자 넷을 맥락 없이 읽는다. */}
       <dl className={gridClass}>
         {items.map((item) => (
           <div key={item.key} className="flex flex-col items-center text-center" data-visitor-counter-item={item.key}>

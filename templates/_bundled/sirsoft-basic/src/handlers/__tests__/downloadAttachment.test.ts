@@ -1,6 +1,6 @@
 /**
  * @file downloadAttachment.test.ts
- * @description 게시판 첨부 다운로드 핸들러 단위 검증 (이슈 #413 item 58b)
+ * @description 게시판 첨부 다운로드 핸들러 단위 검증 (item 58b)
  *
  * 배경: 기존 다운로드는 레이아웃의 <a href="{{download_url}}"> 브라우저 직접 링크(GET)였다.
  * G7 은 Sanctum 토큰 전용 인증인데 <a> 네비게이션에는 토큰이 실리지 않아
@@ -18,7 +18,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { downloadAttachmentHandler } from '../downloadAttachment';
 
-describe('downloadAttachmentHandler — 토큰 동반 첨부 다운로드 (이슈 #413 item 58b)', () => {
+describe('downloadAttachmentHandler — 토큰 동반 첨부 다운로드 (item 58b)', () => {
   let apiGetSpy: ReturnType<typeof vi.fn>;
   let createObjectURLSpy: ReturnType<typeof vi.fn>;
   let revokeObjectURLSpy: ReturnType<typeof vi.fn>;

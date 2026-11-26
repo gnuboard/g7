@@ -75,7 +75,7 @@ return [
         'complete' => '완료',
         'refund' => '환급',
         'execute' => '실행',
-        // 내보내기(#787)
+        // 내보내기
         'export' => [
             'request' => '신청 접수',
             'request_denied' => '요청 거부',
@@ -318,7 +318,7 @@ return [
         'claim_payment_cancel' => '클레임 추가결제 대기 취소 (:payment_number)',
         'claim_image_upload' => '클레임 첨부 업로드 (:original_name)',
         'claim_image_delete' => '클레임 첨부 삭제 (:original_name)',
-        // 내보내기(#787)
+        // 내보내기
         'export_request' => '내보내기 요청 (:file_name)',
         'export_request_denied' => ':type_label 내보내기 요청 거부 (:reason_label)',
         'export_start' => '내보내기 처리 시작 (:file_name)',
@@ -470,7 +470,7 @@ return [
 
     // 이름을 되찾지 못한 엔티티의 표시 (설명 파라미터 해석 실패 시)
     'entity_id_fallback' => 'ID: :id',
-    // 내보내기(#787)
+    // 내보내기
     'export_denied_reasons' => [
         'forbidden' => '권한 없음',
         'too_many_pending' => '동시 요청 한도 초과',

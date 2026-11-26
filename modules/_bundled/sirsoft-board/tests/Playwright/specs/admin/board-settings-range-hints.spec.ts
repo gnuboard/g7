@@ -1,12 +1,12 @@
 /**
- * 게시판 환경설정 "게시판 설정" 탭 — 숫자 필드 범위 힌트 렌더 (이슈 #413).
+ * 게시판 환경설정 "게시판 설정" 탭 — 숫자 필드 범위 힌트 렌더.
  *
  * description 의 `({{min}}~{{max}})` 파라미터가 `_local.form._meta.limits`(config SSoT)
  * 로부터 실제 숫자로 치환되어야 한다. 데이터소스 ID `settings` 가 코어 전역 `_global.settings`
  * 와 충돌하던 회귀(파라미터 미치환 → `{{min}}`/`{{max}}` raw 노출)를 브라우저에서 차단한다.
  *
  * 단위(Vitest board-settings-range-hints) 는 레이아웃 JSON 의 표현식 존재만 검증하므로,
- * 실제 데이터 바인딩 + 치환 결과는 브라우저 렌더로만 확인 가능 (위지윅 발행 회귀 #238 교훈).
+ * 실제 데이터 바인딩 + 치환 결과는 브라우저 렌더로만 확인 가능 (위지윅 발행 회귀의 교훈).
  *
  * @scenario board-settings-range-hints
  * 효과 요약(마커 아님 — 평문): 페이지당 게시글 수, 제목 길이, 답변 깊이, 파일 크기 힌트의 config 범위 치환,
@@ -18,7 +18,7 @@ import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 
 const SETTINGS_URL = '/admin/boards/settings?tab=basic_defaults';
 
-test.describe.skip('게시판 환경설정 — 범위 힌트 동적 렌더 (#413)', () => {
+test.describe.skip('게시판 환경설정 — 범위 힌트 동적 렌더', () => {
   // @scenario case=hint_text_ranges
   // @effects per_page_hint_renders_config_range, title_length_hints_render_config_range, reply_depth_hint_renders_config_max_10, file_size_hint_renders_config_max_200
   test('숫자 필드 description 이 config 범위로 치환된다 (raw 플레이스홀더 없음)', async ({
@@ -44,11 +44,11 @@ test.describe.skip('게시판 환경설정 — 범위 힌트 동적 렌더 (#413
     await expect(
       page.getByText('게시글 제목의 최대 글자 수를 설정합니다 (1~1000)'),
     ).toBeVisible();
-    // #413 검수 오류: max_reply_depth 상한 5 → 10
+    // 검수 오류: max_reply_depth 상한 5 → 10
     await expect(
       page.getByText('답변글의 최대 중첩 깊이를 설정합니다 (1~10)'),
     ).toBeVisible();
-    // #413 검수 오류: max_file_size max 누락 → 200 보완
+    // 검수 오류: max_file_size max 누락 → 200 보완
     await expect(
       page.getByText('업로드 가능한 최대 파일 크기입니다 (MB 단위, 1~200)'),
     ).toBeVisible();

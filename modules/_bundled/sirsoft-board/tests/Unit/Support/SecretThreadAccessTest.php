@@ -17,7 +17,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use Modules\Sirsoft\Board\Tests\Concerns\BuildsSecretThread;
 
 /**
- * 스레드 경로 판정의 성능·안전 경계 (#789 §4.2)
+ * 스레드 경로 판정의 성능·안전 경계
  *
  * 쿼리 수 상한(토큰 없는 비회원 0, 메모리 트리 재조회 없음, 목록 prime 상수), 순환·다른 게시판
  * 데이터에서의 fail-closed, grant 변화에 따른 메모 무효화를 고정한다.

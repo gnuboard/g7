@@ -146,7 +146,7 @@ class ReportController extends AdminBaseController
      *
      * 유입 사이트 목록은 집계표를 읽어 호스트까지만 말한다 — 「google.com 에서 340」은
      * 알아도 어느 검색 결과에서 왔는지는 모른다. 이 한 갈래만 원장(`analytics_visits`)의
-     * `referrer_url` 을 직접 세어 그 아래를 펼친다(#682 라운드 4, 검수 지적 ⑥).
+     * `referrer_url` 을 직접 세어 그 아래를 펼친다.
      *
      * @param  ReferrerUrlsRequest  $request  유입처 주소 요청
      * @return JsonResponse 주소 목록 응답
@@ -346,7 +346,7 @@ class ReportController extends AdminBaseController
             return $response;
         }
 
-        // 객체로 푼다 — 연관 배열로 풀었다 다시 싸면 봇 행의 빈 맵 `extra: {}` 가 `[]` 로 바뀐다(#758, 7.1.1 출시 전).
+        // 객체로 푼다 — 연관 배열로 풀었다 다시 싸면 봇 행의 빈 맵 `extra: {}` 가 `[]` 로 바뀐다(7.1.1 출시 전).
         $payload = $response->getData();
 
         if (! ($payload->data ?? null) instanceof \stdClass) {
@@ -361,7 +361,7 @@ class ReportController extends AdminBaseController
         $payload->data->recent_hits = $this->reports->recentBotHits($from, $to);
 
         // 「봇 요청」·「봇 종류」 KPI 는 기간 전체를 말해야 한다 — 쪽으로 잘린 목록을 더하면
-        // 봇 종류가 한 쪽보다 많은 기간에 첫 쪽의 합만 보인다(#682 S3 라운드 14).
+        // 봇 종류가 한 쪽보다 많은 기간에 첫 쪽의 합만 보인다.
         $payload->data->totals = $this->reports->totals(StatsDimension::BotName->value, $from, $to);
 
         return $response->setData($payload);
@@ -418,7 +418,7 @@ class ReportController extends AdminBaseController
                     ];
 
                     foreach ($extraColumns as $header => $extraKey) {
-                        // 부가 값이 없는 행의 `extra` 는 빈 맵(stdClass)이다 (#758)
+                        // 부가 값이 없는 행의 `extra` 는 빈 맵(stdClass)이다
                         $value = (int) (((array) $row['extra'])[$extraKey] ?? 0);
 
                         $line[] = in_array($header, self::CENT_CSV_COLUMNS, true)
@@ -428,7 +428,7 @@ class ReportController extends AdminBaseController
 
                     // 확장이 값을 사람이 읽는 단위로 바꿀 수 있게 한 번 더 건넨다. 열 수가
                     // 바뀌면 헤더와 어긋나므로 같은 길이일 때만 받는다.
-                    // 공개 훅 인자 모양은 그대로 둔다 — `extra` 는 응답(JSON)에서만 빈 맵(stdClass)이고 리스너에는 배열로 건넨다 (#758)
+                    // 공개 훅 인자 모양은 그대로 둔다 — `extra` 는 응답(JSON)에서만 빈 맵(stdClass)이고 리스너에는 배열로 건넨다
                     $hookRow = ['extra' => (array) $row['extra']] + $row;
                     $filtered = HookManager::applyFilters('core.analytics.csv_row', $line, $hookRow, $dimension);
                     if (is_array($filtered) && count($filtered) === count($line)) {

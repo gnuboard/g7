@@ -807,7 +807,7 @@ class LayoutRepository implements LayoutRepositoryInterface
      * 출처(모듈·플러그인)의 soft delete 된 레이아웃을 조회합니다.
      *
      * 모듈 전용이던 `*ByModule` 을 플러그인 생명주기도 써서, 플러그인 레이아웃은 정리되지 않고 같은 식별자의
-     * 모듈 행이 대신 지워질 수 있었다(#712) — 출처 타입을 반드시 받는다.
+     * 모듈 행이 대신 지워질 수 있었다 — 출처 타입을 반드시 받는다.
      *
      * @param  string  $identifier  출처 식별자
      * @param  LayoutSourceType  $sourceType  출처 타입
@@ -961,7 +961,7 @@ class LayoutRepository implements LayoutRepositoryInterface
     }
 
     /**
-     * 템플릿 설정 화면 행을 조회합니다 (#434).
+     * 템플릿 설정 화면 행을 조회합니다.
      *
      * @param  string  $ownerIdentifier  설정 화면을 가진 템플릿 식별자
      * @param  int|null  $hostTemplateId  등록된 관리자 템플릿 ID (null 이면 전체)

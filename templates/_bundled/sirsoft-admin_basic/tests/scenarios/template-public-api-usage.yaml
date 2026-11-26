@@ -1,4 +1,4 @@
-feature: 관리자 템플릿이 코어 공개 API 만으로 언어 전환·본인인증 요청·상태 구독을 하는 계약 (#639)
+feature: 관리자 템플릿이 코어 공개 API 만으로 언어 전환·본인인증 요청·상태 구독을 하는 계약
 
 description: |
   관리자 템플릿 일부가 코어 비공개 내부에 직접 손대고 있었다. 언어 선택은 `window.__templateApp.changeLocale()`

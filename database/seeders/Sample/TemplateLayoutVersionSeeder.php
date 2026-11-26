@@ -117,7 +117,7 @@ class TemplateLayoutVersionSeeder extends Seeder
 
         foreach ($this->sampleVersions as $index => $versionData) {
             // 레이아웃 content를 복사하여 버전별로 약간 수정 (content.version 은 레이아웃 문서 형식 버전이라 건드리지 않는다)
-            // 원문 그대로 읽는다 — 캐스트는 `{}` 를 `[]` 로 만든다 (#758)
+            // 원문 그대로 읽는다 — 캐스트는 `{}` 를 `[]` 로 만든다
             $content = LayoutEmptyObjects::rawPreserving($layout);
 
             // 버전별로 컴포넌트 수정 시뮬레이션 (`meta` 가 빈 객체 표식이면 배열로 바꿔 쓴다)

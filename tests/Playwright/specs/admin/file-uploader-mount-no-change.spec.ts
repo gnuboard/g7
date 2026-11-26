@@ -6,7 +6,7 @@
  *          picking_file_enables_save,
  *          user_post_write_has_no_changes_on_entry
  *
- * 배경(#736 브라우저 실측 2026-10-05, 트러블슈팅 state-global 사례 9): 업로더(FileUploader)가 마운트
+ * 배경(브라우저 실측 2026-10-05, 트러블슈팅 state-global 사례 9): 업로더(FileUploader)가 마운트
  * effect 에서 빈 목록으로 onFilesChange 를 불러, 그 이벤트로 hasChanges 를 켜는 게시판 레이아웃이
  * 열자마자 저장 버튼을 켰다. 첨부 카드가 폼 데이터 초기화 뒤에 그려지면 남는 경합이라 직접 진입·SPA
  * 이동 모두에서 거의 늘 재현됐다. 고른 파일이 생기면 여전히 저장 버튼이 켜져야 한다(대조군).

@@ -607,7 +607,7 @@ class CancellableAmountCalculator
     }
 
     /**
-     * 반품 발 환불신청서 1건의 ① 축 — **이 신청서 몫의 차분**을 구합니다. (S-B-D16 · #599 validate P2 #1)
+     * 반품 발 환불신청서 1건의 ① 축 — **이 신청서 몫의 차분**을 구합니다.
      *
      * 재계산(`buildRecalcInput()`)은 반품완료(`RETURNED`) 행을 **잔여로 센다** — 교환과 달리
      * 승계 행이 없어 그렇게 설계돼 있다. 그래서 이번 신청서 몫만 넘기면 앞 회차에 이미 반품된
@@ -769,7 +769,7 @@ class CancellableAmountCalculator
      * 근거 없는 환산으로 한도를 과대 산정하느니 좁히는 쪽을 택한다(기존 계약,
      * `CancellableAmountCalculatorTest::test_missing_exchange_rate_falls_back_to_the_local_amount`).
      * 다만 **조용히 넘기지 않고 경고를 남긴다** — 종전에는 USD 50 이 50 원 한도로 잡혀 정당한 환불이
-     * 막혀도 흔적이 없었다(#599 validate P2 minor). 예외로 막지 않는 이유는 이 값이 관리자 화면
+     * 막혀도 흔적이 없었다(validate P2 minor). 예외로 막지 않는 이유는 이 값이 관리자 화면
      * 표시에도 쓰여, 환율 하나가 빠진 주문의 상세·환불 화면이 통째로 열리지 않게 되기 때문이다.
      *
      * @param  float  $localAmount  결제 통화 금액

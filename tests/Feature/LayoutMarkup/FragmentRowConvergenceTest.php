@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 조각 행이 어느 등록 경로를 타든 소스 파일 한 벌로 수렴하는지 검증합니다 (#703).
+ * 조각 행이 어느 등록 경로를 타든 소스 파일 한 벌로 수렴하는지 검증합니다.
  *
  * 조각 식별자(`fragment_key`) 마이그레이션은 기존 행의 키를 대상 이름으로 백필했고, 등록은 소스 파일 이름을
  * 키로 쓴다. 7.0.11 에서 올라온 설치에서 그 차이가 세 갈래로 드러났다.
@@ -236,7 +236,7 @@ class FragmentRowConvergenceTest extends TestCase
         $edited['injections'][0]['components'][0]['text'] = 'admin edited';
         $legacy = $this->putRow('vendor-conva', $data, $edited);
 
-        // 갱신 경로는 행 쓰기를 동기화기에 맡긴다(#727) — 관리자와 같이 생성자로 받는다.
+        // 갱신 경로는 행 쓰기를 동기화기에 맡긴다 — 관리자와 같이 생성자로 받는다.
         $harness = new class(app(LayoutExtensionService::class), app(LayoutRowSynchronizer::class))
         {
             use RefreshesLayoutExtensions;

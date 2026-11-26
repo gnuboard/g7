@@ -481,7 +481,7 @@ class GdprCookieConsentControllerTest extends PluginTestCase
         }
     }
 
-    // ===== 이슈 #430 — intent:'reject' 거부 저장 (컨트롤러 경로) =====
+    // ===== intent:'reject' 거부 저장 (컨트롤러 경로) =====
 
     /**
      * @scenario entry=reject, subject=member, category=optional
@@ -503,10 +503,10 @@ class GdprCookieConsentControllerTest extends PluginTestCase
             'intent' => 'reject',
         ])->assertOk();
 
-        // 거부 응답 메시지 = rejected_saved (거부인데 "동의가 저장" 오표기 정정, 이슈 #430)
+        // 거부 응답 메시지 = rejected_saved (거부인데 "동의가 저장" 오표기 정정)
         $response->assertJsonPath('message', __('sirsoft-gdpr::messages.consent.rejected_saved'));
 
-        // 필수 → 동의 축 제외: status 에 저장되지 않음 (이슈 #430 후속)
+        // 필수 → 동의 축 제외: status 에 저장되지 않음
         $this->assertDatabaseMissing('gdpr_user_consents', [
             'user_id' => $user->id,
             'consent_key' => 'cookie_necessary',

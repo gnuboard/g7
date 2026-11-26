@@ -2,7 +2,7 @@
  * @file admin-uploader-callback-parity.test.ts
  * @description 첨부 업로더 확장점 콜백이 기본 업로더와 같은 식을 쓰는지 — 관리자 템플릿 레이아웃 전수
  *
- * 첨부 업로더 확장점(`attachment_uploader`, #916)은 대체 업로더가 같은 일을 하도록 기본 업로더의 이벤트 처리를
+ * 첨부 업로더 확장점(`attachment_uploader`)은 대체 업로더가 같은 일을 하도록 기본 업로더의 이벤트 처리를
  * `callbacks` 에 한 벌 더 적는다. 기본 업로더는 `$args[0]`, 콜백은 `$event` 로 같은 값을 받는다. 이 두 벌이 갈라지면
  * 대체 업로더를 끼운 사이트에서만 저장값이 달라지는데, 기본 업로더로 도는 화면·시험에서는 콜백이 한 번도 실행되지 않아
  * 아무도 모른다. 실제로 일반 탭·SEO 탭 콜백이 `_local.form.general.site_logo` 처럼 옵셔널 체이닝을 잃어, 폼에 그 갈래가

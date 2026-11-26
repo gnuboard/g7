@@ -1,6 +1,6 @@
 /**
  * @file useFileDrafts.memberScope.test.tsx
- * @description 레이아웃 편집기 초안이 관리자 회원별로 갈리는지 잠근다 (#639 ⑩).
+ * @description 레이아웃 편집기 초안이 관리자 회원별로 갈리는지 잠근다.
  *
  * 배경(브라우저 실측 2026-10-05): 관리자 A 가 편집기에서 남긴 초안이 `g7le.codeEditor.{템플릿}.drafts`
  * 하나에 적혀, 같은 브라우저로 로그인한 관리자 B 의 편집기에 「저장하지 않은 편집 1건이 있습니다」
@@ -34,7 +34,7 @@ function signInAs(uuid: string | null): void {
     };
 }
 
-describe('useFileDrafts — 회원별 초안 (#639 ⑩)', () => {
+describe('useFileDrafts — 회원별 초안', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         window.localStorage.clear();

@@ -35,7 +35,7 @@ use Tests\TestCase;
 use Tests\Unit\Support\ContentMedia\Fixtures\FakeContentMediaStore;
 
 /**
- * 본문 미디어 코어 골격 — 가짜 어댑터(모듈 1·플러그인 1)로 업로드·훅·동기화·복제·제거·서명·서빙·정리 흐름을 잠근다 (#887, G1·G2)
+ * 본문 미디어 코어 골격 — 가짜 어댑터(모듈 1·플러그인 1)로 업로드·훅·동기화·복제·제거·서명·서빙·정리 흐름을 잠근다
  *
  * 세 확장(게시판·페이지·쇼핑몰)의 본문 미디어 흐름을 골격 한 곳으로 모으면서 정한 공통 규칙을 확인한다.
  * - 업로드 훅 순서 before_upload → filter_upload_file → after_upload, 필터가 돌려준 파일은 판정을 다시 거친다.

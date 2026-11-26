@@ -1,5 +1,5 @@
 /**
- * ActionDispatcher — 액션 정의를 옮겨 담을 때 키를 버리지 않는다 (engine-v1.80.0, #753)
+ * ActionDispatcher — 액션 정의를 옮겨 담을 때 키를 버리지 않는다 (engine-v1.80.0)
  *
  * 레이아웃이 적은 액션 정의를 엔진이 다른 자리(오류 처리기·데이터소스 오류 처리·navigate 대체 동작·
  * switch 갈래·이벤트 결과)로 옮겨 실행하면서 `handler·target·params·actions` 4개 키만 골라 담았다.
@@ -30,7 +30,7 @@ vi.mock('../../api/ApiClient', () => ({
 /** 레이아웃 리스너 결과 표식 — 엔진 helpers/componentEventResult.ts 와 같은 전역 심볼 */
 const LAYOUT_LISTENER_RESULT = Symbol.for('g7.layoutListenerResult');
 
-describe('[case:state-setstate-45] ActionDispatcher — 액션 모양 보존 (#753)', () => {
+describe('[case:state-setstate-45] ActionDispatcher — 액션 모양 보존', () => {
   let dispatcher: ActionDispatcher;
   let calls: Array<Record<string, any>>;
 

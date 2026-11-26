@@ -24,7 +24,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use RuntimeException;
 
 /**
- * HTTP 경계의 권한·요청 빈도·오류 노출·응답 문구 결함 수정 검증 (#599 validate P3 — 06 #2·#3·#5·#6·#9·minor)
+ * HTTP 경계의 권한·요청 빈도·오류 노출·응답 문구 결함 수정 검증 (06 #2·#3·#5·#6·#9·minor)
  *
  * 검증 축:
  * - 비회원 클레임 라우트가 guest 역할의 `user-claims.*` 권한을 판정한다(#3).

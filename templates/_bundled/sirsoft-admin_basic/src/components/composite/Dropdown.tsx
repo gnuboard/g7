@@ -63,7 +63,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  // 여는 단추 — 고르거나 Esc 로 닫은 뒤 포커스를 돌려받는다(메뉴가 사라져 body 로 빠지지 않게, #869 키보드 접근)
+  // 여는 단추 — 고르거나 Esc 로 닫은 뒤 포커스를 돌려받는다(메뉴가 사라져 body 로 빠지지 않게, 키보드 접근)
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [adjustedPosition, setAdjustedPosition] = useState(position);
 
@@ -250,7 +250,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
                   item.disabled ? 'dropdown-item-disabled' : 'dropdown-item'
                 } ${focusedIndex === index ? 'dropdown-item-focused' : ''} ${FOCUS_VISIBLE_RING}`}
                 onClick={() => handleItemClick(item)}
-                // Tab 으로 잡은 항목을 Enter·Space 로 고른다 — 문서의 Enter 처리와 겹치지 않게 처리한 키는 번지지 않는다(#869)
+                // Tab 으로 잡은 항목을 Enter·Space 로 고른다 — 문서의 Enter 처리와 겹치지 않게 처리한 키는 번지지 않는다
                 onKeyDown={item.disabled ? undefined : activateOnKey(() => handleItemClick(item))}
                 onFocus={() => !item.disabled && setFocusedIndex(index)}
                 onMouseEnter={() => !item.disabled && setFocusedIndex(index)}

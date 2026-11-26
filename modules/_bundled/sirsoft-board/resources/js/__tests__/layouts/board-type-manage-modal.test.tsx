@@ -696,7 +696,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
      *
      * @effects board_type_manage_modal_layout_contract
      */
-    it('헤더 셀에 다크 모드 텍스트 색상이 있다 (#408 — .text-table-header 시맨틱이 흡수)', () => {
+    it('헤더 셀에 다크 모드 텍스트 색상이 있다 (.text-table-header 시맨틱이 흡수)', () => {
       const thSlug = findById(modal, 'bt_th_slug');
       // text-xs + text-gray-500 + dark:text-gray-400 + font-medium + uppercase + tracking-wider 토큰을 .text-table-header 자산이 흡수
       expect(thSlug.props.className).toContain('text-table-header');
@@ -785,7 +785,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
       const slugInput = findById(modal, 'bt_input_slug');
       expect(slugInput.classMap).toBeDefined();
       expect(slugInput.classMap.key).toContain('btFormErrors?.slug');
-      // Input 외형은 시맨틱 .input 이 디폴트로 제공, 에러는 input-error 토글로 통일 (#369)
+      // Input 외형은 시맨틱 .input 이 디폴트로 제공, 에러는 input-error 토글로 통일
       expect(slugInput.classMap.variants.error).toBe('board-input-error');
       expect(slugInput.classMap.variants.normal).toBe('');
     });
@@ -795,7 +795,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
      *
      * @effects board_type_manage_modal_layout_contract
      */
-    it('slug 에러 메시지 요소가 존재하고 조건부 렌더링된다 (#408 — .form-error-xs 흡수)', () => {
+    it('slug 에러 메시지 요소가 존재하고 조건부 렌더링된다 (.form-error-xs 흡수)', () => {
       const slugError = findById(modal, 'bt_slug_error');
       expect(slugError).not.toBeNull();
       expect(slugError.name).toBe('P');

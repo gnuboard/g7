@@ -3,7 +3,7 @@
  * 동의 기록 표 셀 — 행 값을 번역 인자로 넘기는 문구는 `$t:defer:` 로 쓴다.
  *
  * `$t:` 는 엔진이 셀 문맥(`row`)이 생기기 전에 먼저 번역해 인자가 빈 값이 된다. 「스냅샷 보기」 버튼의
- * 접근 이름(title)이 버전 자리가 빈 채로 나왔다(#798). 규정: `docs/frontend/data-binding-i18n.md` 「지연 번역」.
+ * 접근 이름(title)이 버전 자리가 빈 채로 나왔다. 규정: `docs/frontend/data-binding-i18n.md` 「지연 번역」.
  *
  * @vitest-environment node
  */

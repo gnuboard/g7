@@ -1,4 +1,4 @@
-feature: 방문자 동의 런타임 — 브라우저의 동의 스냅샷 (#639, 공개 gnuboard/g7#129 요청 7가지)
+feature: 방문자 동의 런타임 — 브라우저의 동의 스냅샷 (공개 gnuboard/g7#129 요청 7가지)
 
 description: |
   코어가 `/api/consent` 를 들고 `_global.consent` 를 채우며, 다른 확장은 그 상태·`G7Core.consent`·`consent:changed`

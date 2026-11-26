@@ -1,6 +1,6 @@
 /**
  * @file admin-board-bulk-members-render.test.tsx
- * @description 게시판 환경설정 「기본값」 탭 — 관리자·스텝 일괄 지정 카드 렌더 (#708)
+ * @description 게시판 환경설정 「기본값」 탭 — 관리자·스텝 일괄 지정 카드 렌더
  *
  * 실제 파셜 JSON(`_section_bulk_members.json`)을 렌더해, 카드가 화면에 무엇을 그리는지 본다.
  * - 「기본값」 탭에서만 그리고, 제목·라벨은 실제 문구로 풀린다(키가 그대로 새지 않는다)
@@ -84,7 +84,7 @@ async function renderSection(global: Record<string, any>, readOnly = false) {
 
 const bulk = (koSettings as any).bulk_members;
 
-describe('게시판 관리자·스텝 일괄 지정 카드 — 렌더 (#708)', () => {
+describe('게시판 관리자·스텝 일괄 지정 카드 — 렌더', () => {
     let utils: Awaited<ReturnType<typeof renderSection>> | undefined;
 
     afterEach(() => {

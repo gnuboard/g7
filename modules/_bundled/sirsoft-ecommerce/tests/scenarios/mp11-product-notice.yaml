@@ -5,7 +5,7 @@
 #   고시 무한스크롤 response.data.data 바인딩 정정 + toggle-active 라우트/컨트롤러/Service
 #   (전용 활동로그) + 드롭다운 active_only 필터를 PHPUnit Feature + Vitest 레이아웃 렌더링이
 #   커버하며 green.
-#   test-files 면제 사유: product-notice-list-toggle.test.tsx 미작성 (#421 이월)
+#   test-files 면제 사유: product-notice-list-toggle.test.tsx 미작성
 feature: 상품정보제공고시 무한스크롤/활성토글/드롭다운 필터 (A9)
 
 description: |
@@ -25,7 +25,7 @@ axes:
   permission:
     - can_update
     - no_permission
-  per_page:               # 목록 요청 크기 경계 (#493 E11)
+  per_page:               # 목록 요청 크기 경계
     - all                 # 'all' 키워드는 계속 허용
     - within_bound        # 숫자 ≤ 100
     - over_bound          # 숫자 > 100 → 422
@@ -37,7 +37,7 @@ effects:
   - toggle_active_logs_activity        # 전용 toggle_active 활동로그
   - dropdown_excludes_inactive         # active_only=true → 비활성 미노출
   - common_info_scroll_fixed           # A10 동반 정정 회귀 가드
-  # 목록 요청 크기 상한 (#493 E11)
+  # 목록 요청 크기 상한
   - per_page_over_bound_rejected_422   # 상한 없던 요청에 100 상한 부여
   - per_page_all_keyword_still_allowed # 'all' 은 기존 계약 유지
   - per_page_at_bound_passes           # 경계 100 통과

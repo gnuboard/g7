@@ -53,7 +53,7 @@ class CoreUpdateServiceStagingCleanupTest extends TestCase
     public function test_resolve_staging_root_은_안쪽_소스_경로에서_격리_디렉토리_루트를_돌려준다(): void
     {
         $inner = $this->base.DIRECTORY_SEPARATOR.'core_20260906_095309'
-            .DIRECTORY_SEPARATOR.'extracted'.DIRECTORY_SEPARATOR.'dev-g7-develop';
+            .DIRECTORY_SEPARATOR.'extracted'.DIRECTORY_SEPARATOR.'g7-develop';
 
         $this->assertSame(
             $this->base.DIRECTORY_SEPARATOR.'core_20260906_095309',
@@ -81,7 +81,7 @@ class CoreUpdateServiceStagingCleanupTest extends TestCase
     public function test_cleanup_pending_은_소스_경로를_받아도_격리_디렉토리를_통째로_지운다(): void
     {
         $staging = $this->base.DIRECTORY_SEPARATOR.'core_20260906_095309';
-        $source = $staging.DIRECTORY_SEPARATOR.'extracted'.DIRECTORY_SEPARATOR.'dev-g7-develop';
+        $source = $staging.DIRECTORY_SEPARATOR.'extracted'.DIRECTORY_SEPARATOR.'g7-develop';
         File::ensureDirectoryExists($source.DIRECTORY_SEPARATOR.'app');
         File::put($source.DIRECTORY_SEPARATOR.'composer.json', '{}');
         File::put($staging.DIRECTORY_SEPARATOR.'core_update.zip', 'zip');

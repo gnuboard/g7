@@ -24,7 +24,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * 검수 서버(stage)의 레이아웃 테이블 — 검수 서버의 레이아웃 쓰기는 `stage_` 테이블로만 가고 운영 레이아웃은 그대로다 (#888).
+ * 검수 서버(stage)의 레이아웃 테이블 — 검수 서버의 레이아웃 쓰기는 `stage_` 테이블로만 가고 운영 레이아웃은 그대로다.
  *
  * @scenario-manifest tests/scenarios/stage-layout-tables.yaml
  */
@@ -359,7 +359,7 @@ class StageLayoutTablesTest extends TestCase
     }
 
     /**
-     * 명령 이름이 복사 방향(운영 → 검수 서버)과 파괴성을 드러내고, `--yes` 여도 실행 전에 방향과 지워질 검수 서버 편집본 수를 알린다 (#888).
+     * 명령 이름이 복사 방향(운영 → 검수 서버)과 파괴성을 드러내고, `--yes` 여도 실행 전에 방향과 지워질 검수 서버 편집본 수를 알린다.
      *
      * 종전 이름 `stage-layouts:resync` 는 「검수 서버 레이아웃을 운영으로 올린다」로 읽힐 수 있었고, 문서가 쓰는 `--yes` 형태에서는
      * 방향을 말하는 유일한 문구(확인 질문)가 생략됐다. 그렇게 실행하면 검수 서버의 편집본과 그 버전 기록이 되살릴 수 없게 지워진다.
@@ -400,7 +400,7 @@ class StageLayoutTablesTest extends TestCase
     }
 
     /**
-     * 방향을 알 수 없는 종전 이름은 등록하지 않는다 — 7.2.0 에서 새로 생긴 명령이라 별칭을 남기지 않는다 (#888).
+     * 방향을 알 수 없는 종전 이름은 등록하지 않는다 — 7.2.0 에서 새로 생긴 명령이라 별칭을 남기지 않는다.
      *
      * @scenario case=reset_from_live_notice
      *

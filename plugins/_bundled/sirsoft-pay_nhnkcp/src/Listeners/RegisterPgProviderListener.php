@@ -71,7 +71,7 @@ class RegisterPgProviderListener implements HookListenerInterface
             'supported_methods' => ['card', 'bank', 'vbank', 'phone'],
             // 코어의 provider-agnostic 결제 진입 dispatch — 주문 응답의 pg_payment_handler 로
             // 내려가 템플릿이 그대로 호출한다. 미선언 시 프론트가 응답을 변조해 결제창을
-            // 직접 띄우는 우회가 필요해진다(#475).
+            // 직접 띄우는 우회가 필요해진다.
             'payment_handler' => 'sirsoft-pay_nhnkcp.requestPayment',
         ];
 

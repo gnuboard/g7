@@ -9,7 +9,7 @@ use Modules\Sirsoft\Board\Tests\Concerns\RestoresBoardSettingsStorage;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 설정 저장소 스냅샷·복원 트레이트의 경계 상태 검증 (#789 P17)
+ * 설정 저장소 스냅샷·복원 트레이트의 경계 상태 검증
  *
  * 기반 클래스가 시험마다 뜨고 되돌리는 동작을 별도 탐침 객체로 직접 돌려, 저장소 디렉터리가 없던
  * 첫 실행과 파일 일부만 있던 상태 모두 원래대로 돌아오는지 본다. 탐침이 디렉터리를 지우고 써도

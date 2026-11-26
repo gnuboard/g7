@@ -35,7 +35,7 @@ describe('탈퇴 확인 창 — 환불로 받은 마일리지 소멸 안내 (Q20
    */
   it('탈퇴 확인 창의 확장점(withdraw_warnings)에 항목을 넣고 금액이 있을 때만 선다', () => {
     // 경고 목록은 모달 안에 있다 — 서버 오버레이 주입(target_id)은 레이아웃 components 트리만 찾아 모달 안 노드를 못 찾는다
-    // (실측: 「Layout extension target not found」 로그, 경고 미노출). 모달까지 순회하는 확장점 주입을 쓴다(#747 C12 W1).
+    // (실측: 「Layout extension target not found」 로그, 경고 미노출). 모달까지 순회하는 확장점 주입을 쓴다.
     const data = notice as Node;
     expect(data.extension_point).toBe('withdraw_warnings');
     expect(data.injections).toBeUndefined();

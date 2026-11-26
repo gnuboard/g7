@@ -121,7 +121,7 @@ interface PostScrapRepositoryInterface
     public function deleteManyByIds(array $ids): Collection;
 
     /**
-     * 회원의 스크랩을 모두 삭제합니다 (회원 삭제 정리, #888).
+     * 회원의 스크랩을 모두 삭제합니다 (회원 삭제 정리).
      *
      * 반환 컬렉션은 scrap_count 를 다시 계산할 게시글을 고르는 근거다.
      *

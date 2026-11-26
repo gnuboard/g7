@@ -63,7 +63,7 @@ class TemplateComposer
             $activeTemplate = null;
         }
 
-        // 프론트엔드 공개 설정 — 관리자 공개 설정 API(`GET /api/admin/frontend-config`)와 같은 함수로 조립한다(#792 D8)
+        // 프론트엔드 공개 설정 — 관리자 공개 설정 API(`GET /api/admin/frontend-config`)와 같은 함수로 조립한다
         $bundle = $this->frontendConfigService->settingsBundle(FrontendConfigService::SCOPE_ADMIN);
         $frontendSettings = $bundle['settings'];
         $pluginSettings = $bundle['plugins'];
@@ -100,7 +100,7 @@ class TemplateComposer
 
         $view->with('activeAdminTemplate', $activeTemplate);
         $view->with('extensionCacheVersion', $extensionCacheVersion);
-        // 템플릿 설정 중 template.json `expose` 선언 키만 — 엔진이 첫 화면 전 config API 를 부르지 않게 한다(선언 없으면 null) (#879)
+        // 템플릿 설정 중 template.json `expose` 선언 키만 — 엔진이 첫 화면 전 config API 를 부르지 않게 한다(선언 없으면 null)
         $view->with('exposedTemplateConfig', $activeTemplate !== null ? $this->templateService->getExposedTemplateConfig($activeTemplate) : null);
         // 카테고리 값은 화면이 이름표로 읽는 맵이다 — 빈 카테고리(`identity`)를 `{}` 로 바꾸는 일은 공개 설정 API 와 같은 조립 함수가 한다
         $view->with('frontendSettings', $frontendSettings);
@@ -110,7 +110,7 @@ class TemplateComposer
         $view->with('moduleAssets', $moduleAssets);
         $view->with('pluginAssets', $pluginAssets);
         $view->with('bundleUrls', $bundleUrls);
-        // 템플릿이 공급한 설정 화면 부품 묶음 — 어느 관리자 템플릿이 켜져 있든 그 템플릿 부품으로 설정 화면을 그린다 (#434 D28·D30)
+        // 템플릿이 공급한 설정 화면 부품 묶음 — 어느 관리자 템플릿이 켜져 있든 그 템플릿 부품으로 설정 화면을 그린다
         $view->with('templateSettingsAssets', $this->templateSettingsService->settingsAssetUrls($extensionCacheVersion));
         $view->with('activeModulesMeta', $activeModulesMeta);
         $view->with('activePluginsMeta', $activePluginsMeta);
@@ -126,9 +126,9 @@ class TemplateComposer
         $view->with('extensionClassPrefixes', $this->collectExtensionClassPrefixes());
         $view->with('customAssetsDisabled', $this->customAssetsDisabledByRequest());
         $view->with('trustedScriptHosts', $trustedScriptHosts);
-        // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다 (#639)
+        // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다
         $view->with('stateContracts', StateContracts::forFrontend());
-        // 엔진이 전체 페이지 이동으로 넘길 custom 주소(routes/custom.php, #792 W5) · 실시간 알림 접속정보
+        // 엔진이 전체 페이지 이동으로 넘길 custom 주소(routes/custom.php) · 실시간 알림 접속정보
         $view->with('customRoutes', $this->frontendConfigService->customRoutes());
         $view->with('websocketConfig', $this->frontendConfigService->websocket());
         $view->with('frontendLocale', $this->frontendConfigService->locale());

@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
  * 반응 유형 API 리소스
  *
  * 반응 유형을 API 응답 형식으로 변환합니다. name 은 현재 로케일 문자열로
- * 내려주며, 미입력 언어는 getLocalizedName() 이 폴백 처리합니다 (이슈 #525 확정 15).
+ * 내려주며, 미입력 언어는 getLocalizedName() 이 폴백 처리합니다 (확정 15).
  */
 class ReactionTypeResource extends BaseApiResource
 {

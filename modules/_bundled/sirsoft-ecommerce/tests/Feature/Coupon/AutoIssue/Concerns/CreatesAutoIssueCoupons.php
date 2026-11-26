@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 
 /**
- * 자동발급 쿠폰 테스트 픽스처 (#952)
+ * 자동발급 쿠폰 테스트 픽스처
  */
 trait CreatesAutoIssueCoupons
 {

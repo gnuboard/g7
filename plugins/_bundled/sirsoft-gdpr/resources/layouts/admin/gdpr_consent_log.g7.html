@@ -235,7 +235,7 @@ $t:sirsoft-gdpr.admin.consent_log.filter.action_label</span>
                 </input>
                 <span class="gdpr-text-label">$t:sirsoft-gdpr.admin.consent_log.action.revoked</span>
               </label>
-              <!-- 거부 필터 (이슈 #430) — action=rejected 행만 조회. 백엔드 actions[] whereIn 이 rejected 를 자동 지원하므로 백엔드 무수정. -->
+              <!-- 거부 필터 — action=rejected 행만 조회. 백엔드 actions[] whereIn 이 rejected 를 자동 지원하므로 백엔드 무수정. -->
               <label class="gdpr-inline-clickable">
                 <input type="checkbox" class="gdpr-checkbox" checked="{{(_local.filter.actions || []).includes('rejected')}}">
                   <on type="change">
@@ -395,7 +395,7 @@ $t:sirsoft-gdpr.admin.consent_log.filter.source_label</span>
               </on>
               <span>{{(row.user?.name ?? '') + ' (' + (row.user?.email ?? '') + ')'}}</span>
             </a>
-            <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+            <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다 -->
             <span data-if="{{!!row.user?.real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-gdpr.common.real_name_sub', { name: row.user.real_name })}}" class="gdpr:block gdpr:mt-0.5 gdpr-text-tertiary">{{row.user.real_name}}</span>
             <span data-if="{{!row.user_id}}" class="gdpr:inline-flex gdpr:items-center gdpr:px-2 gdpr:py-0.5 gdpr:rounded-full gdpr:text-xs gdpr:font-medium gdpr:bg-gray-100 gdpr:text-gray-700 gdpr:dark:bg-gray-700 gdpr:dark:text-gray-300 gdpr:font-mono">{{$t('sirsoft-gdpr.admin.consent_log.guest_label') + ' ' + (row.session_id ? row.session_id.substring(0, 8) + '…' : '-')}}</span>
           </cell>

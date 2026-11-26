@@ -2,7 +2,7 @@ feature: 관리자 템플릿 Select 컴포넌트 계약
 
 description: |
   Select 의 children·options 두 모드 렌더, 이벤트, 제어 값, HTML 속성, 라벨·오류 표시, 기본 외형 병합을 잠근다.
-  #816 에서 확장 접두 빌드 클래스(ecommerce:bg-…·ecommerce:w-…)를 앞글자를 떼고 해석해 커스텀 외형 판정·폭 토큰의 바깥 상자 이동이
+  확장 접두 빌드 클래스(ecommerce:bg-…·ecommerce:w-…)를 앞글자를 떼고 해석해 커스텀 외형 판정·폭 토큰의 바깥 상자 이동이
   템플릿 클래스와 같게 동작하도록 했다. 시험 하나가 시나리오 하나다.
 
 axes:

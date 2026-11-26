@@ -14,7 +14,7 @@ use Tests\Support\UpgradeFiles;
 UpgradeFiles::requireOnce(dirname(__DIR__, 3).'/upgrades/data/1.0.0-beta.4/migrations/BackfillEasyPayPgProvider.php');
 
 /**
- * 저장된 주문설정의 나이스페이먼츠 간편결제 PG 고정 백필 테스트 — 이슈 #475
+ * 저장된 주문설정의 나이스페이먼츠 간편결제 PG 고정 백필 테스트
  *
  * 기존 설치 환경의 order_settings.json 에는 간편결제가 `pg_provider: null` 로 영속화되어
  * 있다. 서버가 이 값을 보고 간편결제 주문을 "PG 결제가 아닌 주문" 으로 오인해 결제 실패

@@ -1,4 +1,4 @@
-feature: sirsoft-basic 모듈별 단독 사용 — 선택 연동과 공통 화면 가드 (#822)
+feature: sirsoft-basic 모듈별 단독 사용 — 선택 연동과 공통 화면 가드
 
 description: |
   sirsoft-basic 이 게시판·쇼핑몰·페이지 모듈과 우편번호 플러그인을 필수 의존으로 선언해, 하나라도 꺼진 사이트는

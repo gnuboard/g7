@@ -1,10 +1,10 @@
-feature: 게시판 목록 검색어 정제 — 어떤 입력에도 목록이 500 이 되지 않는다 (#407 재발 방지 / #519 C7)
+feature: 게시판 목록 검색어 정제 — 어떤 입력에도 목록이 500 이 되지 않는다 (재발 방지)
 
 description: |
   게시판 목록의 「제목+내용」 검색(search_field=title_content)은 FULLTEXT `MATCH … AGAINST IN BOOLEAN MODE`
   를 탄다. BOOLEAN MODE 는 `+ - * " ( ) ~ < > @` 를 연산자로 해석하므로 원문 검색어를 그대로 바인딩하면
   사용자가 그 문자를 입력하는 것만으로 파싱 오류가 나고 목록 화면 전체가 500 이 된다. 게시판은 자기 raw
-  쿼리를 들고 있어 코어 정제기(#407)가 닿지 않았고, 지금은 코어 헬퍼(KeywordSearch::apply)를 거쳐
+  쿼리를 들고 있어 코어 정제기가 닿지 않았고, 지금은 코어 헬퍼(KeywordSearch::apply)를 거쳐
   DatabaseFulltextEngine::sanitizeBooleanModeKeyword() 정제를 받는다.
 
   공백 없는 긴 검색어도 같은 결과를 낸다. ngram 파서는 공백 없는 토큰을 글자 단위 낱말로 쪼개므로

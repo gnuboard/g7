@@ -1,5 +1,5 @@
 /**
- * E2E: 템플릿이 공급한 설정 화면 → 사용자 화면 반영 → 기본값으로 (#434 §12.7·§12.15)
+ * E2E: 템플릿이 공급한 설정 화면 → 사용자 화면 반영 → 기본값으로
  *
  * 배경: 설정 화면은 템플릿이 자기 레이아웃·부품 묶음으로 공급한다(공용 화면 없음, D28·D32) — sirsoft-basic 화면 부품이 응답 sections 로 칸을 그린다.
  * 저장한 값은 사용자 화면 레이아웃 바인딩(`_global.templateSettings`)과 서버 `<html>` 표준 속성으로 나가므로,
@@ -19,7 +19,7 @@ const SETTINGS_API = `/api/admin/templates/${TEMPLATE}/settings`;
 
 // @scenario case=settings_layout
 // @effects settings_layout_saves_template_settings, template_settings_exposed_to_global, standard_attributes_rendered, settings_reset_to_defaults
-test('#434 - 템플릿이 공급한 설정 화면에서 저장한 값이 사용자 화면에 나가고 「기본값으로」 로 원상이 된다', async ({ page, request }) => {
+test('템플릿이 공급한 설정 화면에서 저장한 값이 사용자 화면에 나가고 「기본값으로」 로 원상이 된다', async ({ page, request }) => {
   test.setTimeout(240_000);
   const token = issueToken('core.templates.read', 'core.templates.settings');
   const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' };

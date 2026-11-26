@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 주문금액 비교 스냅샷 표시 재료 단일 출처 테스트 (#599 후속)
+ * 주문금액 비교 스냅샷 표시 재료 단일 출처 테스트
  *
  * 접수 뒤 상세는 다통화 줄을 저장하지 않고 읽을 때 다시 만든다 — 그 값은 미리보기가 낸 값과
  * **같아야** 한다(같은 신청서의 미리보기와 상세가 다른 외화 줄을 보이면 안 된다). 정가 합계는

@@ -1,5 +1,5 @@
 /**
- * 본문 미디어 업로드 런타임 (engine-v1.89.0, #883)
+ * 본문 미디어 업로드 런타임 (engine-v1.89.0)
  *
  * 편집기 플러그인이 확장의 업로드 계약(`ContentMediaUploadTarget`)을 검사·사용하는 공용 함수 묶음이다.
  * `G7Core.contentMedia` 파사드가 이 런타임 하나를 감싼다(`initContentMediaAPI`).

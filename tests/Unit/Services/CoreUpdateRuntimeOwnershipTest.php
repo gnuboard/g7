@@ -29,7 +29,7 @@ class CoreUpdateRuntimeOwnershipTest extends TestCase
     }
 
     /**
-     * 정상화 타깃에 확장 업데이트 임시 폴더와 로그 디렉토리가 포함된다 (#651 B5).
+     * 정상화 타깃에 확장 업데이트 임시 폴더와 로그 디렉토리가 포함된다.
      *
      * `storage/app/temp` 의 부모는 sudo 업데이트가 최초 생성자가 되면 root 로 굳어 이후 관리자 화면의
      * 확장 업데이트가 임시 폴더를 만들지 못하고, `storage/logs` 는 restore_ownership 복원(Step 11)
@@ -57,7 +57,7 @@ class CoreUpdateRuntimeOwnershipTest extends TestCase
     /**
      * 부모(CoreUpdateCommand)·자식(ExecuteUpgradeStepsCommand) 흐름 종료부가
      * 정상화를 호출한다 — 로그 소유권 정상화(restoreUpgradeLogOwnership)와
-     * 항상 짝으로 (#519 소스 훑기 선례).
+     * 항상 짝으로 (소스 훑기 선례).
      */
     public function test_update_flows_invoke_runtime_ownership_normalization(): void
     {

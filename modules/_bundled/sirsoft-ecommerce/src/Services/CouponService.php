@@ -30,7 +30,7 @@ class CouponService
      * @param  CouponRepositoryInterface  $repository  쿠폰 Repository
      * @param  UserCouponService  $userCouponService  회원 쿠폰 서비스
      * @param  CouponIssueRepositoryInterface  $issueRepository  쿠폰 발급 Repository
-     * @param  CouponNotificationDefinitionService  $notificationDefinitions  쿠폰별 발급 알림 종류 관리 (#952)
+     * @param  CouponNotificationDefinitionService  $notificationDefinitions  쿠폰별 발급 알림 종류 관리
      */
     public function __construct(
         protected CouponRepositoryInterface $repository,
@@ -143,7 +143,7 @@ class CouponService
             ]);
         });
 
-        // 발급 알림을 켰으면 이 쿠폰의 알림 종류를 만든다 (#952)
+        // 발급 알림을 켰으면 이 쿠폰의 알림 종류를 만든다
         $this->syncNotificationDefinition($coupon);
 
         // After 훅 - 후처리, 알림, 캐시 등
@@ -206,7 +206,7 @@ class CouponService
             ]);
         });
 
-        // 알림 사용·쿠폰명 변경을 알림 종류에 반영한다 (#952)
+        // 알림 사용·쿠폰명 변경을 알림 종류에 반영한다
         $this->syncNotificationDefinition($coupon);
 
         // After 훅
@@ -243,7 +243,7 @@ class CouponService
             $this->repository->delete($coupon->id);
         });
 
-        // 쿠폰 전용 알림 종류와 템플릿을 함께 지운다 (#952)
+        // 쿠폰 전용 알림 종류와 템플릿을 함께 지운다
         try {
             $this->notificationDefinitions->remove((int) $coupon->id);
         } catch (\Throwable $e) {
@@ -259,7 +259,7 @@ class CouponService
     }
 
     /**
-     * 쿠폰의 발급 알림 종류를 맞춥니다. 실패해도 쿠폰 저장은 되돌리지 않는다(알림 설정은 다시 저장하면 맞춰진다). (#952)
+     * 쿠폰의 발급 알림 종류를 맞춥니다. 실패해도 쿠폰 저장은 되돌리지 않는다(알림 설정은 다시 저장하면 맞춰진다).
      *
      * @param  Coupon  $coupon  저장된 쿠폰
      * @return void 반환값 없음
@@ -417,7 +417,7 @@ class CouponService
     }
 
     /**
-     * 발급 내역 1건을 발급 취소합니다. (사용가능 상태일 때만, #952)
+     * 발급 내역 1건을 발급 취소합니다. (사용가능 상태일 때만)
      *
      * 관리자 발급 취소와 첫구매 쿠폰 회수가 함께 쓰는 본체다. `status=available` 조건부 UPDATE 1회로 바꾸므로
      * 같은 순간 사용(USED 전환)과 겹쳐도 사용된 쿠폰을 취소하지 않는다 — 그때는 0건이라 null 을 돌려준다.

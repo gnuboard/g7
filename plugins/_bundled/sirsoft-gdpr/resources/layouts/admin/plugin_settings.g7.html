@@ -24,7 +24,7 @@
       </default>
     </error-handling>
   </data-source>
-  <!-- 연간 통지 대상 건수 — 발송 판정과 같은 조건이며 꺼져 있어도 센다(켜기 전에 규모를 본다, #636). 저장 뒤 다시 받는다 -->
+  <!-- 연간 통지 대상 건수 — 발송 판정과 같은 조건이며 꺼져 있어도 센다(켜기 전에 규모를 본다). 저장 뒤 다시 받는다 -->
   <data-source id="gdprAnnualNoticePreview" label_key="$t:sirsoft-gdpr.editor.data_source.gdprAnnualNoticePreview" type="api" endpoint="/api/plugins/sirsoft-gdpr/admin/annual-notice/preview" method="GET" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data">
@@ -309,7 +309,7 @@
                         <span class="gdpr-text-muted">$t:sirsoft-gdpr.settings.policy_version.publisher_label</span>
                         <div class="gdpr:min-w-0">
                           <span>{{gdprPolicyVersionCurrent?.data?.data?.publisher?.name ? (gdprPolicyVersionCurrent?.data?.data?.publisher?.email ? gdprPolicyVersionCurrent.data.data.publisher.name + ' (' + gdprPolicyVersionCurrent.data.data.publisher.email + ')' : gdprPolicyVersionCurrent.data.data.publisher.name) : (gdprPolicyVersionCurrent?.data?.data?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}</span>
-                          <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+                          <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다 -->
                           <span data-if="{{!!gdprPolicyVersionCurrent?.data?.data?.publisher?.real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-gdpr.common.real_name_sub', { name: gdprPolicyVersionCurrent.data.data.publisher.real_name })}}" class="gdpr:block gdpr-text-tertiary">{{gdprPolicyVersionCurrent.data.data.publisher.real_name}}</span>
                         </div>
                       </div>
@@ -361,7 +361,7 @@
                             <td class="gdpr:px-3 gdpr:py-2 gdpr:text-xs">{{row?.created_at ?? '-'}}</td>
                             <td class="gdpr:px-3 gdpr:py-2 gdpr:text-xs">
                               <span class="gdpr:block">{{row?.publisher?.name ? (row?.publisher?.email ? row.publisher.name + ' (' + row.publisher.email + ')' : row.publisher.name) : (row?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}</span>
-                              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+                              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다 -->
                               <span data-if="{{!!row?.publisher?.real_name}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-gdpr.common.real_name_sub', { name: row.publisher.real_name })}}" class="gdpr:block gdpr-text-tertiary">{{row.publisher.real_name}}</span>
                             </td>
                             <td class="gdpr:px-3 gdpr:py-2 gdpr:text-xs">{{row?.change_type === 'material' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.material' : (row?.change_type === 'initial' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.initial' : '$t:sirsoft-gdpr.settings.policy_version.change_type.non_material')}}</td>
@@ -684,7 +684,7 @@
               <toggle data-type="composite" name="annual_notice.enabled" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
             <!-- 조치 대상 — 코어 개인정보 탭과 같은 「대상 행」 양식(이름 · 건수 배지 · 오른쪽 끝 대상 보기·지금 실행 · 그 행의 결과 줄).
-                 건수는 꺼져 있어도 보인다(켜기 전에 규모를 본다, #636). 「대상 보기」는 회원 읽기 권한이 있으면 0명이어도 그린다(빈 명단은 창이 안내한다).
+                 건수는 꺼져 있어도 보인다(켜기 전에 규모를 본다). 「대상 보기」는 회원 읽기 권한이 있으면 0명이어도 그린다(빈 명단은 창이 안내한다).
                  되돌릴 수 없는 발송은 채운 강조색을 쓰지 않는다(2026-09-26 결정). -->
             <div data-ref="annual_notice_targets" data-if="{{(gdprAnnualNoticePreview?.data?.count !== null &amp;&amp; gdprAnnualNoticePreview?.data?.count !== undefined) || privacyManualRuns?.data?.targets?.['sirsoft-gdpr:annual_notice']?.can_run}}" class="gdpr:space-y-2">
               <div class="gdpr:rounded-lg gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700">

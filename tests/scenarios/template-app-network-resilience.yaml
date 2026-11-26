@@ -1,4 +1,4 @@
-feature: TemplateApp 초기화 네트워크 복원력 — 재시도·문서 이탈 가드·확장 번들 실패 시 대기 생략 (#463)
+feature: TemplateApp 초기화 네트워크 복원력 — 재시도·문서 이탈 가드·확장 번들 실패 시 대기 생략
 
 description: |
   TemplateApp 초기화는 routes.json·components.json 같은 구동 자원을 받아야 화면을 그린다. 일시적인 네트워크

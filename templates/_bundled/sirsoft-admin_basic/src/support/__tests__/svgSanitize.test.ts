@@ -1,6 +1,6 @@
 /**
  * @file svgSanitize.test.ts
- * @description 인라인 SVG 화이트리스트 정제 — 결제 브랜드 마크·관리자 메뉴 아이콘(#381) 공용
+ * @description 인라인 SVG 화이트리스트 정제 — 결제 브랜드 마크·관리자 메뉴 아이콘 공용
  *
  * 레이아웃·메뉴 저장 검증과 별개로 화면이 그리기 직전에 다시 거른다. 스크립트·이벤트 처리기·외부 참조
  * (foreignObject·use·href)·style 은 빠지고 글자색을 따르는 `currentColor` 도형은 남는지 잰다.

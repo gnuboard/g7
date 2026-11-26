@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * 본인인증 알림 정의 시딩 테스트 (#699 — 옛 IdentityMessageSeederTest 대체)
+ * 본인인증 알림 정의 시딩 테스트 (옛 IdentityMessageSeederTest 대체)
  *
  * 본인인증 메시지는 config/core.php 의 notification_definitions 에 `identity.*` type 으로 선언되고
  * NotificationDefinitionSeeder 가 함께 동기화한다. 점(.)이 든 type 을 config 연관 배열 키로 둬도

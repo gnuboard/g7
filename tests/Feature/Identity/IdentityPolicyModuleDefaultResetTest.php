@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 모듈이 선언한 본인인증 정책의 「기본값으로 되돌리기」 (7.2.1 Fixed, #952 검증 중 발견)
+ * 모듈이 선언한 본인인증 정책의 「기본값으로 되돌리기」 (7.2.1 Fixed)
  */
 class IdentityPolicyModuleDefaultResetTest extends TestCase
 {

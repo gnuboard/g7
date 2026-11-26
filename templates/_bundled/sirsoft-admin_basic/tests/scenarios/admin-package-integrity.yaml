@@ -1,4 +1,4 @@
-# 시나리오 매니페스트 — 관리자 화면의 패키지 무결성 표시와 「미서명으로 계속」 (#916 ④)
+# 시나리오 매니페스트 — 관리자 화면의 패키지 무결성 표시와 「미서명으로 계속」
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 
 feature: admin_package_integrity_screens

@@ -1,6 +1,6 @@
 /**
  * @file userOrderClaimSection.test.tsx
- * @description 회원 주문상세 '이 주문의 클레임' 섹션 — 셸 계약 + 신청번호 링크 + 썸네일 자리표시 (#599)
+ * @description 회원 주문상세 '이 주문의 클레임' 섹션 — 셸 계약 + 신청번호 링크 + 썸네일 자리표시
  *
  * 이 섹션은 회원 신청내역·비회원 주문상세와 **같은 partial**(`_list.json`)이다. 회원 주문상세 셸이
  * 더 세우는 것은 하나 — `claimDetailLinkMode: new_window`. 그 값이 서면 신청번호 자체가 새 창
@@ -249,7 +249,7 @@ describe('회원 주문상세 클레임 섹션 — 기본 서브탭 (서버가 �
   function activeTabs(): string[] {
     return [...document.querySelectorAll('a, button')]
       .filter((b) => b.className.includes('border-gray-900'))
-      // 라벨만 본다 — 탭에는 건수 배지(#599 후속 F12)가 함께 실려 textContent 끝에 숫자가 붙는다.
+      // 라벨만 본다 — 탭에는 건수 배지가 함께 실려 textContent 끝에 숫자가 붙는다.
       .map((b) => (b.querySelector('span')?.textContent ?? b.textContent ?? '').trim());
   }
 

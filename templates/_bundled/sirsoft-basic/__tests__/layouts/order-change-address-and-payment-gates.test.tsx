@@ -1,6 +1,6 @@
 /**
  * @file order-change-address-and-payment-gates.test.tsx
- * @description 주문 배송지 변경 창의 적용 잠금 + 주문서 결제수단 0건 안내·잠금 회귀 검증 (#703)
+ * @description 주문 배송지 변경 창의 적용 잠금 + 주문서 결제수단 0건 안내·잠금 회귀 검증
  *
  * 회귀 배경:
  *   - 배송지 변경 창이 「저장된 배송지」 탭으로 열린 채 아무것도 고르지 않거나(또는 저장 배송지 0건)

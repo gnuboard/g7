@@ -4,7 +4,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * DataGrid 의 모든 Pagination 렌더 경로가 hasMorePages 를 넘기는지 전수 확인 (#519)
+ * DataGrid 의 모든 Pagination 렌더 경로가 hasMorePages 를 넘기는지 전수 확인
  *
  * DataGrid 는 표 뷰와 카드/모바일 뷰에서 Pagination 을 각각 렌더한다. 총 건수를 상한까지만
  * 센 목록은 `last_page` 가 null 로 오므로 "다음" 이동 가능 여부는 `hasMorePages` 로만

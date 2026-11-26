@@ -43,7 +43,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
     {
         // 팩 주입은 시딩 컨텍스트다 — 바인딩 없이 저장하면 UserOverridesAwareBuilder 가
         // 주입 자체를 "사용자 수정"으로 오인해 user_overrides 를 오염시키고, 그 선언이
-        // 이후 시더 재실행의 컬럼 갱신을 영구히 얼린다 (#597 에서 실측·교정).
+        // 이후 시더 재실행의 컬럼 갱신을 영구히 얼린다.
         app()->instance('user_overrides.seeding', true);
         try {
             $audit = [];
@@ -550,7 +550,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
      * HasUserOverrides 의 updating 이벤트가 기록, beta.4 가 레거시 항목을 dot-path 로
      * 전환)이므로 그 형식만 본다. 종전의 `isset($overrides[$column])` 판정은 어떤
      * 생산자도 쓰지 않는 연관 형식을 전제해 항상 false 였고, 그 결과 활성화/비활성화가
-     * 운영자 수정 번역을 오류 없이 덮어쓰거나 제거했다 (#597 에서 발견·교정).
+     * 운영자 수정 번역을 오류 없이 덮어쓰거나 제거했다.
      *
      * 컬럼 전체 항목(`"subject"` 등)은 의도적으로 보존 사유로 보지 않는다 — 그 형식은
      * 시더 재실행(syncFromUpgrade)의 컬럼 보호 선언이며, 팩 병합까지 차단하면 팩

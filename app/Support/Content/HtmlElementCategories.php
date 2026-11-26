@@ -3,7 +3,7 @@
 namespace App\Support\Content;
 
 /**
- * HTML 요소 분류 — 저장 정화기가 HTMLPurifier 정의에 요소를 더할 때 인라인·블록을 정하는 기준 (#887)
+ * HTML 요소 분류 — 저장 정화기가 HTMLPurifier 정의에 요소를 더할 때 인라인·블록을 정하는 기준
  *
  * 본문 콘텐츠 규칙(`ContentHtmlPolicy`)의 후보 요소(audio·video 등)와 운영자 추가 태그를 HTMLPurifier 정의에 더할 때, 「문구 콘텐츠」
  * (phrasing content)는 인라인으로 정의해야 문단(`<p>`) 안에 그대로 남는다. 블록으로 정의하면 HTMLPurifier 가 문단을 그 앞에서 닫아

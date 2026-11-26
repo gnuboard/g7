@@ -8,7 +8,7 @@ use App\Rules\TranslatableField;
 use Illuminate\Validation\Validator;
 
 /**
- * 알림톡 템플릿 카카오 등록 페이로드(content) 검증 규칙 (#597 §3.2 매트릭스).
+ * 알림톡 템플릿 카카오 등록 페이로드(content) 검증 규칙 (§3.2 매트릭스).
  *
  * Store/Update 가 동일 매트릭스를 공유한다. 문서(부록 A-2·A-3)에 수치가 명시된 제약만
  * 강제하고, 수치 미기재 세부(강조표기 타이틀 길이 등)는 kapi 를 최종 게이트로 위임한다 —
@@ -89,7 +89,7 @@ trait ValidatesTemplateContent
     }
 
     /**
-     * SMS 본문(다국어 맵)의 검증 규칙을 반환합니다 (#597 §14.3).
+     * SMS 본문(다국어 맵)의 검증 규칙을 반환합니다.
      *
      * sms_body 는 로케일별 본문 맵이다. 허용 로케일 판정·길이 검사는 코어 TranslatableField
      * 규칙에 위임한다 — 로케일 목록(`app.translatable_locales`)은 활성 언어팩에 따라 부팅마다

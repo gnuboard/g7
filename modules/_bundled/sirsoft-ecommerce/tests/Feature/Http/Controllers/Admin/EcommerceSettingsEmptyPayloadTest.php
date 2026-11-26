@@ -7,7 +7,7 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 저장할 설정 구역이 없는 요청의 거절 회귀 테스트 (#703 브라우저 실측)
+ * 저장할 설정 구역이 없는 요청의 거절 회귀 테스트
  *
  * 회귀 배경: 쇼핑몰 환경설정 화면의 저장 본문 식이 평가에 실패하자(구조분해 매개변수) 식 원문 문자열이 본문으로
  * 나갔다. 서버는 저장할 구역이 하나도 없는데도 「설정이 저장되었습니다」 200 으로 응답해, 운영자는 어느 탭을

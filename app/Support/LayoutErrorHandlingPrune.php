@@ -9,7 +9,7 @@ use stdClass;
  * 레이아웃 오류 처리(errorHandling)의 빈 동작 항목 정리
  *
  * 편집기 [덮기]로 시작한 빈 동작(`{}`)을 고르지 않고 저장하면 런타임 findHandler 가 그 코드를 「처리됨」으로
- * 보아 같은 맵 default, 데이터 소스 onError, 템플릿 기본 처리를 가린다(#869, 설계 확정 2026-11-09). 편집기
+ * 보아 같은 맵 default, 데이터 소스 onError, 템플릿 기본 처리를 가린다(설계 확정 2026-11-09). 편집기
  * 저장 직렬화(`stripInheritedFromLayoutContent`, layoutTreeUtils.ts)가 이 항목을 지우고, 서버는 같은 정책을
  * 저장 요청의 최종 방어선과 버전 복원에서 다시 적용한다. PHP 디코드는 이 자리의 `{}` 를 `[]` 로 읽을 수 있는데
  * 화면에서는 빈 배열도 참이므로 둘 다 빈 동작으로 본다.
@@ -84,7 +84,7 @@ final class LayoutErrorHandlingPrune
      */
     private static function isEmptyAction(mixed $action): bool
     {
-        // 저장 요청과 버전 원문은 빈 객체를 EmptyMap 표식으로 보존해 디코드한다 (#758).
+        // 저장 요청과 버전 원문은 빈 객체를 EmptyMap 표식으로 보존해 디코드한다.
         if (EmptyMap::is($action)) {
             return true;
         }

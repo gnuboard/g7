@@ -117,7 +117,7 @@ describe('에스크로 배송 등록', () => {
   });
 });
 
-/** 구매거절확인 버튼 — 배송 등록과 같은 결함(실패 문맥에 없는 `response` 를 읽어 PG 사유가 늘 일반 문구로 가려짐, #858) */
+/** 구매거절확인 버튼 — 배송 등록과 같은 결함(실패 문맥에 없는 `response` 를 읽어 PG 사유가 늘 일반 문구로 가려짐) */
 const denyConfirmButton = flattenNodes(extension).find(
   (n) => n.name === 'Button' && JSON.stringify(actionsOf(n)).includes('/escrow-deny-confirm'),
 ) as any;

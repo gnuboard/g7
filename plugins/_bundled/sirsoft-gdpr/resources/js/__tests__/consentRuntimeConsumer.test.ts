@@ -1,6 +1,6 @@
 /**
  * @file consentRuntimeConsumer.test.ts
- * @description 이 플러그인의 브라우저 쪽은 코어 동의 런타임의 소비자다 (#639, 결정 D8)
+ * @description 이 플러그인의 브라우저 쪽은 코어 동의 런타임의 소비자다
  *
  * 예전에는 부팅 때와 동의 저장 직후(`sirsoft-gdpr.syncConsent`)에 자체적으로 동의 상태를 조회하고
  * `gdpr:consent-changed` 를 보냈다. SPA 로그인 뒤에는 아무도 다시 조회하지 않아 회원 동의 대신 게스트 거부가

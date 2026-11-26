@@ -62,8 +62,8 @@ class PublicPageResource extends BaseApiResource
             'id' => $this->id,
             'slug' => $this->slug,
             'title' => $this->getLocalizedTitle(),
-            // 미리보기(미발행)만 본문 미디어를 서명 주소로 — 발행 페이지는 정식 주소라 정적 캐시와 충돌하지 않는다 (#883)
-            // 서명은 이 페이지가 소유한 해시만 — 다른 페이지 소유 해시는 원본 페이지의 게이트를 따른다 (#887)
+            // 미리보기(미발행)만 본문 미디어를 서명 주소로 — 발행 페이지는 정식 주소라 정적 캐시와 충돌하지 않는다
+            // 서명은 이 페이지가 소유한 해시만 — 다른 페이지 소유 해시는 원본 페이지의 게이트를 따른다
             'content' => app(PageContentMediaService::class)->presentContent(
                 is_array($this->content)
                     ? (LocalizedValue::pick($this->content, $locale) ?? '')

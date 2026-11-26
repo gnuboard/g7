@@ -12,7 +12,7 @@ use App\Extension\AbstractUpgradeStep;
  *   - migrations/
  *       01_FinalizeOrphanedInstallerRuntime.php
  *         beta.4~beta.6 의 finalize-env.php 자가 차단 회귀로 잔존한 storage/installer/runtime.php
- *         를 감지하여 .env 머지 + runtime.php 삭제 + state.json 정리를 인라인 수행 (이슈 #371)
+ *         를 감지하여 .env 머지 + runtime.php 삭제 + state.json 정리를 인라인 수행
  *
  * 본 클래스는 `AbstractUpgradeStep` 의 default `run()` 에 위임 — 별도 override 없음.
  *

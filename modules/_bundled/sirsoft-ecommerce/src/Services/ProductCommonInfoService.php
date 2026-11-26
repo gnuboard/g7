@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Services\Concerns\PurifiesHtml;
 /**
  * 공통정보 서비스
  *
- * HTML 모드 본문은 상품 설명과 같은 저장 정화(`PurifiesHtml` 의 `content` 프로필, 로케일별)를 거쳐 저장한다(#887) — 위험 요소는
+ * HTML 모드 본문은 상품 설명과 같은 저장 정화(`PurifiesHtml` 의 `content` 프로필, 로케일별)를 거쳐 저장한다 — 위험 요소는
  * 지우고, 코어 「본문 콘텐츠」 후보(그림 캡션·업로드 동영상·오디오·외부 영상)와 운영자 추가 태그는 스위치와 무관하게 원문대로 둔다.
  */
 class ProductCommonInfoService
@@ -120,7 +120,7 @@ class ProductCommonInfoService
             $data['sort_order'] = $this->repository->getMaxSortOrder() + 1;
         }
 
-        // 본문 미디어 서명 주소는 정식 주소로 되돌린 뒤 HTML 모드면 정화한다 (#883, #887)
+        // 본문 미디어 서명 주소는 정식 주소로 되돌린 뒤 HTML 모드면 정화한다
         $data = $this->sanitizeContent($data, 'text');
 
         $commonInfo = DB::transaction(function () use ($data) {
@@ -131,7 +131,7 @@ class ProductCommonInfoService
 
             $commonInfo = $this->repository->create($data);
 
-            // 본문이 참조한 본문 미디어만 잇는다 (#883)
+            // 본문이 참조한 본문 미디어만 잇는다
             $this->syncContentMedia($commonInfo, $data);
 
             return $commonInfo->fresh();
@@ -169,7 +169,7 @@ class ProductCommonInfoService
         // 필터 훅 - 데이터 변형
         $data = HookManager::applyFilters('sirsoft-ecommerce.product-common-info.filter_update_data', $data, $id);
 
-        // 본문 미디어 서명 주소는 정식 주소로 되돌린 뒤 HTML 모드면 정화한다 — 모드를 보내지 않은 수정은 저장된 모드를 따른다 (#883, #887)
+        // 본문 미디어 서명 주소는 정식 주소로 되돌린 뒤 HTML 모드면 정화한다 — 모드를 보내지 않은 수정은 저장된 모드를 따른다
         $data = $this->sanitizeContent($data, (string) ($commonInfo->content_mode ?? 'text'));
 
         $commonInfo = DB::transaction(function () use ($commonInfo, $data) {
@@ -180,7 +180,7 @@ class ProductCommonInfoService
 
             $commonInfo = $this->repository->update($commonInfo->id, $data);
 
-            // 본문 미디어 동기화 — 본문을 보낸 수정만 (#883)
+            // 본문 미디어 동기화 — 본문을 보낸 수정만
             if (array_key_exists('content', $data)) {
                 $this->syncContentMedia($commonInfo, $data);
             }
@@ -196,7 +196,7 @@ class ProductCommonInfoService
 
     /**
      * 공통 정보 본문을 저장 전에 정리합니다 — 본문 미디어 서명 주소를 정식 주소로 되돌리고, HTML 모드면 로케일마다 상품 설명과 같은
-     * 저장 정화(`content` 프로필)를 한다 (#887).
+     * 저장 정화(`content` 프로필)를 한다.
      *
      * 정화는 서명 주소를 되돌린 뒤에 한다 — 정화기가 쿼리의 `&` 를 바꾸기 전에(상품 설명 `sanitizeDescription` 과 같은 순서).
      * 후보 스위치·외부 영상 서비스 켜고 끄기는 표시에서만 따르므로(결정 5) 꺼 둔 채 저장해도 그 요소가 남고, 문단 안 미디어·인라인 추가
@@ -229,7 +229,7 @@ class ProductCommonInfoService
     }
 
     /**
-     * 공통 정보 본문이 참조한 본문 미디어를 맞춥니다 — 저장 트랜잭션 안 (#883).
+     * 공통 정보 본문이 참조한 본문 미디어를 맞춥니다 — 저장 트랜잭션 안.
      *
      * @param  ProductCommonInfo  $commonInfo  저장된 공통 정보
      * @param  array  $data  요청 데이터 (`content_media_temp_key`)
@@ -245,7 +245,7 @@ class ProductCommonInfoService
             isset($data['content_media_temp_key']) && is_string($data['content_media_temp_key']) ? $data['content_media_temp_key'] : null
         );
 
-        // 상품·다른 공통 정보의 본문 미디어를 이 공통 정보 소유로 복제했으면 바뀐 본문을 다시 저장한다 (#887)
+        // 상품·다른 공통 정보의 본문 미디어를 이 공통 정보 소유로 복제했으면 바뀐 본문을 다시 저장한다
         if (($result['cloned'] ?? 0) > 0 && array_key_exists('content', $result) && $result['content'] !== $commonInfo->content) {
             $this->repository->update($commonInfo->id, ['content' => $result['content']]);
         }
@@ -277,7 +277,7 @@ class ProductCommonInfoService
             // 연결된 상품의 common_info_id를 null로 설정
             $commonInfo->products()->update(['common_info_id' => null]);
 
-            // 공통정보 본문 미디어 영구 삭제 — 본문에서 빠져 소프트 삭제된 것 포함, 파일은 커밋 뒤 (#887)
+            // 공통정보 본문 미디어 영구 삭제 — 본문에서 빠져 소프트 삭제된 것 포함, 파일은 커밋 뒤
             app(ContentMediaPurger::class)->purgeForOwner(ContentMediaOwnerType::CommonInfo, $commonInfo->id);
 
             // 공통정보 삭제

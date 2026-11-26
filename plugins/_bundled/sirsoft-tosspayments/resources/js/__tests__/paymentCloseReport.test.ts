@@ -4,7 +4,7 @@
  * 결제창에서 실패·닫힘으로 돌아오면 저장해 둔 주문 정보로 서버에 보고한다. 서버는 주문 소유자만 받아
  * 준다 — 회원은 `G7Core.api` 가 싣는 Bearer, 비회원은 쇼핑몰 계약 `_global.guestOrderToken` 을 실은
  * `X-Guest-Order-Token` 이다. 로그인 토큰·템플릿 저장소를 직접 읽지 않고, 코어 클라이언트를 우회하는
- * raw fetch 도 쓰지 않는다(#639).
+ * raw fetch 도 쓰지 않는다.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {

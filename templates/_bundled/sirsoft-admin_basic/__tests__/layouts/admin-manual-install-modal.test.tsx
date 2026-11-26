@@ -345,7 +345,7 @@ describe('수동 설치 모달 3개 구조 동일성 검증', () => {
    * @scenario extension_type=module, extension_type=plugin, extension_type=template
    * @effects field_errors_use_form_error_xs
    */
-  it('3개 모달 모두 필드별 에러 표시(.form-error-xs) 포함 (#408)', () => {
+  it('3개 모달 모두 필드별 에러 표시(.form-error-xs) 포함', () => {
     const types = ['module', 'plugin', 'template'] as const;
 
     for (const type of types) {
@@ -391,7 +391,7 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
           type: 'basic',
           name: 'Div',
           props: { 'data-testid': 'modal-content' },
-          // 본문과 고정 하단(props.footer)을 함께 그린다 — 설치 단추가 고정 하단으로 옮겨 갔다(#869 P1)
+          // 본문과 고정 하단(props.footer)을 함께 그린다 — 설치 단추가 고정 하단으로 옮겨 갔다
           children: [...modalJson.children, ...(modalJson.props?.footer ?? [])],
         },
       ],
@@ -419,7 +419,7 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
     expect(tabNav).toBeInTheDocument();
     expect(tabNav.getAttribute('data-variant')).toBe('underline');
 
-    // FileInput이 보여야 함 (file_upload 탭이 기본) — ZIP 칸과 서명 파일(.sig.json, #916) 칸 두 개
+    // FileInput이 보여야 함 (file_upload 탭이 기본) — ZIP 칸과 서명 파일(.sig.json) 칸 두 개
     expect(screen.getAllByTestId('file-input').map((el) => el.getAttribute('data-accept'))).toEqual(['.zip', '.json']);
   });
 
@@ -465,7 +465,7 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
 
     const [fileInput, signatureInput] = screen.getAllByTestId('file-input');
     expect(fileInput.className).toContain('border-red-500');
-    // 서명 파일 칸(#916)은 자기 오류(signature)가 없으면 붉지 않다
+    // 서명 파일 칸은 자기 오류(signature)가 없으면 붉지 않다
     expect(signatureInput.className).not.toContain('border-red-500');
   });
 

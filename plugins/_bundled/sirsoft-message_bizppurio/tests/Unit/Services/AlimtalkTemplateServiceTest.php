@@ -11,7 +11,7 @@ use Plugins\Sirsoft\MessageBizppurio\Services\BizppurioKakaoApiClient;
 use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
- * AlimtalkTemplateService — 작성 모달 참조 조회(카테고리·발신프로필) 위임 검증 (#597).
+ * AlimtalkTemplateService — 작성 모달 참조 조회(카테고리·발신프로필) 위임 검증.
  *
  * 템플릿 목록/상세의 실시간 조회(구 Phase 5)는 DB 기반 라이프사이클
  * (BizppurioTemplateService)로 대체되어 제거됐다 — 이 서비스는 카테고리와

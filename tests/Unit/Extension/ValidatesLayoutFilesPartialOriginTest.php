@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 조각 출처 표식(`__partial_origin`)이 병합 기준 원본에만 남고 서비스 본문은 표식 도입 전과 같은지 고정한다 (#727 T-U7).
+ * 조각 출처 표식(`__partial_origin`)이 병합 기준 원본에만 남고 서비스 본문은 표식 도입 전과 같은지 고정한다.
  *
  * 표식은 3자 병합이 조각 경계를 알기 위한 것이라 `validateLayoutFiles()` 반환의 `original` 에만 있어야 한다.
  * `data`(DB `content`·해시·편집기로 가는 판)가 한 바이트라도 달라지면 설치본 전부가 "수정됨" 으로 보이거나

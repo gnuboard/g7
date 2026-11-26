@@ -4,7 +4,7 @@
   화면에 붙을 때(목록의 mount → initMenuFromUrl 핸들러) 주소의 menu(slug)·mode 값을 읽어 그 항목을 골라 두므로, 특정
   메뉴를 가리키는 주소를 주고받으면 상대도 같은 항목을 편 채로 연다(없는 slug 면 빈 패널 그대로).
   항목 이름은 그 주소(?menu={slug}&mode=view)의 링크다 — 보통 클릭은 아래 onSelect 가 같은 주소를 남기고, 가운데
-  클릭·Ctrl+클릭은 새 탭에서 그 항목 패널을 연다(#757). 여러 개 선택 모드에서는 링크가 아니다.
+  클릭·Ctrl+클릭은 새 탭에서 그 항목 패널을 연다. 여러 개 선택 모드에서는 링크가 아니다.
   행마다 그 메뉴에 부여된 역할을 배지로 보인다 — 목록 응답은 역할 ID(role_ids)만 싣고, 이름은 이 화면의 활성 역할 목록에서 찾는다. -->
 <partial name="panel_menu_list">
   <div data-ref="menu_list_panel" class="admin-card">

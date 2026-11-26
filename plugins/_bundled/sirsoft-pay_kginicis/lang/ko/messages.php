@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    // 미입금 가상계좌 채번 취소 사유 — 이커머스 번역 키에서 이 플러그인 키로 옮김(#916)
+    // 미입금 가상계좌 채번 취소 사유 — 이커머스 번역 키에서 이 플러그인 키로 옮김
     'vbank_close_reason' => '입금 전 주문 취소',
     'errors' => [
         'cash_receipt_issue_failed' => '현금영수증 발행에 실패했습니다.',

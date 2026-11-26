@@ -13,7 +13,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 로그인 진입 판정과 자동 이동 (#798 K5 · W19 · W20)
+ * 로그인 진입 판정과 자동 이동
  *
  * 이메일 먼저 입력 화면은 `POST /api/auth/login/discover`(관리자 `…/admin/login/discover`)로 수단을 묻는다. 응답은 항상
  * `{method, label, redirect_url}` 이고 회원 유무와 무관하다. 외부 주소는 비밀번호로 낮춘다. 자동 이동 경로는 프론트 설정

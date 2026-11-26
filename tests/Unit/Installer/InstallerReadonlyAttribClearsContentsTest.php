@@ -7,7 +7,7 @@ use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 설치기가 안내하는 읽기 전용 해제 명령이 폴더 **안쪽까지** 푸는지 실제로 실행해 확인합니다 (#599 validate).
+ * 설치기가 안내하는 읽기 전용 해제 명령이 폴더 **안쪽까지** 푸는지 실제로 실행해 확인합니다.
  *
  * 종전 안내 `attrib -R "<storage>" /D /S` 는 경로를 파일 사양으로 읽어, 부모 폴더 아래에서 이름이
  * `storage` 인 항목만 푼다. 2026-09-23 Windows 실측: 폴더 자체의 R 은 풀렸지만 `storage\app` 과

@@ -687,7 +687,7 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
     if (preview) {
       return;
     }
-    // 보이던 팝업만이 아니라 이 경로의 후보 전부 — 폭이 바뀌어 기기 판정이 달라져도 레이어가 다시 열리지 않게(#902)
+    // 보이던 팝업만이 아니라 이 경로의 후보 전부 — 폭이 바뀌어 기기 판정이 달라져도 레이어가 다시 열리지 않게
     rememberClosed(closableOnPage(Array.isArray(popups) ? popups : [], path));
     setDismissVersion((v) => v + 1);
   }, [popups, path, preview]);
@@ -696,7 +696,7 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
     if (config.dismiss_mode === 'close' || preview) {
       return;
     }
-    // 「보지 않기」 기록은 보이던 팝업만(2026-10-27 결정), 이 페이지에서 레이어를 닫는 것은 「닫기」와 같이 이 경로 후보 전부(#902)
+    // 「보지 않기」 기록은 보이던 팝업만(2026-10-27 결정), 이 페이지에서 레이어를 닫는 것은 「닫기」와 같이 이 경로 후보 전부
     rememberDismissed(visible.map((p) => p.id), config.dismiss_mode, config.dismiss_days);
     rememberClosed(closableOnPage(Array.isArray(popups) ? popups : [], path));
     setDismissVersion((v) => v + 1);

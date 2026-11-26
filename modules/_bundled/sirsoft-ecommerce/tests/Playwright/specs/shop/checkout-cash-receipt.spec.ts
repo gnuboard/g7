@@ -1,5 +1,5 @@
 /**
- * 체크아웃 현금영수증 신청 폼 E2E (#454 S3 / W-1).
+ * 체크아웃 현금영수증 신청 폼 E2E.
  *
  * 이 spec 이 검증하는 것은 "슬롯에 주입된 모듈 폼이 브라우저에서 실제로 동작하는가" 다.
  * 레이아웃 JSON 단위 테스트(cashReceiptUi.test.tsx)는 JSON 구조만 읽으므로,
@@ -38,7 +38,7 @@ const IDENTIFIER_LABEL = {
   business: '사업자등록번호',
 } as const;
 
-// #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+// 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
 const SLOT = '[id^="ext_checkout_cash_receipt__"]';
 const FIELDS = '[id^="ext_checkout_cash_receipt_fields__"]';
 const TOGGLE = '[id^="ext_checkout_cash_receipt_toggle__"]';

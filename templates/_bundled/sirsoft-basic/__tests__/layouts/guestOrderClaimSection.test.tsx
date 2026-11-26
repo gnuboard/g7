@@ -1,6 +1,6 @@
 /**
  * @file guestOrderClaimSection.test.tsx
- * @description 비회원 주문상세 '이 주문의 클레임' 섹션 렌더 회귀 (#599 S14)
+ * @description 비회원 주문상세 '이 주문의 클레임' 섹션 렌더 회귀
  *
  * 이 섹션은 회원 신청내역과 **같은 partial**(`_list.json`)이다 — 다른 것은 셸이 세운 주소뿐이다.
  * 형제 계약 테스트(`guestClaimShellContract`)가 그 배선을 구조로 재는 데 반해, 이 파일은
@@ -193,7 +193,7 @@ describe('비회원 주문상세 클레임 섹션 — 기본 서브탭 (서버�
 
     const active = [...document.querySelectorAll('button')]
       .filter((b) => b.className.includes('border-gray-900'))
-      // 라벨만 본다 — 탭에는 건수 배지(#599 후속 F12)가 함께 실려 textContent 끝에 숫자가 붙는다.
+      // 라벨만 본다 — 탭에는 건수 배지가 함께 실려 textContent 끝에 숫자가 붙는다.
       .map((b) => (b.querySelector('span')?.textContent ?? b.textContent ?? '').trim());
     // 탭 라벨은 표현식 안 $t() — 시험 도구가 실제 앱처럼 $locale·$templateId 를 실으면서(7.1.3) 번역된 라벨이 보인다
     expect(active).toEqual(['반품']);

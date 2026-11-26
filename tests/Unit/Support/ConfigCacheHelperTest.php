@@ -60,7 +60,7 @@ class ConfigCacheHelperTest extends TestCase
 
     /**
      * 설치된 운영 환경의 rebuild() 는 먼저 지우지 않고 config:cache 를 임시 경로로 돌려 굽는다 — 실제 파일은 굽는 내내
-     * 남는다(#882: 지운 뒤 굽는 사이 들어온 요청이 비캐시 부팅·반쯤 쓰인 파일을 만났다). 굽기가 아무것도 만들지 못하면
+     * 남는다(지운 뒤 굽는 사이 들어온 요청이 비캐시 부팅·반쯤 쓰인 파일을 만났다). 굽기가 아무것도 만들지 못하면
      * (여기서는 명령을 대역으로 바꿔 파일이 생기지 않는다) 그때 config:clear 로 낡은 캐시를 지운다.
      *
      * @scenario case=installed

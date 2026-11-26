@@ -21,7 +21,7 @@ use Modules\Sirsoft\Ecommerce\Services\ExportService;
 use Modules\Sirsoft\Ecommerce\Tests\ExportTestCase;
 
 /**
- * 내보내기 행의 저장 디스크(`ecommerce_exports.disk`) 테스트 (#916 A8)
+ * 내보내기 행의 저장 디스크(`ecommerce_exports.disk`) 테스트
  *
  * 내보내기 파일은 관리자가 환경설정 > 드라이버 「비공개 첨부 저장소」에서 고른 디스크에 저장된다(「기본」이면 `modules`).
  * 저장소를 바꾼 뒤에도 그 전에 만든 파일을 받고·지우고·만료 정리할 수 있어야 한다 — 그래서 저장할 때의 디스크를 행에

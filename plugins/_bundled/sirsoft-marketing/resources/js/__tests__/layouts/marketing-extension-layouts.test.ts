@@ -173,7 +173,7 @@ describe('plugin_settings.json', () => {
 
     // @scenario layout=plugin_settings
     // @effects extension_layout_contract_holds
-    it('permissions는 보기 권한(core.plugins.read)이다 — 수정 권한이 없으면 읽기 전용으로 연다(#434 W18)', () => {
+    it('permissions는 보기 권한(core.plugins.read)이다 — 수정 권한이 없으면 읽기 전용으로 연다', () => {
         expect(layout.permissions).toEqual(['core.plugins.read']);
     });
 

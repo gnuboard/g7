@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
  * 게시판 반응 유형 모델.
  *
  * 반응(추천/비추천 등) 유형을 DB로 관리한다. name은 다국어 JSON,
- * 조회 시 getLocalizedName()이 로케일 폴백을 처리한다 (이슈 #525 확정 15).
+ * 조회 시 getLocalizedName()이 로케일 폴백을 처리한다 (확정 15).
  *
  * 아이콘 표시 우선순위는 icon_attachment(업로드 이미지) > icon(시드 FA 클래스) >
  * 레이아웃 기본 아이콘이다. 관리자는 이미지만 지정할 수 있고 FA 클래스는 시드 전용이다.

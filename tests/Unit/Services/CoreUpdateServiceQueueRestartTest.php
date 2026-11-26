@@ -8,7 +8,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 코어 업데이트 후 큐 워커 재시작 신호 회귀 테스트 (dev-g7 #658).
+ * 코어 업데이트 후 큐 워커 재시작 신호 회귀 테스트.
  *
  * 코어 업데이트는 어느 지점에서도 `queue:restart` 를 보내지 않았다. 큐 워커는 부팅이 한 번뿐이라
  * 코어 코드·config·확장 목록을 기동 시점 상태로 물고 있고, 업데이트가 파일을 전부 교체해도

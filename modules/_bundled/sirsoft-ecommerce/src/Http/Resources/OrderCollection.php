@@ -26,7 +26,7 @@ class OrderCollection extends BaseApiCollection
     {
         return [
             'can_update' => 'sirsoft-ecommerce.orders.update',
-            // [내보내기] 버튼(#787) — 목록 API 가 이미 이 목록의 조회 권한을 요구하므로 내보내기 요청 권한 하나로 정한다
+            // [내보내기] 버튼 — 목록 API 가 이미 이 목록의 조회 권한을 요구하므로 내보내기 요청 권한 하나로 정한다
             // audit:allow abilitymap-permission-matches-route-ssot reason: 이 플래그가 여는 동작은 내보내기 요청 API(POST admin/exports)이고 그 라우트 권한(SSoT)이 exports.create 다 — 목록 리소스 권한으로 게이팅하면 내보내기 권한 없는 운영자에게 버튼이 보인다
             'can_export' => 'sirsoft-ecommerce.exports.create',
         ];

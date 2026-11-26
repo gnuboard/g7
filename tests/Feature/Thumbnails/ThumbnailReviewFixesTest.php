@@ -28,7 +28,7 @@ use Tests\TestCase;
 use Tests\Unit\Thumbnails\Support\TestImages;
 
 /**
- * 코어 검토 결함 회귀 (#869) — 준비 단계 예외의 원본 폴백, 일시 사유 bypass 의 캐시 금지, 잘린 원본 복사 거부,
+ * 코어 검토 결함 회귀 — 준비 단계 예외의 원본 폴백, 일시 사유 bypass 의 캐시 금지, 잘린 원본 복사 거부,
  * 공개 썸네일 디스크 허용 목록, 옛 썸네일 디스크 정리, 원본 통로 캐시 상한, 파생본 없는 공개 원본의 퍼지.
  */
 class ThumbnailReviewFixesTest extends TestCase

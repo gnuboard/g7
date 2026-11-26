@@ -47,7 +47,7 @@ export interface Tab {
   onClick?: (tabId: string | number) => void;
   /**
    * 탭이 가리키는 주소 — 주면 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
-   * 보통 클릭은 지금처럼 탭 전환(onTabChange — 저장 안 한 변경 확인 흐름 유지)(#757).
+   * 보통 클릭은 지금처럼 탭 전환(onTabChange — 저장 안 한 변경 확인 흐름 유지).
    */
   href?: string;
   /**
@@ -112,7 +112,7 @@ export interface TabNavigationScrollProps {
   editorAttrs?: EditorAttrs;
   /**
    * 좁은 화면에서 탭 대신 그리는 선택 상자의 이름(「{이름} {현재 탭}」으로 읽힌다).
-   * 없으면 공용 문구 「섹션 이동」 — 종전에는 이름이 없어 현재 탭 글자(「기본정보」)만 읽혔다(#757)
+   * 없으면 공용 문구 「섹션 이동」 — 종전에는 이름이 없어 현재 탭 글자(「기본정보」)만 읽혔다
    */
   'aria-label'?: string;
   /** 탭의 빨간 점(`errorDot`)을 보조기기가 읽을 이름 (예: 「오류가 있는 칸이 있습니다」). 없으면 공용 문구 */
@@ -487,7 +487,7 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   if (isMobile) {
     return (
       // 감싸개는 레이아웃이 준 className 을 그대로 쓰고 선택 상자 둘레 위아래 여백만 더한다 — 종전에는 자기 클래스(px-4)로
-      // 갈아 끼워 레이아웃이 준 좌우 여백(게시판 설정 하위 탭 막대 24px)이 640 이하에서 16px 로 줄었다(#869 P2).
+      // 갈아 끼워 레이아웃이 준 좌우 여백(게시판 설정 하위 탭 막대 24px)이 640 이하에서 16px 로 줄었다.
       <Div className={`${className} py-3`} style={style} id={id} {...editorAttrs}>
         <Select
           value={String(activeTab)}

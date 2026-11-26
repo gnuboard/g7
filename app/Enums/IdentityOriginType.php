@@ -6,7 +6,7 @@ namespace App\Enums;
  * 본인인증 트리거 출처 유형 Enum.
  *
  * `identity_verification_logs.origin_type` 에 저장되는 인증 호출 경로 분류.
- * 이슈 #297 요구사항 8.3 에 따라 인증이 어디서 시작되었는지 추적합니다.
+ * 인증이 어디서 시작되었는지 추적합니다.
  *
  * @since 7.0.0-beta.5
  */

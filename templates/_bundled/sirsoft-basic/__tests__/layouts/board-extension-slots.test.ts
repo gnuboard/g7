@@ -10,7 +10,7 @@
  * 잠그는 것:
  *   - 파일마다 확장점 이름·개수(계획 §6.1 표 19곳)와 반복(iteration) 노드 안에 있는지
  *   - 정규화 props(postId·boardSlug·context 등)와 context 값 — 확장이 화면을 구분하는 계약
- *   - 호스트 className `contents`, 표지 `data-extension-point`, 노드 id 필수(#408 — 엔진이 조각 id 를 호스트 id 로 스코프한다).
+ *   - 호스트 className `contents`, 표지 `data-extension-point`, 노드 id 필수(엔진이 조각 id 를 호스트 id 로 스코프한다).
  *     반복 안 자리는 행 변수로 보간해 행마다 다르다. 반복 밖 자리의 정적 id 는 3중 include 갈래가 서로 배타적인 data-if 라 DOM 에 동시에 하나뿐이다
  *   - 서빙 등가: board/index·board/form·board/show 레이아웃을 partial 까지 펼쳤을 때의 노드 수
  *

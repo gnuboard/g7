@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Tests\Concerns\CountsQueries;
 
 /**
- * 쇼핑 첫 화면 구성 조회의 쿼리 수 회귀 테스트 (#519)
+ * 쇼핑 첫 화면 구성 조회의 쿼리 수 회귀 테스트
  *
  * 쇼핑 첫 화면은 분류·상품 목록·최근 본·인기·신상품 다섯 조각으로 그려진다. 각 조각은
  * 독립 엔드포인트라 어느 하나에 N+1 이 들어와도 나머지는 멀쩡하고, 화면도 정상으로 보인다.

@@ -15,7 +15,7 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * 밖으로 나가는 링크의 주소(`G7_PUBLIC_LINK_URL` → `core.public_link_url`) 테스트 (#888)
+ * 밖으로 나가는 링크의 주소(`G7_PUBLIC_LINK_URL` → `core.public_link_url`) 테스트
  *
  * 같은 DB 를 쓰는 서버를 공개 주소와 다른 주소로 띄울 때, 그 서버가 보내는 메일·알림의 회원용·관리자용 링크는
  * 공개 주소를 가리키고, 이 서버가 받아야 하는 주소(결제·본인인증 콜백, 정식 주소 이동)와 브라우저가 돌아가는 주소

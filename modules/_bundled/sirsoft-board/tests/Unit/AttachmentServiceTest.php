@@ -338,7 +338,7 @@ class AttachmentServiceTest extends ModuleTestCase
         $attachment1->path = "{$slug}/temp/{$tempKey}/uuid1.pdf";
         $attachment1->stored_filename = 'uuid1.pdf';
         $attachment1->id = 1;
-        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다(#883)
+        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다
         $attachment1->created_by = $this->user->id;
         $attachment1->shouldReceive('update')
             ->once()
@@ -356,7 +356,7 @@ class AttachmentServiceTest extends ModuleTestCase
         $attachment2->path = "{$slug}/temp/{$tempKey}/uuid2.jpg";
         $attachment2->stored_filename = 'uuid2.jpg';
         $attachment2->id = 2;
-        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다(#883)
+        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다
         $attachment2->created_by = $this->user->id;
         $attachment2->shouldReceive('update')
             ->once()
@@ -428,7 +428,7 @@ class AttachmentServiceTest extends ModuleTestCase
      *
      * 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면(삭제 대기) 디렉토리
      * 순회가 lstat 오류를 던졌고, 그 예외가 글 저장 전체를 500 으로 되돌렸다 — 파일은 이미 본경로로
-     * 옮겨졌는데 DB 는 임시 경로를 가리킨 채 남았다(#703 브라우저 실측). 정리 실패로 남는 것은 빈 임시 디렉토리뿐이다.
+     * 옮겨졌는데 DB 는 임시 경로를 가리킨 채 남았다. 정리 실패로 남는 것은 빈 임시 디렉토리뿐이다.
      *
      * @return void 반환값 없음
      *
@@ -445,7 +445,7 @@ class AttachmentServiceTest extends ModuleTestCase
         $attachment->path = "{$slug}/temp/{$tempKey}/big.zip";
         $attachment->stored_filename = 'big.zip';
         $attachment->id = 3;
-        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다(#883)
+        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다
         $attachment->created_by = $this->user->id;
         $attachment->shouldReceive('update')->once()->andReturn(true);
 
@@ -497,7 +497,7 @@ class AttachmentServiceTest extends ModuleTestCase
     }
 
     /**
-     * 비회원은 소유 쿠키가 맞는, 글에 연결되기 전의 비회원 임시 첨부만 지울 수 있다 (#883 2단계).
+     * 비회원은 소유 쿠키가 맞는, 글에 연결되기 전의 비회원 임시 첨부만 지울 수 있다.
      *
      * @return void 반환값 없음
      *
@@ -918,7 +918,7 @@ class AttachmentServiceTest extends ModuleTestCase
     #[Test]
     public function test_download_fires_after_download_hook(): void
     {
-        // Arrange (#413-58: 다운로드 시 활동이력 기록을 위한 after_download 훅 발화)
+        // Arrange (58: 다운로드 시 활동이력 기록을 위한 after_download 훅 발화)
         $afterDownloadFired = false;
         $firedAttachment = null;
         $firedContext = null;
@@ -971,7 +971,7 @@ class AttachmentServiceTest extends ModuleTestCase
     #[Test]
     public function test_download_passes_admin_context_to_hook(): void
     {
-        // Arrange (#413-58: admin 진입점은 context 기본값 'admin' 으로 호출)
+        // Arrange (58: admin 진입점은 context 기본값 'admin' 으로 호출)
         $firedContext = null;
 
         HookManager::addAction(
@@ -1018,7 +1018,7 @@ class AttachmentServiceTest extends ModuleTestCase
     #[Test]
     public function test_download_does_not_fire_hook_when_not_found(): void
     {
-        // Arrange (#413-58: 첨부 미존재 시 훅 미발화 — 다운로드 실패는 이력 미기록)
+        // Arrange (58: 첨부 미존재 시 훅 미발화 — 다운로드 실패는 이력 미기록)
         $afterDownloadFired = false;
 
         HookManager::addAction(
@@ -1123,7 +1123,7 @@ class AttachmentServiceTest extends ModuleTestCase
         $attachment->disk = self::ROW_DISK;
         $attachment->path = "{$slug}/temp/{$tempKey}/uuid1.jpg";
         $attachment->stored_filename = 'uuid1.jpg';
-        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다(#883)
+        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다
         $attachment->created_by = $this->user->id;
         $attachment->shouldReceive('update')->once()->andReturn(true);
 
@@ -1172,7 +1172,7 @@ class AttachmentServiceTest extends ModuleTestCase
         $attachment->id = 1;
         $attachment->path = "{$slug}/temp/{$tempKey}/gone.jpg";
         $attachment->stored_filename = 'gone.jpg';
-        // 올린 사람 = 로그인 회원 — 소유 필터(#883)에서 빠지면 읽기 실패 경로에 닿지 않는다
+        // 올린 사람 = 로그인 회원 — 소유 필터에서 빠지면 읽기 실패 경로에 닿지 않는다
         $attachment->created_by = $this->user->id;
         $attachment->shouldReceive('update')->never();
 
@@ -1210,7 +1210,7 @@ class AttachmentServiceTest extends ModuleTestCase
         $attachment->id = 1;
         $attachment->path = "{$slug}/temp/{$tempKey}/empty.txt";
         $attachment->stored_filename = 'empty.txt';
-        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다(#883)
+        // 올린 사람 = 로그인 회원 — 회원은 본인이 올린 임시 첨부만 잇는다
         $attachment->created_by = $this->user->id;
         $attachment->shouldReceive('update')->once()->andReturn(true);
 

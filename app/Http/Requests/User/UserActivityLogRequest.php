@@ -6,7 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * 내 활동 기록 조회 요청 (7.2.1, #952)
+ * 내 활동 기록 조회 요청 (7.2.1)
  *
  * 인자 없이 부르면 1쪽 50건으로 종전과 같은 결과다(관리자 작업 기록이 빠진 것만 다르다).
  * 기간은 사이트 날짜(YYYY-MM-DD)로 받는다.

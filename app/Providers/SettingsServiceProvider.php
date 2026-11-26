@@ -43,7 +43,7 @@ class SettingsServiceProvider extends ServiceProvider
         // 같은 인스턴스를 해석해야 교체(스텁 주입)가 모든 경로에 통한다.
         $this->app->singleton(ExtensionSettingsMirror::class);
 
-        // 큐 워커 설정 다시 읽기 — 프로세스 수명 동안 마지막으로 본 설정 버전을 기억해야 하므로 의도된 싱글톤이다(#724).
+        // 큐 워커 설정 다시 읽기 — 프로세스 수명 동안 마지막으로 본 설정 버전을 기억해야 하므로 의도된 싱글톤이다.
         $this->app->singleton(WorkerSettingsRefresher::class);
 
         // JsonConfigRepository를 직접 인스턴스화 (DI 컨테이너 사용 불가)
@@ -107,7 +107,7 @@ class SettingsServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // 큐 작업 시작 직전에 설정 버전을 비교해 바뀌었으면 다시 읽는다 — 워커는 부팅 때 읽은 설정을
-        // 프로세스가 끝날 때까지 들고 있다(#724). sync 연결 작업은 웹 요청 안에서 돌므로 비교하지 않는다
+        // 프로세스가 끝날 때까지 들고 있다. sync 연결 작업은 웹 요청 안에서 돌므로 비교하지 않는다
         // (요청마다 캐시를 조회하지 않기 위해서다).
         Queue::before(function (JobProcessing $event) {
             if ($event->connectionName === 'sync') {
@@ -552,7 +552,7 @@ class SettingsServiceProvider extends ServiceProvider
     }
 
     /**
-     * 비공개 첨부 저장소 설정을 적용합니다 (#916).
+     * 비공개 첨부 저장소 설정을 적용합니다 .
      *
      * 공개 자산 디스크(`applyPublicAssetDiskConfig`)와 같은 꼴이다 — testing 환경에서는 dev 공유 drivers.json 값이 테스트로
      * 흘러들지 않도록 주입을 건너뛰고, 실제 주입·정규화는 `injectPrivateAttachmentDiskConfig()` 가 맡는다.
@@ -573,7 +573,7 @@ class SettingsServiceProvider extends ServiceProvider
      * drivers.private_attachment_disk 저장값을 core.storage.private_attachment_disk 로 주입합니다.
      *
      * 「기본」(`default`)·빈 값은 미설정('')으로 정규화한다 — 해석기(`PrivateAttachmentDisk`)가 지금까지의 디스크로 폴백한다.
-     * 플러그인 디스크가 아직 정의되지 않았어도(booted 전) 값은 그대로 둔다. 고아 디스크는 해석기가 쓰는 시점에 거른다(#916 A7).
+     * 플러그인 디스크가 아직 정의되지 않았어도(booted 전) 값은 그대로 둔다. 고아 디스크는 해석기가 쓰는 시점에 거른다.
      *
      * @param  JsonConfigRepository  $configRepository  설정 저장소
      * @return void 반환값 없음
@@ -590,7 +590,7 @@ class SettingsServiceProvider extends ServiceProvider
     }
 
     /**
-     * 웹서버 파일 위임 설정을 적용합니다 (#878).
+     * 웹서버 파일 위임 설정을 적용합니다.
      *
      * 공개 자산 디스크(`applyPublicAssetDiskConfig`)와 같은 꼴이다 — testing 환경에서는 dev 공유 drivers.json 값이
      * 테스트로 흘러들지 않도록 주입을 건너뛰고, 실제 주입·정규화는 `injectFileDelegationConfig()` 가 맡는다

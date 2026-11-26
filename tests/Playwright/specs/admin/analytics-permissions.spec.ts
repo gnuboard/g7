@@ -1,5 +1,5 @@
 /**
- * E2E: 방문자 통계 권한 3단계 — 조회·설정·개인정보 열람 (이슈 #682 S3)
+ * E2E: 방문자 통계 권한 3단계 — 조회·설정·개인정보 열람
  *
  * 권한은 서버(라우트 미들웨어·레이아웃 권한) 쪽에서 막힌다. 레이아웃에 권한이 걸린 화면은 권한이 없으면
  * 레이아웃 요청 자체가 403 이라, 엔진이 화면 틀 대신 「페이지 로딩 실패」 카드에 서버가 준 필요 권한을
@@ -132,7 +132,7 @@ test.describe('방문자 통계 권한 3단계', () => {
   // @effects csv_filename_carries_the_actual_date_range
   test('방문자 상세 CSV 는 기간이 붙은 이름으로 저장된다', async ({ page }) => {
     // 내려받기는 blob 저장이라 서버가 붙인 파일명(응답 헤더)을 쓰지 못하고 화면이 준 이름이 이긴다.
-    // 이 버튼만 이름을 기간 없이 고정해, 같은 사람을 두 기간으로 받으면 같은 이름이 됐다(#682 S3 라운드 13).
+    // 이 버튼만 이름을 기간 없이 고정해, 같은 사람을 두 기간으로 받으면 같은 이름이 됐다.
     await authenticatePage(page, issueScopedToken('core.analytics.read', 'core.analytics.privacy'));
 
     await page.goto(`/admin/analytics/visitors/${visitorKey}?from=2026-09-01&to=2026-09-07`);
@@ -148,7 +148,7 @@ test.describe('방문자 통계 권한 3단계', () => {
   // @scenario screen=privacy_requests, state=normal, viewport=1440, locale=ko, e2e=permissions
   // @effects download_filename_matches_the_server_name
   test('정보주체 JSON 은 서버가 알려 준 이름(날짜)으로 저장되고 검색한 IP 를 이름에 넣지 않는다', async ({ page }) => {
-    // 화면이 검색값으로 이름을 지어 방문자 IP 가 다운로드 폴더에 남았다 — 서버 규약은 날짜다(#682 S3 라운드 15).
+    // 화면이 검색값으로 이름을 지어 방문자 IP 가 다운로드 폴더에 남았다 — 서버 규약은 날짜다.
     await authenticatePage(page, issueScopedToken('core.analytics.privacy'));
 
     await page.goto('/admin/analytics/privacy-requests?subject=ip&value=203.0.113.77');
@@ -179,7 +179,7 @@ test.describe('방문자 통계 권한 3단계', () => {
   // @scenario screen=pages, state=normal, viewport=1440, locale=ko, e2e=permissions
   // @effects report_page_size_follows_the_setting
   test('리포트 화면은 주소에 쪽 크기가 없으면 per_page 를 보내지 않고, 선택란이 응답의 쪽 크기를 보인다', async ({ page }) => {
-    // 화면이 늘 `per_page=25` 를 보내 설정 「상세 TOP N」이 리포트에 닿지 않았다(#682 S3 라운드 15).
+    // 화면이 늘 `per_page=25` 를 보내 설정 「상세 TOP N」이 리포트에 닿지 않았다.
     await authenticatePage(page, issueScopedToken('core.analytics.read'));
 
     const report = page.waitForResponse(
@@ -198,7 +198,7 @@ test.describe('방문자 통계 권한 3단계', () => {
   // @effects cross_permission_fallback_never_reads_as_a_fact
   test('설정 권한만 있으면 전체 삭제 창이 행 수 대신 권한 안내를 보인다 — 「0행」을 사실처럼 보이지 않는다', async ({ page }) => {
     // 행 수는 조회 권한 API 에서 온다 — 권한이 없으면 삼킨 403 의 fallback 0 이 「지금 방문 0행」으로
-    // 되돌릴 수 없는 삭제 앞에 떴다(#682 S3 라운드 15). 창을 열기만 하고 지우지 않는다.
+    // 되돌릴 수 없는 삭제 앞에 떴다. 창을 열기만 하고 지우지 않는다.
     await authenticatePage(page, issueScopedToken('core.analytics.update'));
     await page.goto('/admin/analytics/settings?tab=retention');
     const button = page.locator('#purge_all_button');
@@ -220,7 +220,7 @@ test.describe('방문자 통계 권한 3단계', () => {
   // @effects subject_delete_confirm_names_the_subject
   test('정보주체 화면 — 요약의 액션 수가 응답과 같고, 삭제 창이 지울 IP 를 보이며, 삭제 뒤 같은 화면에 남는다', async ({ page }) => {
     // 삭제 창이 액션 조건을 `data-if` 로 적어 삭제 뒤 방문자 목록으로 튕겼고, 대상 줄은 공란이었다. 결과 요약은
-    // 서버가 싣지 않는 필드를 세어 「액션 0건」이었다(#682 S3 라운드 15). 이 케이스는 시드를 지우므로 앞뒤로 다시 심는다.
+    // 서버가 싣지 않는 필드를 세어 「액션 0건」이었다. 이 케이스는 시드를 지우므로 앞뒤로 다시 심는다.
     visitorKey = (runSeed('privacy-visitor').match(/SEED_VISITOR_KEY=(\S+)/) ?? [])[1] ?? '';
     await authenticatePage(page, issueScopedToken('core.analytics.privacy'));
 
@@ -260,7 +260,7 @@ test.describe('방문자 통계 권한 3단계', () => {
   // @effects subject_actions_stay_available_without_core_visits
   test('코어 방문이 0건이어도 검색 응답이 오면 내보내기·삭제를 누를 수 있다', async ({ page }) => {
     // 코어 원장이 보존 기간으로 비었어도 확장은 자기 표에 그 사람의 기록을 가질 수 있고, 서버는 그때도
-    // 확장의 정보주체 필터를 부른다 — 화면이 0건에서 버튼을 잠그면 그 요청을 처리할 길이 없다(#682 S4 라운드 6).
+    // 확장의 정보주체 필터를 부른다 — 화면이 0건에서 버튼을 잠그면 그 요청을 처리할 길이 없다.
     await authenticatePage(page, issueScopedToken('core.analytics.privacy'));
 
     const lookup = page.waitForResponse(

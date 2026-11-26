@@ -7,7 +7,7 @@ use App\Support\Template\TemplateSettingCollections;
 use Illuminate\Support\Facades\File;
 
 /**
- * 템플릿 환경설정 선언 파일(`templates/{id}/config/settings/defaults.json`) 해석기 (#434)
+ * 템플릿 환경설정 선언 파일(`templates/{id}/config/settings/defaults.json`) 해석기
  *
  * 모듈 설정과 같은 모양이다 — 섹션(`_meta.categories`)마다 기본값(`defaults.{섹션}.{키}`)·노출
  * (`frontend_schema.{섹션}`)을 두고, 저장도 섹션별 파일이다. 모듈·플러그인은 PHP 클래스가 검증 스키마를 돌려주지만
@@ -63,7 +63,7 @@ final class TemplateSettingsSchema
     public const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
 
     /**
-     * 설정 화면 부품 묶음 규약 경로(`dist/` 상대) — 템플릿이 자기 설정 화면 부품을 공급하는 자리 (#434 D28).
+     * 설정 화면 부품 묶음 규약 경로(`dist/` 상대) — 템플릿이 자기 설정 화면 부품을 공급하는 자리.
      */
     public const SETTINGS_ASSETS = ['js' => 'settings/settings.iife.js', 'css' => 'settings/settings.css'];
 

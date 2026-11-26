@@ -100,7 +100,7 @@ class EnvironmentDetector
             config('process.composer_binary'),
             $_ENV['COMPOSER_BINARY'] ?? null,
             // 배열 리터럴은 앞 항이 값을 내도 **모든 항이 평가된다** — `??` 사슬이 아니므로
-            // 앞의 후보가 있다고 이 호출이 건너뛰어지지 않는다 (#609 D34).
+            // 앞의 후보가 있다고 이 호출이 건너뛰어지지 않는다.
             ExecutionEnvironment::hasFunction('getenv') ? (getenv('COMPOSER_BINARY') ?: null) : null,
         ]);
 
@@ -261,7 +261,7 @@ class EnvironmentDetector
     public static function buildComposerEnv(): array
     {
         // `getenv` 가 막힌 호스팅에서는 현재 환경을 `$_SERVER` 로 대신 읽는다 — 여기서
-        // 죽으면 composer 실행 자체가 아니라 **환경 조립**에서 요청이 끝난다 (#609 D34).
+        // 죽으면 composer 실행 자체가 아니라 **환경 조립**에서 요청이 끝난다.
         $current = ExecutionEnvironment::hasFunction('getenv') ? getenv() : ($_SERVER ?? []);
         if (! is_array($current)) {
             $current = [];

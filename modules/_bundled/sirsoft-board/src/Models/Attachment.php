@@ -51,7 +51,7 @@ class Attachment extends Model
      * 본문 미디어(편집기 본문에 넣은 이미지·동영상) 컬렉션.
      *
      * 첨부 목록에 보이지 않고 첨부 개수 상한에도 세지 않는다. 일반 첨부 업로드(`UploadAttachmentRequest`)는
-     * 이 이름을 쓸 수 없다 — 클라이언트가 컬렉션 이름을 정하면 상한을 피해 갈 수 있다(#883).
+     * 이 이름을 쓸 수 없다 — 클라이언트가 컬렉션 이름을 정하면 상한을 피해 갈 수 있다.
      */
     public const COLLECTION_CONTENT_MEDIA = 'content_media';
 

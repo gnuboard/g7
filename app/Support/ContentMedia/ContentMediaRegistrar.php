@@ -6,7 +6,7 @@ use App\Contracts\ContentMedia\ContentMediaStore;
 use App\Support\Content\MediaSourceRoutes;
 
 /**
- * 본문 미디어 서빙 라우트 등록 도우미 (#887)
+ * 본문 미디어 서빙 라우트 등록 도우미
  *
  * 본문의 `<video>`·`<audio>`·`<source>` 가 가리켜도 되는 주소(미디어 출처 허용 패턴)는 확장이 실제로 등록한 서빙 라우트에서
  * 만든다(`App\Support\Content\MediaSourceRoutes`) — 경로 모양만 흉내 낸 가짜 주소를 막기 위해서다. 본문 미디어를 서빙하는

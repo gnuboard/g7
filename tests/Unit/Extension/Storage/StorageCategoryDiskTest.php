@@ -432,7 +432,7 @@ class StorageCategoryDiskTest extends TestCase
     }
 
     /**
-     * 비공개 원본 바인딩 키(#916)는 「기본」이면 확장 기본 디스크, 선택하면 그 디스크, 고아 디스크면 기본으로 돌아간다.
+     * 비공개 원본 바인딩 키는 「기본」이면 확장 기본 디스크, 선택하면 그 디스크, 고아 디스크면 기본으로 돌아간다.
      * 다른 카테고리(설정·공개 자산)는 이 선택을 따르지 않는다.
      *
      * @return void 반환값 없음
@@ -463,7 +463,7 @@ class StorageCategoryDiskTest extends TestCase
     }
 
     /**
-     * `.env` 고정(getPrivateAttachmentDiskPin)이 있으면 관리자 선택보다 그 디스크가 우선한다(#916 D7).
+     * `.env` 고정(getPrivateAttachmentDiskPin)이 있으면 관리자 선택보다 그 디스크가 우선한다.
      *
      * @return void 반환값 없음
      *

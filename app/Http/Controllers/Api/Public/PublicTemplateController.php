@@ -59,7 +59,7 @@ class PublicTemplateController extends PublicBaseController
         // API 사용량 기록
         $this->logApiUsage('templates.routes', ['identifier' => $identifier]);
 
-        // 서버 캐시 키는 **서버 현재** 확장 캐시 버전으로만 조립한다 (#588 레이아웃 서빙과 같은 규율).
+        // 서버 캐시 키는 **서버 현재** 확장 캐시 버전으로만 조립한다 (레이아웃 서빙과 같은 규율).
         // 클라이언트 `?v` 를 키에 넣으면 미인증 요청이 `?v=1,2,3,…` 로 서버 캐시 엔트리를 무한히
         // 늘려 디스크를 고갈시킨다 (KVE-2026-2336). `?v` 는 아래 HTTP 캐시 정책 판단에만 쓴다.
         $rawVersion = request()->query('v');
@@ -70,7 +70,7 @@ class PublicTemplateController extends PublicBaseController
         // 해당 모듈의 모든 화면이 404 로 남는다 — 버전은 이미 올라간 뒤라 스스로 회복되지 않는다.
         // 따라서 열화 스냅샷은 그대로 응답하되 캐시에 남기지 않는다.
         $buildRoutes = function () use ($identifier) {
-            // 응답 전용 — routes.json 의 빈 맵 `{}` 를 보존한다 (#758)
+            // 응답 전용 — routes.json 의 빈 맵 `{}` 를 보존한다
             $result = $this->templateService->getRoutesDataWithModules($identifier, preserveEmptyMaps: true);
 
             if (! $result['success']) {
@@ -123,7 +123,7 @@ class PublicTemplateController extends PublicBaseController
 
         // 버전 키드 URL(`?v` 명시)은 bump 시 URL 자체가 바뀌므로 조건부 공개 캐시가 안전하다.
         // 무버전 요청(핸드셰이크 폴백 등)은 종전대로 캐시 헤더 없이 신선 응답 (#122 작업 D).
-        // 열화 스냅샷은 공개 캐시 금지 — 서버측 캐시 회피(#493)와 동일 규율로, 같은 `?v`
+        // 열화 스냅샷은 공개 캐시 금지 — 서버측 캐시 회피와 동일 규율로, 같은 `?v`
         // URL 에 public max-age 가 붙으면 브라우저/CDN 이 열화 응답을 1시간 박제한다
         // (버전은 이미 올라간 뒤라 스스로 회복되지 않음. 정적 게시의 열화 제외와 대칭).
         if ($rawVersion !== null && ! $this->templateService->lastRouteMergeWasDegraded()) {
@@ -203,7 +203,7 @@ class PublicTemplateController extends PublicBaseController
         }
 
         // JSON 파싱 및 반환
-        // props 매니페스트의 빈 맵을 `{}` 로 응답하도록 보존해 읽는다 (#758)
+        // props 매니페스트의 빈 맵을 `{}` 로 응답하도록 보존해 읽는다
         $components = EmptyMap::decodePreserving((string) file_get_contents($result['componentsPath']));
 
         return $this->cachedJsonResponse($components, 3600);
@@ -222,7 +222,7 @@ class PublicTemplateController extends PublicBaseController
         // API 사용량 기록
         $this->logApiUsage('templates.config', ['identifier' => $identifier]);
 
-        // 캐싱된 template.json 읽기 (1시간 유효) — 셸 인라인(`expose`)과 같은 캐시를 쓰도록 서비스 한 곳에 둔다 (#879)
+        // 캐싱된 template.json 읽기 (1시간 유효) — 셸 인라인(`expose`)과 같은 캐시를 쓰도록 서비스 한 곳에 둔다
         $configData = $this->templateService->getTemplateConfigData($identifier);
 
         // 에러 응답 처리

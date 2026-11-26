@@ -21,7 +21,7 @@ axes:
     - member
     - owner
     - manager
-    # 스레드 경로 규칙 앵커(답변 작성자)·비밀글 조회 「본인만」 (#789)
+    # 스레드 경로 규칙 앵커(답변 작성자)·비밀글 조회 「본인만」
     - thread_anchor
     - read_secret_self
 

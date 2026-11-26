@@ -95,7 +95,7 @@
                 },
                 "children": [
                     {
-                        "comment": "라벨 칸을 맞춰 값이 한 줄로 시작하게 kv-list(#682 S4 라운드 8 전수조사 — 라벨 폭마다 값이 들쭉날쭉).",
+                        "comment": "라벨 칸을 맞춰 값이 한 줄로 시작하게 kv-list(라벨 폭마다 값이 들쭉날쭉).",
                         "type": "basic",
                         "name": "Div",
                         "props": {

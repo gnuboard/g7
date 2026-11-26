@@ -135,7 +135,7 @@ class LayoutExtensionIntegrationTest extends TestCase
      */
     public function test_module_deactivation_and_reactivation_preserves_extensions(): void
     {
-        // 재활성화 복원은 붙을 자리가 있는 활성 템플릿의 행만 되살린다(#725) — 확장점을 가진 호스트 화면을 둔다.
+        // 재활성화 복원은 붙을 자리가 있는 활성 템플릿의 행만 되살린다 — 확장점을 가진 호스트 화면을 둔다.
         TemplateLayout::factory()->create([
             'template_id' => $this->template->id,
             'name' => 'header_host',
@@ -500,7 +500,7 @@ class LayoutExtensionIntegrationTest extends TestCase
     }
 
     /**
-     * 템플릿을 지우기 전에 그 템플릿의 Extension 을 명시적으로 지운다 — 외래키 검사를 꺼도 고아가 남지 않는다(DB CASCADE 비의존, #888).
+     * 템플릿을 지우기 전에 그 템플릿의 Extension 을 명시적으로 지운다 — 외래키 검사를 꺼도 고아가 남지 않는다(DB CASCADE 비의존).
      *
      * 템플릿 제거(`TemplateManager::unregisterLayouts()`)와 같은 순서로 `TemplateChildrenDeleter` 가 자식을 먼저 지운다.
      *
@@ -1125,7 +1125,7 @@ class LayoutExtensionIntegrationTest extends TestCase
         // 병합 결과는 표준 키 `initActions`(camelCase) 단일 배열로 통합된다. deprecated 별칭
         // `init_actions` 로 입력해도 결과는 표준 키이며, 별칭 키는 제거된다 — 두 키가 공존하면
         // 엔진(TemplateApp)의 `initActions || init_actions` OR 단락이 한쪽을 통째로 무시해
-        // 확장이 기여한 init 단계가 실행되지 않는다 (#421 회귀의 근본 원인).
+        // 확장이 기여한 init 단계가 실행되지 않는다 (회귀의 근본 원인).
         $handlers = array_column($result['initActions'] ?? [], 'handler');
         $this->assertSame(['hostInit', 'sirsoft-ecommerce.initPreferredCurrency'], $handlers, '호스트 init_actions 뒤에 확장 init_actions 가 병합되어야 한다');
         $this->assertArrayNotHasKey('init_actions', $result, 'deprecated 별칭 키가 잔존하면 엔진 OR 단락이 통합 결과를 무시한다');

@@ -37,7 +37,7 @@ effects:
   - pipes_apply_in_bindings                      # 바인딩·resolveObject·레이아웃 실사용 패턴에서 파이프 적용
   - pipe_expression_preserves_raw_type           # 단일 바인딩+파이프는 원본 타입 유지
   - pipe_edge_cases_safe
-  # thumb·thumbSrcset 내장 파이프(engine-v1.95.0, #869) — 판정은 support/thumbnailUrl 이 하고(thumbnail-frontend.yaml),
+  # thumb·thumbSrcset 내장 파이프(engine-v1.95.0) — 판정은 support/thumbnailUrl 이 하고(thumbnail-frontend.yaml),
   # 여기서는 파이프 결선과 기본 규격만 잰다
   - thumb_pipe_appends_preset_to_serving_urls       # 등록된 서빙 경로에만 ?size=, 인자 없으면 sm
   - thumb_pipe_leaves_non_targets_untouched         # 외부·정적 주소, null·undefined 는 그대로

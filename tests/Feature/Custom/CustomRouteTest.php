@@ -20,7 +20,7 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * custom 예약 자리 라우트(`routes/custom.php`) Feature 테스트 (#792 WP-K2)
+ * custom 예약 자리 라우트(`routes/custom.php`) Feature 테스트
  *
  * 개발자 라우트가 G7 화면 catch-all 보다 먼저 등록되어 이기고, 등록하지 않은 주소는 G7 셸이 그대로 그리며,
  * 코어 예약 주소를 가리는 라우트는 등록되지 않는지 잠근다. 실제 운영 순서(routes/web.php 맨 앞)를 재현하려고

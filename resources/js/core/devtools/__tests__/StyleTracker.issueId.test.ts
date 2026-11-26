@@ -1,7 +1,7 @@
 /**
  * @file StyleTracker.issueId.test.ts
  * @description StyleTracker 가 감지한 스타일 이슈도 G7DevToolsCore 에 id 를 가진 채 쌓인다.
- * StyleTracker 는 id 없는 이슈(Omit<StyleIssue, 'id'>)를 넘기는데 코어는 받은 그대로 저장해 id 가 비었다(#869 타입 검사로 드러남).
+ * StyleTracker 는 id 없는 이슈(Omit<StyleIssue, 'id'>)를 넘기는데 코어는 받은 그대로 저장해 id 가 비었다(타입 검사로 드러남).
  * (매니페스트 devtools-style-issue-id.yaml)
  *
  * @vitest-environment jsdom

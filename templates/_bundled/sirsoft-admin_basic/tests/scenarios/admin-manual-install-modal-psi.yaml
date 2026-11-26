@@ -9,7 +9,7 @@ description: |
     - 구조: 세 모달 JSON 을 모두 읽어 탭(underline, file_upload/github), if 기반 분기, 에러 배너,
       FileInput 과 `$event.target.value` 바인딩, 상세 오류(errors.error), 필드 오류(.form-error-xs),
       설치 버튼 아이콘(download/spinner)을 대조한다.
-    - 렌더: 모듈 모달의 본문과 고정 하단(`props.footer`, #869 P1 에서 설치 단추가 옮겨 감)을 실제로 그려
+    - 렌더: 모듈 모달의 본문과 고정 하단(`props.footer`, 설치 단추가 옮겨 감)을 실제로 그려
       탭 전환, 오류 표시, 설치 중 아이콘, 설치 버튼 잠금 조건을 본다. 세 모달 구조가 같다는 것은
       구조 계층이 세 종류 전수로 잡으므로 렌더 계층은 모듈 하나로 잰다.
 

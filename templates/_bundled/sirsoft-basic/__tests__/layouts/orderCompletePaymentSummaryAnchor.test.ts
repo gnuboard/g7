@@ -1,6 +1,6 @@
 /**
  * @file orderCompletePaymentSummaryAnchor.test.ts
- * @description 주문 완료 화면 결제 금액 요약의 확장 앵커 검증 (#639).
+ * @description 주문 완료 화면 결제 금액 요약의 확장 앵커 검증.
  *
  * 결제 플러그인(KG이니시스·NHN KCP·나이스페이먼츠)의 주문 완료 조각은 target_id
  * "order_complete_payment_summary" 에 붙는다. 이 화면에 그 id 가 없어서 NHN KCP·나이스페이먼츠

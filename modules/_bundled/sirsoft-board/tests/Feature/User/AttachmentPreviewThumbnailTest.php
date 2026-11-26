@@ -23,7 +23,7 @@ use Modules\Sirsoft\Board\Support\AttachmentThumbnailSourceProvider;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 게시판 첨부 미리보기의 이미지 썸네일 계약 (#869)
+ * 게시판 첨부 미리보기의 이미지 썸네일 계약
  *
  * 미리보기 주소에 `?size=`·`?w=` 를 붙이면 콘텐츠 상태 게이트(삭제글·비밀글·블라인드 글)를 지난 뒤
  * 규격 크기로 줄인 파생본을 낸다. 파라미터가 없으면 종전 원본 응답과 같아야 하고, 게이트는 썸네일에도

@@ -23,7 +23,7 @@ use Modules\Sirsoft\Ecommerce\Services\StockService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 삭제 경로가 FK CASCADE 에 기대지 않는지 검증 (#599 validate P4)
+ * 삭제 경로가 FK CASCADE 에 기대지 않는지 검증
  *
  * CASCADE 가 걸린 DB 에서는 명시 삭제가 없어도 자식 행이 사라져 결함이 드러나지 않는다. 그래서
  * 외래키 검사를 끈 세션(`SET FOREIGN_KEY_CHECKS=0` — DDL 이 아니라 세션 변수라 테스트 트랜잭션을

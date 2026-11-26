@@ -556,7 +556,7 @@ class ZipBootstrapContractTest extends TestCase
      * 화면 스크립트가 실패 응답(`!data.ok`)에 실린 세션 키를 저장하고 번호 칸을 숨기는지 확인한다.
      *
      * 서버는 맞는 번호로 인증한 뒤의 판정 실패에도 세션을 돌려준다. 화면이 그 세션을 버리면 번호 칸에 남은
-     * (이미 지워진) 번호를 다시 보내 `invalid_token` 과 시도 차감을 받는다(#971). 인증 실패 세 코드의 세션 폐기
+     * (이미 지워진) 번호를 다시 보내 `invalid_token` 과 시도 차감을 받는다. 인증 실패 세 코드의 세션 폐기
      * 분기는 그대로 두고, 그 밖의 실패에서만 세션을 받아 둔다.
      *
      * @scenario archive=foreign

@@ -109,7 +109,7 @@ class CacheKeyIndexConcurrencyTest extends TestCase
         File::deleteDirectory($barrier);
 
         $driver = new ModuleCacheDriver(self::IDENTIFIER, 'file');
-        // 키 목록은 키 해시로 64조각(`g7:_idx:{접두사}:{0..63}`)에 나뉘어 있다(#798 — 조각마다 잠금, 키가 많은 확장의 put 비용 축소).
+        // 키 목록은 키 해시로 64조각(`g7:_idx:{접두사}:{0..63}`)에 나뉘어 있다(조각마다 잠금, 키가 많은 확장의 put 비용 축소).
         // 조각을 합쳐 센다. 같은 조각에 든 키끼리는 여전히 같은 잠금으로 동시 수정을 막는다.
         $index = [];
         for ($shard = 0; $shard < 64; $shard++) {

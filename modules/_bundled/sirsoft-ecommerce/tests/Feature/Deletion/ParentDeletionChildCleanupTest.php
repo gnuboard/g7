@@ -28,7 +28,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 상품·옵션·추가옵션·주문·카테고리 삭제 시 하위 행 명시 삭제 (#888)
+ * 상품·옵션·추가옵션·주문·카테고리 삭제 시 하위 행 명시 삭제
  *
  * 종전에는 상품 삭제가 장바구니·찜·쿠폰 적용 상품·리뷰를, 옵션 동기화가 그 옵션을 담은 장바구니를, 추가옵션
  * 동기화가 선택지를, 주문 삭제가 주문옵션 리뷰를, 카테고리 삭제가 쿠폰 적용 카테고리를 DB 외래키의 연쇄 삭제에

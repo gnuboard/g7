@@ -45,7 +45,7 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
         $this->mock(CacheInterface::class)->shouldIgnoreMissing();
 
         // 서비스 자신의 부수효과만 잰다 — 단건 저장 훅(after_set)을 구독한 SeoSettingsCacheListener 는 general 카테고리
-        // 저장마다 SEO 캐시를 비운다(#434, 봇 화면에 사이트 이름 등이 실린다). 그 계약은 리스너 테스트가 맡으므로 여기서는
+        // 저장마다 SEO 캐시를 비운다(봇 화면에 사이트 이름 등이 실린다). 그 계약은 리스너 테스트가 맡으므로 여기서는
         // 구독을 떼어 clearAll 횟수에 섞이지 않게 한다(훅 상태는 TestCase 가 테스트마다 초기화한다).
         HookManager::clearAction('core.settings.after_set');
 
@@ -165,7 +165,7 @@ class SettingsServiceSetSettingSideEffectsTest extends TestCase
     }
 
     /**
-     * 자산 URL 방식을 단건으로 바꾸면 확장 캐시 버전이 오른다 — 실제 키 관측 (#651 F5).
+     * 자산 URL 방식을 단건으로 바꾸면 확장 캐시 버전이 오른다 — 실제 키 관측.
      *
      * 병합 번들 CSS 에는 그 시점의 자산 URL 형태(확장자 / `?file=`)가 구워져 있고, 디스크 번들과
      * 정적 게시본은 캐시 버전으로 키드된다. 버전이 오르지 않으면 모드를 바꿔도 옛 형태의

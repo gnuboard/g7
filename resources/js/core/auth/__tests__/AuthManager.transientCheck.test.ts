@@ -123,7 +123,7 @@ describe('[case:network-auth-check-transient-5xx-logout] AuthManager — 인증 
     expect(changes).toEqual([]);
   });
 
-  // #869 λ 4부 16 관찰 4: 서버 요청 제한(429)을 인증 확인이 받으면 4xx 라 미인증으로 보고 로그인 화면으로 보냈다
+  // 서버 요청 제한(429)을 인증 확인이 받으면 4xx 라 미인증으로 보고 로그인 화면으로 보냈다
   // @scenario failure=rate_limited_429
   // @effects transient_auth_failure_retried
   it('429 뒤에 성공하면 다시 물어 인증 상태가 되고 토큰을 지우지 않는다', async () => {

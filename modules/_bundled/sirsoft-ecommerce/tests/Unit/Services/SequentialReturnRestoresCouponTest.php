@@ -14,12 +14,12 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 순차 부분반품이 끝나면 쿠폰이 **실제로 복원된다** (S2-D5 종단 · #599 통합실측 세션2)
+ * 순차 부분반품이 끝나면 쿠폰이 **실제로 복원된다** (S2-D5 종단)
  *
  * 형제 테스트 `ReturnedRowsExcludedFromRecalcTest` 는 `completedClaimItems()` 의 **반환값**
  * 까지만 본다. 그것은 고친 자리를 정확히 겨누지만, **증상 자체**(쿠폰이 `used` 로 굳는다)를
  * 재현하지는 않는다 — 입력이 맞아도 그 뒤 재계산·`detectRestoredCoupons()`·복원 훅 중
- * 한 곳이 끊기면 고객은 여전히 쿠폰을 잃는다(#599 세션2 계획서준수검증 결함4).
+ * 한 곳이 끊기면 고객은 여전히 쿠폰을 잃는다(세션2 계획서준수검증 결함4).
  *
  * 실측이 남긴 증상(주문 517 · 2026-09-15):
  *

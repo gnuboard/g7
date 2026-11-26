@@ -41,7 +41,7 @@ class UpdateMenuRequest extends FormRequest
             'name' => ['nullable', new LocaleRequiredTranslatable(maxLength: 255)],
             'slug' => ['required', 'string', 'max:255', Rule::unique(Menu::class, 'slug')->ignore($menuId)],
             'url' => 'nullable|string|max:500',
-            // 레거시 icon 문자열은 FA 클래스만 받는다(#381) — 이미지·SVG 는 icon_spec 으로. 클래스가 아닌 문자열은 원래 빈 칸으로 저장되던 값이다.
+            // 레거시 icon 문자열은 FA 클래스만 받는다 — 이미지·SVG 는 icon_spec 으로. 클래스가 아닌 문자열은 원래 빈 칸으로 저장되던 값이다.
             // 단, 현재 저장값을 그대로 되돌려 보내면(아이콘 칸 모르는 템플릿이 예전 비클래스 문자열을 실어 보냄) 형식 검사를 건너뛴다.
             'icon' => $this->keepsStoredIcon()
                 ? ['nullable', 'string']
@@ -96,7 +96,7 @@ class UpdateMenuRequest extends FormRequest
     }
 
     /**
-     * 요청의 레거시 icon 문자열이 메뉴의 현재 저장값을 그대로 되돌려 보낸 것인지 판정합니다 (#381).
+     * 요청의 레거시 icon 문자열이 메뉴의 현재 저장값을 그대로 되돌려 보낸 것인지 판정합니다.
      *
      * @return bool 현재 저장값과 같은 아이콘 문자열이면 true
      */

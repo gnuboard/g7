@@ -1,6 +1,6 @@
 /**
  * @file MenuIconField.test.tsx
- * @description 관리자 메뉴 아이콘 입력 필드 — 미리보기·유형 라벨·탭 4개(선택·직접 입력·업로드·SVG 코드) (#381)
+ * @description 관리자 메뉴 아이콘 입력 필드 — 미리보기·유형 라벨·탭 4개(선택·직접 입력·업로드·SVG 코드)
  *
  * 필드는 엔진 폼 바인딩이 읽는 가짜 이벤트(`{ target: { name, value } }`)로 구조형 값(icon_spec)을 내보낸다.
  * 업로드는 `G7Core.api.post` 로 보내고 응답의 icon_spec 을 그대로 내보낸다. 문구는 `admin.menus.icon_field.*`
@@ -214,7 +214,7 @@ describe('MenuIconField — 값 내보내기', () => {
 
   describe('[case:components-form-blocked-input-leaves-partial-value] 막힌 입력의 중간값 잔존', () => {
   /**
-   * 회귀(#381 브라우저 실측): 외부 주소를 한 글자씩 입력하면 막히기 전의 중간 글자(`https`·`https:/`)가
+   * 회귀: 외부 주소를 한 글자씩 입력하면 막히기 전의 중간 글자(`https`·`https:/`)가
    * class 값으로 내보내져 폼에 남았다. 막힌 입력은 입력을 시작하기 전 값으로 되돌려야 한다.
    *
    * @scenario surface=form_field, icon_type=image
@@ -265,7 +265,7 @@ describe('MenuIconField — 값 내보내기', () => {
   });
 
   /**
-   * 회귀(#381 validate-plan O3): 편집 중 다른 메뉴로 바뀌어 값이 바깥에서 SVG·없음으로 갈리면,
+   * 회귀(plan O3): 편집 중 다른 메뉴로 바뀌어 값이 바깥에서 SVG·없음으로 갈리면,
    * 「직접 입력」 칸에 이전 메뉴의 클래스 글자가 남았다(SVG 칸도 같은 방향으로 남았다).
    *
    * @scenario surface=form_field, icon_type=svg
@@ -534,7 +534,7 @@ describe('MenuIconField — 업로드', () => {
   });
 
   /**
-   * 회귀(#381 validate-plan 5차 ⓐ): 직접 입력에 외부 주소를 붙여넣어 막힌 뒤 선택 탭에서 지금과 같은 아이콘을 고르면,
+   * 회귀(plan 5차 ⓐ): 직접 입력에 외부 주소를 붙여넣어 막힌 뒤 선택 탭에서 지금과 같은 아이콘을 고르면,
    * 값이 바뀌지 않아 칸 맞춤이 돌지 않고 막힌 주소와 빨간 문구가 직접 입력 칸에 남았다.
    *
    * @scenario surface=form_field, icon_type=class
@@ -566,7 +566,7 @@ describe('MenuIconField — 업로드', () => {
   });
 
   /**
-   * 회귀(#381 validate-plan 5차 ⓑ): 업로드 오류 문구는 다음 업로드 때만 지워져, 다른 아이콘을 고르거나 지운 뒤에도 남았다.
+   * 회귀(plan 5차 ⓑ): 업로드 오류 문구는 다음 업로드 때만 지워져, 다른 아이콘을 고르거나 지운 뒤에도 남았다.
    *
    * @scenario surface=form_field, icon_type=image
    * @effects upload_failure_shows_message
@@ -588,7 +588,7 @@ describe('MenuIconField — 업로드', () => {
   });
 
   /**
-   * 회귀(#381 validate-plan 5차 ⓒ): 업로드 진행 중 「아이콘 지우기」를 누르면, 늦게 온 업로드 응답이 지운 값을 덮어
+   * 회귀(plan 5차 ⓒ): 업로드 진행 중 「아이콘 지우기」를 누르면, 늦게 온 업로드 응답이 지운 값을 덮어
    * 업로드 이미지가 되살아났다. 진행 중에 값이 바뀌면 늦은 응답은 버린다.
    *
    * @scenario surface=form_field, icon_type=image
@@ -629,7 +629,7 @@ describe('MenuIconField — 업로드', () => {
   });
 
   /**
-   * 회귀(#381 validate-plan 6차 O-6a): 직접 입력·SVG 두 칸에서 친 값은 서로를 맞추지 않아, 직접 입력에 막힌 외부 주소·빨간
+   * 회귀(plan 6차 O-6a): 직접 입력·SVG 두 칸에서 친 값은 서로를 맞추지 않아, 직접 입력에 막힌 외부 주소·빨간
    * 문구가 SVG 를 붙여 넣은 뒤에도 남고(반대로 SVG 칸엔 옛 코드가 남아 한 글자만 고쳐도 값이 SVG 로 돌아갔다).
    *
    * @scenario surface=form_field, icon_type=svg
@@ -663,7 +663,7 @@ describe('MenuIconField — 업로드', () => {
   });
 
   /**
-   * 회귀(#381 validate-plan 6차 O-6b): 업로드가 끝나기 전에 저장하면 이전 아이콘으로 저장되고 올린 이미지는 조용히 버려졌다.
+   * 회귀(plan 6차 O-6b): 업로드가 끝나기 전에 저장하면 이전 아이콘으로 저장되고 올린 이미지는 조용히 버려졌다.
    * 업로드 동안 전역 `menuIconUploading` 을 켜 저장 단추를 잠그고(레이아웃), 끝나면(성공·실패) 끈다.
    *
    * @scenario surface=form_field, icon_type=image
@@ -688,7 +688,7 @@ describe('MenuIconField — 업로드', () => {
   });
 
   /**
-   * 회귀(#381 validate-plan 6차 O-6b): 업로드 중에 폼이 닫히면(취소·다른 화면) 업로드 중 표시를 끄고, 늦게 온 결과는
+   * 회귀(plan 6차 O-6b): 업로드 중에 폼이 닫히면(취소·다른 화면) 업로드 중 표시를 끄고, 늦게 온 결과는
    * 닫힌 폼 값에 쓰지 않는다.
    *
    * @scenario surface=form_field, icon_type=image
@@ -716,7 +716,7 @@ describe('MenuIconField — 업로드', () => {
   });
 
   /**
-   * 회귀(#381 validate-plan 6차 O-6c): 직접 입력에 사이트 경로를 한 글자씩 치면 글자마다 미리보기 이미지 요청이 나갔다.
+   * 회귀(plan 6차 O-6c): 직접 입력에 사이트 경로를 한 글자씩 치면 글자마다 미리보기 이미지 요청이 나갔다.
    * 입력이 멈춘 뒤에만 미리보기를 바꾸고, 그 주소에는 사이트 마운트 접두가 붙는다(하위 폴더 설치).
    *
    * @scenario surface=form_field, icon_type=image

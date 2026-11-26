@@ -1,4 +1,4 @@
-feature: 화면 주소 헬퍼(ScreenUrl)·사용자 화면 URL 설정·코어 하드코딩 주소 교체 (#792)
+feature: 화면 주소 헬퍼(ScreenUrl)·사용자 화면 URL 설정·코어 하드코딩 주소 교체
 
 description: |
   서버가 만드는 사람이 여는 화면 주소를 ScreenUrl::path/absolute(키·G7 기본 경로·파라미터·범위)로 만들고

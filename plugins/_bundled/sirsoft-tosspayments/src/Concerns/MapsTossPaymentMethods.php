@@ -13,7 +13,7 @@ namespace Plugins\Sirsoft\Tosspayments\Concerns;
  *
  * 관리자 주문설정 화면의 PG 표시는 결제수단 카탈로그의 `pg_locked` / `needs_pg` 선언을 코어
  * 레이아웃이 직접 읽어 3분기(PG 고정 배지 / PG 선택 / PG 불필요)하므로, 과거처럼 레이아웃
- * 표현식의 no-PG 리스트 리터럴을 정규식으로 재작성하는 리스너는 두지 않는다(#475).
+ * 표현식의 no-PG 리스트 리터럴을 정규식으로 재작성하는 리스너는 두지 않는다.
  *
  * core 값은 체크아웃이 서버로 보낼 코어 PaymentMethodEnum 값이다. toss_* id 는 코어 enum 이
  * 거부하므로, 프론트는 이 core 값을 payment_method 로 전송하고 toss_* 선택값은 _local 에만
@@ -36,7 +36,7 @@ trait MapsTossPaymentMethods
         'toss_naverpay' => ['setting' => 'method_naverpay', 'method' => 'CARD', 'easy_pay' => '네이버페이', 'core' => 'card'],
         'toss_payco' => ['setting' => 'method_payco', 'method' => 'CARD', 'easy_pay' => '페이코', 'core' => 'card'],
         'toss_samsungpay' => ['setting' => 'method_samsungpay', 'method' => 'CARD', 'easy_pay' => '삼성페이', 'core' => 'card'],
-        // 토스 공식 간편결제사 코드(한글) — 「L.pay」 는 화면 표기일 뿐 SDK 코드는 「엘페이」다 (#933)
+        // 토스 공식 간편결제사 코드(한글) — 「L.pay」 는 화면 표기일 뿐 SDK 코드는 「엘페이」다
         'toss_applepay' => ['setting' => 'method_applepay', 'method' => 'CARD', 'easy_pay' => '애플페이', 'core' => 'card'],
         'toss_lpay' => ['setting' => 'method_lpay', 'method' => 'CARD', 'easy_pay' => '엘페이', 'core' => 'card'],
         'toss_ssgpay' => ['setting' => 'method_ssgpay', 'method' => 'CARD', 'easy_pay' => 'SSG페이', 'core' => 'card'],

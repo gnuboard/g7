@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Lang;
 use Tests\PureTestCase;
 
 /**
- * 언어 선택지 라벨 전수 테스트 (S2-D11 회귀 · #599 통합실측 세션2)
+ * 언어 선택지 라벨 전수 테스트 (S2-D11 회귀)
  *
  * **증상**: 마이페이지 [내 정보] → [수정하기] 의 「언어」 드롭다운이 이렇게 떴다.
  *
@@ -49,7 +49,7 @@ class LanguageOptionLabelsTest extends PureTestCase
      * `modules/sirsoft-ecommerce/tests/Unit/Lang` 는 5단계다. 6단계로 고정하면 활성
      * 사본에서 저장소 **밖**(`htdocs/`)을 가리켜, 언어 파일이 멀쩡한데도
      * `assertFileExists` 가 「파일이 없다」로 터진다 — 가드가 스스로를 무력화한다
-     * (#599 계획서 준수 검증 결함).
+     * (계획서 준수 검증 결함).
      *
      * 그래서 `artisan` 과 `composer.json` 이 **함께** 있는 디렉터리를 만날 때까지
      * 올라간다. 둘 중 하나만 보면 다른 PHP 프로젝트에서도 멈출 수 있어 둘 다 요구한다.

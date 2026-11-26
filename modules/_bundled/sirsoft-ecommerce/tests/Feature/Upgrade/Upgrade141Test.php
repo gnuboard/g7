@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Modules\Sirsoft\Ecommerce\Upgrades\Upgrade_1_4_1;
 
 /**
- * 1.4.1 업그레이드 — 쓰이지 않는 배송 설정 키 정리 (#952 P16)
+ * 1.4.1 업그레이드 — 쓰이지 않는 배송 설정 키 정리
  */
 class Upgrade141Test extends ModuleTestCase
 {

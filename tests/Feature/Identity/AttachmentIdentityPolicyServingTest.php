@@ -24,7 +24,7 @@ use Tests\TestCase;
 use Tests\Unit\Thumbnails\Support\TestImages;
 
 /**
- * 코어 첨부(`/api/attachment/{hash}`)와 본인인증 정책 (#869).
+ * 코어 첨부(`/api/attachment/{hash}`)와 본인인증 정책.
  *
  * - 내려받기에 걸린 켜진 본인인증 정책(hook 범위 `core.attachment.before_download_action`, route 범위
  *   `api.attachment.download`)이 있으면 원본·썸네일을 `private` 로 낸다. 인증을 마친 사람에게만 가는 응답이

@@ -169,7 +169,7 @@ class ExtensionManagerZipTest extends TestCase
      * Mac 에서 다시 압축한 확장 ZIP(감싼 폴더 + 폴더 항목 + `__MACOSX/` 부속 폴더)도 manifest 를 찾는지 검증합니다.
      *
      * 부속 폴더가 함께 풀리면 최상위 폴더가 둘이 되어 감싼 폴더를 벗기지 못하고 `module:update --zip` 이
-     * 「manifest 없음」으로 멈췄다(#971).
+     * 「manifest 없음」으로 멈췄다.
      *
      * @scenario case=zip_update_macosx
      *

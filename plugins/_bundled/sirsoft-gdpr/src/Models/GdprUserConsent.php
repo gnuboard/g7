@@ -110,7 +110,7 @@ class GdprUserConsent extends Model
     }
 
     /**
-     * 저장·삭제되면 요청 안 동의 조회 메모를 비웁니다 (#860).
+     * 저장·삭제되면 요청 안 동의 조회 메모를 비웁니다.
      *
      * @return void 반환값 없음
      */

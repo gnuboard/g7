@@ -98,14 +98,14 @@ class SettingsController extends AdminBaseController
      * - `consent_selection`: 지금 선택 상태 `{state, reason, provider_id, provider_label}`
      * - `queue_connection_options`: 큐 워커로 등록할 수 있는 연결 `[{name, driver}]` (sync·null 제외, #139)
      * - `csp`: 콘텐츠 보안 정책 섹션 메타 `{override, preview, auto_hosts, style_override, style_preview, style_auto_hosts}` (#158, 스타일 3키는 7.1.6)
-     * - `thumbnail_engine_available`: 이 서버에 쓸 수 있는 이미지 처리 엔진이 있는지 (없으면 업로드 탭이 「썸네일 없이 원본」 안내, #869)
-     * - `thumbnail_disk_options`: 썸네일 저장 위치 선택지 `{public: [{id, label}], gated: [{id, label}]}` — label 은 로케일 맵 (#869)
+     * - `thumbnail_engine_available`: 이 서버에 쓸 수 있는 이미지 처리 엔진이 있는지 (없으면 업로드 탭이 「썸네일 없이 원본」 안내)
+     * - `thumbnail_disk_options`: 썸네일 저장 위치 선택지 `{public: [{id, label}], gated: [{id, label}]}` — label 은 로케일 맵
      * - `thumbnail_server_defaults`: 업로드 탭 「고급」 칸(썸네일 서버 보호 값)을 비웠을 때 쓸 값 — `.env` G7_THUMBNAIL_* 가 있으면 그 값,
-     *   없으면 기본값. 화면은 이 값을 칸의 placeholder 로 보인다 (#869)
+     *   없으면 기본값. 화면은 이 값을 칸의 placeholder 로 보인다
      * - `search_scopes`: 최근 검색어 범위 `[{scope, owner, owner_label, label, default_max_count, default_retention_days}]` (개인정보 탭, 7.1.5)
-     * - `embed_extension_providers`: 확장이 제공한 외부 영상 서비스 `[{key, extension, id, name}]` (본문 콘텐츠 탭, 7.1.5 #883)
+     * - `embed_extension_providers`: 확장이 제공한 외부 영상 서비스 `[{key, extension, id, name}]` (본문 콘텐츠 탭, 7.1.5)
      * - `file_delegation`: 웹서버 파일 위임 요약 `{mode, base_path, accel_prefix, accel_mapping, nginx_alias_path}` — 지금 적용 중인 값이다(저장값이
-     *   아니라 `.env` 잠금까지 반영한 config). 드라이버 탭이 웹서버 설정 안내를 실제 경로로 채운다 (#878)
+     *   아니라 `.env` 잠금까지 반영한 config). 드라이버 탭이 웹서버 설정 안내를 실제 경로로 채운다
      * - `public_disk_hardening`: `/storage` 직접 주소 보호 헤더 점검 결과 `{ok, nosniff, disposition, status, checked_at, rules_written}` 또는 null (드라이버 탭 경고, 7.1.6 — `rules_written=false` 는 규칙 파일을 지금 설정으로 쓰지 못함)
      *
      * @return array<string, mixed> 응답 메타 배열
@@ -117,7 +117,7 @@ class SettingsController extends AdminBaseController
         return [
             'limits' => config('core.settings_limits', []),
             'env_priority_enabled' => EnvPriority::enabled(),
-            // 키-값 맵이다 — 잠긴 키가 없으면 `[]` 가 아니라 `{}` 로 낸다(settings.md 의 약속, #758)
+            // 키-값 맵이다 — 잠긴 키가 없으면 `[]` 가 아니라 `{}` 로 낸다(settings.md 의 약속)
             'env_locked' => (object) $this->settingsService->envLockedMeta(),
             'consent_providers' => array_values(array_map(
                 static fn (ConsentProviderInterface $provider): array => [
@@ -129,7 +129,7 @@ class SettingsController extends AdminBaseController
             'consent_selection' => $consent->selection()->toArray(),
             'queue_connection_options' => $this->queueWorkerRegistry->registrableConnections(),
             'csp' => $this->buildCspMeta(),
-            // 파비콘 우선순위 안내(#434) — 일반 탭 파비콘 칸 아래 「현재 ○○ 화면은 △△ 템플릿 설정의 파비콘이 우선 적용됩니다」
+            // 파비콘 우선순위 안내 — 일반 탭 파비콘 칸 아래 「현재 ○○ 화면은 △△ 템플릿 설정의 파비콘이 우선 적용됩니다」
             'favicon' => $this->buildFaviconMeta(),
             'thumbnail_engine_available' => app(ImageProcessorResolver::class)->resolve() !== null,
             'thumbnail_disk_options' => app(ThumbnailDiskOptions::class)->all(),
@@ -137,14 +137,14 @@ class SettingsController extends AdminBaseController
             'search_scopes' => $this->searchHistoryService->settingsMeta(),
             'embed_extension_providers' => $this->settingsService->embedExtensionProviderOptions(),
             'file_delegation' => FileDelegation::describe(),
-            // 비공개 첨부 저장소 카드(#916) — .env 로 고정된 주체, 저장된 선택이 이 서버에 없는 디스크인지
+            // 비공개 첨부 저장소 카드 — .env 로 고정된 주체, 저장된 선택이 이 서버에 없는 디스크인지
             'private_attachment' => $this->settingsService->privateAttachmentMeta(),
             'public_disk_hardening' => PublicDiskHardeningProbe::cached(),
         ];
     }
 
     /**
-     * 파비콘 우선순위 요약 — 해석 실패(템플릿 행 없음 등)는 안내를 숨기는 null 로 (#434).
+     * 파비콘 우선순위 요약 — 해석 실패(템플릿 행 없음 등)는 안내를 숨기는 null 로.
      *
      * @return array<string, mixed>|null 화면 종류별 요약
      */
@@ -187,9 +187,9 @@ class SettingsController extends AdminBaseController
      * 응답에 실을 설정을 다듬습니다.
      *
      * `drivers.queue_names` 는 연결 => 큐 목록 맵이다 — 비었을 때 PHP 배열 그대로 내면 `[]` 가 돼 화면이 키를
-     * 붙여도 저장 본문에서 사라진다(#758 과 같은 결함군). 그래서 늘 객체로 낸다.
+     * 붙여도 저장 본문에서 사라진다(빈 객체가 빈 배열로 바뀌는 것과 같은 결함군). 그래서 늘 객체로 낸다.
      *
-     * 업로드 탭 썸네일 규격 표(#869)는 저장 행 그대로가 아니라 레지스트리가 합친 표(고정·og·켜진 확장·운영자, 행마다
+     * 업로드 탭 썸네일 규격 표는 저장 행 그대로가 아니라 레지스트리가 합친 표(고정·og·켜진 확장·운영자, 행마다
      * `kind`)로 낸다. 저장 행에는 og 와 확장 기본값이 없고, 키가 없는 기존 설치는 아예 비어 있기 때문이다.
      * `thumbnail_presets` 와 `thumbnail_presets_rows` 에 같은 표를 싣는다 — 화면이 어느 쪽에 묶어도 저장 본문
      * (`upload.thumbnail_presets`)과 오류 키(`upload.thumbnail_presets.{i}.name`)의 행 번호가 표와 같다.
@@ -266,9 +266,9 @@ class SettingsController extends AdminBaseController
                 return $this->success('settings.save_success', [
                     'settings' => $allSettings,
                     // 전역 상태(`_global.settings`)용 공개 설정 — 계산 필드(site_logo_url·site_favicon_url)가 실려 있다.
-                    // 화면이 저장 직후 `settings`(관리자 형태, 계산 필드 없음)로 전역을 덮으면 상단 로고가 새로고침 전까지 사라졌다(#434 S-3).
+                    // 화면이 저장 직후 `settings`(관리자 형태, 계산 필드 없음)로 전역을 덮으면 상단 로고가 새로고침 전까지 사라졌다.
                     'frontend_settings' => $this->settingsService->getFrontendSettings(),
-                    // 저장은 했지만 알려야 할 조합(#916 D5 — 비공개 첨부 저장소 = 공개 자산 디스크, D26 — 권한 썸네일 = 공개 자산 = s3)
+                    // 저장은 했지만 알려야 할 조합
                     'warnings' => $this->settingsService->storageWarnings(
                         is_array($allSettings['drivers'] ?? null) ? $allSettings['drivers'] : [],
                         is_array($allSettings['upload'] ?? null) ? $allSettings['upload'] : [],
@@ -352,7 +352,7 @@ class SettingsController extends AdminBaseController
      * 이 엔드포인트는 진단만 돌려준다. 값은 환경설정 > 고급의 신뢰 프록시 카드에서
      * 저장하고(`debug.trusted_proxies`), 저장 전 확인은 {@see testTrustedProxy()} 가 맡는다.
      *
-     * **편집을 화면에 연 이유(#609)**: 원래 이 값은 `.env` 전용이었다. 그 전제는 셸로
+     * **편집을 화면에 연 이유**: 원래 이 값은 `.env` 전용이었다. 그 전제는 셸로
      * `.env` 를 고칠 수 있다는 것인데, 무CLI·고정 docroot 설치에는 그 통로가 없어 진단이
      * "고칠 수 없는 경고" 로 끝났다. 남는 위험 — 관리자 계정이 탈취되면 공격자가 신뢰
      * 프록시를 열어 X-Forwarded-For 를 위조할 수 있다 — 은 사라지지 않았다. 다만 그 시점의
@@ -371,7 +371,7 @@ class SettingsController extends AdminBaseController
     }
 
     /**
-     * 웹서버 파일 위임이 실제로 동작하는지 확인할 작은 파일을 내보냅니다 (2단계 프로브, #878).
+     * 웹서버 파일 위임이 실제로 동작하는지 확인할 작은 파일을 내보냅니다 (2단계 프로브).
      *
      * 코어 파일 헬퍼(`fileResponse()`)를 그대로 지나므로 **저장된(적용 중인) 위임 설정**으로 나간다 — 위임이 켜져 있으면
      * 앱은 본문 대신 `X-Sendfile`/`X-Accel-Redirect` 헤더만 세우고, 웹서버가 그 헤더를 소비해 파일을 보내야 본문이 도착한다.
@@ -406,7 +406,7 @@ class SettingsController extends AdminBaseController
     }
 
     /**
-     * 신뢰 프록시 후보값을 저장 전에 검사합니다 (#609).
+     * 신뢰 프록시 후보값을 저장 전에 검사합니다.
      *
      * 저장하지 않고, 이번 요청에 그 값을 적용했을 때 방문자 IP·HTTPS 인식이 어떻게 해석되는지
      * 돌려준다. 이 설정은 틀려도 오류를 내지 않으므로(방문자 IP 만 조용히 어긋난다) 저장 후에
@@ -432,7 +432,7 @@ class SettingsController extends AdminBaseController
     }
 
     /**
-     * 외부 영상 서비스 추가 창의 예시 주소 확인 — 꺼낸 id 와 만들어질 플레이어 주소 (#883).
+     * 외부 영상 서비스 추가 창의 예시 주소 확인 — 꺼낸 id 와 만들어질 플레이어 주소.
      *
      * 저장하지 않는다. 형식이 틀리면(검증 위반) 필드별 문구도 함께 돌려줘 창이 저장 전에 알려 줄 수 있게 한다.
      *
@@ -452,7 +452,7 @@ class SettingsController extends AdminBaseController
     }
 
     /**
-     * 개인정보 보유기간·휴면의 처리 대상 건수를 미리 조회합니다 (#636).
+     * 개인정보 보유기간·휴면의 처리 대상 건수를 미리 조회합니다.
      *
      * 화면의 「대상 N건」 배지가 쓰는 값이며, 커맨드의 `--dry-run` 과 **같은 조건식**을 지납니다 —
      * 화면에서 본 숫자와 실제 처리 건수가 어긋나면 운영자가 규모를 오판한 채 켜게 됩니다.
@@ -491,7 +491,7 @@ class SettingsController extends AdminBaseController
     }
 
     /**
-     * 비밀번호 만료 처리 대상 건수를 미리 봅니다 (#736 — 데이터를 바꾸지 않음).
+     * 비밀번호 만료 처리 대상 건수를 미리 봅니다 (데이터를 바꾸지 않음).
      *
      * 배치가 실제로 쓰는 것과 **같은 쿼리**로 사전 안내·만료 처리 대상을 센다. 기능이 꺼져 있어도
      * 저장값으로 센다 — 켜기 전에 규모를 보는 자리다. "꺼짐" 과 "대상 0건" 은 `enabled` 로 구분하고,
@@ -506,7 +506,7 @@ class SettingsController extends AdminBaseController
     }
 
     /**
-     * 초기 화면 정적 파일(부트스트랩 리소스 정적 게시) 상태를 조회합니다 (#651).
+     * 초기 화면 정적 파일(부트스트랩 리소스 정적 게시) 상태를 조회합니다.
      *
      * CLI `ext-static:status` 와 **같은 판정**(`ExtensionStaticCacheService::statusReport`)을 돌려준다.
      * 읽기 전용이며 입력이 없어 FormRequest 를 두지 않는다 (`trustedProxy` 와 동형).
@@ -532,7 +532,7 @@ class SettingsController extends AdminBaseController
     }
 
     /**
-     * 초기 화면 정적 파일을 지금 다시 만듭니다 (관리자 수동 복구, #651).
+     * 초기 화면 정적 파일을 지금 다시 만듭니다 (관리자 수동 복구).
      *
      * 캐시 버전을 올리고 현재 버전을 강제 재게시한다. 게시 실패·게시가 쓰이지 않는 환경은
      * 요청 처리 실패가 아니라 **진단 결과**라 HTTP 200 으로 돌려주고 성공 여부는 페이로드

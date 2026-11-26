@@ -1,7 +1,7 @@
 <partial description="클레임 상세 - 배송 (회수 · 재발송 운송장 묶음 + 주소)" editor_label="$t:user.modal_label.mypage_claims.detail_shipping">
   <!-- §6-2 — 회수(교환·반품)와 재발송(교환)을 한 카드 안 두 항목으로 둔다. 관리자 상세(D17-②)와 같은 형태다 — 두 배송을 별도 카드로 나누면 같은 신청서의 오고 가는 흐름이 끊겨 보인다. 환불·취소는 회수 배송이 없어 이 카드가 통째로 서지 않는다.
 조회 전용이다. 송장 입력·상태 변경은 운영자 화면 소관이며, 여기에 입력 요소를 두면 구매자가 고칠 수 없는 값을 고칠 수 있는 것처럼 보인다.
-송장은 **상품 행마다** 있다(#599) — 한 신청서의 상품이 여러 상자로 오갈 수 있다. 서버가 같은 (택배사, 운송장)을 가진 행을 묶어 `tracking_groups` 로 싣고, 이 카드는 그 묶음을 방향별로 그리기만 한다. 추적 URL 도 서버가 배송사 템플릿으로 만든다(`tracking_url`) — 화면이 규칙을 재조립하면 주문 배송 조회와 두 벌이 된다. -->
+송장은 **상품 행마다** 있다 — 한 신청서의 상품이 여러 상자로 오갈 수 있다. 서버가 같은 (택배사, 운송장)을 가진 행을 묶어 `tracking_groups` 로 싣고, 이 카드는 그 묶음을 방향별로 그리기만 한다. 추적 URL 도 서버가 배송사 템플릿으로 만든다(`tracking_url`) — 화면이 규칙을 재조립하면 주문 배송 조회와 두 벌이 된다. -->
   <div data-if="{{claim.data?.claim?.claim_type === 'exchange' || claim.data?.claim?.claim_type === 'return'}}" class="bg-white dark:bg-gray-800 rounded-lg p-6">
     <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-4"/>
     <!-- 섹션 제목 -->

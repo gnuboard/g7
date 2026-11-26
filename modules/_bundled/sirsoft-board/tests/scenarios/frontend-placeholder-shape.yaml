@@ -2,7 +2,7 @@ feature: 게시판 모듈 화면 문구는 서버식 자리표시자를 쓰지 �
 
 description: |
   화면 번역 엔진은 `{key}`·`{{key}}` 만 치환한다. 화면 문구 JSON(번들과 ja 팩)에 서버 문구식 `:key` 가 남아 있으면
-  그 문구를 화면에서 쓰는 순간 글자 그대로 보인다(#798). 서버는 `src/lang` PHP 만 읽으므로 JSON 만 고친다.
+  그 문구를 화면에서 쓰는 순간 글자 그대로 보인다. 서버는 `src/lang` PHP 만 읽으므로 JSON 만 고친다.
 
 axes:
   source: ["bundled|ja_pack"]

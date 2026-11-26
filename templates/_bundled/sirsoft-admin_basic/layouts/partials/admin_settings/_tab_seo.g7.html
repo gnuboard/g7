@@ -64,7 +64,7 @@
         <div>
           <label class="form-label">$t:admin.settings.seo.og_image_default</label>
           <p class="text-tertiary mb-2">$t:admin.settings.seo.og_image_default_desc</p>
-          <!-- 첨부 업로더 확장점(#916) — 업로더 플러그인이 mode="replace" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),
+          <!-- 첨부 업로더 확장점 — 업로더 플러그인이 mode="replace" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),
                콜백은 기본 업로더의 이벤트 처리와 같은 동작이다($args[0] → $event). 기본 업로더는 <default> 안에 그대로 둔다. -->
           <extension-point name="attachment_uploader" data-ref="og_image_default_uploader_slot" class="contents">
             <prop name="uploader">

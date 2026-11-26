@@ -163,8 +163,8 @@ class SettingsControllerDriverOptionsTest extends TestCase
 
         $data = $response->json('data.available_drivers');
 
-        // 12개 카테고리 존재 (search 는 폴백 가드 편입으로 추가 — A5b, image 는 이미지 처리 엔진 — #869,
-        // file_delegation 은 웹서버 파일 위임 — #878, private_attachment 는 비공개 첨부 저장소 — #916)
+        // 12개 카테고리 존재 (search 는 폴백 가드 편입으로 추가, image 는 이미지 처리 엔진,
+        // file_delegation 은 웹서버 파일 위임, private_attachment 는 비공개 첨부 저장소)
         $this->assertCount(12, $data);
 
         // 각 카테고리에 최소 1개 이상의 드라이버 존재
@@ -384,7 +384,7 @@ class SettingsControllerDriverOptionsTest extends TestCase
     }
 
     /**
-     * 이미지 엔진 선택지는 이 서버에서 쓸 수 있는 엔진만 보입니다 (#869).
+     * 이미지 엔진 선택지는 이 서버에서 쓸 수 있는 엔진만 보입니다.
      *
      * imagick 확장이 없는 서버(Windows 개발 서버)에서는 gd 만 보여야 한다 — 고를 수 없는 엔진을 보여 주면
      * 운영자가 골라 저장하다 422 를 만난다.

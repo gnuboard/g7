@@ -103,7 +103,7 @@ axes:
     - partial_bank_only       # 은행만
     - partial_missing_holder  # 예금주 누락
 
-  refund_bank_requirement:    # 필수 여부 판정 (D13 · #599 후속 P9·N10)
+  refund_bank_requirement:    # 필수 여부 판정 (D13)
     - vbank_paid_required     # 가상계좌 + 입금완료 → 필수 (미입력 422)
     - vbank_waiting_optional  # 가상계좌 + 입금 전 → 선택
     - dbank_required          # 무통장 → **필수**. 사람이 송금해야 하므로 계좌 없이 승인되면
@@ -170,7 +170,7 @@ effects:
   - checkout_refund_bank_partial_input_rejected_422
   - checkout_refund_bank_empty_allowed
   - checkout_refund_bank_name_resolved_from_code  # 은행코드 → 은행명 조회 저장
-  # 체크아웃 결제 partial 구조 (템플릿 sirsoft-basic, #399 선행 마킹 정리)
+  # 체크아웃 결제 partial 구조 (템플릿 sirsoft-basic, 선행 마킹 정리)
   - checkout_payment_has_dbank_and_vbank_method_blocks  # 결제 partial 에 무통장, 가상계좌 블록이 각각 있다
   - template_leaves_cash_receipt_fields_to_module # 현금영수증 도메인 필드(용도, 식별번호)는 모듈 소유라 템플릿 partial 에 없다
   - checkout_refund_bank_fields_in_dbank_and_vbank_blocks  # 환불계좌 컨테이너와 은행, 계좌번호, 예금주 3필드가 무통장, 가상계좌 블록 양쪽에 있다
@@ -216,7 +216,7 @@ effects:
   - cancel_refund_bank_empty_list_points_to_settings   # N7 — 은행 미등록이면 설정 자리를 지목
   - cancel_refund_bank_partial_input_rejected_422
   - cancel_refund_bank_recorded_on_the_claim_row  # 접수는 **신청서 행**에 적는다 — 결제행은
-                                                 # 환불을 실행하는 시점에 갱신된다(#599 후속).
+                                                 # 환불을 실행하는 시점에 갱신된다.
                                                  # 접수만으로 결제행을 덮으면 계좌가 다른 두
                                                  # 신청서 중 나중 접수가 앞선 송금 대상을 바꾼다
   - cancel_refund_bank_omitted_when_untouched     # 미입력 시 키 미전송 → 주문 시 계좌 보존
@@ -277,7 +277,7 @@ effects:
 
   # 부수 복구
   - kg_user_order_show_injection_restored         # order_payment_info_panel id 부여
-  - mypage_cash_receipt_slot_at_payment_panel_end  # 현금영수증·결제 플러그인 확장 슬롯이 결제 정보 목록 말단(결제수단 행 아래)에 모여 있다 — 마이페이지 결제 패널 구조 잠금(#933 에서 표식 부여)
+  - mypage_cash_receipt_slot_at_payment_panel_end  # 현금영수증·결제 플러그인 확장 슬롯이 결제 정보 목록 말단(결제수단 행 아래)에 모여 있다 — 마이페이지 결제 패널 구조 잠금
 
 test_files:
   # 백엔드

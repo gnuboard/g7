@@ -9,7 +9,7 @@ use Plugins\Sirsoft\MessageBizppurio\Models\BizppurioTemplate;
 use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
- * BizppurioTemplate 모델 — 캐스트·알림톡 발송 게이트·unique 제약 검증 (#597).
+ * BizppurioTemplate 모델 — 캐스트·알림톡 발송 게이트·unique 제약 검증.
  */
 class BizppurioTemplateTest extends PluginTestCase
 {
@@ -179,7 +179,7 @@ class BizppurioTemplateTest extends PluginTestCase
 
     public function test_sms_단독이면_승인된_알림톡도_발송하지_않는다(): void
     {
-        // "SMS 단독" 은 운영자가 이 알림에서 알림톡을 쓰지 않겠다고 명시한 것이다(#597 §3.5).
+        // "SMS 단독" 은 운영자가 이 알림에서 알림톡을 쓰지 않겠다고 명시한 것이다.
         $template = BizppurioTemplate::create([
             'notification_type' => 'welcome',
             'alimtalk_enabled' => true,

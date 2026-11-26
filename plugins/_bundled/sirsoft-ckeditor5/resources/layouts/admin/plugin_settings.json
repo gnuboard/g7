@@ -1131,7 +1131,7 @@
                                                         }
                                                     },
                                                     {
-                                                        "comment": "전역 plugins 는 코어 소유 계약이다 — 자기 식별자 하위 키만 갱신한다(#639 state_contracts)",
+                                                        "comment": "전역 plugins 는 코어 소유 계약이다 — 자기 식별자 하위 키만 갱신한다(state_contracts)",
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",

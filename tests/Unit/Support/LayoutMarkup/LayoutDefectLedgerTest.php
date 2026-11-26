@@ -100,7 +100,7 @@ class LayoutDefectLedgerTest extends LayoutMarkupTestCase
             }
 
             // 액션의 `params.body` 는 서버로 보내는 요청 본문이라 렌더되지 않는다 — 항목 API 처럼 본문 필드가
-            // `key`·`type`·`name` 이면 구조 판정이 노드로 오인한다(#490 비회원 작성자 항목 추가 창). 본문만 빼고
+            // `key`·`type`·`name` 이면 구조 판정이 노드로 오인한다(비회원 작성자 항목 추가 창). 본문만 빼고
             // params 의 나머지는 그대로 훑는다.
             if ($key === 'params' && isset($value['handler']) && array_key_exists('body', $child)) {
                 $child = array_diff_key($child, ['body' => true]);

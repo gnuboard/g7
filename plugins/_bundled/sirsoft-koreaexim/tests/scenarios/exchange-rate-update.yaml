@@ -26,7 +26,7 @@ effects:
   - reversible_schema
   - update_eligibility
   - http_call_budget
-  - manual_run_save_failure_recorded   # 쇼핑몰 통화 설정 저장 실패도 수동 실행은 예외 없이 「환율 저장 실패」 이력으로 남고 재적용 원본이 되지 않는다 (#916)
+  - manual_run_save_failure_recorded   # 쇼핑몰 통화 설정 저장 실패도 수동 실행은 예외 없이 「환율 저장 실패」 이력으로 남고 재적용 원본이 되지 않는다 
 test_files:
   - plugins/_bundled/sirsoft-koreaexim/tests/Feature/MigrationSmokeTest.php
   - plugins/_bundled/sirsoft-koreaexim/tests/Feature/Console/UpdateExchangeRatesCommandTest.php

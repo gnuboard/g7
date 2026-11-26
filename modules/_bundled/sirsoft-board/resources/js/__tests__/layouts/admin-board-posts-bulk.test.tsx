@@ -1,6 +1,6 @@
 /**
  * @file admin-board-posts-bulk.test.tsx
- * @description 관리자 게시글 일괄 삭제·블라인드·복구 (#524 WP-D) — 레이아웃 계약 회귀.
+ * @description 관리자 게시글 일괄 삭제·블라인드·복구 — 레이아웃 계약 회귀.
  *
  * 이 화면이 지키는 계약:
  *  - 체크 칸은 `admin.manage` 능력이 있을 때만 나온다. 권한이 없는 운영자에게 누를 수 없는
@@ -43,7 +43,7 @@ function buttonByTestId(testId: string): any {
     return flattenNodes(layout).find((n: any) => n?.props?.['data-testid'] === testId);
 }
 
-describe('관리자 게시글 일괄 처리 (#524 WP-D)', () => {
+describe('관리자 게시글 일괄 처리', () => {
     // @scenario permission=manage
     // @effects admin_post_bulk_selectable_requires_manage
     it('체크 칸은 manage 능력이 있을 때만 나온다', () => {

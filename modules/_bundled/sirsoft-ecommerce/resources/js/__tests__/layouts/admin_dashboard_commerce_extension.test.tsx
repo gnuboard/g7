@@ -222,7 +222,7 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
             const badge = findById(commerceExt as any, id);
             const click = (badge.actions ?? []).find((a: any) => a.type === 'click' && a.handler === 'navigate');
             expect(click, `${id} navigate 액션 누락`).toBeDefined();
-            // 배지는 링크다(#757 WP-L) — 주소는 href 에 있고 navigate 는 path 없이 그 href 로 간다
+            // 배지는 링크다 — 주소는 href 에 있고 navigate 는 path 없이 그 href 로 간다
             expect(badge.name).toBe('A');
             expect(click.params?.path).toBeUndefined();
             const path: string = badge.props.href;
@@ -318,7 +318,7 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
 
         const item = findById(commerceExt as any, 'pending_inquiry_item_{{i}}');
         const click = actionsOf(item).find((a: any) => a.type === 'click' && a.handler === 'navigate');
-        // 문의 행은 링크다(#757 WP-L) — 주소는 href, navigate 는 path 없이 그 href 로
+        // 문의 행은 링크다 — 주소는 href, navigate 는 path 없이 그 href 로
         expect(item.name).toBe('A');
         expect(item.props.href).toBe('/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}/post/{{inquiry?.inquirable_id}}');
         expect(click.params?.path).toBeUndefined();
@@ -326,7 +326,7 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
 
     // @scenario module_state=active, board_module_state=inactive, user_role=admin_with_dashboard_permission, data_state=has_inquiries
     // @effects pending_inquiries_card_hidden_when_board_module_inactive
-    it('게시판 모듈이 꺼지면 미답변 문의를 부르지 않고 카드도 숨긴다 (#822)', () => {
+    it('게시판 모듈이 꺼지면 미답변 문의를 부르지 않고 카드도 숨긴다', () => {
         // 상품 문의는 게시판 글이다 — 게시판(선택 연동)이 꺼진 사이트에는 갈 화면이 없다.
         const guard = "_global.activeModules?.includes('sirsoft-board') ?? true";
         const ds = commerceExt.data_sources.find((d: any) => d.id === 'commerce_pending_inquiries') as any;
@@ -344,7 +344,7 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
                 scope.commerce_pending_inquiries,
             );
         };
-        // 받는 중(undefined)에는 그리지 않는다 — 게시판이 꺼진 상점에서 카드가 보였다가 사라졌다(#915)
+        // 받는 중(undefined)에는 그리지 않는다 — 게시판이 꺼진 상점에서 카드가 보였다가 사라졌다
         expect(visible({ _global: { activeModules: ['sirsoft-board'] }, commerce_pending_inquiries: undefined })).toBe(false);
         expect(visible({ _global: { activeModules: ['sirsoft-board'] }, commerce_pending_inquiries: { data: { board_active: true } } })).toBe(true);
         expect(visible({ _global: { activeModules: ['sirsoft-ecommerce'] }, commerce_pending_inquiries: undefined })).toBe(false);

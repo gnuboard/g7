@@ -7,12 +7,12 @@ use Tests\Concerns\ScansPhpSourceFunctions;
 use Tests\TestCase;
 
 /**
- * 설치기 best-effort 작업 실패 문구 테스트 (#651 C3).
+ * 설치기 best-effort 작업 실패 문구 테스트.
  *
  * 종전에는 작업 종류와 무관하게 언어팩 전용 문구를 재사용해, 대상이 없는 `static_publish`·
  * `config_cache` 실패가 "언어팩 일부 설치에 실패했습니다:  (계속 진행)" 으로 찍혔다.
  *
- * 문구 조립 지점은 단계별 실행 도입(#609)으로 `runSingleInstallationTask()` 안으로 옮겨졌고,
+ * 문구 조립 지점은 단계별 실행 도입으로 `runSingleInstallationTask()` 안으로 옮겨졌고,
  * 라벨 조립은 `installerTaskDisplayName()` 이 소유한다 — 대상이 있으면 괄호로 덧붙이는
  * 규칙은 그대로이며, 여기에 실패 사유(`:error`)가 더해진다.
  *

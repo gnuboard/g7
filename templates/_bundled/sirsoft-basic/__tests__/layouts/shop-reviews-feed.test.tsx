@@ -133,7 +133,7 @@ describe('[case:components-misc-filter-change-stale-list-veil] 후기 목록 조
 
     // 덮개가 걷힌 뒤 새 목록이 그려지기까지의 틈(실측 약 70ms)에 앞 목록이 또렷이 비치지 않게,
     // 목록·빈 안내·쪽 번호 묶음이 같은 소스를 받는 동안 흐려진다. 필터 줄은 묶음 밖이라 흐려지지 않는다
-    // 「총 N개」 글자도 같은 소스를 받는 동안 흐린다(받기 전 「총 0개」가 먼저 보였다, #915) — 목록 묶음과 따로 걸린 한 줄이다
+    // 「총 N개」 글자도 같은 소스를 받는 동안 흐린다(받기 전 「총 0개」가 먼저 보였다) — 목록 묶음과 따로 걸린 한 줄이다
     const blurredAll = collect(layout, (n) => n.blur_until_loaded && typeof n.blur_until_loaded === 'object');
     const blurred = blurredAll.filter((n) => !String(n.text ?? '').startsWith('$t:shop.reviews.total_count'));
     expect(blurredAll.length - blurred.length).toBe(1);

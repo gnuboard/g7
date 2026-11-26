@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * 템플릿 오버라이드 행의 신원에 오버라이드 대상(`override_target`)이 들어가는지 검증합니다 (#703).
+ * 템플릿 오버라이드 행의 신원에 오버라이드 대상(`override_target`)이 들어가는지 검증합니다.
  *
  * 7.0.11 은 오버라이드 행을 여섯 축(대상 확장 포함)으로 갈랐는데, 조각 식별자 마이그레이션의 고유 키는 대상 확장을
  * 빼고 걸었다. 한 템플릿이 같은 확장점을 두 확장에 대해 오버라이드하면 백필 뒤 두 행의 키가 같아져 고유 키 추가가

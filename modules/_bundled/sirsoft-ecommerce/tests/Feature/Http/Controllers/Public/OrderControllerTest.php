@@ -483,7 +483,7 @@ class OrderControllerTest extends ModuleTestCase
     }
 
     /**
-     * T9 — 간편결제(확장 결제수단) 주문 생성 응답이 PG 결제 계약을 내려준다 (#475).
+     * T9 — 간편결제(확장 결제수단) 주문 생성 응답이 PG 결제 계약을 내려준다.
      *
      * 과거에는 확장 ID 가 PG 결제로 인식되지 않아 응답이 non-PG 로 내려갔고, 프론트가
      * payment_method 를 'card' 로 위장해야 결제창이 떴다. 이제 응답이
@@ -574,7 +574,7 @@ class OrderControllerTest extends ModuleTestCase
     }
 
     /**
-     * T10 — 간편결제 주문은 PG 결제 주문이므로 임시주문이 보존되어 재결제가 가능하다 (#475).
+     * T10 — 간편결제 주문은 PG 결제 주문이므로 임시주문이 보존되어 재결제가 가능하다.
      *
      * 이슈의 핵심 증상: 결제 실패 후 재시도하면 "임시주문을 찾을 수 없습니다" 로 재결제가
      * 막혔다. 원인은 확장 결제수단이 non-PG 로 오인되어 주문 생성 시점에 TempOrder 가

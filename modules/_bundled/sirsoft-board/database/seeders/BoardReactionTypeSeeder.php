@@ -12,7 +12,7 @@ use Modules\Sirsoft\Board\Support\ReactionTypeDefaults;
 /**
  * 게시판 반응 유형 초기 시더.
  *
- * 관리자 CRUD 화면이 없으므로(이슈 #525 확정 01) 이 시더가 유일한 유형 등록 경로다.
+ * 관리자 CRUD 화면이 없으므로(확정 01) 이 시더가 유일한 유형 등록 경로다.
  * 라벨 기본값은 ko/en/ja를 직접 하드코딩하되, 활성 언어팩의 seed/reaction_types.json
  * 다국어 키를 trait 이 자동 머지한다 (BoardTypeSeeder 와 동일 패턴).
  *

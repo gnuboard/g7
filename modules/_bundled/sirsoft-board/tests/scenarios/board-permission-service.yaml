@@ -12,7 +12,7 @@ description: |
     - assign_roles         — assignRolesToPermission: 위와 같은 차분 동기화 + permissions 가 비면
                              defaultPermissions 로 폴백.
     - remove_permissions   — removeBoardPermissions: 카테고리·액션 권한·역할 부여·훅 매핑을 DB 외래키
-                             연쇄 없이 명시적으로 지우고, 다른 게시판 권한과 모듈 루트 권한은 남긴다(#888).
+                             연쇄 없이 명시적으로 지우고, 다른 게시판 권한과 모듈 루트 권한은 남긴다.
 
 axes:
   case: [service_contract, ensure_permissions, sync_module_roles, assign_roles, remove_permissions]

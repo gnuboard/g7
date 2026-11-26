@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * `php artisan custom:check` 테스트 (#792 WP-K2·WP-K3)
+ * `php artisan custom:check` 테스트
  *
  * 등록된 custom 라우트·거부된 라우트·개발자 패키지·코어 충돌을 보여 주고, 거부·충돌이 있으면 실패 코드로 끝나는지 잠근다.
  */

@@ -9,7 +9,7 @@ use Tests\Helpers\CreatesTemplateSettingsFixtures;
 use Tests\TestCase;
 
 /**
- * 파비콘 `<head>` 주입 렌더링 테스트 (#434)
+ * 파비콘 `<head>` 주입 렌더링 테스트
  *
  * SPA 셸(사용자·관리자)은 3계층 해석, 오류·점검·DB 오류 화면은 번들 계층만(DB·API 를 보지 않는다).
  */

@@ -10,7 +10,7 @@ use Illuminate\Validation\Rule;
 use Plugins\Sirsoft\MessageBizppurio\Http\Requests\Concerns\ValidatesTemplateContent;
 
 /**
- * 비즈뿌리오 알림 발송 설정 upsert 검증 (#597 §4.1 행 하단 토글).
+ * 비즈뿌리오 알림 발송 설정 upsert 검증 (§4.1 행 하단 토글).
  *
  * 알림 설정 탭 행의 대체 SMS·SMS 단독·알림톡 사용 토글이 즉시 저장하는 요청이다.
  * 대상 행이 없으면 draft 로 생성(upsert)하므로 notification_type(라우트 파라미터)의

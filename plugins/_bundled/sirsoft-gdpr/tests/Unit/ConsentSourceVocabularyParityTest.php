@@ -11,7 +11,7 @@ use Plugins\Sirsoft\Gdpr\Enums\ConsentSource;
  *
  * 불변식: **기록 어휘(ConsentSource) = 화면 필터 옵션 = 라벨 키**
  *
- * 어긋나면 두 가지가 동시에 깨집니다 (#492 브라우저 실측에서 확인된 결함 D-35):
+ * 어긋나면 두 가지가 동시에 깨집니다 (브라우저 실측에서 확인된 결함 D-35):
  * - 화면 필터에 없는 출처로 기록된 행은 어떤 필터 조합으로도 도달할 수 없다 (60행 중 20행)
  * - 라벨 키가 없는 출처는 목록 셀에 원시 키 문자열이 그대로 노출된다
  *
@@ -101,7 +101,7 @@ class ConsentSourceVocabularyParityTest extends TestCase
      *
      * 백엔드(`lang/{locale}/messages.php`)와 프론트엔드(`resources/lang/{locale}.json`)를
      * **둘 다** 봅니다. 관리자 화면의 `$t:` 는 프론트엔드 JSON 에서 해석되므로 PHP 쪽만
-     * 채우면 화면에는 여전히 원시 키가 남습니다 (#492 작업 중 실제로 겪은 누락).
+     * 채우면 화면에는 여전히 원시 키가 남습니다 (작업 중 실제로 겪은 누락).
      */
     #[Test]
     public function 모든_출처_값에_ko_en_라벨이_정의되어_있다(): void

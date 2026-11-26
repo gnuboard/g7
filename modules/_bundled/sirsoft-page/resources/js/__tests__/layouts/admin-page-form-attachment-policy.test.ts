@@ -1,5 +1,5 @@
 /**
- * 관리자 페이지 폼 첨부 업로더의 첨부 정책 참조 검증 (#703)
+ * 관리자 페이지 폼 첨부 업로더의 첨부 정책 참조 검증
  *
  * 회귀 배경: 업로더가 10MB·확장자 7종·5개를 리터럴로 박아 두어, 모듈 설정(attachment.*)을 바꾸면
  * 화면과 서버 검증(UploadPageAttachmentRequest·PageAttachmentService)의 상한이 어긋났다.
@@ -45,7 +45,7 @@ function evaluate(raw: string, settings: Record<string, any> | undefined): any {
     return new Function('attachmentSettings', `return ${expr};`)(settings);
 }
 
-describe('admin_page_form 첨부 업로더 — 모듈 첨부 정책 참조 (#703)', () => {
+describe('admin_page_form 첨부 업로더 — 모듈 첨부 정책 참조', () => {
     const uploader = findComponent(adminPageForm, 'FileUploader');
     const withSettings = (data: Record<string, any>) => ({ data });
 

@@ -42,7 +42,7 @@ class RefreshTokenExpiration
             return $response;
         }
 
-        // 연장 규칙은 개발자 화면 요청(ScreenAuth)과 공유한다 (#792)
+        // 연장 규칙은 개발자 화면 요청(ScreenAuth)과 공유한다
         app(TokenExpirySlider::class)->slide($token, $request);
 
         return $response;

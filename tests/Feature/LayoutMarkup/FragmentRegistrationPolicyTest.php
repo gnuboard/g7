@@ -20,12 +20,12 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 확장 조각 등록 경로의 세 규칙 (#476 C10·C13).
+ * 확장 조각 등록 경로의 세 규칙.
  *
  *  ⓐ 붙을 자리(호스트 레이아웃·확장점)가 없는 템플릿에는 등록하지 않는다 — 사용자 템플릿에 관리자 조각 0행.
  *  ⓑ 같은 확장이 같은 대상에 조각 둘을 보내면 두 행이 산다 (`fragment_key` 가 고유 키에 있다).
  *  ⓒ 조각 컴파일은 붙을 템플릿과 무관하다(2026-09-28 결정) — 어느 템플릿의 컴포넌트 목록에 없는 컴포넌트를 써도 같은 결과로 등록되고,
- *     그 컴포넌트가 실제로 있는지는 런타임(활성 템플릿)이 판정한다. 그래서 조각은 한 번만 읽고 실패도 파일마다 한 번만 기록한다(#725).
+ *     그 컴포넌트가 실제로 있는지는 런타임(활성 템플릿)이 판정한다. 그래서 조각은 한 번만 읽고 실패도 파일마다 한 번만 기록한다.
  *  ⓓ 호스트가 나중에 설치돼도 재등록(`registerAllActiveExtensionsToTemplate`)이 그 조각을 메운다. 갱신 경로는 소스에 없는 조각의 행(고아)을 정리한다.
  *
  * 종전에는 세 등록 루프가 모든 활성 템플릿에 무조건 등록했고(사용자 템플릿에 관리자 대상 13행), 5축 고유 키가
@@ -192,7 +192,7 @@ class FragmentRegistrationPolicyTest extends TestCase
         File::delete($this->tmp.'/module/admin-user-mileage-tab.g7.html');
         $this->writeOverlay('admin-user-note-tab', 'admin_user_detail', 'user_detail');
 
-        // 갱신 경로는 행 쓰기를 동기화기에 맡긴다(#727) — 관리자와 같이 생성자로 받는다.
+        // 갱신 경로는 행 쓰기를 동기화기에 맡긴다 — 관리자와 같이 생성자로 받는다.
         $harness = new class($service, app(LayoutRowSynchronizer::class))
         {
             use RefreshesLayoutExtensions;

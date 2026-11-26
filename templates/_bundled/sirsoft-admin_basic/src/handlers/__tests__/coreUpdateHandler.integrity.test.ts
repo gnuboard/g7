@@ -1,5 +1,5 @@
 /**
- * 코어 업데이트 착수의 패키지 무결성 거절 처리 (#916).
+ * 코어 업데이트 착수의 패키지 무결성 거절 처리 .
  *
  * 서버가 최신 릴리스를 미서명(409 `package_unsigned`)·서명 불일치(422)로 거절하면 착수 핸들러는 실패 토스트 대신
  * 거절 내용(`errors.integrity`·`message`)을 전역 `packageIntegrity`·`packageIntegrityMessage` 에 싣는다 — 업데이트 탭의
@@ -76,7 +76,7 @@ describe('코어 업데이트 착수 — 패키지 무결성 거절', () => {
         expect(globals.packageIntegrity).toEqual(UNSIGNED);
         expect(globals.packageIntegrityMessage).toBe('서명되지 않은 코어 패키지입니다.');
         expect(post.mock.calls[0][1]).not.toHaveProperty('allow_unsigned');
-        // 서명 확인을 아는 화면의 표식 — 첫 착수부터 늘 싣는다(서버가 옛 화면과 구별, #916 옛 화면 호환)
+        // 서명 확인을 아는 화면의 표식 — 첫 착수부터 늘 싣는다(서버가 옛 화면과 구별해 옛 화면도 호환)
         expect(post.mock.calls[0][1]).toHaveProperty('integrity_aware', true);
         expect(globals.coreUpdateBusy).toBe(false);
     });

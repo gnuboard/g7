@@ -1,4 +1,4 @@
-feature: 화면 단위 DOM id 유일성 — 확장점 조각 엔진 스코프와 디버그 모드 중복 경고 (engine-v1.99.0, #408)
+feature: 화면 단위 DOM id 유일성 — 확장점 조각 엔진 스코프와 디버그 모드 중복 경고 (engine-v1.99.0)
 
 description: |
   한 화면에 같은 DOM id 가 둘 이상이면 getElementById·label for·aria-* 와 확장 주입(target_id)이 첫 요소에만 걸린다.

@@ -116,7 +116,7 @@ class BoardScopeLedgerListener implements HookListenerInterface
                     "{$r}boards.posts.comments.destroy",
                 ],
                 'paths' => [
-                    // 글 수정 판정은 첨부 업로드(post_id)와 같은 곳에 둔다 — 컨트롤러 canModifyPost 는 위임만 한다 (#883)
+                    // 글 수정 판정은 첨부 업로드(post_id)와 같은 곳에 둔다 — 컨트롤러 canModifyPost 는 위임만 한다
                     "{$sup}PostModifyGate::allows",
                     "{$svc}CommentService::canUpdate",
                     "{$svc}CommentService::canDelete",
@@ -276,7 +276,7 @@ class BoardScopeLedgerListener implements HookListenerInterface
                     "{$svc}ReactionService::removeManyByAdmin",
                 ],
             ],
-            // 신고 관리(reports.*)는 범위를 선언하지 않는다 — 원장 대상이 아니다(#789)
+            // 신고 관리(reports.*)는 범위를 선언하지 않는다 — 원장 대상이 아니다
         ];
     }
 }

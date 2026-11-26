@@ -1,5 +1,5 @@
 /**
- * 회원 상세 「쇼핑 데이터」 탭의 목록 링크 (#524) — 눌러서 실제로 가는지.
+ * 회원 상세 「쇼핑 데이터」 탭의 목록 링크 — 눌러서 실제로 가는지.
  *
  * 왜 E2E 여야 하는가: 이 링크들은 원래 `href="{{식}}"` 으로 적혀 있었고 **전부 죽어 있었다**.
  * 렌더 시 그 prop 값이 `undefined` 가 되어 DOM 에 `href` 속성 자체가 실리지 않았는데,
@@ -24,7 +24,7 @@ import { issueToken } from '../../fixtures/auth';
 
 /**
  * 탭 링크, 그 링크가 가야 할 목록 주소, 회원을 싣는 쿼리 이름(주소에 인코딩된 모양).
- * 배송지 목록은 여러 회원을 한 번에 거는 전용 필터라 `user_uuids[]` 를 쓴다(#745).
+ * 배송지 목록은 여러 회원을 한 번에 거는 전용 필터라 `user_uuids[]` 를 쓴다.
  */
 const LINKS: ReadonlyArray<readonly [string, string, string]> = [
   ['user-wishlists-link', '/admin/ecommerce/wishlists', 'user_uuid'],
@@ -33,7 +33,7 @@ const LINKS: ReadonlyArray<readonly [string, string, string]> = [
   ['user-inquiries-link', '/admin/ecommerce/inquiries', 'user_uuid'],
 ];
 
-test.describe('회원 상세 쇼핑 데이터 탭 링크 (#524)', () => {
+test.describe('회원 상세 쇼핑 데이터 탭 링크', () => {
   // @scenario surface=member_detail_tab, actor=admin
   // @effects member_detail_tab_links_navigate_in_browser
   test('목록 링크 4개가 회원 uuid 를 싣고 이동한다', async ({ page, memberDataSeed }) => {

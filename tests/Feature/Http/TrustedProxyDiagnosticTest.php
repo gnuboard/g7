@@ -200,7 +200,7 @@ class TrustedProxyDiagnosticTest extends TestCase
         $this->assertStringNotContainsString(':ip', $alerts[0]['message'], '치환 자리가 그대로 남아 있습니다.');
         // 조치가 빠지면 운영자는 무엇이 잘못됐는지만 알고 무엇을 할지 모른다. 조치 문구는
         // 무CLI 설치에서도 밟을 수 있는 경로여야 한다 — `.env` 를 고치라는 안내는 그 설치에
-        // 통로가 없어 조치가 아니다 (#609 로 화면 경로로 바꿨다).
+        // 통로가 없어 조치가 아니다 (화면 경로로 바꿨다).
         $this->assertStringContainsString('신뢰 프록시', $alerts[0]['message'], '원인만이 아니라 조치도 담아야 합니다.');
         $this->assertStringNotContainsString('.env', $alerts[0]['message'], '무CLI 설치가 밟을 수 없는 경로를 조치로 안내하고 있습니다.');
     }

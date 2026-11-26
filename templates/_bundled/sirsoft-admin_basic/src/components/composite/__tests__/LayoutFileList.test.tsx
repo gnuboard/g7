@@ -253,7 +253,7 @@ describe('LayoutFileList 컴포넌트', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={[]} onSelect={onSelect} />);
 
-      // 회색 보조 글자는 의미 클래스 text-muted 가 준다 (#399)
+      // 회색 보조 글자는 의미 클래스 text-muted 가 준다
       const messageElement = container.querySelector('.text-muted');
       expect(messageElement).toBeTruthy();
       expect(messageElement?.textContent).toBe('파일이 없습니다.');
@@ -390,7 +390,7 @@ describe('LayoutFileList 컴포넌트', () => {
       const onSelect = vi.fn();
       const { container } = render(<LayoutFileList files={[]} onSelect={onSelect} />);
 
-      // .text-muted = gray-500 / 다크 gray-400 — 인라인 짝(text-gray-500 dark:text-gray-400)을 따로 두지 않는다 (#399)
+      // .text-muted = gray-500 / 다크 gray-400 — 인라인 짝(text-gray-500 dark:text-gray-400)을 따로 두지 않는다
       const messageElement = container.querySelector('.text-muted');
       expect(messageElement?.textContent).toBe('파일이 없습니다.');
       expect(messageElement?.className).not.toContain('text-gray-500');

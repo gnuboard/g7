@@ -84,7 +84,7 @@ export function parseEditorMode(pathname: string, search: string): EditorModePar
  * @param layoutName 선택 노드의 레이아웃 이름 — 모달·반복 항목은 이 값이 호스트라 `&host=` 로 싣는다
  * @param returnLayoutName 복귀 라우트의 레이아웃 이름 — 기반·확장 편집은 이 값을 `&host=` 로 싣는다.
  *   복원은 host 로 복귀 라우트를 찾는다(useEditorUrlSync). 없으면 새로고침 뒤 편집을 끝낼 때 「라우트 선택」
- *   빈 화면으로 떨어졌다(#869).
+ *   빈 화면으로 떨어졌다.
  * @returns 절대 path (origin 미포함) — `pushState` / `<a href>` 에 그대로 사용 가능
  */
 export function buildEditorUrl(

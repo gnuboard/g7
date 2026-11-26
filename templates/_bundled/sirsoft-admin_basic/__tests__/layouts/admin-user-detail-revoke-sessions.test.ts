@@ -46,7 +46,7 @@ function flatten(node: any): Json[] {
   if (!node || typeof node !== 'object') return [];
   if (Array.isArray(node)) return node.flatMap(flatten);
   const children = Array.isArray(node.children) ? node.children.flatMap(flatten) : [];
-  // Modal 고정 하단(props.footer)의 단추도 걷는다(#869 P1 — 바닥 단추를 footer 로 옮김)
+  // Modal 고정 하단(props.footer)의 단추도 걷는다(바닥 단추를 footer 로 옮김)
   const footer = Array.isArray(node.props?.footer) ? node.props.footer.flatMap(flatten) : [];
   const slots = node.slots ? Object.values(node.slots).flatMap(flatten) : [];
   const modals = Array.isArray(node.modals) ? node.modals.flatMap(flatten) : [];

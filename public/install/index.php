@@ -135,7 +135,7 @@ if (! $ownershipLocked && $currentStep === 3) {
     $defaults['app_url_autofill'] = ! isset($state['config']['app_url']);
     $defaults['admin_language'] = getCurrentLanguage();
     // state.json에서 비밀번호 제외된 config 복원 (폼에 비밀번호를 사전 입력하지 않음).
-    // state 에는 이미 비밀이 기록되지 않지만(이슈 #465), 레거시 state.json 이 남아 있는
+    // state 에는 이미 비밀이 기록되지 않지만, 레거시 state.json 이 남아 있는
     // 환경에서도 평문이 HTML 로 렌더되지 않도록 프리필 단계에서 다시 제거한다.
     $savedConfig = $state['config'] ?? $defaults;
     unset(

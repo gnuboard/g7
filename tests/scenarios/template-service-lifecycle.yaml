@@ -4,7 +4,7 @@ description: |
   TemplateService 가 템플릿 목록·설치·제거·활성화·비활성화를 TemplateManager 에 위임하고, 실패를
   ValidationException 으로 바꾸며, before_* 훅·필터를 발화하는 계약. 완료 훅(after_*)은 Manager 가
   발화하므로 Service 는 중복 발화하지 않는다(#138). 매니저 실패 문구는 번역의 :error 자리에 원인을 넣는다 —
-  자리표시자를 남기지 않는다(#703).
+  자리표시자를 남기지 않는다.
 
 axes:
   operation: [list, install, uninstall, activate, deactivate, failure_message]

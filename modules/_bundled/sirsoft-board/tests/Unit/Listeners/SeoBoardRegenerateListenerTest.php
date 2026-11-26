@@ -13,7 +13,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  * 게시판 SEO 무거운 후속 작업 리스너 (큐) 테스트
  *
  * 비우기는 SeoBoardCacheListener 가 sync 로 하고, 상세 다시 그리기와 게시판 재활성 재색인만 이 리스너가
- * 큐에서 맡는다(#724). 재색인 묶음·레이스 가드는 BoardSitemapLifecycleTest 가 이 리스너로 검증한다.
+ * 큐에서 맡는다. 재색인 묶음·레이스 가드는 BoardSitemapLifecycleTest 가 이 리스너로 검증한다.
  */
 class SeoBoardRegenerateListenerTest extends ModuleTestCase
 {

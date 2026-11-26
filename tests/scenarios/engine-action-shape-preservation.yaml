@@ -1,4 +1,4 @@
-feature: 엔진 — 액션 정의를 옮겨 담을 때 키를 버리지 않는다 (engine-v1.80.0, #753)
+feature: 엔진 — 액션 정의를 옮겨 담을 때 키를 버리지 않는다 (engine-v1.80.0)
 
 description: |
   레이아웃이 적은 액션 정의를 엔진이 다른 자리로 옮겨 실행하면서 키를 골라 담아(handler·target·params·actions 등)

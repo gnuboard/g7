@@ -146,7 +146,7 @@ function startHandlerRegistration(): void {
  * 코어 재초기화(로케일 전환) 때 불리는 진입점 — 새 디스패처에 핸들러를 다시 꽂는다.
  *
  * 로케일을 바꾸면 코어가 ActionDispatcher 를 새로 만들고 `window.__{Name}.initPlugin()` 을 부른다. 이 전역이
- * 없어 언어를 바꾼 뒤 `sirsoft-totp.copyToClipboard` 가 디스패처에서 빠졌다(#639 ④, 실측 2026-10-05). QR 관측자 같은
+ * 없어 언어를 바꾼 뒤 `sirsoft-totp.copyToClipboard` 가 디스패처에서 빠졌다(실측 2026-10-05). QR 관측자 같은
  * 1회성 부팅 작업은 넣지 않는다.
  *
  * @returns 반환값 없음

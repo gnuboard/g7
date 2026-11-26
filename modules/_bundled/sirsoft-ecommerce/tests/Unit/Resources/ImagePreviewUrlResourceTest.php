@@ -22,7 +22,7 @@ use PHPUnit\Framework\Attributes\Test;
 use ReflectionMethod;
 
 /**
- * 이미지 리소스의 두 주소 계약 (#878)
+ * 이미지 리소스의 두 주소 계약
  *
  * 공개 자산 디스크(CDN) 행의 `download_url` 은 직접 주소라 썸네일 파이프(`thumbPreset`·`?size=`)가 걸리지 않는다.
  * 리소스는 원본(`download_url`)과 함께 썸네일 기준 주소 `preview_url`(항상 API 서빙 경로)을 내리고, 대표 이미지

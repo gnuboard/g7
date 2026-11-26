@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Feature\Coupon\AutoIssue\Concerns\CreatesAut
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 가입 쿠폰 자동발급 (#952 P2·P3·P14)
+ * 가입 쿠폰 자동발급
  *
  * 실제 훅 체인(core.auth.after_register / after_register_activated → GrantSignupCouponListener)으로 검증한다.
  */

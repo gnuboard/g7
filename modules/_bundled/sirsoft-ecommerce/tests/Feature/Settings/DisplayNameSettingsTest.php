@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 쇼핑몰 환경설정의 기능별 작성자 표시 이름 (#490 9단계)
+ * 쇼핑몰 환경설정의 기능별 작성자 표시 이름
  *
  * 리뷰 설정 탭(후기)과 기본 정보 탭(문의)의 표시 이름 칸은 이커머스 설정 파일이 아니라 코어 설정
  * `member.display_name_areas` 의 두 영역 키에 저장된다. 그래서 환경설정 > 회원 탭의 같은 영역과 값이 하나다.

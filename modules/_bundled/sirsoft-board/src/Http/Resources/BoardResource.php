@@ -98,7 +98,7 @@ class BoardResource extends BaseApiResource
             'max_file_count' => $this->max_file_count,
             'allowed_extensions' => $this->formatAllowedExtensions(),
 
-            // 본문 미디어 정책 (#883) — 폼 요청에만. 값이 있으면 「직접 정하기」 켬(use_custom), 없으면 null(첨부 정책을 따름).
+            // 본문 미디어 정책 — 폼 요청에만. 값이 있으면 「직접 정하기」 켬(use_custom), 없으면 null(첨부 정책을 따름).
             // fallback 은 지금 첨부 설정으로 만든 대체 정책(화면이 「따르는 값」으로 보여 준다)
             'content_media_policy' => $isFormRequest ? ContentMediaPolicyRules::toFormValue($this->content_media_policy) : null,
             'content_media_policy_fallback' => $isFormRequest && $this->resource instanceof Board
@@ -334,7 +334,7 @@ class BoardResource extends BaseApiResource
      * DB 컬럼 `active_reaction_types`(code 문자열 배열)와 `board_reaction_types` 를
      * 조인해 프론트가 바로 쓸 수 있는 `{id, code, name, icon}` 배열로 변환합니다.
      * 게시판이 켠 유형 중 시스템에서 살아있는(활성) 유형만, display_order 순으로 노출합니다
-     * (이슈 #525 확정 11 — 게시판 ∩ 시스템). 응답 필드명을 DB 컬럼과 의도적으로 달리해
+     * (확정 11 — 게시판 ∩ 시스템). 응답 필드명을 DB 컬럼과 의도적으로 달리해
      * 동명이의어를 방지합니다.
      *
      * @param  array<int, string>  $activeCodes  게시판이 켠 반응 유형 code 목록

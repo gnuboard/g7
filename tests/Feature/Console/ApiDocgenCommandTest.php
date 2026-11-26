@@ -14,7 +14,7 @@ use Tests\TestCase;
 /**
  * api:docgen 커맨드 통합 동작 Feature 테스트.
  *
- * 계획서(#447) 단계 5 가 명시한 커맨드 5대 동작을 검증한다:
+ * 계획서 단계 5 가 명시한 커맨드 5대 동작을 검증한다:
  * (a) 라우트 전수 수집, (b) 확장별 파일 라우팅, (c) FormRequest rules 추출,
  * (d) idempotent 재생성(사람 서술 보존), (e) --check drift 검출.
  *

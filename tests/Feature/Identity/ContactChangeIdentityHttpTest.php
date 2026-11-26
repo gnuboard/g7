@@ -17,7 +17,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 연락처 변경 본인인증 정책(`core.profile.contact_change`)의 HTTP 경로 테스트 (#736 D21)
+ * 연락처 변경 본인인증 정책(`core.profile.contact_change`)의 HTTP 경로 테스트
  *
  * 정책은 `core.user.before_update` 훅에 걸리고 조건이 "바뀐 항목에 이메일·전화·휴대폰이 있다" 이다. 리스너가 바뀐
  * 항목을 저장 전 모델의 `getDirty()` 로 읽어(훅은 모델을 채우기 전에 발행된다) 항상 빈 목록이 되어 기본 켜진 정책이

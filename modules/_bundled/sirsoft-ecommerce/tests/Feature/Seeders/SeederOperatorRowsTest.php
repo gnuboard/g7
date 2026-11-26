@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 이커머스 시더 3종의 stale 정리가 운영자가 만든 미사용 항목을 지우지 않는지 고정한다 (#727 W7).
+ * 이커머스 시더 3종의 stale 정리가 운영자가 만든 미사용 항목을 지우지 않는지 고정한다.
  *
  * 결함(수정 전): 클레임 사유·배송 유형·택배사 시더는 "사용 중인 코드" 만 보존하고 나머지 선언 밖 코드를 지웠다 —
  * 운영자가 설정 화면에서 만든 미사용 항목이 언어팩을 켜고 끌 때(시더 재실행) 사라졌다. 정리 대상은 시더가 만든 행
@@ -86,7 +86,7 @@ class SeederOperatorRowsTest extends ModuleTestCase
     }
 
     /**
-     * 운영자가 고친 시드 행을 선언 정리로 지울 때 남는 활동 로그는 클래스 이름이 아니라 사람이 읽는 항목 이름으로 설명된다 (#888).
+     * 운영자가 고친 시드 행을 선언 정리로 지울 때 남는 활동 로그는 클래스 이름이 아니라 사람이 읽는 항목 이름으로 설명된다.
      *
      * @scenario seeder=claim_reason
      *

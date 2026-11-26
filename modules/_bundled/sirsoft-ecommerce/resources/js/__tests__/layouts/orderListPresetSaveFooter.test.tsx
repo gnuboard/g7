@@ -1,6 +1,6 @@
 /**
  * @file orderListPresetSaveFooter.test.tsx
- * @description 주문 목록 프리셋 저장 창 — 바닥 단추가 Modal 고정 하단에서 본문 입력을 따라간다 (#869 P1)
+ * @description 주문 목록 프리셋 저장 창 — 바닥 단추가 Modal 고정 하단에서 본문 입력을 따라간다
  *
  * 저장·취소 단추를 본문 안 `ecommerce-modal-footer-buttons` 줄로 그리던 창이라 640px 이하에서 단추가
  * 세로로 쌓이지 않았다. 단추를 Modal 고정 하단(`<footer>` → props.footer)으로 옮겼다. 고정 하단은 Modal 이
@@ -55,14 +55,14 @@ function setupRegistry(): ComponentRegistry {
   return registry;
 }
 
-/** 저장 단추는 관리자 주 버튼 사본 의미 클래스(`ecommerce-btn-primary`)를 쓴다 — 파랑 인라인에서 바뀌었다(#399 R-1 P3, D2) */
+/** 저장 단추는 관리자 주 버튼 사본 의미 클래스(`ecommerce-btn-primary`)를 쓴다 — 파랑 인라인에서 바뀌었다 */
 const isPrimary = (b: Element) => b.className.split(/\s+/).includes('ecommerce-btn-primary');
 const saveButton = () =>
   Array.from(document.querySelectorAll('.modal-footer-bar button')).find(isPrimary) as HTMLButtonElement | undefined;
 const cancelButton = () =>
   Array.from(document.querySelectorAll('.modal-footer-bar button')).find((b) => !isPrimary(b)) as HTMLButtonElement | undefined;
 
-describe('주문 목록 프리셋 저장 창 — 고정 하단 (#869 P1)', () => {
+describe('주문 목록 프리셋 저장 창 — 고정 하단', () => {
   let testUtils: ReturnType<typeof createLayoutTest> | null = null;
 
   afterEach(() => {

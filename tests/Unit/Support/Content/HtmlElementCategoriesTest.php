@@ -6,7 +6,7 @@ use App\Support\Content\HtmlElementCategories;
 use PHPUnit\Framework\TestCase;
 
 /**
- * HTML 요소 분류 — 저장 정화기가 HTMLPurifier 정의에 더할 요소의 인라인·블록 판정 (#887)
+ * HTML 요소 분류 — 저장 정화기가 HTMLPurifier 정의에 더할 요소의 인라인·블록 판정
  *
  * @scenario-manifest tests/scenarios/content-render-policy.yaml
  */

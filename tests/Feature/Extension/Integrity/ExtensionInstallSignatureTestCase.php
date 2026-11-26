@@ -21,7 +21,7 @@ use Tests\Concerns\PackageSignatureFixtures;
 use Tests\TestCase;
 
 /**
- * 확장 수동 설치(ZIP·GitHub)의 패키지 서명 검증 공통 시나리오 (#916 ④, D16~D19·D36)
+ * 확장 수동 설치(ZIP·GitHub)의 패키지 서명 검증 공통 시나리오
  *
  * 매니저 설치 단계(`install*`)는 목으로 바꾼다 — 검증은 서비스가 `_pending` 으로 옮기기 **전에** 하므로, 거절된 요청이
  * 매니저 설치를 부르지 않고 `_pending`·활성 디렉터리에 파일을 남기지 않는 것을 직접 잰다. 통과한 요청은 `_pending` 에

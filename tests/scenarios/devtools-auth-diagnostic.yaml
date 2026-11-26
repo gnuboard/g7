@@ -3,7 +3,7 @@ feature: DevTools 인증 진단 — 빈 사용자·남은 토큰을 로그인으
 description: |
   G7DevToolsCore.getAuthDebugInfo() 는 저장된 토큰과 사용자 객체로 인증 상태를 진단한다.
   종전에는 빈 배열·빈 객체·null 사용자도 토큰만 남아 있으면 「인증됨」으로 표시했고,
-  AuthManager 가 로그아웃을 판정한 뒤에도 남은 토큰이 진단을 뒤집었다(#670).
+  AuthManager 가 로그아웃을 판정한 뒤에도 남은 토큰이 진단을 뒤집었다.
 
   판정 순서:
     - AuthManager.isAuthenticated() 가 있으면 그 판정이 우선이다 — 빈 폴백 사용자로 뒤집지 않는다.

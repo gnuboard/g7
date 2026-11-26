@@ -15,7 +15,7 @@ description: |
   발동축은 **누가** 그 동작을 하느냐로 갈린다 — admin 정책은 관리자에게만 428 을 던지고 일반
   사용자에게는 발동하지 않는다. grace 창 안에 인증 이력이 있으면 다시 묻지 않는다.
 
-  이슈 #524 WP-D 가 여기에 `sirsoft-board.post.bulk_action` 을 더했다. 일괄 처리는 훅을 루프
+  D 가 여기에 `sirsoft-board.post.bulk_action` 을 더했다. 일괄 처리는 훅을 루프
   **앞에서 한 번만** 발화하므로 정책도 그 한 번에 걸린다 — 건마다 발화하면 첫 건에서 428 이
   나 나머지가 처리되지 않는다. 던지는 예외는 `\Error` 계열이라 `catch (\Exception)` 이 삼키지
   못한다(그래서 컨트롤러가 `\Exception` 만 잡는다).

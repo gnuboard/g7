@@ -1,4 +1,4 @@
-feature: CBT(엔화) 클레임 추가결제 승인의 sid ↔ 결제 건 바인딩 (#599 validate C1)
+feature: CBT(엔화) 클레임 추가결제 승인의 sid ↔ 결제 건 바인딩
 
 description: |
   CBT 승인 재료는 sid 하나이고, 승인 응답(/cbtapprove)에는 금액·주문번호가 없다(매뉴얼상 미사용).

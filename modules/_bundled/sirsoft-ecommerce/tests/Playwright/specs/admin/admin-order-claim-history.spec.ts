@@ -1,5 +1,5 @@
 /**
- * 관리자 주문상세 '클레임 내역' 섹션 — 탭 진입·서브탭 전환·새 창 진입 (#599 S9c · D20)
+ * 관리자 주문상세 '클레임 내역' 섹션 — 탭 진입·서브탭 전환·새 창 진입
  *
  * 이 섹션에서 브라우저로만 드러나는 축을 본다:
  *
@@ -104,7 +104,7 @@ function typesWithClaims(counts: Record<string, number>): string[] {
   return ['exchange', 'return', 'cancel', 'refund'].filter((type) => (counts[type] ?? 0) > 0);
 }
 
-test.describe('관리자 주문상세 클레임 내역 섹션 (#599 S9c)', () => {
+test.describe('관리자 주문상세 클레임 내역 섹션', () => {
   /**
    * 탭이 있는데 섹션이 없으면 클릭이 무반응이다 (D17-①) — 그 어긋남은 오류를 남기지 않는다.
    */

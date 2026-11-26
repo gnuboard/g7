@@ -46,7 +46,7 @@
   <slot name="content">
     <flex data-type="layout" data-blur-until-loaded="{{_global?.currentUser?.uuid}}" justify="center" class="min-h-[60vh] py-12">
       <include src="partials/auth/_redirect_if_logged_in.g7.html"/>
-      <!-- 회원가입 폼 — 사용자 정보를 받은 비회원에게만 그린다(받는 중·회원이면 위 조각이 홈으로 보낸다, #915). -->
+      <!-- 회원가입 폼 — 사용자 정보를 받은 비회원에게만 그린다(받는 중·회원이면 위 조각이 홈으로 보낸다). -->
       <div data-if="{{_global.currentUser !== undefined &amp;&amp; (!_global.currentUser?.uuid || _local.isLoginAction)}}" class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:auth.register.title</h2>
         <!-- 「일반 회원가입 받지 않음」(7.2.0) — 폼·가입 확장 칸 대신 안내 카드와 로그인 버튼. 회사가 만드는 계정(회사 계정 자동 생성·관리자 추가)은 이 화면을 거치지 않는다. -->

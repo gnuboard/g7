@@ -862,12 +862,12 @@ class OrderExchangeService
 
         // 상품 단위 전이의 before 훅 — 잠금·쓰기 전이라 리스너가 던지면 어떤 행도 옮겨지지 않는다.
         // 상품 단위 전용 필터는 두지 않는다: 대상 행·목표 상태는 운영자 판단이자 미수납 게이트가 이미 잰 값이고, 헤더가
-        // 따라 움직이면 그 단계마다 `before_status_change` 가 난다. 자유 입력은 반려 사유 하나다(#599 후속) —
+        // 따라 움직이면 그 단계마다 `before_status_change` 가 난다. 자유 입력은 반려 사유 하나다 —
         // 그 사유만은 아래에서 헤더 경로와 같은 `filter_status_change_data` 를 거친다.
         HookManager::doAction('sirsoft-ecommerce.claim.exchange.before_option_status_change', $exchange, $specs, $target->value, $context);
 
         // 반려 사유는 신청서 한 칸(`reject_reason`)에 남는 자유 입력이라 헤더 경로와 **같은 필터**를 거친다
-        // (#599 후속 운영 결정) — 어느 칸에서 적었느냐에 따라 확장이 손댈 수 있는지가 갈리면 금칙어 필터 같은
+        // (후속 운영 결정) — 어느 칸에서 적었느냐에 따라 확장이 손댈 수 있는지가 갈리면 금칙어 필터 같은
         // 확장이 상품 칸으로 우회된다. 받아들이는 키도 같다(처리자·목표 상태는 되돌린다).
         if ($rejectReason !== '') {
             $filterInput = ['reject_reason' => $rejectReason] + $context;
@@ -889,7 +889,7 @@ class OrderExchangeService
 
         // 신청서 행을 잠그고 **잠금 안에서** 상품 행을 다시 읽어 판정한다. 헤더 동기화도 같은
         // 트랜잭션 안에서 한다 — 상품 전이를 커밋한 뒤 잠금 없이 헤더를 옮기면 그 사이에 들어온
-        // 다른 전이와 헤더 판정이 겹친다(#599 validate P2 #19). 훅은 커밋 뒤에 나간다(#7).
+        // 다른 전이와 헤더 판정이 겹친다(validate P2 #19). 훅은 커밋 뒤에 나간다(#7).
         $fresh = DB::transaction(function () use ($exchange, $itemIds, $quantities, $target, $processedBy, $rejectReason, $context, &$succeeded, &$skipped, &$changes, &$split, &$headerBefore, &$headerAfter) {
             $locked = $this->exchangeRepository->findForUpdate((int) $exchange->getKey()) ?? $exchange;
             $mode = $locked->mode();
@@ -1869,7 +1869,7 @@ class OrderExchangeService
             $order = $this->orderRepository->findForUpdateOrFail($exchange->order_id);
             $order->load(['options', 'shippings', 'payment']);
 
-            // 대상 필터·직전 상태를 **잠금 안에서 다시 읽은 값**으로 판정한다(#599 validate P2 #3).
+            // 대상 필터·직전 상태를 **잠금 안에서 다시 읽은 값**으로 판정한다(validate P2 #3).
             // 호출부가 들고 온 모델로 거르면, 두 처리자가 각자 완료 전 상태를 읽은 뒤 차례로
             // 들어올 때 둘 다 같은 상품을 대상으로 잡아 원 옵션 재고 복구·완료 훅이 두 번 돈다
             // (재고 복구에는 멱등 가드가 없다). 주문 행 잠금이 두 완료를 줄 세운다.
@@ -1958,7 +1958,7 @@ class OrderExchangeService
                 if ($orderOption) {
                     // 재고 플래그·적립 회수는 **실제로 교환완료가 된 행**에 적용한다. 부분 수량이면
                     // 완료분이 새 행으로 갈라져 나가고 원 행은 코스에 남으므로, 원 행에 적으면 아직
-                    // 재고를 점유한 행이 "복구됨" 으로 보인다(#599 validate P2 #4).
+                    // 재고를 점유한 행이 "복구됨" 으로 보인다(validate P2 #4).
                     $exchangedOption = $this->markOrderOptionExchanged($orderOption, (int) $item->exchange_quantity);
 
                     if (! $unreturned && $options->shouldRestoreStock($item->id)) {
@@ -2260,7 +2260,7 @@ class OrderExchangeService
      *
      * 교환은 그 옵션을 새로 한 번 더 내보내는 일이라, 지금 판매하지 않는 것을 보내 달라는 신청은
      * 받을 수 없다. 예전에는 옵션의 `is_active` 만, 그것도 **옵션을 바꾸는 경로에서만** 봤다 —
-     * 그래서 ① 판매 중지한 옵션으로 **동일옵션 교환**이 접수되고(2026-09-22 #599 실측
+     * 그래서 ① 판매 중지한 옵션으로 **동일옵션 교환**이 접수되고(2026-09-22
      * `is_active=false` 인 원 옵션으로 낸 동일옵션 교환이 201 로 통과했다) ② 품절·판매중지·
      * 출시예정·미노출·구매등급제한 **상품**으로도 교환이 접수됐다.
      *
@@ -2819,7 +2819,7 @@ class OrderExchangeService
      *
      * 접수 뒤의 재계산(완료·수동 접수·완료 미리보기·신청 수정의 동결 스냅샷)이 고객이 고른
      * 우선순위를 그대로 이어받게 한다. 예전에는 저장 컬럼이 없어 이 경로들이 PG 우선으로 고정돼,
-     * 마일리지 우선을 고른 신청서의 환불신청서가 PG 환불로 먼저 채워졌다(#599 validate P2-A 후속).
+     * 마일리지 우선을 고른 신청서의 환불신청서가 PG 환불로 먼저 채워졌다(A 후속).
      *
      * @param  OrderExchange  $claim  신청서
      * @return RefundPriorityEnum 환불 우선순위
@@ -2840,7 +2840,7 @@ class OrderExchangeService
      *
      * 판정은 클레임 서비스 공용 헬퍼(`CurrencyConversionService::resolveOrderBaseCurrency()`)가
      * 소유한다 — 스냅샷 → 설정 기본 통화. 예전의 `orders.currency` 폴백은 **결제 통화**라 기본
-     * 통화와 다른 주문에서 신청서 통화가 틀렸다(#599 validate P2 #14).
+     * 통화와 다른 주문에서 신청서 통화가 틀렸다(validate P2 #14).
      *
      * @param  Order  $order  주문
      * @return string 기준통화 코드
@@ -3374,7 +3374,7 @@ class OrderExchangeService
             $successor->subtotal_volume = ($target->volume ?? 0) * $successor->quantity;
 
             // 스냅샷의 정체는 신규 옵션, 가격은 원 행 — 재계산이 원 금액을 재현해야 한다.
-            // 과세 종류도 원 행을 잇는다(#612): 과세·면세·영세 금액이 원 행에서 그대로 복사되므로,
+            // 과세 종류도 원 행을 잇는다: 과세·면세·영세 금액이 원 행에서 그대로 복사되므로,
             // 신규 옵션의 지정값을 스냅샷에 실으면 이후 부분취소 재계산이 같은 금액을 다른 갈래로 다시 나눈다.
             $originalSnapshot = $original->option_snapshot ?? [];
             $successor->option_snapshot = array_merge($target->toSnapshotArray(), [
@@ -3480,7 +3480,7 @@ class OrderExchangeService
         }
 
         // 배송 행도 배송완료로 옮긴다 — 구매자 주문상세 「배송 현황」 카드는 배송 행을 읽으므로, 상품만 옮기면
-        // 상품 줄은 배송완료인데 카드는 배송중으로 남았다(#599 후속 실주문 실측). 상태 변경이 송장을 싣지 않아
+        // 상품 줄은 배송완료인데 카드는 배송중으로 남았다(후속 실주문 실측). 상태 변경이 송장을 싣지 않아
         // 주문 쪽 동기화(`applyShippingTracking`)를 타지 않으므로 여기서 직접 옮긴다.
         $this->orderShippingRepository->updateTrackingByOrderOptionId((int) $successor->id, [
             'shipping_status' => ShippingStatusEnum::DELIVERED->value,
@@ -3545,7 +3545,7 @@ class OrderExchangeService
      *
      * 부분 수량이면 `changeStatusWithQuantity()` 가 완료분을 **새 행(split)** 으로 갈라 교환완료로
      * 옮기고 원 행은 잔여로 코스에 남긴다. 호출부는 재고 플래그·적립 회수를 그 새 행에 적용해야
-     * 한다(#599 validate P2 #4).
+     * 한다(validate P2 #4).
      *
      * @param  OrderOption  $orderOption  원 주문옵션
      * @param  int  $quantity  완료 수량
@@ -4065,7 +4065,7 @@ class OrderExchangeService
     }
 
     /**
-     * 「교환 후」 재계산 입력 스냅샷의 과세 종류를 원 주문상품 행 값으로 맞춥니다 (#612).
+     * 「교환 후」 재계산 입력 스냅샷의 과세 종류를 원 주문상품 행 값으로 맞춥니다.
      *
      * 실제 후속 행은 원 행의 과세 종류를 잇는다(`ensureNewOrderOption`) — 미리보기만 신규 옵션 값을 쓰면
      * 영세 → 과세 교환이 화면에서는 부가세가 붙은 금액으로 보이고 실제 장부는 영세로 남는다.
@@ -4210,7 +4210,7 @@ class OrderExchangeService
         return DB::transaction(function () use ($exchange, $payload, $operator) {
             $locked = $this->exchangeRepository->findForUpdate($exchange->id) ?? $exchange;
 
-            // 수정 가능 여부는 **잠금 안에서 다시 읽은 상태**로 판정한다(#599 validate P2 #8).
+            // 수정 가능 여부는 **잠금 안에서 다시 읽은 상태**로 판정한다(validate P2 #8).
             // 호출부 모델로 판정하면 그 사이 승인된 신청서의 사유·재발송지·청구가 수정된다.
             if (! $locked->exchange_status->isWithdrawable()) {
                 throw OrderClaimException::notEditable();

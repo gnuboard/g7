@@ -5,7 +5,7 @@ namespace Tests\Unit\Database;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 신규 설치 마이그레이션에 옛 메시지 표 생성이 없는지 정적으로 검사합니다 (#699 W7·B1).
+ * 신규 설치 마이그레이션에 옛 메시지 표 생성이 없는지 정적으로 검사합니다.
  *
  * 본인인증 메시지(identity_message_*)와 7.0.0-beta.2 이후 쓰이지 않는 메일 표(mail_templates·mail_send_logs)는
  * 7.1.0 신규 설치에서 아예 만들어지지 않아야 한다. 기존 설치의 정리는 업그레이드 스텝(07·08)이 맡는다.

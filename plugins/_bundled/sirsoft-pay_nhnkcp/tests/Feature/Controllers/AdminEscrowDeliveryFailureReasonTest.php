@@ -19,7 +19,7 @@ use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
 /**
- * 관리자 에스크로 배송 등록 실패 응답의 사유 선택 (#858)
+ * 관리자 에스크로 배송 등록 실패 응답의 사유 선택
  *
  * KCP 가 돌려준 거절 사유(res_msg)는 운영자에게 그대로 보이고, CLI 실행 실패 문구(서버 절대 경로 포함)는
  * 서버 로그에만 남고 응답에는 일반 문구가 실린다.

@@ -1,6 +1,6 @@
 /**
  * @file Select.accessibleName.test.tsx
- * @description 목록형 Select(options 모드) 단추가 「{이름} {현재 값}」으로 읽힌다 (#757)
+ * @description 목록형 Select(options 모드) 단추가 「{이름} {현재 값}」으로 읽힌다
  *
  * 결함: options 모드는 레이아웃이 준 aria-label·aria-labelledby 를 바깥 Div 에 펼치고 실제 단추에는 넘기지 않았다.
  *   역할 없는 Div 의 이름은 화면 낭독기가 읽지 않으므로, 마이페이지 검색 대상·회원정보 수정 국가 등 선택칸이
@@ -33,7 +33,7 @@ const nameByLabelledBy = (el: Element): string =>
     .join(' ')
     .trim();
 
-describe('Select 접근 이름 (options 모드, #757)', () => {
+describe('Select 접근 이름 (options 모드)', () => {
   /**
    * @scenario surface=user_layout
    * @effects listbox_reads_name_and_value

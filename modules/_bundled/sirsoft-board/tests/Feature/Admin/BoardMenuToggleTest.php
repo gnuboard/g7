@@ -17,7 +17,7 @@ use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 게시판 생성/수정 시 관리자 메뉴 토글 (이슈 #413-15)
+ * 게시판 생성/수정 시 관리자 메뉴 토글 (15)
  *
  * 배경: 신규 게시판 생성 시 관리자 메뉴가 등록되지 않고, 편집 화면 수동 버튼으로만
  * 추가 가능했음. 생성/수정 폼의 add_to_menu 토글로 메뉴 추가/제거가 가능해야 한다.

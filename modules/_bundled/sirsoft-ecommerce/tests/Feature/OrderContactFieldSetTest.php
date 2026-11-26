@@ -42,7 +42,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 주문서 항목 집합 (#490 11단계)
+ * 주문서 항목 집합
  *
  * 집합 `sirsoft-ecommerce.order_contact` 의 선언과 잠금, 주문 요청 규칙(설정을 바꾸지 않은 사이트는 종전과 같음),
  * 주문자 이메일과 상세 주소와 배송 메모의 사용과 필수, 추가 항목의 검증과 값 저장과 응답과 파기,

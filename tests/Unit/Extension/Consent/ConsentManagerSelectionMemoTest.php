@@ -11,7 +11,7 @@ use Tests\Concerns\FakesConsentProviders;
 use Tests\TestCase;
 
 /**
- * 동의 선택 상태의 요청 메모 (#860 W10)
+ * 동의 선택 상태의 요청 메모
  *
  * 쿠키 동의 미들웨어·뷰 컴포저·동의 API 가 한 요청에서 `selection()` 을 여러 번 부르면 그때마다 제공자 등록
  * 필터를 돌려 제공자를 새로 만들었다. 같은 요청에서는 한 번만 계산하되, 운영자 선택값·제공자 등록·설정 저장이

@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * users 테이블에 회원 목록 필터·정렬용 인덱스를 추가합니다 (#705).
+ * users 테이블에 회원 목록 필터·정렬용 인덱스를 추가합니다.
  *
  * - idx_users_status_created_at : (status, created_at) — 기본 필터(계정 상태 + 가입일)와 기본 정렬
  * - idx_users_last_login_at     : 최근 로그인 범위·정렬

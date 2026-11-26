@@ -1,4 +1,4 @@
-feature: 비회원 주문 상세의 리뷰 작성 버튼 (#703)
+feature: 비회원 주문 상세의 리뷰 작성 버튼
 
 description: |
   can_write_review 가 권한만 보고 판정돼 비회원(guest 역할에 리뷰 작성 권한 기본 부여) 주문의 구매확정

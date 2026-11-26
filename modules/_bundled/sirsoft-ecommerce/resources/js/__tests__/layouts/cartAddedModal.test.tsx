@@ -224,7 +224,7 @@ describe('show.json init_actions에서 isNavigatingToCart 초기화 검증', () 
 
 describe('_purchase_card.json 장바구니 버튼 onSuccess 검증', () => {
     /*
-     * 7.1.6(#898): 담기 동작이 구매 카드 단추 안에서 상세 화면의 이름 붙은 액션 `purchaseAddToCart`
+     * 7.1.6: 담기 동작이 구매 카드 단추 안에서 상세 화면의 이름 붙은 액션 `purchaseAddToCart`
      * (shop/show.g7.html `<action name="purchaseAddToCart">`)로 옮겨졌다 — 좁은 화면의 하단 구매바·바텀시트가
      * 같은 동작을 부르게 하려는 것이다(_purchase_card.g7.html 머리 주석). 담기 성공 계약은 그대로이므로
      * 단추가 그 액션을 부르는지 확인한 뒤, 단언은 액션 정의의 장바구니 apiCall onSuccess 에서 한다.

@@ -7,7 +7,7 @@ use App\Support\Content\ContentHtmlPolicy;
 use Tests\TestCase;
 
 /**
- * 미디어 출처 허용 패턴 — 확장이 등록한 실제 서빙 라우트에서 만든다 (#887)
+ * 미디어 출처 허용 패턴 — 확장이 등록한 실제 서빙 라우트에서 만든다
  *
  * 경로 이름 규약(`…/content-media/{12자}`)만 맞춘 가짜 경로는 등록된 라우트가 아니므로 통과하지 못한다. 모듈(`api.modules.*`)·
  * 플러그인(`api.plugins.*`) 라우트 모두, 라우트 `where`(해시 12자·slug 한 조각)와 서명 쿼리 꼬리를 그대로 따른다.

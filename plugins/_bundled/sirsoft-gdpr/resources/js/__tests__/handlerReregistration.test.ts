@@ -1,6 +1,6 @@
 /**
  * @file handlerReregistration.test.ts
- * @description 코어 재초기화 진입점은 남기되 등록할 핸들러가 없다 (#639, 결정 D22)
+ * @description 코어 재초기화 진입점은 남기되 등록할 핸들러가 없다
  *
  * TemplateApp 은 로케일 전환 등으로 ActionDispatcher 를 새로 만든 뒤 `window.__[Plugin].initPlugin()` 을
  * 부른다. 이 플러그인은 더는 액션 핸들러를 등록하지 않는다 — 동의 저장 뒤 동기화는 코어 내장

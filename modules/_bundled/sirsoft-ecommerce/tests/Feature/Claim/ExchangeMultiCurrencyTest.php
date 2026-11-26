@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 교환 흐름의 다통화 계약 — 결제 통화 ≠ 기준 통화 (#599 세션3 다통화 축)
+ * 교환 흐름의 다통화 계약 — 결제 통화 ≠ 기준 통화 (세션3 다통화 축)
  *
  * KRW 단일 통화 주문만으로는 **화면이 어느 값을 읽든 통과한다** — 기준 통화 금액과 결제 통화
  * 금액이 같은 숫자이기 때문이다. 그래서 단위를 혼용하는 오류가 드러나지 않는다.

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Lang;
 use Tests\TestCase;
 
 /**
- * 셸 HTML 의 `#g7-config` 에 템플릿 설정을 template.json `expose` 선언 키만 싣는다 (#879).
+ * 셸 HTML 의 `#g7-config` 에 템플릿 설정을 template.json `expose` 선언 키만 싣는다.
  *
  * 첫 화면 전 config API 왕복을 없애면서도, 제작자가 선언하지 않은 template.json 값(의존성·외부 자산·저장소 주소 등)은
  * 소스 보기에 드러나지 않게 한다. 선언이 없는 템플릿(제3자 포함)은 싣지 않고 엔진이 종전처럼 API 를 부른다.

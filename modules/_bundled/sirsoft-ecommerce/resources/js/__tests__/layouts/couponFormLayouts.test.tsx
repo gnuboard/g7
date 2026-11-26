@@ -329,7 +329,7 @@ describe('couponFormLayouts', () => {
             expect(radioGroup.actions).toBeDefined();
             expect(asArray(radioGroup?.actions).length).toBeGreaterThan(0);
 
-            // #952 — 조건 기본값과 함께 첫구매 발급 시점을 비우는 setState 들을 sequence 로 묶는다
+            // 조건 기본값과 함께 첫구매 발급 시점을 비우는 setState 들을 sequence 로 묶는다
             const action = asArray(radioGroup?.actions)[0];
             const steps = action.handler === 'sequence' ? asArray(action.params?.actions ?? action.actions) : [action];
             const conditionStep = steps.find((s: any) => s.handler === 'setState' && s.params?.['form.issue_condition'] !== undefined);
@@ -1148,7 +1148,7 @@ describe('couponFormLayouts', () => {
         // 카드 본문은 구분선 없이 여백만(space-y-5, 20px) — row-stack
         // (divide-y + py-2) 은 구분선이 생기고 간격도 좁아 회귀였다.
         // 기본 정보는 11개: 적용대상/발급방법/발급조건(자동)/첫구매 발급시점/가입 안내/생일 항목 경고/생일 안내/
-        // 발급조건(수동)/직접발급안내/쿠폰명/쿠폰설명 (안내·경고·시점은 조건부 직계 자식, #952)
+        // 발급조건(수동)/직접발급안내/쿠폰명/쿠폰설명 (안내·경고·시점은 조건부 직계 자식)
         // 발급 설정은 4개: 수량/기간/자동발급 「한 번만」 안내(자동일 때)/재발급(자동이 아닐 때)
         const cases: Array<[string, any, number]> = [
             ['기본 정보', basicInfoPartial, 11],

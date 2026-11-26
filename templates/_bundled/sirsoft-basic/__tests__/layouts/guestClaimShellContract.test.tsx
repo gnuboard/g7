@@ -1,6 +1,6 @@
 /**
  * @file guestClaimShellContract.test.tsx
- * @description 비회원 클레임 화면의 **구조 계약** (#599 S14)
+ * @description 비회원 클레임 화면의 **구조 계약**
  *
  * 비회원 화면은 회원 화면과 **같은 partial 을 무수정으로** 쓴다 — 다른 것은 셸이 세우는 계약값과
  * 데이터소스 주소뿐이다. 그래서 이 파일이 재는 것은 "그려지는가" 가 아니라 그 규율이 지켜지는가다:
@@ -243,7 +243,7 @@ describe('셸 계약값 — 비회원은 주문 스코프가 붙는다', () => {
     expect(seeds.claimEmptyCtaPath).not.toContain('/mypage/');
     expect(guestOrder.initLocal.isGuest).toBe(true);
     expect(guestOrder.initLocal.withdrawRefreshDataSourceId).toBe('claims');
-    // 옛 [주문 취소] 버튼과 그 셸 표식은 삭제됐다(#599 후속) — 공유 partial 에 그 핸들러 참조가 없어야 비회원도 클레임 진입만 본다.
+    // 옛 [주문 취소] 버튼과 그 셸 표식은 삭제됐다 — 공유 partial 에 그 핸들러 참조가 없어야 비회원도 클레임 진입만 본다.
     expect(guestOrder.initLocal.useClaimActions).toBeUndefined();
     const orderItemsRaw = fs.readFileSync(path.resolve(__dirname, '../../layouts/partials/mypage/orders/_items.json'), 'utf-8');
     expect(orderItemsRaw).not.toContain('initUserCancelItems');
@@ -268,7 +268,7 @@ describe('셸 계약값 — 비회원은 주문 스코프가 붙는다', () => {
     expect(String(editInit.params.claimApiBase)).toContain('_global.guestOrderNumber');
     expect(JSON.stringify(editInit.params)).not.toContain('_local');
 
-    // 승인 이후 신청서의 `/edit` 은 비회원 상세로 돌려보낸다(#599 T2-D7) — 상점 기준 경로가 앞에 붙는다.
+    // 승인 이후 신청서의 `/edit` 은 비회원 상세로 돌려보낸다 — 상점 기준 경로가 앞에 붙는다.
     expect(String(editInit.params.detailPath)).toContain("'/guest/claims/'");
     expect(String(editInit.params.detailPath)).toContain('_global.shopBase');
     expect(String(editInit.params.detailPath)).toContain('route.claim_number');

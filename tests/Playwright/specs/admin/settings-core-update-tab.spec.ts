@@ -1,5 +1,5 @@
 /**
- * sirsoft-admin_basic — 환경설정 「업데이트」 탭 (W6 · 이슈 #609 G6).
+ * sirsoft-admin_basic — 환경설정 「업데이트」 탭 (W6).
  *
  * 브라우저에서만 확정되는 것을 잰다:
  *

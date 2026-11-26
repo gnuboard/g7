@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 기존 주문상품 행의 과세 종류(`order_options.tax_status`)를 백필합니다 (#612).
+ * 기존 주문상품 행의 과세 종류(`order_options.tax_status`)를 백필합니다.
  *
  * 1.3.3 이 주문 시점 확정 과세 종류를 행에 기록하기 시작했다. 그 전 행은 비어 있으므로 상품 스냅샷
  * (`product_snapshot.tax_status`)의 값으로 채운다. 스냅샷에 값이 없거나 알 수 없는 값이면 과세로 본다

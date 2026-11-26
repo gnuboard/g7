@@ -25,7 +25,7 @@
   <data-source id="attachmentSettings" label_key="$t:sirsoft-page.editor.data_source.attachmentSettings" type="api" endpoint="/api/modules/sirsoft-page/admin/attachments/settings" method="GET" :auto_fetch="true" :auth_required="true">
     <fallback :data="null"/>
   </data-source>
-  <!-- 편집기 본문 미디어 업로드 계약 — 표준 계약 엔드포인트(#887). 받는 종류가 없거나 올릴 권한이 없으면(읽기 전용 관리자 403) null 이라 편집기는 종전대로 동작한다 -->
+  <!-- 편집기 본문 미디어 업로드 계약 — 표준 계약 엔드포인트. 받는 종류가 없거나 올릴 권한이 없으면(읽기 전용 관리자 403) null 이라 편집기는 종전대로 동작한다 -->
   <data-source id="contentMediaTarget" label_key="$t:sirsoft-page.editor.data_source.contentMediaTarget" type="api" endpoint="/api/modules/sirsoft-page/admin/content-media/target" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <fallback :data="null"/>
   </data-source>
@@ -353,7 +353,7 @@
                 <!-- FileUploader 업로드 트리거 (대기 중인 첨부를 temp_key 로 업로드 → 저장 시 백엔드가 연결) -->
                 <emit-event event="upload:page_attachments"/>
                 <set-state target="local" uploadFailedCount="{{[].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"/>
-                <!-- 업로드가 하나라도 실패하면 저장하지 않는다 — 실패한 파일 없이 저장된 줄 알게 된다(#869 브라우저 실측). 실패 문구는 업로더가 파일마다 이미 알린다. -->
+                <!-- 업로드가 하나라도 실패하면 저장하지 않는다 — 실패한 파일 없이 저장된 줄 알게 된다. 실패 문구는 업로더가 파일마다 이미 알린다. -->
                 <set-state if="{{(_local.uploadFailedCount ?? 0) > 0}}" target="local" :saving="false"/>
                 <toast if="{{(_local.uploadFailedCount ?? 0) > 0}}" type="error" message="$t:attachment.upload_failed_save_stopped"/>
                 <api-call if="{{(_local.uploadFailedCount ?? 0) === 0}}" :auth_required="true" target="{{route?.id ? '/api/modules/sirsoft-page/admin/pages/' + route?.id : '/api/modules/sirsoft-page/admin/pages'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local.tempKey })}}">

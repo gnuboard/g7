@@ -474,7 +474,7 @@ class PublicProductControllerTest extends ModuleTestCase
     }
 
     /**
-     * 상품 상세를 product_code(상품코드)로 조회할 수 있다 (#450 라우팅 code 전환)
+     * 상품 상세를 product_code(상품코드)로 조회할 수 있다 (라우팅 code 전환)
      */
     #[Test]
     public function test_show_returns_product_by_product_code(): void
@@ -1060,7 +1060,7 @@ class PublicProductControllerTest extends ModuleTestCase
     }
 
     // ========================================
-    // abilities.can_update 게이트 테스트 (#450)
+    // abilities.can_update 게이트 테스트
     // 유저 상품 상세에서 관리자 상품 수정 화면 진입 크로스링크 노출 여부
     // ========================================
 

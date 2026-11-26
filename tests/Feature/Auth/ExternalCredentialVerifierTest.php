@@ -19,7 +19,7 @@ use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
- * 외부 자격 증명 검증자 `core.auth.registered_credential_verifiers` (#798 K4 · W27 · W32)
+ * 외부 자격 증명 검증자 `core.auth.registered_credential_verifiers`
  *
  * 로그인 칸의 식별자를 담당하는 검증자가 있으면 비밀번호를 G7 이 아니라 그 검증자가 확인한다. 인증 성공은 `loginVerifiedUser()` 로 합류해
  * 비밀번호 로그인과 같은 세 응답, 거절은 일반 실패와 같은 401(실패 횟수는 검증자가 고른다 — 비밀번호 없는 회원도), 추가 단계는 409 + 이동 경로.

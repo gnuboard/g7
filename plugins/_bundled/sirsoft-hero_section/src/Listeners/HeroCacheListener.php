@@ -12,7 +12,7 @@ use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
  *
  * 저장 직후 사용자 화면에 바로 반영돼야 하므로 모두 `sync` 로 돈다(큐로 미루면 그사이 옛 배너가 보인다).
  * 플러그인 설정(캐시 시간·공개 자산 디스크) 변경·비활성화 때는 전체를 비운다. 코어 환경설정의 드라이버 탭(공개 자산
- * 디스크)을 저장해도 비운다 — 캐시에 담긴 배너의 `direct_url` 이 옛 디스크 기준으로 묵지 않게(#878).
+ * 디스크)을 저장해도 비운다 — 캐시에 담긴 배너의 `direct_url` 이 옛 디스크 기준으로 묵지 않게.
  */
 class HeroCacheListener implements HookListenerInterface
 {

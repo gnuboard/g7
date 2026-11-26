@@ -1,4 +1,4 @@
-feature: GDPR 관리자 화면의 회원 표시 이름 (#490)
+feature: GDPR 관리자 화면의 회원 표시 이름
 
 description: |
   동의 기록의 회원 이름(`user.name`), 정책 버전의 발행자 이름(`publisher.name`, 목록, 현재 버전, 버전 상세), 연간 안내 대상

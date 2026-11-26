@@ -60,7 +60,7 @@ class CoreUpdateController extends AdminBaseController
             );
         }
 
-        // 직전 업데이트 시도가 개발자 custom 자리 사전 검사로 멈췄으면(#792) 같은 새 버전에 한해 그 결과를 싣는다 —
+        // 직전 업데이트 시도가 개발자 custom 자리 사전 검사로 멈췄으면 같은 새 버전에 한해 그 결과를 싣는다 —
         // 확인 결과 창이 「업데이트를 시작하지 않았습니다」 표를 보여 준다.
         $result['custom_preflight'] = $this->coreUpdateService->pendingCustomPreflight($result['latest_version'] ?? null);
 

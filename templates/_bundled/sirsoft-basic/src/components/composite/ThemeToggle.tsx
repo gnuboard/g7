@@ -98,7 +98,7 @@ const getInitialTheme = (): ThemeMode => {
   if (savedTheme && ['auto', 'light', 'dark'].includes(savedTheme)) {
     return savedTheme;
   }
-  // 저장값이 없는 첫 방문자는 템플릿 설정의 기본 화면 모드 (#434)
+  // 저장값이 없는 첫 방문자는 템플릿 설정의 기본 화면 모드
   return getDefaultTheme();
 };
 
@@ -180,7 +180,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   };
 
   return (
-    // 메뉴 안 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혔다(#869)
+    // 메뉴 안 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혔다
     <Div ref={menuRef} className={`relative ${className}`} id={id} {...editorAttrs} onKeyDown={escapeToClose(showMenu, () => setShowMenu(false), toggleRef)}>
       {/* 테마 토글 버튼 */}
       <Button

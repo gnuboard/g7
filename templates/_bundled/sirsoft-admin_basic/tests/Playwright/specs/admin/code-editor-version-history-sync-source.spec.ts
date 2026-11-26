@@ -1,5 +1,5 @@
 /**
- * sirsoft-admin_basic — 코드 편집기 [버전 히스토리] 창의 동기화 판 표시 (#888)
+ * sirsoft-admin_basic — 코드 편집기 [버전 히스토리] 창의 동기화 판 표시
  *
  * 확장 업데이트·레이아웃 갱신이 운영자 판을 새 판으로 덮기 직전에 남긴 판은 목록 맨 위(최신)에 놓여도
  * 지금 본문과 다르다. 그 판에 [복구] 가 없으면 덮인 운영자 판을 되돌릴 길이 없다. 또 사람이 아니라 동기화가
@@ -97,7 +97,7 @@ async function openVersionHistory(page: Page, token: string): Promise<void> {
   await expect(page.getByTestId('layout-version-row-3')).toBeVisible({ timeout: 20_000 });
 }
 
-test.describe('@sirsoft-admin_basic 코드 편집기 버전 히스토리 — 동기화 판 (#888)', () => {
+test.describe('@sirsoft-admin_basic 코드 편집기 버전 히스토리 — 동기화 판', () => {
   // 편집 화면 첫 진입(Monaco·파일 목록)이 개발 서버에서 30초를 넘길 수 있다
   test.describe.configure({ timeout: 150_000 });
 

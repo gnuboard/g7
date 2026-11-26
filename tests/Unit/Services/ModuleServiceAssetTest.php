@@ -202,7 +202,7 @@ class ModuleServiceAssetTest extends TestCase
      * 소스맵(.map)은 로컬 환경 밖에서 **서빙되지 않는다**.
      *
      * 소스맵에는 원본 코드 전문(sourcesContent)이 담겨 있어 서빙 허용 자체를 로컬 환경으로
-     * 한정했다(#471 / 공개 #72). 그 한정을 소유하는 것은 확장자 화이트리스트
+     * 한정했다(공개 #72). 그 한정을 소유하는 것은 확장자 화이트리스트
      * (`AllowedModuleFileType::getAllowedExtensions()`)이고, 서비스가 그 목록을 2차로
      * 확인한다.
      *

@@ -126,7 +126,7 @@ class LayoutEmptyObjectsTest extends TestCase
     }
 
     /**
-     * 화면이 그대로 받는 확대 자리(#758) — props 값·responsive props 값·isolatedState 값·data_sources data/headers 아래·
+     * 화면이 그대로 받는 확대 자리 — props 값·responsive props 값·isolatedState 값·data_sources data/headers 아래·
      * defines·computed 값·overlay injections props 값·extensionPointProps 값의 빈 객체를 보존한다.
      *
      * @scenario position=expanded_value

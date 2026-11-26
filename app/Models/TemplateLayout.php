@@ -214,12 +214,12 @@ class TemplateLayout extends Model
     }
 
     /**
-     * 템플릿 설정 화면 레이아웃 이름의 끝부분 (#434) — `{소유 템플릿}.template_settings`
+     * 템플릿 설정 화면 레이아웃 이름의 끝부분 — `{소유 템플릿}.template_settings`
      */
     public const TEMPLATE_SETTINGS_SUFFIX = 'template_settings';
 
     /**
-     * 템플릿 설정 화면 레이아웃 이름 (#434) — 활성 관리자 템플릿에 교차 등록되는 `{소유 템플릿}.template_settings`.
+     * 템플릿 설정 화면 레이아웃 이름 — 활성 관리자 템플릿에 교차 등록되는 `{소유 템플릿}.template_settings`.
      *
      * @param  string  $ownerIdentifier  설정 화면을 가진 템플릿 식별자
      * @return string 레이아웃 이름

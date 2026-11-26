@@ -16,7 +16,7 @@ use Tests\Helpers\CreatesTemplateSettingsFixtures;
 use Tests\TestCase;
 
 /**
- * 템플릿 설정 화면 교차 등록·라우트 생성 테스트 (#434)
+ * 템플릿 설정 화면 교차 등록·라우트 생성 테스트
  *
  * 설정 화면은 켜진 관리자 템플릿에 `{소유}.template_settings`(source_type=template, source_identifier=소유) 로 등록된다.
  * 오버라이드 행도 같은 모양이라, 관리자 템플릿의 자기 레이아웃 갱신·고아 오버라이드 정리가 이 행을 지우지 않아야 한다.
@@ -173,7 +173,7 @@ class TemplateSettingsLayoutRegistrationTest extends TestCase
         $this->assertSame('core.templates.read', $route['meta']['permission']);
         $this->assertNull($routes->firstWhere('path', '*/admin/templates/qa434-nolayout/settings'), '설정 화면을 공급하지 않은 템플릿은 라우트가 없다');
 
-        // 공용 화면은 없다(#434 D32) — 켜진 관리자 템플릿에 옛 공용 화면 레이아웃이 남아 있어도 그 화면으로 열지 않는다
+        // 공용 화면은 없다 — 켜진 관리자 템플릿에 옛 공용 화면 레이아웃이 남아 있어도 그 화면으로 열지 않는다
         File::ensureDirectoryExists(base_path('templates/qa434-host/layouts'));
         File::put(base_path('templates/qa434-host/layouts/admin_template_settings.json'), json_encode(['version' => '1.0.0', 'layout_name' => 'admin_template_settings', 'components' => []]));
         app(TemplateSettingsService::class)->clearCache();
@@ -240,7 +240,7 @@ class TemplateSettingsLayoutRegistrationTest extends TestCase
 
     /**
      * 켜진 관리자 템플릿이 `layouts/overrides/{템플릿id}/template_settings.*` 로 그 템플릿 설정 화면을 덮어쓴다 —
-     * 행 소유(source_identifier)는 화면을 공급한 템플릿 그대로이고, 덮어쓰기 파일을 지우고 새로 고치면 원본으로 돌아간다 (#434 D28).
+     * 행 소유(source_identifier)는 화면을 공급한 템플릿 그대로이고, 덮어쓰기 파일을 지우고 새로 고치면 원본으로 돌아간다.
      *
      * @scenario case=registration
      *
@@ -280,7 +280,7 @@ class TemplateSettingsLayoutRegistrationTest extends TestCase
     }
 
     /**
-     * 설정 화면 부품 묶음은 꺼진 템플릿도 규약 경로 두 파일만 내주고, 관리자 화면 설정에 설치 템플릿 묶음 주소가 실린다 (#434 D30).
+     * 설정 화면 부품 묶음은 꺼진 템플릿도 규약 경로 두 파일만 내주고, 관리자 화면 설정에 설치 템플릿 묶음 주소가 실린다.
      *
      * @scenario case=settings_bundle_load
      *
@@ -327,7 +327,7 @@ class TemplateSettingsLayoutRegistrationTest extends TestCase
     }
 
     /**
-     * 관리자 템플릿 번역 응답에 설치 템플릿의 설정 화면 문구가 `{템플릿id}.{묶음}` 으로 감싸여 실린다 — 부품 매니페스트 `lang` 의 묶음만 (#434 D28).
+     * 관리자 템플릿 번역 응답에 설치 템플릿의 설정 화면 문구가 `{템플릿id}.{묶음}` 으로 감싸여 실린다 — 부품 매니페스트 `lang` 의 묶음만.
      *
      * @scenario case=settings_bundle_load
      *

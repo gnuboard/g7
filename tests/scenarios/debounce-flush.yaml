@@ -8,7 +8,7 @@ description: |
   축은 셋이다 — **무엇이 대기 중인가**(없음·하나·여럿), **무엇이 flush 를 부르는가**(직접 호출·
   비디바운스 액션·타이머 만료), 그리고 그 결과를 읽는 쪽이 렌더 시점 문맥인가 flush 이후 문맥인가.
 
-  #476 이 마지막 축을 추가했다: flush 는 store 를 갱신하지만 액션에 넘어가는 `dataContext` 는
+  마지막 축은 나중에 더해졌다: flush 는 store 를 갱신하지만 액션에 넘어가는 `dataContext` 는
   **렌더 시점 스냅샷**이라, 그대로 두면 타이핑 직후 저장이 직전 버퍼를 보낸다. 응답은 200 이라
   화면에는 성공으로 보인다 — 그래서 회귀를 재려면 **응답 상태가 아니라 요청 본문**을 봐야 한다.
 
@@ -42,7 +42,7 @@ effects:
   - non_debounced_action_flushes_pending_first
   - non_debounced_action_runs_alone_when_nothing_pending
   - debounced_handler_runs_before_non_debounced_one
-  # flush 이후 데이터 문맥 (#476)
+  # flush 이후 데이터 문맥
   - action_inside_debounce_window_reads_global_after_flush
   - context_is_reused_untouched_when_nothing_was_flushed
   # _changedKeys 병합 규약

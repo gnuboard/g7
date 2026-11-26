@@ -7,7 +7,7 @@ export interface MenuItemData {
     url: string;
     /** 호환 문자열 아이콘 — 메뉴는 FA 클래스(이미지·SVG 면 null), 이커머스 브랜드·카테고리는 맨 이름(`tag`·`folder`) */
     icon: string | null;
-    /** 구조형 아이콘 (#381) — 없으면 icon 을 class 로 그린다 */
+    /** 구조형 아이콘 — 없으면 icon 을 class 로 그린다 */
     iconSpec?: MenuIconSpecData | null;
     isActive: boolean;
     isModuleMenu: boolean;
@@ -22,7 +22,7 @@ export interface MenuItemData {
      */
     roleCount?: number;
     /**
-     * 항목 편집 주소 — 있으면 이름이 행 전체를 덮는 링크(`after:` 덮개)가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 연다(#757).
+     * 항목 편집 주소 — 있으면 이름이 행 전체를 덮는 링크(`after:` 덮개)가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 연다.
      * 보통 클릭은 지금처럼 onClick(선택). 끌기 손잡이·펼침 단추·스위치는 덮개 위층이라 링크 안에 들어가지 않는다.
      */
     href?: string;

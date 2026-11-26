@@ -171,7 +171,7 @@ class ExtensionSelectionResolverTest extends TestCase
     /**
      * 같은 종류 설치 순서 — 뒤에 고른 의존 대상이 먼저 오고, 연쇄 의존도 풀린다.
      *
-     * 설치 작업은 배열 순서를 그대로 따르므로 의존 대상이 뒤에 있으면 의존 검사에서 실패한다(#822 D7).
+     * 설치 작업은 배열 순서를 그대로 따르므로 의존 대상이 뒤에 있으면 의존 검사에서 실패한다.
      *
      * @scenario surface=save_extensions, owner_type=module
      *

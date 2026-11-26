@@ -16,7 +16,7 @@ use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
- * 본인인증 메시지 디스패처 테스트 (#699 — 알림 시스템 경유)
+ * 본인인증 메시지 디스패처 테스트 (알림 시스템 경유)
  *
  * 3단 폴백(정책 → 목적 → 기본)을 알림 type 후보로 해석하고, GenericNotification 으로 발송하며,
  * 채널 토글·발송 로그·옛 발송 훅(deprecated)·회원/게스트 수신자를 잠근다.

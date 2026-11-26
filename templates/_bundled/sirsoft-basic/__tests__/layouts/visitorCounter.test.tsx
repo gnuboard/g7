@@ -1,6 +1,6 @@
 /**
  * @file visitorCounter.test.tsx
- * @description 홈 방문자 카운터 조각·데이터소스의 런타임 계약 (이슈 #682 S3 C4)
+ * @description 홈 방문자 카운터 조각·데이터소스의 런타임 계약
  *
  * 잠그는 것: 공개 요약 소스가 설정이 켜졌을 때만 받고 404 를 삼키는 것, 조각이 설정 켬 + 응답 도착일 때만 그려지는 것
  * (꺼졌거나 실패하면 0 대신 숨김), VisitorCounter 가 네 숫자와 번역 라벨을 받는 것, 라벨 키가 ko/en 에 있는 것.
@@ -54,7 +54,7 @@ describe('홈 방문자 카운터', () => {
   // @effects home_counter_hides_when_disabled_or_failed
   it('조각은 설정 켬 + 응답 도착 + 오류 없음일 때만 그려진다 (0 을 그리지 않는다)', () => {
     const root = collect(partial).find((o) => o.id === 'visitor_counter_section');
-    // 조건 식을 실제로 평가해 진리표로 잰다 — 부분 문자열로 재면 `!` 하나가 뒤집혀도 초록이다(#682 S3 R16-D3).
+    // 조건 식을 실제로 평가해 진리표로 잰다 — 부분 문자열로 재면 `!` 하나가 뒤집혀도 초록이다.
     const [expr] = scanBindings(String(root?.if ?? '')).map((b) => b.expr);
     expect(expr, '카운터 조각의 표시 조건').toBeTruthy();
     const shown = (enabled: unknown, summary: unknown): boolean =>

@@ -12,7 +12,7 @@ use Modules\Sirsoft\Page\Services\PageAttachmentService;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 
 /**
- * 페이지 임시 첨부 연결의 롤백 — 파일도 임시 자리로 (#883 3단계)
+ * 페이지 임시 첨부 연결의 롤백 — 파일도 임시 자리로
  *
  * 페이지 저장이 임시 첨부를 본경로로 옮긴 뒤 같은 트랜잭션의 뒤 단계가 실패하면, 종전에는 파일만 본경로에 남았다.
  * 이동은 StorageTransaction 이라 롤백되면 사본을 지우고 원본을 둔다. 커밋되면 원본을 지운다.

@@ -29,7 +29,7 @@ use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
- * 관리자 설치 창 「함께 쓰면 연동되는 확장(선택)」 (#822 P12·D9)
+ * 관리자 설치 창 「함께 쓰면 연동되는 확장(선택)」
  *
  * 설치 미리보기는 연동 대상을 `integrations[]` 로 내고 미설치·비활성 항목을 기본 체크한다(템플릿 대상은 고를 수 없음).
  * 고른 연동은 의존 다음·본체 이전에 설치·활성화하고, 실패해도 본체 설치는 계속하며 실패는 `integration_notices` 로 알린다.

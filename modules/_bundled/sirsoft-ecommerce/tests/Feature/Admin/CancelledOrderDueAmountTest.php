@@ -20,7 +20,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 취소하면 돌려줄 돈이 없어 환불신청서도 만들어지지 않고(RF 0건), 취소신청서만 생긴다.
  * 그 결과 주문은 `cancelled` 인데 **미수금은 결제예정금액 그대로 남는다.**
  *
- * 실측(#599 통합실측 세션1 · 주문 20260915-1506049952): 무통장 5,000원 + 배송비 5,000원
+ * 실측(주문 20260915-1506049952): 무통장 5,000원 + 배송비 5,000원
  * = `total_due_amount 10,000` 으로 생성 → 미입금 상태에서 취소 → `order_status=cancelled` ·
  * `payment_status=cancelled` · `paid_amount_local=0` 인데 **`total_due_amount=10,000` 유지**.
  * 같은 DB 의 다른 취소 주문 9건은 전부 `due=0` 이다 — 결제를 거친 주문만 0 이 되기 때문이다.

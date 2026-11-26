@@ -53,7 +53,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 
 /**
- * 결제사 플러그인 공개 계약 구현 — 기존 이커머스 서비스와 저장소에 위임만 한다 (#916).
+ * 결제사 플러그인 공개 계약 구현 — 기존 이커머스 서비스와 저장소에 위임만 한다 .
  *
  * 동작이 바뀌는 것은 재결제 복구(restoreForRetry) 하나다. 서비스는 호출 때마다 컨테이너에서 해석한다 —
  * 시험이 바꿔 끼운 서비스와 통화 설정 초기화가 이 구현에도 닿게 하려는 것이다.

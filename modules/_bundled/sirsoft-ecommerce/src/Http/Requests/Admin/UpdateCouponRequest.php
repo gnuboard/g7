@@ -86,7 +86,7 @@ class UpdateCouponRequest extends FormRequest
             }
         }
 
-        // 발급방법·조건·알림 규칙 정규화 (#952)
+        // 발급방법·조건·알림 규칙 정규화
         $merge = array_merge($merge, $this->normalizeIssueRuleInput(false));
 
         if ($merge) {
@@ -149,7 +149,7 @@ class UpdateCouponRequest extends FormRequest
             'categories.*.type' => 'required|string|in:include,exclude',
         ];
 
-        // 첫구매 발급 시점·발급 알림 (#952)
+        // 첫구매 발급 시점·발급 알림
         $rules = array_merge($rules, $this->issueRuleRules());
 
         // 훅을 통한 동적 규칙 확장

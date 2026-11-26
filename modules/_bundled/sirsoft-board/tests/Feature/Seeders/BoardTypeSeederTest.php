@@ -8,7 +8,7 @@ use Modules\Sirsoft\Board\Models\BoardType;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 게시판 유형 시더가 운영자가 만든 유형을 지우지 않는지 고정한다 (#727 D5-④).
+ * 게시판 유형 시더가 운영자가 만든 유형을 지우지 않는지 고정한다.
  *
  * 결함(수정 전): 시더 끝의 stale 정리가 범위 조건 없이 "선언에 없는 slug" 를 전부 지워, 언어팩을 켜고 끌 때마다
  * (시더 재실행) 운영자가 「유형 추가」 로 만든 게시판 유형이 사라졌다.

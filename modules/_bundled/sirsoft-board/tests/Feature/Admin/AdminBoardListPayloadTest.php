@@ -11,7 +11,7 @@ use Modules\Sirsoft\Board\Models\BoardType;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 관리자 게시판 목록 페이로드 회귀 테스트 (#518).
+ * 관리자 게시판 목록 페이로드 회귀 테스트.
  *
  * 목록 표현(`toAdminListArray`)은 전체 표현(`toArray`)에서 필요한 항목만 골라 담는다.
  * 골라 담는 목록은 화면이 실제로 그리는 항목의 상위집합이어야 한다 — 빠지면 예외도 오류도 없이

@@ -69,7 +69,7 @@ class MigrateSettingsToJsonCommand extends Command
         'image_max_width' => 'upload',
         'image_max_height' => 'upload',
         'image_quality' => 'upload',
-        // 이미지 썸네일 (#869) — 옛 system_configs 에 있었을 리 없는 키지만, 같은 이름이 남아 있으면 upload 로 옮긴다
+        // 이미지 썸네일 — 옛 system_configs 에 있었을 리 없는 키지만, 같은 이름이 남아 있으면 upload 로 옮긴다
         'thumbnail_enabled' => 'upload',
         'thumbnail_presets' => 'upload',
         'thumbnail_content_preset' => 'upload',
@@ -113,7 +113,7 @@ class MigrateSettingsToJsonCommand extends Command
      * 옮기지 않고 버리는 옛 키 (어디서도 읽지 않는 키)
      *
      * 매핑에 없는 키는 general 로 들어가므로, 지운 설정은 여기 적어야 옮겨 오지 않는다.
-     * `maintenance_mode`: 점검 모드는 `php artisan down` / `php artisan up` 이 맡는다 (#888).
+     * `maintenance_mode`: 점검 모드는 `php artisan down` / `php artisan up` 이 맡는다.
      *
      * @var array<int, string>
      */

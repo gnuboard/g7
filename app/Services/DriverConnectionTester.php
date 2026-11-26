@@ -68,7 +68,7 @@ class DriverConnectionTester
             }
         }
 
-        // 웹서버 파일 위임 (#878) — 요청에 방식이 실렸을 때만 판정한다(다른 카드의 시험 버튼은 이 키를 보내지 않는다)
+        // 웹서버 파일 위임 — 요청에 방식이 실렸을 때만 판정한다(다른 카드의 시험 버튼은 이 키를 보내지 않는다)
         if (($settings['file_delegation'] ?? null) !== null && $settings['file_delegation'] !== '') {
             $results['file_delegation'] = $this->testFileDelegation($settings);
             if (! $results['file_delegation']['success']) {
@@ -586,7 +586,7 @@ class DriverConnectionTester
     }
 
     /**
-     * 웹서버 파일 위임 구성을 정적으로 판정합니다 (1단계 — #878).
+     * 웹서버 파일 위임 구성을 정적으로 판정합니다 (1단계).
      *
      * PHP 안에서는 웹서버가 위임 헤더를 실제로 소비하는지 확정할 수 없다. 여기서는 확정 가능한 실패만 실패로 내고
      * (Apache 인데 mod_xsendfile 이 없다 · 고른 방식과 웹서버 종류가 어긋난다), 나머지는 「저장한 뒤 실제 전송 확인

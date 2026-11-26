@@ -9,7 +9,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 훅 액션의 Laravel 이벤트 미러 — 콜백마다 리스너 대신 디스패처당 와일드카드 1개 (#860 W5)
+ * 훅 액션의 Laravel 이벤트 미러 — 콜백마다 리스너 대신 디스패처당 와일드카드 1개
  *
  * 외부 `Event::listen('hook.x')`·`Event::dispatch('hook.x')` 계약과 「액션 정확히 1회」(2026-02-15 이중 실행 사고의
  * `$dispatching` 가드)를 그대로 지키면서, 액션 등록 수만큼 쌓이던 이름 리스너를 없앤다.

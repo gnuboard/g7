@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Log;
  * - role: 특정 역할의 사용자들 (admin, manager 등)
  * - permission: 특정 권한을 가진 역할에 소속된 사용자들 (예: sirsoft-board.reports.manage)
  * - specific_users: 지정된 사용자 UUID 목록
- * - site_admin_email: 환경설정 > 일반의 관리자 이메일(`general.admin_email`) 한 곳. 비회원 수신자로 만들어 메일만 받는다(#888).
+ * - site_admin_email: 환경설정 > 일반의 관리자 이메일(`general.admin_email`) 한 곳. 비회원 수신자로 만들어 메일만 받는다.
  *   비어 있으면 0명이고 경고 로그를 남긴다.
  *
  * 비회원 수신자는 user_id 없이 이메일/이름/로케일만 가진 1급 Notifiable 로,
@@ -231,7 +231,7 @@ class NotificationRecipientResolver
     }
 
     /**
-     * 사이트 관리자 이메일 참조를 만듭니다 — addSiteAdminEmail() 과 같은 판정입니다 (#888).
+     * 사이트 관리자 이메일 참조를 만듭니다 — addSiteAdminEmail() 과 같은 판정입니다.
      *
      * @return array<int, array<string, mixed>> 참조 목록 (비었거나 형식이 틀리면 빈 배열)
      */
@@ -469,7 +469,7 @@ class NotificationRecipientResolver
     }
 
     /**
-     * 사이트 관리자 이메일을 수신자에 추가합니다 (#888).
+     * 사이트 관리자 이메일을 수신자에 추가합니다.
      *
      * 환경설정 > 일반의 관리자 이메일(`general.admin_email`)을 비회원 수신자로 만든다 — 비회원을 허용하는 채널(메일)만 받는다.
      * 비었거나 형식이 틀리면 아무도 넣지 않고 경고를 남긴다. 화면은 이 칸을 필수로 받지만 설정 파일을 직접 고친 사이트·

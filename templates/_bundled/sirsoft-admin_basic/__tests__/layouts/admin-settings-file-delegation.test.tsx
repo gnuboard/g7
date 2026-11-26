@@ -1,8 +1,8 @@
 /**
- * 드라이버 탭 — 웹서버 파일 위임 카드 테스트 (#878)
+ * 드라이버 탭 — 웹서버 파일 위임 카드 테스트
  *
  * @description
- * 「웹서버 파일 위임」 카드는 저장소 카드들(공개 자산 스토리지 → 비공개 첨부 저장소, #916) 바로 뒤의 형제 카드다. 셀렉트는 저장 키(drivers.file_delegation)와
+ * 「웹서버 파일 위임」 카드는 저장소 카드들(공개 자산 스토리지 → 비공개 첨부 저장소) 바로 뒤의 형제 카드다. 셀렉트는 저장 키(drivers.file_delegation)와
  * 서버 카탈로그(available_drivers.file_delegation)에 묶이고, nginx 를 고를 때만 내부 위치 접두사 칸이 보인다.
  * 방식별 웹서버 설정 안내는 `_meta.file_delegation`(설치 위치 실경로)으로 채워지고, 「설정 점검」(test-driver)과
  * 「실제 전송 확인」(file-delegation-probe) 버튼은 위임을 쓰는 동안에만 보인다.

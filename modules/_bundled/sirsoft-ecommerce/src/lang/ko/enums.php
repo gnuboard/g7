@@ -491,7 +491,7 @@ return [
         'parcel_box' => '택배함에 넣어주세요',
         'call' => '배송 전 연락 부탁드립니다',
     ],
-    // 내보내기(#787)
+    // 내보내기
     'export_status' => [
         'pending' => '대기',
         'processing' => '진행중',

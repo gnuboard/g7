@@ -73,7 +73,7 @@ function findFirst(node: any, predicate: (n: any) => boolean): any | null {
     if (predicate(node)) return node;
     const kids = [
         ...asArray(node?.children),
-        ...asArray(node?.props?.footer), // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
+        ...asArray(node?.props?.footer), // 고정 하단 (바닥 단추가 Modal 고정 하단으로 옮김)
         ...asArray(node.responsive?.portable?.children),
     ];
     for (const child of kids) {
@@ -200,7 +200,7 @@ function findFormFields(node: any): string[] {
 // 1. 메인 레이아웃 (admin_board_settings.json)
 // =============================================
 // 조합 요약(마커 아님, 평문): layout_file=modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_settings.g7.html
-// (#408 시맨틱 자산 매핑 매니페스트 3종의 대상 레이아웃 렌더링 테스트 — 자산 치환의 구조 회귀를 잰다)
+// (시맨틱 자산 매핑 매니페스트 3종의 대상 레이아웃 렌더링 테스트 — 자산 치환의 구조 회귀를 잰다)
 describe('admin_board_settings.json - 메인 레이아웃', () => {
     /**
      * @scenario save_path=bulk
@@ -350,9 +350,9 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         expect(innerActions[2].params.replace).toBe(true);
         expect(innerActions[2].params.query.tab).toBeDefined();
 
-        // scrollIntoView - 탭 변경 후 본문 상단으로 스크롤 (#369)
+        // scrollIntoView - 탭 변경 후 본문 상단으로 스크롤
         expect(innerActions[3].handler).toBe('scrollIntoView');
-        // _admin_base 슬롯 #main_content 와 중복 회피 — 페이지 안쪽 탭 컨텐츠 컨테이너로 변경 (#408)
+        // _admin_base 슬롯 #main_content 와 중복 회피 — 페이지 안쪽 탭 컨텐츠 컨테이너로 변경
         expect(innerActions[3].params.selector).toBe('#tab_content');
     });
 
@@ -400,7 +400,7 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
      */
     it('저장 버튼이 하단 sticky footer 안에 있다', () => {
         const content = mainLayout.slots.content[0];
-        // 액션 버튼은 페이지 상단 sticky_header 가 아닌 하단 sticky footer_buttons 컨테이너에 있다 (#369)
+        // 액션 버튼은 페이지 상단 sticky_header 가 아닌 하단 sticky footer_buttons 컨테이너에 있다
         // sirsoft-admin_basic 의 .sticky-footer-buttons 자산 사용 (sticky bottom-0 z-10 ... bg-gray-50 dark:bg-gray-800)
         const footerButtons = findById(content, 'footer_buttons');
         expect(footerButtons).toBeDefined();
@@ -440,7 +440,7 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         expect(apiCallAction.auth_required).toBe(true);
 
         // onSuccess: isSaving=false, hasChanges=false, refetchDataSource x5, toast
-        // (5번째 재조회는 개인정보 보유기간 대상 건수 — 저장된 설정 기준이라 저장 뒤 다시 읽는다, 이슈 #636)
+        // (5번째 재조회는 개인정보 보유기간 대상 건수 — 저장된 설정 기준이라 저장 뒤 다시 읽는다)
         expect(apiCallAction.onSuccess).toHaveLength(7);
         expect(asArray(apiCallAction?.onSuccess)[0].params.isSaving).toBe(false);
         expect(asArray(apiCallAction?.onSuccess)[0].params.hasChanges).toBe(false);
@@ -481,7 +481,7 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
      */
     it('Partial 참조가 올바르다 (8개 하위 탭 partial 포함)', () => {
         const content = mainLayout.slots.content[0];
-        // _admin_base 슬롯 #main_content 와 중복 회피 — 페이지 안쪽 탭 컨텐츠 컨테이너 id 는 tab_content (#408)
+        // _admin_base 슬롯 #main_content 와 중복 회피 — 페이지 안쪽 탭 컨텐츠 컨테이너 id 는 tab_content
         const tabContent = findById(content, 'tab_content');
         expect(tabContent).toBeDefined();
         const partials = tabContent.children.filter((c: any) => c.partial);
@@ -552,7 +552,7 @@ describe('_tab_board_settings_basic.json - 기본 하위 탭', () => {
      *
      * @effects settings_layout_default_tabs_contract
      */
-    it('페이지 안내 배너(page_info_banner)가 섹션 목록 상단에 존재한다 (#408 alert-info)', () => {
+    it('페이지 안내 배너(page_info_banner)가 섹션 목록 상단에 존재한다 (alert-info)', () => {
         const banner = findById(tabBoardSettingsBasic, 'page_info_banner');
         expect(banner).toBeDefined();
         expect(banner.props.className).toContain('alert-info');
@@ -568,7 +568,7 @@ describe('_tab_board_settings_basic.json - 기본 하위 탭', () => {
     it('SectionLayout을 사용한다', () => {
         const sections = findByName(tabBoardSettingsBasic, 'SectionLayout');
         expect(sections.length).toBeGreaterThanOrEqual(1);
-        // sirsoft-admin_basic 의 .admin-card 자산 사용 (#408)
+        // sirsoft-admin_basic 의 .admin-card 자산 사용
         // 자산 정의: bg-white border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-700
         for (const section of sections) {
             expect(section.props.className).toContain('admin-card');
@@ -595,7 +595,7 @@ describe('_tab_board_settings_basic.json - 기본 하위 탭', () => {
      *
      * @effects settings_layout_default_tabs_contract
      */
-    it('각 필드에 일괄 적용 체크박스가 있고 Input change 액션으로 토글된다 — controlled checkbox 표준 (#304)', () => {
+    it('각 필드에 일괄 적용 체크박스가 있고 Input change 액션으로 토글된다 — controlled checkbox 표준', () => {
         const fieldType = findById(tabBoardSettingsBasic, 'field_type');
         expect(fieldType).toBeDefined();
 
@@ -625,7 +625,7 @@ describe('_tab_board_settings_basic.json - 기본 하위 탭', () => {
      *
      * @effects settings_layout_default_tabs_contract
      */
-    it('basic 탭의 모든 일괄적용 필드(4개) Input에 change 액션이 적용되어 있고 라벨에는 click 액션이 없다 (#304)', () => {
+    it('basic 탭의 모든 일괄적용 필드(4개) Input에 change 액션이 적용되어 있고 라벨에는 click 액션이 없다', () => {
         const fieldIds = ['field_type', 'field_secret_mode', 'field_show_view_count', 'field_use_report'];
 
         for (const fieldId of fieldIds) {
@@ -723,7 +723,7 @@ describe('_tab_board_settings_permissions.json - 권한 하위 탭', () => {
      *
      * @effects settings_layout_default_tabs_contract
      */
-    it('권한 행은 Label로 체크박스+텍스트를 감싸고 Input change로 토글한다 — basic 탭과 동일 패턴 (#304)', () => {
+    it('권한 행은 Label로 체크박스+텍스트를 감싸고 Input change로 토글한다 — basic 탭과 동일 패턴', () => {
         const sectionIds = ['permissions_admin_section', 'permissions_user_section'];
 
         for (const sectionId of sectionIds) {
@@ -773,14 +773,14 @@ describe('_tab_board_settings_permissions.json - 권한 하위 탭', () => {
      *
      * @effects settings_layout_default_tabs_contract
      */
-    it('권한 섹션 헤더(전체 토글)는 Label로 체크박스+텍스트를 감싸고 Input change로 토글한다 (#304)', () => {
+    it('권한 섹션 헤더(전체 토글)는 Label로 체크박스+텍스트를 감싸고 Input change로 토글한다', () => {
         const sectionIds = ['permissions_admin_section', 'permissions_user_section'];
 
         for (const sectionId of sectionIds) {
             const section = findById(tabBoardSettingsPermissions, sectionId);
             expect(section, `${sectionId} 노드 존재`).toBeDefined();
 
-            // 섹션 헤더는 첫 자식 Label (.section-header-row 시맨틱 자산 적용 + 체크박스 감쌈, #408)
+            // 섹션 헤더는 첫 자식 Label (.section-header-row 시맨틱 자산 적용 + 체크박스 감쌈)
             const headerLabel = section.children.find(
                 (c: any) => c.name === 'Label' && (c.props?.className ?? '').includes('section-header-row')
             );
@@ -909,7 +909,7 @@ describe('_tab_board_settings_reply.json - 답변글 하위 탭', () => {
      *
      * @effects settings_layout_default_tabs_contract
      */
-    it('답글 삭제 정책 Select 가 block/cascade 옵션으로 렌더된다 (#573)', () => {
+    it('답글 삭제 정책 Select 가 block/cascade 옵션으로 렌더된다', () => {
         const policyField = findById(tabBoardSettingsReply, 'field_reply_delete_policy');
         expect(policyField).toBeDefined();
         expect(policyField.if).toBeUndefined();
@@ -933,7 +933,7 @@ describe('_tab_board_settings_reply.json - 답변글 하위 탭', () => {
      *
      * @effects settings_layout_default_tabs_contract
      */
-    it('답글 삭제 정책 ko 다국어 키(라벨/설명/옵션/일괄적용)가 실재한다 (#573)', () => {
+    it('답글 삭제 정책 ko 다국어 키(라벨/설명/옵션/일괄적용)가 실재한다', () => {
         const lang = koSettingsLang as any;
         expect(lang.fields?.reply_delete_policy).toBeTruthy();
         expect(lang.fields?.descriptions?.reply_delete_policy).toBeTruthy();
@@ -1136,7 +1136,7 @@ describe('_tab_board_settings_bulk_apply.json - 일괄 적용 하위 탭', () =>
         expect(openModalActions[0].target).toBe('bulk_apply_confirm_modal');
     });
 
-    // 회귀(#413-26): 롤백 발생 후 모달을 닫았다가 다시 열면 직전 롤백 안내가
+    // 회귀(26): 롤백 발생 후 모달을 닫았다가 다시 열면 직전 롤백 안내가
     // 잔존하던 결함 — 모달 열기 sequence 에서 bulkApplyAborted/Board 도 함께 초기화해야 함.
     /**
      * @scenario save_path=bulk
@@ -1182,7 +1182,7 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
     it('SectionLayout을 사용한다', () => {
         const sections = findByName(tabReportPolicy, 'SectionLayout');
         expect(sections.length).toBeGreaterThanOrEqual(1);
-        // sirsoft-admin_basic 의 .admin-card 자산 사용 (#408)
+        // sirsoft-admin_basic 의 .admin-card 자산 사용
         expect(sections[0].props.className).toContain('admin-card');
     });
 
@@ -1282,10 +1282,10 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
      *
      * @effects settings_layout_report_policy_contract
      */
-    it('admin-card 안 4 섹션 description 이 .card-description 시맨틱이고 card-title 의 직계 sibling 이다 (#408)', () => {
+    it('admin-card 안 4 섹션 description 이 .card-description 시맨틱이고 card-title 의 직계 sibling 이다', () => {
         // _tab_report_policy.json 의 4 섹션 (자동 숨김, abuse_prevention, permissions, notification)
         // description 이 stack 안에 묻혀있으면 .card-title:has(+ .card-description) 셀렉터 불발 →
-        // card-title 의 하단 여백이 의도(mb-1)와 다르게 mb-6 으로 적용됨 (보고 #408)
+        // card-title 의 하단 여백이 의도(mb-1)와 다르게 mb-6 으로 적용됨 (보고)
         //
         // 기대: admin-card 직계 자식 순서가 [card-title, card-description, stack, ...] 이고,
         //       card-description 의 className 에 'card-description' 시맨틱 자산이 포함되어야 함.
@@ -1348,7 +1348,7 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
      *
      * @effects settings_layout_report_policy_contract
      */
-    it('admin_board_settings 메인 레이아웃에 id="main_content" 가 없어야 한다 — _admin_base 의 슬롯 id 와 중복 금지 (HTML 스펙) (#408)', () => {
+    it('admin_board_settings 메인 레이아웃에 id="main_content" 가 없어야 한다 — _admin_base 의 슬롯 id 와 중복 금지 (HTML 스펙)', () => {
         function findAllIds(node: any, out: Map<string, number> = new Map()): Map<string, number> {
             if (!node || typeof node !== 'object') return out;
             if (Array.isArray(node)) { node.forEach((c) => findAllIds(c, out)); return out; }
@@ -1371,7 +1371,7 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
      *
      * @effects settings_layout_report_policy_contract
      */
-    it('board layout 의 모든 .card-description 은 Div 태그여야 한다 — Span/P 금지 (#408)', () => {
+    it('board layout 의 모든 .card-description 은 Div 태그여야 한다 — Span/P 금지', () => {
         // 표준: span.card-description / p.card-description 는 잘못된 시맨틱 HTML
         //          → div.card-description 만 허용.
         const layouts: Array<[string, any]> = [
@@ -1475,7 +1475,7 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
 
     // 허용 범위는 서버가 내려주는 한계값(_meta.limits)을 바인딩한다. 화면이 숫자를 직접 들면
     // 저장 규칙과 갈라진다 — 실제로 화면 min:1 ↔ 서버 min:0 으로 어긋나 "0=비활성" 안내대로
-    // 입력할 수 없던 결함이 있었다(#493 B4).
+    // 입력할 수 없던 결함이 있었다.
     /**
      * @scenario save_path=bulk
      *
@@ -1513,7 +1513,7 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
      */
     it('Input 에러 시 input-error 시맨틱 클래스가 분기 적용된다', () => {
         // Input 디폴트 외형은 Input 컴포넌트가 자체 제공 (시맨틱 .input).
-        // 호출처 className 표현식은 422 검증 에러 시 input-error 시맨틱을 토글하는 분기만 담당 (#369).
+        // 호출처 className 표현식은 422 검증 에러 시 input-error 시맨틱을 토글하는 분기만 담당.
         const inputs = findByName(tabReportPolicy, 'Input').filter(
             (c: any) => c.props?.type === 'number'
         );
@@ -1530,12 +1530,12 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
      *
      * @effects settings_layout_report_policy_contract
      */
-    it('신고 관리 권한 TagInput 에러 시 input-error 분기 + 인라인 에러 Span 이 존재한다 (#413 item 8)', () => {
+    it('신고 관리 권한 TagInput 에러 시 input-error 분기 + 인라인 에러 Span 이 존재한다 (item 8)', () => {
         // 신고 권한 필드(view_roles/manage_roles)는 빈 배열 제출 시 FormRequest 가 차단한다.
         // 그 422 응답을 화면에 표시하기 위해, 다른 number Input 필드와 동일한 패턴으로
         //   1) TagInput control 에 input-error 시맨틱 토글 (빨간 테두리)
         //   2) TagInput 직후 형제로 인라인 에러 메시지 Span
-        // 두 가지가 모두 있어야 한다. (#408 시맨틱화 유지 — 원시 Tailwind 풀스택 금지)
+        // 두 가지가 모두 있어야 한다. (시맨틱화 유지 — 원시 Tailwind 풀스택 금지)
         const permissionFields = ['report_permissions.view_roles', 'report_permissions.manage_roles'];
 
         // TagInput 과 그 바로 뒤 형제 Span 을 함께 보기 위해, 부모의 children 배열을 순회한다.
@@ -1567,7 +1567,7 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
             expect(next, `${field} 뒤 에러 Span`).not.toBeNull();
             expect(next.name).toBe('Span');
             expect(next.if).toContain(`_local.errors?.['${field}']`);
-            // 빨간 오류 글자는 확장 사본 의미 클래스 board-form-error(block·mt-1·text-xs·red-700/300) 로 묶였다(#399 R-1 P2, D3)
+            // 빨간 오류 글자는 확장 사본 의미 클래스 board-form-error(block·mt-1·text-xs·red-700/300) 로 묶였다
             expect(String(next.props.className).split(/\s+/)).toContain('board-form-error');
             expect(next.text).toContain(`_local.errors`);
             expect(next.text).toContain(field);
@@ -2444,7 +2444,7 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
      */
     it('메인 레이아웃 Partial 목록에 _tab_seo.json이 포함되어 있다', () => {
         const content = mainLayout.slots.content[0];
-        // _admin_base 슬롯 #main_content 와 중복 회피 — tab_content 로 변경 (#408)
+        // _admin_base 슬롯 #main_content 와 중복 회피 — tab_content 로 변경
         const tabContent = findById(content, 'tab_content');
         const partialPaths = tabContent.children
             .filter((c: any) => c.partial)

@@ -28,7 +28,7 @@ class AttachmentResource extends BaseApiResource
             'order' => $this->getValue('order'),
             'download_url' => $this->download_url,
             'is_image' => $this->is_image,
-            // 문서(attachments.md)대로 비어 있으면 `{}`, 없으면 null 이다 (#758)
+            // 문서(attachments.md)대로 비어 있으면 `{}`, 없으면 null 이다
             'meta' => $this->getValue('meta') === [] ? new \stdClass : $this->getValue('meta'),
             'source_type' => $this->getValue('source_type')?->value,
             'source_identifier' => $this->getValue('source_identifier'),

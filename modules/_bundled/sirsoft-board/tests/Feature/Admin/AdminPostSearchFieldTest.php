@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\Group;
 /**
  * 관리자 게시글 목록 검색 대상 구분 테스트
  *
- * 검증 목적 (이슈 #524 §4.2 — 관리자 목록에 all/title_content/author 는 있는데
+ * 검증 목적 (관리자 목록에 all/title_content/author 는 있는데
  * 「제목만」·「내용만」이 없던 결함):
  * - filters[0][field]=title → 제목만, content → 내용만
  * - all 은 종전과 같이 제목+내용 FULLTEXT + 작성자 분기를 함께 유지한다 (회귀)

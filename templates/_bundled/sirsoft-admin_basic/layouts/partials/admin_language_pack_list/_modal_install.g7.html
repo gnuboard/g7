@@ -3,7 +3,7 @@
   지금 탭에 맞춰 주소·형식·본문을 통째로 갈아 끼운다.
   깔린 뒤에는 목록을 다시 받고 확장을 새로 읽는다 — 새 언어 자원이 곧바로 쓰이게 하려는 것이다.
   실패는 토스트가 아니라 창 위쪽 붉은 띠와 각 칸 아래 문구로 보여 준다(고칠 자리가 이 창 안에 있다).
-  패키지 무결성(#916): 파일 탭에는 서명 파일(.sig.json), URL 탭에는 서명 파일 주소 칸이 있다(둘 다 선택 — 주소를 짐작해 따로 받지 않는다).
+  패키지 무결성: 파일 탭에는 서명 파일(.sig.json), URL 탭에는 서명 파일 주소 칸이 있다(둘 다 선택 — 주소를 짐작해 따로 받지 않는다).
   미서명(409)·서명 불일치(422) 거절은 공용 안내 조각이 그리고, 정책이 허용하면 설치 버튼이 「미서명으로 계속」으로 바뀌어
   같은 요청에 `allow_unsigned=1` 만 더해 다시 보낸다. -->
 <partial description="언어팩 설치 모달 (ZIP/GitHub/URL 3-tab) — 모듈 설치 모달 UX 패턴 동일" editor_label="$t:admin.modal_label.admin_language_pack_list.language_pack_install_modal">
@@ -97,7 +97,7 @@
         </div>
       </div>
     </div>
-    <!-- ZIP 주소(URL) 갈래(#916) — 서버의 URL 설치 API 에 주소·체크섬(선택)·서명 파일 주소(선택)를 JSON 으로 보낸다.
+    <!-- ZIP 주소(URL) 갈래 — 서버의 URL 설치 API 에 주소·체크섬(선택)·서명 파일 주소(선택)를 JSON 으로 보낸다.
          서명 파일 주소를 비우면 서버는 짐작해 받지 않고 미서명으로 다룬다. -->
     <div data-ref="language_pack_url_tab" data-if="{{_global.languagePackInstallTab === 'url'}}" class="mt-4 space-y-4">
       <div class="row-stack">
@@ -171,7 +171,7 @@
               <success>
                 <set-state target="global" :isLanguagePackInstalling="false" :languagePackUploadFile="null" :languagePackUploadFileName="null" :languagePackUploadSignature="null" :languagePackUploadSignatureName="null" :languagePackGithubUrl="null" :languagePackUrl="null" :languagePackChecksum="null" :languagePackSignatureUrl="null" :languagePackInstallError="null" :languagePackInstallErrors="null" languagePackInstallTab="file_upload" :packageIntegrity="null" :packageIntegrityMessage="null"/>
                 <toast type="success" message="$t:admin.language_packs.messages.install_success"/>
-                <!-- 설치된 언어팩의 서명 결과(응답 integrity_status, #916) — 확인됐으면 서명자를, 서명 없이 들였으면 그 사실을 알린다 -->
+                <!-- 설치된 언어팩의 서명 결과(응답 integrity_status) — 확인됐으면 서명자를, 서명 없이 들였으면 그 사실을 알린다 -->
                 <toast if="{{response?.data?.integrity_status === 'verified'}}" type="success" message="$t:admin.package_integrity.result_verified|signer={{(response?.data?.integrity_key_id ?? '').split(':')[0]}}"/>
                 <toast if="{{response?.data?.integrity_status === 'unsigned' || response?.data?.integrity_status === 'unverifiable'}}" type="warning" message="$t:admin.package_integrity.result_unsigned"/>
                 <refetch-data-source dataSourceId="language_packs"/>

@@ -1,5 +1,5 @@
 {
-    "comment": "쿠폰 폼의 발급 알림 구역 (#952) — 알림을 켠 쿠폰마다 알림 종류 `coupon_issued.{쿠폰ID}` 가 G7 알림 템플릿 시스템에 생긴다.\n  이 구역은 켜기/끄기와 광고성 여부만 폼(`_local.form`)에 담고, 채널별 켜기/끄기·문구 편집·미리보기·기본값 복원은 쇼핑몰 설정의\n  알림 화면과 **같은 편집 창**(이 폼 레이아웃이 `<modal src>` 로 include)을 그대로 연다. 창들이 다시 받는 데이터소스 이름\n  (`ecommerceNotificationDefinitions`·`availableChannels`)도 설정 화면과 같게 둔다.\n  다운로드 쿠폰은 회원이 직접 받으므로 이 구역 전체를 숨긴다. 등록 화면(저장 전)에는 정의가 아직 없어 안내만 보인다.",
+    "comment": "쿠폰 폼의 발급 알림 구역 — 알림을 켠 쿠폰마다 알림 종류 `coupon_issued.{쿠폰ID}` 가 G7 알림 템플릿 시스템에 생긴다.\n  이 구역은 켜기/끄기와 광고성 여부만 폼(`_local.form`)에 담고, 채널별 켜기/끄기·문구 편집·미리보기·기본값 복원은 쇼핑몰 설정의\n  알림 화면과 **같은 편집 창**(이 폼 레이아웃이 `<modal src>` 로 include)을 그대로 연다. 창들이 다시 받는 데이터소스 이름\n  (`ecommerceNotificationDefinitions`·`availableChannels`)도 설정 화면과 같게 둔다.\n  다운로드 쿠폰은 회원이 직접 받으므로 이 구역 전체를 숨긴다. 등록 화면(저장 전)에는 정의가 아직 없어 안내만 보인다.",
     "meta": {
         "is_partial": true,
         "description": "쿠폰 폼 - 발급 알림 (쿠폰별 알림 종류 카드)"

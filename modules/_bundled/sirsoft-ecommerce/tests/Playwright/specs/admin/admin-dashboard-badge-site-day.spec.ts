@@ -35,7 +35,7 @@ import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 const DASHBOARD_URL = '/admin/dashboard';
 const ORDERS_API_PATH = '/api/modules/sirsoft-ecommerce/admin/orders';
 const OVERVIEW_API_PATH = '/api/modules/sirsoft-ecommerce/admin/dashboard/overview';
-// #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+// 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
 const BADGE = '[id^="today_payment_complete_badge__"]';
 const NOTICE = '#date_site_basis_notice';
 

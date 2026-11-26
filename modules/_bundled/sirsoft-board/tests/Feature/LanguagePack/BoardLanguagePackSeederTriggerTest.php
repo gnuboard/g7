@@ -40,7 +40,7 @@ class BoardLanguagePackSeederTriggerTest extends ModuleTestCase
         DB::table('board_types')->where('id', '>', 0)->delete();
 
         // 캐시된 LanguagePackRegistry 정리 — 싱글톤을 갈아 끼우지 않고 캐시만 비운다. 부팅 때 등록된 번역 필터·주입기가
-        // 그 인스턴스를 쥐고 있어, 교체하면 옛 인스턴스가 캐시를 이미 채운 실행에서만 새 활성 팩이 안 보여 흔들렸다(#597 규칙).
+        // 그 인스턴스를 쥐고 있어, 교체하면 옛 인스턴스가 캐시를 이미 채운 실행에서만 새 활성 팩이 안 보여 흔들렸다(규칙).
         app(LanguagePackRegistry::class)->invalidate();
     }
 

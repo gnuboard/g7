@@ -59,14 +59,14 @@ trait ValidatesLayoutFiles
     protected ?array $compileContextOverride = null;
 
     /**
-     * JSON 문서 안에서 관용한 조각 참조 실패 종류 (#712 D1).
+     * JSON 문서 안에서 관용한 조각 참조 실패 종류.
      *
      * 7.0.11 은 이 셋을 `app.debug=false` 에서 빈 자리로 바꿔 설치를 통과시켰다. `layouts/` 밖 참조(보안 경계)·최대 깊이
      * 초과·마크업 조각 컴파일 실패는 7.0 에서 만들 수 없던(또는 막아야 하는) 실패라 JSON 문서 안이어도 엄격하다.
      */
     private const TOLERATED_INCLUDE_FAILURES = ['include_file_not_found', 'invalid_include_json', 'circular_include'];
 
-    /** 관용한 조각 자리를 표시하는 값 — 부모가 리스트면 원소를 빼고, 아니면 `[]` 로 바꾼다 (#712 D3). */
+    /** 관용한 조각 자리를 표시하는 값 — 부모가 리스트면 원소를 빼고, 아니면 `[]` 로 바꾼다. */
     private const SKIPPED_PARTIAL = ['__g7_skipped_partial' => true];
 
     /**
@@ -89,7 +89,7 @@ trait ValidatesLayoutFiles
      * 이 대상 템플릿 종류(`admin`·`user`)의 화면만 검증합니다 — null 이면 전부.
      *
      * 템플릿 활성화만 채운다. 사용자 템플릿을 켤 때 모듈의 **관리자** 화면까지 컴파일·검증하면, 무관한 관리자 화면
-     * 하나의 실패가 활성화 전체를 되돌렸다(#725 D6). 거르기는 파일 수집 단계에서 하고, 레이아웃 이름 산출 기준
+     * 하나의 실패가 활성화 전체를 되돌렸다. 거르기는 파일 수집 단계에서 하고, 레이아웃 이름 산출 기준
      * 경로(`$layoutsPath`)는 바꾸지 않는다({@see getLayoutTargetType()} 와 같은 판정).
      */
     protected ?string $onlyLayoutTargetType = null;
@@ -225,7 +225,7 @@ trait ValidatesLayoutFiles
             // 레이아웃 이름 결정
             $layoutName = $layoutData['layout_name'] ?? $this->generateLayoutNameFromPath($layoutsPath, $layoutFile, $identifier);
 
-            // partial 병합 검증 — `.json` 문서의 조각 참조 실패는 관용하고(7.0 JSON 확장 호환, #712), `.g7.html` 은 엄격하다.
+            // partial 병합 검증 — `.json` 문서의 조각 참조 실패는 관용하고(7.0 JSON 확장 호환), `.g7.html` 은 엄격하다.
             $basePath = dirname($layoutFile);
             $mainDataSources = $layoutData['data_sources'] ?? [];
             $this->currentLayoutFile = $layoutFile;
@@ -392,7 +392,7 @@ trait ValidatesLayoutFiles
      */
     protected function formatLayoutValidationError(string $sourceType, string $errorType, array $params): string
     {
-        // 소스 타입마다 자기 문구 파일을 쓴다 — 종전엔 플러그인도 모듈 문구를 빌려 "모듈 … 검증 실패" 로 표기됐다(#712).
+        // 소스 타입마다 자기 문구 파일을 쓴다 — 종전엔 플러그인도 모듈 문구를 빌려 "모듈 … 검증 실패" 로 표기됐다.
         $translationKey = match ($sourceType) {
             'template' => "templates.errors.layout_validation_{$errorType}",
             'plugin' => "plugins.errors.layout_validation_{$errorType}",
@@ -403,7 +403,7 @@ trait ValidatesLayoutFiles
     }
 
     /**
-     * JSON 문서에서 관용한 조각 참조 실패 목록을 꺼내고 비웁니다 (#712).
+     * JSON 문서에서 관용한 조각 참조 실패 목록을 꺼내고 비웁니다.
      *
      * 등록 경로(활성화·업데이트·갱신·설치)가 {@see validateLayoutFiles()} 직후 불러 결과의 `layout_warnings` 로 싣는다.
      * 같은 실패가 호스트 레이아웃과 조각 파일 단독 스캔에서 두 번 잡혀도 한 건으로 센다.
@@ -753,7 +753,7 @@ trait ValidatesLayoutFiles
      * @param  string  $basePath  기준 경로 (현재 레이아웃 파일의 디렉토리)
      * @param  int  $depth  현재 partial 깊이
      * @param  array  $dataSources  메인 레이아웃의 data_sources (partial 파일에서 참조 가능)
-     * @param  bool  $lenient  이 데이터를 담은 문서가 `.json` 인지 — 참이면 관용 갈래({@see TOLERATED_INCLUDE_FAILURES})를 빈 자리로 둔다 (#712)
+     * @param  bool  $lenient  이 데이터를 담은 문서가 `.json` 인지 — 참이면 관용 갈래({@see TOLERATED_INCLUDE_FAILURES})를 빈 자리로 둔다
      * @return array partial이 모두 해석된 데이터 (관용한 자리 자체였다면 {@see SKIPPED_PARTIAL})
      *
      * @throws LayoutIncludeException
@@ -775,7 +775,7 @@ trait ValidatesLayoutFiles
             return $this->resolvePartial($data['partial'], $basePath, $depth, $dataSources, $lenient);
         }
 
-        // 3. 배열의 각 요소를 재귀적으로 처리 — 관용한 자리는 리스트면 빼고(재색인), 아니면 `[]` 로 비운다 (#712 D3).
+        // 3. 배열의 각 요소를 재귀적으로 처리 — 관용한 자리는 리스트면 빼고(재색인), 아니면 `[]` 로 비운다.
         $skipped = false;
 
         foreach ($data as $key => $value) {
@@ -814,7 +814,7 @@ trait ValidatesLayoutFiles
      * 설치는 성공한 채 DB content 에 구멍이 굽히고 화면 일부가 흔적 없이 사라졌다. 조각을 소스로
      * 읽게 만들면서 이 침묵을 함께 걷어낸다 — 남겨 두면 다음 결함도 같은 방식으로 숨는다.
      *
-     * **예외 — 7.0 JSON 호환(#712)**: 실패한 참조를 담은 문서가 `.json` 이면(`$lenient`) 파일 부재·조각 JSON 파싱
+     * **예외 — 7.0 JSON 호환**: 실패한 참조를 담은 문서가 `.json` 이면(`$lenient`) 파일 부재·조각 JSON 파싱
      * 실패·순환 참조는 예외 대신 빈 자리 표식을 돌려주고 경고를 남긴다(7.0.11 이 설치를 통과시키던 세 갈래). 7.0 JSON
      * 확장이 조각 하나 때문에 설치·활성화·업데이트 전부에서 거부되던 회귀를 막는 것이고, `.g7.html` 문서는 그대로 엄격하다.
      *

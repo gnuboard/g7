@@ -1,6 +1,6 @@
 /**
  * @file board-secret-post-login-redirect.test.tsx
- * @description 비밀글(비로그인) 안내 박스의 로그인 버튼 → redirect 보존 회귀 (이슈 #413 item 28)
+ * @description 비밀글(비로그인) 안내 박스의 로그인 버튼 → redirect 보존 회귀 (item 28)
  *
  * 검증 방식: 레이아웃 JSON 트리 직접 분석 (DOM 비의존).
  * 정책: 비밀글에 비로그인 진입 시 안내 박스의 로그인 버튼은 현재 글 경로를 보존해 로그인 후 복귀해야 한다.
@@ -56,7 +56,7 @@ function collectLoginButtonActions(): Node[] {
     return loginButtons.flatMap((btn) => (btn.actions as Node[]) ?? []);
 }
 
-describe('이슈 #413-28 — 비밀글 로그인 버튼 redirect 보존 (basic/show.json)', () => {
+describe('28 — 비밀글 로그인 버튼 redirect 보존 (basic/show.json)', () => {
     it('비밀글 로그인 버튼이 존재해야 한다', () => {
         const loginButtons = collectNodes(
             basicShow,

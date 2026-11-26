@@ -18,7 +18,7 @@ use Tests\TestCase;
 // audit:allow test-extension-base-class reason: 메뉴·역할·플러그인 행(코어 테이블)만 쓰는 생명주기 테스트라 트랜잭션 격리로 충분하다 — PluginTestCase 의 RefreshDatabase(migrate:fresh)는 로컬 MySQL OOM 규율(mem:migrate-fresh-ddl-crashes-local-mysql)에 걸린다
 
 /**
- * GDPR 플러그인 비활성화·재활성화 시 관리자 메뉴 역할 보존 (#708)
+ * GDPR 플러그인 비활성화·재활성화 시 관리자 메뉴 역할 보존
  *
  * 비활성화가 메뉴 행을 지워 운영자가 붙인 역할이 사라지고, 재활성화가 운영자가 뗀 privacy
  * 역할을 다시 붙이던 결함을 잠근다. 메뉴·역할·플러그인 행만 쓰므로 트랜잭션으로 격리한다.
@@ -128,7 +128,7 @@ class MenuRolePreservationTest extends TestCase
 
     /**
      * 플러그인의 uninstall() 은 메뉴와 역할 연결을 지우지 않는다 — 데이터 보존 제거에서도 불리므로, 메뉴는 「데이터도 함께 삭제」
-     * 제거에서 코어(PluginManager)가 지운다(#888). 코어 쪽 계약은 tests/Feature/Extension/PluginUninstallKeepsMenusTest.php.
+     * 제거에서 코어(PluginManager)가 지운다. 코어 쪽 계약은 tests/Feature/Extension/PluginUninstallKeepsMenusTest.php.
      *
      * @scenario plugin=gdpr, transition=uninstall
      *

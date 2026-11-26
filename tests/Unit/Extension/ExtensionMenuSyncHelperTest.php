@@ -21,7 +21,7 @@ use Tests\TestCase;
  * 확장 메뉴 동기화 헬퍼의 핵심 로직을 검증합니다.
  * user_overrides 기반 필드 보호 동작을 검증합니다:
  * - 필드별 독립 보호 (name, icon, order, url 각각)
- * - parent_id, is_active 도 운영자 수정 표식이 없을 때만 갱신 (#727 D5-③ — 종전엔 항상 갱신)
+ * - parent_id, is_active 도 운영자 수정 표식이 없을 때만 갱신 (종전엔 항상 갱신)
  * - stale 메뉴 정리 (자식 포함, UpgradeStep 전용 — 자동 호출 폐기 #135)
  * - 재귀 메뉴 동기화
  */
@@ -1057,7 +1057,7 @@ class ExtensionMenuSyncHelperTest extends TestCase
         $this->assertEquals('Board Management', $slugs[0]);
     }
 
-    // ========== 메뉴 아이콘 선언 정규화 (#381) ==========
+    // ========== 메뉴 아이콘 선언 정규화 ==========
 
     /**
      * 기존 메뉴를 운영자 수정 없이 동기화할 때 저장소 update 로 넘어간 icon 값을 돌려줍니다.

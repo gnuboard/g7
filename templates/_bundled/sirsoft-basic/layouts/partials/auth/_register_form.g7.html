@@ -60,11 +60,11 @@
         <span>$t:auth.password</span>
         <span class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
-      <!-- 규칙·자리표시 숫자는 보안 환경설정 값을 따른다(#736) — 8 을 박아 두면 운영자가 최소 길이를 올려도 화면이 옛 규칙을 안내한다. -->
+      <!-- 규칙·자리표시 숫자는 보안 환경설정 값을 따른다 — 8 을 박아 두면 운영자가 최소 길이를 올려도 화면이 옛 규칙을 안내한다. -->
       <password-input aria-label="$t:auth.password" name="password" placeholder="$t:auth.register.password_placeholder|count={{_global.settings?.security?.password_min_length ?? 8}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :required="true" disabled="{{_local?.isRegistering}}" :showToggle="true" :showValidation="true" enableRules="{{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)].concat(_global.settings?.security?.require_password_special_char ? ['hasSpecial'] : [], _global.settings?.security?.password_require_char_types ? ['minTypes:2'] : [])}}"/>
       <!-- 칸 아래 서버 오류 — 비밀번호 입력 컴포넌트의 자체 오류 줄(error 속성)은 글자가 한 단계 커서(text-sm) 다른 칸(text-xs)과 크기가 달랐다. 이 폼의 다른 칸과 같은 줄로 그린다. -->
       <span data-if="{{_local.errors?.password}}" class="form-error">{{_local.errors?.password?.[0] ?? ''}}</span>
-      <!-- 화면이 미리 확인할 수 없는 규칙(서버만 판정)은 작은 글로 알린다 — 켜진 것만 보인다(#736). -->
+      <!-- 화면이 미리 확인할 수 없는 규칙(서버만 판정)은 작은 글로 알린다 — 켜진 것만 보인다. -->
       <p data-if="{{!!_global.settings?.security?.password_block_identifier || !!_global.settings?.security?.password_block_repeated_chars || !!_global.settings?.security?.password_block_sequential_chars}}" class="mt-2 flex flex-wrap gap-x-1 text-xs text-muted">
         <span>$t:auth.password_rules.server_intro</span>
         <span data-if="{{!!_global.settings?.security?.password_block_identifier}}">$t:auth.password_rules.identifier</span>
@@ -119,7 +119,7 @@
       <div>
         <div class="flex items-center gap-2">
           <!-- 동의 값은 체크 상태(true/false)로 직접 잇는다 — 폼 값이 빈 객체로 시작해 자동바인딩이 값 바인딩을 고르면
-               체크를 풀어도 "1"(동의)이 남는다(#757 후속). -->
+               체크를 풀어도 "1"(동의)이 남는다. -->
           <checkbox name="agree_terms" aria-label="$t:auth.agree_terms_label" :required="true" disabled="{{_local?.isRegistering}}" :autoBinding="false" checked="{{!!_local.registerForm?.agree_terms}}">
             <on type="change">
               <set-state target="local" registerForm.agree_terms="{{$event.target.checked}}"/>

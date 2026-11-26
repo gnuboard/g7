@@ -310,7 +310,7 @@
               </options>
             </select>
             <p class="pay-tosspayments-form-hint">$t:sirsoft-tosspayments.settings.use_escrow_hint</p>
-            <!-- 에스크로를 쓸 때만 보인다. 폼 값(initLocal)은 설정을 그린 다음 박자에 들어오므로 그 전에는 받은 설정 값으로, 받기 전에는 「안 씀」으로 판단한다 — 받은 직후 한 박자에 안내가 번쩍이지 않게(#915 결함군) -->
+            <!-- 에스크로를 쓸 때만 보인다. 폼 값(initLocal)은 설정을 그린 다음 박자에 들어오므로 그 전에는 받은 설정 값으로, 받기 전에는 「안 씀」으로 판단한다 — 받은 직후 한 박자에 안내가 번쩍이지 않게 -->
             <div data-ref="escrow_operation_notice" data-if="{{(_local.form?.use_escrow ?? settings?.data?.use_escrow ?? 'off') !== 'off'}}" class="paytosspayments:mt-2 paytosspayments:rounded-md paytosspayments:bg-amber-50 paytosspayments:dark:bg-amber-900/20 paytosspayments:border paytosspayments:border-amber-200 paytosspayments:dark:border-amber-800 paytosspayments:p-3 paytosspayments:space-y-1">
               <p class="paytosspayments:text-sm paytosspayments:text-amber-800 paytosspayments:dark:text-amber-200">$t:sirsoft-tosspayments.settings.escrow_no_partial_cancel_notice</p>
               <p class="paytosspayments:text-sm paytosspayments:text-amber-800 paytosspayments:dark:text-amber-200">

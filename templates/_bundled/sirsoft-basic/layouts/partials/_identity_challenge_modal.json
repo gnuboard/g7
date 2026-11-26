@@ -176,7 +176,7 @@
             "name": "Div",
             "responsive": {
                 "-640": {
-                    "comment": "640px 이하에서는 취소와 오른쪽 묶음을 세로로 쌓는다(Modal 고정 하단과 같은 경계, #869). 취소를 왼쪽 끝에 두는 양 끝 정렬이라 고정 하단(오른쪽 정렬)으로 옮기지 않는다",
+                    "comment": "640px 이하에서는 취소와 오른쪽 묶음을 세로로 쌓는다(Modal 고정 하단과 같은 경계). 취소를 왼쪽 끝에 두는 양 끝 정렬이라 고정 하단(오른쪽 정렬)으로 옮기지 않는다",
                     "props": {
                         "className": "flex flex-col gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700"
                     }

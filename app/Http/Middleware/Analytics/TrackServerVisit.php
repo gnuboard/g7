@@ -64,7 +64,7 @@ class TrackServerVisit
             // 적재는 훅을 거친다 — 확장이 같은 자리에 끼어들 수 있게 하기 위해서다.
             // 구독 리스너가 `sync => true` 라 큐를 타지 않는다. 이 메서드는 응답이
             // 나간 뒤(`terminate`) 도므로 동기로 적재해도 방문자가 기다리지 않는다
-            // (#682 S3 라운드 6, 설계 결정 「큐는 꼭 필요한 부분에만」).
+            // (설계 결정 「큐는 꼭 필요한 부분에만」).
             HookManager::doAction('core.analytics.tracking_request_received', $dto->toArray());
         } catch (\Throwable $e) {
             // 응답은 이미 나갔다. 통계 때문에 요청 종료가 실패하면 안 된다.

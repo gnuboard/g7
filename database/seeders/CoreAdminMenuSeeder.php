@@ -37,7 +37,7 @@ class CoreAdminMenuSeeder extends Seeder
      */
     private function deleteExistingCoreMenus(): void
     {
-        // 묶음 삭제는 모델 deleted 이벤트를 내지 않는다 — 업로드 아이콘 첨부 정리를 커밋 뒤로 직접 예약한다 (#381).
+        // 묶음 삭제는 모델 deleted 이벤트를 내지 않는다 — 업로드 아이콘 첨부 정리를 커밋 뒤로 직접 예약한다.
         // 코어 메뉴 아래 운영자가 만든 메뉴는 parent_id FK 연쇄로 함께 지워지므로 그 하위 메뉴들도 정리 대상에 넣는다
         $ids = Menu::where('extension_type', ExtensionOwnerType::Core)->pluck('id')->map(fn ($id) => (int) $id)->all();
         $frontier = $ids;
@@ -102,7 +102,7 @@ class CoreAdminMenuSeeder extends Seeder
         $children = $menuData['children'] ?? [];
         unset($menuData['children']);
 
-        // 선언 아이콘 정규화 — 업데이트 경로(ExtensionMenuSyncHelper::syncMenu)와 같은 규칙 (#381)
+        // 선언 아이콘 정규화 — 업데이트 경로(ExtensionMenuSyncHelper::syncMenu)와 같은 규칙
         if (array_key_exists('icon', $menuData)) {
             $menuData['icon'] = MenuIconDeclaration::normalize(
                 $menuData['icon'],

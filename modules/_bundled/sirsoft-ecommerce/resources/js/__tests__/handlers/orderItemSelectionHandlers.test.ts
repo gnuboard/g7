@@ -1,5 +1,5 @@
 /**
- * orderItemSelectionHandlers 테스트 (#599 후속 — 옛 취소 모달 삭제 뒤 남은 선택 축)
+ * orderItemSelectionHandlers 테스트 (옛 취소 모달 삭제 뒤 남은 선택 축)
  *
  * @description
  * 주문상세 상품 체크박스는 클레임 신청 버튼이 작성 화면으로 넘길 상품을 정한다. 옛 주문 취소

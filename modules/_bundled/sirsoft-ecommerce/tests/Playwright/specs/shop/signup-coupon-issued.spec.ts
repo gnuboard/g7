@@ -1,5 +1,5 @@
 /**
- * 가입 쿠폰 — 스스로 가입한 회원의 쿠폰함에 가입 쿠폰이 들어온다 (#952 A·C)
+ * 가입 쿠폰 — 스스로 가입한 회원의 쿠폰함에 가입 쿠폰이 들어온다
  *
  * 관리자 API 로 발급중인 「가입」 자동발급 쿠폰을 만들고, 공개 가입 API 로 시험 회원을 가입시킨 뒤,
  * 그 회원으로 로그인해 마이페이지 쿠폰함 화면에 그 쿠폰 카드(발급 경로 「가입」)가 보이는지 잰다.
@@ -53,7 +53,7 @@ test.afterAll(async () => {
   await api.dispose();
 });
 
-test.describe('가입 쿠폰 (#952)', () => {
+test.describe('가입 쿠폰', () => {
   // @scenario case=register_browser
   // @effects signup_coupon_issued
   test('스스로 가입하면 쿠폰함에 가입 쿠폰 카드가 보인다', async ({ page }) => {

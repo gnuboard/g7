@@ -86,7 +86,7 @@ class LangPacksRecoveryTest extends TestCase
         $this->arrangeFakeBaseAndPending();
 
         $pending = config('app.update.pending_path');
-        $sourceBundled = $pending.'/core_20260508_143749/extracted/dev-g7-pre-release/lang-packs/_bundled';
+        $sourceBundled = $pending.'/core_20260508_143749/extracted/g7-pre-release/lang-packs/_bundled';
         File::ensureDirectoryExists($sourceBundled.'/g7-core-ja');
         File::put($sourceBundled.'/g7-core-ja/language-pack.json', '{"identifier":"g7-core-ja"}');
 
@@ -129,7 +129,7 @@ class LangPacksRecoveryTest extends TestCase
 
         // _pending 에 다른 내용을 두어, 복구가 잘못 트리거되면 덮어쓸지 검증
         $pending = config('app.update.pending_path');
-        $sourceBundled = $pending.'/core_20260508_143749/extracted/dev-g7-pre-release/lang-packs/_bundled';
+        $sourceBundled = $pending.'/core_20260508_143749/extracted/g7-pre-release/lang-packs/_bundled';
         File::ensureDirectoryExists($sourceBundled.'/g7-core-ja');
         File::put($sourceBundled.'/g7-core-ja/language-pack.json', '{"identifier":"g7-core-ja","preserve":false}');
 

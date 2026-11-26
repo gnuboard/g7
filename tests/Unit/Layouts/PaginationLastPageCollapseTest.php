@@ -5,7 +5,7 @@ namespace Tests\Unit\Layouts;
 use Tests\TestCase;
 
 /**
- * 상한 목록의 `last_page: null` 을 화면이 접지 않는지 전 영역 회귀 가드 (#519).
+ * 상한 목록의 `last_page: null` 을 화면이 접지 않는지 전 영역 회귀 가드.
  *
  * 총 건수를 상한까지만 센 목록은 마지막 페이지를 계산할 수 없어 `last_page: null` 을 내보낸다.
  * 화면이 그 값을 1 로 채우면 두 가지가 일어난다.

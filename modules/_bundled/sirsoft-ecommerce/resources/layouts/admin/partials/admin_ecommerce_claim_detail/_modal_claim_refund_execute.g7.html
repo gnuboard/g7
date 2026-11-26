@@ -50,7 +50,7 @@
           <span data-ref="crm_005_total" class="ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{_global.claimRefundExecuteContext?.refundTotalFormatted ?? ''}}</span>
         </div>
       </div>
-      <!-- 환불받을 계좌 (#599 실측) — 계좌로 송금해야 끝나는 환불인데 신청서에 계좌가 없을 때만 선다. 종전에는 이 창이 계좌를 **보여 주기만** 해서, 계좌가 비어 있어도 [환불하기]가 그대로 눌렸고 돈은 나가지 않았는데 신청서만 환불완료로 닫혔다 — 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었다. 「필요한가」는 서버가 실행 게이트와 같은 술어로 환불 수단마다 판정해 내려주고(`refund_account_by_method`) 여는 핸들러가 지금 고른 수단의 값을 싣는다(화면이 결제수단 코드로 재현하면 확장 결제수단에서 갈린다). -->
+      <!-- 환불받을 계좌 — 계좌로 송금해야 끝나는 환불인데 신청서에 계좌가 없을 때만 선다. 종전에는 이 창이 계좌를 **보여 주기만** 해서, 계좌가 비어 있어도 [환불하기]가 그대로 눌렸고 돈은 나가지 않았는데 신청서만 환불완료로 닫혔다 — 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었다. 「필요한가」는 서버가 실행 게이트와 같은 술어로 환불 수단마다 판정해 내려주고(`refund_account_by_method`) 여는 핸들러가 지금 고른 수단의 값을 싣는다(화면이 결제수단 코드로 재현하면 확장 결제수단에서 갈린다). -->
       <div data-if="{{_global.claimRefundExecuteContext?.refundAccountRequired === true}}" class="ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:p-4 ecommerce:space-y-3">
         <div>
           <p class="ecommerce-text-primary ecommerce:text-sm ecommerce:font-medium">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_input_title</p>

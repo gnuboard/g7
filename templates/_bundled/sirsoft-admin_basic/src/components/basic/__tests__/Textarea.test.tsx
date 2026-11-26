@@ -277,7 +277,7 @@ describe('Textarea 컴포넌트', () => {
     });
   });
 
-  // 디폴트 시맨틱 머지 회귀 테스트 (#369)
+  // 디폴트 시맨틱 머지 회귀 테스트
   // 호출처가 이미 'textarea' 토큰을 명시한 경우 중복 prepend ("textarea textarea ...") 를 방지한다.
   describe('디폴트 시맨틱 클래스 머지', () => {
     it('className 미지정 시 디폴트 시맨틱 "textarea" 가 자동 적용된다', () => {

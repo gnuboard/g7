@@ -1,5 +1,5 @@
 /**
- * E2E: 관리자 ↔ 유저 화면 상호 이동 링크 + 모바일 사이드바 드로어 상단 잘림 수정 (#450)
+ * E2E: 관리자 ↔ 유저 화면 상호 이동 링크 + 모바일 사이드바 드로어 상단 잘림 수정
  *
  * @scenario admin-user-cross-navigation
  * 케이스(마커 아님 — 평문): admin_sidebar_view_site, admin_board_view_user_page, mobile_drawer_not_clipped
@@ -25,7 +25,7 @@ async function gotoAdmin(page: import('@playwright/test').Page, path: string): P
 
 // @scenario link=admin_sidebar_to_user_site, permitted=na
 // @effects new_tab_navigation
-test('@smoke #450 - 관리자 사이드바 "사이트 보기" 링크가 새 탭 A 로 마운트된다', async ({ page }) => {
+test('@smoke 관리자 사이드바 "사이트 보기" 링크가 새 탭 A 로 마운트된다', async ({ page }) => {
   const token = issueToken('core.templates.layouts.edit');
   await authenticatePage(page, token);
 
@@ -44,7 +44,7 @@ test('@smoke #450 - 관리자 사이드바 "사이트 보기" 링크가 새 탭 
 
 // @scenario link=admin_board_to_user_board, permitted=na
 // @effects new_tab_navigation, board_admin_routes_by_slug
-test('@smoke #450 - 관리자 게시물 조회 화면에 "유저 화면 보기" 새 탭 링크가 마운트된다', async ({ page }) => {
+test('@smoke 관리자 게시물 조회 화면에 "유저 화면 보기" 새 탭 링크가 마운트된다', async ({ page }) => {
   // 게시판 관리 권한으로 관리자 게시물 목록 진입
   const token = issueToken('sirsoft-board.notice.admin.posts.read', 'sirsoft-board.notice.admin.manage');
   await authenticatePage(page, token);
@@ -63,7 +63,7 @@ test('@smoke #450 - 관리자 게시물 조회 화면에 "유저 화면 보기" 
 
 // @scenario link=admin_product_to_user_detail, permitted=na
 // @effects new_tab_navigation, product_detail_routes_by_code
-test('@smoke #450 - 관리자 상품 수정 화면에 "유저 화면 보기" 새 탭 링크가 마운트된다', async ({ page }) => {
+test('@smoke 관리자 상품 수정 화면에 "유저 화면 보기" 새 탭 링크가 마운트된다', async ({ page }) => {
   const token = issueToken('sirsoft-ecommerce.products.read', 'sirsoft-ecommerce.products.update');
   await authenticatePage(page, token);
 
@@ -81,7 +81,7 @@ test('@smoke #450 - 관리자 상품 수정 화면에 "유저 화면 보기" 새
 
 // @scenario link=admin_sidebar_to_user_site, permitted=na
 // @effects drawer_starts_below_header
-test('@smoke #450 - 모바일 드로어가 헤더 아래에서 시작해 첫 메뉴가 잘리지 않는다', async ({ page }) => {
+test('@smoke 모바일 드로어가 헤더 아래에서 시작해 첫 메뉴가 잘리지 않는다', async ({ page }) => {
   const token = issueToken('core.templates.layouts.edit');
   await authenticatePage(page, token);
 
@@ -103,7 +103,7 @@ test('@smoke #450 - 모바일 드로어가 헤더 아래에서 시작해 첫 메
   // inset-y-0(top:0) 회귀 시 이 값이 0 이 되어 첫 메뉴가 헤더에 가려진다.
   const box = await drawer.boundingBox();
   if (box) {
-    expect(box.y, '드로어가 top:0 으로 헤더를 덮음 (#450 회귀)').toBeGreaterThanOrEqual(48);
+    expect(box.y, '드로어가 top:0 으로 헤더를 덮음').toBeGreaterThanOrEqual(48);
   }
 
   // 첫 메뉴 항목의 top 이 헤더 하단(약 56~64px)보다 아래에 있어야 한다.
@@ -111,7 +111,7 @@ test('@smoke #450 - 모바일 드로어가 헤더 아래에서 시작해 첫 메
   if ((await firstItem.count()) > 0) {
     const itemBox = await firstItem.boundingBox();
     if (itemBox) {
-      expect(itemBox.y, '첫 메뉴 항목이 헤더에 가려 잘림 (#450 회귀)').toBeGreaterThanOrEqual(48);
+      expect(itemBox.y, '첫 메뉴 항목이 헤더에 가려 잘림').toBeGreaterThanOrEqual(48);
     }
   }
 });

@@ -17,9 +17,9 @@ effects:
   - datagrid_always_selectable
   - member_log_actor_has_member_menu
   - system_log_actor_has_no_member_menu
-  # 펼친 줄의 삭제 직전 기록(#888) — row 를 읽는 번역 인자(대상·사유·남긴 버전 수)는 $t:defer: 라야 값이 들어간다
+  # 펼친 줄의 삭제 직전 기록 — row 를 읽는 번역 인자(대상·사유·남긴 버전 수)는 $t:defer: 라야 값이 들어간다
   - expanded_row_shows_deletion_snapshot
-  # 「삭제 직전 기록만 보기」 필터(#888) — 체크하면 deletion_snapshot=1 을 주소에 싣고 새로고침해도 남는다
+  # 「삭제 직전 기록만 보기」 필터 — 체크하면 deletion_snapshot=1 을 주소에 싣고 새로고침해도 남는다
   - deletion_snapshot_filter_binds_query
 
 test_files:

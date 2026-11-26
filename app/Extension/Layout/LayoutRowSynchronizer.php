@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 파일 → DB 레이아웃 행 쓰기의 단일 진입점 (#727).
+ * 파일 → DB 레이아웃 행 쓰기의 단일 진입점.
  *
  * 설치·활성화·템플릿 전환·확장 업데이트·수동 갱신이 모두 이 한 곳을 지나야 "운영자 수정 보존" 규칙이 갈리지 않는다.
  * 종전에는 보존 판정이 `refresh*Layouts()` 한 곳에만 있어, 같은 행을 쓰는 다른 경로(활성화·템플릿 전환·조각 재등록·
@@ -171,7 +171,7 @@ final class LayoutRowSynchronizer
 
             $this->layouts->saveAttributes($row->id, $values);
 
-            // 본문이 그대로면(결정 없는 충돌만 있고 반영된 곳 없음) 되돌릴 판이 없다 — 같은 내용 버전을 쌓지 않는다 (#888)
+            // 본문이 그대로면(결정 없는 충돌만 있고 반영된 곳 없음) 되돌릴 판이 없다 — 같은 내용 버전을 쌓지 않는다
             if ($changed && in_array($result->verdict, ['merged', 'conflict'], true)) {
                 $this->recordLayoutVersion($row->id, $ours, $result);
             }
@@ -318,7 +318,7 @@ final class LayoutRowSynchronizer
             }
             $this->extensions->saveModelAttributes($existing, $values);
 
-            // 본문이 그대로면 같은 내용 버전을 쌓지 않는다 (#888)
+            // 본문이 그대로면 같은 내용 버전을 쌓지 않는다
             if ($changed && in_array($result->verdict, ['merged', 'conflict'], true)) {
                 if ($this->extensionVersions->getNextVersion($existing->id) <= 1) {
                     $this->extensionVersions->saveVersion($existing->id, $ours, null);
@@ -385,7 +385,7 @@ final class LayoutRowSynchronizer
         $raw = $row->getRawOriginal('original_content');
 
         if (is_string($raw) && $raw !== '') {
-            // layout-assoc-decode-ok: 수정 여부 비교 전용 — {}/[] 표기 차이를 수정으로 세지 않는다(#758 W11)
+            // layout-assoc-decode-ok: 수정 여부 비교 전용 — {}/[] 표기 차이를 수정으로 세지 않는다
             return ! LayoutContentComparator::sameDocument($row->getRawOriginal('content'), LayoutPartialOrigin::strip(json_decode($raw, true)));
         }
 
@@ -430,7 +430,7 @@ final class LayoutRowSynchronizer
             $rows = $this->extensions->getWithoutOriginalContentBySource($sourceType, $identifier);
 
             foreach ($rows->groupBy('template_id') as $templateId => $group) {
-                // 템플릿이 사라진 행은 건너뛴다. 조각 컴파일은 템플릿과 무관해 업데이트 1회에 한 번만 한다(#725).
+                // 템플릿이 사라진 행은 건너뛴다. 조각 컴파일은 템플릿과 무관해 업데이트 1회에 한 번만 한다.
                 $fragments = $this->templates->findById((int) $templateId) !== null ? $reader->fragments($backupPath, $identifier) : [];
 
                 foreach ($group as $row) {

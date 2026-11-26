@@ -1,5 +1,5 @@
 /**
- * 클레임 화면 E2E 공용 픽스처 (#599 S15b)
+ * 클레임 화면 E2E 공용 픽스처
  *
  * **왜 응답을 가로채는가.** `playwright:issue-token` 은 호출마다 **새 회원**을 만든다
  * (`User::factory()->create()`). 그래서 회원 토큰으로 목록 API 를 훑어 신청서를 찾는 방식은
@@ -45,7 +45,7 @@ export type ClaimableSeed = {
   availableQuantity?: number;
   lockedQuantity?: number;
   types: string[];
-  /** 취소·환불 분기 — `auto`(접수 후 자동 전이) · `request`(접수 후 승인 대기). 두 값 모두 환불신청서를 만든다(#599 후속 D2). */
+  /** 취소·환불 분기 — `auto`(접수 후 자동 전이) · `request`(접수 후 승인 대기). 두 값 모두 환불신청서를 만든다. */
   refundBranch?: 'auto' | 'request' | null;
 };
 
@@ -297,7 +297,7 @@ export async function seedGuestSession(page: Page, expiresAt?: string): Promise<
  * 방문자**를 재현한다. 동의 상태의 단일 출처는 서버 응답이므로 그 응답만 갈아끼운다.
  *
  * (동의하지 않은 방문자에게 조회 토큰이 부팅마다 파기되는 것이 옳은지는 이 spec 의 축이 아니라
- * GDPR 플러그인의 allowlist 판정 문제다 — #599 S15b 가 발견해 보고했다.)
+ * GDPR 플러그인의 allowlist 판정 문제다 — 실측 중 발견해 보고했다.)
  *
  * @param page Playwright 페이지
  * @returns 완료 Promise
@@ -458,7 +458,7 @@ export const FROZEN_COMPARISON = {
 };
 
 /**
- * 주문금액 비교 표가 그려질 재료를 전부 실은 미리보기 응답을 만듭니다. (#599 후속)
+ * 주문금액 비교 표가 그려질 재료를 전부 실은 미리보기 응답을 만듭니다.
  *
  * 표의 값은 서버 `formatted` 직독이므로, 응답에만 있고 다른 줄에서 만들 수 없는 값
  * (부가세 5,636 → 3,091)을 심어 그 글자가 그대로 나오는지로 잰다.

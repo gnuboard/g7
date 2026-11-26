@@ -60,7 +60,7 @@ function findHandlerInActions(actions: any[] | undefined, handler: string): any 
  * 액션의 `actionRef` 를 상품 상세(show.json)의 `named_actions` 로 해석한다.
  *
  * 엔진(ActionDispatcher.resolveActionRef)과 같은 규칙이다 — 이름 붙은 정의 위에 인라인 속성을 덮는다.
- * 7.1.6(#898)에서 찜 토글이 제목 옆 단추 안에서 이름 붙은 액션 `toggleProductWishlist` 로 옮겨졌다
+ * 7.1.6에서 찜 토글이 제목 옆 단추 안에서 이름 붙은 액션 `toggleProductWishlist` 로 옮겨졌다
  * (좁은 화면 하단 구매바의 찜 단추와 같이 쓴다 — show.g7.html `<action name="toggleProductWishlist">`).
  * 동작 계약은 그대로이므로 해석한 정의에서 같은 것을 단언한다.
  *
@@ -264,7 +264,7 @@ describe('찜 목록 partial 구조 검증 (_list.json)', () => {
      */
     it('빈 목록에서 shopBase/products 로 가는 링크(A)가 존재해야 함', () => {
         // 경로가 _global.shopBase 동적 표현식 + /products 로 변경됨.
-        // #757 WP-L: 화면 이동은 실제 주소를 가진 링크다 — 주소는 href 한 곳이고(D12), 보통 클릭의 navigate 는
+        // 화면 이동은 실제 주소를 가진 링크다 — 주소는 href 한 곳이고(D12), 보통 클릭의 navigate 는
         // path 없이 그 href 로 간다. 가운데 클릭·새 탭으로 상품 목록을 열 수 있다.
         const shopLink = findFirstNode(
             wishlistListPartial,

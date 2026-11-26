@@ -3,7 +3,7 @@
 
 /**
  * @file board-blinded-original-access.test.tsx
- * @description 블라인드 게시글/댓글 '원글 보기' 게이트 회귀 (이슈 #413-34)
+ * @description 블라인드 게시글/댓글 '원글 보기' 게이트 회귀 (34)
  *
  * 검증 방식: 레이아웃 JSON 트리 직접 분석 (DOM 비의존).
  * 정책: 블라인드 원문은 권한자(관리자+작성자 본인)만 열람.
@@ -55,7 +55,7 @@ function findByComment(root: unknown, commentText: string): Node[] {
     return collectNodes(root, (n) => typeof n.comment === 'string' && (n.comment as string).includes(commentText));
 }
 
-describe('이슈 #413-34 — 블라인드 게시글 원문 게이트 (basic/show.json)', () => {
+describe('34 — 블라인드 게시글 원문 게이트 (basic/show.json)', () => {
     /** @effects blinded_content_null_for_guest, blinded_content_null_for_other_member */
     it("'원글 보기' 토글 버튼의 if 가 content 존재에 의존한다", () => {
         const buttons = findByComment(basicShow, '원글 보기/숨기기 토글 버튼');
@@ -96,7 +96,7 @@ describe('이슈 #413-34 — 블라인드 게시글 원문 게이트 (basic/show
     });
 });
 
-describe('이슈 #413-34 — 블라인드 댓글 원문 게이트 (_comment_item.json)', () => {
+describe('34 — 블라인드 댓글 원문 게이트 (_comment_item.json)', () => {
     /** @effects blinded_comment_content_matrix */
     it("댓글 '원글 보기' 토글 버튼의 if 가 content 존재에 의존한다", () => {
         const buttons = findByComment(commentItem, '원글 보기/숨기기 토글 버튼');

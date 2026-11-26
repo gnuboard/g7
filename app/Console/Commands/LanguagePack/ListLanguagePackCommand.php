@@ -12,7 +12,7 @@ use Illuminate\Console\Command;
  *
  * 모듈/플러그인/템플릿의 list 커맨드와 동일한 운영 도구. Service::list() 를 경유하므로
  * 설치된 DB 행뿐 아니라 "번들에 있으나 미설치"(uninstalled) 및 "active 로 기록됐으나
- * 설치본 파일 부재(드리프트)" 상태를 함께 표면화한다(이슈 #496).
+ * 설치본 파일 부재(드리프트)" 상태를 함께 표면화한다.
  */
 class ListLanguagePackCommand extends Command
 {

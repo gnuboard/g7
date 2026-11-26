@@ -479,7 +479,7 @@ describe('PopupLayer', () => {
 
   // @scenario surface=close_survives_device_switch_on_same_page
   // @effects accessible_modal_carousel
-  it('PC 폭에서 「닫기」한 뒤 같은 페이지에서 모바일 폭으로 바꿔도 모바일 전용 후보가 레이어를 다시 열지 않는다 (#902)', () => {
+  it('PC 폭에서 「닫기」한 뒤 같은 페이지에서 모바일 폭으로 바꿔도 모바일 전용 후보가 레이어를 다시 열지 않는다', () => {
     const popups = [
       htmlPopup(1, '<p>pc</p>', { device: 'pc' }),
       htmlPopup(2, '<p>m</p>', { device: 'mobile' }),
@@ -505,7 +505,7 @@ describe('PopupLayer', () => {
 
   // @scenario surface=dismiss_records_seen_but_closes_page_on_device_switch
   // @effects dismiss_cookie_written
-  it('「보지 않기」는 보이던 팝업만 기록하되, 같은 페이지에서 모바일 폭으로 바꿔도 레이어를 다시 열지 않는다 (#902)', () => {
+  it('「보지 않기」는 보이던 팝업만 기록하되, 같은 페이지에서 모바일 폭으로 바꿔도 레이어를 다시 열지 않는다', () => {
     const popups = [htmlPopup(1, '<p>pc</p>', { device: 'pc' }), htmlPopup(2, '<p>m</p>', { device: 'mobile' })];
     const { getByText, container } = show(popups, { dismiss_mode: 'today' }, '/');
     fireEvent.click(getByText('오늘 하루 보지 않기'));

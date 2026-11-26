@@ -125,7 +125,7 @@
           </div>
         </div>
       </div>
-      <!-- 확장 카드(#888) — 확장이 필터 훅 `core.settings.filter_system_info_sections` 로 더한 섹션을 응답 순서대로 「시스템 정보」 카드 옆에 그린다.
+      <!-- 확장 카드 — 확장이 필터 훅 `core.settings.filter_system_info_sections` 로 더한 섹션을 응답 순서대로 「시스템 정보」 카드 옆에 그린다.
            서버가 형식을 검증해 넘기므로(배지·항목·접는 목록·알림) 화면은 그 모양만 따른다. 값은 모두 글자로 그린다(HTML 해석 없음).
            섹션이 없으면 아무것도 그리지 않는다. -->
       <div data-each="section, sectionIdx in {{systemInfo?.data?.extra_sections ?? []}}" data-ref="card_extra_section_{{sectionIdx}}" class="admin-card">

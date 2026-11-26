@@ -74,7 +74,7 @@ class ArchiveCommand extends Command
         }
 
         // 매시 실행이 끝을 알리지 못하고 멈춘 실행 이력을 닫는다 — 워커가 도중에 죽은 행이
-        // 「실행 중」으로 남아 진단 화면의 수동 집계 버튼을 잠그지 않게(#682 S3 라운드 13).
+        // 「실행 중」으로 남아 진단 화면의 수동 집계 버튼을 잠그지 않게.
         if ($period === 'hour' && ! $dryRun) {
             $closed = $staleRuns->failStale();
 

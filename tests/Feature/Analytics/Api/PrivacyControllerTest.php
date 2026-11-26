@@ -133,7 +133,7 @@ class PrivacyControllerTest extends AnalyticsApiTestCase
      * 화면의 익명 모드 안내는 이 값을 읽는다. 조회 권한(`diagnostics`)에서 읽으면
      * 개인정보 권한만 가진 담당자에게 403 이고, 삼킨 뒤 남은 fallback 이 「full」로
      * 굳어 안내가 영영 뜨지 않았다 — 0건을 받고도 「기록 없음」인지 「IP 를 저장하지
-     * 않음」인지 구분 못 해 GDPR 요청에 잘못 답할 수 있다(#682 S3 라운드 5).
+     * 않음」인지 구분 못 해 GDPR 요청에 잘못 답할 수 있다.
      *
      * @return void 없음
      *
@@ -238,7 +238,7 @@ class PrivacyControllerTest extends AnalyticsApiTestCase
      * 조회 응답이 내보내기와 같은 파일명을 알려 주는지 확인합니다.
      *
      * 내보내기는 토큰 동반 blob 으로 받아 화면이 저장 이름을 정한다. 서버 이름을 몰라 화면이 검색값을
-     * 넣었더니 방문자 IP 가 다운로드 폴더에 남았다(#682 S3 라운드 15). 날짜는 사이트 기준이라 화면이
+     * 넣었더니 방문자 IP 가 다운로드 폴더에 남았다. 날짜는 사이트 기준이라 화면이
      * 계산할 수 없어 서버가 이름을 알려 준다.
      *
      * @return void 없음
@@ -432,7 +432,7 @@ class PrivacyControllerTest extends AnalyticsApiTestCase
     {
         // 이 표도 주소를 그린다 — 설정이 뒤 옥텟을 지운 값을 원본으로 읽으면 정보주체에게
         // 그 주소로 잘못 답한다. 형제 경로(`VisitorController::show`)와 같은 키를 싣는다
-        // (#682 S3 라운드 6, 계획서 §4.10 「IP(마스킹 표시)」).
+        // (계획서 §4.10 「IP(마스킹 표시)」).
         config(['g7_settings.core.analytics.ip_mask_octets' => 1]);
 
         $this->visit(['ip' => '203.0.113.7']);

@@ -60,7 +60,7 @@ class DiagnosticsControllerTest extends AnalyticsApiTestCase
      * 화면은 이 값 하나로 「방송을 기다릴지, 2초 폴링을 걸지」를 가른다. 그래서 이 값은 「키가
      * 있는가」가 아니라 **「방송이 실제로 나가는가」**여야 한다 — 키만 보고 판정하면 키는 넣었지만
      * 드라이버가 `null`/`log` 이거나 호스트가 빈 사이트에서 방송도 폴링도 없어 진행률 바가
-     * 멈춘 채 남는다(#682 S3 라운드 3, 설계 결정으로 판정식을 `HookManager` 와 하나로 합쳤다).
+     * 멈춘 채 남는다(설계 결정으로 판정식을 `HookManager` 와 하나로 합쳤다).
      *
      * @return void 없음
      *
@@ -174,7 +174,7 @@ class DiagnosticsControllerTest extends AnalyticsApiTestCase
     }
 
     /**
-     * 진단 응답이 동의 제공자 선택 상태와 제공자 이름을 싣는지 확인합니다 (#639 §4.2).
+     * 진단 응답이 동의 제공자 선택 상태와 제공자 이름을 싣는지 확인합니다.
      *
      * 동의 출처(`provider`)만 실으면 제공자를 고르지 못한 상태(ambiguous·missing)가 정상 연동과 구별되지
      * 않는다 — 화면은 그때 「제공자 선택 필요」 배지를 띄워야 한다.
@@ -220,7 +220,7 @@ class DiagnosticsControllerTest extends AnalyticsApiTestCase
     {
         // 실패 로그의 주소도 방문 원장과 같은 마스킹 규칙을 받는다(마이그레이션 주석). 그 사실을
         // 싣지 않으면 운영자가 뒤 옥텟이 지워진 값을 원래 주소로 읽고 그 주소로 차단·문의한다
-        // (#682 S3 라운드 6).
+        //.
         config(['g7_settings.core.analytics.ip_mask_octets' => 3]);
 
         $this->assertSame(
@@ -269,7 +269,7 @@ class DiagnosticsControllerTest extends AnalyticsApiTestCase
     {
         // 집계 경계는 사이트 자정에 잠겨 있다(`AnalyticsClock::dayRangeUtc`). 시각 표기가 UTC 로
         // 나가면 KST 사이트에서 「기간」이 15:00~15:00 으로 보이고, 보는 사람 기준으로 나가면
-        // 「오늘 KPI」와 목록의 날짜가 서로 다른 하루를 가리킨다(#682 S3 라운드 6, 설계 결정).
+        // 「오늘 KPI」와 목록의 날짜가 서로 다른 하루를 가리킨다(설계 결정).
         // 오프셋이 붙으면 브라우저가 자기 시간대로 다시 옮기므로 **오프셋 없는** 문자열이어야 한다.
         // 사이트 표준시를 명시해 둔다 — 테스트 환경 기본값은 UTC 라 그대로 두면 이 축이 성립하지 않는다.
         config(['g7_settings.core.general.timezone' => 'Asia/Seoul']);
@@ -296,7 +296,7 @@ class DiagnosticsControllerTest extends AnalyticsApiTestCase
      * 진단 응답의 **모든** 시각이 사이트 표준시인지 확인합니다.
      *
      * 키 하나만 재면 나머지가 샌다 — 라운드 6 은 `last_tracked_at` 한 자리만 쟀고, 그 사이
-     * `cloud_ranges.updated_at` 은 오프셋 붙은 ISO8601 로 남아 있었다(#682 S3 라운드 7).
+     * `cloud_ranges.updated_at` 은 오프셋 붙은 ISO8601 로 남아 있었다.
      * 그래서 모집단을 **응답에서 파생**한다: 페이로드를 재귀로 훑어 시각처럼 보이는 문자열을
      * 전부 모으고, 그중 하나라도 `T`·오프셋을 달고 있으면 red 다. 키를 새로 더해도 자동으로
      * 검사 대상이 된다.

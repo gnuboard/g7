@@ -1,7 +1,7 @@
 /**
  * 이커머스 환경설정 > 본인인증 정책 탭 — 삭제 핸들러 회귀 테스트.
  *
- * 회귀 사례 (#297):
+ * 회귀 사례:
  *   삭제 버튼이 등록되지 않은 `confirm` 핸들러를 호출하여 "Unknown action handler: confirm" 토스트
  *   에러로 삭제 자체가 실행되지 않던 문제. setState + openModal 시퀀스 + 별도 확인 모달 패턴으로 교체.
  */
@@ -22,7 +22,7 @@ function collectNodes(node: any, predicate: (n: any) => boolean): any[] {
         }
         if (predicate(n)) result.push(n);
         if (n.children) visit(n.children);
-        if (n.props?.footer) visit(n.props.footer); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
+        if (n.props?.footer) visit(n.props.footer); // 고정 하단 (바닥 단추가 Modal 고정 하단으로 옮김)
         if (n.actions) visit(n.actions);
         if (n.params) visit(n.params);
         if (n.onSuccess) visit(n.onSuccess);
@@ -32,7 +32,7 @@ function collectNodes(node: any, predicate: (n: any) => boolean): any[] {
     return result;
 }
 
-describe('이커머스 본인인증 정책 삭제 — confirm 핸들러 미사용, 모달 + 스피너 패턴 (#297)', () => {
+describe('이커머스 본인인증 정책 삭제 — confirm 핸들러 미사용, 모달 + 스피너 패턴', () => {
     /**
      * 등록되지 않은 confirm 핸들러를 부르면 삭제가 실행되지 않으므로 탭 어디에도 남아 있으면 안 된다.
      *

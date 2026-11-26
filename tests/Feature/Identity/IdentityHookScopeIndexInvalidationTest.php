@@ -26,7 +26,7 @@ use Tests\TestCase;
 use Tests\Unit\Thumbnails\Support\TestImages;
 
 /**
- * hook 범위 본인인증 정책 색인(`IdentityPolicyRepository::getHookScopeIndex()`)의 무효화 (#869).
+ * hook 범위 본인인증 정책 색인(`IdentityPolicyRepository::getHookScopeIndex()`)의 무효화.
  *
  * 리스너는 이 색인에 없는 훅을 정책 표 조회 없이 지나간다. 색인이 낡으면 켜진 정책이 건너뛰어진다(열린 채 통과).
  * 정책 저장, 확장 활성화·비활성화, 업데이트 뒤 상태 복원(성공·롤백)이 모두 색인을 비워야 한다. 업데이트 중

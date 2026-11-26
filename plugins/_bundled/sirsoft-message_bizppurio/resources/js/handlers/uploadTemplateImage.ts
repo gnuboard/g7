@@ -1,5 +1,5 @@
 /**
- * uploadTemplateImage 핸들러 (#597 §3.2 · 부록 A-7)
+ * uploadTemplateImage 핸들러 (부록 A-7)
  *
  * 이미지형 알림톡 템플릿 작성 모달에서 파일 선택(change) 시, 선택한 이미지를 플러그인의
  * 이미지 업로드 프록시(`POST /admin/templates/image` — kapi 위임)로 전송하고, 반환된

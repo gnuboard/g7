@@ -1,5 +1,5 @@
 /**
- * 본인인증 이력 화면 — 필터 체크박스 렌더 + 채널명 다국어 라벨 회귀 (#415)
+ * 본인인증 이력 화면 — 필터 체크박스 렌더 + 채널명 다국어 라벨 회귀
  *
  * 배경 (엔진 v1.50.2 + 채널 라벨 수정):
  *  - 결함 #1/#2: 상태/발생유형 필터의 배열 리터럴 source(`['requested'...]`)가
@@ -16,7 +16,7 @@
  * 채널명 버그를 잠근다.
  *
  * 단위 테스트(엔진 회귀 + 레이아웃 렌더) green 상태에서도 실제 브라우저 렌더 결함을
- * 놓칠 수 있어(위지윅 발행 회귀 #238 교훈) 실제 페이지에서 검증한다.
+ * 놓칠 수 있어(위지윅 발행 회귀의 교훈) 실제 페이지에서 검증한다.
  *
  * @scenario identity-logs-filters-and-channel-label
  */
@@ -150,7 +150,7 @@ test('@smoke 본인인증 이력 — 채널 필터가 식별자가 아닌 라벨
 // @scenario tab-switch-filter-reset
 // @scenario interaction=provider_tab_switch
 // @effects local_filter_reset, query_cleared
-test('@smoke 본인인증 이력 — 인증수단 탭 전환 시 상태 필터가 초기화된다 (#420-4)', async ({ page }) => {
+test('@smoke 본인인증 이력 — 인증수단 탭 전환 시 상태 필터가 초기화된다 (4)', async ({ page }) => {
   // 배경(라이브 증거): 상태 필터(예: '요청됨') 체크 후 인증수단 탭을 전환하면
   // 체크박스는 체크된 채로 남는데 목록은 필터 없는 전체가 나오던 불일치 결함.
   // 수정: onTabChange 가 sequence[ setState(filter 리셋) → navigate ] 로 동작 →
@@ -225,7 +225,7 @@ test('@smoke 본인인증 이력 — 인증수단 탭 전환 시 상태 필터�
   });
   expect(
     anyIndividualChecked,
-    '탭 전환 후에도 개별 상태 체크박스가 체크된 채 남음 — #420-4 필터 미초기화 회귀',
+    '탭 전환 후에도 개별 상태 체크박스가 체크된 채 남음 — 필터 미초기화 회귀',
   ).toBe(false);
 
   // URL 쿼리에도 필터가 남아있지 않아야 한다 (조회 = 전체).

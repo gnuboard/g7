@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * `ext-static:status` / `ext-static:publish` 의 root 실행 안내 + 상태 보고서 소비 테스트 (#651 C1·D3).
+ * `ext-static:status` / `ext-static:publish` 의 root 실행 안내 + 상태 보고서 소비 테스트.
  *
  * 상태 명령은 종전에 "즉시 게시하려면 `php artisan ext-static:publish`" 를 실행 계정과 무관하게
  * 권했다. 운영자가 그 안내를 sudo 셸에서 그대로 따르면 캐시 락 샤드가 root 소유가 되어 이후 웹

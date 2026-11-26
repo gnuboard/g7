@@ -17,7 +17,7 @@ description: |
 axes:
   area: [cascade_install, role_state, self_delete, schedule_list, dashboard_alert, extension_list, layout_gate, stats, resources, activities, alerts, core_update.check, core_update.changelog, compatibility_listener, compatibility_dismiss, dashboard]
   permission: [granted, missing]
-  # 테스트 마킹에 이미 쓰이고 있었으나 어느 매니페스트에도 없던 축 (#609 부채 정리 — 값은 기존 마킹에서 옮김, cross_product 면제)
+  # 테스트 마킹에 이미 쓰이고 있었으나 어느 매니페스트에도 없던 축 (부채 정리 — 값은 기존 마킹에서 옮김, cross_product 면제)
   endpoint: [modules.install, plugins.install|templates.install, admin.users.index, admin.users.destroy, admin.users.index|admin.users.show, admin.schedules.index, admin.dashboard.alerts, admin.modules.index, admin.plugins.index|admin.templates.index, admin.plugins.index, admin.extensions.dismiss, admin.modules.show|admin.plugins.show, admin.notifications.index, admin.identity.providers.index, layouts.preview.serve]
   selection: [dependency_plugin, dependency_plugin_installed_inactive, language_pack, all_kinds]
   unit: [CascadeInstallAuthorizer]
@@ -45,7 +45,7 @@ effects:
   - cascade_language_pack_without_permission_returns_403
   - cascade_dependency_without_permission_returns_403_on_every_install_endpoint
   - can_select_matches_required_permissions
-  - cascade_dependency_unselected_without_permission   # 설치 미리보기(ExtensionInstallPreviewBuilder)가 권한 없는 종류의 미충족 의존 확장을 기본 선택하지 않고 can_select=false 로 잠근다(#764)
+  - cascade_dependency_unselected_without_permission   # 설치 미리보기(ExtensionInstallPreviewBuilder)가 권한 없는 종류의 미충족 의존 확장을 기본 선택하지 않고 can_select=false 로 잠근다
   # 꺼진 역할
   - inactive_role_permissions_are_excluded
   - inactive_role_permissions_are_excluded_on_eager_path

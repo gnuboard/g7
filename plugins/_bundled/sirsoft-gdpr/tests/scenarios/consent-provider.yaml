@@ -1,4 +1,4 @@
-feature: 코어 동의 제공자 계약으로 동의 판단에 답하기 (#639)
+feature: 코어 동의 제공자 계약으로 동의 판단에 답하기
 
 description: |
   코어는 동의를 관리하는 확장이 무엇인지 모른다. 이 플러그인은 코어 필터 `core.consent.registered_providers` 로

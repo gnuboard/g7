@@ -7631,7 +7631,7 @@ describe('ActionDispatcher', () => {
   });
 
   describe('redirect', () => {
-    // `redirect` 는 #297 부터 레이아웃(`auth/identity_challenge`)에 적혀 있었으나 엔진에 소비처가 없어
+    // `redirect` 는 이전부터 레이아웃(`auth/identity_challenge`)에 적혀 있었으나 엔진에 소비처가 없어
     // **한 번도 동작한 적이 없었다** — 미등록 핸들러라 조용히 무동작이고 콘솔·네트워크에 흔적이 없다.
     // (전 이력 조사: `case 'redirect'` 0건 · 매니페스트 0건 · 확장 등록 0건 → 병합 손상이 아니다.)
     let assignSpy: any;

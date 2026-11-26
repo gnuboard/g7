@@ -1,6 +1,6 @@
 /**
  * @file admin-notification-identity-definition-modals.test.tsx
- * @description 알림 설정 > 본인인증 — 정책별 문구 추가·삭제 창 (#699)
+ * @description 알림 설정 > 본인인증 — 정책별 문구 추가·삭제 창
  *
  * 7.0.x 본인인증 탭의 「메시지 정의 추가·삭제」 창을 알림 정의 API 로 옮긴 것이다. 필드·검증·오류 표시는
  * 그대로고 보내는 곳과 본문 모양만 바뀌었다.

@@ -162,7 +162,7 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
   // ==============================
   // 3. 메타 설정 섹션 헤더 + 페이지별 admin-card 구조
   // ==============================
-  // 시맨틱 자산 치환(#408) 조합 요약(마커 아님, 평문): layout_file 은 이 탭의 _tab_seo.g7.html 이고, 효과는 그것을 재는 시험의 표식에 있다
+  // 시맨틱 자산 치환 조합 요약(마커 아님, 평문): layout_file 은 이 탭의 _tab_seo.g7.html 이고, 효과는 그것을 재는 시험의 표식에 있다
   describe('메타 설정 섹션 (section-header + admin-card × 4)', () => {
     // @scenario case=seo_tab_09
     // @scenario layout_file=modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_seo.g7.html

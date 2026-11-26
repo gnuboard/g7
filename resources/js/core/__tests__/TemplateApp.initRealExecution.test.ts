@@ -1,5 +1,5 @@
 /**
- * TemplateApp — init 항목·웹소켓 수신 동작을 실제 ActionDispatcher 로 실행한다 (engine-v1.80.0, #753)
+ * TemplateApp — init 항목·웹소켓 수신 동작을 실제 ActionDispatcher 로 실행한다 (engine-v1.80.0)
  *
  * `TemplateApp.test.ts` 는 엔진 모듈을 모의 디스패처로 바꿔 「createHandler 에 무엇이 넘어가는가」 만 본다.
  * 이 파일은 실제 ActionDispatcher 를 꽂아 계획서 WP-T 가 요구한 실행 결과를 잠근다.
@@ -29,7 +29,7 @@ vi.mock('../template-engine', async () => {
 
 import { TemplateApp } from '../TemplateApp';
 
-describe('TemplateApp — init·웹소켓 수신 실제 실행 (#753)', () => {
+describe('TemplateApp — init·웹소켓 수신 실제 실행', () => {
   let calls: string[];
   const originalConfig = (window as any).G7Config;
 

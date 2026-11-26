@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 검수 서버(stage)의 언어팩 업데이트 — 공유 DB 의 언어팩 상태를 바꾸지 않는다 (#888).
+ * 검수 서버(stage)의 언어팩 업데이트 — 공유 DB 의 언어팩 상태를 바꾸지 않는다.
  *
  * 언어팩 업데이트는 상태를 `updating` 으로 바꾸고, 재설치가 `installed` 를 기록한 뒤 다시 켜는(activate) 순서를 거친다. 검수 서버가
  * 이 순서를 공유 DB 에 쓰면 그동안 운영 서버에서 그 로케일이 빠진다. 확장 업데이트(`*:update`)는 검수 서버에서 공유 상태 칸을

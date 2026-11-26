@@ -1,4 +1,4 @@
-feature: 개발자 화면 회원 판정(서버 세션 + 그 로그인의 토큰 생존)·custom.auth·custom.admin·내부 API 도구 (#792)
+feature: 개발자 화면 회원 판정(서버 세션 + 그 로그인의 토큰 생존)·custom.auth·custom.admin·내부 API 도구
 
 description: |
   로그인·2단계 인증·비밀번호 변경 완료·관리자 로그인은 세션에 로그인을 남기며 이번 토큰 ID 를 세션

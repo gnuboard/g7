@@ -50,7 +50,7 @@
                 },
                 "actions": [
                     {
-                        "comment": "적용 — 저장된 배송지 탭에서 아무것도 고르지 않았으면 잠겨 있다(address_id 없이 나가면 서버가 직접 입력 칸을 요구해 422, #703).\n               회원/비회원 단일 커스텀 핸들러. 핸들러가 _global(changeAddressMode/selectedAddressId/editingShippingAddress/guestOrderToken) 을 읽어 endpoint(user vs guest)+body(address_id vs 직접입력)+토큰 헤더를 분기하고, isSubmittingAddress 처리중 상태·모달 닫기·order 리패치·토스트까지 모두 처리한다 (cancel/confirm-option 과 동일 패턴). confirm 1회는 핸들러 호출 액션에 둔다.",
+                        "comment": "적용 — 저장된 배송지 탭에서 아무것도 고르지 않았으면 잠겨 있다(address_id 없이 나가면 서버가 직접 입력 칸을 요구해 422).\n               회원/비회원 단일 커스텀 핸들러. 핸들러가 _global(changeAddressMode/selectedAddressId/editingShippingAddress/guestOrderToken) 을 읽어 endpoint(user vs guest)+body(address_id vs 직접입력)+토큰 헤더를 분기하고, isSubmittingAddress 처리중 상태·모달 닫기·order 리패치·토스트까지 모두 처리한다 (cancel/confirm-option 과 동일 패턴). confirm 1회는 핸들러 호출 액션에 둔다.",
                         "type": "click",
                         "handler": "sirsoft-ecommerce.changeShippingAddress",
                         "params": {

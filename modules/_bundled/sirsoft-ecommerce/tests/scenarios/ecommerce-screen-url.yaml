@@ -1,4 +1,4 @@
-feature: 이커머스 화면 주소 래퍼 — 알림·주문 이동·클레임·결제 뒤 복귀·검색·사이트맵 (#792)
+feature: 이커머스 화면 주소 래퍼 — 알림·주문 이동·클레임·결제 뒤 복귀·검색·사이트맵
 
 description: |
   사람이 여는 주소는 EcommerceScreenUrl(상점 접두는 부를 때마다 ShopPathResolver)로 만들어 코어 ScreenUrl 의

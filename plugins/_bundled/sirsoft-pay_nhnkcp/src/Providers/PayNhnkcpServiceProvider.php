@@ -24,7 +24,7 @@ class PayNhnkcpServiceProvider extends BasePluginServiceProvider
         // EncryptCookies 대상에서 제외한다. 암호화 대상이면 callback 응답에서
         // 직접 발급한 평문 쿠키가 다음 API 요청에서 복호화 실패로 폐기될 수 있다.
         // 값 동기화: IssuesReceiptCookie::RECEIPT_COOKIE_NAME 과 동일해야 함.
-        // 비활성이면 걸지 않는다 (#730 게이트, #860)
+        // 비활성이면 걸지 않는다
         if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
             EncryptCookies::except(['nhnkcp_receipt_token']);
         }

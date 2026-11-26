@@ -5,7 +5,7 @@ namespace App\Support\Favicon;
 use App\Support\AssetUrl;
 
 /**
- * 파비콘 최하위 계층 — 코어 번들 아이콘 또는 운영자가 직접 넣은 `public/favicon.ico` (#434)
+ * 파비콘 최하위 계층 — 코어 번들 아이콘 또는 운영자가 직접 넣은 `public/favicon.ico`
  *
  * DB·API 를 보지 않는다. 그래서 DB 접속 오류·점검 모드(`/api/*` 503)·오류 화면·설치기처럼 아무것도 믿을 수 없는
  * 화면도 이 계층으로 아이콘을 낸다.

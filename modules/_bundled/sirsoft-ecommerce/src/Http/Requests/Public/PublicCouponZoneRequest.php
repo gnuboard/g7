@@ -6,7 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * 공개 쿠폰존 목록 요청 (#952)
+ * 공개 쿠폰존 목록 요청
  *
  * 비로그인 방문자도 부른다. 쪽 번호와 쪽당 개수(1~48)만 받는다.
  */

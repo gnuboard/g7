@@ -124,7 +124,7 @@ class PathGuardTest extends TestCase
      * 없는 UNC 경로는 상위 폴더를 거슬러 찾을 때도 UNC 루트(`//서버/공유`)를 지킨다.
      *
      * 네트워크 공유에 설치한 Windows 사이트에서 없는 조각이 드라이브 경로(`C://서버/…`)로 바뀌면 layouts 밖으로 판정돼
-     * JSON 문서의 누락 조각 관용(#712)이 작동하지 않는다. 공유 루트 위로는 올라가지 않는다.
+     * JSON 문서의 누락 조각 관용이 작동하지 않는다. 공유 루트 위로는 올라가지 않는다.
      *
      * @scenario case=resolve_missing_unc_file
      *

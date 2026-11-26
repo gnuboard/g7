@@ -55,7 +55,7 @@ class MenuController extends AdminBaseController
 
             // 필터 유무와 무관하게 같은 경로로 조회한다. 예전에는 필터가 없으면 filters 를
             // 받지 않는 메서드로 분기했는데, 그 경로는 sort_by/sort_order 를 통째로 버려
-            // "필터를 하나라도 걸어야 정렬이 먹는" 상태가 됐다 (#492 D-22).
+            // "필터를 하나라도 걸어야 정렬이 먹는" 상태가 됐다.
             $menus = $this->menuService->getFilteredMenusForManagement($filters, $user);
 
             return $this->successWithResource(
@@ -145,7 +145,7 @@ class MenuController extends AdminBaseController
     }
 
     /**
-     * 메뉴 아이콘 파일을 올리고 icon_spec 을 돌려줍니다 (#381).
+     * 메뉴 아이콘 파일을 올리고 icon_spec 을 돌려줍니다.
      *
      * 래스터(png·webp·jpg·gif)는 코어 첨부로 저장해 attachment 이미지 spec 을, SVG 는 파일로 저장하지 않고
      * 검사한 인라인 svg spec 을 돌려준다. 메뉴 저장 전에는 어느 메뉴에도 묶이지 않는다.

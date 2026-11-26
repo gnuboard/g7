@@ -485,7 +485,7 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 | `target` | string | ✅ | `"light"`, `"dark"`, `"auto"` (시스템 설정 따름) |
 
 핸들러는 `action.target` 만 읽습니다. `params.theme` 으로 넘기면 콘솔에 `Invalid theme:
-undefined` 경고만 남기고 아무 것도 하지 않습니다 (dev-g7#640).
+undefined` 경고만 남기고 아무 것도 하지 않습니다.
 
 #### 동작
 

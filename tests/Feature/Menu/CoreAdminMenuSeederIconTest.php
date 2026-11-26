@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
- * 코어 관리자 메뉴 시더의 아이콘 선언 정규화 테스트 (#381).
+ * 코어 관리자 메뉴 시더의 아이콘 선언 정규화 테스트.
  *
  * `config/core.php` menus 의 아이콘 선언(문자열·class·image 상대경로·svg path)이 확장 동기화와 같은 정규화기를 거쳐
  * 저장 정규형으로 시드되고, 잘못된 선언(사이트 절대경로)은 시드를 막지 않고 아이콘만 비는지 검증한다.
@@ -158,7 +158,7 @@ class CoreAdminMenuSeederIconTest extends TestCase
     }
 
     /**
-     * 회귀(#381 validate-plan 5차 2회차 ③): 코어 메뉴를 다시 시드하면 코어 메뉴 아래 운영자가 만든 메뉴가 FK 연쇄로 함께
+     * 회귀(plan 5차 2회차 ③): 코어 메뉴를 다시 시드하면 코어 메뉴 아래 운영자가 만든 메뉴가 FK 연쇄로 함께
      * 지워지는데, 첨부 정리는 코어 메뉴 ID 만 예약해 그 하위 메뉴의 업로드 아이콘 첨부·파일이 영구히 남았다.
      *
      * @scenario icon_type=image_attachment, entry=core_seed
@@ -193,7 +193,7 @@ class CoreAdminMenuSeederIconTest extends TestCase
     }
 
     /**
-     * 회귀(#381 validate-plan 6차 D-6c): 시더는 트랜잭션 밖에서 돌아 커밋 뒤 예약이 곧바로 실행된다. 첨부 정리를 메뉴
+     * 회귀(plan 6차 D-6c): 시더는 트랜잭션 밖에서 돌아 커밋 뒤 예약이 곧바로 실행된다. 첨부 정리를 메뉴
      * 삭제보다 먼저 예약하면, 코어 메뉴 삭제가 실패해 메뉴는 남아도 하위 메뉴의 업로드 아이콘 첨부·파일이 먼저 사라졌다.
      *
      * @scenario icon_type=image_attachment, entry=core_seed

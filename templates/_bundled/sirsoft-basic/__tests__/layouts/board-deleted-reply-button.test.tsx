@@ -1,13 +1,13 @@
 /**
  * @file board-deleted-reply-button.test.tsx
- * @description 삭제된 게시글 상세의 답변 버튼 차단 회귀 (이슈 #413-50-3)
+ * @description 삭제된 게시글 상세의 답변 버튼 차단 회귀 (50-3)
  *
  * 검증 방식: 레이아웃 JSON 트리 직접 분석 (DOM 비의존).
  * 정책: 삭제된 게시글(deleted_at 존재)에서는 답변 버튼을 노출하지 않는다.
  *   기존에는 답변 버튼 if 조건에 status !== 'blinded' 만 있고 삭제 검사(!deleted_at)가
- *   없어, 삭제글에서도 답변 버튼이 노출되고 답글 폼 진입이 가능했다(#413-44 와 동일 계열).
+ *   없어, 삭제글에서도 답변 버튼이 노출되고 답글 폼 진입이 가능했다(44 와 동일 계열).
  *
- * 회귀 배경: 답변 버튼은 폼 진입(write?parent_id=)의 입구. 백엔드(#413-44)가 폼 진입을
+ * 회귀 배경: 답변 버튼은 폼 진입(write?parent_id=)의 입구. 백엔드(44)가 폼 진입을
  *   차단하더라도, 버튼이 노출되면 사용자가 삭제글에 답글을 시도하는 경험상 결함이 남는다.
  *
  * @scenario viewer=regular
@@ -43,7 +43,7 @@ function findByComment(root: unknown, commentText: string): Node[] {
     return collectNodes(root, (n) => typeof n.comment === 'string' && (n.comment as string).includes(commentText));
 }
 
-describe('이슈 #413-50-3 — 삭제 게시글 답변 버튼 차단 (basic/show.json)', () => {
+describe('50-3 — 삭제 게시글 답변 버튼 차단 (basic/show.json)', () => {
     it('답변 버튼의 if 가 삭제 상태(deleted_at)를 차단한다', () => {
         const buttons = findByComment(basicShow, '답변 버튼');
         expect(buttons.length).toBeGreaterThan(0);

@@ -6,7 +6,7 @@ use App\Extension\ModuleManager;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 회원 혜택(#952) 훅이 모듈의 공개 훅 계약(`getHooks()`)에 선언돼 있는지 잠근다.
+ * 회원 혜택 훅이 모듈의 공개 훅 계약(`getHooks()`)에 선언돼 있는지 잠근다.
  *
  * 모집단은 손으로 적지 않는다 — 1.4.1 에서 들어온 회원 알림 정의가 구독하는 훅을 정의에서 꺼내고,
  * 쿠폰마다 따로 있는 발급 알림 훅은 자리표시자 이름(`{쿠폰ID}`)으로 대조한다.

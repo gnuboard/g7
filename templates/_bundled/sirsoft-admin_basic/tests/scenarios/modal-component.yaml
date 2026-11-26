@@ -18,8 +18,8 @@ effects:
   - modal_locks_and_restores_body_scroll
   - modal_title_affix_optional_and_safe_without_core
   - modal_footer_rendered_outside_scroll_area
-  - modal_footer_hidden_when_all_buttons_filtered   # 고정 하단 단추가 조건으로 모두 빠지면 바닥 줄도 숨긴다(#869 C1)
-  - modal_footer_reads_modal_node_context   # footer 는 본문 자식과 같은 데이터 컨텍스트·상태 범위로 그린다(#869 P1)
+  - modal_footer_hidden_when_all_buttons_filtered   # 고정 하단 단추가 조건으로 모두 빠지면 바닥 줄도 숨긴다
+  - modal_footer_reads_modal_node_context   # footer 는 본문 자식과 같은 데이터 컨텍스트·상태 범위로 그린다
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Modal.test.tsx

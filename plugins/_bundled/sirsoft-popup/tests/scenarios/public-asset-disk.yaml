@@ -1,4 +1,4 @@
-feature: 팝업 이미지의 공개 자산 디스크 — 직접 주소(원본)와 API 주소(썸네일), 행 disk 추종 (#878)
+feature: 팝업 이미지의 공개 자산 디스크 — 직접 주소(원본)와 API 주소(썸네일), 행 disk 추종
 
 description: |
   팝업 이미지는 공개 API `/api/plugins/sirsoft-popup/images/{hash}` 로만 나갔다(히어로섹션과 같은 결함, 제품 결정). 이 플러그인이

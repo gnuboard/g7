@@ -1,6 +1,6 @@
 /**
  * @file downloadMarkupFile.test.ts
- * @description 코드 편집기 HTML 탭 본문을 `.g7.html` 파일로 내려받는 핸들러 단위 검증 (#476 C5)
+ * @description 코드 편집기 HTML 탭 본문을 `.g7.html` 파일로 내려받는 핸들러 단위 검증
  *
  * 편집기가 여는 것은 설치본(DB 행)이라 서버에 파일이 없다 — 본문을 Blob 으로 만들어 `<a download>`
  * 로 저장한다. 파일명은 경로 구분자를 `_` 로 접고 확장자는 `.g7.html` 하나만 붙인다.
@@ -11,7 +11,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { downloadMarkupFileHandler, normalizeMarkupFilename } from '../downloadMarkupFile';
 
-describe('downloadMarkupFileHandler — .g7.html 내려받기 (#476)', () => {
+describe('downloadMarkupFileHandler — .g7.html 내려받기', () => {
   let createObjectURLSpy: ReturnType<typeof vi.fn>;
   let revokeObjectURLSpy: ReturnType<typeof vi.fn>;
   let clickSpy: ReturnType<typeof vi.fn>;

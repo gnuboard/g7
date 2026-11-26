@@ -171,7 +171,7 @@
       <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700 break-words">{{memberFieldGroup.title}}</h3>
       <include src="partials/member/_member_fields_view.g7.html"/>
     </div>
-    <!-- 보안 카드 (#952) — 모든 기기에서 로그아웃. 늘 보인다. 2단계 인증 플러그인(TOTP)이 이 카드 안에 등록·해제 칸을 끼워 넣는 자리이기도 하다(data-ref 앵커). -->
+    <!-- 보안 카드 — 모든 기기에서 로그아웃. 늘 보인다. 2단계 인증 플러그인(TOTP)이 이 카드 안에 등록·해제 칸을 끼워 넣는 자리이기도 하다(data-ref 앵커). -->
     <div data-ref="profile_security_card" data-if="{{user.data?.status !== 'withdrawn'}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <responsive on="portable" class-merge="p-4"/>
       <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">$t:mypage.security.title</h3>

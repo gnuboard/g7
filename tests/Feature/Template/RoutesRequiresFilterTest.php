@@ -22,7 +22,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * routes.json 라우트 키 `requires` — 필요한 모듈·플러그인이 모두 활성일 때만 라우트를 낸다 (#822).
+ * routes.json 라우트 키 `requires` — 필요한 모듈·플러그인이 모두 활성일 때만 라우트를 낸다.
  *
  * - 공개 routes 응답·SEO·사이트맵·정적 사본은 {@see TemplateService::getRoutesDataWithModules()} 한 곳의 필터를 쓴다.
  * - 형식 오류·모르는 유형은 라우트를 남기고 경고(fail-open).

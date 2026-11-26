@@ -2043,7 +2043,7 @@ hr {
   color: var(--error-text-emphasis);
 }
 
-/* 기존 DB 테이블 감지 인라인 카드 (#244)
+/* 기존 DB 테이블 감지 인라인 카드
    .test-result .alert 가 display:flex 라 카드 자식이 가로로 정렬되므로
    block 으로 오버라이드하고 카드 내부에 자체 spacing 적용 */
 .test-result .db-existing-tables-card {

@@ -5,7 +5,7 @@ namespace App\Support;
 use Symfony\Component\Mime\MimeTypes;
 
 /**
- * 허용 확장자 목록 정규화 (#493 C2)
+ * 허용 확장자 목록 정규화
  *
  * 허용 확장자는 관리자 화면에서 콤마로 구분한 한 줄 텍스트로 들어오고, API 를 직접 쓰는
  * 경로에서는 배열로 들어온다. 저장 계층과 적용 계층이 각자 형태를 판단하면 한쪽이

@@ -6,7 +6,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * [case:cache-17] 템플릿 업데이트 성공 cleanup 의 config 캐시 무효화 구조 테스트 (#588, 공개 #119)
+ * [case:cache-17] 템플릿 업데이트 성공 cleanup 의 config 캐시 무효화 구조 테스트 (공개 #119)
  *
  * `template.config.{identifier}` 는 버전 접미사 없는 고정 키라 캐시 버전 bump 로
  * 무효화되지 않는다. updateTemplate() 성공 cleanup 이 clearTemplateCache() 를
@@ -46,7 +46,7 @@ class TemplateUpdateConfigCacheInvalidationTest extends TestCase
     }
 
     /**
-     * 업데이트 tail 은 활성/비활성과 무관하게 **무조건** 캐시 버전을 올린다 (#651 F1).
+     * 업데이트 tail 은 활성/비활성과 무관하게 **무조건** 캐시 버전을 올린다.
      *
      * 종전에는 `if ($previousStatus !== ExtensionStatus::Active->value)` 가드 안에서만 올렸다.
      * 활성 템플릿은 `refreshTemplateLayouts()` 의 조건부 bump(레이아웃 변경 건수 > 0)에
@@ -68,7 +68,7 @@ class TemplateUpdateConfigCacheInvalidationTest extends TestCase
             'updateTemplate'
         );
 
-        // 같은 조건은 꺼진 템플릿의 설정 화면 동기화(#434)에도 쓰인다 — 조건문 자체가 아니라
+        // 같은 조건은 꺼진 템플릿의 설정 화면 동기화에도 쓰인다 — 조건문 자체가 아니라
         // 그 블록 안에 bump 가 들어 있는지를 본다.
         $guard = 'if ($previousStatus !== ExtensionStatus::Active->value)';
         $offset = 0;
@@ -90,7 +90,7 @@ class TemplateUpdateConfigCacheInvalidationTest extends TestCase
     }
 
     /**
-     * 실패·복원 경로도 캐시 버전을 올린다 (#651 F2).
+     * 실패·복원 경로도 캐시 버전을 올린다.
      *
      * 백업 복원이 실패했거나 부분 반영된 디스크가 남을 수 있어, 게시본을 새 버전으로 다시
      * 굽는 쪽이 옛 게시본을 그대로 두는 쪽보다 안전하다. bump 실패는 원래 예외를 가리지

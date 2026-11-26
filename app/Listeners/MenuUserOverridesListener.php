@@ -34,7 +34,7 @@ class MenuUserOverridesListener implements HookListenerInterface
             'core.menu.before_update' => ['method' => 'handleBeforeUpdate', 'priority' => 10],
             // 순서 변경(계층·평탄 두 경로)은 여기서 기록하지 않는다 — 두 경로 모두 `Menu::where()->update()` 라
             // UserOverridesAwareBuilder 가 **실제로 순서가 바뀐 메뉴만** 기록한다. 종전 훅 핸들러는 payload 의 모든
-            // 메뉴에 order 를 무조건 기록해, 드래그 한 번 뒤로 새 버전의 메뉴 순서 변경이 영영 안 들어왔다(#727 W11).
+            // 메뉴에 order 를 무조건 기록해, 드래그 한 번 뒤로 새 버전의 메뉴 순서 변경이 영영 안 들어왔다.
             'core.menu.after_sync_roles' => ['method' => 'handleAfterSyncRoles', 'priority' => 10],
         ];
     }

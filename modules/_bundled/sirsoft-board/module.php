@@ -66,7 +66,7 @@ class Module extends AbstractModule
         // 역할 수는 게시판 수의 두 배 수준이라 한 번에 읽어도 된다.
         $roleRepository = app(RoleRepositoryInterface::class);
         foreach ($roleRepository->getByExtension(ExtensionOwnerType::Module, 'sirsoft-board') as $role) {
-            // 권한·메뉴·회원 연결과 메뉴 권한을 먼저 떼고 지운다 — DB 외래키 연쇄에 맡기지 않는다(#888)
+            // 권한·메뉴·회원 연결과 메뉴 권한을 먼저 떼고 지운다 — DB 외래키 연쇄에 맡기지 않는다
             $roleRepository->deleteWithRelations($role);
         }
 
@@ -140,7 +140,7 @@ class Module extends AbstractModule
                     'api.modules.sirsoft-board.boards.comments.*',
                     'api.modules.sirsoft-board.boards.attachments.*',
                     'api.modules.sirsoft-board.boards.attachment.*',
-                    // 본문 미디어 업로드·서빙 (#883) — 서빙(show)은 컨트롤러도 없는 게시판을 404 로 돌려 결과가 같다
+                    // 본문 미디어 업로드·서빙 — 서빙(show)은 컨트롤러도 없는 게시판을 404 로 돌려 결과가 같다
                     'api.modules.sirsoft-board.boards.content-media.*',
                     'api.modules.sirsoft-board.admin.board.*',
                 ],
@@ -351,7 +351,7 @@ class Module extends AbstractModule
                 ],
                 // 신고 관리 권한 (type: admin)
                 // 범위(resource_route_key·owner_key)를 선언하지 않는다 — 신고는 게시판을 가로지르는 운영 업무라
-                // 「본인만」의 자연스러운 뜻이 없고, 1케이스 구조 뒤 케이스 테이블에 신고자 컬럼도 없다(#789).
+                // 「본인만」의 자연스러운 뜻이 없고, 1케이스 구조 뒤 케이스 테이블에 신고자 컬럼도 없다.
                 [
                     'identifier' => 'reports',
                     'name' => [
@@ -734,7 +734,7 @@ class Module extends AbstractModule
             BoardActivityLogListener::class,
             ActivityLogDescriptionResolver::class,
             SeoBoardCacheListener::class,
-            // 상세 재렌더·재활성 대량 재색인은 큐 — 무효화(SeoBoardCacheListener, sync)가 먼저 돌고 커밋 뒤에 실행된다(#724)
+            // 상세 재렌더·재활성 대량 재색인은 큐 — 무효화(SeoBoardCacheListener, sync)가 먼저 돌고 커밋 뒤에 실행된다
             SeoBoardRegenerateListener::class,
             SeoBoardSettingsCacheListener::class,
             EcommerceInquiryHookListener::class,
@@ -748,17 +748,17 @@ class Module extends AbstractModule
             UserScrapInfoListener::class,
             UserReactionInfoListener::class,
             PrivacyRetentionHandlerListener::class,
-            // 개인정보 동의 플러그인에 비밀글 열람 토큰 키를 필수 저장 키로 제공 (#789)
+            // 개인정보 동의 플러그인에 비밀글 열람 토큰 키를 필수 저장 키로 제공
             ProvideNecessaryStorageKeysListener::class,
-            // 스코프 강제 지점 원장 — 감사 전용(런타임 동작 무변경), #789
+            // 스코프 강제 지점 원장 — 감사 전용(런타임 동작 무변경)
             BoardScopeLedgerListener::class,
-            // 첨부 미리보기를 코어 이미지 썸네일의 서빙 경로·원본 제공자로 등록 (#869)
+            // 첨부 미리보기를 코어 이미지 썸네일의 서빙 경로·원본 제공자로 등록
             ThumbnailServingListener::class,
             // 비회원 작성자 항목에 게시판별 사용, 필수 설정을 입힌다
             GuestAuthorFieldDefinitionListener::class,
             // 추가 정보를 입력하지 않은 회원에게도 비밀번호 확인 라우트를 열어 둔다
             ExemptRequiredFieldsRoutesListener::class,
-            // 회원 삭제 직전 게시판 알림 설정·반응·스크랩을 명시적으로 지우고 집계를 다시 맞춘다 (#888)
+            // 회원 삭제 직전 게시판 알림 설정·반응·스크랩을 명시적으로 지우고 집계를 다시 맞춘다
             UserDeleteCleanupListener::class,
         ];
     }
@@ -1004,7 +1004,7 @@ class Module extends AbstractModule
     }
 
     /**
-     * `.env` `SIRSOFT_BOARD_ATTACHMENT_DISK` 로 첨부 디스크를 고정했는지 반환합니다 (#916 D7).
+     * `.env` `SIRSOFT_BOARD_ATTACHMENT_DISK` 로 첨부 디스크를 고정했는지 반환합니다.
      *
      * 고정돼 있으면 첨부·본문 미디어는 관리자의 「비공개 첨부 저장소」 선택 대신 그 디스크를 쓰고, 환경설정 > 드라이버 화면이
      * 「.env 로 고정된 확장: 게시판」으로 안내한다.

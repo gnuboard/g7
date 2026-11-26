@@ -1,10 +1,10 @@
 /**
- * TemplateSettingsFields — sirsoft-admin_basic 설정 화면의 칸 그리기 (#434)
+ * TemplateSettingsFields — sirsoft-admin_basic 설정 화면의 칸 그리기
  *
  * 이 템플릿 설정 화면 부품(`TemplateSettingsScreen`)이 쓴다 — 설정 화면 묶음(`dist/settings/*`)에 함께 묶여 다른 관리자 템플릿
  * 화면에서도 뜬다. 조회 응답의 섹션 서술(`sections`)대로 섹션마다 카드 하나, 칸마다 종류별 입력을 그린다. 칸마다 다른
  * 경로(`{섹션}.{키}`)에 쓰는 동적 바인딩이라 선언형 레이아웃 대신 컴포넌트로 둔다. 이 템플릿이 선언하지 않는 칸 종류
- * (메뉴 등)는 그리지 않는다 — 칸 종류 부품은 그 칸을 선언한 템플릿이 자기 화면에 공급한다(#434 D28).
+ * (메뉴 등)는 그리지 않는다 — 칸 종류 부품은 그 칸을 선언한 템플릿이 자기 화면에 공급한다.
  *
  * - 값은 섹션 중첩 객체(`{섹션: {키: 값}}`)이고, 바뀌면 폼 전체를 `onChange(next)` 로 올린다. 업로더 여러 개가 연달아
  *   끝나도 앞 결과가 덮이지 않게 최신 값을 ref 로 이어 붙인다.
@@ -149,7 +149,7 @@ export const TemplateSettingsFields: React.FC<TemplateSettingsFieldsProps> = ({
   id,
   editorAttrs,
 }) => {
-  // 폭 분기는 엔진 폭으로 고른다 — Tailwind 반응형 접두는 창 폭으로 판정되어 편집기 미리보기·엔진 responsive 와 경계가 갈린다(#869).
+  // 폭 분기는 엔진 폭으로 고른다 — Tailwind 반응형 접두는 창 폭으로 판정되어 편집기 미리보기·엔진 responsive 와 경계가 갈린다.
   const twoColumns = isWidthAtLeast(useRenderWidth(), 'md');
 
   // 업로더 콜백이 연달아 와도 직전 결과 위에 쌓이게 최신 값을 따로 들고 있는다

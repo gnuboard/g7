@@ -1,4 +1,4 @@
-feature: 페이지 본문 미디어 — 버전이 참조하면 남기고 복원 때 동기화 (#887 G5)
+feature: 페이지 본문 미디어 — 버전이 참조하면 남기고 복원 때 동기화
 
 description: |
   본문에서 빠진 본문 미디어(`page_attachments.collection = content_media`)는 어느 버전 본문도 그 해시를 참조하지 않을 때만

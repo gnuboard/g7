@@ -1,5 +1,5 @@
 /**
- * 확장점 주입 조각의 DOM id 스코프 (engine-v1.99.0, #408)
+ * 확장점 주입 조각의 DOM id 스코프 (engine-v1.99.0)
  *
  * 같은 확장 조각이 한 화면의 확장점 여러 곳에 주입되면(게시글 본문과 답글마다의 `html_content`,
  * 알림 정의 행마다의 `notification_row_footer`, 회원 항목 반복 안의 `address_search_slot` 등)
@@ -8,7 +8,7 @@
  *
  * 그래서 확장점 호스트 아래에서 그려지는 노드의 **보간 없는 정적 노드 id** 는 DOM 에 쓸 때
  * `{원래 id}__{가장 가까운 호스트 확장점의 DOM id}` 로 바꾼다(결정 D2). 선례는 SlotContainer 의
- * `scopeSlotChildDef` 다(#410, `{id}__{컨테이너 id}`).
+ * `scopeSlotChildDef` 다(`{id}__{컨테이너 id}`).
  *
  * 바꾸지 않는 것(결정 D3)
  * - `{{…}}` 로 보간한 id — 작성자가 이미 행마다 다르게 만든 값이다.

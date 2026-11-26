@@ -45,7 +45,7 @@ exclusions:
   - { aspect: binding_guard, data_surface: flat_typed_array, reason: "동일" }
   # 원시 enum 배열 표면을 쓰던 유일한 컴포넌트(SocialLoginButtons.providers)가 sirsoft-basic 1.4.0 에서 제거됐다
   # (소셜 버튼은 플러그인이 로그인·가입 확장점에 주입). 두 템플릿 스펙에 이 표면이 없으므로 잴 대상이 없다 —
-  # 제거 자체는 dataBuiltinCapabilityShape.test.ts 「SocialLoginButtons — basic capability 에서 제거됨」이 단언한다(#869).
+  # 제거 자체는 dataBuiltinCapabilityShape.test.ts 「SocialLoginButtons — basic capability 에서 제거됨」이 단언한다.
   - { aspect: capability_attach, data_surface: primitive_enum_array, reason: "SocialLoginButtons 제거(sirsoft-basic 1.4.0) — 두 템플릿에 이 표면 없음" }
   - { aspect: structure_op, data_surface: primitive_enum_array, reason: "동일 — 원시 배열 추가 동작은 multi_array(BarChart labels)가 잰다" }
 

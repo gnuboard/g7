@@ -1,5 +1,5 @@
 /**
- * 현금영수증 전주기 E2E (#454 S3 이월 → S5).
+ * 현금영수증 전주기 E2E (S5).
  *
  * checkout-cash-receipt.spec.ts 가 "신청 폼이 렌더·동작하는가" 를 본다면, 이 spec 은
  * 신청 이후의 **발급 생애주기**를 본다: 입금확인 → 자동발급 → 금액변동 → 전액취소·재발급.
@@ -29,7 +29,7 @@ import type { Page } from '@playwright/test';
 
 const CART_LOCALE = 'ko';
 
-// #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+// 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
 const TOGGLE = '[id^="ext_checkout_cash_receipt_toggle__"]';
 const IDENTIFIER = '[id^="ext_checkout_cash_receipt_identifier__"]';
 
@@ -442,7 +442,7 @@ test.describe('현금영수증 전주기 (신청 → 입금확인 → 자동발�
 
     // 관리자 취소의 입구는 상품 표 선택 바의 [취소·환불 접수] 하나다. 주문상태 드롭다운에는 더 이상
     // '주문취소' 가 없다 — 드롭다운으로 취소하면 환불신청서 없이 상품만 cancelled 로 옮겨 장부에 근거
-    // 없는 취소가 남았기 때문이다(#599). 이 버튼이 여는 창은 종전 취소 모달과 같은 창이다.
+    // 없는 취소가 남았기 때문이다. 이 버튼이 여는 창은 종전 취소 모달과 같은 창이다.
     const cancelRefundButton = page.getByRole('button', { name: '취소·환불 접수' });
     await expect(cancelRefundButton).toBeEnabled({ timeout: 15_000 });
     await cancelRefundButton.click();

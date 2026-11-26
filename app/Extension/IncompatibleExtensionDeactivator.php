@@ -36,7 +36,7 @@ use Throwable;
  *     결제 플러그인이 함께 비호환이면 이커머스는 아직 켜진 결제 플러그인 때문에 막힌다. 종류별 처리 뒤 `retryBlocked()` 가
  *     막혔던 후보를 진척이 없을 때까지 다시 끄고, 끈 것은 같은 알림 묶음에 넣는다(부팅 순서는 바꾸지 않는다).
  *
- * 자동 재활성화는 하지 않는다(#302) — 재호환 감지는 `CoreServiceProvider::detectRecoveredExtensions()` 가 알림만 남긴다.
+ * 자동 재활성화는 하지 않는다 — 재호환 감지는 `CoreServiceProvider::detectRecoveredExtensions()` 가 알림만 남긴다.
  */
 class IncompatibleExtensionDeactivator
 {

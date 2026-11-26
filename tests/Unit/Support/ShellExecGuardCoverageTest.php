@@ -48,7 +48,7 @@ class ShellExecGuardCoverageTest extends TestCase
      * 어휘를 스폰 계열 전수로 넓히자 A-8 면 밖의 실제 무가드 3곳이 드러났고, 그 셋(코어
      * 업데이트 경로)은 **G6 에서 이관을 마쳤다** — `extractWithUnzip`·`isUnzipAvailable` 은
      * `exec`, `executeComposerInstall` 은 `proc_open` 가용성을 SSoT 로 먼저 묻고 도메인
-     * 예외로 폴백한다 (#609 D34).
+     * 예외로 폴백한다.
      *
      * 목록을 지우지 않고 **비운 채로 남긴다** — 이 상수가 사라지면 「이관 대상이 있었다」는
      * 사실과 「지금은 없다」는 판정이 함께 사라지고, 새 지점이 생겼을 때 다시 목록을 만드는

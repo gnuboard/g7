@@ -1,5 +1,5 @@
 /**
- * DiagnosticEngine — spa-local-leak 감지기 오탐 (#599 validate P7)
+ * DiagnosticEngine — spa-local-leak 감지기 오탐
  *
  * 종전 감지기는 「navigate 뒤에 visibleColumns 를 `$args[0]` 로 되쓰는 setState」 만 보고 발화했다.
  * 그런데 컬럼 선택기가 있는 목록 화면은 **정상 진입에서도** 마운트 콜백이 그 setState 를 낸다 —

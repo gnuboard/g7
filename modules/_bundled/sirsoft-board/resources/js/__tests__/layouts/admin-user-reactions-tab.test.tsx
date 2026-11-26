@@ -1,6 +1,6 @@
 // e2e:allow 가드 판별력 보강 전용(7차 검증, 부록 B D10) — `hits.length >= 2` 느슨한 하한을 탭 버튼 id ↔ 본문 노드 id 상호 대조로 바꿨 것뿐이고, 대상 조각·주입 동작은 불변이다. 브라우저 흐름은 admin/board-user-reactions-tab.spec.ts 가 담당한다.
 /**
- * 회원 상세 「반응」 요약 탭 (#525 WP-C) — 확장 주입 계약 회귀.
+ * 회원 상세 「반응」 요약 탭 — 확장 주입 계약 회귀.
  *
  * 이 조각이 지키는 계약:
  *  - 주입이 **두 군데**로 갈린다(탭 버튼 / 본문). 둘을 잇는 것은 `id` 하나뿐이라 한쪽만
@@ -82,7 +82,7 @@ describe('회원 상세 반응 탭 — 요약 카드와 링크', () => {
     it('목록 이동은 링크(href)와 navigate 로 하고 회원 uuid 를 실어 보낸다', () => {
         expect(/\/admin\/boards\/reactions/.test(extJson)).toBe(true);
         expect(/"user_uuid"/.test(extJson)).toBe(true);
-        // #757 — 「전체 보기」는 링크다(새 탭 열기). 주소는 href 한 곳이고 회원 uuid 를 쿼리로 싣는다.
+        // 「전체 보기」는 링크다(새 탭 열기). 주소는 href 한 곳이고 회원 uuid 를 쿼리로 싣는다.
         // 2026-09-15 실측에서 이 조각의 식 href 가 DOM 에 실리지 않은 적이 있어 보통 클릭은 navigate path 로 간다(스크랩 탭과 같음)
         expect(extJson).toContain('"href":"/admin/boards/reactions?user_uuid={{user?.data?.uuid');
         expect(extJson).toContain('"path":"/admin/boards/reactions"');

@@ -1,6 +1,6 @@
 /**
  * @file adminMemberSearchBlankKeyword.test.ts
- * @description 이커머스 관리자 화면의 회원 검색이 빈 검색어로 요청하지 않는지 (#703)
+ * @description 이커머스 관리자 화면의 회원 검색이 빈 검색어로 요청하지 않는지
  *
  * 코어 회원 검색 API(`/api/admin/users/search`)는 keyword 가 비면(공백만 있어도 요청 정리 뒤 비게 된다)
  * 422 로 거절한다. 이커머스에는 이 API 를 검색어로 부르는 자리가 다섯 곳 있다.

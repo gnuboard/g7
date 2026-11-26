@@ -55,7 +55,7 @@ trait CachesPluginStatus
      */
     private static function rememberNonEmptyPluginList(string $key, \Closure $resolver): array
     {
-        // 같은 요청 안에서는 저장소를 한 번만 읽는다 — 목록은 요청 안에서 바뀌지 않고, 바뀌면 무효화가 메모도 비운다(#860)
+        // 같은 요청 안에서는 저장소를 한 번만 읽는다 — 목록은 요청 안에서 바뀌지 않고, 바뀌면 무효화가 메모도 비운다
         $memo = ExtensionStatusMemo::current();
         $memoized = $memo?->get($key);
 
@@ -137,7 +137,7 @@ trait CachesPluginStatus
         $cache->forget('ext.plugins.active_identifiers');
         $cache->forget('ext.plugins.installed_identifiers');
 
-        // 같은 요청의 목록 메모도 버린다 — 상태를 바꾼 요청의 뒤쪽(활성화 직후 provider boot 등)이 새 목록을 보게(#860)
+        // 같은 요청의 목록 메모도 버린다 — 상태를 바꾼 요청의 뒤쪽(활성화 직후 provider boot 등)이 새 목록을 보게
         ExtensionStatusMemo::forgetCurrent('plugins');
 
         // 같은 요청에서 만든 선택 연동 역맵도 버린다 — 상태가 바뀐 뒤의 「연동 중인 확장」 응답이 옛 목록이 되지 않게(7.1.4)
@@ -145,7 +145,7 @@ trait CachesPluginStatus
 
         // 본인인증 정책 색인(route·hook)은 활성 확장의 정책만 담는다 — 상태가 바뀌면 함께 비운다. 업데이트 중(updating)에는
         // 그 확장의 정책이 빠진 색인이 만들어질 수 있어, 상태 복원(성공·롤백)이 비우지 않으면 캐시 수명 동안 그 확장의
-        // 정책이 걸리지 않는다(#869). 비우기 실패가 상태 변경을 깨지 않게 경고만 남긴다.
+        // 정책이 걸리지 않는다. 비우기 실패가 상태 변경을 깨지 않게 경고만 남긴다.
         try {
             IdentityPolicy::flushRouteScopeCache();
         } catch (\Throwable $e) {

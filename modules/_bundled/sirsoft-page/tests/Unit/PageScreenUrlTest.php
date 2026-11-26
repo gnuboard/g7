@@ -14,7 +14,7 @@ use Modules\Sirsoft\Page\Support\PageScreenUrl;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 
 /**
- * 페이지 화면 주소 래퍼(PageScreenUrl) 테스트 (#792 WP-U3 F1-7)
+ * 페이지 화면 주소 래퍼(PageScreenUrl) 테스트
  */
 class PageScreenUrlTest extends ModuleTestCase
 {
@@ -52,7 +52,7 @@ class PageScreenUrlTest extends ModuleTestCase
     }
 
     /**
-     * 페이지 저장 때의 사이트맵 증분 색인도 주소 필터를 탄다 (#792 W17) — 전체 재생성과 같은 주소여야 한다.
+     * 페이지 저장 때의 사이트맵 증분 색인도 주소 필터를 탄다 — 전체 재생성과 같은 주소여야 한다.
      *
      * @scenario case=sitemap_incremental
      *

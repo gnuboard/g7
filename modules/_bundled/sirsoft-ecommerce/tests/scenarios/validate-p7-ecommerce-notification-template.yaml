@@ -1,4 +1,4 @@
-feature: 쇼핑몰 환경설정 알림 템플릿 편집 창 — 수신자 규칙 종류 전환·관계 선택 (#599 validate P7)
+feature: 쇼핑몰 환경설정 알림 템플릿 편집 창 — 수신자 규칙 종류 전환·관계 선택
 
 description: |
   코어 알림 템플릿 편집 창과 같은 결함(종류 전환 시 이전 값 잔존 → 수신자 0명, 관련 사용자 relation 미시드 → 422,
@@ -29,4 +29,4 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-notification-template-picked-names.test.ts
 
 notes: |
-  e2e_browser=not_applicable — 표현식 계약 수정. 브라우저 실측은 #599 통합 단계에서 한다.
+  e2e_browser=not_applicable — 표현식 계약 수정. 브라우저 실측은 통합 단계에서 한다.

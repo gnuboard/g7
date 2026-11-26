@@ -1,5 +1,5 @@
 /**
- * CKEditor5 이미지 업로드는 코어 API 클라이언트(`G7Core.api`)로 보낸다 (#639)
+ * CKEditor5 이미지 업로드는 코어 API 클라이언트(`G7Core.api`)로 보낸다
  *
  * 종전에는 CDN 의 SimpleUploadAdapter 에 브라우저 저장소의 로그인 토큰으로 만든 Authorization 헤더를
  * 넘겼다. 코어 클라이언트를 우회해 토큰 갱신·401 처리를 놓치는 결함군이라, 업로드 어댑터가
@@ -89,7 +89,7 @@ describe('CKEditor5 업로드 어댑터', () => {
      * @scenario outcome=anonymous_unauthorized
      * @effects login_required_message_shown_without_redirect
      */
-    it('토큰 없이 보낸 업로드의 401 은 「로그인이 필요합니다」 문구로 거부한다 (#883)', async () => {
+    it('토큰 없이 보낸 업로드의 401 은 「로그인이 필요합니다」 문구로 거부한다', async () => {
         const anonymous401 = { response: { status: 401, data: { message: '인증이 필요합니다.' } }, g7Auth: { tokenSent: false } };
         apiPost.mockRejectedValue(anonymous401);
         (window as any).G7Core.api.isAnonymousUnauthorized = (e: any) => e === anonymous401;
@@ -154,7 +154,7 @@ describe('CKEditor5 업로드 어댑터', () => {
     });
 
     /**
-     * 공개 자산 디스크(CDN) 행 — 서버가 반응형 후보를 내리면 CKEditor 가 본문에 srcset 으로 저장하도록 그대로 돌려준다(#878)
+     * 공개 자산 디스크(CDN) 행 — 서버가 반응형 후보를 내리면 CKEditor 가 본문에 srcset 으로 저장하도록 그대로 돌려준다
      *
      * @scenario outcome=uploaded
      * @effects responsive_urls_returned_to_editor

@@ -10,7 +10,7 @@ use Plugins\Sirsoft\Popup\Services\PublicPopupService;
  *
  * 저장 직후 사용자 화면에 바로 반영돼야 하므로 모두 `sync` 로 돈다(큐로 미루면 그사이 옛 팝업이 보인다).
  * 플러그인 비활성화 때는 Plugin::deactivate() 가 비운다. 코어 환경설정의 드라이버 탭(공개 자산 디스크)을 저장해도
- * 비운다 — 캐시에 담긴 팝업 이미지의 `direct_url` 이 옛 디스크 기준으로 묵지 않게(#878).
+ * 비운다 — 캐시에 담긴 팝업 이미지의 `direct_url` 이 옛 디스크 기준으로 묵지 않게.
  */
 class PopupCacheListener implements HookListenerInterface
 {

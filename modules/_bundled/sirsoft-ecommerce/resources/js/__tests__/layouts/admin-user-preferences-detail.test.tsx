@@ -1,5 +1,5 @@
 /**
- * 회원 상세와 수정 화면의 이커머스 선호값(결제 통화, 배송국가)을 누가 그리는지에 대한 계약 (#599, #490).
+ * 회원 상세와 수정 화면의 이커머스 선호값(결제 통화, 배송국가)을 누가 그리는지에 대한 계약.
  *
  * 두 값은 회원 항목(core.user)으로 선언돼 있다. 그래서 관리자 템플릿의 공용 조각이 회원 상세와 수정 화면의
  * 「확장 항목」 구획에 같은 이름, 같은 값으로 그린다(상세와 수정은 같은 항목을 같은 양식으로 갖는다 — 요구사항 2026-09-21).
@@ -17,7 +17,7 @@ const extensions = path.resolve(__dirname, '../../../extensions');
 const fragments = fs.readdirSync(extensions).filter((file) => file.endsWith('.json'));
 const read = (file: string): any => JSON.parse(fs.readFileSync(path.join(extensions, file), 'utf8'));
 
-describe('회원 상세와 수정 화면 — 이커머스 선호값은 회원 항목으로 그린다 (#599, #490)', () => {
+describe('회원 상세와 수정 화면 — 이커머스 선호값은 회원 항목으로 그린다', () => {
   // @scenario surface=admin, field_kind=record_only
   // @effects admin_user_detail_shows_ecommerce_preferences
   it('회원 상세 「쇼핑 데이터」 탭 조각은 결제 통화와 배송국가를 그리지 않는다', () => {

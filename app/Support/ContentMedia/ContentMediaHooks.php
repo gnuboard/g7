@@ -3,7 +3,7 @@
 namespace App\Support\ContentMedia;
 
 /**
- * 본문 미디어 공용 훅 이름 (#887)
+ * 본문 미디어 공용 훅 이름
  *
  * 본문 미디어를 다루는 모든 확장(모듈·플러그인)의 업로드·영구 삭제에서 코어 골격(`AbstractContentMediaService`)이 발화한다.
  * 리스너는 두 번째 인자 `ContentMediaContext` 로 어느 확장·문서의 미디어인지 안다. 확장별 첨부 훅(`{확장}.attachment.*`)은

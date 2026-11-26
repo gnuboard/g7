@@ -8,7 +8,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\PureTestCase;
 
 /**
- * 메뉴 아이콘 인라인 SVG 검사기 단위 테스트 (#381).
+ * 메뉴 아이콘 인라인 SVG 검사기 단위 테스트.
  *
  * 인라인 삽입은 문서 안에서 실행되므로 스크립트·이벤트 속성·외부 참조·style·image·use·a·애니메이션을 거부하고,
  * 비정사각·currentColor 는 허용한다. 크기 한도는 32KB 다.
@@ -41,7 +41,7 @@ class MenuIconSvgValidatorTest extends PureTestCase
     /**
      * 화면 정제 허용 목록(svgSanitize.ts SVG_SANITIZE_CONFIG.ALLOWED_TAGS) 밖의 요소는 서버가 먼저 거부한다.
      *
-     * 서버가 받아 저장했는데 화면 정제가 지워 빈 아이콘이 되는 어긋남(#381 규정 검토 D8)을 막는다.
+     * 서버가 받아 저장했는데 화면 정제가 지워 빈 아이콘이 되는 어긋남(규정 검토 D8)을 막는다.
      *
      * @effects unsafe_svg_rejected
      *
@@ -153,7 +153,7 @@ class MenuIconSvgValidatorTest extends PureTestCase
     }
 
     /**
-     * 회귀(#381 validate-plan 5차 ⓓ): 32KB 이하여도 따옴표·줄바꿈처럼 JSON 이스케이프로 두 배가 되는 글자가 대부분이면
+     * 회귀(plan 5차 ⓓ): 32KB 이하여도 따옴표·줄바꿈처럼 JSON 이스케이프로 두 배가 되는 글자가 대부분이면
      * 저장 JSON 이 `menus.icon`(TEXT, 65,535바이트)을 넘어 저장이 500 으로 깨졌다 — 저장될 크기로도 too_large 를 낸다.
      *
      * @effects unsafe_svg_rejected

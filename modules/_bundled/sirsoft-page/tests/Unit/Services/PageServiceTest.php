@@ -206,7 +206,7 @@ class PageServiceTest extends ModuleTestCase
     }
 
     /**
-     * 페이지 삭제가 버전 이력을 DB CASCADE 없이 명시적으로 지우는지 확인 (#888)
+     * 페이지 삭제가 버전 이력을 DB CASCADE 없이 명시적으로 지우는지 확인
      *
      * 외래키 검사를 끈 상태에서 삭제해도 `page_versions` 에 고아 행이 남지 않아야 한다 —
      * 남는다면 삭제가 외래키 연쇄에 기대고 있다는 뜻이다.

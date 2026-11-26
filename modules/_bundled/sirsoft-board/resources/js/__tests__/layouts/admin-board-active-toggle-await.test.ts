@@ -1,6 +1,6 @@
 /**
  * @file admin-board-active-toggle-await.test.ts
- * @description 게시판 관리 목록 「사용」 스위치가 서버 확정을 기다리는지 잠근다 (#408 브라우저 실측).
+ * @description 게시판 관리 목록 「사용」 스위치가 서버 확정을 기다리는지 잠근다.
  *
  * 결함: 스위치를 누르면 Toggle 이 내부 값을 먼저 뒤집는데, PUT 이 실패(500)하면 `checked`(row.is_active)가 그대로라
  * 스위치가 눌린 쪽으로 남아 DB 값과 화면이 어긋났다(새로고침하면 맞게 돌아옴). 성공 때만 목록을 다시 받아 바꾸는 배선이라,

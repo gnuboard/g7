@@ -6,7 +6,7 @@ import type { OverlayBox, Overlays, PublicOverlayBox } from '../../lib/overlays'
 /** 관리자 폼의 이미지 한 장 (업로드 응답 모양) */
 interface FormImage {
   url?: string;
-  /** 원본 직접 주소 (공개 자산 디스크 행만) — 사용자 화면과 같은 주소로 미리 그린다 (#878) */
+  /** 원본 직접 주소 (공개 자산 디스크 행만) — 사용자 화면과 같은 주소로 미리 그린다 */
   direct_url?: string | null;
   width?: number | null;
   height?: number | null;

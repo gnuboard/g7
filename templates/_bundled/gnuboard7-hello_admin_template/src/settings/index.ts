@@ -1,5 +1,5 @@
 /**
- * gnuboard7-hello_admin_template 설정 화면 묶음 진입 — 학습용 최소 예제 (#434 D28·D30)
+ * gnuboard7-hello_admin_template 설정 화면 묶음 진입 — 학습용 최소 예제
  *
  * 코어가 관리자 화면을 열 때 설치된 템플릿의 설정 화면 묶음(`dist/settings/settings.iife.js`)을 플러그인 묶음처럼 싣는다 —
  * 이 템플릿이 꺼져 있거나 어느 관리자 템플릿이 켜져 있어도. 여기서 설정 화면 부품을 `{템플릿id}.TemplateSettingsScreen` 으로

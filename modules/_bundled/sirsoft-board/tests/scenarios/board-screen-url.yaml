@@ -1,4 +1,4 @@
-feature: 게시판 화면 주소 래퍼 — 알림·검색·사이트맵은 화면 주소 헬퍼, SEO 캐시는 기본 경로 (#792)
+feature: 게시판 화면 주소 래퍼 — 알림·검색·사이트맵은 화면 주소 헬퍼, SEO 캐시는 기본 경로
 
 description: |
   게시판 알림의 글 주소·검색 결과·사이트맵 주소는 코어 ScreenUrl(키 board.index·board.list·board.post)을 거쳐

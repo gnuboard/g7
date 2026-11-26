@@ -1,5 +1,5 @@
 /**
- * 게시판 반응(추천/비추천) 사용자 흐름 — 등록 → 전환 → 해제 (이슈 #525).
+ * 게시판 반응(추천/비추천) 사용자 흐름 — 등록 → 전환 → 해제.
  *
  * 게시글 상세에서 반응 버튼을 눌러 등록하고, 다른 유형으로 전환하고, 같은 유형을 재클릭해
  * 해제하는 흐름을 브라우저에서 확인한다. 각 클릭 후 게시글 데이터소스를 재조회(refetchDataSource)
@@ -31,7 +31,7 @@ const OWN_POST_ID = 19;
 const OWN_POST_PATH = `/board/${SLUG}/${OWN_POST_ID}`;
 const OWN_POST_REACT_API = `**/api/modules/sirsoft-board/boards/${SLUG}/posts/${OWN_POST_ID}/react`;
 
-test.describe('게시판 반응 등록→전환→해제 흐름 (#525)', () => {
+test.describe('게시판 반응 등록→전환→해제 흐름', () => {
   // @scenario case=register_first_like, case=switch_like_to_dislike, case=remove_same_type
   // @effects register_inserts_row_and_increments_count, switch_updates_row_and_adjusts_both_counts, remove_deletes_row_and_decrements_count
   test('추천 등록 → 비추천 전환 → 비추천 해제 시 버튼 하이라이트·개수가 갱신된다', async ({

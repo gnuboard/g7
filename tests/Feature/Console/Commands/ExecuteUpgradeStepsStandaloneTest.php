@@ -725,7 +725,7 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
     private function bindMocks(): array
     {
         $service = Mockery::mock(CoreUpdateService::class);
-        // 종료부의 root 산출물 소유권 정상화(#615 도입)는 모든 경로에서 호출되며 본 테스트의 관심사가
+        // 종료부의 root 산출물 소유권 정상화(도입)는 모든 경로에서 호출되며 본 테스트의 관심사가
         // 아니다 — 기본 허용으로 두어 각 케이스가 자기 단계만 단언하게 한다.
         $service->shouldReceive('normalizeRuntimeOwnershipAfterRootRun')->andReturnNull()->byDefault();
         // 종료부의 빈 격리 디렉토리 청소(7.0.10 도입)도 모든 경로에서 호출된다 — 전용 케이스가

@@ -1,5 +1,5 @@
 /**
- * 마이페이지 「내 정보」 ↔ 「내 정보 수정」 항목 정합 (#599).
+ * 마이페이지 「내 정보」 ↔ 「내 정보 수정」 항목 정합.
  *
  * 요구사항(2026-09-21): 「회원상세보기에 나오는 것은 수정하기 화면에서 모두 수정이 가능해야 한다.
  * 위치도 동일하고 양식도 동일해야 한다. … 관리자만 해당되는 것이 아니다. 사용자도 포함이며」
@@ -30,13 +30,13 @@ const keysIn = (source: string) => [...new Set(source.match(/mypage\.[a-z_0-9.]+
  *
  * 화면 제목과 두 입구(비밀번호 변경·수정하기)는 보기 화면이 수정 화면으로 가는 길이라 수정
  * 화면에 다시 둘 자리가 없다. 결제 통화와 배송 국가의 `edit_hint` 는 그 표시가 보기 화면에 박혀 있던
- * 시절의 예외였다. 지금은 두 값을 확장별 카드가 항목 계약으로 그려 그 키가 화면에 없으므로 목록에서 뺐다(#490).
+ * 시절의 예외였다. 지금은 두 값을 확장별 카드가 항목 계약으로 그려 그 키가 화면에 없으므로 목록에서 뺐다.
  *
  * 회원 탈퇴는 **일부러** 보기 화면에만 둔다. 되돌릴 수 없는 행위라 편집 중인 폼 옆에 두면
  * 저장하려던 손이 그 버튼에 닿는다 — 항목(고칠 값)이 아니라 행위이고, 그 행위의 확인 절차는
  * `_modal_withdraw` 가 따로 소유한다.
  *
- * 보안 카드(#952)의 「모든 기기에서 로그아웃」도 같은 이유로 보기 화면에만 둔다 — 고칠 값이 아니라 즉시 일어나는
+ * 보안 카드의 「모든 기기에서 로그아웃」도 같은 이유로 보기 화면에만 둔다 — 고칠 값이 아니라 즉시 일어나는
  * 행위이고, 확인 절차는 `_modal_logout_all_devices` 가 소유한다.
  */
 const VIEW_ONLY = [
@@ -80,12 +80,12 @@ const groupKeysIn = (source: string): string[] => {
   return keys;
 };
 
-describe('마이페이지 내 정보 보기 ↔ 수정 정합 (#599)', () => {
+describe('마이페이지 내 정보 보기 ↔ 수정 정합', () => {
   // @scenario surface=mypage_profile
   // @effects mypage_profile_view_and_edit_share_field_source
   it('회원 항목은 두 화면이 같은 원천에서 그린다 — 같은 데이터소스, 같은 묶음 계산, 같은 카드', () => {
     // 회원 항목(연락처, 위치, 서명, 자기소개, 운영자 추가 항목)은 화면에 박혀 있지 않고 서버가 준 항목 계약을
-    // 돌며 그린다(#490). 그래서 이 항목들의 정합은 라벨 키가 아니라 「같은 원천을 같은 식으로 묶는가」 로 잠근다.
+    // 돌며 그린다. 그래서 이 항목들의 정합은 라벨 키가 아니라 「같은 원천을 같은 식으로 묶는가」 로 잠근다.
     const fieldSource = (target: any) => (target.data_sources as any[]).find((item) => item.id === 'profileFields');
     expect(fieldSource(viewLayout)?.endpoint).toBe('/api/me/fields');
     expect(fieldSource(editLayout)?.endpoint).toBe(fieldSource(viewLayout)?.endpoint);

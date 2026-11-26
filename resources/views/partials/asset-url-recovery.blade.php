@@ -1,5 +1,5 @@
 {{--
-    자산 URL 모드 자가 복구 — 공용 헬퍼 (이슈 #486 §5)
+    자산 URL 모드 자가 복구 — 공용 헬퍼
 
     실행 코드는 `public/assets/core/js/g7-shell-head.js` 로 옮겼다(#158 — strict CSP
     `script-src 'self'` 에서 인라인 `<script>` 가 실행되지 않아 전 화면이 백지가 됐다).

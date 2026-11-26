@@ -1,6 +1,6 @@
 /**
  * @file shop-coupon-zone.test.tsx
- * @description 쿠폰존 화면 (#952 C) — 비로그인 공개 목록, 로그인 회원 목록, 받기 단추·모두 받기, 빈 목록, 쪽 나누기.
+ * @description 쿠폰존 화면 — 비로그인 공개 목록, 로그인 회원 목록, 받기 단추·모두 받기, 빈 목록, 쪽 나누기.
  *
  * 레이아웃 JSON 의 식을 실제 바인딩 엔진으로 평가한다.
  */
@@ -32,7 +32,7 @@ const grid = load('partials/shop/coupons/_grid.json');
 const toolbar = load('partials/shop/coupons/_toolbar.json');
 const byRef = (root: any, ref: string) => collect(root, (n) => n?.props?.['data-ref'] === ref || n?.id === ref)[0];
 
-describe('쿠폰존 화면 (#952)', () => {
+describe('쿠폰존 화면', () => {
   // @scenario case=coupon_zone_endpoint
   // @effects coupon_zone_endpoint_by_login
   it('공개 주소 하나를 토큰이 있으면 실어 부른다 — 로그인 확인 전후로 주소가 갈리지 않는다', () => {

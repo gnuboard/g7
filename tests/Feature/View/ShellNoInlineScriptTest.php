@@ -37,13 +37,13 @@ class ShellNoInlineScriptTest extends TestCase
         'customAssetsDisabled', 'activeModules', 'activePlugins', 'trustedScriptHosts', 'stateContracts',
         'appConfig', 'consentInitial', 'coreEditorAsset', 'coreDevToolsAsset', 'cache_version', 'assetUrlMode',
         'searchScopes', 'seoTitle',
-        // 7.2.0 — 다크 방식·확장 CSS 덮기·확장 클래스 접두(#816), 개발자 화면 주소(#792)
+        // 7.2.0 — 다크 방식·확장 CSS 덮기·확장 클래스 접두, 개발자 화면 주소
         'colorScheme', 'extensionCssOverrides', 'extensionClassPrefixes', 'customRoutes',
-        // 하위 폴더 배치의 경로 접두사 — 서버 `AssetUrl::basePrefix()` 값(#609)
+        // 하위 폴더 배치의 경로 접두사 — 서버 `AssetUrl::basePrefix()` 값
         'basePath',
-        // 활성 템플릿 공개 설정 — 엔진 `_global.templateSettings`(#434)
+        // 활성 템플릿 공개 설정 — 엔진 `_global.templateSettings`
         'templateSettings',
-        // 템플릿 설정 중 template.json `expose` 선언 키 — 엔진이 첫 화면 전 config API 를 부르지 않는다(#879, 비실행 JSON 블록 안)
+        // 템플릿 설정 중 template.json `expose` 선언 키 — 엔진이 첫 화면 전 config API 를 부르지 않는다(비실행 JSON 블록 안)
         'templateConfig',
     ];
 
@@ -55,15 +55,15 @@ class ShellNoInlineScriptTest extends TestCase
         'customAssetsDisabled', 'activeModules', 'activePlugins', 'trustedScriptHosts', 'stateContracts',
         'appConfig', 'coreEditorAsset', 'coreDevToolsAsset', 'cache_version', 'assetUrlMode',
         'seoTitle',
-        // 7.2.0 — 다크 방식·확장 CSS 덮기·확장 클래스 접두(#816), 개발자 화면 주소(#792)
+        // 7.2.0 — 다크 방식·확장 CSS 덮기·확장 클래스 접두, 개발자 화면 주소
         'colorScheme', 'extensionCssOverrides', 'extensionClassPrefixes', 'customRoutes',
-        // 하위 폴더 배치의 경로 접두사 — 서버 `AssetUrl::basePrefix()` 값(#609)
+        // 하위 폴더 배치의 경로 접두사 — 서버 `AssetUrl::basePrefix()` 값
         'basePath',
-        // 활성 템플릿 공개 설정 — 엔진 `_global.templateSettings`(#434)
+        // 활성 템플릿 공개 설정 — 엔진 `_global.templateSettings`
         'templateSettings',
-        // 템플릿이 공급하는 설정 화면 번들 주소 — 관리자 셸만 싣는다(#434)
+        // 템플릿이 공급하는 설정 화면 번들 주소 — 관리자 셸만 싣는다
         'templateSettingsAssets',
-        // 템플릿 설정 중 template.json `expose` 선언 키(#879)
+        // 템플릿 설정 중 template.json `expose` 선언 키
         'templateConfig',
     ];
 

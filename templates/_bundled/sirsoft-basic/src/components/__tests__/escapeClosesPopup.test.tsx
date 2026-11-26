@@ -1,5 +1,5 @@
 /**
- * 펼친 목록 안 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 (#869 키보드 접근, 사용자 템플릿)
+ * 펼친 목록 안 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 (키보드 접근, 사용자 템플릿)
  *
  * 알림 판, 테마 메뉴, 작성자 메뉴(UserInfo), 검색어 제안은 바깥 클릭으로만 닫혀, 목록 안에서 Esc 를 눌러도 열린 채였다.
  * 이제 Esc 로 닫고 여는 단추로 포커스를 돌린다(검색어 제안은 입력칸에 남는다). 이 Esc 는 바깥으로 번지지 않아 목록을 품은
@@ -36,7 +36,7 @@ const expectContained = () => {
   expect(documentKeyDown.mock.calls.filter(([e]) => (e as KeyboardEvent).key === 'Escape')).toHaveLength(0);
 };
 
-describe('펼친 목록 안 Esc (#869, 사용자 템플릿)', () => {
+describe('펼친 목록 안 Esc (사용자 템플릿)', () => {
   // @scenario element=notification_center
   // @effects escape_inside_popup_closes_and_returns_focus
   it('알림 판: 판 안에서 Esc 로 닫고 종 단추로 돌아간다', () => {

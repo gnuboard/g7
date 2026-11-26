@@ -410,7 +410,7 @@ class ProductReviewService
     }
 
     /**
-     * 회원이 쓴 리뷰 목록을 조회합니다. (마이페이지 내 리뷰, #952)
+     * 회원이 쓴 리뷰 목록을 조회합니다. (마이페이지 내 리뷰)
      *
      * @param  int  $userId  회원 ID
      * @param  int  $perPage  페이지당 항목 수
@@ -439,7 +439,7 @@ class ProductReviewService
      */
     public function saveReply(ProductReview $review, int $adminId, array $data): ProductReview
     {
-        // 같은 서비스의 상태 변경·답변 삭제와 같은 권한 범위 — 범위 밖 운영자가 답변을 다는 것을 막는다 (#952 W8)
+        // 같은 서비스의 상태 변경·답변 삭제와 같은 권한 범위 — 범위 밖 운영자가 답변을 다는 것을 막는다
         $this->assertWithinScope($review, 'sirsoft-ecommerce.reviews.update');
 
         $isUpdate = ! is_null($review->replied_at);
@@ -452,7 +452,7 @@ class ProductReviewService
             'reply_updated_at' => $isUpdate ? now() : null,
         ]);
 
-        // 답변 알림 (#952) — 두 번째 인자가 첫 등록 여부다. 알림은 첫 등록이고 작성자가 회원일 때만 나간다
+        // 답변 알림 — 두 번째 인자가 첫 등록 여부다. 알림은 첫 등록이고 작성자가 회원일 때만 나간다
         HookManager::doAction('sirsoft-ecommerce.product-review.after_reply', $saved, ! $isUpdate);
 
         return $saved;
@@ -491,7 +491,7 @@ class ProductReviewService
 
         return DB::transaction(function () use ($review) {
             // 이미지 파일은 커밋된 뒤에 지운다 — 뒤 단계가 실패해 레코드가 되돌아가면 파일만 사라져 깨진 이미지가 남았다
-            // (StorageTransaction, #883). 행 disk 기준
+            // (StorageTransaction). 행 disk 기준
             foreach ($review->images as $image) {
                 $rowStorage = $this->storageForRow($image->disk);
                 if ($rowStorage->exists('images', $image->path)) {
@@ -514,7 +514,7 @@ class ProductReviewService
     }
 
     /**
-     * 주문 옵션들에 연결된 리뷰를 이미지 파일째 영구 삭제합니다 (개인정보 보유기간 삭제 모드·관리자 주문 삭제, 이슈 #636).
+     * 주문 옵션들에 연결된 리뷰를 이미지 파일째 영구 삭제합니다 (개인정보 보유기간 삭제 모드·관리자 주문 삭제).
      *
      * 회원 후기는 주문 옵션에 묶여 있어 주문을 삭제하면 남을 수 없다. DB CASCADE 에
      * 기대지 않고 명시 삭제하며, 이미지 파일도 함께 지운다(행만 지우면 파일이 고아로 남는다).
@@ -530,7 +530,7 @@ class ProductReviewService
     }
 
     /**
-     * 회원이 쓴 리뷰를 이미지 파일째 영구 삭제합니다 (회원 삭제 정리, #888).
+     * 회원이 쓴 리뷰를 이미지 파일째 영구 삭제합니다 (회원 삭제 정리).
      *
      * 회원 행을 지우기 전에 부른다 — 리뷰는 작성 회원에 묶여 있어 회원이 사라지면 남을 수 없다.
      * 휴지통에 든 리뷰도 함께 지운다. 시스템 삭제라 관리자 스코프 판정을 두지 않는다.
@@ -544,7 +544,7 @@ class ProductReviewService
     }
 
     /**
-     * 상품에 달린 리뷰를 이미지 파일째 영구 삭제합니다 (상품 삭제 정리, #888).
+     * 상품에 달린 리뷰를 이미지 파일째 영구 삭제합니다 (상품 삭제 정리).
      *
      * 주문 이력이 있는 상품은 삭제가 막히므로 실제 대상은 주문 없이 등록한 후기(이관)다.
      * 휴지통에 든 리뷰도 함께 지운다. 상품 삭제 권한 판정은 호출부(상품 서비스)가 이미 했다.
@@ -622,7 +622,7 @@ class ProductReviewService
         HookManager::doAction('sirsoft-ecommerce.product-review.before_bulk_delete', $ids, $reviews);
 
         return DB::transaction(function () use ($reviews, $ids, $snapshots) {
-            // 이미지 파일 일괄 삭제 — 커밋된 뒤에 지운다 (StorageTransaction, #883). 행 disk 기준
+            // 이미지 파일 일괄 삭제 — 커밋된 뒤에 지운다 (StorageTransaction). 행 disk 기준
             foreach ($reviews as $review) {
                 foreach ($review->images as $image) {
                     $rowStorage = $this->storageForRow($image->disk);

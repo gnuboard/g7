@@ -1,5 +1,5 @@
 /**
- * 본문 콘텐츠 규칙 런타임 진입점 (engine-v1.90.0, #883 5단계)
+ * 본문 콘텐츠 규칙 런타임 진입점 (engine-v1.90.0)
  *
  * `G7Core.contentPolicy` 파사드(`initContentPolicyAPI`)와 시험이 {@link getContentPolicyRuntime} 으로 같은 인스턴스를 쓴다.
  */

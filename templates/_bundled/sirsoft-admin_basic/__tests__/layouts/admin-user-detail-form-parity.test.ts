@@ -1,5 +1,5 @@
 /**
- * 관리자 회원 **상세 ↔ 수정** 항목 정합 (#599).
+ * 관리자 회원 **상세 ↔ 수정** 항목 정합.
  *
  * 요구사항(2026-09-21): 「회원상세보기에 나오는 것은 수정하기 화면에서 모두 수정이 가능해야 한다.
  * 위치도 동일하고 양식도 동일해야 한다.」 — 상세를 정본으로 삼아 수정 화면을 맞췄다.
@@ -13,7 +13,7 @@
  * 상세의 이름 칸은 글자다. 고칠 수 있는 값은 입력칸으로, 시스템이 적는 기록값은 같은 자리에
  * 잠근 채로 둔다. 그 판정은 아래 RECORD_ONLY 가 이름으로 적는다.
  *
- * 이름, 닉네임, 연락처, 위치, 서명, 자기소개와 운영자가 추가한 항목은 두 화면 모두 공용 조각이 그린다(#490 6단계) —
+ * 이름, 닉네임, 연락처, 위치, 서명, 자기소개와 운영자가 추가한 항목은 두 화면 모두 공용 조각이 그린다 —
  * 수정 화면은 입력 조각(partials/member/_member_fields), 상세는 보기 조각(partials/member/_member_fields_view).
  * 두 조각은 칸에 같은 id(`field_{키}`)를 주므로, 조각 참조를 실제 조각으로 풀어 놓고 종전과 같은 방법으로 순서를 견준다.
  * 어느 묶음을 어느 자리에 놓는지(반복 원본 식)도 두 화면이 같아야 한다.
@@ -95,7 +95,7 @@ const FORM_ONLY = [
   'field_password_group',
   'field_password',
   'field_password_confirmation',
-  // 본인 계정의 비밀번호를 바꿀 때만 묻는 확인 칸(#736 D19) — 비밀번호처럼 쓰기 전용이다.
+  // 본인 계정의 비밀번호를 바꿀 때만 묻는 확인 칸 — 비밀번호처럼 쓰기 전용이다.
   'field_current_password',
   // 「비밀번호 없이 만들기」(7.2.0 A2t, K11) — 등록 화면에만 있는 생성 방식 선택이라 상세에 짝이 없다.
   'field_create_without_password',
@@ -117,7 +117,7 @@ const RECORD_ONLY = [
   'field_withdrawn_at',
   'field_blocked_at',
   'field_dormant_at',
-  // 비밀번호 구획(#736) — 변경일·만료 예정·변경 요구·연기 종료는 서버가 적는 기록이다(만료 개별 설정만 고친다).
+  // 비밀번호 구획 — 변경일·만료 예정·변경 요구·연기 종료는 서버가 적는 기록이다(만료 개별 설정만 고친다).
   'field_password_changed_at',
   'field_password_expires_at',
   'field_password_change_required',
@@ -131,7 +131,7 @@ const RECORD_ONLY = [
   'field_search_history_site',
 ];
 
-describe('관리자 회원 상세 ↔ 수정 정합 (#599)', () => {
+describe('관리자 회원 상세 ↔ 수정 정합', () => {
   // @scenario surface=admin_user_detail_form
   // @effects admin_user_form_tabs_match_detail_tabs
   it('수정 화면의 탭이 상세와 같은 이름·같은 순서다', () => {

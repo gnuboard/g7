@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * Playwright·Chrome MCP 실측용 휴면 계정 픽스처 커맨드 (이슈 #636 S4).
+ * Playwright·Chrome MCP 실측용 휴면 계정 픽스처 커맨드.
  *
  * 휴면 축은 **시간이 흘러야** 재현되는 상태다. 730일을 기다릴 수 없으므로 마지막 활동
  * 시각과 통지 표지를 직접 심어 각 단계의 화면을 즉시 만들어 낸다. 검증 대상은 날짜 계산이
@@ -194,7 +194,7 @@ class PlaywrightSeedDormant extends Command
 
         // forceFill — `created_at` 은 대량 할당 대상이 아니라 create() 가 **조용히 버리고** 지금 시각을 넣는다.
         // 그러면 「가입한 지 오래된 계정」이 방금 가입한 계정이 되어, 가입 경과를 보는 대상(연간 통지 등)에서
-        // 빠진다(#636 §1-E 실측으로 잡은 결함).
+        // 빠진다(E 실측으로 잡은 결함).
         $user = new User;
         $user->forceFill($attributes)->save();
 

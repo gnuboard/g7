@@ -19,7 +19,7 @@ use Throwable;
  * 이벤트 이름·조건·다중 서버 1대·점검 모드 처리가 `schedule:run` 과 같다.
  *
  * - 30초 주기 행은 호출 1회에 1번만 실행한다(같은 분의 두 번째 슬롯은 다음 호출이 맡는다).
- * - 웹 크론 러너(#609 `app/Scheduling/ScheduleRunner`)와 이름이 겹치지 않도록 이 이름을 쓴다.
+ * - 웹 크론 러너(`app/Scheduling/ScheduleRunner`)와 이름이 겹치지 않도록 이 이름을 쓴다.
  *   그쪽이 Laravel 스케줄러 이벤트 전체를 돌린다면 이 러너를 함께 부르지 않는다(이중 실행).
  */
 class DatabaseScheduleRunner

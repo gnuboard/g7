@@ -23,7 +23,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ContentMediaRepositoryInter
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 
 /**
- * 이커머스 본문 미디어 어댑터 — 코어 골격(`AbstractContentMediaService`)에 저장소·권한을 답한다 (#887)
+ * 이커머스 본문 미디어 어댑터 — 코어 골격(`AbstractContentMediaService`)에 저장소·권한을 답한다
  *
  * 문맥(`ContentMediaContext`)의 문서 종류는 소유 종류 값(`product`·`common_info`), 문서 ID 는 상품·공통 정보 ID 다. 범위(scope)는
  * 쓰지 않는다 — 복제·서빙 범위는 모듈 전체다.

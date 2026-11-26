@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 환불 계좌·환불 수단 게이트 결함 수정 검증 (#599 validate P3 — 06 #10·#11·#12·minor)
+ * 환불 계좌·환불 수단 게이트 결함 수정 검증 (06 #10·#11·#12·minor)
  *
  * 검증 축:
  * - [환불하기] 수단 게이트가 [금액 수정]과 같은 강도다 — 카드 주문의 계좌 수동 환불을 허용한다(#11, 2026-09-23 결정).

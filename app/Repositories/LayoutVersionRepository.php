@@ -123,10 +123,10 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
             // 2. 레이아웃 모델 조회 및 복원 직전 content 보관 (변경 요약 기준)
             $layout = TemplateLayout::findOrFail($layoutId);
             // 버전 행·현재 행 모두 원문 그대로 읽는다 — 캐스트는 `{}` 를 `[]` 로 만들어 복원 한 번으로
-            // 본 행의 빈 객체가 사라진다 (#758)
+            // 본 행의 빈 객체가 사라진다
             $currentContent = LayoutEmptyObjects::rawPreserving($layout);
             // 빈 동작 오류 코드는 편집기 저장 직렬화와 같은 규칙으로 지운다 — 그 규칙 이전에 저장된 버전을
-            // 복원해도 빈 항목이 되살아나 default 와 onError 처리를 가리지 않게 한다 (#869)
+            // 복원해도 빈 항목이 되살아나 default 와 onError 처리를 가리지 않게 한다
             $restoredContent = LayoutErrorHandlingPrune::prune(LayoutEmptyObjects::rawPreserving($versionToRestore));
 
             // 3. 레이아웃을 복원할 content로 업데이트 — lock_version 도 올린다. 복원 직전 화면을 열어 둔

@@ -8,7 +8,7 @@ use Plugins\Sirsoft\Popup\Models\PopupImage;
 use Plugins\Sirsoft\Popup\Tests\PluginTestCase;
 
 /**
- * 팝업 이미지의 직접 주소(`directUrl()`)가 행 disk 를 따르는지 고정한다 (#878).
+ * 팝업 이미지의 직접 주소(`directUrl()`)가 행 disk 를 따르는지 고정한다.
  *
  * 공개 자산 디스크(public·CDN)에 올린 행은 원본 한 장을 PHP 를 거치지 않는 직접 주소로 내고, 기본(플러그인) 디스크
  * 행·고아 디스크 행·비어 있는 행은 null 이라 화면이 공개 API 주소로 받는다. 직접 주소는 설정이 아니라 **행 disk** 로

@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * 코어 첨부 다운로드의 판정 필터와 비활성 확장 규칙 (#887)
+ * 코어 첨부 다운로드의 판정 필터와 비활성 확장 규칙
  *
  * 코어 공개 다운로드(`GET /api/attachment/{hash}` → `AttachmentService::getFileInfo`·`download`)는 확장을 모른다. 행을 만든 확장이
  * 필터 `core.attachment.filter_can_download` 로 원 리소스 열람 권한을 답한다 — `null`(의견 없음)=기존 흐름, `false`=403,

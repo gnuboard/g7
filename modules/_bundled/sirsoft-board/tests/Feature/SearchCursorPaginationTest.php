@@ -10,7 +10,7 @@ use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 게시판 검색의 커서(키셋) 전환 회귀 테스트 (#519)
+ * 게시판 검색의 커서(키셋) 전환 회귀 테스트
  *
  * 깊은 페이지를 OFFSET 으로 훑으면 건너뛸 행을 실제로 읽어야 한다. 최신순처럼 실제 컬럼
  * 기준 정렬은 커서로 넘겨 그 비용을 없애고, 관련도순은 계산값 정렬이라 offset 을 유지한다.

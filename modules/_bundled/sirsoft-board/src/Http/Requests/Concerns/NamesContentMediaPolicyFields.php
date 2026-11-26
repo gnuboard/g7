@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Board\Http\Requests\Concerns;
 use App\Enums\ContentMediaKind;
 
 /**
- * 본문 미디어 정책(`content_media_policy`) 하위 칸의 검증 표시명(:attribute)을 만듭니다 (#883).
+ * 본문 미디어 정책(`content_media_policy`) 하위 칸의 검증 표시명(:attribute)을 만듭니다.
  *
  * 정책 규칙은 코어 `ContentMediaPolicyRules::settingsRules()` 가 미디어 종류(이미지·동영상·오디오)마다
  * 칸을 펼쳐 만든다. 요청이 이름을 주지 않으면 기본 문구에 「override values.content media policy.max per

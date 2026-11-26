@@ -1,5 +1,5 @@
 /**
- * E2E: 사용자 화면 입력칸의 접근 가능한 이름 (#757)
+ * E2E: 사용자 화면 입력칸의 접근 가능한 이름
  *
  * 결함: 사용자 템플릿에는 곁 라벨 자동 연결이 없어, 레이아웃이 이름을 달지 않은 선택칸·체크박스가 화면 낭독기에서
  *   「콤보 상자」「체크박스」로만, 목록형 선택칸(options 모드)은 고른 값만(「제목+내용, 단추」) 읽혔다.
@@ -101,7 +101,7 @@ async function openAsMember(page: Page, path: string, token: string = issueScope
   await dismissCookieBanner(page);
 }
 
-test.describe('#757 사용자 화면 입력칸 이름', () => {
+test.describe('사용자 화면 입력칸 이름', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
   });
@@ -144,7 +144,7 @@ test.describe('#757 사용자 화면 입력칸 이름', () => {
   /**
    * 회원정보 수정 — 보이는 제목(국가·언어·시간대)이 목록형 단추 이름의 앞부분이 된다.
    *
-   * 칸 제목은 회원 항목의 이름이라 운영자가 환경설정 > 회원에서 바꿀 수 있다(#490 — 종전의 고정 문구 「휴대폰 번호」는 이제
+   * 칸 제목은 회원 항목의 이름이라 운영자가 환경설정 > 회원에서 바꿀 수 있다(종전의 고정 문구 「휴대폰 번호」는 이제
    * 항목 이름 「휴대폰」이다). 그래서 제목을 박지 않고 그 회원의 항목 계약(`GET /api/me/fields`)에서 읽어 대조한다.
    *
    * @scenario surface=user_layout

@@ -906,7 +906,7 @@ class OrderRepository implements OrderRepositoryInterface
     }
 
     /**
-     * 결제수단 필터 조건 묶음 하나를 결제 행 쿼리에 겁니다. (#933)
+     * 결제수단 필터 조건 묶음 하나를 결제 행 쿼리에 겁니다.
      *
      * `NOT_EASY(pg, 목록) = (pg_provider <> pg OR embedded_pg_provider IS NULL OR embedded_pg_provider NOT IN 목록)` —
      * 활성 간편결제 별칭이 찾는 주문을 코어 값·비간편결제 별칭 결과에서 뺀다. `pg_provider` 는 NOT NULL 컬럼이다.
@@ -1097,7 +1097,7 @@ class OrderRepository implements OrderRepositoryInterface
         // 결제수단 필터
         //
         // 서비스·내보내기 유형이 선택 id 를 결제 행 조건 묶음(`_payment_method_clauses`, PaymentMethodResolver::orderListFilterClauses)으로
-        // 풀어 넘기면 그 묶음의 OR 로 찾는다 — PG 별칭(toss_kakaopay)은 코어 값(card)으로 저장돼 id 로는 찾을 수 없다 (#933).
+        // 풀어 넘기면 그 묶음의 OR 로 찾는다 — PG 별칭(toss_kakaopay)은 코어 값(card)으로 저장돼 id 로는 찾을 수 없다.
         // 묶음이 없으면(대시보드 등 서비스를 거치지 않는 경로) 종전처럼 id 를 그대로 찾는다.
         $clauses = array_values(array_filter(
             is_array($filters['_payment_method_clauses'] ?? null) ? $filters['_payment_method_clauses'] : [],

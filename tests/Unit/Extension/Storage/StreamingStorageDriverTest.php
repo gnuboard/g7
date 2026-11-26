@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * 코어 저장소 드라이버 셋의 스트림 계약 (#883 3단계)
+ * 코어 저장소 드라이버 셋의 스트림 계약
  *
  * 큰 파일(동영상)을 메모리에 통째로 올리지 않고 옮기고(파일 보상 도구), 일부 구간만 내보내려고(Range 서빙) 둔 계약이다.
  * 모든 경로는 기존 경로 가드를 거친다.

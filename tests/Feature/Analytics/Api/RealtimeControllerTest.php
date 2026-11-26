@@ -102,7 +102,7 @@ class RealtimeControllerTest extends AnalyticsApiTestCase
     }
 
     /**
-     * 현재 접속자 행이 국가·기기 코드에 사람이 읽을 이름을 붙이는지 확인합니다(#682 S4 라운드 8).
+     * 현재 접속자 행이 국가·기기 코드에 사람이 읽을 이름을 붙이는지 확인합니다.
      *
      * @return void 없음
      *
@@ -157,7 +157,7 @@ class RealtimeControllerTest extends AnalyticsApiTestCase
     {
         // 계획서 §4.10 은 현재 접속자 표에 「privacy 권한이면 IP 열 + 프로필 링크」를 적었다.
         // 이름·uuid 가 응답에 없으면 화면이 링크를 만들 수 없어, 지금 접속 중인 회원을 찾아도
-        // 회원 목록에서 다시 뒤져야 한다(#682 S3 라운드 6).
+        // 회원 목록에서 다시 뒤져야 한다.
         $member = User::factory()->create(['name' => '지금 보고 있는 회원']);
         $this->visit(['user_id' => $member->id, 'visitor_type' => 'member']);
 

@@ -102,7 +102,7 @@ test.describe('확장 목록 — 보기 전환', () => {
     await gotoList(page, extensionReadToken, '/admin/plugins', 'plugin_card_grid');
 
     // 열 수는 컨테이너 폭으로 정한다(카드 250 + 간격 16) — 사이드바가 열린 1100px 은 그리드 폭이 732px 라
-    // 3열(782px)에 못 미쳐 2열이 맞다. 3열 표본은 컴포넌트 실측표(1280 → 3)를 따른다(#703 재측정).
+    // 3열(782px)에 못 미쳐 2열이 맞다. 3열 표본은 컴포넌트 실측표(1280 → 3)를 따른다(재측정).
     for (const [width, expected] of [[1440, 4], [1280, 3], [834, 2], [390, 1]] as const) {
       await page.setViewportSize({ width, height: 900 });
       await expect
@@ -170,7 +170,7 @@ test.describe('확장 목록 — 보기 전환', () => {
   });
 });
 
-test.describe('확장 목록 — 스위치 재동기와 숨김 항목 (#703)', () => {
+test.describe('확장 목록 — 스위치 재동기와 숨김 항목', () => {
   test.setTimeout(90_000);
 
   // 서버에는 아무 것도 바꾸지 않는다 — 끄기 요청을 가로채 409(의존 충돌)를 돌려준다.
@@ -226,7 +226,7 @@ test.describe('확장 목록 — 스위치 재동기와 숨김 항목 (#703)', (
     await checkbox.click();
     expect(new URL((await request).url()).searchParams.get('include_hidden')).toBe('1');
 
-    // 체크 값은 주소에 실린다 — 화면 상태에 두면 페이지를 넘길 때 풀려 2페이지를 숨김 없이 받았다(#703 실측).
+    // 체크 값은 주소에 실린다 — 화면 상태에 두면 페이지를 넘길 때 풀려 2페이지를 숨김 없이 받았다.
     await expect(page).toHaveURL(/include_hidden=1/);
     const reload = page.waitForRequest((r) => /\/api\/admin\/modules\?/.test(r.url()));
     await page.reload();
@@ -284,7 +284,7 @@ test.describe('확장 목록 — 스위치 재동기와 숨김 항목 (#703)', (
   });
 
   // 언어팩도 같은 격자·같은 재동기 신호를 쓴다. 꺼진 팩을 켜는 요청을 가로채 409(같은 로케일 자리 충돌)를
-  // 돌려주고 고르는 창을 닫는다 — 환경설정 언어팩 탭은 이 창을 싣지 않아 아무 것도 뜨지 않았다(#703 실측).
+  // 돌려주고 고르는 창을 닫는다 — 환경설정 언어팩 탭은 이 창을 싣지 않아 아무 것도 뜨지 않았다.
   // @scenario screen=settings_language_packs_tab, view=gallery, install_state=inactive
   // @effects toggle_resyncs_to_server_value_on_refetch
   test('P10 — 언어팩 자리 충돌 창을 취소하면 스위치가 서버 값(꺼짐)으로 돌아온다', async ({ page, extensionReadToken }) => {

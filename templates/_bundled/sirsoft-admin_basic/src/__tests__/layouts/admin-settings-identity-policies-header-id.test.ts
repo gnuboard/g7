@@ -1,7 +1,7 @@
 // e2e:allow 노드 id 이름 바꾸기만 하는 정적 레이아웃 계약 — 화면 DOM id 중복 0 은 코어 크롤 E2E(all-routes-dom-id-unique.spec.ts)와 Chrome MCP 실측이 잰다
 /**
  * @file admin-settings-identity-policies-header-id.test.ts
- * @description 코어 환경설정 「본인인증」 탭의 정책 구획 머리 노드 id (#408)
+ * @description 코어 환경설정 「본인인증」 탭의 정책 구획 머리 노드 id
  *
  * @scenario-manifest tests/scenarios/screen-dom-id-unique-408.yaml
  *

@@ -1,4 +1,4 @@
-feature: 모듈 선언 본인인증 정책 「기본값으로 되돌리기」 (7.2.1 Fixed, #952 검증 중 발견)
+feature: 모듈 선언 본인인증 정책 「기본값으로 되돌리기」 (7.2.1 Fixed)
 
 description: |
   source_type=module 정책의 필드를 되돌리면 그 모듈의 getIdentityPolicies() 선언값으로 복원되고 user_overrides 에서 빠지는지 잰다.

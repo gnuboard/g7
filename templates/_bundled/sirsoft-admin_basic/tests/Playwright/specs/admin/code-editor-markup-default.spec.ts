@@ -1,5 +1,5 @@
 /**
- * sirsoft-admin_basic — 코드 편집기 HTML(.g7.html) 기본화 (#476)
+ * sirsoft-admin_basic — 코드 편집기 HTML(.g7.html) 기본화
  *
  * 코드 편집기의 정본이 JSON 에서 HTML(`.g7.html`) 로 바뀌었다. DB 는 JSON 만 두고, 열 때 역변환
  * (`?with_markup=1`)·저장할 때 프로덕션 컴파일(`format=markup`)이며, JSON 탭은 읽기 전용 산출물이다.
@@ -58,7 +58,7 @@ async function openSandboxEditor(page: Page, token: string): Promise<void> {
   await authenticatePage(page, token);
   await page.goto(EDITOR_URL);
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
-  // 좌측 목록은 `role="tree"` 파일 트리다(#476) — 고정 폭 카드가 아니라 트리가 뜨는 것이 진입 신호다.
+  // 좌측 목록은 `role="tree"` 파일 트리다 — 고정 폭 카드가 아니라 트리가 뜨는 것이 진입 신호다.
   await page.waitForSelector('[role="tree"] [role="treeitem"]', { timeout: 30_000 });
   await expect(page.locator('#editor_card').getByText('e2e_sandbox.g7.html')).toBeVisible({ timeout: 30_000 });
   // Monaco 동봉본 첫 로드가 느린 환경이 있다 — 편집기 마운트만 넉넉히 기다린다(그 뒤 단언은 기본 타임아웃).
@@ -84,7 +84,7 @@ async function setMarkup(page: Page, markup: string): Promise<void> {
 /**
  * 지금 **편집기에 붙어 있는** HTML 모델의 본문을 읽습니다.
  *
- * `getModels()` 에서 첫 html 모델을 고르면 안 된다 — #476 이후 편집기는 **파일마다 모델을
+ * `getModels()` 에서 첫 html 모델을 고르면 안 된다 — 코드 편집기 개편 이후 편집기는 **파일마다 모델을
  * 따로** 잡고(`<Editor path>`), 앞서 연 파일의 모델이 그대로 살아 있다. 그래서 확장 조각으로
  * 갈아탄 뒤에도 첫 모델(직전 레이아웃)이 잡혀 «바뀌지 않았다» 로 보인다
  * (실측 2026-09-12: 조각을 열었는데 `<layout name="e2e_sandbox"` 가 읽혔다).
@@ -122,14 +122,14 @@ test.describe('@sirsoft-admin_basic 코드 편집기 HTML 기본화', () => {
         firstLine: html?.getLineContent?.(1) ?? '',
         jsonPaneHidden: (document.querySelector('#json_editor_pane')?.className ?? '').includes('hidden'),
         markupPane: !!document.querySelector('#markup_editor_pane'),
-        // 트리 행은 **마지막 세그먼트만** 보여 주고 전체 경로는 title 로 남긴다(#476).
+        // 트리 행은 **마지막 세그먼트만** 보여 주고 전체 경로는 title 로 남긴다.
         // `.json` 표기가 화면에 남았는지는 헤더 표기로 본다.
         headerLabels: [...document.querySelectorAll('#editor_card span')].map((e) => e.textContent ?? ''),
       };
     });
 
     expect(state.markupPane).toBe(true);
-    // JSON 탭은 **언마운트하지 않고 덮는다**(#476) — 지우면 편집 버퍼와 Monaco 모델이 함께 날아간다.
+    // JSON 탭은 **언마운트하지 않고 덮는다** — 지우면 편집 버퍼와 Monaco 모델이 함께 날아간다.
     // 그래서 존재 여부가 아니라 `hidden` 여부로 본다.
     expect(state.jsonPaneHidden, 'JSON 탭은 활성 전에는 감춰져 있다').toBe(true);
     expect(state.languages).toContain('html');

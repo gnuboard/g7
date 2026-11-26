@@ -47,7 +47,7 @@
 
 | 경로 | 서명 파일을 얻는 곳 |
 | --- | --- |
-| 모듈·플러그인·템플릿 GitHub 설치(관리자 화면) | 태그 릴리스 자산 `{base}.zip` + `{base}.zip.sig.json` |
+| 모듈·플러그인·템플릿 GitHub 설치(관리자 화면) | 태그 릴리스 자산 `{base}.zip` + `{base}.sig.json` (옛 이름 `{base}.zip.sig.json` 도 읽음) |
 | 모듈·플러그인·템플릿 수동 ZIP 업로드(관리자 화면) | 업로드 창의 선택 칸 「서명 파일」(`signature`) |
 | 모듈·플러그인·템플릿 업데이트 — GitHub(화면·`{type}:update`) | 태그 릴리스 자산 |
 | 모듈·플러그인·템플릿 업데이트 — `{type}:update --zip=` | `--signature=` 로 준 파일, 생략하면 ZIP 옆 `<zip>.sig.json` |
@@ -168,7 +168,8 @@ key_id = {label 소문자}:{sha256(raw 공개키 32바이트) 의 앞 16 hex}
 | 항목 | 규칙 |
 | --- | --- |
 | ZIP 이름 | `{identifier}-{version}.zip` (코어는 `g7-{version}.zip`) |
-| 서명 파일 이름 | ZIP 이름 뒤에 `.sig.json` (`sirsoft-board-1.3.0.zip.sig.json`) |
+| 서명 파일 이름 | 릴리스 자산은 `{base}.sig.json` (`sirsoft-board-1.3.0.sig.json`). 로컬 ZIP 옆 서명은 `{zip}.sig.json` 과 `{base}.sig.json` 둘 다 자동 인식 |
+| 7.2.0 호환 | 릴리스에 `{base}.zip` + `{base}.zip.sig.json` 짝을 올리지 않는다 — 7.2.0 이하 업데이터가 그 짝을 받다가 「서명 형식을 알 수 없음」으로 실패한다. `{base}.sig.json` 이면 7.2.0 은 미서명 zipball 로 진행하고 7.2.1 이상은 서명을 검증한다 |
 | ZIP 안 | 루트 디렉터리 하나 `{identifier}-{version}/` 아래에 패키지 파일. manifest(`module.json`·`plugin.json`·`template.json`·`language-pack.json`)는 그 바로 아래 |
 
 GitHub 릴리스에서는 두 자산이 **짝으로** 있어야 서명된 패키지로 봅니다. `{identifier}-{version}.zip` 짝을 먼저 찾고, 식별자를

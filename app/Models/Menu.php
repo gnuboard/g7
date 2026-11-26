@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\DB;
  * `syncMenu()` 경로에서 필드 단위로 보존됩니다.
  *
  * `icon` 은 FA 클래스 문자열 또는 구조형 JSON(image·svg) 정규형으로 저장한다 — 모든 쓰기가 뮤테이터로
- * `MenuIconSpec::canonicalize()` 를 거치므로 같은 뜻이면 바이트가 같다(#381). 응답 출력은 반드시
+ * `MenuIconSpec::canonicalize()` 를 거치므로 같은 뜻이면 바이트가 같다. 응답 출력은 반드시
  * `MenuIconPresenter` 를 거친다(원문은 JSON 문자열일 수 있다).
  */
 class Menu extends Model
@@ -53,7 +53,7 @@ class Menu extends Model
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
         'url' => ['label_key' => 'activity_log.fields.url', 'type' => 'text'],
-        // display: SVG 코드(최대 32KB)를 로그에 통째로 쌓지 않도록 요약값으로 기록 (#381)
+        // display: SVG 코드(최대 32KB)를 로그에 통째로 쌓지 않도록 요약값으로 기록
         'icon' => ['label_key' => 'activity_log.fields.icon', 'type' => 'text', 'display' => [MenuIconSpec::class, 'activityLogSummary']],
         'parent_id' => ['label_key' => 'activity_log.fields.parent_id', 'type' => 'number'],
         'order' => ['label_key' => 'activity_log.fields.order', 'type' => 'number'],

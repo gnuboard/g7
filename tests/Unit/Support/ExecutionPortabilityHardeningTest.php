@@ -117,7 +117,7 @@ class ExecutionPortabilityHardeningTest extends TestCase
 
         $this->assertTrue(
             $result['valid'],
-            'stat 이 못 보는 경로를 exec 결과 확인 전에 버렸다 (open_basedir 회귀 #361 와 같은 형태)'
+            'stat 이 못 보는 경로를 exec 결과 확인 전에 버렸다 (open_basedir 회귀와 같은 형태)'
         );
     }
 

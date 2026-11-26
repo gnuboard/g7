@@ -174,7 +174,7 @@ class ScheduleRegistrarTest extends TestCase
     }
 
     /**
-     * 생존 신호 이벤트가 매분 등록되고, 등록기는 `schedule:` 이벤트만 관리 대상으로 본다(#609 계약 ⓐⓑ).
+     * 생존 신호 이벤트가 매분 등록되고, 등록기는 `schedule:` 이벤트만 관리 대상으로 본다(계약 ⓐⓑ).
      *
      * @scenario trigger=scheduled
      *

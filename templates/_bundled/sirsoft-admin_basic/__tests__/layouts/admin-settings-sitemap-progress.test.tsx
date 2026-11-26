@@ -123,7 +123,7 @@ describe('_tab_seo — sitemap 진행상황 표시 UI', () => {
     expect(block.if).toContain('failed');
   });
 
-  // 엔진은 노드 최상위 classMap 만 읽는다 — props.classMap 은 무시돼 배지 색이 한 번도 칠해지지 않았다(#703).
+  // 엔진은 노드 최상위 classMap 만 읽는다 — props.classMap 은 무시돼 배지 색이 한 번도 칠해지지 않았다.
   // @scenario trigger=admin, regen_mode=full, realtime=reverb_off
   // @effects progress_recorded_per_phase
   it('상태 배지 classMap 이 5개 상태 variant 를 모두 정의한다', () => {

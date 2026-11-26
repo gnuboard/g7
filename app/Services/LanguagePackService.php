@@ -202,7 +202,7 @@ class LanguagePackService
      * 각 팩에 드리프트 파생 플래그 `files_missing` 와 복구 가능 여부 `bundled_source_available` 를 부여합니다.
      *
      * `files_missing` 은 DB 에 active 로 기록됐으나 설치본 디렉토리가 실재하지 않는 행을 표면화하기 위한 것으로,
-     * 이 상태의 팩은 런타임에 오류 없이 base locale 로 조용히 폴백한다(이슈 #496 의 드리프트 증상).
+     * 이 상태의 팩은 런타임에 오류 없이 base locale 로 조용히 폴백한다(드리프트 증상).
      *
      * `bundled_source_available` 은 그 팩을 `lang-packs/_bundled/` 소스로 재설치해 복구할 수 있는지를 나타낸다.
      * 설치 경로(source_type)가 아니라 **번들 소스의 실재 여부**로 판정하므로, github/url/zip 으로 설치된 팩이라도
@@ -762,7 +762,7 @@ class LanguagePackService
      * 언어팩의 합집합을 반환하여 코어 기본 로케일이 누락되지 않도록
      * 합니다. 언어팩 설치/활성화 직후 사용자 UI 갱신용으로 사용됩니다.
      *
-     * 활성 코어 언어팩은 부팅에서 레지스트리가 이미 읽어 둔 메모를 쓴다 — DB 를 다시 조회하지 않는다(#860).
+     * 활성 코어 언어팩은 부팅에서 레지스트리가 이미 읽어 둔 메모를 쓴다 — DB 를 다시 조회하지 않는다.
      * 활성화·비활성화·제거는 `LanguagePackRegistry::invalidate()` 로 그 메모를 비운다.
      *
      * @return array<int, string> 로케일 문자열 배열
@@ -2293,7 +2293,7 @@ class LanguagePackService
             // Updating: 설치 트랜잭션 이전에 실패한 경우.
             // Installed: 설치 트랜잭션이 installed 를 기록한 뒤(활성화 단계 이전/도중) 실패한 경우 —
             //   여기서 복원하지 않으면 active 였던 팩이 installed 로 방치되어 해당 로케일의
-            //   백엔드 번역이 오류·로그 없이 통째로 폴백된다 (#597 보완 실측에서 유사 상태 실측).
+            //   백엔드 번역이 오류·로그 없이 통째로 폴백된다 (보완 실측에서 유사 상태 실측).
             //   활성화가 성공적으로 끝난 뒤(active) 실패한 경우는 덮어쓰지 않는다.
             try {
                 $current = $this->repository->findByIdentifier($identifier);

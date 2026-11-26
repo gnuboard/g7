@@ -153,7 +153,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   }, []);
 
   /**
-   * 메뉴의 화면 이동 주소 — 사용자 uuid 가 있을 때만 링크로 그린다(#757). 없으면 종전처럼 단추·클릭 영역.
+   * 메뉴의 화면 이동 주소 — 사용자 uuid 가 있을 때만 링크로 그린다. 없으면 종전처럼 단추·클릭 영역.
    */
   const userUuid = typeof user?.uuid === 'string' && user.uuid !== '' ? user.uuid : null;
   const userDetailLink = userUuid ? resolveLinkHref(`/admin/users/${userUuid}`) : null;
@@ -251,7 +251,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   };
 
   return (
-    // 메뉴 안 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혔다(#869)
+    // 메뉴 안 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혔다
     <Div ref={profileRef} className={dropdownOnly ? `absolute inset-0 ${className}` : `relative ${className}`} id={id} {...editorAttrs} onKeyDown={escapeToClose(showProfileMenu, () => setShowProfileMenu(false), menuTriggerRef)}>
       <Button
         ref={menuTriggerRef}
@@ -293,7 +293,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
       {/* 프로필 드롭다운 */}
       {showProfileMenu && (
         <Div className={`absolute ${dropdownDirection === 'down' ? 'top-full mt-2' : 'bottom-full mb-2'} ${dropdownOnly ? 'right-0 w-72' : 'left-0 w-full'} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50`}>
-          {/* 사용자 정보 — 주소가 있으면 링크(가운데 클릭·Ctrl+클릭 새 탭, #757). 보통 클릭은 종전처럼 SPA 이동 */}
+          {/* 사용자 정보 — 주소가 있으면 링크(가운데 클릭·Ctrl+클릭 새 탭). 보통 클릭은 종전처럼 SPA 이동 */}
           {userDetailLink ? (
             <a
               href={sitePath(userDetailLink.href)}
@@ -308,7 +308,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             <Div
               className={`px-4 py-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${FOCUS_VISIBLE_RING}`}
               onClick={openUserDetail}
-              // 주소 링크가 없을 때의 내 정보 칸 — 키보드로도 회원 상세로 간다(#869 키보드 접근)
+              // 주소 링크가 없을 때의 내 정보 칸 — 키보드로도 회원 상세로 간다(키보드 접근)
               {...keyboardActivationProps(openUserDetail)}
             >
               {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (#143) */}
@@ -319,7 +319,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
           {/* 언어 선택은 헤더 독립 버튼으로 일원화(드롭다운에서 제거) — 유저 템플릿 패리티(H-T7).
               languageText/availableLocales props 는 하위호환을 위해 유지하되 더 이상 사용하지 않는다. */}
           <Div className="py-2">
-            {/* 프로필 설정 — 주소가 있으면 링크(#757). 보통 클릭은 종전처럼 onProfileClick 또는 SPA 이동 */}
+            {/* 프로필 설정 — 주소가 있으면 링크. 보통 클릭은 종전처럼 onProfileClick 또는 SPA 이동 */}
             {profileEditLink ? (
               <a
                 href={sitePath(profileEditLink.href)}

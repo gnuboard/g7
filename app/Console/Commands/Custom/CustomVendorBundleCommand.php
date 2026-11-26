@@ -8,7 +8,7 @@ use App\Extension\Vendor\VendorBundler;
 use Illuminate\Console\Command;
 
 /**
- * 개발자 전용 composer(`custom/`)의 vendor 를 custom/vendor-bundle.zip 으로 빌드합니다 (#792).
+ * 개발자 전용 composer(`custom/`)의 vendor 를 custom/vendor-bundle.zip 으로 빌드합니다.
  *
  * composer 를 쓸 수 없는 서버는 이 묶음을 올려 두면 설치·코어 업데이트가 풀어 준다.
  *

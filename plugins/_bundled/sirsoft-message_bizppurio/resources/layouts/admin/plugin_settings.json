@@ -71,7 +71,7 @@
                 "page": "{{query.bz_page ?? 1}}",
                 "per_page": 20
             },
-            "comment": "비즈뿌리오 알림 템플릿 DB 목록(#597 §4.3). 필터·검색·페이지는 URL 쿼리 SSoT(bz_status/bz_search/bz_page)."
+            "comment": "비즈뿌리오 알림 템플릿 DB 목록. 필터·검색·페이지는 URL 쿼리 SSoT(bz_status/bz_search/bz_page)."
         },
         {
             "id": "templates_readiness",
@@ -1818,7 +1818,7 @@
                                 ]
                             },
                             {
-                                "comment": "비즈뿌리오 알림 템플릿 관리(#597 §4.3) — DB 목록(정의 라벨 조인). 필터·검색·페이지는 URL 쿼리(bz_status/bz_search/bz_page, mergeQuery 왕복 규약). 행 액션은 알림 설정 탭 행 하단과 동일 의미(작성 모달·SMS 모달·승인취소·삭제 공유).",
+                                "comment": "비즈뿌리오 알림 템플릿 관리 — DB 목록(정의 라벨 조인). 필터·검색·페이지는 URL 쿼리(bz_status/bz_search/bz_page, mergeQuery 왕복 규약). 행 액션은 알림 설정 탭 행 하단과 동일 의미(작성 모달·SMS 모달·승인취소·삭제 공유).",
                                 "id": "templates_manage_view",
                                 "type": "basic",
                                 "name": "Div",
@@ -2902,7 +2902,7 @@
     },
     "modals": [
         {
-            "comment": "알림톡 템플릿 작성/신청 모달(#597 §4.2, 3면+플러그인 관리 화면 공유). 값은 _global.bz_tpl_modal 에 담는다(모달 컨텍스트 분리). content 는 kapi 등록 페이로드 필드 그대로이며, 유형 전환 잔여 필드는 서버(FormRequest)가 정돈한다. 신규/기존 분기는 id 유무의 저장 버튼 if 2벌(POST/PUT)로 처리한다.",
+            "comment": "알림톡 템플릿 작성/신청 모달(3면+플러그인 관리 화면 공유). 값은 _global.bz_tpl_modal 에 담는다(모달 컨텍스트 분리). content 는 kapi 등록 페이로드 필드 그대로이며, 유형 전환 잔여 필드는 서버(FormRequest)가 정돈한다. 신규/기존 분기는 id 유무의 저장 버튼 if 2벌(POST/PUT)로 처리한다.",
             "id": "modal_bizppurio_template",
             "type": "composite",
             "name": "Modal",
@@ -5045,7 +5045,7 @@
             }
         },
         {
-            "comment": "대체 SMS/SMS 단독 본문 편집 모달(#597 §4.1). 값은 _global.bz_sms_modal, 저장은 delivery upsert(행 없으면 draft 생성). #{var} 치환 규칙은 알림톡 본문과 동일.",
+            "comment": "대체 SMS/SMS 단독 본문 편집 모달. 값은 _global.bz_sms_modal, 저장은 delivery upsert(행 없으면 draft 생성). #{var} 치환 규칙은 알림톡 본문과 동일.",
             "id": "modal_bizppurio_sms",
             "type": "composite",
             "name": "Modal",
@@ -5289,7 +5289,7 @@
             }
         },
         {
-            "comment": "승인 취소 경고 확인 모달(#597 §3.2). 확정 시 kapi cancel_approval → draft 복귀 — status 가 approved 를 벗어나는 즉시 발송 게이트가 차단된다(대체 SMS 는 sms 채널 규칙으로 계속). 취소 후 상세를 받아 작성 모달을 이어서 연다.",
+            "comment": "승인 취소 경고 확인 모달. 확정 시 kapi cancel_approval → draft 복귀 — status 가 approved 를 벗어나는 즉시 발송 게이트가 차단된다(대체 SMS 는 sms 채널 규칙으로 계속). 취소 후 상세를 받아 작성 모달을 이어서 연다.",
             "id": "modal_bizppurio_cancel_approval",
             "type": "composite",
             "name": "Modal",
@@ -5422,7 +5422,7 @@
             ]
         },
         {
-            "comment": "반려 사유 열람 모달(#597 §4.1). kapi detail 의 comments 스냅샷(inspection_detail) 원문을 그대로 보여준다.",
+            "comment": "반려 사유 열람 모달. kapi detail 의 comments 스냅샷(inspection_detail) 원문을 그대로 보여준다.",
             "id": "modal_bizppurio_rejection",
             "type": "composite",
             "name": "Modal",
@@ -5500,7 +5500,7 @@
             }
         },
         {
-            "comment": "템플릿 삭제 확인 모달(#597 §3.2 DELETE). 카카오측 코드는 삭제 가능 상태(R+REG/REJ)일 때만 동반 삭제되며, 그 외에는 DB 행만 삭제되고 사유가 응답에 실린다.",
+            "comment": "템플릿 삭제 확인 모달. 카카오측 코드는 삭제 가능 상태(R+REG/REJ)일 때만 동반 삭제되며, 그 외에는 DB 행만 삭제되고 사유가 응답에 실린다.",
             "id": "modal_bizppurio_delete",
             "type": "composite",
             "name": "Modal",

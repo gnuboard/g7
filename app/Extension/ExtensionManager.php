@@ -409,7 +409,7 @@ class ExtensionManager
             File::makeDirectory($dir, 0755, true);
         }
 
-        // 파일 저장 — 제자리에 덮어쓰지 않는다. 쓰는 사이 다른 요청이 반쯤 쓰인 파일을 읽었다(#882).
+        // 파일 저장 — 제자리에 덮어쓰지 않는다. 쓰는 사이 다른 요청이 반쯤 쓰인 파일을 읽었다.
         // 임시 파일에 다 쓴 뒤 바꿔 끼운다.
         AtomicBootstrapCache::write($this->autoloadFilePath, $content);
 
@@ -2405,7 +2405,7 @@ PHP;
 
         [$owner, $repo] = [$matches[1], $matches[2]];
         $tempDir = storage_path('app/temp/'.$type.'_update_'.uniqid());
-        // 부모 storage/app/temp 소유권까지 맞춘다 — sudo 코어 업데이트가 최초 생성자면 root 로 굳는다(#651)
+        // 부모 storage/app/temp 소유권까지 맞춘다 — sudo 코어 업데이트가 최초 생성자면 root 로 굳는다
         ExtensionPendingHelper::ensureUpdateTempDirectory($tempDir);
 
         try {

@@ -6,7 +6,7 @@ use App\Extension\Traits\ValidatesLayoutFiles;
 use Tests\TestCase;
 
 /**
- * 레이아웃 검증 실패 문구 테스트 (#712 W1 · F1a).
+ * 레이아웃 검증 실패 문구 테스트.
  *
  * 7.1.0 실측에서 세 결함이 함께 드러났다 — 템플릿 실패 첫 줄이 원시 키(`templates.errors.layout_validation_validation_failed`),
  * 모듈 실패 문구 끝에 치환되지 않은 `:error`, 플러그인 실패가 "모듈" 로 표기되고 `plugins.errors.layout_validation_markup_error`

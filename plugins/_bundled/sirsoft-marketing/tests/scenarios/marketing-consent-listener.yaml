@@ -1,7 +1,7 @@
 feature: 마케팅 동의 리스너 — 회원 항목 목록, 응답, 삭제 훅 배선
 
 description: |
-  동의 값의 검증과 저장은 회원 항목 선언(Plugin::getFields)과 저장소 어댑터(MarketingConsentFieldHandler)가 맡는다(#490).
+  동의 값의 검증과 저장은 회원 항목 선언(Plugin::getFields)과 저장소 어댑터(MarketingConsentFieldHandler)가 맡는다.
   리스너는 그 주변만 잇는다.
 
   핵심 동작:

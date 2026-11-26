@@ -1238,7 +1238,7 @@ export class ActionDispatcher {
       errorContext: { error: ErrorContext } & Record<string, unknown>
     ) => {
       // 오류 처리기 정의를 통째로 넘긴다 — 키를 골라 담으면 conditions·cases·if·actionRef·onSuccess 가
-      // 경고 없이 버려진다(engine-v1.80.0, #753). type 은 dispatchAction 이 쓰지 않는 형식 값이다.
+      // 경고 없이 버려진다(engine-v1.80.0). type 은 dispatchAction 이 쓰지 않는 형식 값이다.
       const action = { ...handler, type: 'click' } as ActionDefinition;
 
       // 에러 컨텍스트를 data에 포함 — 기본 401 처리의 `{{auth.loginPath}}` 가 풀리도록 auth 도 싣는다.
@@ -1570,7 +1570,7 @@ export class ActionDispatcher {
       //
       // executeAction 을 거치지 않고 등록 핸들러를 직접 부른다. executeAction 은 실패를 오류 처리기(기본: 토스트)로
       // 먼저 넘긴 뒤 던지므로, 아래 catch 가 삼키기 전에 내부 문구 「Failed to execute action: reloadPluginHandlers」가
-      // 화면에 떴다 — 켜자마자 다시 끄거나 라우트 캐시를 다시 굽는 사이 자산이 404·500 이면(#882 실측). 켜기·끄기 자체는
+      // 화면에 떴다 — 켜자마자 다시 끄거나 라우트 캐시를 다시 굽는 사이 자산이 404·500 이면. 켜기·끄기 자체는
       // 이미 끝났고 자산은 다음 새로고침에 다시 붙으므로 알릴 일이 아니다.
       const { moduleInfo, pluginInfo } = action.params || {};
       const assetReloads: Array<[unknown, string]> = [
@@ -2420,7 +2420,7 @@ export class ActionDispatcher {
       }
     }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
-    // refreshConsent: 방문자 동의 스냅샷을 다시 조회한다 (engine-v1.78.0, #639)
+    // refreshConsent: 방문자 동의 스냅샷을 다시 조회한다 (engine-v1.78.0)
     // 동의를 저장한 화면(쿠키 배너·마이페이지 동의 카드)이 성공 뒤에 부른다. 코어 동의 런타임이
     // `_global.consent` 를 갱신하고 `consent:changed` 리스너(차단 엔진 동기화 등)가 끝날 때까지 기다린 뒤
     // 끝나므로, 같은 시퀀스의 다음 동작(토스트 등)은 동기화 이후에 실행된다. 관리자 화면처럼 런타임이
@@ -2694,7 +2694,7 @@ export class ActionDispatcher {
 
     // engine-v1.77.1: 인자 없이 불려도 실행한다 — 컴포넌트가 콜백을 `onClose()` 처럼 이벤트 없이 부르면
     // `run` 의 `event.type`·`preventDefault()` 가 TypeError 로 거부돼 액션이 실행되지 않았다
-    // (admin_basic Modal 의 Escape → closeModal 이 무반응 — #736 S2, 2025-12-19 부터). 액션 type 의
+    // (admin_basic Modal 의 Escape → closeModal 이 무반응 — 2025-12-19 부터). 액션 type 의
     // 대체 이벤트를 넘긴다(target 없음 — 폼 submit 판정·$event.target 은 비어 있다).
     return (event?: Event) => this.runGuardingFormSubmit(event ?? new Event(action.type || 'click'), run);
   }
@@ -3500,7 +3500,7 @@ export class ActionDispatcher {
 
         try {
           // 오류 처리기 정의를 통째로 넘긴다 — 키를 골라 담으면 단일 `<fail>` 의 conditions·switch·if·
-          // actionRef·onSuccess 가 경고 없이 버려졌다(engine-v1.80.0, #753).
+          // actionRef·onSuccess 가 경고 없이 버려졌다(engine-v1.80.0).
           const handlerAction = { ...result.handler, type: 'click' } as ActionDefinition;
 
           await this.executeAction(handlerAction, errorContext);
@@ -4199,7 +4199,7 @@ export class ActionDispatcher {
    * `openWindow` 는 새 창이라 팝업 차단에 걸린다. 본인인증 제공자처럼 **같은 탭에서 나갔다가
    * 돌아오는** 흐름은 그 둘 어느 쪽도 아니다 — 그 자리가 이 핸들러다.
    *
-   * `<action handler="redirect" url="…">` 는 #297 부터 레이아웃에 적혀 있었으나 엔진에 소비처가
+   * `<action handler="redirect" url="…">` 는 이전부터 레이아웃에 적혀 있었으나 엔진에 소비처가
    * 없어 **한 번도 동작한 적이 없었다**(전 이력 조사 — `case 'redirect'` 0건, 매니페스트 0건,
    * 확장 등록 0건). 미등록 핸들러는 조용히 무동작이라 콘솔·네트워크에 흔적이 남지 않는다.
    *
@@ -6547,7 +6547,7 @@ export class ActionDispatcher {
    *
    * sequence 는 단계마다 `data` 를 `...context.data` 로 다시 만들어 `_global` 이 sequence 시작 시점의 사본이다.
    * 그 사본을 읽으면 같은 sequence 안의 closeModal → openModal 이 방금 닫은 창을 되살린다 — 닫기는 `[]` 를 쓰고
-   * 열기는 낡은 `[A]` 에 쌓아 `[A, B]` 를 쓴다(#712 실측: 강제 활성 창 → 언어팩 다시 켜기 창). setState 의 같은
+   * 열기는 낡은 `[A]` 에 쌓아 `[A, B]` 를 쓴다(강제 활성 창 → 언어팩 다시 켜기 창). setState 의 같은
    * 뿌리(troubleshooting-state-setstate 사례 12)처럼 `G7Core.state.get()` 을 먼저 읽는다 — globalStateUpdater 호출
    * 직후의 `_global` 내용을 돌려준다. 전역 상태 접근이 없을 때(부트 전·단위 테스트)는 문맥 사본으로 물러선다.
    *
@@ -6583,7 +6583,7 @@ export class ActionDispatcher {
    *
    * `params.all === true` 면 열린 창을 모두 닫습니다(engine-v1.95.0). 창 위에 뜬 안내 창에서 다른 화면으로 보낼 때
    * 쓴다 — 맨 위 하나만 닫으면 밑의 창이 전역 창 스택에 남아, 그 화면으로 돌아왔을 때 다시 열린 채 보인다
-   * (#490 D-A3: 장바구니 「옵션 변경」 창 위의 「추가 정보가 필요합니다」 창 → 「입력하러 가기」). 엄격 비교라
+   * (장바구니 「옵션 변경」 창 위의 「추가 정보가 필요합니다」 창 → 「입력하러 가기」). 엄격 비교라
    * 문자열 "false"·숫자 1 같은 값으로는 전부 닫히지 않는다.
    *
    * @param context 액션 컨텍스트 (선택적)
@@ -9584,7 +9584,7 @@ export class ActionDispatcher {
       for (const rawAction of props.actions) {
         // actionRef 해석 - named_actions 참조를 실제 액션 정의로 변환
         const action = this.resolveActionRef(rawAction);
-        // 컴포넌트 actions 는 type 이나 event 를 반드시 적는 진입점 액션이다(번들 레이아웃 4755건 전수 확인, #869).
+        // 컴포넌트 actions 는 type 이나 event 를 반드시 적는 진입점 액션이다(번들 레이아웃 4755건 전수 확인).
         // 둘 다 없으면 종전처럼 getEventHandlerName 이 던진다 — 하위 액션용으로 선택이 된 type 을 여기서만 단언한다.
         const eventName = action.event
           ? this.normalizeEventPropName(action.event)

@@ -39,7 +39,7 @@ class PageServiceProvider extends BaseModuleServiceProvider
     protected array $storageServices = [];
 
     /**
-     * 비공개 첨부 저장소를 따르는 서비스 (#916)
+     * 비공개 첨부 저장소를 따르는 서비스 
      *
      * 페이지 첨부·본문 미디어는 권한 확인 뒤 서버가 내려주는 원본이라 관리자가 고른 「비공개 첨부 저장소」 디스크
      * (「기본」이면 `modules`)에 저장한다. 기존 행은 행 disk 로 서빙·삭제한다. 설정 파일·공개 이미지 폴백은
@@ -81,11 +81,11 @@ class PageServiceProvider extends BaseModuleServiceProvider
         }
 
         // 본문 미디어 서빙 라우트를 미디어 출처 허용 패턴의 원천으로 등록한다 — 동영상·오디오의 src 는 등록된 서빙 라우트 주소만
-        // 통과한다(#887). 이름만 넘겨 부팅마다 어댑터·리포지토리를 만들지 않는다. 모듈이 꺼져 라우트가 없으면 패턴에서 빠진다.
+        // 통과한다. 이름만 넘겨 부팅마다 어댑터·리포지토리를 만들지 않는다. 모듈이 꺼져 라우트가 없으면 패턴에서 빠진다.
         ContentMediaRegistrar::register(PageContentMediaStore::SERVE_ROUTE);
 
         // Sitemap 기여자 등록 — 생성기를 처음 해석할 때(사이트맵 생성·SEO 화면) 붙는다. 이미 해석돼 있으면 바로
-        // 붙는다. 부팅마다 생성기·기여자·리포지토리를 만들지 않는다 (#860). 비활성이면 걸지 않는다(#730 게이트).
+        // 붙는다. 부팅마다 생성기·기여자·리포지토리를 만들지 않는다. 비활성이면 걸지 않는다.
         if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
             $this->callAfterResolving(SitemapGenerator::class, function (SitemapGenerator $generator): void {
                 try {

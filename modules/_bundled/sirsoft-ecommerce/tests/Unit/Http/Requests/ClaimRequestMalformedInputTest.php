@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * 형식이 틀린 입력(문자열 칸에 목록)은 서버 오류가 아니라 입력 오류로 돌아간다 (#599 — 16차 병합 후속)
+ * 형식이 틀린 입력(문자열 칸에 목록)은 서버 오류가 아니라 입력 오류로 돌아간다 (16차 병합 후속)
  *
  * 규칙 계산(`rules()`)은 검증보다 먼저 돌고, 사후 검증(`after`)은 규칙이 실패해도 돈다. 그 안에서 입력을
  * `(string)` 으로 바꾸면 목록이 온 요청에서 「Array to string conversion」 으로 500 이 난다 — 규칙이 이미

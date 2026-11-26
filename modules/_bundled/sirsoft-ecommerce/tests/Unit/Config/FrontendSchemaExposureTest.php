@@ -6,7 +6,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\PureTestCase;
 
 /**
- * 프론트엔드 노출 스키마 계약 테스트 (이슈 #524 §4.3)
+ * 프론트엔드 노출 스키마 계약 테스트
  *
  * 결함: 마일리지 기능을 꺼도 마이페이지 「적립금」 탭이 그대로 보였다. 탭 바는
  * `_global.modules['sirsoft-ecommerce']` 를 보고 판단하는데, 그 값은 `frontend_schema` 로

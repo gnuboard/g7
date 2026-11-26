@@ -624,7 +624,7 @@ export function applyRecipe(
   // `withScopedProps` 가 mutator 에 그 폭의 실효 className(기본 + 구간 classMerge)을 넘기고, 편집 뒤에는 기본 대비
   // 바뀐 토큰만 `responsive[bp].classMerge` 로 저장한다. 종전에는 처음 편집할 때 기본 className 전체를 구간
   // `props.className` 에 복사(시드)해 두었다 — 엔진이 구간 className 을 통째로 교체했기 때문이다. 그 복사본은 편집
-  // 시점에 묶여 기본값을 나중에 바꿔도 따라가지 않았고, 운영자 화면에도 같은 문자열 반복이 쌓였다(#399 F10).
+  // 시점에 묶여 기본값을 나중에 바꿔도 따라가지 않았고, 운영자 화면에도 같은 문자열 반복이 쌓였다.
   // 이미 `props.className` 을 가진 구간은 그 값을 기준으로 고치고 같은 자리에 쓴다(styleScope 참고).
   return withScopedProps(node, scope, (props, style) => {
     if (clearGroup) {

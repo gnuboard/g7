@@ -1,6 +1,6 @@
 /**
  * @file validateP7RefundAccountMask.test.tsx
- * @description #599 validate P7-B — 신청서 환불 계좌 칸과 가린 등록 계좌 프리필
+ * @description 신청서 환불 계좌 칸과 가린 등록 계좌 프리필
  *
  * 등록 계좌 프리필은 가린 모양(`********7890` · `홍**`)으로 온다. 서버는 세 칸이 모두 가린 모양 그대로일
  * 때만 원문으로 되돌리므로, 화면의 세 칸은 한 핸들러(`setClaimRefundAccountField`)를 거쳐 「한 칸을 고치면

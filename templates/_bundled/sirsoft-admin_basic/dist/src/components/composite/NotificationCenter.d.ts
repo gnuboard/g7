@@ -18,7 +18,7 @@ export interface NotificationItem {
     read?: boolean;
     iconName?: IconName;
     /**
-     * 알림의 이동 주소(응답 `url`) — 있으면 알림 본문을 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다(#757).
+     * 알림의 이동 주소(응답 `url`) — 있으면 알림 본문을 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다.
      * 보통 클릭은 종전처럼 알림 클릭 콜백(이동·읽음 처리), 수정키 클릭은 브라우저 기본 동작. 바깥 주소는 새 탭으로 연다.
      */
     url?: string | null;

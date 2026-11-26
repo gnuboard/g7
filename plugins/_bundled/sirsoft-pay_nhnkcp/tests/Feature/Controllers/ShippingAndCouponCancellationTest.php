@@ -611,7 +611,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
     }
 
     /**
-     * **접수만 한 취소**는 PG API 를 부르지 않는다. (#599 후속 P2·D3)
+     * **접수만 한 취소**는 PG API 를 부르지 않는다.
      *
      * 예전의 `cancel_pg=false` 자리다. 그 플래그는 없앴다 — 끈 채로 카드 취소를 하면 PG 를
      * 부르지 않고도 환불이 `완료`로 찍혀, **고객 카드는 그대로인데 장부만 환불완료**가 됐다.

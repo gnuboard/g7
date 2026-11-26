@@ -254,7 +254,7 @@ class CheckModifiedLayoutsContractTest extends TestCase
 
     /**
      * 템플릿 「수정한 레이아웃」 조회는 실제 행으로 판정해 오버라이드 레이아웃(`kind: layout`)과 조각 오버라이드
-     * (`kind: extension`)를 싣고, 키 순서만 다른 자기 레이아웃은 수정으로 세지 않는다 (#727 §5.9·W6).
+     * (`kind: extension`)를 싣고, 키 순서만 다른 자기 레이아웃은 수정으로 세지 않는다.
      *
      * @effects modified_layouts_check_lists_operator_rows, representation_only_differences_are_not_modifications
      *
@@ -303,7 +303,7 @@ class CheckModifiedLayoutsContractTest extends TestCase
 
     /**
      * 모듈 「수정한 레이아웃」 조회는 실제 행으로 판정해 그 모듈 레이아웃(`kind: layout`)과 확장 조각 수정본(`kind: extension`)을
-     * 함께 싣는다 (#727 §5.9).
+     * 함께 싣는다.
      *
      * @effects modified_layouts_check_lists_operator_rows
      *

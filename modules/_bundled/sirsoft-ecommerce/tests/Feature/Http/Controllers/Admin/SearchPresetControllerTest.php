@@ -25,7 +25,7 @@ class SearchPresetControllerTest extends ModuleTestCase
     {
         parent::setUp();
 
-        // 관리자 사용자 생성 — 프리셋 라우트는 상품 권한을 요구한다 (#577 에서 부착).
+        // 관리자 사용자 생성 — 프리셋 라우트는 상품 권한을 요구한다.
         // 권한 미보유 403 축은 SearchPresetPermissionTest 가 담당한다.
         $this->adminUser = $this->createAdminUser([
             'sirsoft-ecommerce.products.read',

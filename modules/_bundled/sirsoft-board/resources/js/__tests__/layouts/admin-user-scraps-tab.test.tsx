@@ -1,6 +1,6 @@
 /**
  * @file admin-user-scraps-tab.test.tsx
- * @description 회원 상세 「스크랩」 탭 확장 (#524 WP-A) — 주입이 두 군데로 갈리는 조각의 계약.
+ * @description 회원 상세 「스크랩」 탭 확장 — 주입이 두 군데로 갈리는 조각의 계약.
  *
  * 이 조각이 지키는 계약:
  *  - 탭 버튼(`inject_props` → `tabs._append`)과 본문(`append_child`)은 **서로 다른 앵커**에 붙고
@@ -23,7 +23,7 @@ const contentInjection = injections.find((i: any) => i.position === 'append_chil
 const tabItem = asArray(tabInjection?.props?.tabs?._append)[0];
 const content = asArray(contentInjection?.components)[0];
 
-describe('회원 상세 스크랩 탭 확장 (#524 WP-A)', () => {
+describe('회원 상세 스크랩 탭 확장', () => {
     // @scenario surface=member_detail_tab
     // @effects member_tab_targets_admin_user_detail
     it('회원 상세 레이아웃을 대상으로 삼는다', () => {
@@ -88,7 +88,7 @@ describe('회원 상세 스크랩 탭 확장 (#524 WP-A)', () => {
 
         expect(link.props['data-testid']).toBe('user-scraps-link');
 
-        // #757 — 새 탭으로 열 수 있게 href 를 단다(주소 없는 <a> 금지). 다만 2026-09-15 브라우저 실측에서 이 조각의
+        // 새 탭으로 열 수 있게 href 를 단다(주소 없는 <a> 금지). 다만 2026-09-15 브라우저 실측에서 이 조각의
         // `href="{{식}}"` 이 DOM 에 실리지 않은 적이 있어, 보통 클릭 이동은 href 에 기대지 않고 navigate 의 path 로 한다
         // (href 가 빠져도 이동은 산다). href 가 실제로 실리는지는 2단계 브라우저 실측(M1)이 확인한다.
         expect(String(link.props.href)).toContain('/admin/boards/scraps?user_uuid=');

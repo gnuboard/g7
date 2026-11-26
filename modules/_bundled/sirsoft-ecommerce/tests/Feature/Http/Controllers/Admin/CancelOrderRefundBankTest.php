@@ -19,7 +19,7 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 관리자 주문 취소 시 환불계좌 조건부 검증 (#454 S3 / D13)
+ * 관리자 주문 취소 시 환불계좌 조건부 검증
  *
  * 표시·필수 규칙:
  *   vbank + 입금완료 → 필수 (PG 환불 API 의 refundReceiveAccount)
@@ -347,7 +347,7 @@ class CancelOrderRefundBankTest extends ModuleTestCase
     /**
      * 입금완료 가상계좌 취소에 계좌를 주면 통과하고 **그 신청서 행**에 저장된다.
      *
-     * 저장 자리가 결제행에서 신청서 행으로 옮겨졌다(#599 후속). 관리자 [주문취소]는 이제
+     * 저장 자리가 결제행에서 신청서 행으로 옮겨졌다. 관리자 [주문취소]는 이제
      * 환불신청서를 만들 뿐이고 실제 송금은 [환불하기]가 하며, 결제행은 **그 환불을 실행하는
      * 시점**에 실행 대상 환불의 계좌로 갱신된다(`AppliesRefundBankAccount`) — 접수만으로
      * 결제행을 덮어쓰면, 계좌가 서로 다른 두 신청서가 있을 때 나중 접수가 앞선 환불의 송금
@@ -398,7 +398,7 @@ class CancelOrderRefundBankTest extends ModuleTestCase
     }
 
     /**
-     * 무통장 취소는 환불계좌가 **필수**다. (#599 후속 P9)
+     * 무통장 취소는 환불계좌가 **필수**다.
      *
      * 예전에는 입금완료 가상계좌만 계좌를 요구했다. 그래서 무통장 주문을 취소하면 **송금 대상
      * 계좌가 없는 채로** 환불이 `APPROVED` 에 앉았고, 운영자는 어디로 보내야 할지 모르는 환불

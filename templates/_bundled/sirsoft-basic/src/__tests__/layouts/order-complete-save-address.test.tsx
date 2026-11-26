@@ -156,7 +156,7 @@ describe('주문완료 [이 배송지를 저장하기] (B6)', () => {
   it('409 는 실패 처리 하나의 conditions 로 가른다 — 상태 코드별 error-handling 은 두지 않는다', () => {
     const call = find(saveButton, (n) => n.handler === 'apiCall') as Node;
 
-    // engine-v1.80.0 부터 단일 <fail> 안의 conditions 가 그대로 실행된다(#753) — 처음 설계대로 409 / 그 밖 을 한 곳에서 가른다
+    // engine-v1.80.0 부터 단일 <fail> 안의 conditions 가 그대로 실행된다 — 처음 설계대로 409 / 그 밖 을 한 곳에서 가른다
     expect(call?.errorHandling).toBeUndefined();
     expect(call?.onError?.handler).toBe('conditions');
     // 7.2.0: 추가 정보가 비어 거부된 요청(403, error_code 가 required_fields_pending)을 가르는 갈래가 맨 앞에 선다.

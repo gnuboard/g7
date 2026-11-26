@@ -55,7 +55,7 @@ class TestDriverConnectionRequest extends FormRequest
     }
 
     /**
-     * 검증 전에 웹서버 파일 위임 접두사를 저장 게이트와 같은 모양으로 다듬습니다 (#878).
+     * 검증 전에 웹서버 파일 위임 접두사를 저장 게이트와 같은 모양으로 다듬습니다.
      *
      * 화면의 「설정 점검」은 저장하기 전 입력값을 보낸다 — 저장(`SaveSettingsRequest`)은 끝 `/` 가 없는
      * `/_g7_sendfile` 을 `/_g7_sendfile/` 로 고쳐 통과시키므로, 점검도 같은 값을 같은 결과로 판정해야 한다.
@@ -82,7 +82,7 @@ class TestDriverConnectionRequest extends FormRequest
     {
         $rules = [
             // 드라이버 선택
-            // 플러그인 등록 스토리지 드라이버도 시험할 수 있게 카탈로그로 판정한다(#916 A4 — 저장 검증과 같은 판정)
+            // 플러그인 등록 스토리지 드라이버도 시험할 수 있게 카탈로그로 판정한다
             'storage_driver' => ['nullable', 'string', $this->catalogRule('storage'), $this->getDriverUsabilityRule('storage')],
             'cache_driver' => ['nullable', 'string', $this->catalogRule('cache', self::SUPPORTED_CACHE_DRIVERS), $this->getDriverUsabilityRule('cache')],
             'session_driver' => ['nullable', 'string', $this->catalogRule('session', self::SUPPORTED_SESSION_DRIVERS), $this->getDriverUsabilityRule('session')],
@@ -117,7 +117,7 @@ class TestDriverConnectionRequest extends FormRequest
             'websocket_server_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'websocket_server_scheme' => ['nullable', Rule::in(self::SUPPORTED_WEBSOCKET_SCHEMES)],
 
-            // 웹서버 파일 위임 (#878) — 저장 게이트와 같은 선택지·접두사 형식
+            // 웹서버 파일 위임 — 저장 게이트와 같은 선택지·접두사 형식
             'file_delegation' => ['nullable', Rule::in(FileDelegation::modes())],
             'file_delegation_accel_prefix' => ['nullable', 'string', 'max:255', 'regex:'.FileDelegation::ACCEL_PREFIX_PATTERN],
         ];
@@ -180,7 +180,7 @@ class TestDriverConnectionRequest extends FormRequest
     }
 
     /**
-     * 값이 드라이버 카탈로그(코어 + 플러그인 훅 등록)에 있는지 검사하는 규칙을 반환합니다 — 저장 검증과 같은 판정(#916 A4).
+     * 값이 드라이버 카탈로그(코어 + 플러그인 훅 등록)에 있는지 검사하는 규칙을 반환합니다 — 저장 검증과 같은 판정.
      *
      * @param  string  $category  드라이버 카테고리
      * @param  array<int, string>  $coreValues  카탈로그 밖이지만 받는 코어 값(캐시 memcached 등)

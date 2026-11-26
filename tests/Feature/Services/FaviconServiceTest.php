@@ -13,7 +13,7 @@ use Tests\Helpers\CreatesTemplateSettingsFixtures;
 use Tests\TestCase;
 
 /**
- * 파비콘 우선순위 해석 테스트 (#434)
+ * 파비콘 우선순위 해석 테스트
  *
  * ① 활성 템플릿 설정 > ② 일반 탭 site_favicon > ③ 번들(또는 운영자 public/favicon.ico). 무효 첨부는 다음 계층으로.
  */

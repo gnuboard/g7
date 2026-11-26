@@ -3,7 +3,7 @@
  *
  * 배경: 관리자 결제수단 목록은 아이콘 열을 `Icon name={{$method._cached_icon}}` 하나로만 그렸고,
  * 각 PG 플러그인이 관리자 전용 주입 스크립트로 자기 결제수단 행의 아이콘을 브랜드 배지로 바꿔 끼웠다.
- * #639 에서 주입 스크립트를 지우고, 목록이 카탈로그 `_cached_brand_mark` 를 `BrandMark` 로 직접 그린다
+ * 주입 스크립트를 지우고, 목록이 카탈로그 `_cached_brand_mark` 를 `BrandMark` 로 직접 그린다
  * (넓은 화면 표 `_payment_methods_list`, 좁은 화면 카드 `_payment_methods_cards`).
  *
  * 이 spec 이 고정하는 두 가지:

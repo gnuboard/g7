@@ -11,7 +11,7 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * 메뉴 아이콘 선언 정규화기(MenuIconDeclaration) 단위 테스트 (#381).
+ * 메뉴 아이콘 선언 정규화기(MenuIconDeclaration) 단위 테스트.
  *
  * 코어·확장이 선언한 아이콘(문자열·class·image 상대경로·svg path/value)을 저장 정규형으로 바꾸고,
  * 위반 선언은 설치를 막지 않고 null + 경고 로그 + 라이프사이클 경고(menu_icon)로 남기는지 검증한다.

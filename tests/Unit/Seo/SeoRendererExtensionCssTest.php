@@ -13,7 +13,7 @@ use Tests\TestCase;
 /**
  * 검색엔진용 화면(SEO 렌더)에 확장 CSS 가 사용자 화면과 같은 순서로 실린다.
  *
- * 확장 화면 스타일은 확장이 자기 CSS 로 공급한다(#816). 봇 화면에도 그 CSS 가 없으면 확장 화면이 맨 HTML 로 보인다.
+ * 확장 화면 스타일은 확장이 자기 CSS 로 공급한다. 봇 화면에도 그 CSS 가 없으면 확장 화면이 맨 HTML 로 보인다.
  * 순서는 템플릿 CSS → `@layer g7-extension;` 선언 → 모듈 번들 CSS → 플러그인 번들 CSS → 호환 덮기 파일이고,
  * 봇 화면은 라이트로 그리므로 `<html data-g7-color-scheme="light">` 를 단다.
  *

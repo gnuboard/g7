@@ -73,7 +73,7 @@ abstract class PluginTestCase extends TestCase
      * 플러그인 API 라우트를 테스트 앱에 등록합니다.
      *
      * `PluginRouteServiceProvider` 는 `plugins` 테이블의 활성 행을 대조해서만 라우트를
-     * 등록합니다(#603). 테스트는 `RefreshDatabase` 로 매번 빈 테이블에서 부팅하므로 그
+     * 등록합니다. 테스트는 `RefreshDatabase` 로 매번 빈 테이블에서 부팅하므로 그
      * 게이트가 항상 닫히고, 이 플러그인의 모든 엔드포인트가 404 가 됩니다 — 실패는
      * 권한·검증이 아니라 "주소 없음" 으로 나타나 원인이 드러나지 않습니다.
      *

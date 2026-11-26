@@ -86,7 +86,7 @@ describe('sirsoft-admin_basic 관리자 로그인 2단계 인증 단계', () => 
    * @effects code_step_rendered_on_challenge, credential_step_hidden_on_challenge
    */
   it('1단계 입력과 2단계 블록의 조건이 상보적이다', () => {
-    // #736 이후 1단계는 2단계 인증·비밀번호 변경 두 단계가 모두 아닐 때만 보인다(세 단계 상보 — 변경 단계 쪽은
+    // 이제 1단계는 2단계 인증·비밀번호 변경 두 단계가 모두 아닐 때만 보인다(세 단계 상보 — 변경 단계 쪽은
     // admin-login-password-change-step.test.tsx 가 잠근다).
     // 7.2.0 A1t — 비밀번호 칸, 찾기 링크, 로그인 버튼은 이메일 판정이 외부 수단일 때도 숨으므로 1단계 조건 뒤에 판정 조건이 붙는다.
     // 그 셋을 포함해 1단계 칸 넷이 모두 같은 1단계 조건으로 시작한다.

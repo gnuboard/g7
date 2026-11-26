@@ -31,7 +31,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 추가 정보를 입력하지 않은 회원과 이커머스 (#490 11단계, 7단계 잔여)
+ * 추가 정보를 입력하지 않은 회원과 이커머스 (11단계, 7단계 잔여)
  *
  * 비어 있는 필수 회원 항목이 있는 회원의 주문 요청은 코어가 403 `required_fields_pending` 으로 거부하고,
  * 결제 결과 처리와 통화, 배송국가 전환은 열어 둔다. 이커머스가 회원 항목으로 선언한 배송국가와 결제 통화가

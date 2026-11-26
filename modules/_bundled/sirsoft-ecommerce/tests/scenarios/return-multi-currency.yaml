@@ -42,7 +42,7 @@ description: |
     - 금액이 맞아도 전이가 통화에 걸려 멈추면 반품이 끝나지 않는다 — 상태 기계를 실제로 돌린다.
     - 접수 시점 금액은 상점 통화를 바꿔도 **재환산되지 않는다**.
 
-  #599 통합실측 세션2 브라우저 실측(주문 754 · KRW 단일)이 남긴 값:
+  브라우저 실측(주문 754 · KRW 단일)이 남긴 값:
 
     returns.currency_code          = 'KRW'
     returns.mc_claim_shipping_fee  = {KRW:3000, USD:3, JPY:345, CNY:17.4, EUR:2.34}

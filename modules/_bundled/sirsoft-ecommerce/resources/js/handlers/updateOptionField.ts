@@ -96,7 +96,7 @@ export function updateOptionFieldHandler(
 
     // 대상 옵션을 실제로 찾았는지 추적.
     //
-    // 옵션 지연 로딩(#518) 이후 목록 행의 `options` 는 펼치기 전까지 `undefined` 다. 찾지
+    // 옵션 지연 로딩 이후 목록 행의 `options` 는 펼치기 전까지 `undefined` 다. 찾지
     // 못한 채로 아래 modified 추적을 돌리면 존재하지 않는 옵션이 수정 대상으로 기록되고,
     // 일괄 저장이 그 유령 키를 `option_items` 에 실어 보낸다.
     let optionFound = false;

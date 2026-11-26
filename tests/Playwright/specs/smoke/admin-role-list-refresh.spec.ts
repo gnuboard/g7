@@ -5,7 +5,7 @@
  * - 7개 list 화면(menu/module/plugin/role/schedule/template/user_list) 의 정사각 outline
  *   아이콘 버튼이 인라인 Tailwind → IconButton(variant="outline", size="md") 으로 치환됨.
  * - 본 spec 은 admin_role_list 의 refresh 버튼을 대표로 검증 (나머지 6개는 동일 구조).
- * - refs #399
+ * - refs
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 

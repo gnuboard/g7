@@ -1,6 +1,6 @@
 /**
  * @file admin-extension-reactivate-language-packs.test.tsx
- * @description 확장 재활성화 뒤 함께 꺼졌던 언어팩을 되살리는 창의 배선 (#703)
+ * @description 확장 재활성화 뒤 함께 꺼졌던 언어팩을 되살리는 창의 배선
  *
  * 확장을 끄면 그 확장에 딸린 언어팩도 함께 꺼지고, 다시 켜면 서버가 활성 응답에
  * `pending_language_packs` 를 실어 준다(그리고 그 목록을 서버에서 지운다). 창 세 벌

@@ -1,6 +1,6 @@
 /**
  * @file identity-policy-custom-checkpoint.test.ts
- * @description 쇼핑몰 설정 본인인증 정책 창 — 「사용자 지정」 범위 (7.2.1, #952 F)
+ * @description 쇼핑몰 설정 본인인증 정책 창 — 「사용자 지정」 범위 (7.2.1)
  *
  * - 활성 확장이 확장 지점을 선언했을 때만 「사용자 지정」 을 고를 수 있는 범위 선택이 보인다(이미 사용자 지정인 정책은 늘 보인다)
  * - 사용자 지정이면 대상 칸이 글자 입력이 아니라 확장 지점 목록이 된다
@@ -40,7 +40,7 @@ const scopeSelects = collect(modal, (n) => typeof n.if === 'string' && n.if.incl
 const checkpointSelect = collect(modal, (n) => (n?.props?.['data-ref'] ?? n?.id) === 'identity_policy_checkpoint_select')[0];
 const targetInput = collect(modal, (n) => typeof n.if === 'string' && n.if.includes("form?.scope !== 'custom'") && !n.if.includes('identityCheckpoints'))[0];
 
-describe('쇼핑몰 설정 본인인증 정책 창 — 사용자 지정 (#952)', () => {
+describe('쇼핑몰 설정 본인인증 정책 창 — 사용자 지정', () => {
   // @scenario case=identity_policy_modal_custom_option
   // @effects identity_custom_scope_offered_only_with_checkpoints
   it('확장 지점이 있으면 사용자 지정이 든 범위 선택을, 없으면 라우트·훅만 있는 선택을 보인다', () => {

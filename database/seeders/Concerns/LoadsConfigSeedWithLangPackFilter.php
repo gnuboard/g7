@@ -17,7 +17,7 @@ use App\Extension\HookManager;
  *   - 신규 SSoT 도메인 시더 작성 시 lang pack 필터 호출 누락 자동 방지
  *   - audit 룰 `seeder-translation-filter` 와 정합 (트레이트 사용 = 자동 검증 통과)
  *
- * @since 7.0.0-beta.4 (이슈 #263 후속 — Seeder 보일러플레이트 추상화)
+ * @since 7.0.0-beta.4 (Seeder 보일러플레이트 추상화)
  */
 trait LoadsConfigSeedWithLangPackFilter
 {

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
- * `g7:migrate-plan` — 실행 대기 마이그레이션의 SQL·파괴 여부·출처를 실행 없이 계산한다 (#888).
+ * `g7:migrate-plan` — 실행 대기 마이그레이션의 SQL·파괴 여부·출처를 실행 없이 계산한다.
  *
  * 마이그레이션은 연결의 pretend 로 SQL 만 모은다. 컬럼 삭제·이름 변경·타입 변경·NOT NULL 전환은 스테이지 기간 미루기 권장.
  * core 범위는 마이그레이터에 등록된 모든 비확장 경로라 `database/migrations/custom` 같은 경로도 `source=custom` 으로 나온다.

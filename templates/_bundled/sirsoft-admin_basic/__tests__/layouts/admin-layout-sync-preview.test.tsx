@@ -1,6 +1,6 @@
 /**
  * @file admin-layout-sync-preview.test.tsx
- * @description 레이아웃 갱신·업데이트 창의 「화면별 처리 미리보기」 (#888)
+ * @description 레이아웃 갱신·업데이트 창의 「화면별 처리 미리보기」
  *
  * 창을 열면 미리보기 API 가 화면별 판정을 돌려주고, 공통 조각(_shared/_layout_sync_preview)이 판정 표·처리 방식
  * (기본 수정 유지)·충돌 화면의 결정(운영자 판 유지 / 새 판 적용)·지워질 선언 항목을 그린다. 미리보기가 실패하면

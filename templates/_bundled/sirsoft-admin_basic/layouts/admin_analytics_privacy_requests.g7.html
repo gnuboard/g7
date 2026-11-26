@@ -7,7 +7,7 @@
   <!-- 조건이 질의에 있을 때만 받는다. 기준 셋 중 질의 `subject` 가 가리키는 하나에만 값을 싣는다.
        응답의 `ip_mask_octets` 는 이 표의 주소도 설정대로 뒤 옥텟이 지워진 값이라는 사실이다 —
        원본으로 읽으면 정보주체에게 그 주소로 잘못 답한다. 값마다 배지를 달면 표가 좁아지므로
-       IP 열 이름 한 자리에서 한 번만 알린다(§4.10 「IP(마스킹 표시)」, #682 S3 라운드 6). -->
+       IP 열 이름 한 자리에서 한 번만 알린다(§4.10 「IP(마스킹 표시)」). -->
   <data-source id="analytics_subjects" label_key="$t:editor.data_source.analytics_subjects" type="api" endpoint="/api/admin/analytics/privacy/subjects" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" if="{{!!query.value}}">
     <params ip="{{(query.subject || 'ip') === 'ip' ? query.value : undefined}}" user_id="{{query.subject === 'user_id' ? query.value : undefined}}" visitor_key="{{query.subject === 'visitor_key' ? query.value : undefined}}" from="{{query.from}}" to="{{query.to}}"/>
     <fallback>
@@ -39,7 +39,7 @@
     </fallback>
     <!-- 조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를
          띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을
-         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2). -->
+         열 때마다 전역 오류 토스트가 뜬다. -->
     <error-handling>
       <on-code code="403">
         <suppress/>
@@ -247,7 +247,7 @@
                   <on type="click">
                     <!-- 이 화면은 검색 조건(대상·값·기간)을 주소에 싣는다. 병합하지 않고 이동하면
                          상세 화면이 기간 없이 열리고 그 화면의 단건 CSV 도 다른 기간을 내려준다 —
-                         형제 화면(방문자 목록)의 같은 드릴다운과도 어긋난다(#682 S3 라운드 5). -->
+                         형제 화면(방문자 목록)의 같은 드릴다운과도 어긋난다. -->
                     <navigate :mergeQuery="true"><query/></navigate>
                   </on>
                   {{String(row.visitor_key ?? '').slice(0, 8)}}

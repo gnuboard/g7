@@ -14,7 +14,7 @@ use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 게시판 본문 미디어 업로드 (#883 4단계)
+ * 게시판 본문 미디어 업로드
  *
  * 업로드는 그 게시판 `attachments.upload` 권한과 본문 미디어 정책으로만 판정한다 — 「파일 첨부 사용」이 꺼져 있어도 올라간다(D26).
  * 파일은 처음부터 최종 경로(`{slug}/content-media/…`)에 두고 행은 임시(board_id=0 + 임시 키)다. 응답 주소는 서명 주소다.
@@ -128,7 +128,7 @@ class ContentMediaUploadTest extends BoardTestCase
      */
     public function test_files_outside_policy_are_rejected(): void
     {
-        // 대체 정책의 동영상은 코어 「동영상 업로드 허용」을 따른다 — 사이트 설정 파일 값에 기대지 않게 기본값(끔)으로 고정 (#887)
+        // 대체 정책의 동영상은 코어 「동영상 업로드 허용」을 따른다 — 사이트 설정 파일 값에 기대지 않게 기본값(끔)으로 고정
         config(['g7_settings.core.content.allow_uploaded_video' => false]);
         $tempKey = (string) Str::uuid();
 

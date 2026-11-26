@@ -21,7 +21,7 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
  * 단건(`UpdateClaimStatusRequest`)과 동일하다 — 세 진입점이 같은 계약을 쓴다(D26).
  *
  * 회수중·발송중은 신청서마다 송장을 싣는다(`trackings: [{id, carrier_id, tracking_number}]`) —
- * 송장은 신청서마다 다르므로 한 쌍을 여러 건에 나눠 쓰지 않는다(#599 후속 운영 결정). 대상 신청서
+ * 송장은 신청서마다 다르므로 한 쌍을 여러 건에 나눠 쓰지 않는다(후속 운영 결정). 대상 신청서
  * 하나라도 송장이 빠지면 422 다.
  */
 class BulkClaimStatusRequest extends FormRequest
@@ -57,7 +57,7 @@ class BulkClaimStatusRequest extends FormRequest
             'ids' => ['required', 'array', 'min:1', 'max:100'],
             'ids.*' => ['integer'],
             'status' => ['required', 'string', Rule::in($this->assignableStatuses())],
-            // 반려는 사유가 정본이다 — 없이 받으면 구매자 화면의 반려 사유가 빈 칸으로 남는다(#599 후속).
+            // 반려는 사유가 정본이다 — 없이 받으면 구매자 화면의 반려 사유가 빈 칸으로 남는다.
             'reject_reason' => ['nullable', 'required_if:status,rejected', 'string', 'max:2000'],
             'admin_memo' => ['nullable', 'string', 'max:2000'],
             'trackings' => ['nullable', 'required_if:status,'.implode(',', $this->trackingRequiredStatuses()), 'array', 'max:100'],

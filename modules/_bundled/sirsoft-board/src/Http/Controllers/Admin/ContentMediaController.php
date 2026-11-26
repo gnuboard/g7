@@ -17,10 +17,10 @@ use Modules\Sirsoft\Board\Services\PostService;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
- * 관리자 게시판 본문 미디어 컨트롤러 — 관리자 글쓰기 편집기 업로드 (#883 4단계)
+ * 관리자 게시판 본문 미디어 컨트롤러 — 관리자 글쓰기 편집기 업로드
  *
  * 권한은 라우트의 `admin.attachments.upload` 이고, 서빙은 사용자 경로(`boards/{slug}/content-media/{hash}`)를 함께 쓴다.
- * 편집기 업로드 계약은 표준 엔드포인트 `GET admin/board/{slug}/content-media/target`(#887)이 낸다.
+ * 편집기 업로드 계약은 표준 엔드포인트 `GET admin/board/{slug}/content-media/target`이 낸다.
  */
 class ContentMediaController extends AdminBaseController
 {
@@ -40,7 +40,7 @@ class ContentMediaController extends AdminBaseController
     }
 
     /**
-     * 관리자 편집기 업로드 계약 — 표준 계약 엔드포인트 (#887).
+     * 관리자 편집기 업로드 계약 — 표준 계약 엔드포인트.
      *
      * 판정은 관리자 업로드와 같은 `admin.attachments.upload` 권한이다. 관리자 글쓰기 폼 메타 `content_media` 는 같은 값을
      * 계속 싣는다(호환).
@@ -99,7 +99,7 @@ class ContentMediaController extends AdminBaseController
         } catch (ContentMediaLimitExceededException $e) {
             return $this->error($e->getMessageKey(), 422, ['code' => 'content_media_limit_exceeded'], $e->getMessageParams());
         } catch (ValidationException $e) {
-            // 업로드 파일 필터(`core.content_media.filter_upload_file`)가 돌려준 파일이 정책에 맞지 않으면 422 (#887)
+            // 업로드 파일 필터(`core.content_media.filter_upload_file`)가 돌려준 파일이 정책에 맞지 않으면 422
             throw $e;
         } catch (ModelNotFoundException $e) {
             return $this->notFound('sirsoft-board::messages.errors.post_not_found');

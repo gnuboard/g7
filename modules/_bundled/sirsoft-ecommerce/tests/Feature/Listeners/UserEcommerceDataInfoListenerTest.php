@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 회원 상세 쇼핑 데이터 요약 주입 리스너 테스트 (이슈 #524 §4.1)
+ * 회원 상세 쇼핑 데이터 요약 주입 리스너 테스트
  *
  * 검증 목적:
  * - 관리자 회원 상세(GET /api/admin/users/{uuid}) 응답에만 ecommerce_data 가 실린다

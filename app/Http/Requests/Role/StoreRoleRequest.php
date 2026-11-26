@@ -45,7 +45,7 @@ class StoreRoleRequest extends FormRequest
             'name' => ['required', new LocaleRequiredTranslatable(maxLength: 100)],
             'description' => ['nullable', new TranslatableField(maxLength: 500)],
             'is_active' => 'boolean',
-            // 비밀번호 만료 (#736) — 사이트 설정 따름(기본)·적용·제외. 회원 개별 설정이 우선이고, 한 회원의 역할끼리 부딪치면 적용.
+            // 비밀번호 만료 — 사이트 설정 따름(기본)·적용·제외. 회원 개별 설정이 우선이고, 한 회원의 역할끼리 부딪치면 적용.
             'password_expiry_policy' => ['sometimes', 'nullable', 'string', Rule::in(PasswordExpiryPolicy::values())],
             'permissions' => 'nullable|array',
             'permissions.*.id' => ['required', 'integer', Rule::exists(Permission::class, 'id')],

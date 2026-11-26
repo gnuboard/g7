@@ -1,6 +1,6 @@
 /**
  * @file pagination-null-last-page-contract.test.tsx
- * @description 상한 목록의 last_page=null 을 화면이 1 로 붕괴시키지 않는지 전수 검증 (#519)
+ * @description 상한 목록의 last_page=null 을 화면이 1 로 붕괴시키지 않는지 전수 검증
  *
  * 총 건수를 상한까지만 센 목록은 마지막 페이지를 계산할 수 없어 서버가 `last_page: null`
  * 을 보낸다. 화면이 이를 `?? 1` 로 채우면 "1페이지뿐" 이라고 잘못 말하고, 페이저 표시
@@ -36,7 +36,7 @@ function rel(file: string): string {
   return path.relative(layoutsDir, file).replace(/\\/g, '/');
 }
 
-describe('상한 목록의 last_page=null 계약 (#519)', () => {
+describe('상한 목록의 last_page=null 계약', () => {
   it('레이아웃 파일을 실제로 수집해야 함 (스캔 대상이 0이면 이 테스트는 아무것도 증명하지 못한다)', () => {
     expect(layoutFiles.length).toBeGreaterThan(0);
   });

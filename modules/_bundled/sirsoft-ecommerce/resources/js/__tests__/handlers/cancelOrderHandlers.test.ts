@@ -164,7 +164,7 @@ describe('executeCancelOrderHandler — 항상 items 전송 (백엔드 FULL 승�
     });
 
     /**
-     * P2 회귀 잠금 (#599 후속) — `cancel_pg` 는 더 이상 전송하지 않는다.
+     * P2 회귀 잠금 — `cancel_pg` 는 더 이상 전송하지 않는다.
      *
      * 끈 채로 카드 취소를 하면 PG 를 부르지 않고도 환불이 완료로 찍혀, **고객 카드는 그대로인데
      * 장부만 환불완료**가 됐다. 키가 되살아나면 그 경로도 함께 돌아온다.
@@ -203,7 +203,7 @@ describe('executeCancelOrderHandler — 항상 items 전송 (백엔드 FULL 승�
         expect(body.auto_advance_refund).toBe(false);
     });
 
-    describe('환불 계좌 (#454 S3)', () => {
+    describe('환불 계좌', () => {
         beforeEach(() => {
             mockOrderDataSource = {
                 data: { options: [{ id: 100, quantity: 2, option_status: 'payment_complete' }] },

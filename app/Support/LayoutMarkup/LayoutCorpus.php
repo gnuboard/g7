@@ -44,7 +44,7 @@ final class LayoutCorpus
             base_path('templates/_bundled/*/layouts'),
             base_path('modules/_bundled/*/resources/layouts'),
             base_path('plugins/_bundled/*/resources/layouts'),
-            // 템플릿이 공급하는 설정 화면(`settings/template_settings.*`, #434) — 켜진 관리자 템플릿마다 교차 등록돼 DB 레이아웃이 된다
+            // 템플릿이 공급하는 설정 화면(`settings/template_settings.*`) — 켜진 관리자 템플릿마다 교차 등록돼 DB 레이아웃이 된다
             base_path('templates/_bundled/*/settings'),
         ];
     }

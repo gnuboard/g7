@@ -207,7 +207,7 @@ class GdprConsentServiceTest extends PluginTestCase
      * v1.5.0 자동 차단 엔진 SSoT 회귀 가드:
      * 회원의 카테고리별 동의 상태가 cookie_ 접두사 제거된 카테고리 키로 매핑되어야 함.
      *
-     * 이슈 #430 후속 — 필수 카테고리는 동의 축에서 제외되어 status 에 저장되지 않으므로
+     * 필수 카테고리는 동의 축에서 제외되어 status 에 저장되지 않으므로
      * 이 맵에도 등장하지 않는다. 자동 차단 엔진(blocker.ts)은 necessary 를 맵 유무와
      * 무관하게 항상 허용하므로(category==='necessary' → true) 필수 부재가 안전하다.
      */
@@ -342,7 +342,7 @@ class GdprConsentServiceTest extends PluginTestCase
         $this->assertSame(1, GdprUserConsent::where('user_id', $user->id)->first()->consent_count);
     }
 
-    // ===== 이슈 #430 — 쿠키 거부 저장 =====
+    // ===== 쿠키 거부 저장 =====
 
     /**
      * 선택형 카테고리 거부 시 is_rejected=true, rejected_at 기록, history action=rejected.
@@ -406,7 +406,7 @@ class GdprConsentServiceTest extends PluginTestCase
     }
 
     /**
-     * 필수 카테고리는 동의 축에서 제외 — status·history 모두 저장하지 않는다 (이슈 #430 후속).
+     * 필수 카테고리는 동의 축에서 제외 — status·history 모두 저장하지 않는다.
      *
      * 필수 쿠키는 ePrivacy Art.5(3) 면제로 동의 대상이 아니다. 거부·동의 어떤 신호가 와도
      * "현재 상태"(status)나 "동의 이력"(history)에 기록하지 않는다. 필수를 저장하면
@@ -524,7 +524,7 @@ class GdprConsentServiceTest extends PluginTestCase
      * updateConsents 일괄 경로에도 거부 신호가 전달되어 선택형만 rejected 로 저장.
      * (배너 "동의하지 않고 계속하기" 실제 호출 경로)
      *
-     * 이슈 #430 후속 — 필수는 동의 축에서 제외되어 status 에 저장되지 않는다.
+     * 필수는 동의 축에서 제외되어 status 에 저장되지 않는다.
      *
      * @scenario entry=reject, subject=member, category=optional
      *

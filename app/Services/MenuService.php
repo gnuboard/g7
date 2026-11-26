@@ -49,7 +49,7 @@ class MenuService
     }
 
     /**
-     * 요청의 icon_spec 을 icon 저장값으로 바꿉니다 — icon_spec 이 있으면(null 포함) icon 보다 우선한다 (#381).
+     * 요청의 icon_spec 을 icon 저장값으로 바꿉니다 — icon_spec 이 있으면(null 포함) icon 보다 우선한다.
      *
      * 훅(before_create·before_update) **전에** 부른다 — `MenuUserOverridesListener` 가 before_update 훅에서
      * `$data` 로 사용자 수정 표식을 계산하므로, 변환이 뒤에 있으면 icon 변경 표식이 누락된다.

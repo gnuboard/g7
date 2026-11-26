@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 상품 조회 공개 계약 (#916)
+ * 상품 조회 공개 계약 
  *
  * 다른 확장(히어로섹션 상품 위치)은 상품 Model·저장소 대신 이 계약으로 상품을 찾는다. 이름·사이트 경로·id 묶음 조회가 전환 전 히어로
  * 해석기가 직접 만들던 값과 같아야 한다.

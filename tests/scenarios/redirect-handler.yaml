@@ -5,7 +5,7 @@ description: |
   `navigate` 는 SPA 경로용이라 절대 주소를 라우트로 해석하고, `openWindow` 는 새 창이라
   팝업 차단에 걸린다. 그 사이 자리가 이 핸들러다.
 
-  `auth/identity_challenge` 는 #297 부터 `handler="redirect"` 를 적고 있었으나 엔진에
+  `auth/identity_challenge` 는 이전부터 `handler="redirect"` 를 적고 있었으나 엔진에
   소비처가 없어 **한 번도 동작하지 않았다** — 미등록 핸들러는 조용히 무동작이라 콘솔·네트워크에
   흔적이 남지 않는다. 전 이력 조사로 확인했다: `case 'redirect'` 0건 · 매니페스트 0건 ·
   확장 등록 0건(병합이 떨군 것이 아니라 처음부터 없었다).

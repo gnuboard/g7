@@ -27,7 +27,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(here, '..', '..', '..');
 const { release, sets, skipped } = JSON.parse(readFileSync(FIXTURE, 'utf8'));
 const entries = Object.entries(sets).map(([distRel, { ref, classes }]) => [distRel, ref, classes]);
-/** 보존 블록에 실리는 이름 전체 — 반응형 접두 기준 집합 + 출시본에 있다가 빠진 일반 유틸리티(#869 P8) */
+/** 보존 블록에 실리는 이름 전체 — 반응형 접두 기준 집합 + 출시본에 있다가 빠진 일반 유틸리티 */
 const blockEntries = Object.entries(sets).map(([distRel, { ref, classes, utilities = [] }]) => [distRel, ref, [...classes, ...utilities]]);
 const utilityEntries = Object.entries(sets)
   .filter(([, { utilities }]) => (utilities ?? []).length > 0)
@@ -126,7 +126,7 @@ describe('전환 전 반응형 접두 클래스가 지금 빌드 CSS 에 남는�
   });
 
   /**
-   * 출시본 빌드 CSS 에 있던 일반 유틸리티(반응형 접두 없음) 중 번들 레이아웃이 더 쓰지 않아 빠진 이름도 남는다(#869 P8).
+   * 출시본 빌드 CSS 에 있던 일반 유틸리티(반응형 접두 없음) 중 번들 레이아웃이 더 쓰지 않아 빠진 이름도 남는다.
    * 사이트가 직접 쓴 레이아웃과 CSS 가 `dark:bg-sky-700`·`grid-cols-[120px_1fr]` 같은 이름을 쓸 수 있었다.
    * 기준 수는 2026-11-07 대조 값(관리자 42, 사용자 34)이다 — 줄면 누가 픽스처를 깎은 것이다.
    */
@@ -152,7 +152,7 @@ describe('전환 전 반응형 접두 클래스가 지금 빌드 CSS 에 남는�
 });
 
 /**
- * 확장 빌드 CSS 에는 화면 폭 접두 클래스가 하나도 없다(#869 S7).
+ * 확장 빌드 CSS 에는 화면 폭 접두 클래스가 하나도 없다.
  *
  * 번들 레이아웃은 엔진 `responsive` 로만 폭을 가르고, 출시된 적 있는 확장 접두 이름도 없어 보존 블록 대상이 아니다.
  * 그런데 빌드 도구가 `resources/js/**\/__tests__` 의 시험 문자열까지 훑어 `ecommerce:md:flex-row` 같은 이름이

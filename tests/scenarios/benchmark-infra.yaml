@@ -106,7 +106,7 @@ effects:
   - peak_memory_before_and_after_are_both_reported
   - batch_axis_reports_nonzero_exit_code_as_partial_measurement
   - unregistered_command_is_skipped_with_reason
-  # ── 부팅 축 (P0, #860) ──
+  # ── 부팅 축 (P0) ──
   - boot_axis_spawns_fresh_process_per_run_with_web_runtime
   - boot_axis_discards_first_run_and_reports_median_and_counts
   - boot_axis_reports_varying_query_counts_across_runs

@@ -1,4 +1,4 @@
-feature: 검수 서버(실행 역할 stage) 대시보드 호환성 [다시 활성화] 잠금 — 셸 주입값 기준 (브라우저, #888)
+feature: 검수 서버(실행 역할 stage) 대시보드 호환성 [다시 활성화] 잠금 — 셸 주입값 기준 (브라우저)
 
 description: |
   실행 역할은 셸 HTML 의 설정 블록(appConfig.runtime_role)으로 실려 온다. 문서 응답의 그 값을 stage 로 바꿔 열면

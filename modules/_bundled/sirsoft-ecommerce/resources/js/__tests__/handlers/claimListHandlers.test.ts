@@ -1,6 +1,6 @@
-// e2e:allow #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
+// e2e:allow 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측과 Vitest 로 고정한다.
 /**
- * claimListHandlers 테스트 (#599 S12)
+ * claimListHandlers 테스트
  *
  * @description
  * 철회에서 조용히 깨지는 축만 고정한다:
@@ -297,7 +297,7 @@ describe('claimListHandlers', () => {
      *
      * 대기 건의 수단은 접수 때 확정되지만 그 뒤에 낼 수 없게 될 수 있다 — 마일리지 잔액 부족,
      * 운영자가 그 수단을 내림. 그때 화면이 다른 수단을 골라도 핸들러가 실어 보내지 않으면 서버는
-     * 여전히 대기 건의 옛 수단으로 판정해 같은 거절을 돌려준다(#599 실측).
+     * 여전히 대기 건의 옛 수단으로 판정해 같은 거절을 돌려준다.
      * @effects claim_pay_handler_sends_the_chosen_method
      *
      */
@@ -348,7 +348,7 @@ describe('claimListHandlers', () => {
         expect(mockG7Core.dispatch).toHaveBeenCalledWith({
             handler: 'example-pg.requestPayment',
             params: { pgPaymentData: { order_number: 'CP20260901-0001', amount: 6000 } },
-            // 실패 안내는 신청서가 플러그인 문구로 직접 한다 — 디스패처의 내부 문구 토스트는 막는다(#855).
+            // 실패 안내는 신청서가 플러그인 문구로 직접 한다 — 디스패처의 내부 문구 토스트는 막는다.
             errorHandling: { default: { handler: 'suppress' } },
         });
         // 결제창이 뜨는 동안 버튼이 다시 살아나면 같은 건으로 두 번 진입할 수 있다.
@@ -358,7 +358,7 @@ describe('claimListHandlers', () => {
     });
 
     /** @effects claim_pay_pg_entry_failure_releases_the_button */
-    it('결제 — 결제 플러그인이 결제창을 열기 전에 실패하면 진행 표시를 내리고 그 문구를 남긴다 (#855)', async () => {
+    it('결제 — 결제 플러그인이 결제창을 열기 전에 실패하면 진행 표시를 내리고 그 문구를 남긴다', async () => {
         mockG7Core.api.post.mockResolvedValue({
             success: true,
             data: {
@@ -386,7 +386,7 @@ describe('claimListHandlers', () => {
     });
 
     /** @effects claim_pay_pg_entry_failure_releases_the_button */
-    it('결제 — 실패 문구가 없는 결제 플러그인 실패는 대체 문구로 남긴다 (#855)', async () => {
+    it('결제 — 실패 문구가 없는 결제 플러그인 실패는 대체 문구로 남긴다', async () => {
         mockG7Core.api.post.mockResolvedValue({
             success: true,
             data: {

@@ -134,7 +134,7 @@ class PageRepositorySearchTest extends TestCase
     /**
      * 제목만으로 매칭되는지 확인 (본문·슬러그에는 키워드가 없다).
      *
-     * 회귀 배경 (#492 D-25): 운영 DB 에서 제목 검색이 어떤 키워드로도 0 건이었다
+     * 회귀 배경: 운영 DB 에서 제목 검색이 어떤 키워드로도 0 건이었다
      * (`이용약관` / `약관` / `Terms` / `Service` 전부 0, 같은 행을 `LIKE` 로는 찾음).
      * 기존 제목 테스트는 초록이었는데, 본문에 같은 낱말이 들어 있어 **content 매칭으로**
      * 통과하고 있었기 때문이다. 이 케이스는 본문·슬러그에서 키워드를 완전히 제거해
@@ -195,7 +195,7 @@ class PageRepositorySearchTest extends TestCase
 
         $count = $this->repository->countByKeyword('사이트 점검');
 
-        // 건수만 세는 자리도 정확도를 함께 돌려준다 (#519) — 상한에 걸려 잘린 값이
+        // 건수만 세는 자리도 정확도를 함께 돌려준다 — 상한에 걸려 잘린 값이
         // 정확한 것처럼 화면에 나가지 않도록.
         $this->assertSame(1, $count->total);
         $this->assertTrue($count->totalRelation()->isExact());

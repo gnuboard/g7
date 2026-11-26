@@ -208,7 +208,7 @@ interface ProductReviewRepositoryInterface
     public function getWithTrashedByProductId(int $productId): Collection;
 
     /**
-     * 회원이 쓴 리뷰를 최신순으로 페이지 조회합니다. (마이페이지 내 리뷰, #952)
+     * 회원이 쓴 리뷰를 최신순으로 페이지 조회합니다. (마이페이지 내 리뷰)
      *
      * 삭제된 리뷰는 빠진다(소프트 삭제 기본 범위). 상품·이미지·사용 주문 옵션을 함께 읽는다.
      *

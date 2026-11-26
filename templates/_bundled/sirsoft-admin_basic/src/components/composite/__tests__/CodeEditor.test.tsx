@@ -121,7 +121,7 @@ describe('CodeEditor', () => {
   });
 
   /**
-   * 기본 테마는 **문서를 따라간다**(D8, #476).
+   * 기본 테마는 **문서를 따라간다**(D8).
    *
    * 종전 기본값은 `vs-dark` 하드코딩이라 사이트가 라이트 모드여도 편집기만 검은 판이었다.
    * 이제 기본값은 `auto` 이고, 루트에 `dark` 클래스가 없으면 `vs-light` 로 해석된다.
@@ -167,7 +167,7 @@ describe('CodeEditor', () => {
   });
 });
 
-describe('CodeEditor markers — 서버 컴파일 오류·경고 물결 (#476)', () => {
+describe('CodeEditor markers — 서버 컴파일 오류·경고 물결', () => {
   beforeEach(() => {
     setModelMarkersSpy.mockClear();
   });

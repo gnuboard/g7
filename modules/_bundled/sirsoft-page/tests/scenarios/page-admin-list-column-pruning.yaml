@@ -1,4 +1,4 @@
-feature: 관리자 페이지 목록의 본문 컬럼 프루닝 (#518 / 공개 #76)
+feature: 관리자 페이지 목록의 본문 컬럼 프루닝 (공개 #76)
 
 description: |
   관리자 페이지 목록은 본문(`content`)을 출력하지 않는데도 조회가 `select *` 라 longText 본문을

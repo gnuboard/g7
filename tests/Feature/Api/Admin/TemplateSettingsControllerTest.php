@@ -12,7 +12,7 @@ use Tests\Helpers\CreatesTemplateSettingsFixtures;
 use Tests\TestCase;
 
 /**
- * 템플릿 환경설정 API 테스트 (#434)
+ * 템플릿 환경설정 API 테스트
  *
  * 보기는 core.templates.read, 저장·되돌리기는 core.templates.settings. 미설치·선언 없는 템플릿은 404, 꺼진 템플릿도
  * 조회·저장된다. 입력·응답은 섹션 중첩(`{섹션: {키: 값}}`)이다.

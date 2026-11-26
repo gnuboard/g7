@@ -58,7 +58,7 @@ effects:
   - generate_produces_three_bucket_cache_core_modules_plugins
   - each_cache_entry_has_listener_hooks_and_dynamic_keys
   - listener_class_not_autoloaded_at_boot_when_registered_from_cache
-  # #725 — 업데이트가 리스너 클래스를 지운 프로세스에서 옛 구독이 발화해도 그 리스너만 건너뛴다
+  # 업데이트가 리스너 클래스를 지운 프로세스에서 옛 구독이 발화해도 그 리스너만 건너뛴다
   - listener_removed_by_update_is_skipped_without_failing_the_hook
   # 재생성 (무효화=재생성)
   - extension_update_regenerates_hook_cache_via_updateComposerAutoload
@@ -74,7 +74,7 @@ effects:
   - update_autoload_command_runs_without_required_arguments
   # 코어 리스너 등록 경로 중복 (명시 등록 + 캐시 재귀 수집) — 같은 필터가 두 번 붙으면 대시보드 경고가 두 번 뜬다
   - core_listener_registered_exactly_once_across_registration_paths
-  # #862 — 테스트 환경은 실 bootstrap/cache/hooks.php 를 쓰거나 지우지 않는다(경로 치환 인스턴스는 그대로 쓴다)
+  # 테스트 환경은 실 bootstrap/cache/hooks.php 를 쓰거나 지우지 않는다(경로 치환 인스턴스는 그대로 쓴다)
   - testing_env_never_writes_real_hook_cache_file
   - testing_env_never_deletes_real_hook_cache_file
   - substituted_path_manager_still_writes_and_clears_in_testing

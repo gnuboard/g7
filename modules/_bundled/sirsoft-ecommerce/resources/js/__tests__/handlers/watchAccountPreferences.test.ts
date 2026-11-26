@@ -1,5 +1,5 @@
 /**
- * watchAccountPreferences 핸들러 테스트 (이커머스 모듈 소유, #490)
+ * watchAccountPreferences 핸들러 테스트 (이커머스 모듈 소유)
  *
  * @description
  * 내 정보 수정에서 결제 통화나 배송국가를 바꿔 저장하면 화면은 로그인 사용자(current_user)를 다시 받고 그 응답이

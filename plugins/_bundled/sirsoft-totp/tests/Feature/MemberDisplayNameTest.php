@@ -12,7 +12,7 @@ use Plugins\Sirsoft\Totp\Models\TotpCredential;
 use Plugins\Sirsoft\Totp\Tests\PluginTestCase;
 
 /**
- * 인증 앱 강제 해제 활동 로그의 회원 이름 (#490)
+ * 인증 앱 강제 해제 활동 로그의 회원 이름
  *
  * 새로 남기는 활동 로그의 회원 이름(`user_name`)은 그 시점의 관리자 영역(`core:admin`) 표시 이름이다.
  * 설정을 바꾸지 않은 사이트는 수정 전과 같이 회원 이름이 실린다.

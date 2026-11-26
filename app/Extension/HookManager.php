@@ -28,7 +28,7 @@ class HookManager implements HookManagerInterface
     private static ?\WeakMap $mirroredDispatchers = null;
 
     /**
-     * 필터 등록이 바뀔 때마다 올라가는 번호 — 필터 결과를 요청 안에서 메모하는 쪽이 비교한다(#860).
+     * 필터 등록이 바뀔 때마다 올라가는 번호 — 필터 결과를 요청 안에서 메모하는 쪽이 비교한다.
      */
     private static int $filterRevision = 0;
 
@@ -152,7 +152,7 @@ class HookManager implements HookManagerInterface
     }
 
     /**
-     * 현재 이벤트 디스패처에 `hook.*` 와일드카드 미러를 한 번만 등록합니다 (#860).
+     * 현재 이벤트 디스패처에 `hook.*` 와일드카드 미러를 한 번만 등록합니다.
      *
      * 콜백마다 이름 리스너를 걸던 방식은 요청마다 액션 수만큼 리스너를 쌓았다. 등록 여부는 디스패처 객체별로
      * 기억한다 — 새 앱·테스트마다 새 디스패처가 생기므로 정적 bool 로는 안 된다. `Event::fake()` 는 실제
@@ -251,7 +251,7 @@ class HookManager implements HookManagerInterface
      *
      * 화면이 「소켓이 있으니 폴링은 끈다」를 정할 때도 같은 식을 써야 한다. 키만 보고 판정하면
      * 키는 있는데 드라이버가 `null` 이거나 호스트가 비어 있는 사이트에서 방송도 폴링도 없어
-     * 진행률이 멈춘다(#682 S3 라운드 3).
+     * 진행률이 멈춘다.
      *
      * @return bool 방송이 나가면 true
      */

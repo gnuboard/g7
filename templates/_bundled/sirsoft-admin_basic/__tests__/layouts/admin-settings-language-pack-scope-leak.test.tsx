@@ -1,9 +1,9 @@
 /**
  * @file admin-settings-language-pack-scope-leak.test.tsx
  * @description 환경설정 통합 화면 — 정책/언어팩 데이터소스가 같은 query.scope 를 공유해 양방향으로
- *              422 토스트를 유발하던 회귀 (#415)
+ *              422 토스트를 유발하던 회귀
  *
- * 버그 (#415):
+ * 버그:
  *   admin_settings.json 에 정책(policies)·언어팩(language_packs) 데이터소스가 공존하며 둘 다
  *   query.scope 를 읽는다. 두 데이터소스의 scope 값 도메인이 다르다:
  *     - policies      : route / hook / custom
@@ -53,7 +53,7 @@ function selectedSourceIds(
   return new Set(selected.map((s: any) => s.id));
 }
 
-describe('환경설정 — 정책/언어팩 데이터소스 탭 격리 (#415)', () => {
+describe('환경설정 — 정책/언어팩 데이터소스 탭 격리', () => {
   it('본인인증 탭에서는 policies 만 선택되고 language_packs 는 제외된다 (scope=hook 누출 차단)', () => {
     const ids = selectedSourceIds('identity', { scope: 'hook' });
     expect(ids.has('policies'), 'policies 는 본인인증 탭에서 fetch 되어야 함').toBe(true);

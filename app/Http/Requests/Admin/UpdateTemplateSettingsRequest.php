@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Lang;
 use Illuminate\Validation\Rule;
 
 /**
- * 템플릿 설정 저장 요청 검증 (#434)
+ * 템플릿 설정 저장 요청 검증
  *
  * 템플릿 선언 파일(`config/settings/defaults.json`)의 칸 선언(`schema.{섹션}.{키}`)으로 규칙을 만든다 — 플러그인 설정
  * 요청({@see UpdatePluginSettingsRequest})과 같은 방식이고, 스키마 출처만 PHP 클래스 대신 선언 파일이다.

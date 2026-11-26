@@ -49,7 +49,7 @@ require_once __DIR__.'/_guard.php';
 // finalize 전용 가드 — `.env` 의 INSTALLER_COMPLETED=true 단독으로만 차단한다.
 // 일반 인스톨러 엔드포인트의 `installer_guard_or_410()` 은 `g7_installed` 락 파일도
 // 차단 사유로 삼는데, 그 락 파일은 finalize 호출 직전 단계의 complete_flag task 가
-// 먼저 생성하므로 자가 차단 회귀가 발생한다 (이슈 #371).
+// 먼저 생성하므로 자가 차단 회귀가 발생한다.
 installer_guard_finalize_or_410();
 
 // 다국어 로드 — 형제 엔드포인트 6곳(`install-process` · `install-worker` · `run-task` ·

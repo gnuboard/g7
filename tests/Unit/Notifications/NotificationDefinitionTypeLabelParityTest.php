@@ -5,7 +5,7 @@ namespace Tests\Unit\Notifications;
 use Tests\TestCase;
 
 /**
- * 코어 소유 알림 정의 타입 ↔ 관리자 화면 라벨 패리티 (#597 후속, 2026-08-24)
+ * 코어 소유 알림 정의 타입 ↔ 관리자 화면 라벨 패리티 (2026-08-24)
  *
  * 관리자 알림 설정 화면의 정의 목록은 제목을 DB `name` 이 아니라 프론트 다국어 키
  * `admin.settings.notification_definitions.types.{type}` 로 렌더한다. 이 네임스페이스의
@@ -13,7 +13,7 @@ use Tests\TestCase;
  * 공급한다(모듈 소유 타입은 각 모듈의 화면·lang 이 담당).
  *
  * 키가 없으면 예외도 경고도 없이 원시 키 문자열이 화면 제목으로 그대로 노출된다
- * (실사례: sitemap_regenerated / sitemap_regenerate_failed — #481 이 config 정의만 추가하고
+ * (실사례: sitemap_regenerated / sitemap_regenerate_failed — config 정의만 추가하고
  * 템플릿 라벨을 누락). config/core.php 에 정의를 추가하는 커밋이 라벨을 빠뜨리는 일이
  * 재발하지 않도록, 코어 정의 전수를 양 로케일 라벨과 대조한다.
  *
@@ -178,7 +178,7 @@ class NotificationDefinitionTypeLabelParityTest extends TestCase
     /**
      * 코어 소유 알림 정의 타입 전수를 config 에서 읽는다
      *
-     * 본인인증 분류(`category = identity`, 7.1.0~ #699)는 뺀다 — 그 카드는 처음부터 서버가 주는 로케일 이름
+     * 본인인증 분류(`category = identity`, 7.1.0~)는 뺀다 — 그 카드는 처음부터 서버가 주는 로케일 이름
      * (`$localized(def.name)`)으로 그리고, 운영자가 추가하는 정책별 문구(`identity.policy.{키}`)는 정적 라벨을
      * 가질 수 없어 이 네임스페이스로 덮을 수 없다. 이름의 다국어는 정의 선언과 언어팩 seed 가 공급한다.
      *

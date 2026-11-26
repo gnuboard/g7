@@ -407,7 +407,7 @@ class SignatureControllerTest extends PluginTestCase
     }
 
     /**
-     * 결제 금액 하한이 세 요청 경로에서 동일한지 확인합니다 (#493 E9).
+     * 결제 금액 하한이 세 요청 경로에서 동일한지 확인합니다.
      *
      * 같은 필드에 PC 는 min:100, 모바일은 min:1 이 걸려 있어, 모바일에서 성립한 결제가 PC 에서는
      * 거부됐습니다. 하한이 다시 갈라지면 이 테스트가 먼저 깨집니다.
@@ -434,7 +434,7 @@ class SignatureControllerTest extends PluginTestCase
     }
 
     /**
-     * 최소 화폐단위(1원) 결제도 PC 서명 요청이 받아들이는지 확인합니다 (#493 E9).
+     * 최소 화폐단위(1원) 결제도 PC 서명 요청이 받아들이는지 확인합니다.
      *
      * @scenario channel=pc, price_boundary=minimum
      *
@@ -475,7 +475,7 @@ class SignatureControllerTest extends PluginTestCase
     }
 
     /**
-     * 최소 화폐단위(1원) 결제를 모바일 서명 요청도 받아들이는지 확인합니다 (#493 E9).
+     * 최소 화폐단위(1원) 결제를 모바일 서명 요청도 받아들이는지 확인합니다.
      *
      * 하한 통일의 근거가 "모바일에서 이미 1원 결제가 성립 중" 이었다. 그 전제를 PC 왕복만
      * 으로 가드하면, 모바일 경로가 조용히 100 원으로 되돌아가도 아무 테스트도 red 가 되지
@@ -512,7 +512,7 @@ class SignatureControllerTest extends PluginTestCase
     }
 
     /**
-     * 모바일 서명 요청도 같은 하한 경계를 실제 요청에서 지키는지 확인합니다 (#493 E9).
+     * 모바일 서명 요청도 같은 하한 경계를 실제 요청에서 지키는지 확인합니다.
      *
      * 규칙 문자열 대조(위 parity 테스트)는 세 Request 가 같은 상수를 읽는 것까지만 보장한다.
      * 그 규칙이 모바일 라우트에도 실제로 걸리는지는 왕복으로만 알 수 있다.

@@ -1,4 +1,4 @@
-feature: 엔진 — 이벤트 없이 불린 액션 핸들러 (engine-v1.77.1, #736 S2)
+feature: 엔진 — 이벤트 없이 불린 액션 핸들러 (engine-v1.77.1)
 
 description: |
   컴포넌트가 콜백을 이벤트 없이 부를 때(관리자 모달 Escape 의 `onClose()`) `createHandler` 가 돌려준 핸들러가

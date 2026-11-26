@@ -114,7 +114,7 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
     /**
      * 회원 주문 (order_confirmed) → name 은 받는 사람 이름 자리표시, order_url 은 마이페이지 경로.
      *
-     * 회원 이름을 여기서 읽어 싣지 않는다. 코어가 받는 사람과 채널마다 그 채널의 표시 이름으로 바꾼다(#490).
+     * 회원 이름을 여기서 읽어 싣지 않는다. 코어가 받는 사람과 채널마다 그 채널의 표시 이름으로 바꾼다.
      * 주문서에 적힌 주문자 이름(배송지)이나 회원의 이름 컬럼이 그대로 나가지 않아야 한다.
      *
      * @effects member_order_notification_uses_member_name_and_mypage_url
@@ -135,7 +135,7 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
-     * 받는 사람이 회원인 알림의 name 은 자리표시이고, 받는 사람이 아닌 회원의 이름(customer_name)은 알림 영역의 표시 이름이다 (#490).
+     * 받는 사람이 회원인 알림의 name 은 자리표시이고, 받는 사람이 아닌 회원의 이름(customer_name)은 알림 영역의 표시 이름이다.
      *
      * @scenario case=notification_member_names
      *

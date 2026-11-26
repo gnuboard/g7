@@ -224,15 +224,15 @@ abstract class TestCase extends BaseTestCase
             'g7_settings.core.security.ip_restriction_enabled' => false,
             'g7_settings.core.security.admin_allowed_ips' => [],
             'g7_settings.core.security.ip_restriction_rules' => [],
-            // HTTPS 강제 이동(#888)도 꺼 둔다. 개발 사이트에서 켜 두면 web·api 그룹의 http 테스트 요청이 전부 301·308 로
+            // HTTPS 강제 이동도 꺼 둔다. 개발 사이트에서 켜 두면 web·api 그룹의 http 테스트 요청이 전부 301·308 로
             // 이동해 원인을 가리키지 않는 실패가 무더기로 난다. 이동을 검증하는 테스트(ForceHttpsTest)는 자기 테스트에서 켠다.
             'g7_settings.core.security.force_https' => false,
-            // 닉네임 정책(#490)도 꺼 둔다. 개발 사이트에서 중복 금지나 금지어를 켜 두면 회원을 만드는 테스트가
+            // 닉네임 정책도 꺼 둔다. 개발 사이트에서 중복 금지나 금지어를 켜 두면 회원을 만드는 테스트가
             // 그 환경에서만 닉네임 검증 오류로 깨진다. 정책을 검증하는 테스트는 이 세 키를 자기 테스트에서 명시한다.
             'g7_settings.core.member.nickname_unique' => false,
             'g7_settings.core.member.nickname_banned_words' => [],
             'g7_settings.core.member.nickname_change_interval_days' => 0,
-            // 표시 이름 설정(#490)도 기본값으로 고정한다. 개발 사이트에서 영역을 닉네임으로 바꿔 두면 닉네임 항목이 필수로 잠겨
+            // 표시 이름 설정도 기본값으로 고정한다. 개발 사이트에서 영역을 닉네임으로 바꿔 두면 닉네임 항목이 필수로 잠겨
             // 회원을 만드는 테스트가 그 환경에서만 깨지고, 응답의 `display_name` 값도 달라진다. 표시 이름을 검증하는 테스트는 자기 테스트에서 명시한다.
             'g7_settings.core.member.display_name_selectable_kinds' => ['name'],
             'g7_settings.core.member.display_name_member_default_kind' => 'name',
@@ -252,7 +252,7 @@ abstract class TestCase extends BaseTestCase
             // 본문에서 이 키를 명시한다.
             'g7_settings.core.analytics.privacy_mode' => 'full',
             'g7_settings.core.analytics.respect_dnt' => true,
-            // 비밀번호 정책(#736)도 전부 기본값(꺼짐)으로 고정한다. 개발 사이트에서 만료·작성 규칙을 켜 두면
+            // 비밀번호 정책도 전부 기본값(꺼짐)으로 고정한다. 개발 사이트에서 만료·작성 규칙을 켜 두면
             // 로그인이 토큰 대신 변경 단계를 돌려주고, 가입·변경 테스트의 비밀번호가 조합·반복 규칙에 걸려
             // 그 환경에서만 무더기로 깨진다. 정책을 검증하는 테스트는 해당 키를 자기 setUp 에서 명시한다.
             'g7_settings.core.security.password_require_char_types' => false,
@@ -270,7 +270,7 @@ abstract class TestCase extends BaseTestCase
             'g7_settings.core.security.password_expiry_action' => 'force',
             'g7_settings.core.security.password_expiry_remind_days' => 30,
             'g7_settings.core.security.password_expiry_batch_size' => 1000,
-            // 활동 로그 보관 기간(#736 D14) — 사이트 저장값이 파기 테스트로 새지 않게 기본값으로 고정
+            // 활동 로그 보관 기간 — 사이트 저장값이 파기 테스트로 새지 않게 기본값으로 고정
             'g7_settings.core.security.activity_log_retention_days' => 365,
             'g7_settings.core.security.password_expiry_started_at' => null,
         ]);

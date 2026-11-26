@@ -1,4 +1,4 @@
-// e2e:allow #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다. / #855 후속: 결제창 열기 전 오류의 화면 문구를 번역된 일반 문구로(내부 영어 문구는 콘솔) — Chrome MCP 실측(신청서 ko/ja, 주문서 오류 창)과 Vitest 로 고정한다.
+// e2e:allow 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다. / 결제창 열기 전 오류의 화면 문구를 번역된 일반 문구로(내부 영어 문구는 콘솔) — Chrome MCP 실측(신청서 ko/ja, 주문서 오류 창)과 Vitest 로 고정한다.
 /**
  * requestPayment 핸들러 테스트
  *
@@ -67,7 +67,7 @@ describe('requestPaymentHandler', () => {
         await requestPaymentHandler({ params: { pgPaymentData: withoutMethod } });
 
         expect(apiGet).not.toHaveBeenCalled();
-        // 내부 영어 문구(KG Inicis payment method is missing …)는 콘솔에만 남고 화면에는 번역된 일반 문구가 간다(#855).
+        // 내부 영어 문구(KG Inicis payment method is missing …)는 콘솔에만 남고 화면에는 번역된 일반 문구가 간다.
         expect(setLocalSpy).toHaveBeenCalledWith(
             expect.objectContaining({
                 isSubmittingOrder: false,
@@ -113,7 +113,7 @@ describe('requestPaymentHandler', () => {
 
     /**
      * 클레임 추가결제는 신청서 화면에서 열린다 — 그 화면에는 주문서 전용 오류 모달이 없어, 모달을 열면 안내 없이
-     * 「결제 진행 중…」에 멈췄다. 문구를 담아 던져 이커머스 신청서 핸들러가 dispatch 결과로 받게 한다 (#855).
+     * 「결제 진행 중…」에 멈췄다. 문구를 담아 던져 이커머스 신청서 핸들러가 dispatch 결과로 받게 한다.
      */
     // @scenario flow=entry_guard
     // @effects claim_payment_entry_failure_is_handed_to_the_claim_screen
@@ -165,7 +165,7 @@ describe('requestPaymentHandler — PC closeUrl', () => {
     let originalUserAgent: PropertyDescriptor | undefined;
 
     beforeEach(() => {
-        // 결제 진입 실패의 사유는 콘솔에 남는다 — 화면 문구와 나눠 단언한다(#855).
+        // 결제 진입 실패의 사유는 콘솔에 남는다 — 화면 문구와 나눠 단언한다.
         vi.spyOn(console, 'error').mockImplementation(() => {});
         apiGet = vi.fn().mockResolvedValue(CLIENT_CONFIG);
         apiPost = vi.fn().mockResolvedValue({
@@ -264,7 +264,7 @@ describe('requestPaymentHandler — PC closeUrl', () => {
                 paymentErrorMessage: '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
             }),
         );
-        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다(#855).
+        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다.
         expect(console.error).toHaveBeenCalledWith(
             expect.stringContaining('requestPayment error'),
             expect.objectContaining({ message: 'KG Inicis supports only KRW standard payments or JPY Japan CBT payments.' }),
@@ -296,7 +296,7 @@ describe('requestPaymentHandler — PC closeUrl', () => {
                 paymentErrorMessage: '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
             }),
         );
-        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다(#855).
+        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다.
         expect(console.error).toHaveBeenCalledWith(
             expect.stringContaining('requestPayment error'),
             expect.objectContaining({ message: 'KG Inicis live standard payment is not configured.' }),
@@ -327,7 +327,7 @@ describe('requestPaymentHandler — PC closeUrl', () => {
                 paymentErrorMessage: '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
             }),
         );
-        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다(#855).
+        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다.
         expect(console.error).toHaveBeenCalledWith(
             expect.stringContaining('requestPayment error'),
             expect.objectContaining({ message: 'Selected KG Inicis easy pay method is disabled.' }),
@@ -405,7 +405,7 @@ describe('requestPaymentHandler — PC closeUrl', () => {
     });
     /**
      * 면세분이 섞인 결제는 매뉴얼(stdpay_pc)의 tax(부가세)·taxfree(비과세)를 싣는다 — 종전에는 보내지 않아
-     * 면세 상품이 과세로 등록됐다(#820). 전부 과세면 보내지 않는다(「부가세 업체정함」 계약 가맹점 전용 필드).
+     * 면세 상품이 과세로 등록됐다. 전부 과세면 보내지 않는다(「부가세 업체정함」 계약 가맹점 전용 필드).
      */
     // @scenario flow=pc_standard
     // @effects tax_split_follows_manual
@@ -493,7 +493,7 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
     let submitSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
-        // 결제 진입 실패의 사유는 콘솔에 남는다 — 화면 문구와 나눠 단언한다(#855).
+        // 결제 진입 실패의 사유는 콘솔에 남는다 — 화면 문구와 나눠 단언한다.
         vi.spyOn(console, 'error').mockImplementation(() => {});
         apiGet = vi.fn().mockResolvedValue(CLIENT_CONFIG);
         apiPost = vi.fn().mockImplementation((url: string) => {
@@ -641,7 +641,7 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
                 paymentErrorMessage: '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
             }),
         );
-        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다(#855).
+        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다.
         expect(console.error).toHaveBeenCalledWith(
             expect.stringContaining('requestPayment error'),
             expect.objectContaining({ message: 'KG Inicis Japan payment methods require a JPY order.' }),
@@ -688,7 +688,7 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
                 paymentErrorMessage: '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
             }),
         );
-        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다(#855).
+        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다.
         expect(console.error).toHaveBeenCalledWith(
             expect.stringContaining('requestPayment error'),
             expect.objectContaining({ message: 'JPY orders can only use KG Inicis Japan CBT payment methods.' }),
@@ -766,7 +766,7 @@ describe('requestPaymentHandler — CBT (JPPG) 분기', () => {
                 paymentErrorMessage: '결제를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.',
             }),
         );
-        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다(#855).
+        // 사유(내부 영어 문구)는 화면이 아니라 콘솔에 남는다.
         expect(console.error).toHaveBeenCalledWith(
             expect.stringContaining('requestPayment error'),
             expect.objectContaining({ message: 'KG Inicis Japan CBT payment is not configured.' }),
@@ -1155,7 +1155,7 @@ describe('SDK URL 신뢰 호스트 게이트', () => {
     });
 });
 
-describe('resolvePaymentErrorMessage — 화면에 보일 결제 오류 문구 (#855)', () => {
+describe('resolvePaymentErrorMessage — 화면에 보일 결제 오류 문구', () => {
     afterEach(() => {
         delete (window as Record<string, unknown>).G7Core;
     });

@@ -31,7 +31,7 @@ class NotificationRecipientCapability
      * 수신자가 해당 권한을 가졌는지 판정합니다.
      *
      * 게스트(비회원)는 언제나 false 입니다 — 관리자 화면에 접근할 계정 자체가 없습니다.
-     * 수신자 규칙 `site_admin_email`(환경설정의 관리자 이메일, #888)이 만든 수신자도 게스트라 false 입니다 —
+     * 수신자 규칙 `site_admin_email`(환경설정의 관리자 이메일)이 만든 수신자도 게스트라 false 입니다 —
      * 그 주소의 주인이 회원인지 알 수 없으므로 권한이 필요한 주소를 메일에 싣지 않습니다.
      *
      * @param  object  $notifiable  수신자 (User 또는 GuestNotifiable)

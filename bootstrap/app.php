@@ -222,7 +222,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
             $middleware->appendToGroup($extGroup, ExtensionMiddlewareGate::class.":{$extGroup},after_core");
         }
 
-        // HTTPS 강제 이동 (#888) — 관리자 환경설정 > 보안의 「HTTPS 강제 적용」이 켜져 있으면 http 요청을 같은 주소의 https 로 보낸다.
+        // HTTPS 강제 이동 — 관리자 환경설정 > 보안의 「HTTPS 강제 적용」이 켜져 있으면 http 요청을 같은 주소의 https 로 보낸다.
         // web·api 그룹 **맨 앞**: prependToGroup 은 나중에 부른 것이 앞에 놓이므로 그룹 prepend 가운데 마지막에 부른다(확장 before_core
         // 게이트보다도 앞). 점검 모드·신뢰 프록시는 전역 미들웨어라 이보다 먼저 판정이 끝난다.
         $middleware->prependToGroup('web', ForceHttps::class);
@@ -277,12 +277,12 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'analytics.fallback' => TrackServerVisit::class,
             // 집계 조회 라우트 앞에서 오래된 집계를 다시 계산하고 응답에 신선도를 싣는다(권한 미들웨어 뒤).
             'analytics.archive_on_view' => EnsureArchiveFresh::class,
-            // 개발자 화면(custom 예약 자리, #792) 회원 필수 / 관리자 필수 — routes/custom.php 에서 라우트에 붙인다
+            // 개발자 화면(custom 예약 자리) 회원 필수 / 관리자 필수 — routes/custom.php 에서 라우트에 붙인다
             'custom.auth' => RequireScreenUser::class,
             'custom.admin' => RequireScreenAdmin::class,
         ]);
 
-        // 개발자 화면(routes/custom.php, #792) 묶음 — G7 화면 catch-all 과 같은 순서 계약을 따른다:
+        // 개발자 화면(routes/custom.php) 묶음 — G7 화면 catch-all 과 같은 순서 계약을 따른다:
         // 정식 주소 이동(호스트 → 끝·연속 슬래시) → 봇 표식(SEO 렌더 없이 표식만) → 봇 기록 → 서버 폴백 집계(봇 표식이 있으면 세지 않음).
         // 사용자 템플릿 의존성 검사(template.dependencies)는 넣지 않는다 — 템플릿이 없어도 개발자 화면은 뜬다.
         $middleware->group('custom.screen', [

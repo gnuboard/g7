@@ -140,7 +140,7 @@ function ModalStandIn(props: any) {
         React.createElement('section', { ref: dialogRef, role: 'dialog', 'data-title': title, onClick: (e: any) => e.stopPropagation() },
             React.createElement('button', { type: 'button', 'aria-label': 'close', onClick: (e: any) => onClose?.(e) }, 'x'),
             children,
-            // 실물과 같이 고정 하단(footer)도 그린다 — 확인 창 단추가 고정 하단으로 옮겨 갔다(#869)
+            // 실물과 같이 고정 하단(footer)도 그린다 — 확인 창 단추가 고정 하단으로 옮겨 갔다
             renderModalFooterStandIn(props)));
 }
 
@@ -1053,7 +1053,7 @@ function unmountClears(modal: Node, key: string): Array<{ guarded: boolean }> {
         const clears = (x.lifecycle?.onUnmount ?? []).some((a: any) => a?.handler === 'setState' && a.params?.target === 'global' && Object.prototype.hasOwnProperty.call(a.params, key) && (a.params[key] === null || a.params[key] === ''));
         if (clears) out.push({ guarded: g });
         (x.children ?? []).forEach((c: any) => walk(c, g));
-        (x.props?.footer ?? []).forEach((c: any) => walk(c, g)); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
+        (x.props?.footer ?? []).forEach((c: any) => walk(c, g)); // 고정 하단 (바닥 단추가 Modal 고정 하단으로 옮김)
     };
     walk(modal, false);
 

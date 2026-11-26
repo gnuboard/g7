@@ -153,7 +153,7 @@ describe('AnalyticsTracker', () => {
   // @effects consented_visitors_first_page_is_held_until_consent_is_known
   it('동의 조회보다 먼저 온 첫 화면은 버리지 않고 들고 있다가, 동의로 확인되면 보내고 아니면 버린다', async () => {
     // 첫 화면 비콘은 부팅 직후 동기로 나가 동의 조회보다 늘 먼저다. 버리면 동의한 방문자가
-    // 새로 들어오거나 새로고침한 화면이 한 건도 안 남는다(#682 S3 라운드 13 브라우저 실측).
+    // 새로 들어오거나 새로고침한 화면이 한 건도 안 남는다.
     const run = async (settled: Partial<ConsentSnapshotLike> & { status: ConsentSnapshotLike['status'] }) => {
       fetchMock.mockClear();
       const source = fakeConsentSource();
@@ -186,7 +186,7 @@ describe('AnalyticsTracker', () => {
 
   // @scenario mode=consent, source=beacon, visit_state=open
   // @effects consented_visitors_first_page_is_held_until_consent_is_known
-  it('로그인·로그아웃으로 판정이 다시 대기로 돌아가면 그 사이의 화면 이동도 들고 있다가 새 판정으로 보낸다 (#639)', async () => {
+  it('로그인·로그아웃으로 판정이 다시 대기로 돌아가면 그 사이의 화면 이동도 들고 있다가 새 판정으로 보낸다', async () => {
     // 로그인은 SPA 이동이다 — 로그인 직후 화면의 비콘은 동의 재조회보다 먼저 나간다. 버리면 회원으로
     // 들어온 첫 화면이 통째로 빠지고, 옛(게스트) 판정으로 보내면 동의하지 않은 회원이 세어진다.
     const source = fakeConsentSource();
@@ -622,7 +622,7 @@ describe('AnalyticsTracker', () => {
   // @effects tracker_fits_payload_to_server_field_limits
   it('서버 검증 상한을 넘는 필드는 보내기 전에 맞춰 비콘 전체가 버려지지 않게 한다', () => {
     // 서버(CollectRequest)는 한 필드라도 넘으면 비콘 전체를 검증 실패로 버린다 —
-    // 긴 게시글 제목 하나 때문에 그 화면 열람이 통째로 빠졌다(#682 R12-D2).
+    // 긴 게시글 제목 하나 때문에 그 화면 열람이 통째로 빠졌다.
     Object.defineProperty(document, 'referrer', {
       value: `https://ref.test/?q=${'r'.repeat(1100)}`,
       configurable: true,
@@ -670,7 +670,7 @@ describe('AnalyticsTracker', () => {
   // @effects prerendered_page_counts_its_landing_pageview_when_activated, tracker_skips_excluded_requests_before_sending
   it('미리 그리던 화면은 보내지 않다가 실제로 열리면 그 첫 화면을 init 비콘으로 보낸다', () => {
     // 브라우저가 미리 그린 화면을 방문자가 실제로 열면 그때가 랜딩이다. 미리 그릴 때 버리고
-    // 끝나면 그 방문의 첫 화면이 브라우저·서버 어디에도 남지 않는다(#682 R12-D5).
+    // 끝나면 그 방문의 첫 화면이 브라우저·서버 어디에도 남지 않는다.
     const doc = document as Document & { prerendering?: boolean };
     doc.prerendering = true;
 

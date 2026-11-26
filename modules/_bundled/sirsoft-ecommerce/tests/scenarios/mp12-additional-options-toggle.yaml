@@ -47,7 +47,7 @@ effects:
   - additional_option_value_allow_custom_text_toggle # 선택지 단위 직접입력 토글 + 번역 라벨
   - additional_option_empty_values_error_shown      # 빈 선택지 그룹 강조 테두리 + 하단 메시지
   - product_save_sequence_syncs_images              # 저장 sequence emitEvent → form.images → apiCall
-  - save_template_modal_footer_in_children          # 공지 템플릿 저장 모달 취소·저장 단추가 Modal 고정 하단(props.footer)에 있다(#869 P1, 종전 children 말미)
+  - save_template_modal_footer_in_children          # 공지 템플릿 저장 모달 취소·저장 단추가 Modal 고정 하단(props.footer)에 있다(종전 children 말미)
   - product_create_navigates_by_id                  # 생성 후 이동은 id 기반 경로
 
 test_files:

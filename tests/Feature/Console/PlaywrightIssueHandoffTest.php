@@ -14,7 +14,7 @@ use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
- * Playwright 묶음 인계 발급 명령 `playwright:issue-handoff` (#798 K2 E2E 픽스처)
+ * Playwright 묶음 인계 발급 명령 `playwright:issue-handoff` (E2E 픽스처)
  *
  * 묶음 쿠키와 코드를 함께 돌려준다 — 그 쿠키를 실은 요청만 교환되고, 쿠키 없는 요청은 422 다. 옵트인 가드와 운영 환경 거절을 지킨다.
  */

@@ -1,5 +1,5 @@
 <!-- 팝업 등록·수정 — 한 레이아웃이 등록(`route.id` 없음)과 수정(`route.id`)을 겸한다. 이미지는 둘 다 화면에 들어올 때 만든 임시 키
-  (`_global.tempKey`)로 먼저 올리고 「저장」 때만 팝업에 붙는다(#810 과 같은 방식) — 저장하지 않고 나가면 사이트 화면은 그대로다.
+  (`_global.tempKey`)로 먼저 올리고 「저장」 때만 팝업에 붙는다(히어로 섹션 배너 편집과 같은 방식) — 저장하지 않고 나가면 사이트 화면은 그대로다.
   내용 유형에 따라 이미지형(PC·모바일 이미지·alt·링크)과 직접 작성형(언어별 본문, 에디터 플러그인이 있으면 그 에디터)이 갈린다.
   오른쪽 미리보기는 사용자 레이어와 같은 컴포넌트를 지금 표시 방식대로 축소해 그린다. 다른 관리자가 먼저 저장했으면(409) 입력을 보존한 채
   같은 화면에서 최신본과 비교·재적용한다. -->
@@ -560,7 +560,7 @@
             </div>
           </section>
           <p data-if="{{_local.pcUploadBlocked || _local.mobileUploadBlocked}}" role="status" class="g7pp-form-hint">$t:sirsoft-popup.admin.form.upload_pending</p>
-          <!-- 동시 수정 충돌(409) — 입력은 그대로 두고, 같은 창에서 최신본을 따로 받아 항목별로 비교한다(#810 과 같은 방식).
+          <!-- 동시 수정 충돌(409) — 입력은 그대로 두고, 같은 창에서 최신본을 따로 받아 항목별로 비교한다(히어로 섹션 배너 편집과 같은 방식).
             적용하면 최신본 위에 고른 내 값만 얹은 폼(최신 revision)으로 바뀐다 -->
           <div data-ref="conflict_panel" data-if="{{_local.conflict}}" role="alert" class="g7pp-alert-danger">
             <div class="gpp:flex gpp:flex-col gpp:gap-2 gpp:w-full gpp:min-w-0">

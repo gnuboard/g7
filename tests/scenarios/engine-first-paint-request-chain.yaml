@@ -1,4 +1,4 @@
-feature: 엔진 첫 화면 요청 사슬 — 셸 인라인 템플릿 설정과 첫 레이아웃 미리 요청 (engine-v1.96.0, #879)
+feature: 엔진 첫 화면 요청 사슬 — 셸 인라인 템플릿 설정과 첫 레이아웃 미리 요청 (engine-v1.96.0)
 
 description: |
   부팅(`TemplateApp.init`)이 첫 화면 전 PHP 왕복을 줄줄이 기다리던 것 중 두 단계를 걷는다.

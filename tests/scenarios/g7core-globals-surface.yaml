@@ -30,7 +30,7 @@ description: |
 
   ## 이 파일이 뒤늦게 매니페스트를 갖게 된 경위
 
-  #524 에서 `getGlobalState()` 규약을 흉내 내던 낡은 테스트 더블 한 줄을 고치면서 이 파일이
+  `getGlobalState()` 규약을 흉내 내던 낡은 테스트 더블 한 줄을 고치면서 이 파일이
   변경셋에 들어왔고, 그제야 소유 매니페스트가 없다는 것이 드러났다. 규약(`state.get()` 은
   `_global` 의 내용물을 평평하게 돌려준다)은 `expand_children_context_carries_global_local_and_computed`
   가 지킨다.
@@ -53,7 +53,7 @@ effects:
   - expand_context_single_binding_keeps_its_type
   - extension_asset_urls_are_same_origin_and_composable
   - thumbnail_api_exposes_content_srcset_within
-  # #712 후속: 확장자를 가로채는 서버 + 정적 게시본 없음 — AMD 디렉토리도 file 쿼리 형태(서버가 .js 를 메운다)
+  # 확장자를 가로채는 서버 + 정적 게시본 없음 — AMD 디렉토리도 file 쿼리 형태(서버가 .js 를 메운다)
   - amd_directory_url_uses_file_query_in_extensionless_mode
   - g7core_namespace_is_created_with_react_globals
   - helper_apis_are_exposed

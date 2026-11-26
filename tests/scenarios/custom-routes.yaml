@@ -1,4 +1,4 @@
-feature: custom 예약 자리 라우트·뷰·번역·마이그레이션·개발자 프로바이더 (#792)
+feature: custom 예약 자리 라우트·뷰·번역·마이그레이션·개발자 프로바이더
 
 description: |
   routes/web.php 맨 앞에서 routes/custom.php 를 custom.screen 묶음(정식 주소 이동·봇 표식·봇 기록·

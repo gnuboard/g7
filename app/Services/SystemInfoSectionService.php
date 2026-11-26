@@ -6,7 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 시스템 정보 화면의 확장 카드 섹션 (#888).
+ * 시스템 정보 화면의 확장 카드 섹션.
  *
  * 관리자 환경설정 > 시스템 정보 탭은 코어가 모은 환경 정보(「시스템 정보」 카드)를 보인다. 확장은 필터 훅
  * `core.settings.filter_system_info_sections` 로 그 옆에 카드를 더할 수 있다 — 예: 서버 상태를 보여 주는 플러그인이

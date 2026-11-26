@@ -785,7 +785,7 @@ G7Core.style.mergeClasses('dark:text-white dark:bg-gray-800', 'dark:text-gray-10
 | 판정함 | 판정하지 않음(그대로 둘 다 남음) |
 |------|------|
 | Tailwind v3 기본 유틸리티 중 표에 든 것 — 정렬(`justify`·`items`·`content`·`self`), flex/grid, display, position·inset, 크기(`w`·`h`·`min-*`·`max-*`), 여백, 글자(크기·굵기·정렬·색·행간·자간 등), 배경, 테두리·둥글기·ring, 그림자·불투명도·필터·변형·전환, 커서·overflow 등 | **커스텀 클래스**(`btn`·`card-header` 같은 템플릿 고유 클래스) — 그룹이 없으므로 충돌로 보지 않는다 |
-| 값 접두사로 판정하는 그룹의 임의값(`w-[320px]`·`p-[3px]`·`gap-[6px]`) | 값 목록으로 판정하는 그룹의 임의값 — 색(`text-[#333]`·`bg-[var(--x)]`·`border-[#ddd]`), 글자 크기(`text-[13px]`), 그림자·둥글기 임의값 |
+| 값 접두사로 판정하는 그룹의 임의값(`w-[320px]`·`p-[3px]`·`gap-[6px]`) | 값 목록으로 판정하는 그룹의 임의값 — 색(`text-`·`bg-[var(--x)]`·`border-[#ddd]`), 글자 크기(`text-[13px]`), 그림자·둥글기 임의값 |
 | 변형 접두사 `dark:` `hover:` `focus:` `active:` `disabled:` `group-hover:` `sm:` `md:` `lg:` `xl:` `2xl:` 과 그 조합 | 그 밖의 변형 접두사(`focus-visible:`·`aria-*:`·`data-*:`·`peer-*:`·`group-*`(hover 외)·`max-*:` 등) — 접두사를 떼지 못해 그룹을 찾지 못한다 |
 | | **Tailwind v4 신규 유틸리티**(`size-*`·`bg-linear-*`·`shadow-xs`·`rounded-xs`·`inset-shadow-*`·`text-shadow-*` 등)와 v4 에서 바뀐 이름 |
 | | 색 이름 목록 밖의 색 토큰(테마에 추가한 `bg-primary-500` 등) |

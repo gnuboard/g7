@@ -12,7 +12,7 @@ use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 사용자 글 작성 API 가 첨부 번호(attachment_ids)로 첨부를 잇는다 (#883 후속)
+ * 사용자 글 작성 API 가 첨부 번호(attachment_ids)로 첨부를 잇는다
  *
  * 종전에는 사용자 글 작성(`POST boards/{slug}/posts`)이 `attachment_ids` 를 검증만 하고 서비스로 넘기지 않아, 201 이 나도 첨부가
  * 글에 이어지지 않았다(관리자 경로·사용자 수정 경로는 넘김). 번호로 잇는 경로도 소유 규칙(본인 업로드만)을 그대로 탄다.

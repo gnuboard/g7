@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * 코드 편집기 HTML(.g7.html) 기본화의 API 계약 (#476).
+ * 코드 편집기 HTML(.g7.html) 기본화의 API 계약.
  *
  *  - `GET …/layouts/{name}?with_markup=1` · `GET …/layout-extensions/{id}?with_markup=1` — 역변환 결과 필드
  *  - `PUT` 저장 `format=markup` — 컴파일된 JSON 이 DB 에 실리고 `lock_version` 이 오른다 · 컴파일 오류는 422 `compile_error`

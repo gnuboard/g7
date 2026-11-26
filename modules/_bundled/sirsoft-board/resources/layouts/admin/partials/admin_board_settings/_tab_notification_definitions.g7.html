@@ -30,7 +30,7 @@
     <div data-ref="board_channel_sub_tabs" class="board:flex board:border-b board:border-gray-200 board:dark:border-gray-700 board:overflow-x-auto">
       <a href="/admin/boards/settings?channel={{ch.id}}&amp;page=1" :mergeQuery="true" data-each="ch, chIdx in {{(availableChannels?.data?.channels ?? []).filter(c => c.hidden_tab !== true &amp;&amp; (c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (c.tab_channels ?? [c.id]).filter(tc => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === tc)?.is_active === true).length > 0))}}" aria-current="{{(query.channel ?? 'mail') === ch.id ? 'page' : undefined}}" class="board-button {{(query.channel ?? 'mail') === ch.id ? 'board:border-b-2 board:border-indigo-500 board:dark:border-indigo-400 board:text-indigo-600 board:dark:text-indigo-400' : 'board-text-muted board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2.5 board:text-sm board:font-medium board:whitespace-nowrap board-flex-center board:gap-2">
         <on type="click">
-          <!-- 채널 서브탭 갈아타기 — 주소는 링크 href 한 곳(새 탭으로도 열린다, #757). 채널이 바뀌면 보이는 문안 집합이 통째로 달라지므로 쪽수는 1 로 되돌린다 -->
+          <!-- 채널 서브탭 갈아타기 — 주소는 링크 href 한 곳(새 탭으로도 열린다). 채널이 바뀌면 보이는 문안 집합이 통째로 달라지므로 쪽수는 1 로 되돌린다 -->
           <sequence>
             <navigate :replace="true" :mergeQuery="true">
               <query channel="{{ch.id}}" :page="1"/>

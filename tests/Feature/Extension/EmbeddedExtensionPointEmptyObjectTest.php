@@ -15,7 +15,7 @@ use stdClass;
 use Tests\TestCase;
 
 /**
- * 반복 렌더 템플릿 안 확장점의 빈 객체 내성 테스트 (#758 — 5-2 PHP 소비자 대조)
+ * 반복 렌더 템플릿 안 확장점의 빈 객체 내성 테스트 (5-2 PHP 소비자 대조)
  *
  * DataGrid 셀 템플릿(`props.columns[].cellChildren`)·확장 행 템플릿(`props.expandChildren`)은 props 아래라
  * 보존 범위 확대(Q3) 뒤로 「값 자리」가 됐다. 그 안의 `{}`(확장점 `default: {}`, 빈 노드 `{}`)는 이제 빈

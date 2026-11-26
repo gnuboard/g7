@@ -10,7 +10,7 @@ use Plugins\Sirsoft\HeroSection\Contracts\TargetSiteUrlsInterface;
 /**
  * 상품 대상 해석기 — 상품 상세 위치(`product_hero`). 저장 키는 상품 id, 화면 값은 주소의 상품 코드(없을 때만 숫자 id — 코드가 먼저다).
  *
- * 이커머스 모듈이 공개한 상품 조회 계약({@see ProductDirectory})만 쓴다(#916).
+ * 이커머스 모듈이 공개한 상품 조회 계약({@see ProductDirectory})만 쓴다.
  */
 class ProductTargetResolver implements TargetResolverInterface, TargetSiteUrlsInterface
 {

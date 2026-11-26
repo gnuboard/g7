@@ -64,7 +64,7 @@
             "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}"
         },
         {
-            "comment": "면세·영세 상품 표시 — 모든 옵션이 같은 과세 종류일 때만 가격 옆에 보인다. 옵션마다 다르면 고른 항목에 보인다 (#612, 좁은 화면)",
+            "comment": "면세·영세 상품 표시 — 모든 옵션이 같은 과세 종류일 때만 가격 옆에 보인다. 옵션마다 다르면 고른 항목에 보인다 (좁은 화면)",
             "type": "basic",
             "name": "Span",
             "if": "{{['tax_free', 'zero_rated'].includes((product.data?.options?.[0]?.tax_status ?? product.data?.tax_status)) && (product.data?.options ?? []).every(o => (o.tax_status ?? product.data?.tax_status) === (product.data?.options?.[0]?.tax_status ?? product.data?.tax_status))}}",

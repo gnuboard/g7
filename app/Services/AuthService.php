@@ -1367,7 +1367,7 @@ class AuthService
 
         // 세션에 사용자 저장 (/dev 대시보드 인증·개발자 화면 회원 판정용)
         // StartApiSession 미들웨어가 세션을 시작한 경우에만 동작. 이번 로그인의 토큰을 세션에 짝으로 묶어
-        // 그 토큰이 회수되면 세션 로그인도 무효가 되게 한다(ScreenAuth, #792).
+        // 그 토큰이 회수되면 세션 로그인도 무효가 되게 한다(ScreenAuth).
         if (request()->hasSession() && request()->session()->isStarted()) {
             Auth::guard('web')->login($user);
             ScreenAuth::pair($user, $newToken->accessToken);
@@ -1618,7 +1618,7 @@ class AuthService
         }
 
         // 가입 직후에도 개발자 화면에서 로그인으로 보이도록 서버 세션에 로그인을 남기고 토큰과 짝을 맺는다
-        // (가입 라우트가 세션을 연 경우에만 — #792 D20).
+        // (가입 라우트가 세션을 연 경우에만).
         if ($newToken !== null && request()->hasSession() && request()->session()->isStarted()) {
             Auth::guard('web')->login($user);
             ScreenAuth::pair($user, $newToken->accessToken);
@@ -1842,7 +1842,7 @@ class AuthService
         }
 
         // 웹 세션 회원이 같으면 개발자 화면 세션의 짝을 새 토큰으로 바꾼다 — 지운 옛 토큰을 짝으로 둔 채면
-        // 갱신 직후 개발자 화면이 로그아웃으로 보인다(#792 F6-2).
+        // 갱신 직후 개발자 화면이 로그아웃으로 보인다.
         ScreenAuth::repair($user, $newToken->accessToken);
 
         return [
@@ -1944,7 +1944,7 @@ class AuthService
             $redirectPrefix = null;
         }
 
-        // 리셋 URL 생성 (extract_data 필터에서 사용) — 메일에 싣는 링크라 화면 주소 헬퍼의 링크 변형을 거친다(#792·#888).
+        // 리셋 URL 생성 (extract_data 필터에서 사용) — 메일에 싣는 링크라 화면 주소 헬퍼의 링크 변형을 거친다.
         // 관리자 재설정 화면은 관리자 범위라 밖으로 나가는 링크의 주소(G7_PUBLIC_LINK_URL, 비면 사이트 주소), 사용자 재설정
         // 화면은 「사용자 화면 URL」(비면 그 링크 주소)과 주소 필터를 따른다.
         $resetQuery = [

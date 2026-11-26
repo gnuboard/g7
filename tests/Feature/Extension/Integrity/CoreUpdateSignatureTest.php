@@ -23,7 +23,7 @@ use Tests\Concerns\PackageSignatureFixtures;
 use Tests\TestCase;
 
 /**
- * 코어 업데이트의 패키지 서명 검증 — CLI `downloadUpdate` 와 웹 `fetchVerifiedReleaseArchive`·착수 둘 다 (#916 ④, D19)
+ * 코어 업데이트의 패키지 서명 검증 — CLI `downloadUpdate` 와 웹 `fetchVerifiedReleaseArchive`·착수 둘 다
  *
  * 코어는 **내장 키로만** 검증한다 — 제작자 키로 서명한 코어는 미신뢰(422). 서명 자산이 없으면 미서명 정책(409 → 확인 시
  * 태그 zipball). 업데이트 확인 응답에 `signature_available`.

@@ -76,7 +76,7 @@ class ProvidePaymentMethodDisplayLabelListenerTest extends PluginTestCase
     }
 
     /**
-     * 나이스 간편결제는 결제수단 칸에 자기 id(`nicepay_kakaopay`)로 저장된다 — 기본 라벨 자리에 원시 id 가 아니라 PG 이름을 쓴다 (#933 S7).
+     * 나이스 간편결제는 결제수단 칸에 자기 id(`nicepay_kakaopay`)로 저장된다 — 기본 라벨 자리에 원시 id 가 아니라 PG 이름을 쓴다.
      *
      * @scenario payment_plugin=nicepayments
      *
@@ -100,7 +100,7 @@ class ProvidePaymentMethodDisplayLabelListenerTest extends PluginTestCase
     }
 
     /**
-     * 결제 meta·간편결제 제공자가 비어도 결제수단 id 로 제공자를 찾아 같은 라벨을 만든다 (#933 S7).
+     * 결제 meta·간편결제 제공자가 비어도 결제수단 id 로 제공자를 찾아 같은 라벨을 만든다.
      *
      * @scenario payment_plugin=nicepayments
      *

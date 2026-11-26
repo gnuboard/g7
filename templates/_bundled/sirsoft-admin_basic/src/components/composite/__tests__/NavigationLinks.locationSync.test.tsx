@@ -1,5 +1,5 @@
 /**
- * 쿼리만 바뀐 같은 화면에서 `mergeQuery` 링크 href 가 새 쿼리를 따라가는지 (#757 링크 단계 후속, 7.1.1 회귀)
+ * 쿼리만 바뀐 같은 화면에서 `mergeQuery` 링크 href 가 새 쿼리를 따라가는지 (링크 단계 후속, 7.1.1 회귀)
  *
  * `mergeQuery` 링크는 렌더할 때 현재 주소의 쿼리를 href 에 합친다. 같은 화면에서 쿼리만 바꾸는 `navigate replace`
  * (TemplateApp.updateQueryParams — `history.replaceState` 뒤 다시 그리기)에서는 링크 props 가 그대로라 DynamicRenderer

@@ -33,7 +33,7 @@ use Plugins\Sirsoft\Tosspayments\Support\ShopRedirectUrl;
 use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
 
 /**
- * 토스페이먼츠 클레임 결제·환불 경로의 #599 validate P2 결함 회귀 테스트
+ * 토스페이먼츠 클레임 결제·환불 경로의 결함 회귀 테스트
  *
  * - #8 클라이언트 승인 API 경로(`respondApprove` → `UserClaimService::approve`)에는 승인 뒤 거절의
  *   보상(취소)이 없었다 — 서버 콜백만 `ClaimPaymentCallback` 클로저로 보상했다. 판정·보상을

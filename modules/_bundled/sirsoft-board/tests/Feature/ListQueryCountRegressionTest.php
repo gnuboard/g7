@@ -13,7 +13,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use Tests\Concerns\CountsQueries;
 
 /**
- * 게시판 목록 조회의 쿼리 수 회귀 테스트 (#519)
+ * 게시판 목록 조회의 쿼리 수 회귀 테스트
  *
  * 행 수를 늘려도 쿼리 수가 늘지 않는지 단언한다 — 그것이 N+1 의 정의이고,
  * 정상적인 구조 변경(관계 추가 등)에는 반응하지 않는다.
@@ -137,7 +137,7 @@ class ListQueryCountRegressionTest extends BoardTestCase
     }
 
     /**
-     * 비밀글 목록: 비밀글 수가 늘어도 경로 판정 쿼리 수가 늘지 않는다 — 답변을 쓴 회원 기준 (#789 §4.2 prime).
+     * 비밀글 목록: 비밀글 수가 늘어도 경로 판정 쿼리 수가 늘지 않는다 — 답변을 쓴 회원 기준 (§4.2 prime).
      *
      * 목록 직렬화 전에 SecretThreadAccess::prime() 이 레벨당 1쿼리로 노드를 채우므로 페이지 크기와
      * 무관한 상수 상한이어야 한다.

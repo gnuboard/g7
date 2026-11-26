@@ -8,7 +8,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ContentMediaRepositoryInter
 use Modules\Sirsoft\Ecommerce\Services\ContentMedia\EcommerceContentMediaService;
 
 /**
- * 소유자 삭제에 따른 본문 미디어 영구 삭제 (#887)
+ * 소유자 삭제에 따른 본문 미디어 영구 삭제
  *
  * 상품(영구 삭제)·상품 공통 정보를 지울 때 그 소유의 본문 미디어를 행과 파일째 지운다. 본문에서 빠져 소프트 삭제된 행도
  * 파일이 남아 있으므로 함께 지운다. 종전에는 두 삭제 경로가 본문 미디어 행을 건드리지 않아 행·파일이 영구히 남았다.

@@ -24,7 +24,7 @@ coverage_strategy: pairwise
 axes:
   custom_source: [none, convention_scan, assets_json, assets_json_broken]
   custom_asset: [css, js, static_file, external_url]
-  # 변경 감지 범위 축 (#651 F7) — 감지 서명이 게시 집합(custom/** 재귀)과 같은 열거자를 쓰는지.
+  # 변경 감지 범위 축 — 감지 서명이 게시 집합(custom/** 재귀)과 같은 열거자를 쓰는지.
   # 종전 서명은 최상위 css/js 의 mtime 만 봐서 하위 디렉토리 글꼴·이미지 교체가 영영 미게시였다.
   custom_change_detection: [top_level_asset, nested_static_file, no_change]
   # 마킹은 있는데 선언이 없던 축 (값은 실제 마킹에서 도출) — 머리말 표식이 교차곱 유예를 소유한다.

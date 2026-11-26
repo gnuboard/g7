@@ -51,7 +51,7 @@ function shows(node: Node, local: Record<string, unknown>, ctx: { formMeta?: unk
         return true;
     }
     const expr = (node.if as string).trim().replace(/^\{\{/, '').replace(/\}\}$/, '');
-    // 편집기는 업로드 계약(form_meta.content_media)을 받은 뒤에만 선다(#883) — 표본 기본값은 「받음」
+    // 편집기는 업로드 계약(form_meta.content_media)을 받은 뒤에만 선다 — 표본 기본값은 「받음」
     // eslint-disable-next-line no-new-func
     return Boolean(new Function('_local', 'form_meta', `return (${expr});`)(local, ctx.formMeta));
 }
@@ -102,7 +102,7 @@ describe('비회원 비밀글 수정 — 편집기 마운트 시점 (_post_form.
 
     // @scenario viewer=guest_author
     // @effects guest_secret_post_editor_waits_for_body
-    it('업로드 계약을 담은 form_meta 를 받기 전에는 편집기를 그리지 않고, 받으면(실패 null 포함) 그린다 (#883)', () => {
+    it('업로드 계약을 담은 form_meta 를 받기 전에는 편집기를 그리지 않고, 받으면(실패 null 포함) 그린다', () => {
         expect(shows(wrapper, { form: { is_secret: false, content: '' } }, { formMeta: undefined })).toBe(false);
         expect(shows(wrapper, { form: { is_secret: false, content: '' } }, { formMeta: null })).toBe(true);
         expect(shows(wrapper, { form: { is_secret: false, content: '' } }, { formMeta: { data: { content_media: {} } } })).toBe(true);

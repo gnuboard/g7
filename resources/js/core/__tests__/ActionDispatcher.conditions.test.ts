@@ -400,7 +400,7 @@ describe('ActionDispatcher conditions 핸들러', () => {
   });
 
   describe('에러 처리', () => {
-    // 엔진 경고는 디버그 모드에서만 console.warn 으로 나온다. 종전 시험은 spy 를 바로 풀어 경고를 보지 않았다(#869)
+    // 엔진 경고는 디버그 모드에서만 console.warn 으로 나온다. 종전 시험은 spy 를 바로 풀어 경고를 보지 않았다
     const warnings = async (action: ActionDefinition): Promise<{ result: unknown; messages: string[] }> => {
       // 실제 executeAction 호출을 위해 spy 복원
       vi.restoreAllMocks();

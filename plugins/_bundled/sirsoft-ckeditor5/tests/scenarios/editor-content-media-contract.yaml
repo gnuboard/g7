@@ -1,4 +1,4 @@
-feature: 편집기가 본문 미디어 업로드 계약(`mediaUpload`)을 읽어 화면의 업로드 주소·정책으로 올린다 (#883 4단계)
+feature: 편집기가 본문 미디어 업로드 계약(`mediaUpload`)을 읽어 화면의 업로드 주소·정책으로 올린다
 
 description: |
   화면(확장 레이아웃)이 `html_editor` 확장점에 코어 계약(`ContentMediaUploadTarget`)을 넘기면, 이 플러그인은 그 계약을

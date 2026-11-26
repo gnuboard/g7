@@ -572,7 +572,7 @@ class NotificationTemplateControllerTest extends TestCase
     }
 
     /**
-     * GET 으로 받은 템플릿을 그대로 PUT 하면(저장만) 수정 표식·「기본」 해제가 일어나지 않는다 (#727 D5-⑤).
+     * GET 으로 받은 템플릿을 그대로 PUT 하면(저장만) 수정 표식·「기본」 해제가 일어나지 않는다.
      *
      * @effects notification_template_unchanged_save_keeps_default
      *

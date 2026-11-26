@@ -1741,7 +1741,7 @@ class LanguagePackServiceTest extends TestCase
      * (활성화 단계 이전/도중) 실패하면, catch 의 상태 복원이 Updating 만 보던 탓에
      * active 였던 팩이 installed 로 방치됐다. 파일은 백업으로 원상 복원되므로
      * 상태도 이전 상태(active)로 복원되어야 한다 — 방치되면 해당 로케일의 백엔드
-     * 번역이 통째로 폴백되는데 오류도 로그도 없다 (#597 보완 실측에서 유사 상태 실측).
+     * 번역이 통째로 폴백되는데 오류도 로그도 없다 (보완 실측에서 유사 상태 실측).
      *
      * @scenario vector=update_failure_after_install_transaction, actor_permission=cli_system
      *

@@ -372,7 +372,7 @@ class BundledSourcePlannerTest extends TestCase
      * zip 인벤토리는 래퍼 폴더 접두사를 config/app.php 위치로 판정하고 평탄한 zip 도 읽습니다.
      *
      * 항목 이름을 역슬래시로 저장한 zip(Windows 압축 도구)도 같다 — 정규화한 이름으로 `getFromName()` 하면
-     * 원본 이름과 달라 manifest·`config/app.php` 를 못 읽고 번들 목록·코어 버전이 비었다(#971). Mac 재압축 zip 의
+     * 원본 이름과 달라 manifest·`config/app.php` 를 못 읽고 번들 목록·코어 버전이 비었다. Mac 재압축 zip 의
      * `__MACOSX/` 부속 항목은 접두사 판정·목록에 끼지 않는다.
      *
      * @scenario source_kind=zip

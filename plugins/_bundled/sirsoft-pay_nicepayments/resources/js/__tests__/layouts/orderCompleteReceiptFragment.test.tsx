@@ -1,6 +1,6 @@
 /**
  * @file orderCompleteReceiptFragment.test.tsx
- * @description 주문 완료 화면 › 나이스페이먼츠 영수증·매출전표·간편결제 이름은 레이아웃 조각이 그린다 (#639)
+ * @description 주문 완료 화면 › 나이스페이먼츠 영수증·매출전표·간편결제 이름은 레이아웃 조각이 그린다
  *
  * 종전에는 주입 스크립트(orderCompleteReceiptInjector)가 주소 정규식(/shop/orders/{N}/complete)으로 화면을 알아보고
  * history.pushState 를 덮어써 화면 이동을 엿본 뒤, 파란 버튼 옆에 「영수증 조회」 버튼을 직접 그렸다. 조각은 결제사 주소를

@@ -69,7 +69,7 @@ trait RefreshesLayoutExtensions
         $liveKeys = $this->fragmentSourceKeys($extensionsPath, $jsonFiles);
 
         // 정의·백업 기준은 템플릿 루프 밖에서 한 번만 읽는다 — 조각 컴파일은 템플릿과 무관하다(2026-09-28 결정, JSON 과
-        // 같다). 종전에는 템플릿마다 다시 읽어 깨진 조각 하나가 템플릿 수만큼 실패를 기록했다(#725). 색인은 조각 식별자
+        // 같다). 종전에는 템플릿마다 다시 읽어 깨진 조각 하나가 템플릿 수만큼 실패를 기록했다. 색인은 조각 식별자
         // (`fragment_key`) 기준이다 — 종전 대상(target) 색인은 같은 대상에 조각이 둘이면 하나를 잃었다 (C13).
         $synchronizer = $this->layoutSynchronizer();
         $definitions = $this->loadFragmentDefinitions($extensionsPath, $jsonFiles, [$extensionType => $identifier]);
@@ -78,7 +78,7 @@ trait RefreshesLayoutExtensions
         foreach ($templates as $template) {
 
             // 등록 + 백필된 옛 키 행 잇기(운영자 수정본 유지) + 오등록·고아 행 정리 — 조각 행을 쓰는 모든 경로가 같은
-            // 수렴 절차를 탄다 (#703). 종전에는 이 갱신 경로만 고아를 정리했고, 옛 키 행은 새 행에 밀려 지워져
+            // 수렴 절차를 탄다. 종전에는 이 갱신 경로만 고아를 정리했고, 옛 키 행은 새 행에 밀려 지워져
             // 운영자가 고친 옛 행을 keep 전략이 보지 못했다.
             $templateStats = $this->layoutExtensionService->syncSourceFragmentsToTemplate(
                 $definitions,

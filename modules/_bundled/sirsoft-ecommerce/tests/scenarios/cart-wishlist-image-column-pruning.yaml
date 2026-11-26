@@ -1,4 +1,4 @@
-feature: 카트·찜목록의 상품 이미지 컬럼 한정 (#518 / 공개 #76)
+feature: 카트·찜목록의 상품 이미지 컬럼 한정 (공개 #76)
 
 description: |
   카트·찜목록 조회가 `product.images` 를 전량 hydration 하고 있었다. 두 화면 모두 상품

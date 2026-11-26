@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\Group;
 /**
  * 마이페이지 게시판 활동 검색 대상 구분 + 댓글 OFF 게시판 제외 테스트
  *
- * 검증 목적 (이슈 #524 §4.2 · §4.3):
+ * 검증 목적:
  * - 내 글: search_field = title_content(기본) / title / content
  * - 내 댓글: search_field = content(기본) / post_title
  * - 적용된 search_field 를 data.query 로 에코해 화면이 셀렉트를 복원할 수 있다

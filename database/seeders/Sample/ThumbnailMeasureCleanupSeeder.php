@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 이미지 썸네일 브라우저 실측 — 코어 데이터 정리 (이슈 #869).
+ * 이미지 썸네일 브라우저 실측 — 코어 데이터 정리.
  *
  * `ThumbnailMeasureSeeder` 가 만든 것만 지운다:
  *   - 실측 로고 첨부(원래 파일명 `ThumbnailMeasureSeeder::LOGO_FILENAME`) — `AttachmentService::delete` 로 지워

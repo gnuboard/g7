@@ -72,7 +72,7 @@ class ClearTemplateCacheCommand extends Command
      *
      * 라이프사이클(update/deactivate/uninstall)과 동일한 무효화 단일 지점
      * (`TemplateManager::clearTemplateCache()`)을 경유한다 — 커맨드가 키 목록을
-     * 별도로 유지하면 키 규약 변경 시 유령 forget 으로 사문화된다 (#588, 공개 #119).
+     * 별도로 유지하면 키 규약 변경 시 유령 forget 으로 사문화된다 (공개 #119).
      *
      * @param  string  $identifier  템플릿 식별자
      * @return void 반환값 없음

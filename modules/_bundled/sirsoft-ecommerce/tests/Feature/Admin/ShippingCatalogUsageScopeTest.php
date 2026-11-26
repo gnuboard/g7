@@ -26,7 +26,7 @@ use PHPUnit\Framework\Attributes\Test;
  *
  *  1. **모집단이 한 컬럼**이었다. 배송사 사용량을 `order_shippings.carrier_id` 로만 셌는데,
  *     교환 상품 행은 `collection_carrier_id`·`redelivery_carrier_id` 로, 반품 상품 행은
- *     `collection_carrier_id` 로 각자 자기 표에 배송사를 붙잡는다(송장은 상품 행마다 — #599). 그래서 회수 전용으로만
+ *     `collection_carrier_id` 로 각자 자기 표에 배송사를 붙잡는다(송장은 상품 행마다). 그래서 회수 전용으로만
  *     쓰인 배송사가 "안 쓰임" 으로 판정돼 삭제가 **200 으로 통과**했고, 그 세 외래키는 전부
  *     `nullOnDelete` 라 접수된 신청서의 택배사가 오류도 로그도 없이 비워졌다.
  *  2. **같은 표에 강도가 다른 삭제 경로가 둘**이었다. 설정 화면은 사용 중이면 400 으로 막는데,
@@ -61,7 +61,7 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
      * 배송사를 붙잡는 컬럼 전수를 **실제 스키마**에서 파생합니다. (이커머스 테이블의 `*carrier_id`)
      *
      * 마이그레이션 원문을 읽으면 `Schema::create` 만 보이고 나중에 `Schema::table` 로 붙은 컬럼(상품 행
-     * 송장 — #599)은 빠진다. 적용된 스키마를 읽어야 「새 컬럼이 생겼는데 사용량 계수 밖」 을 잡는다.
+     * 송장)은 빠진다. 적용된 스키마를 읽어야 「새 컬럼이 생겼는데 사용량 계수 밖」 을 잡는다.
      *
      * @return array<int, string> `테이블.컬럼` 목록 (접두어 제외, 정렬)
      */
@@ -111,7 +111,7 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
         // 계수되거나 ⓑ 휴면(쓰기 0)으로 **명시 선언**되었는지만 본다.
         //
         // `ShippingCarrierService::countUsage()` 가 세는 컬럼
-        // 송장은 신청서 헤더가 아니라 **상품 행**에 있다(#599 — 다중 송장).
+        // 송장은 신청서 헤더가 아니라 **상품 행**에 있다(다중 송장).
         $counted = [
             'ecommerce_order_shippings.carrier_id',
             'ecommerce_order_exchange_options.collection_carrier_id',
@@ -338,7 +338,7 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
     }
 
     /**
-     * 회수·재발송 송장이 붙은 교환 상품 행을 만듭니다. (송장은 상품 행에 있다 — #599)
+     * 회수·재발송 송장이 붙은 교환 상품 행을 만듭니다. (송장은 상품 행에 있다)
      *
      * @param  Order  $order  주문
      * @param  int|null  $collection  회수 택배사 ID
@@ -361,7 +361,7 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
     }
 
     /**
-     * 회수 송장이 붙은 반품 상품 행을 만듭니다. (송장은 상품 행에 있다 — #599)
+     * 회수 송장이 붙은 반품 상품 행을 만듭니다. (송장은 상품 행에 있다)
      *
      * @param  Order  $order  주문
      * @param  int  $carrierId  회수 택배사 ID

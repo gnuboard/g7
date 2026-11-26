@@ -23,7 +23,7 @@ use RuntimeException;
 use Tests\TestCase;
 
 /**
- * 메뉴 아이콘 첨부 수명·확장 선언 이미지 표시 통합 테스트 (#381).
+ * 메뉴 아이콘 첨부 수명·확장 선언 이미지 표시 통합 테스트.
  *
  * 업로드 첨부는 저장 전에는 미바인딩(고아 후보)이고, 메뉴에 저장되면 묶이며, 메뉴가 지워지면(서비스·확장 정리 경로)
  * 커밋 뒤에 함께 지워진다. 롤백되면 파일이 남는다. 확장 선언 이미지는 확장 자산 URL 로 표시된다.
@@ -181,7 +181,7 @@ class MenuIconAttachmentLifecycleTest extends TestCase
     }
 
     /**
-     * 회귀(#381 validate-plan 6차 D-6c): 확장 정리 경로(deleteByExtension)가 트랜잭션 밖에서 불리면 커밋 뒤 예약이 곧바로
+     * 회귀(plan 6차 D-6c): 확장 정리 경로(deleteByExtension)가 트랜잭션 밖에서 불리면 커밋 뒤 예약이 곧바로
      * 실행된다. 첨부 정리를 메뉴 삭제보다 먼저 예약하면, 메뉴 삭제가 실패해 메뉴는 남아도 아이콘 첨부·파일이 먼저 사라졌다.
      *
      * @scenario icon_type=image_attachment, entry=extension_sync
@@ -344,7 +344,7 @@ class MenuIconAttachmentLifecycleTest extends TestCase
     }
 
     /**
-     * 회귀(#381 validate-plan 5차 2회차 ①): 같은 미바인딩 업로드로 메뉴 두 개를 동시에 저장하면 둘 다 규칙을 통과하고
+     * 회귀(plan 5차 2회차 ①): 같은 미바인딩 업로드로 메뉴 두 개를 동시에 저장하면 둘 다 규칙을 통과하고
      * 묶기는 먼저 온 쪽만 되어, 나중 메뉴는 남의 첨부를 아이콘으로 쥔 채 저장됐다(먼저 메뉴가 아이콘을 바꾸면 깨짐).
      * 규칙 통과 뒤 묶기에서 진 쪽은 422(icon_spec)로 거절되고 그 저장은 통째로 되돌린다.
      *
@@ -387,7 +387,7 @@ class MenuIconAttachmentLifecycleTest extends TestCase
     }
 
     /**
-     * 회귀(#381 validate-plan 5차 2회차 ②): 운영자 수정 표식이 없는 확장 메뉴의 업로드 아이콘을 확장 업데이트가 선언값으로
+     * 회귀(plan 5차 2회차 ②): 운영자 수정 표식이 없는 확장 메뉴의 업로드 아이콘을 확장 업데이트가 선언값으로
      * 바꾸면, 예전 업로드 첨부가 메뉴에 묶인 채 아무도 쓰지 않는 파일로 남았다. 동기화도 저장 경로처럼 이전 첨부를 지운다.
      *
      * @scenario icon_type=image_attachment, entry=extension_sync

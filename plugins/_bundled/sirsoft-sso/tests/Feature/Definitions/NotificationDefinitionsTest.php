@@ -85,7 +85,7 @@ class NotificationDefinitionsTest extends PluginTestCase
         $this->assertSame($member->id, $reset['context']['trigger_user_id']);
         // IdP 이름은 언어별 값으로 싣고 코어가 받는 사람 언어로 고른다(키 순서는 저장 JSON 순서라 무관) — 그린 결과는 test_values_follow_recipient_language
         $this->assertEquals(['ko' => '본사 계정', 'en' => 'HQ account'], $reset['data']['idp_label']);
-        // 받는 사람이 그 회원 본인이라 이름은 자리표시다 — 코어가 받는 사람과 채널마다 표시 이름으로 푼다(#490)
+        // 받는 사람이 그 회원 본인이라 이름은 자리표시다 — 코어가 받는 사람과 채널마다 표시 이름으로 푼다
         $this->assertSame('{recipient_name}', $reset['data']['name']);
 
         $deprovisioned = HookManager::applyFilters('sirsoft-sso.notification.extract_data', $base, 'sso_super_admin_deprovisioned', [$super, $account, 'scim']);
@@ -146,7 +146,7 @@ class NotificationDefinitionsTest extends PluginTestCase
     /**
      * IdP 이름과 대체 문구, 퇴사 확인 경로 이름이 알림을 일으킨 요청의 언어가 아니라 받는 사람 언어로 들어가는지 확인한다.
      *
-     * 영어 요청이 일으킨 이메일 충돌 알림이 한국어 관리자 30명에게 「한국어 틀 + Mock company account」로 갔다(#798).
+     * 영어 요청이 일으킨 이메일 충돌 알림이 한국어 관리자 30명에게 「한국어 틀 + Mock company account」로 갔다.
      * 실제 정의의 메일, 사이트 알림 틀을 코어 알림으로 그려 받는 사람마다 본다.
      *
      * @scenario type=all_with_idp|password_reset_without_idp|deprovisioned_source, request_locale=en, recipient=ko|en

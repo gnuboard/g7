@@ -7,7 +7,7 @@ use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Post;
 
 /**
- * 시험용 — 글 저장 트랜잭션 안 훅(`before_*_commit`)을 sync 로 구독해 그 시점에 보이는 것을 적는다 (#883 3단계)
+ * 시험용 — 글 저장 트랜잭션 안 훅(`before_*_commit`)을 sync 로 구독해 그 시점에 보이는 것을 적는다
  *
  * 실제 등록 경로(`HookListenerRegistrar::register`)로 붙인다. `$throw` 를 켜면 예외를 던져 저장 전체가 되돌아가는지 본다.
  */

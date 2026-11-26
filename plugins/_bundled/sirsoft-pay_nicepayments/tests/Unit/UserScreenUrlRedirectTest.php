@@ -8,7 +8,7 @@ use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
 use Plugins\Sirsoft\PayNicepayments\Controllers\PaymentCallbackController;
 
 /**
- * 나이스페이먼츠 — 결제 뒤 복귀 주소 (#792 WP-U5)
+ * 나이스페이먼츠 — 결제 뒤 복귀 주소
  *
  * 결제 성공·실패 뒤 복귀가 「사용자 화면 URL」을 베이스로 쓰는지 잠근다.
  */

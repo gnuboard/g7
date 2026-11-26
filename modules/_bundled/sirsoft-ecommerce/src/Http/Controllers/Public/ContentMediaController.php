@@ -12,7 +12,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * 이커머스 본문 미디어 공개 서빙 컨트롤러 (#883 4단계)
+ * 이커머스 본문 미디어 공개 서빙 컨트롤러
  *
  * 게이트는 상품이면 「전시 중 또는 관리자 또는 서명」, 공통 정보는 공개. 권한 미들웨어는 없다(`<img>`·`<video>` 는 Bearer 없음).
  */

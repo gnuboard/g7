@@ -34,7 +34,7 @@ class LayoutCorpusTest extends LayoutMarkupTestCase
             'templates/_bundled/*/layouts',
             'modules/_bundled/*/resources/layouts',
             'plugins/_bundled/*/resources/layouts',
-            // 템플릿이 공급하는 설정 화면(#434) — 교차 등록돼 DB 레이아웃이 되므로 왕복·굽기 대상이다
+            // 템플릿이 공급하는 설정 화면 — 교차 등록돼 DB 레이아웃이 되므로 왕복·굽기 대상이다
             'templates/_bundled/*/settings',
         ], $roots, '본 레이아웃 루트가 세 확장 유형과 템플릿 설정 화면을 모두 덮지 않습니다.');
     }

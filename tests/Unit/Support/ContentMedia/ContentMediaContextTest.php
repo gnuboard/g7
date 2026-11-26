@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 본문 미디어 문맥 값 객체 — 불변 사본·본인 판정·훅 인자 배열 (#887, G1·G2)
+ * 본문 미디어 문맥 값 객체 — 불변 사본·본인 판정·훅 인자 배열
  *
  * @scenario-manifest tests/scenarios/content-media-core-skeleton.yaml
  */

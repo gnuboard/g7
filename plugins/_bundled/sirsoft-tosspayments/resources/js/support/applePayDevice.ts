@@ -1,4 +1,4 @@
-// e2e:allow 애플페이 결제 시점 iOS 확인 도우미 — 실 iOS Safari 와 애플페이 계약 상점이 있어야 재현된다. Vitest(UA 스텁)와 Playwright MCP 실측(데스크톱·iPhone UA)으로 잠근다 (#933).
+// e2e:allow 애플페이 결제 시점 iOS 확인 도우미 — 실 iOS Safari 와 애플페이 계약 상점이 있어야 재현된다. Vitest(UA 스텁)와 Playwright MCP 실측(데스크톱·iPhone UA)으로 잠근다.
 /**
  * 애플페이 결제 가능 기기 판정 (토스페이먼츠)
  *

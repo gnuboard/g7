@@ -24,7 +24,7 @@ use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
  *
  * 사이트 홈·쇼핑몰 메인 상단의 히어로섹션(메인 배너)을 관리하고, 사용자 템플릿이 열어 둔 확장점
  * (`home_hero`·`shop_hero`)에 슬라이더로 공급합니다. 템플릿은 자리만 두고 화면 컴포넌트·데이터는
- * 이 플러그인이 소유합니다(#810).
+ * 이 플러그인이 소유합니다.
  */
 class Plugin extends AbstractPlugin
 {
@@ -207,7 +207,7 @@ class Plugin extends AbstractPlugin
             return true;
         }
 
-        // 지금 업로드 디스크와, 제거 시작 때(테이블이 있을 때) 읽어 둔 행 디스크를 모두 비운다(#878).
+        // 지금 업로드 디스크와, 제거 시작 때(테이블이 있을 때) 읽어 둔 행 디스크를 모두 비운다.
         // 파일 정리 실패가 이미 끝난 데이터 삭제를 되돌리지 못한다 — 남은 파일은 디스크별 로그로 알린다
         BannerImageService::purgeDisks($this->getStorageFor(BannerImageService::CATEGORY), BannerImageService::takeDisksForUninstall());
 
@@ -320,7 +320,7 @@ class Plugin extends AbstractPlugin
     private const PUBLIC_ASSET_CATEGORIES = ['images'];
 
     /**
-     * 카테고리별 스토리지 디스크 이름 반환 (#878)
+     * 카테고리별 스토리지 디스크 이름 반환
      *
      * 공개 자산 카테고리(`images`)만 공개 자산 디스크(플러그인 설정 public_asset_disk > 코어 전역
      * core.storage.public_asset_disk)를 따르고, 나머지 카테고리는 기본 디스크를 유지합니다. 미설정·고아 디스크는
@@ -336,7 +336,7 @@ class Plugin extends AbstractPlugin
     public function getStorageDiskFor(string $category): string
     {
         if (! in_array($category, self::PUBLIC_ASSET_CATEGORIES, true)) {
-            // 공개 자산이 아닌 키는 부모 규칙(비공개 첨부 저장소 바인딩 등, #916)을 거친다
+            // 공개 자산이 아닌 키는 부모 규칙(비공개 첨부 저장소 바인딩 등)을 거친다
             return parent::getStorageDiskFor($category);
         }
 

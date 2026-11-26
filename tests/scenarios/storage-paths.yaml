@@ -1,4 +1,4 @@
-feature: storage 경로 분류 — config/g7-storage.php 와 storage:paths (#888)
+feature: storage 경로 분류 — config/g7-storage.php 와 storage:paths
 
 description: |
   storage/ 아래 경로를 운영 데이터(shared_data)·서버별 파일(server_local)·업데이트 상태(update_state)·임시 파일

@@ -17,7 +17,7 @@ use Mockery\MockInterface;
 use Tests\TestCase;
 
 /**
- * `extension:list [--type=…] [--json]` — 설치·번들 확장 상태를 쓰기 없이 출력한다 (#888).
+ * `extension:list [--type=…] [--json]` — 설치·번들 확장 상태를 쓰기 없이 출력한다.
  *
  * 스크립트가 `*:install`·`*:activate` 를 쳐 보고 종료 코드로 상태를 추측하지 않도록 둔 읽기 전용 창구다. `--json` 형식은
  * `schema: 1` 로 고정한다. 픽스처는 가짜 식별자(`test-extlist-*`)의 DB 행과 매니페스트 폴더이며 tearDown 에서 지운다.

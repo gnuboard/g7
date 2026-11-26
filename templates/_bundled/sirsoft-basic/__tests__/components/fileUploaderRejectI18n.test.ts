@@ -1,6 +1,6 @@
 /**
  * @file fileUploaderRejectI18n.test.ts
- * @description 첨부 컴포지트의 거절 문구 다국어화 (#599 validate 2026-09-23)
+ * @description 첨부 컴포지트의 거절 문구 다국어화 (validate 2026-09-23)
  *
  * 용량·형식 거절 문구가 한국어 리터럴이라, 신청서 화면이 그 문구를 토스트로 그대로 띄우면(onUploadError)
  * 영어·일본어 화면에도 한국어가 떴다. 문구는 `attachment.*` 키로 만든다.

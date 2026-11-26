@@ -128,7 +128,7 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
                 ['id' => 'card', 'is_active' => true, 'sort_order' => 1, 'pg_provider' => $cardPgProvider],
                 ['id' => 'dbank', 'is_active' => true, 'sort_order' => 2],
             ],
-            // 무통장입금은 사용 중인 입금 계좌가 있어야 공개 목록에 남는다(#703) — PG 판정과 무관한 전제
+            // 무통장입금은 사용 중인 입금 계좌가 있어야 공개 목록에 남는다 — PG 판정과 무관한 전제
             'bank_accounts' => [
                 ['bank_code' => '004', 'account_number' => '123-456', 'account_holder' => '테스트상점', 'is_active' => true, 'is_default' => true],
             ],

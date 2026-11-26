@@ -1,6 +1,6 @@
 /**
  * @file board-show-count-consistency.test.tsx
- * @description 게시판 사용자 페이지 - 카운트 컬럼 정합성 검증 (이슈 #304 Phase 3)
+ * @description 게시판 사용자 페이지 - 카운트 컬럼 정합성 검증
  *
  * 검증 방식: 레이아웃 JSON 트리 직접 분석 (DOM 비의존).
  * 검증 목적:
@@ -28,7 +28,7 @@ function stringifyDeep(node: unknown): string {
     return JSON.stringify(node);
 }
 
-describe('이슈 #304 Phase 3 — 사용자 페이지 카운트 컬럼 정합성', () => {
+describe('사용자 페이지 카운트 컬럼 정합성', () => {
     describe('users/show.json — 최근 게시글 댓글 수 단수형', () => {
         it('post.comment_count 단수형 키를 사용한다', () => {
             const dump = stringifyDeep(usersShow);

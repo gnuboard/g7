@@ -1,6 +1,6 @@
 /**
  * @file checkoutCashReceiptSlot.test.tsx
- * @description 체크아웃 현금영수증 확장 슬롯 + 환불계좌 입력 필드 구조 검증 (#454 S3).
+ * @description 체크아웃 현금영수증 확장 슬롯 + 환불계좌 입력 필드 구조 검증.
  *
  * 설계 계약:
  *  - 현금영수증 신청 폼은 템플릿이 슬롯(extension_point)만 열고 이커머스 모듈이 주입한다.
@@ -178,7 +178,7 @@ describe('환불계좌 입력 필드 (템플릿 직접 소유)', () => {
         );
         expect(withBg.length).toBeGreaterThan(0);
         for (const n of withBg) {
-          // #399 R-1 — 의미 클래스(`text-muted` 등)는 템플릿 CSS 정의에 다크 짝이 들어 있으므로 정의까지 펼쳐 본다
+          // 의미 클래스(`text-muted` 등)는 템플릿 CSS 정의에 다크 짝이 들어 있으므로 정의까지 펼쳐 본다
           expect(expandSemanticClassName(n.props.className), `dark: variant 누락 → ${n.props.className}`).toContain('dark:');
         }
       });

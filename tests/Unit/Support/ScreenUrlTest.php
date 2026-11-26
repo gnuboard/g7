@@ -7,7 +7,7 @@ use App\Support\ScreenUrl;
 use Tests\TestCase;
 
 /**
- * 화면 주소 헬퍼(ScreenUrl) 단위 테스트 (#792 WP-U1 §5-4)
+ * 화면 주소 헬퍼(ScreenUrl) 단위 테스트
  *
  * 자리 치환·인코딩, 필터 훅(경로·키·파라미터·범위 인자), 범위별 절대화 베이스(사용자 = 사용자 화면 URL, 관리자 = 사이트
  * URL), 필터가 돌려준 절대 URL 보존, 같은 출처 판정을 잠근다.

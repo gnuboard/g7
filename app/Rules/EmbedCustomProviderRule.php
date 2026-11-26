@@ -7,7 +7,7 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
- * 운영자가 직접 추가한 외부 영상 서비스 목록 검증 (#883 5단계, D16)
+ * 운영자가 직접 추가한 외부 영상 서비스 목록 검증
  *
  * 항목마다 `id`(영문 소문자 시작 2~32자, 프리셋·다른 항목과 중복 금지), `name`(1~40자), `url_patterns`(1~5개 — `http(s)://` 로 시작,
  * `{id}` 정확히 1개, 호스트의 `*` 는 맨 앞 하위 도메인 자리 `*.example.com` 만), `player_url`(**https 만**, `{id}` 정확히 1개, 이 사이트

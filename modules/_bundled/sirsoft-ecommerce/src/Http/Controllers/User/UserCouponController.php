@@ -52,7 +52,7 @@ class UserCouponController extends AuthBaseController
             $coupons = $this->userCouponService->getUserCoupons($userId, $status, $perPage);
 
             return ResponseHelper::success('sirsoft-ecommerce::messages.coupon.list_fetched', [
-                // 쿠폰함 화면 카드용 쿠폰 블록을 더한 리소스 (#952)
+                // 쿠폰함 화면 카드용 쿠폰 블록을 더한 리소스
                 'coupons' => new UserCouponIssueCollection($coupons),
             ]);
         } catch (Exception $e) {

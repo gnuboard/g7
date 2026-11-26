@@ -2,7 +2,7 @@
  * @file UnifiedIcon.test.tsx
  * @description UnifiedIcon — 접두사(fa:/svg:/img:)로 아이콘 소스를 가르고, Font Awesome 은 Icon 에 맡긴다
  *
- * FA 분기는 Icon 의 스타일 토큰 해석(#381)을 그대로 따른다 — `far`·`fab` 가 스타일을 지키고 `fa-fas` 같은
+ * FA 분기는 Icon 의 스타일 토큰 해석을 그대로 따른다 — `far`·`fab` 가 스타일을 지키고 `fa-fas` 같은
  * 겹친 클래스가 나오지 않는지 출력 클래스 전체를 정확히 비교한다.
  *
  * @scenario-manifest tests/scenarios/icon-component-baseline.yaml

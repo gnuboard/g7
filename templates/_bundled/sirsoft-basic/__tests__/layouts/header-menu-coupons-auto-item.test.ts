@@ -1,6 +1,6 @@
 /**
  * @file header-menu-coupons-auto-item.test.ts
- * @description 헤더 메뉴 자동 항목 「쿠폰존」 (#952 C) — 메뉴 편집기 목록에 있고, 기본 메뉴에는 없으며, 쇼핑몰이 꺼지면 빠진다.
+ * @description 헤더 메뉴 자동 항목 「쿠폰존」 — 메뉴 편집기 목록에 있고, 기본 메뉴에는 없으며, 쇼핑몰이 꺼지면 빠진다.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -19,7 +19,7 @@ const evaluate = (menu: unknown, activeModules: string[]) =>
     _global: { activeModules, templateSettings: { header: { menu } } },
   } as any) as Array<{ id: string }>;
 
-describe('헤더 메뉴 자동 항목 쿠폰존 (#952)', () => {
+describe('헤더 메뉴 자동 항목 쿠폰존', () => {
   // @scenario case=header_menu_coupons
   // @effects header_menu_coupons_auto_item
   it('메뉴 편집기의 자동 항목 목록에 「쿠폰존」 이 있고 다국어 키를 쓴다', () => {

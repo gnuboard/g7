@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductWishlistRepositoryIn
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 인접 목록의 상품 썸네일 재조회 회귀 테스트 (#518 / 공개 #76)
+ * 인접 목록의 상품 썸네일 재조회 회귀 테스트 (공개 #76)
  *
  * `Product::getThumbnailUrl()` 은 `images` 관계가 로드돼 있으면 컬렉션에서 대표를 고르고,
  * 아니면 관계를 **행마다 최대 2회** 다시 조회한다(대표 지정 조회 → 첫 이미지 폴백).

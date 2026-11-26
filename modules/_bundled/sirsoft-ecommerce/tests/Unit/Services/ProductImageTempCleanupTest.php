@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 임시 이미지 연결 뒤 임시 디렉토리 정리 실패의 격리 회귀 테스트 (#703 브라우저 실측)
+ * 임시 이미지 연결 뒤 임시 디렉토리 정리 실패의 격리 회귀 테스트
  *
  * 게시판 첨부에서 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면 임시 디렉토리 정리가 lstat 오류를
  * 던졌고, 그 예외가 저장 전체를 500 으로 되돌려 파일은 본경로, DB 는 임시 경로를 가리키는 어긋남이 남았다.

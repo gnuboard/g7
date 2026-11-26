@@ -1,7 +1,7 @@
 /**
  * @file semanticClasses.ts
  * @description 사용자 템플릿 의미 클래스(`src/styles/main.css` 의 `.text-muted`, `.form-error`, `.card-plain` 등)를
- * 그 정의(@apply 유틸)로 펼쳐 주는 시험 도우미 (#399 R-1).
+ * 그 정의(@apply 유틸)로 펼쳐 주는 시험 도우미.
  *
  * 레이아웃이 반복되던 Tailwind 묶음(예: `text-xs text-red-600 dark:text-red-400`)을 의미 클래스(`form-error`)로 바꿨으므로,
  * 모양을 지키던 시험은 클래스 이름만 보지 않고 그 이름이 템플릿 CSS 에서 같은 유틸로 정의돼 있는지까지 본다.

@@ -96,7 +96,7 @@ return [
         'message_body_empty' => '발송 본문이 비어 있어 발송하지 못했습니다. (알림 유형: :type)',
     ],
 
-    // 알림 템플릿 라이프사이클 (#597 — BizppurioTemplateController 응답·상태 가드)
+    // 알림 템플릿 라이프사이클 (BizppurioTemplateController 응답·상태 가드)
     'template' => [
         'created' => '알림 템플릿을 저장했습니다.',
         'updated' => '알림 템플릿을 수정했습니다.',

@@ -3,7 +3,7 @@ feature: GDPR 화면 문구 자리표시자와 동의 기록 셀 지연 번역
 description: |
   화면 번역 엔진은 `{key}`·`{{key}}` 만 치환한다 — `necessary_storage_allowlist.invalid_scope` 의 `:scope` 를 `{scope}` 로(번들 ko·en, ja 팩).
   동의 기록 표 셀의 「스냅샷 보기」 버튼 title 은 행 값(`row.policy_version`)을 넘기므로 `$t:defer:` 로 쓴다 —
-  `$t:` 는 셀 문맥이 생기기 전에 번역돼 버전 자리가 빈다(#798).
+  `$t:` 는 셀 문맥이 생기기 전에 번역돼 버전 자리가 빈다.
 
 axes:
   source: ["bundled|ja_pack", consent_log_cell]

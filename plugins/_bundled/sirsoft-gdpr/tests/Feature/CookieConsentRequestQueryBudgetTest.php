@@ -19,7 +19,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 use Symfony\Component\HttpFoundation\Cookie;
 
 /**
- * 요청당 동의 조회 쿼리 예산 (#860 W10)
+ * 요청당 동의 조회 쿼리 예산
  *
  * 쿠키 동의 미들웨어는 web·api 모든 응답을 지나간다. 걸러낼 쿠키가 없는 응답에서도 동의 내역과 정책 버전을
  * 읽었고, 한 요청 안에서 미들웨어·동의 제공자·리소스가 정책 버전과 세션 동의 내역을 몇 번씩 다시 읽었다.

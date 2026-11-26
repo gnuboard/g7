@@ -1,6 +1,6 @@
 /**
  * @file board-gallery-view-count-toggle.test.tsx
- * @description 갤러리형 목록 - 조회수 표시 토글(show_view_count) 반영 회귀 테스트 (#413-19-4b)
+ * @description 갤러리형 목록 - 조회수 표시 토글(show_view_count) 반영 회귀 테스트 (19-4b)
  *
  * 배경:
  *   갤러리형 목록(types/gallery/index.g7.html)의 조회수 Span 에 show_view_count 조건이 없어,
@@ -112,7 +112,7 @@ const galleryViewCountLayoutJson = {
 // @axes show_view_count=true show_view_count=false show_view_count=unset board_type=gallery
 // @effects gallery_shows_view_count_when_true, gallery_shows_view_count_when_unset,
 //          gallery_hides_view_count_when_false, gallery_matches_basic_and_card_condition
-describe('갤러리형 목록 - 조회수 표시 토글(show_view_count) (#413-19-4b)', () => {
+describe('갤러리형 목록 - 조회수 표시 토글(show_view_count) (19-4b)', () => {
   let registry: ComponentRegistry;
 
   beforeEach(() => {

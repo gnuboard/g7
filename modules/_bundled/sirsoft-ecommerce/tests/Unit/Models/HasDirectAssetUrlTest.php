@@ -23,7 +23,7 @@ use ReflectionClass;
  * 3개 이미지 모델(상품/카테고리/리뷰)에서 검증합니다. 혼재 운용(구 로컬 행 + 신규
  * 원격 행)과 훅 차단 폴백도 함께 고정합니다.
  *
- * `preview_url`(#878)은 행 disk 와 무관하게 항상 API 서빙 경로다 — 직접 URL 은 썸네일 파이프
+ * `preview_url`은 행 disk 와 무관하게 항상 API 서빙 경로다 — 직접 URL 은 썸네일 파이프
  * (`?size=`) 대상이 아니라서, 목록·미리보기·og·주문 스냅샷은 이 주소에 규격을 건다.
  */
 class HasDirectAssetUrlTest extends ModuleTestCase

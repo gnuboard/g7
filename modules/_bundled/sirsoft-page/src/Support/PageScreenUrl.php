@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Page\Support;
 use App\Support\ScreenUrl;
 
 /**
- * 페이지 화면 주소 — 코어 화면 주소 헬퍼({@see ScreenUrl})의 페이지 래퍼 (#792).
+ * 페이지 화면 주소 — 코어 화면 주소 헬퍼({@see ScreenUrl})의 페이지 래퍼.
  *
  * 사람이 여는 주소(검색 결과·사이트맵)는 이 래퍼로 만들어 「사용자 화면 URL」과 주소 필터를 따른다.
  * G7 엔진 SEO 캐시는 {@see defaultPath()} 로 필터 없는 기본 경로를 쓴다.

@@ -1,5 +1,5 @@
 /**
- * #810 편집 개선 — 실제 업로드 대기·기기/언어 미리보기·수정 충돌.
+ * 편집 개선 — 실제 업로드 대기·기기/언어 미리보기·수정 충돌.
  * @scenario-manifest tests/scenarios/editor-improvements.yaml
  * 효과 요약(마커 아님 — 평문): 편집 중 상태(업로드 대기·미리보기 설정·충돌 뒤 내 입력)를 지킨다
  */
@@ -44,7 +44,7 @@ test('모바일 업로드 지연·실패는 저장을 막고 파일 제거 후 �
     await route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ success: false, message: '검수용 업로드 실패' }) });
   });
   try {
-    // #408 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+    // 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
     await page.locator('[id^="mobile_image_uploader__"] input[type=file]').setInputFiles(await mobilePng(page));
     await expect(page.locator('#footer_save_button')).toBeDisabled();
     release();

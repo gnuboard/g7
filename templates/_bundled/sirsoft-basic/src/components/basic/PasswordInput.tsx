@@ -9,7 +9,7 @@ const t = (key: string, params?: Record<string, string | number>) =>
 /**
  * 특수문자 판정 — 백엔드(`PasswordPolicy` 의 `symbols()`·`PasswordComposition`)와 같은 집합이다.
  * 구두점(P)·기호(S)·공백 구분자(Z) 유니코드 범주라 이모지·전각 기호도 특수문자로 센다.
- * 종전의 `[!@#$%^&*(),.?":{}|<>]` 는 `-`·`_`·`~` 등을 빠뜨려 서버는 통과시키는 비밀번호를 화면이 미충족으로 그렸다(#736).
+ * 종전의 `[!@#$%^&*(),.?":{}|<>]` 는 `-`·`_`·`~` 등을 빠뜨려 서버는 통과시키는 비밀번호를 화면이 미충족으로 그렸다.
  */
 const SPECIAL_CHAR = /[\p{Z}\p{S}\p{P}]/u;
 
@@ -73,7 +73,7 @@ export const availablePasswordRules: Record<string, PasswordRule> = {
   },
   /**
    * 영문·숫자·특수문자 세 종류 중 몇 가지를 섞었는지 — 백엔드 「문자 종류 조합」 규칙(`PasswordComposition`)과 같은 셈법이다.
-   * 대·소문자는 한 종류(영문)로 센다. 종전에는 대문자·소문자·숫자·특수 네 종류로 세어 서버 판정과 어긋났다(#736).
+   * 대·소문자는 한 종류(영문)로 센다. 종전에는 대문자·소문자·숫자·특수 네 종류로 세어 서버 판정과 어긋났다.
    */
   minTypes: {
     key: 'minTypes',

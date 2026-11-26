@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * `layout:repair-empty-objects` — 이미 `[]` 로 굳은 빈 객체를 원본 기준으로 되돌린다 (#758).
+ * `layout:repair-empty-objects` — 이미 `[]` 로 굳은 빈 객체를 원본 기준으로 되돌린다.
  *
  * 기본은 미리보기(쓰기 없음)이고 `--apply` 를 붙여야 쓴다. 원본(`original_content`)이 `{}` 이고 저장본의
  * 같은 자리가 `[]` 인 곳만 고치며, 운영자가 바꾼 다른 값은 그대로 둔다. 스키마를 새로 만들지 않는다

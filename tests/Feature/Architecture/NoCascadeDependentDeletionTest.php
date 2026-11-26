@@ -31,7 +31,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * 부모를 지우는 코어 서비스가 자식을 DB CASCADE 에 기대지 않고 명시적으로 지운다 (#888).
+ * 부모를 지우는 코어 서비스가 자식을 DB CASCADE 에 기대지 않고 명시적으로 지운다.
  *
  * 외래키 검사를 끈 상태(`Schema::disableForeignKeyConstraints()`)에서 삭제를 실행한다 — CASCADE 가 돌지 않으므로
  * 자식이 남으면 그 경로는 CASCADE 에 기대고 있다는 뜻이다. 마이그레이션의 cascade FK 는 안전망으로 남아 있다.

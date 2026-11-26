@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * menus.icon 을 TEXT 로 넓힙니다 (7.2.1, #381).
+ * menus.icon 을 TEXT 로 넓힙니다 (7.2.1).
  *
  * 관리자 메뉴 아이콘이 FA 클래스 문자열 외에 이미지·인라인 SVG 코드(최대 32KB)를 구조형 JSON 으로 담는다.
  * 데이터 변환은 없다 — 기존 문자열은 그대로 FA 클래스로 해석된다.

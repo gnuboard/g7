@@ -2,7 +2,7 @@ feature: 사용자 템플릿 PageSkeleton 컴포넌트 계약
 
 description: |
   화면 불러오는 중 영역(PageSkeleton)이 레이아웃 구조에 맞는 자리 표시를 그리는지 잠근다.
-  #816 에서 확장 접두 빌드 클래스(ecommerce:hidden ecommerce:lg:grid)도 템플릿 클래스와 같은 뜻으로 해석하고 앞글자를 유지하게 했다.
+  확장 접두 빌드 클래스(ecommerce:hidden ecommerce:lg:grid)도 템플릿 클래스와 같은 뜻으로 해석하고 앞글자를 유지하게 했다.
   시험 하나가 시나리오 하나다.
 
 axes:

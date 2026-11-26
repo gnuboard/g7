@@ -42,7 +42,7 @@ export function isBoundValue(value: unknown): value is string {
 }
 
 /**
- * 템플릿 설정(`_global.templateSettings`)에 연결된 값인지 판정한다 (#434).
+ * 템플릿 설정(`_global.templateSettings`)에 연결된 값인지 판정한다.
  *
  * 템플릿 설정은 그 값의 유일한 주인이다 — 편집기에서 직접 지정으로 바꾸면 운영자가 템플릿 설정 화면에서 바꾼 값이
  * 화면에 반영되지 않는 두 주인 상태가 된다. 그래서 이 연결은 배지로만 보이고 해제 경로를 주지 않는다.
@@ -134,7 +134,7 @@ const noticeLink: React.CSSProperties = {
 };
 
 /**
- * 템플릿 설정에 연결된 값의 주인 화면(편집 중인 템플릿의 「설정」)으로 가는 링크 (#434 S30).
+ * 템플릿 설정에 연결된 값의 주인 화면(편집 중인 템플릿의 「설정」)으로 가는 링크.
  *
  * 편집 중인 내용을 잃지 않게 새 창으로 연다. 편집기 공급자 밖(속성 컨트롤 단독 렌더)에서는
  * 어느 템플릿인지 알 수 없으므로 그리지 않는다.
@@ -187,7 +187,7 @@ export function BoundValueNotice({
   onReplace: () => void;
   testIdPrefix: string;
 }): React.ReactElement {
-  // 템플릿 설정 연결은 그 화면이 유일한 주인이라 해제 단추를 두지 않는다 (#434)
+  // 템플릿 설정 연결은 그 화면이 유일한 주인이라 해제 단추를 두지 않는다
   const templateSettings = isTemplateSettingsBinding(expression);
 
   return (

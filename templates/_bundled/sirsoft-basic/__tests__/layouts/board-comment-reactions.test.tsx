@@ -1,6 +1,6 @@
 /**
  * @file board-comment-reactions.test.tsx
- * @description 댓글 반응 버튼 레이아웃 회귀 (이슈 #525 WP-D)
+ * @description 댓글 반응 버튼 레이아웃 회귀
  *
  * 이 화면이 지키는 계약:
  *  - 노출은 게시판이 **반응 사용과 댓글 반응 사용을 둘 다** 켰을 때뿐이다. 댓글 반응은
@@ -25,7 +25,7 @@ import postShow from '../../layouts/partials/board/types/basic/show.json';
 const json = JSON.stringify(commentItem);
 const postJson = JSON.stringify(postShow);
 
-describe('이슈 #525 — 댓글 반응 버튼 (_comment_item.json)', () => {
+describe('댓글 반응 버튼 (_comment_item.json)', () => {
     // @scenario case=comment_buttons_render_under_both_toggles
     // @effects comment_reaction_group_requires_both_toggles
     it('반응 사용과 댓글 반응 사용이 둘 다 켜져야 노출된다', () => {
@@ -57,7 +57,7 @@ describe('이슈 #525 — 댓글 반응 버튼 (_comment_item.json)', () => {
     });
 });
 
-describe('이슈 #525 — 댓글 반응 상태 키잉', () => {
+describe('댓글 반응 상태 키잉', () => {
     // @scenario case=comment_buttons_key_state_by_comment_id
     // @effects comment_reaction_state_keyed_by_comment_id
     it('네 가지 화면 상태를 전부 댓글 번호로 키 잡는다', () => {
@@ -84,7 +84,7 @@ describe('이슈 #525 — 댓글 반응 상태 키잉', () => {
     });
 });
 
-describe('이슈 #525 — 댓글 반응 클릭 흐름', () => {
+describe('댓글 반응 클릭 흐름', () => {
     // @scenario case=comment_buttons_key_state_by_comment_id
     // @effects comment_reaction_optimistic_then_confirmed_by_response
     it('클릭 즉시 낙관 갱신하고 같은 유형 재클릭이면 해제로 예측한다', () => {

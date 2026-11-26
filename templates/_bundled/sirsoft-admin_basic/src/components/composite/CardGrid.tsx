@@ -75,7 +75,7 @@ export interface CardGridProps {
 
   /**
    * 카드 이동 주소(행 표현식) — 있으면 카드 전체를 덮는 `<a href>` 를 깔아 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가
-   * 된다(#757). 엔진은 원문 그대로 넘기고(components.json skipBindingKeys) 카드마다 그 행으로 푼다.
+   * 된다. 엔진은 원문 그대로 넘기고(components.json skipBindingKeys) 카드마다 그 행으로 푼다.
    * 예: `cardHref="/admin/boards/{{row.slug}}/edit"`. 보통 클릭은 SPA 이동, 수정키 클릭은 브라우저 기본 동작,
    * 바깥 주소는 새 탭. 카드 내용은 링크 밖 위층이라(링크 안 단추 없음) 안쪽 단추·스위치·메뉴는 그 요소만 동작한다.
    * 카드는 쌓임 맥락을 만들므로 카드 안 펼침 요소는 포털로 그린다(ActionMenu 는 이미 포털).
@@ -111,7 +111,7 @@ export interface CardGridProps {
   alwaysShowPagination?: boolean;
   onPageChange?: (page: number) => void;
   /**
-   * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/boards?page={page}`). 주면 내장 페이지 번호가 링크가 된다(#757).
+   * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/boards?page={page}`). 주면 내장 페이지 번호가 링크가 된다.
    */
   pageHref?: string;
   /** 페이지 주소에 현재 주소의 쿼리를 합친다 */
@@ -650,7 +650,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
       <Div className={`grid ${gridClasses} gap-${gap}`}>
         {paginatedData.map((row, index) => {
           const cardContent = renderCellChildren(cellChildren, row, index, `card-${index}`, rowActions, handleRowAction, renderEnv);
-          // 카드 주소가 있으면 카드 전체를 덮는 링크를 깐다(#757) — 없거나 링크로 그릴 수 없는 주소면 종전 그대로.
+          // 카드 주소가 있으면 카드 전체를 덮는 링크를 깐다 — 없거나 링크로 그릴 수 없는 주소면 종전 그대로.
           // 카드는 div 그대로이고 링크는 내용 아래층의 마지막 자식이다(링크 안에 단추·스위치를 넣지 않는다 — main.css .card-link-card).
           const link = cardHref ? resolveLinkHref(resolveCardHref(cardHref, row)) : null;
           if (link) {

@@ -11,7 +11,7 @@ import { classAtWidth } from '../layout/widthBreakpoints';
 
 /**
  * 그누보드7 Core 에서 이 컴포넌트가 쓰는 부분만 적은 모양.
- * 전역 Window 를 넓히지 않는다 — 코어의 Window.G7Core 선언과 합쳐지면 코어 쪽 속성(TemplateEngine 등)이 가려진다(#869).
+ * 전역 Window 를 넓히지 않는다 — 코어의 Window.G7Core 선언과 합쳐지면 코어 쪽 속성(TemplateEngine 등)이 가려진다.
  */
 interface G7CoreLike {
   createLogger?: (name: string) => {
@@ -212,7 +212,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownMenuRef = useRef<HTMLDivElement>(null);
-  // 여는 단추 — Esc 로 닫은 뒤 포커스를 돌려받는다(목록이 사라져 body 로 빠지지 않게, #869 키보드 접근)
+  // 여는 단추 — Esc 로 닫은 뒤 포커스를 돌려받는다(목록이 사라져 body 로 빠지지 않게, 키보드 접근)
   const triggerButtonRef = useRef<HTMLButtonElement>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [adjustedPosition, setAdjustedPosition] = useState<'left' | 'right'>(position);
@@ -475,7 +475,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
       <Button
         ref={triggerButtonRef}
         onClick={() => setIsOpen(!isOpen)}
-        // Modal 이 펼친 목록으로 알아보게 한다 — 목록 안 Esc 는 목록 몫이다(#869)
+        // Modal 이 펼친 목록으로 알아보게 한다 — 목록 안 Esc 는 목록 몫이다
         aria-haspopup="true"
         aria-expanded={isOpen}
         className={G7Core()?.style?.mergeClasses?.(

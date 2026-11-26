@@ -211,7 +211,7 @@ class ArchiveFreshnessServiceTest extends TestCase
 
     /**
      * DB 스케줄로 옮긴 매시 집계(카탈로그 analytics-archive-hour)를 실행기가 돌려도 「예약 실행」으로 기록돼
-     * 스케줄러가 살아 있다고 판정되는지 확인합니다(#720 판정 보존 — `--scheduled` 옵션이 실행기까지 전달).
+     * 스케줄러가 살아 있다고 판정되는지 확인합니다(판정 보존 — `--scheduled` 옵션이 실행기까지 전달).
      *
      * @return void 없음
      *

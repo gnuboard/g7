@@ -1,5 +1,5 @@
 /**
- * 사용자 템플릿 Modal — 고정 하단(`footer`) 표면 (#869, 설계 확정 2026-11-08)
+ * 사용자 템플릿 Modal — 고정 하단(`footer`) 표면 (설계 확정 2026-11-08)
  *
  * 종전 사용자 Modal 은 `footer` 를 구조분해하지 않아 `<footer>` 로 적은 단추가 조용히 사라졌고, 그래서 사용자 확인 창은
  * 단추를 본문 안 `justify-end` 줄로 그려 640px 이하에서 세로로 쌓이지 않았다. 관리자 Modal 과 같은 방식으로
@@ -38,7 +38,7 @@ describe('Modal (sirsoft-basic) — footer', () => {
   });
 
   /**
-   * 고정 하단 단추가 조건으로 모두 빠지면 바닥 줄(테두리와 여백)도 보이지 않는다(#869 C1, 관리자 Modal 과 같은 규칙).
+   * 고정 하단 단추가 조건으로 모두 빠지면 바닥 줄(테두리와 여백)도 보이지 않는다(관리자 Modal 과 같은 규칙).
    */
   // @scenario area=footer, width=desktop
   // @effects user_modal_footer_hidden_when_all_buttons_filtered

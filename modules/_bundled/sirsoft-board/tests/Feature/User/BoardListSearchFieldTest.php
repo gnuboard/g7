@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\Group;
 /**
  * 게시판 목록 검색 대상 구분 테스트 (사용자)
  *
- * 검증 목적 (이슈 #524 §4.2 — 사용자 화면에 검색 구분이 어디에도 없던 결함):
+ * 검증 목적 (사용자 화면에 검색 구분이 어디에도 없던 결함):
  * - search_field=title → 제목만, content → 내용만, author → 작성자만
  * - 기본값(title_content)과 미지정(all)의 결과가 종전과 같다 (회귀)
  * - 허용 목록 밖의 값은 기본 검색 대상(title_content)으로 처리한다 (관리자 목록처럼 200, 작성자는 섞지 않는다)

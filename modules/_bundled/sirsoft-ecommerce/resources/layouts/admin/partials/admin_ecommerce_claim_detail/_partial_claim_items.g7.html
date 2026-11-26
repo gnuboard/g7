@@ -106,7 +106,7 @@
           <on type="click">
             <action handler="sirsoft-ecommerce.executeClaimStatusTransition" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" status="{{_local.claimBulkStatus ?? ''}}" rejectReason="{{_local.claimRejectReason ?? ''}}">
               <fail>
-                <!-- 실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 2026-09-22 #599 실측에서 승인 실패 「교환할 옵션의 재고가 부족합니다.」가 2개 겹쳐 떴다. 형제 자리(_partial_claim_shipping·_modal_claim_refund_execute)와 같은 규율이다. -->
+                <!-- 실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 2026-09-22 실측에서 승인 실패 「교환할 옵션의 재고가 부족합니다.」가 2개 겹쳐 떴다. 형제 자리(_partial_claim_shipping·_modal_claim_refund_execute)와 같은 규율이다. -->
                 <suppress/>
               </fail>
             </action>
@@ -134,13 +134,13 @@
           <!-- 교집합이 0건이면 셀렉트를 감추고 이유를 적는다 — 빈 셀렉트만 두면 운영자는 화면이 덜 그려진 줄 안다. -->
           <span data-ref="ci_003_no_common_transition" data-if="{{(_local.selectedClaimItems ?? []).length > 0 &amp;&amp; (_local.itemTransitionOptions ?? []).length === 0}}" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap">$t:sirsoft-ecommerce.admin.claim.detail.items.no_common_transition</span>
         </div>
-        <!-- 반려 사유 (#599 후속 운영 결정). 상품 칸의 반려도 사유가 정본이다 — 상품을 모두 반려하면 신청서가 따라 반려되는데, 사유 없이 보내면 구매자 화면의 반려 사유가 빈 칸으로 남는다. 반려를 고른 순간에만 연다(위 신청서 칸과 같은 규칙). -->
+        <!-- 반려 사유 (후속 운영 결정). 상품 칸의 반려도 사유가 정본이다 — 상품을 모두 반려하면 신청서가 따라 반려되는데, 사유 없이 보내면 구매자 화면의 반려 사유가 빈 칸으로 남는다. 반려를 고른 순간에만 연다(위 신청서 칸과 같은 규칙). -->
         <input data-ref="ci_005_reject_reason" data-if="{{(_local.itemBulkStatus ?? '') === 'rejected'}}" type="text" name="itemRejectReason" class="ecommerce:flex-1 ecommerce:min-w-[16rem] ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.transition.reject_reason_placeholder" value="{{_local.itemRejectReason ?? ''}}">
           <on type="change">
             <set-state target="local" itemRejectReason="{{$event.target.value}}"/>
           </on>
         </input>
-        <!-- 회수중·발송중 송장 (#599 후속 운영 결정). 그 두 상태는 택배가 물건을 싣고 가는 중이라는 사실이라 송장 없이 들어가면 고객 알림의 운송장 칸이 비어서 나간다 — 서버도 422 로 막는다. 송장은 고른 상품 행마다 남는다(회수중은 회수 송장, 발송중은 재발송 송장 — 수량을 줄이면 그 행이 쪼개져 고른 수량에만 붙는다). 선택지는 상세 응답이 나른다 — 배송사 엔드포인트는 `settings.read` 게이트다. -->
+        <!-- 회수중·발송중 송장 (후속 운영 결정). 그 두 상태는 택배가 물건을 싣고 가는 중이라는 사실이라 송장 없이 들어가면 고객 알림의 운송장 칸이 비어서 나간다 — 서버도 422 로 막는다. 송장은 고른 상품 행마다 남는다(회수중은 회수 송장, 발송중은 재발송 송장 — 수량을 줄이면 그 행이 쪼개져 고른 수량에만 붙는다). 선택지는 상세 응답이 나른다 — 배송사 엔드포인트는 `settings.read` 게이트다. -->
         <div data-ref="ci_006_tracking_row" data-if="{{['collecting', 'redelivering'].includes(_local.itemBulkStatus ?? '') || _local.itemTrackingMode === true}}" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <!-- 「송장만 저장」 의 방향 — 교환만 회수·재발송 둘이다(반품은 회수뿐). 방향을 바꾸면 그 방향의 공통 송장을 다시 미리 채운다. -->
           <select data-ref="ci_010_direction" aria-label="$t:sirsoft-ecommerce.admin.claim.detail.items.tracking_direction_label" data-if="{{_local.itemTrackingMode === true &amp;&amp; (claim?.data?.claim?.claim_type ?? '') === 'exchange'}}" name="itemTrackingDirection" class="ecommerce:w-32 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg" value="{{_local.itemTrackingDirection ?? 'collection'}}" options="{{[{ value: 'collection', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.collection_title') }, { value: 'redelivery', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.redelivery_title') }]}}">
@@ -271,7 +271,7 @@
         </on>
       </data-grid>
     </div>
-    <!-- 완료 처리 카드 (D26). 교환·반품만이다 — 환불의 완료는 환불 실행(S9b)이 옮기는 상태라 관리자가 직접 지정하는 축이 아니다. 이미 종결된 신청서에는 그리지 않는다. 버튼·건수는 서버가 센 **지금 완료할 수 있는 상품 수**(`completable_item_count`)를 읽는다 — 예전에는 전체 상품 수를 적고 버튼을 늘 켜 두어, 회수도착 전에 누르면 모달까지 열린 뒤 거절됐다(#599 후속). -->
+    <!-- 완료 처리 카드 (D26). 교환·반품만이다 — 환불의 완료는 환불 실행(S9b)이 옮기는 상태라 관리자가 직접 지정하는 축이 아니다. 이미 종결된 신청서에는 그리지 않는다. 버튼·건수는 서버가 센 **지금 완료할 수 있는 상품 수**(`completable_item_count`)를 읽는다 — 예전에는 전체 상품 수를 적고 버튼을 늘 켜 두어, 회수도착 전에 누르면 모달까지 열린 뒤 거절됐다. -->
     <div data-ref="claim_completion_card" data-if="{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') &amp;&amp; (claim?.data?.claim?.is_final !== true || !!claim?.data?.pending_refund || (claim?.data?.claim?.items ?? []).some(i => i.is_stock_restorable === true))}}" class="ecommerce-admin-card ecommerce:mt-6">
       <div class="ecommerce-flex-between ecommerce:gap-4 ecommerce:flex-wrap">
         <div>

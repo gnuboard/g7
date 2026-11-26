@@ -17,7 +17,7 @@ use Modules\Sirsoft\Page\Models\PageVersion;
 use Modules\Sirsoft\Page\Tests\FeatureTestCase;
 
 /**
- * 페이지 관리 화면의 작성자, 수정자 이름 (#490)
+ * 페이지 관리 화면의 작성자, 수정자 이름
  *
  * 페이지 목록, 상세, 버전 이력, 버전 상세의 `creator.name`, `updater.name` 은 회원 이름 컬럼을 직접 싣지 않고 관리자 영역
  * (`core:admin`) 표시 이름으로 계산한다. 실명은 회원 조회 권한(`core.users.read`)이 있는 관리자에게, 실명이 표시 이름과 다를 때만

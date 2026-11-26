@@ -1,5 +1,5 @@
 /**
- * 회원 상세 「반응」 요약 탭 (#525 WP-C).
+ * 회원 상세 「반응」 요약 탭.
  *
  * 실브라우저로 두 갈래를 잰다:
  *   ① 관리자 응답에 반응 요약이 실리고 탭이 그 숫자를 낸다
@@ -15,7 +15,7 @@
  */
 import { test, expect, authenticatePage } from '../../fixtures/reaction-seed';
 
-test.describe('회원 상세 반응 탭 (#525 WP-C)', () => {
+test.describe('회원 상세 반응 탭', () => {
   // @scenario case=member_detail_tab_links_with_uuid
   // @effects admin_user_detail_includes_board_reactions_summary
   test('반응을 남긴 회원의 상세에 반응 탭과 요약이 뜬다', async ({ page, reactionSeed, reactionManageToken }) => {

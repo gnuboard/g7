@@ -86,14 +86,14 @@ class ActionCompilerTest extends LayoutMarkupTestCase
             '이벤트 액션·switch·confirm' => ['event_actions'],
             '생명주기·구독·conditions' => ['lifecycle_subscription'],
             '병렬 3형태·에러맵·범용 핸들러' => ['flow_and_generic'],
-            // #753 — 이벤트 받기·실패 처리 안 분기 모양 (F1: 자식 여럿은 암묵 sequence, 단일 <fail> 은 객체)
+            // 이벤트 받기·실패 처리 안 분기 모양 (F1: 자식 여럿은 암묵 sequence, 단일 <fail> 은 객체)
             '구독 안 sequence·conditions·switch' => ['listen_sequence_conditions'],
             '단일 <fail> 안 conditions' => ['fail_single_conditions'],
         ];
     }
 
     /**
-     * 분기 모양 픽스처가 굽기 → 역변환 → 재굽기 왕복에서 원본과 같다 (#753).
+     * 분기 모양 픽스처가 굽기 → 역변환 → 재굽기 왕복에서 원본과 같다.
      *
      * `<on listen>`·`<fail>`·`<init>` 안의 sequence·conditions·switch·action-ref 는 엔진이 이제 그대로
      * 실행하므로(engine-v1.80.0), 마크업 ↔ JSON 왕복이 그 모양을 잃지 않아야 편집기 저장이 안전하다.
@@ -482,7 +482,7 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * init 은 항목을 통째로 실행하므로(engine-v1.80.0) sequence·switch·action-ref 를 굽는다 (#753 W5).
+     * init 은 항목을 통째로 실행하므로(engine-v1.80.0) sequence·switch·action-ref 를 굽는다.
      *
      * @scenario compile_unit=action,source_health=valid
      *

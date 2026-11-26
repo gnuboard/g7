@@ -110,7 +110,7 @@ interface ProductOption {
     is_active: boolean;
     sku: string;
     multi_currency_prices?: Record<string, number>;
-    /** 옵션별 과세 종류 — null 은 상품 기본값을 따른다 (#612). 재생성 때 같은 조합의 기존 값은 병합으로 이어진다 */
+    /** 옵션별 과세 종류 — null 은 상품 기본값을 따른다. 재생성 때 같은 조합의 기존 값은 병합으로 이어진다 */
     tax_status?: 'taxable' | 'tax_free' | 'zero_rated' | null;
     [key: string]: any;
 }

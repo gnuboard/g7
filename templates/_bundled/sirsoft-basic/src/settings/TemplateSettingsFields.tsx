@@ -1,8 +1,8 @@
 /**
- * TemplateSettingsFields — sirsoft-basic 설정 화면의 칸 그리기 (#434)
+ * TemplateSettingsFields — sirsoft-basic 설정 화면의 칸 그리기
  *
  * 이 템플릿 설정 화면 부품(`TemplateSettingsScreen`)이 쓴다 — 설정 화면 묶음(`dist/settings/*`)에 묶여 어느 관리자 템플릿에서나
- * 뜬다(#434 D28). 조회 응답의 섹션 서술(`sections`)대로 섹션마다 카드 하나, 칸마다 종류별 입력을 그리고, 이 템플릿의 헤더 메뉴
+ * 뜬다. 조회 응답의 섹션 서술(`sections`)대로 섹션마다 카드 하나, 칸마다 종류별 입력을 그리고, 이 템플릿의 헤더 메뉴
  * 칸(`menu`)은 끌어서 놓는 편집기(`TemplateMenuField`)로 그린다. 칸마다 다른 경로(`{섹션}.{키}`)에 쓰는 동적 바인딩이라 선언형
  * 레이아웃 대신 컴포넌트로 둔다.
  *
@@ -163,7 +163,7 @@ export const TemplateSettingsFields: React.FC<TemplateSettingsFieldsProps> = ({
   id,
   editorAttrs,
 }) => {
-  // 폭 분기는 엔진 폭으로 고른다 — Tailwind 반응형 접두는 창 폭으로 판정되어 편집기 미리보기·엔진 responsive 와 경계가 갈린다(#869).
+  // 폭 분기는 엔진 폭으로 고른다 — Tailwind 반응형 접두는 창 폭으로 판정되어 편집기 미리보기·엔진 responsive 와 경계가 갈린다.
   const twoColumns = useViewportWidth() >= BREAKPOINTS.md;
 
   // 업로더 콜백이 연달아 와도 직전 결과 위에 쌓이게 최신 값을 따로 들고 있는다

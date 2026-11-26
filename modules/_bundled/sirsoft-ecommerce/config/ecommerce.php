@@ -110,7 +110,7 @@ return [
         'cart_expiry_days_min' => 1,
         'cart_expiry_days_max' => 365,
 
-        // 내보내기 파일 보관 기간(일) — 개인정보가 담길 수 있는 파일이 서버에 오래 남지 않도록 상한을 둔다(#787)
+        // 내보내기 파일 보관 기간(일) — 개인정보가 담길 수 있는 파일이 서버에 오래 남지 않도록 상한을 둔다
         'export_retention_days_min' => 1,
         'export_retention_days_max' => 30,
 
@@ -123,7 +123,7 @@ return [
         'expiry_days_max' => 3650,
         'expiry_notification_days_before_min' => 1,
         'expiry_notification_days_before_max' => 365,
-        // 쿠폰 만료 임박 알림 시점(일 전, #952)
+        // 쿠폰 만료 임박 알림 시점(일 전)
         'coupon_expiry_notification_days_before_min' => 1,
         'coupon_expiry_notification_days_before_max' => 30,
 
@@ -140,7 +140,7 @@ return [
         'decimal_places_min' => 0,
         'decimal_places_max' => 8,
 
-        // 개인정보 보유기간 (이슈 #636) — 종결 주문의 주문자·수령인 정보 보유기간(년).
+        // 개인정보 보유기간 — 종결 주문의 주문자·수령인 정보 보유기간(년).
         // 하한 5년: 전자상거래법 §6(계약·청약철회·대금결제·재화공급 기록 5년 보존) — 그보다 짧게
         // 파기하면 법정 보존 의무 위반이라 서버가 막는다.
         'privacy_retention_years_min' => 5,

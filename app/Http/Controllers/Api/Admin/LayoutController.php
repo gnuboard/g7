@@ -381,7 +381,7 @@ class LayoutController extends AdminBaseController
             $layout->source_type?->value ?? null,
             $layout->source_identifier ?? $templateName,
             "{$name}.g7.html",
-            // 저장본 — 그 안에 이미 있던 미등록 템플릿 컴포넌트는 그 개수까지 허용한다 (#712)
+            // 저장본 — 그 안에 이미 있던 미등록 템플릿 컴포넌트는 그 개수까지 허용한다
             $this->layoutMarkupService->decodeStoredContent((string) $layout->getRawOriginal('content')),
         );
     }
@@ -394,7 +394,7 @@ class LayoutController extends AdminBaseController
      * @param  string|null  $sourceKind  행 source_type
      * @param  string|null  $identifier  행 source_identifier
      * @param  string  $label  표시용 파일명
-     * @param  array<string, mixed>|null  $baseline  편집 중인 행의 저장본 (미등록 템플릿 컴포넌트 허용 기준, #712)
+     * @param  array<string, mixed>|null  $baseline  편집 중인 행의 저장본 (미등록 템플릿 컴포넌트 허용 기준)
      * @return JsonResponse 변환 응답
      */
     private function compileMarkupResponse(string $markup, string $templateName, ?string $sourceKind, ?string $identifier, string $label, ?array $baseline = null): JsonResponse
@@ -460,7 +460,7 @@ class LayoutController extends AdminBaseController
     {
         $service = $this->layoutMarkupService;
 
-        // 템플릿 `components.json` 이 스키마를 어기면 검사 목록을 만들 수 없다 — 500 이 아니라 빈 마크업 + 오류로 연다(#712).
+        // 템플릿 `components.json` 이 스키마를 어기면 검사 목록을 만들 수 없다 — 500 이 아니라 빈 마크업 + 오류로 연다.
         try {
             ['markup' => $markup, 'escapes' => $escapes] = $service->toMarkup($json, $templateName);
         } catch (CompileError $error) {
@@ -476,7 +476,7 @@ class LayoutController extends AdminBaseController
         $compileError = null;
 
         try {
-            // 저장본(이 행)에 이미 있던 미등록 템플릿 컴포넌트는 그 개수까지 허용한다 — 7.0 이 무차별 등록한 행 (#712)
+            // 저장본(이 행)에 이미 있던 미등록 템플릿 컴포넌트는 그 개수까지 허용한다 — 7.0 이 무차별 등록한 행
             $warnings = $service->describeWarnings($service->toJson($markup, $templateName, $sourceKind, $identifier, $label, $json)->warnings);
         } catch (CompileError $error) {
             $compileError = $service->describeError($error);

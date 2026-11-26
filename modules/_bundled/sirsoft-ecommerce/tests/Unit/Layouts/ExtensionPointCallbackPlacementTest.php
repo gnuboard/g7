@@ -19,7 +19,7 @@ use Tests\Support\Concerns\AssertsExtensionPointCallbackPlacement;
  * 액션이 `props` 에 있으면 증상이 조용하다 — 확장점 버튼은 정상으로 보이고 자기 일까지 하는데
  * (우편번호 레이어가 열리고 주소도 고를 수 있다) 고른 값만 폼에 돌아오지 않는다.
  *
- * 2026-09-15 #599 세션3 실측에서 관리자 주문상세 배송지 변경의
+ * 2026-09-15 실측에서 관리자 주문상세 배송지 변경의
  * `order_detail_address_search_slot` 이 이 형태였다.
  */
 class ExtensionPointCallbackPlacementTest extends ModuleTestCase

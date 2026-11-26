@@ -1,5 +1,5 @@
 /**
- * 구매자 클레임 신청서 작성 — 취소·환불 분기 (#599 S15b · D2 · §6-3)
+ * 구매자 클레임 신청서 작성 — 취소·환불 분기
  *
  * 한 화면이지만 서버는 두 파이프라인으로 갈린다 — 결제완료 상품은 **즉시 취소**로 바로
  * 환불되고, 배송준비 이후 상품은 **환불 신청서**로 심사를 받는다. 화면이 재는 축은 셋이다.
@@ -197,7 +197,7 @@ test.describe('구매자 클레임 신청서 작성 — 취소·환불 분기', 
 
   // @scenario claim_type=refund, charge_method=none, refund_branch=auto
   // @effects claim_apply_cancel_blocked_locks_submit_inline
-  test('환불 불가 조합은 표 아래 인라인 안내가 서고 제출이 잠긴다 (#599 후속 P3-①)', async ({ page }) => {
+  test('환불 불가 조합은 표 아래 인라인 안내가 서고 제출이 잠긴다', async ({ page }) => {
     await mockClaimable(page, [CANCEL_ITEM], { resolved_type: 'auto' });
     const calls = await mockPreview(page, () => previewWithComparison({}, {
       cancel_blocked: true,
@@ -229,7 +229,7 @@ test.describe('구매자 클레임 신청서 작성 — 취소·환불 분기', 
 
   // @scenario claim_type=refund, charge_method=none, refund_branch=auto
   // @effects claim_apply_refund_priority_reestimates, claim_apply_restored_coupons_and_remaining_balances_render
-  test('마일리지를 쓴 주문은 환불 우선순위 라디오가 서고 바꾸면 그 값으로 미리보기를 다시 부른다 (#599 후속 P3-③)', async ({ page }) => {
+  test('마일리지를 쓴 주문은 환불 우선순위 라디오가 서고 바꾸면 그 값으로 미리보기를 다시 부른다', async ({ page }) => {
     await mockClaimable(page, [CANCEL_ITEM], { resolved_type: 'auto' });
     const calls = await mockPreview(page, (body) => previewWithComparison({}, {
       original_snapshot: { ...(previewWithComparison().adjustment as any).original_snapshot, total_points_used_amount: 5000 },

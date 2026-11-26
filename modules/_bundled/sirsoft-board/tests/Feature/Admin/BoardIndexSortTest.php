@@ -84,7 +84,7 @@ class BoardIndexSortTest extends ModuleTestCase
      * 게시판은 운영자 등록 설정성 테이블이라 레이아웃이 사실상 전량 조회를 쓴다:
      * - 게시판 설정 화면(admin_board_settings.json): per_page=999
      * - 쇼핑몰 환경설정 문의 카드(admin-ecommerce-inquiry-settings.json): per_page=200
-     * 게이트를 100 으로 조였을 때 두 화면 진입이 422 토스트로 깨졌다 (#573 회귀).
+     * 게이트를 100 으로 조였을 때 두 화면 진입이 422 토스트로 깨졌다.
      *
      * @effects accepts_full_list_consumer_per_page
      *

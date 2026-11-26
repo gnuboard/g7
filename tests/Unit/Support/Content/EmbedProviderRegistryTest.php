@@ -9,7 +9,7 @@ use App\Support\Content\EmbedProviderRegistry;
 use Tests\TestCase;
 
 /**
- * 외부 영상 서비스 — 프리셋·직접 추가 해석, 주소 형식 컴파일, 우선순위, PHP↔JS 정규식 고정본 (#883 5단계)
+ * 외부 영상 서비스 — 프리셋·직접 추가 해석, 주소 형식 컴파일, 우선순위, PHP↔JS 정규식 고정본
  *
  * @scenario-manifest tests/scenarios/content-render-policy.yaml
  */
@@ -59,7 +59,7 @@ class EmbedProviderRegistryTest extends TestCase
     /**
      * 지금 PHP 가 만드는 고정본 내용.
      *
-     * 미디어 출처 패턴은 등록된 서빙 라우트에서 만들어지므로(#887) 번들 게시판 모양 서빙 라우트 하나를 등록한 상태로 만든다 —
+     * 미디어 출처 패턴은 등록된 서빙 라우트에서 만들어지므로 번들 게시판 모양 서빙 라우트 하나를 등록한 상태로 만든다 —
      * 표시기·편집기 시험의 표본 주소(`/api/modules/sirsoft-board/boards/free/content-media/…`)가 이 패턴으로 통과한다.
      *
      * @return array<string, mixed> 고정본

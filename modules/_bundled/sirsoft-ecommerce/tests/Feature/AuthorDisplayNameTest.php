@@ -35,7 +35,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Tests\Concerns\CountsQueries;
 
 /**
- * 이커머스의 회원 표시 이름 (#490 9단계)
+ * 이커머스의 회원 표시 이름
  *
  * 상품 후기, 상품 문의와 관리자 화면의 회원 칸이 회원 이름을 `users.name` 에서 직접 읽지 않고 표시 이름 계산기를
  * 거치는지 잠근다. 설정을 바꾸지 않은 사이트의 응답이 수정 전과 같은지도 함께 잠근다.

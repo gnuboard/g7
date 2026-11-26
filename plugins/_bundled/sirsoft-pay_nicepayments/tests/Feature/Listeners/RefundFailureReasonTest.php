@@ -19,7 +19,7 @@ use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
 
 /**
- * 결제 환불 실패 결과의 사유 선택 (#858)
+ * 결제 환불 실패 결과의 사유 선택
  *
  * 쇼핑몰은 이 사유를 「PG 환불 처리에 실패했습니다. (…)」 안내에 끼워 회원·비회원·관리자 응답으로 낸다.
  * 나이스페이먼츠가 돌려준 거절 사유(ResultMsg)는 그대로 싣고, 통신 예외 원문(결제대행사 API 주소·cURL 문구)과

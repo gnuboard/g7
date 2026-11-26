@@ -32,7 +32,7 @@ use Tests\Support\Identity\EnrollmentRequiredProvider;
 use Tests\TestCase;
 
 /**
- * 휴면 계정 생명주기 회귀 테스트 (이슈 #636 S4 · 2단계형 설계 확정)
+ * 휴면 계정 생명주기 회귀 테스트 (2단계형 설계 확정)
  *
  * 통지 → 전환 → 해제 → 탈퇴의 각 단계와, **단계마다 상태가 어떻게 남아 있어야 하는지**를
  * 고정합니다. 특히 두 가지를 구조적으로 못박습니다.
@@ -932,7 +932,7 @@ class DormantLifecycleTest extends TestCase
 
         // 휴면 커맨드는 기능이 꺼져 있으면 로그에 도달하기 전에 반환한다.
         $this->enableDormancy(withdraw: true);
-        // 비밀번호 만료 커맨드(#736)도 같은 약속을 하는 모집단이고, 같은 이유로 기능을 켜 둔다.
+        // 비밀번호 만료 커맨드도 같은 약속을 하는 모집단이고, 같은 이유로 기능을 켜 둔다.
         Config::set('g7_settings.core.security.password_expiry_enabled', true);
         Config::set('g7_settings.core.security.password_expiry_started_at', now()->toIso8601String());
 

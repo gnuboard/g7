@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\MessageBizppurio\Enums;
 
 /**
- * 비즈뿌리오 알림톡 템플릿 라이프사이클 상태 (#597 §3.4).
+ * 비즈뿌리오 알림톡 템플릿 라이프사이클 상태.
  *
  * G7 이 관리하는 알림톡 템플릿의 상태다. 카카오 관리 API(kapi)의 serviceStatus 어휘를
  * 우리 상태로 환원하는 매핑을 단일 출처로 보유한다(동기화 커맨드·수동 sync 가 공유).

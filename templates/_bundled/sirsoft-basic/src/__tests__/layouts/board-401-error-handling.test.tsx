@@ -1,7 +1,7 @@
 // e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * @file board-401-error-handling.test.tsx
- * @description 게시판 목록/상세 - 비로그인 접근 시 401 errorHandling 검증 (이슈 #228 B-5, #413 item 28)
+ * @description 게시판 목록/상세 - 비로그인 접근 시 401 errorHandling 검증 (item 28)
  *
  * 검증 항목:
  * 1. show.json / index.json 데이터소스에 401 errorHandling이 정의되어 있는가
@@ -24,7 +24,7 @@ function getDataSource(layout: any, dataSourceId: string) {
   return (layout.data_sources ?? []).find((s: any) => s.id === dataSourceId) ?? null;
 }
 
-describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #228 B-5)', () => {
+describe('게시판 401 errorHandling — sequence + redirect 방식', () => {
   describe('show.json — auth_mode 및 데이터소스 401', () => {
     // redirect: /board/{{route.slug}}/posts/{{route.id}}
     const ds = getDataSource(showLayout, 'post');

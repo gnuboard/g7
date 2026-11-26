@@ -29,7 +29,7 @@ export interface InsertionAffordancesProps {
   onAddRequest: (point: InsertionPoint) => void;
   /**
    * 버튼이 놓일 수 있는 경계(frame 좌표, `resolveAffordanceBounds`). 넘는 버튼만 안으로 접어 넣는다 — 캔버스
-   * 밖으로 나가 문서를 넓히지 않게(#869 8차). 생략하면 종전 배치.
+   * 밖으로 나가 문서를 넓히지 않게. 생략하면 종전 배치.
    */
   bounds?: AffordanceBounds | null;
 }

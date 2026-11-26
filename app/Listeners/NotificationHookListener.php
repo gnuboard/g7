@@ -635,7 +635,7 @@ class NotificationHookListener implements HookListenerInterface
      *
      * 탈퇴 처리는 이름·이메일·닉네임을 익명화합니다(`…@example.test_deleted_20260921_1733`).
      * 그 주소는 더 이상 존재하지 않는 우편함이므로, 그대로 보내면 운영에서는 매번 바운스가
-     * 나고 발송 평판이 깎입니다(#599 세션A 실측 2026-09-22 — 탈퇴 회원의 `refund_approved`
+     * 나고 발송 평판이 깎입니다(세션A 실측 2026-09-22 — 탈퇴 회원의 `refund_approved`
      * 4행이 익명화된 주소로 생성됨. 그 환경은 SMTP 가 없어 가려졌을 뿐입니다).
      *
      * `database`(알림함)는 막지 않습니다 — 바깥으로 나가지 않고, 관리자가 탈퇴 회원의

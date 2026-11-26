@@ -13,7 +13,7 @@
             {
                 "name": "TemplateSettingsScreen",
                 "type": "composite",
-                "description": "템플릿 설정 화면 — 머리·안내·섹션 탭·저장 결과·칸·저장 바·확인 창 (#434)",
+                "description": "템플릿 설정 화면 — 머리·안내·섹션 탭·저장 결과·칸·저장 바·확인 창",
                 "path": "templates/_bundled/sirsoft-basic/src/settings/TemplateSettingsScreen.tsx",
                 "props": {
                     "data": {

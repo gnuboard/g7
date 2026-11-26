@@ -173,7 +173,7 @@ describe('updateOptionFieldHandler - 비기본 옵션 판매가 변경 (상품 �
 });
 
 /**
- * 옵션 지연 로딩(#518 / 공개 #76) 이후 생긴 상태: 목록 행의 `options` 는 펼치기 전까지
+ * 옵션 지연 로딩(공개 #76) 이후 생긴 상태: 목록 행의 `options` 는 펼치기 전까지
  * `undefined` 다. 이 핸들러는 그 행을 만나도 **아무것도 바꾸지 않아야** 한다.
  *
  * 특히 `options` 를 `[]` 로 채워 넣으면 안 된다. 지연 로딩은 `Array.isArray(row.options)` 로

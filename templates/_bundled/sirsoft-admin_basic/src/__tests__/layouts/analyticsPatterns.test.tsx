@@ -1,8 +1,8 @@
 /**
  * @file analyticsPatterns.test.tsx
- * @description 요일·시간대 패턴 화면의 런타임 계약 (이슈 #682 S3)
+ * @description 요일·시간대 패턴 화면의 런타임 계약
  *
- * 14면 중 이 화면만 전용 렌더링 테스트가 없었다(#682 S3 라운드 2). 리포트 5면과 달리 표가 아니라
+ * 14면 중 이 화면만 전용 렌더링 테스트가 없었다. 리포트 5면과 달리 표가 아니라
  * 막대 두 개라 공통 조각의 가드가 닿지 않는 자리가 있다.
  *
  * 잠그는 것: 기간 바가 이 화면의 소스를 다시 받게 되어 있는 것, 지표 Select 가 두 차트의 데이터를
@@ -40,7 +40,7 @@ describe('요일·시간대 패턴 화면', () => {
     const values = (select?.props?.options ?? []).map((option: any) => option.value);
     expect(values).toEqual(['visits', 'visitors', 'pageviews']);
     // 고른 지표는 화면 상태가 아니라 주소에 실린다 — 화면 상태로 두면 새로고침·주소 공유에서
-    // 「방문」으로 되돌아간다(#682 라운드 4, 검수 지적 ①).
+    // 「방문」으로 되돌아간다.
     expect(select?.actions?.[0]).toMatchObject({ type: 'change', handler: 'navigate' });
     expect(select?.actions?.[0]?.params?.query?.metric).toContain('$event.target.value');
     expect(select?.props?.value).toContain('query.metric');

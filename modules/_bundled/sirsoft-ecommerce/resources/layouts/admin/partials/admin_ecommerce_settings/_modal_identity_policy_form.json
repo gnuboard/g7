@@ -291,7 +291,7 @@
                                             "text": "$t:admin.identity.policies.form.scope"
                                         },
                                         {
-                                            "comment": "「사용자 지정」은 활성 확장이 본인인증 확장 지점을 선언했을 때만 고를 수 있다(7.2.1, #952) — 선언이 없으면 그 정책은 어디서도 강제되지 않는다. 이미 사용자 지정인 정책은 그대로 보인다",
+                                            "comment": "「사용자 지정」은 활성 확장이 본인인증 확장 지점을 선언했을 때만 고를 수 있다(7.2.1) — 선언이 없으면 그 정책은 어디서도 강제되지 않는다. 이미 사용자 지정인 정책은 그대로 보인다",
                                             "type": "basic",
                                             "name": "Select",
                                             "if": "{{(identityCheckpoints?.data?.checkpoints ?? []).length > 0 || _global.identity_policy_form_modal?.form?.scope === 'custom'}}",

@@ -20,7 +20,7 @@ import { findByIdPrefix } from '@core/template-engine/__tests__/utils/layoutShap
  * 컴포넌트 트리에서 특정 ID 를 가진 노드를 재귀적으로 찾습니다.
  * extension JSON 의 components/children 양쪽을 모두 탐색합니다.
  *
- * 반복(iteration) 안의 노드는 id 에 인덱스 보간 접미(`_{{i}}`)가 붙는다 — #421 이
+ * 반복(iteration) 안의 노드는 id 에 인덱스 보간 접미(`_{{i}}`)가 붙는다 — 엔진이
  * 반복 노드의 정적 id 를 전수 동적화했기 때문이다(같은 리터럴 id 가 행마다 중복돼
  * React 가 행을 1건으로 합치던 결함). 그래서 리터럴 일치뿐 아니라 **보간 접미 일치**도
  * 본다. 접미 없이 리터럴만 보면 레이아웃이 정본인데 단언만 낡아 red 가 된다
@@ -300,7 +300,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         expect(Array.isArray(item.actions)).toBe(true);
         const click = item.actions.find((a: any) => a.type === 'click' && a.handler === 'navigate');
         expect(click).toBeDefined();
-        // #757 — 항목은 링크(새 탭 열기). 목적지는 href 한 곳, path 없는 navigate 가 그 href 로 간다
+        // 항목은 링크(새 탭 열기). 목적지는 href 한 곳, path 없는 navigate 가 그 href 로 간다
         expect(item.name).toBe('A');
         expect(click.params?.path ?? item.props.href).toBe('/admin/board/{{post?.board_slug}}/post/{{post?.id}}');
     });
@@ -312,7 +312,7 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         expect(Array.isArray(item.actions)).toBe(true);
         const click = item.actions.find((a: any) => a.type === 'click' && a.handler === 'navigate');
         expect(click).toBeDefined();
-        // #757 — 항목은 링크(새 탭 열기). 목적지는 href 한 곳, path 없는 navigate 가 그 href 로 간다
+        // 항목은 링크(새 탭 열기). 목적지는 href 한 곳, path 없는 navigate 가 그 href 로 간다
         expect(item.name).toBe('A');
         expect(click.params?.path ?? item.props.href).toBe('/admin/boards/reports/{{report?.id}}');
     });

@@ -1,7 +1,7 @@
 // e2e:allow 굽힌 레이아웃 JSON 의 미리보기 주소 식만 평가한다 — 실제 목록의 썸네일 요청은 계획 §8 Chrome MCP 실측으로 확인한다.
 /**
  * @file uploadsThumbnailPreviewUrl.test.tsx
- * @description 업로드 관리 목록의 그림 칸은 썸네일 기준 주소(`preview_url`, 항상 API)에 sm 규격을 건다 (#878)
+ * @description 업로드 관리 목록의 그림 칸은 썸네일 기준 주소(`preview_url`, 항상 API)에 sm 규격을 건다
  *
  * 공개 자산 디스크(CDN) 행의 `download_url` 은 직접 주소라 thumbPreset 이 걸리지 않아 행마다 원본이 내려간다.
  * 서버가 함께 내리는 `preview_url` 을 먼저 쓰고, 그 필드가 없는 예전 응답은 `download_url` 로 돌아간다.

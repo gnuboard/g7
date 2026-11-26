@@ -1,5 +1,5 @@
 /**
- * 환경설정 개인정보 탭 — 관리자 직권 실행(「지금 실행」) 레이아웃 계약 테스트 (이슈 #636 후속)
+ * 환경설정 개인정보 탭 — 관리자 직권 실행(「지금 실행」) 레이아웃 계약 테스트
  *
  * @description
  * 탈퇴 잔여정보 파기와 휴면 네 단계를 스케줄러와 무관하게 큐에 접수하는 버튼·확인 창·상태 줄의 계약을 고정한다.
@@ -72,7 +72,7 @@ function clickSteps(button: any): any[] {
 
 const runButtons = [findById(privacyTab, 'run_withdrawn'), findById(privacyTab, 'run_dormant_stage_{{stage}}')];
 
-describe('개인정보 조치 직권 실행 — 버튼 (#636 후속)', () => {
+describe('개인정보 조치 직권 실행 — 버튼', () => {
     /**
      * @scenario target_kind=retention_handler, toggle=off, actor=read_only
      *
@@ -148,7 +148,7 @@ describe('개인정보 조치 직권 실행 — 버튼 (#636 후속)', () => {
 
     /**
      * 더블클릭: 실행 버튼 `disabled` 의 submitting 은 다시 그려진 뒤에야 걸려 두 번째 클릭이 한 번 더 접수될 수 있다
-     * (#736 S2 P10 — 만료·개인정보 두 확인 창 모두). 버튼이 첫 클릭 즉시 스스로 잠근다.
+     * (만료·개인정보 두 확인 창 모두). 버튼이 첫 클릭 즉시 스스로 잠근다.
      *
      * @scenario target_kind=dormant_stage, toggle=off, actor=runner
      *
@@ -178,7 +178,7 @@ describe('개인정보 조치 직권 실행 — 버튼 (#636 후속)', () => {
     });
 });
 
-describe('[case:state-closure-9] 개인정보 조치 직권 실행 — 상태 소스 폴링 (#636 후속)', () => {
+describe('[case:state-closure-9] 개인정보 조치 직권 실행 — 상태 소스 폴링', () => {
     const dataSource = (settingsLayout as any).data_sources.find((d: any) => d.id === 'privacyManualRuns');
 
     /**
@@ -219,7 +219,7 @@ describe('[case:state-closure-9] 개인정보 조치 직권 실행 — 상태 �
     });
 });
 
-describe('[case:state-closure-10] 개인정보 조치 직권 실행 — 확인 창 (#636 후속)', () => {
+describe('[case:state-closure-10] 개인정보 조치 직권 실행 — 확인 창', () => {
     /**
      * @scenario target_kind=dormant_stage, toggle=on, actor=runner
      *

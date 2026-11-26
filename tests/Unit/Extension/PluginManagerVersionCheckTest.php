@@ -120,7 +120,7 @@ class PluginManagerVersionCheckTest extends TestCase
     /**
      * 코어 업데이트 진행 중(`G7_UPDATE_IN_PROGRESS=1`)에는 환경변수 APP_VERSION 이 config 보다 우선한다.
      *
-     * 환경변수 우선은 업데이트 트리 안에서만 성립한다(#658) — 그 밖에서는 stale 한 프로세스 환경이 config 를 이기면 안 된다.
+     * 환경변수 우선은 업데이트 트리 안에서만 성립한다 — 그 밖에서는 stale 한 프로세스 환경이 config 를 이기면 안 된다.
      *
      * @effects getCoreVersion_prefers_env_APP_VERSION_only_inside_update_tree
      *
@@ -140,7 +140,7 @@ class PluginManagerVersionCheckTest extends TestCase
     }
 
     /**
-     * 업데이트 트리 밖에서는 환경변수 APP_VERSION 이 있어도 config 버전으로 판정한다 (#658).
+     * 업데이트 트리 밖에서는 환경변수 APP_VERSION 이 있어도 config 버전으로 판정한다.
      *
      * @effects getCoreVersion_ignores_env_APP_VERSION_outside_update_tree
      *

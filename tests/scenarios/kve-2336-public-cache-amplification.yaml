@@ -5,7 +5,7 @@ description: |
   요청마다 캐시 엔트리(lang 은 건당 수백 KB)를 영구 기록했고, 공개 lane 에 속도 제한이 없었다.
 
   - 서버 캐시 키는 서버 현재 확장 캐시 버전(getExtensionCacheVersion)으로만 조립한다
-    (#588 레이아웃 서빙과 같은 규율). `?v` 는 HTTP 캐시 정책 판단에만 쓴다.
+    (레이아웃 서빙과 같은 규율). `?v` 는 HTTP 캐시 정책 판단에만 쓴다.
   - routes 의 에러 결과는 캐시하지 않는다(cached() 헬퍼와 같은 규율).
   - 공개 데이터 응답(템플릿 routes·config·lang·components·editor-spec, 레이아웃, 모듈·플러그인
     components·editor-spec)에만 접두사 있는 throttle(auth.throttle.public, 기본 600/분, public_ext).

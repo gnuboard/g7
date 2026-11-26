@@ -1,5 +1,5 @@
 /**
- * 관리자 클레임 목록 본체 — 서브탭 전환·목록 컨텍스트 왕복·권한 게이팅 (#599 S8b)
+ * 관리자 클레임 목록 본체 — 서브탭 전환·목록 컨텍스트 왕복·권한 게이팅
  *
  * 필터가 만든 URL 로 목록이 실제로 다시 그려지는지까지가 이 spec 의 검증 대상이다.
  * 브라우저에서만 드러나는 축 셋을 본다:
@@ -44,7 +44,7 @@ async function waitForList(page: import('@playwright/test').Page): Promise<void>
   await expect(page.locator('#claim_type_subtabs')).toBeVisible({ timeout: 30_000 });
 }
 
-test.describe('[case:components-form-select-options-nonnative] 관리자 클레임 목록 본체 (#599 S8b)', () => {
+test.describe('[case:components-form-select-options-nonnative] 관리자 클레임 목록 본체', () => {
   // @scenario claim_type=exchange
   // @effects list_body_replaces_placeholder, subtabs_render_above_filter_card
   test('목록에 유형 서브탭 4종과 DataGrid 본체가 그려진다', async ({ page, claimsManageToken }) => {

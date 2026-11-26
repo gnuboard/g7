@@ -55,7 +55,7 @@ const findRestrictionRadioParams = (root: any, value: string): any => {
             return changeAction?.params ?? null;
         }
         if (node?.children) stack.push(...node.children);
-        if (Array.isArray(node?.props?.footer)) stack.push(...node.props.footer); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
+        if (Array.isArray(node?.props?.footer)) stack.push(...node.props.footer); // 고정 하단 (바닥 단추가 Modal 고정 하단으로 옮김)
     }
     return null;
 };
@@ -214,7 +214,7 @@ describe('productFormLayouts', () => {
             // @effects notice_template_confirm_applies_template
             it('취소 버튼이 sequence(setState pending=null + closeModal) 패턴이다', () => {
                 const content = noticeTemplateConfirmModal.children[0];
-                // 취소·확인 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+                // 취소·확인 단추는 Modal 고정 하단(props.footer)에 있다
                 const buttonContainer = { children: noticeTemplateConfirmModal.props.footer };
                 const cancelButton = buttonContainer.children[0];
 
@@ -231,7 +231,7 @@ describe('productFormLayouts', () => {
             // @effects notice_template_confirm_applies_template
             it('확인 버튼 sequence 가 closeModal → 템플릿 적용 → pending 초기화 순으로 실행된다', () => {
                 const content = noticeTemplateConfirmModal.children[0];
-                // 취소·확인 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+                // 취소·확인 단추는 Modal 고정 하단(props.footer)에 있다
                 const buttonContainer = { children: noticeTemplateConfirmModal.props.footer };
                 const confirmButton = buttonContainer.children[1];
 
@@ -321,7 +321,7 @@ describe('productFormLayouts', () => {
         // @effects notice_template_confirm_applies_template
         it('확인 모달의 취소 버튼이 sequence 로 pending 만 초기화한다', () => {
             const content = noticeTemplateConfirmModal.children[0];
-            // 취소·확인 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+            // 취소·확인 단추는 Modal 고정 하단(props.footer)에 있다
             const buttonContainer = { children: noticeTemplateConfirmModal.props.footer };
             const cancelButton = buttonContainer.children[0];
 
@@ -481,7 +481,7 @@ describe('productFormLayouts', () => {
         // @scenario section=activity_log
         // @effects activity_log_member_menu_opens_new_window_link
         it('회원 메뉴 「회원 보기」는 회원 상세를 새 창으로 여는 링크다(href + target=_blank)', () => {
-            // 새 창은 메뉴 항목 링크가 연다 — 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」도 된다(#757 결정 2026-10-15).
+            // 새 창은 메뉴 항목 링크가 연다 — 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」도 된다(결정 2026-10-15).
             // 항목 링크가 새 창을 열고 항목 동작은 부르지 않으므로 openWindow 갈래는 남기지 않는다.
             const json = JSON.stringify(activityLogPartial);
             const items: any[] = [];
@@ -572,7 +572,7 @@ describe('productFormLayouts', () => {
                 const node = stack.shift();
                 if (node?.name === 'Input' && node?.props?.type === 'number') return node;
                 if (node?.children) stack.push(...node.children);
-                if (Array.isArray(node?.props?.footer)) stack.push(...node.props.footer); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
+                if (Array.isArray(node?.props?.footer)) stack.push(...node.props.footer); // 고정 하단 (바닥 단추가 Modal 고정 하단으로 옮김)
             }
             return null;
         };
@@ -842,7 +842,7 @@ describe('productFormLayouts', () => {
                 if (node.id === id) return node;
                 if (Array.isArray(node)) { stack.push(...node); continue; }
                 if (node.children) stack.push(...node.children);
-                if (Array.isArray(node?.props?.footer)) stack.push(...node.props.footer); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
+                if (Array.isArray(node?.props?.footer)) stack.push(...node.props.footer); // 고정 하단 (바닥 단추가 Modal 고정 하단으로 옮김)
                 if (node.slots) {
                     for (const slotChildren of Object.values(node.slots)) {
                         stack.push(...(slotChildren as any[]));

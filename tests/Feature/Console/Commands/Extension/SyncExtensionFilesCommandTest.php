@@ -16,7 +16,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\TestCase;
 
 /**
- * `extension:sync-files` — 같은 판인데 파일이 다른 확장의 활성 폴더만 번들 내용으로 맞춘다 (#888).
+ * `extension:sync-files` — 같은 판인데 파일이 다른 확장의 활성 폴더만 번들 내용으로 맞춘다.
  *
  * 판 번호를 올리지 않은 번들 변경이나 DB 를 함께 쓰는 두 번째 서버에서 활성 폴더가 옛 파일에 머물렀다. 종전 수단
  * (`module:update --force`)은 같은 판 스텝 재실행·호환 검사 생략이 함께 묶여 있었다. 판정은 내용 해시(상대경로 정렬 +
@@ -247,7 +247,7 @@ class SyncExtensionFilesCommandTest extends TestCase
     }
 
     /**
-     * 사람이 읽는 출력은 바꾸기 전에 방향(번들 → 활성 폴더)과 교체 대상 수를 먼저 알린다 (#888).
+     * 사람이 읽는 출력은 바꾸기 전에 방향(번들 → 활성 폴더)과 교체 대상 수를 먼저 알린다.
      *
      * 종전 이름 `sync-files` 는 방향이 없어 「활성 폴더를 번들로 올린다」로도 읽혔고, 확인·백업 없이 활성 폴더를 덮어써
      * 손으로 고친 파일이 사라졌다.
@@ -278,7 +278,7 @@ class SyncExtensionFilesCommandTest extends TestCase
 
     /**
      * 종전 이름 `extension:sync-files` 도 같은 동작을 한다(하위 호환) — 사람이 읽는 출력에는 새 이름을 쓰라는 안내를, `--json` 에는
-     * 아무것도 섞지 않는다(스크립트가 JSON 을 파싱한다) (#888).
+     * 아무것도 섞지 않는다(스크립트가 JSON 을 파싱한다).
      *
      * @scenario case=legacy_name
      *
@@ -306,7 +306,7 @@ class SyncExtensionFilesCommandTest extends TestCase
 
     /**
      * 언어팩도 같은 판·다른 내용이면 활성 폴더(`lang-packs/<id>`)를 번들 내용으로 바꾼다 — 판 번호·DB 는 그대로, 미리보기는 무변경,
-     * 교체 뒤 확장 캐시 버전을 올려 화면의 언어 파일을 새로 받게 한다 (#888).
+     * 교체 뒤 확장 캐시 버전을 올려 화면의 언어 파일을 새로 받게 한다.
      *
      * 검수 서버가 먼저 언어팩을 새 판으로 올리면 공유 DB 판이 새 판이 되어 운영 서버의 `language-pack:update` 는 「이미 최신」으로
      * 끝나고, 종전 이 명령은 module·plugin·template 만 받아 운영 서버가 새 언어팩 파일을 받을 길이 없었다.
@@ -339,7 +339,7 @@ class SyncExtensionFilesCommandTest extends TestCase
     }
 
     /**
-     * 종류를 정하지 않고 실행해도 설치된 언어팩을 판정한다 — 전 종류 실행이 언어팩을 빠뜨리지 않는다 (#888).
+     * 종류를 정하지 않고 실행해도 설치된 언어팩을 판정한다 — 전 종류 실행이 언어팩을 빠뜨리지 않는다.
      *
      * @scenario case=language_pack
      *
@@ -359,7 +359,7 @@ class SyncExtensionFilesCommandTest extends TestCase
     }
 
     /**
-     * 언어팩도 판이 다르면 대상이 아니고 `language-pack:update` 를 안내하며 1 이다 (#888).
+     * 언어팩도 판이 다르면 대상이 아니고 `language-pack:update` 를 안내하며 1 이다.
      *
      * @scenario case=language_pack
      *

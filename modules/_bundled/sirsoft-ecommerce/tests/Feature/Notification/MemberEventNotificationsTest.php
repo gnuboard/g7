@@ -17,7 +17,7 @@ use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 회원 사건 알림 4종 — 마일리지 적립·차감, 주문 부분 취소, 리뷰 답글 (#952 D)
+ * 회원 사건 알림 4종 — 마일리지 적립·차감, 주문 부분 취소, 리뷰 답글
  */
 class MemberEventNotificationsTest extends ModuleTestCase
 {

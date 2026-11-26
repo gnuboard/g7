@@ -37,7 +37,7 @@ class ActivityLogResource extends BaseApiResource
             'properties' => $this->properties,
             ...$this->formatChangesOutput($this->changes),
             'has_changes' => ! empty($this->changes),
-            // 삭제 직전 기록(영구 삭제·선언 정리) — 펼친 자리에 대상·사유·본문 미리보기를 보인다(#888)
+            // 삭제 직전 기록(영구 삭제·선언 정리) — 펼친 자리에 대상·사유·본문 미리보기를 보인다
             'snapshot' => $snapshot = $this->deletionSnapshot(),
             'has_details' => ! empty($this->changes) || $snapshot !== null,
             'actor_name' => $this->actor_name,

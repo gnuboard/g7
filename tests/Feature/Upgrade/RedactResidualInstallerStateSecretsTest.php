@@ -8,7 +8,7 @@ use Tests\Concerns\IsolatesInstallerBasePath;
 use Tests\TestCase;
 
 /**
- * 7.0.4 잔존 installer-state.json 비밀 정리 회귀 가드 (이슈 #465).
+ * 7.0.4 잔존 installer-state.json 비밀 정리 회귀 가드.
  *
  * axis 전수:
  *   1. state.json 부재 → no-op

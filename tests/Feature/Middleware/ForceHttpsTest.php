@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 /**
- * HTTPS 강제 이동 미들웨어 (`ForceHttps`, #888)
+ * HTTPS 강제 이동 미들웨어 (`ForceHttps`)
  *
  * 관리자 환경설정 > 보안의 「HTTPS 강제 적용」은 저장만 되고 아무 코드도 읽지 않았다 — 켜도 http 로 그대로 열렸다.
  * 켜져 있으면 web·api 그룹의 http 요청을 같은 호스트·경로·쿼리의 https 로 보내야 하고(GET 301, 그 밖 308),

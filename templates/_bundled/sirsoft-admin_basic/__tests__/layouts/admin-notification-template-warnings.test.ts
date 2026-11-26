@@ -1,6 +1,6 @@
 /**
  * @file admin-notification-template-warnings.test.ts
- * @description 알림 템플릿 편집 창의 저장 경고와 회원 항목 변수 묶음 (#490 U18)
+ * @description 알림 템플릿 편집 창의 저장 경고와 회원 항목 변수 묶음
  *
  * 시나리오 SSoT: tests/scenarios/admin-notification-template-warnings.yaml
  *

@@ -10,7 +10,7 @@ use Illuminate\Http\JsonResponse;
  * 반응 불가 예외
  *
  * 반응 기능이 꺼진 게시판, 게시판이 켜지 않은(비활성) 유형, 본인 글 반응 시도 등
- * 반응이 허용되지 않는 상황에서 발생합니다 (이슈 #525 확정 07·08·11).
+ * 반응이 허용되지 않는 상황에서 발생합니다 (확정 07·08·11).
  *
  * `ReactPostRequest` + `AvailableReactionType` Rule 이 요청 단계에서 선차단하지만,
  * 훅이나 Service 직접 호출처럼 FormRequest 를 거치지 않는 경로가 있으므로 최종

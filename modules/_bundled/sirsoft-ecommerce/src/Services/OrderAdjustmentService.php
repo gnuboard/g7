@@ -59,7 +59,7 @@ class OrderAdjustmentService
     ) {}
 
     /**
-     * 그 주문의 후속 행 회계 단가 오버라이드를 한 번에 구합니다. (#599 S3-D3)
+     * 그 주문의 후속 행 회계 단가 오버라이드를 한 번에 구합니다.
      *
      * 재계산(`buildRecalcInput()`)과 취소 장부(`buildAdjustedItems()`)는 **같은 단가**를 봐야
      * 한다 — 두 값이 갈라지면 재계산이 본 금액과 장부에 적힌 금액이 어긋나 S3-D3 과 같은 종류의
@@ -87,7 +87,7 @@ class OrderAdjustmentService
     }
 
     /**
-     * 교환 후속 행의 **회계 단가** 오버라이드를 만듭니다. (#599 S3-D3)
+     * 교환 후속 행의 **회계 단가** 오버라이드를 만듭니다.
      *
      * 후속 행(`source_type=exchange`)은 설계대로 원 행의 금액·스냅샷 가격을 승계한다(2026-08-22 판정 1)
      * — 그래야 교환 뒤 **다른 상품**의 부분취소가 정확하다. 그런데 저가 옵션으로 바꾼 교환은 차액을
@@ -154,7 +154,7 @@ class OrderAdjustmentService
             // 교환 신청 시점에 상품가가 바뀐 주문에서 엔진 단가가 `new_unit_price`(현재 상품가
             // 기준)와 어긋나, 후속 행을 취소할 때 그 차이만큼 덜(또는 더) 환불된다. 치환 패스
             // (`applySubstitutions()`)와 같은 식으로 조정액을 역산해 엔진 단가 == 신규 단가로
-            // 맞춘다(#599 validate P2 #3).
+            // 맞춘다(validate P2 #3).
             $snapshot['price_adjustment'] = (float) $exchangeItem->new_unit_price
                 - (float) (($successor->product_snapshot ?? [])['selling_price'] ?? 0);
 
@@ -241,7 +241,7 @@ class OrderAdjustmentService
         // 판정 근거는 **종결 행의 존재**다 — 누적 환불액(`total_refunded_amount`)이 아니다.
         // 환불액이 0 으로 확정된 부분 환불(운영자가 0 원으로 수정, 무상 증정 행 등)도 행은
         // 취소로 닫히는데, 누적 환불액만 보면 그 뒤의 신청이 원 결제금액을 기준선으로 삼아 닫힌
-        // 행의 값까지 한 번 더 돌려준다(#599 validate P2 #2). 반대로 기준선을 다시 구해도 종결
+        // 행의 값까지 한 번 더 돌려준다(validate P2 #2). 반대로 기준선을 다시 구해도 종결
         // 행이 없으면 값은 원 결제금액과 같으므로 판정을 넓혀 잃는 것은 계산 한 번뿐이다.
         $baselineAmount = $originalPaidAmount + $originalPointsUsed;
         // 배송비 정책별 상세(12)의 원 주문 측도 이 기준선 재계산을 쓴다 — 종결 행이 있는 주문의 배송 행은
@@ -650,7 +650,7 @@ class OrderAdjustmentService
 
             // 치환할 라인은 **그 주문 행이 만든 라인**이다. 수량 분할(`source_type=split`)·교환
             // 후속 행은 같은 `product_option_id` 를 갖는 라인을 여럿 만들므로, 키로 첫 라인을
-            // 잡으면 다른 주문 행의 수량이 줄어든다(#599 validate P2 minor). 라인 → 주문 행
+            // 잡으면 다른 주문 행의 수량이 줄어든다(validate P2 minor). 라인 → 주문 행
             // 대응은 `buildRecalcInput()` 이 메타데이터로 남긴다. 대응이 없으면(외부에서 만든
             // 입력) 종전대로 키의 첫 라인으로 떨어진다.
             $lineOrderOptionIds = $metadata['line_order_option_ids'] ?? [];
@@ -743,7 +743,7 @@ class OrderAdjustmentService
 
                     // 두 라인을 각자 반올림하면 합이 상한을 넘을 수 있다(예: 상한 1,001 을 1:1 로 나누면
                     // 501 + 501). 한 라인만 반올림하고 나머지는 상한에서 뺀 값으로 둔다 — 합은 언제나
-                    // 원 상한과 같다(#599 validate P2 minor).
+                    // 원 상한과 같다(validate P2 minor).
                     $remainingCap = (int) round($cap * $remaining / $originalQuantity);
                     $couponSnapshots[$couponIssueId]['max_discount_amount_by_line'][$originalKey] = $remainingCap;
                     $couponSnapshots[$couponIssueId]['max_discount_amount_by_line'][$newKey] = $cap - $remainingCap;
@@ -910,7 +910,7 @@ class OrderAdjustmentService
                 continue;
             }
 
-            // 재계산의 과세 분류는 이 행에 확정해 둔 과세 종류를 따른다(#612) — 옵션 스냅샷 값이 없거나
+            // 재계산의 과세 분류는 이 행에 확정해 둔 과세 종류를 따른다 — 옵션 스냅샷 값이 없거나
             // 다른 옵션 스냅샷으로 대체된 경우에도 원 주문이 나눈 과세·면세·영세 갈래가 바뀌지 않는다.
             $optionSnapshot = (array) ($successorOverrides[(int) $optionId]['option_snapshot'] ?? $option->option_snapshot ?? []);
             if ($option->tax_status instanceof ProductTaxStatus) {
@@ -1058,7 +1058,7 @@ class OrderAdjustmentService
         // 항상 0 이라 이 경로가 그 축을 몰라도 성립했지만, 전량 반품은 가장 흔한 반품이면서
         // 동시에 이 경로를 타므로 빼지 않으면 차감하기로 한 회수배송비가 조용히 사라진다.
         // 추가 비용이 0 이면 아래 식은 종전 값(`refundAmount = 원 결제금액`)과 완전히 같다.
-        // **이미 환불된 몫을 뺀다**(#599 후속 — 새 결함 N1).
+        // **이미 환불된 몫을 뺀다**(새 결함 N1).
         //
         // 이 경로는 "남은 상품이 없다" 는 이유로 재계산을 건너뛰고 원 결제금액 전액을 환불 대상으로
         // 삼는다. 그런데 같은 주문에서 앞서 부분 환불이 있었으면 그 몫이 이미 나갔다 — 빼지 않으면
@@ -1352,7 +1352,7 @@ class OrderAdjustmentService
             'total_tax_amount' => $taxableAmount,
             'total_tax_free_amount' => (float) $result->summary->taxFreeAmount,
             // 재계산 결과의 옵션별 세율 반영 부가세를 그대로 사용 (주문 생성 시점과 동일 산식).
-            // 폴백 기준은 주문 생성(resolveVatAmount)과 같이 영세분을 뺀 과세표준이다(#612).
+            // 폴백 기준은 주문 생성(resolveVatAmount)과 같이 영세분을 뺀 과세표준이다.
             'total_vat_amount' => (float) ($result->summary->vatAmount
                 ?? VatCalculator::fromTaxableAmount((int) $taxableAmount - (int) $result->summary->zeroRatedAmount)),
             'total_zero_rated_amount' => (float) $result->summary->zeroRatedAmount,
@@ -1677,7 +1677,7 @@ class OrderAdjustmentService
                 )
             ),
             // 영세 금액도 같은 재계산 결과에서 — 빠지면 영세 상품을 취소해도 결제사·현금영수증에
-            // 넘기는 면세 몫(면세 + 영세)이 취소 전 영세 금액을 계속 품는다(#612).
+            // 넘기는 면세 몫(면세 + 영세)이 취소 전 영세 금액을 계속 품는다.
             'total_zero_rated_amount' => (float) $recalcResult->summary->zeroRatedAmount,
             // 현금성 금액도 잔여 실결제액 기준으로 재계산한다. 이 값을 갱신하지 않으면
             // CashReceiptService::syncFromOrder() 가 "금액 변동 없음"으로 판정해 부분환불 후
@@ -1766,7 +1766,7 @@ class OrderAdjustmentService
             }
         }
 
-        // payment_method 는 순수 string (#475 — 확장 결제수단 ID 허용). 코어 enum 에 없는
+        // payment_method 는 순수 string (확장 결제수단 ID 허용). 코어 enum 에 없는
         // 확장 결제수단은 현금성 0 으로 판정한다 (OrderProcessingService 와 동일 idiom).
         return PaymentMethodEnum::tryFrom($order->payment?->paymentMethodId() ?? '')
             ?->resolveCashEquivalentAmount($finalAmount)

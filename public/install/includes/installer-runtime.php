@@ -518,7 +518,7 @@ if (! function_exists('buildInstallerRuntimeFromState')) {
             $appKey = generateAppKeyInline();
         }
 
-        // state.config 에는 더 이상 비밀번호가 기록되지 않으므로(이슈 #465), 세션이 유실된
+        // state.config 에는 더 이상 비밀번호가 기록되지 않으므로, 세션이 유실된
         // 재개/재시도 경로에서는 기존 runtime.php 의 값을 보존해야 한다. app.key 보존과
         // 동일한 패턴.
         $writePassword = (string) ($stateConfig['db_write_password'] ?? ($stateConfig['db_password'] ?? ''));
@@ -582,7 +582,7 @@ if (! function_exists('buildInstallerRuntimeFromState')) {
             && $stateConfig['db_read_host'] !== ($stateConfig['db_write_host'] ?? null)) {
             // read 비밀번호 폴백 순서: state.config → 기존 runtime 의 read 비밀번호 →
             // write 비밀번호. 기존 runtime 을 건너뛰고 write 값으로 대체하면 read 전용
-            // 계정의 비밀번호가 write 값으로 오염된다 (이슈 #465 부수 수정).
+            // 계정의 비밀번호가 write 값으로 오염된다 (부수 수정).
             $readPassword = (string) ($stateConfig['db_read_password'] ?? '');
             if ($readPassword === '') {
                 $readPassword = (string) ($existing['db']['read']['password'] ?? '');
@@ -606,7 +606,7 @@ if (! function_exists('buildInstallerRuntimeFromState')) {
 
 if (! function_exists('hydrateDbSecretsFromRuntime')) {
     /**
-     * state.config 에서 제거된 DB 비밀번호를 runtime.php 값으로 채운다 (이슈 #465).
+     * state.config 에서 제거된 DB 비밀번호를 runtime.php 값으로 채운다.
      *
      * state.json 은 더 이상 DB 비밀번호를 보관하지 않으므로, state.config 로 DB 에
      * 접속하던 소비처(db_cleanup / 롤백 seed truncate) 는 이 헬퍼로 자격증명을 복원해야

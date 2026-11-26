@@ -11,7 +11,7 @@ use Tests\TestCase;
 /**
  * ChallengeResource 의 max_attempts 응답 노출 회귀 차단.
  *
- * 이슈 #275 — POST /api/identity/challenges 응답 페이로드에 max_attempts 가 없어 프론트
+ * POST /api/identity/challenges 응답 페이로드에 max_attempts 가 없어 프론트
  * launcher 가 하드코딩 5 로 fallback 하던 결함을 차단한다.
  *
  * Resource → 응답 JSON 의 max_attempts 키 노출이 깨지면 사용자 모달의 "남은 시도 횟수"

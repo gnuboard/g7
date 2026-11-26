@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 /**
- * 자산 URL 빌더 가드 (이슈 #486 단위 B).
+ * 자산 URL 빌더 가드 (단위 B).
  *
  * 단위 B 의 완료 조건은 "기본값 `extension` 에서 렌더 결과가 단위 A 이전과 바이트 동일" 이다.
  * 아래 확장자 모드 기대값은 치환 이전 소스에 하드코딩되어 있던 문자열을 그대로 옮긴 것으로,

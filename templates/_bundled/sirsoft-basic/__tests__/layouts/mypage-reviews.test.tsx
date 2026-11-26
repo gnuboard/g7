@@ -1,6 +1,6 @@
 /**
  * @file mypage-reviews.test.tsx
- * @description 마이페이지 내 리뷰 (#952 E) — 목록 API, 삭제 단추는 지울 수 있는 리뷰에만, 삭제 확인 창의 DELETE 와 재조회, 빈 목록.
+ * @description 마이페이지 내 리뷰 — 목록 API, 삭제 단추는 지울 수 있는 리뷰에만, 삭제 확인 창의 DELETE 와 재조회, 빈 목록.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -30,7 +30,7 @@ const page = load('mypage/reviews.json');
 const list = load('partials/mypage/reviews/_list.json');
 const modal = load('partials/mypage/reviews/_modal_review_delete.json');
 
-describe('마이페이지 내 리뷰 (#952)', () => {
+describe('마이페이지 내 리뷰', () => {
   // @scenario case=mypage_reviews_data_source
   // @effects user_reviews_own_only
   it('내 리뷰 API 를 쪽 번호와 함께 부른다', () => {

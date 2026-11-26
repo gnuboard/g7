@@ -18,7 +18,7 @@ use Tests\Concerns\PackageSignatureFixtures;
 use Tests\TestCase;
 
 /**
- * 패키지 서명 검증기·미서명 정책 (#916 ④, D16·D17·D31·D32)
+ * 패키지 서명 검증기·미서명 정책
  *
  * 형식·알고리즘 → 기대 패키지 → 크기·SHA-256 → 키 신뢰(코어는 내장 키만, 제작자 키는 vendor 범위) → Ed25519 서명 →
  * 해제 뒤 manifest 대조 순서와, 미서명 정책(경고 후 확인·차단 스위치·불일치/미신뢰 늘 차단)을 잠근다. 교차 언어 벡터

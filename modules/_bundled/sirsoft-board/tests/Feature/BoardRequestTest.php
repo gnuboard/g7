@@ -370,7 +370,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * 비밀 답변 열람 범위(secret_reply_visibility)는 세 값만 받는다 — 생성·수정·환경설정 기본값 (#789 D19)
+     * 비밀 답변 열람 범위(secret_reply_visibility)는 세 값만 받는다 — 생성·수정·환경설정 기본값
      *
      * @return void 반환값 없음
      *
@@ -638,7 +638,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * StoreBoardRequest - max_comment_length 상한 10000 검증 (회귀: issue#413)
+     * StoreBoardRequest - max_comment_length 상한 10000 검증 (회귀)
      *
      * 환경설정에서 max_comment_length를 1001~10000으로 저장할 수 있으므로
      * 게시판 생성 Request도 동일 상한(10000)을 허용해야 함.
@@ -668,7 +668,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * UpdateBoardRequest - max_comment_length 상한 10000 검증 (회귀: issue#413)
+     * UpdateBoardRequest - max_comment_length 상한 10000 검증 (회귀)
      *
      * @return void 반환값 없음
      *
@@ -690,7 +690,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * StoreBoardRequest - max_title_length 상한 1000 검증 (회귀: issue#413)
+     * StoreBoardRequest - max_title_length 상한 1000 검증 (회귀)
      *
      * 환경설정에서 max_title_length를 201~1000으로 저장할 수 있으므로
      * 게시판 생성 Request도 동일 상한(1000)을 허용해야 함.
@@ -717,7 +717,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * UpdateBoardRequest - max_title_length 상한 1000 검증 (회귀: issue#413)
+     * UpdateBoardRequest - max_title_length 상한 1000 검증 (회귀)
      *
      * @return void 반환값 없음
      *
@@ -737,7 +737,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * StoreBoardRequest - max_content_length 상한 100000 검증 (회귀: issue#413)
+     * StoreBoardRequest - max_content_length 상한 100000 검증 (회귀)
      *
      * 환경설정에서 max_content_length를 50001~100000으로 저장할 수 있으므로
      * 게시판 생성 Request도 동일 상한(100000)을 허용해야 함.
@@ -764,7 +764,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * UpdateBoardRequest - max_content_length 상한 100000 검증 (회귀: issue#413)
+     * UpdateBoardRequest - max_content_length 상한 100000 검증 (회귀)
      *
      * @return void 반환값 없음
      *
@@ -784,11 +784,11 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     // ==========================================
-    // 카테고리 최대 개수 / 빈 이름 검증 (회귀: issue#413 item 19-4a)
+    // 카테고리 최대 개수 / 빈 이름 검증 (회귀)
     // ==========================================
 
     /**
-     * StoreBoardRequest - 카테고리 최대 개수 초과 시 검증 실패 (회귀: issue#413 19-4a)
+     * StoreBoardRequest - 카테고리 최대 개수 초과 시 검증 실패 (회귀)
      *
      * config('sirsoft-board.limits.category_max') 개수까지는 통과,
      * 초과하면 실패해야 함. (이전엔 max 규칙이 없어 51개 저장이 200 통과되던 버그)
@@ -822,7 +822,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * StoreBoardRequest - 빈 카테고리명 차단 (회귀: issue#413 19-4a)
+     * StoreBoardRequest - 빈 카테고리명 차단 (회귀)
      *
      * @return void 반환값 없음
      *
@@ -850,7 +850,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * UpdateBoardRequest - 카테고리 최대 개수 초과 시 검증 실패 (회귀: issue#413 19-4a)
+     * UpdateBoardRequest - 카테고리 최대 개수 초과 시 검증 실패 (회귀)
      *
      * @return void 반환값 없음
      *
@@ -876,7 +876,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * UpdateBoardRequest - 빈 카테고리명 차단 (회귀: issue#413 19-4a)
+     * UpdateBoardRequest - 빈 카테고리명 차단 (회귀)
      *
      * @return void 반환값 없음
      *
@@ -894,13 +894,13 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     // ==========================================
-    // StoreBoardSettingsRequest - report_permissions 검증 (회귀: issue#413)
+    // StoreBoardSettingsRequest - report_permissions 검증 (회귀)
     // ==========================================
 
     // (board-settings-report-permissions 매니페스트의 field 축 — docblock 은 @scenario 를 1건만 읽으므로 라인 주석으로 병기)
     // @scenario field=view_roles
     /**
-     * report_permissions.view_roles 빈 배열은 검증 실패해야 함 (회귀: issue#413)
+     * report_permissions.view_roles 빈 배열은 검증 실패해야 함 (회귀)
      *
      * nullable → required_with+min:1 변경으로 빈 배열 전송 시
      * syncReportPermissionRoles()가 모든 역할을 detach하는 버그 차단.
@@ -928,7 +928,7 @@ class BoardRequestTest extends ModuleTestCase
     // (board-settings-report-permissions 매니페스트의 field 축 — docblock 은 @scenario 를 1건만 읽으므로 라인 주석으로 병기)
     // @scenario field=manage_roles
     /**
-     * report_permissions.manage_roles 빈 배열은 검증 실패해야 함 (회귀: issue#413)
+     * report_permissions.manage_roles 빈 배열은 검증 실패해야 함 (회귀)
      *
      * @return void 반환값 없음
      *
@@ -951,7 +951,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * default_board_permissions 의 nested 그룹 키는 저장 전 제거되어야 함 (회귀: issue#413)
+     * default_board_permissions 의 nested 그룹 키는 저장 전 제거되어야 함 (회귀)
      *
      * 레거시 오염 데이터로 flat 권한 키(값=역할 배열) 외에 그룹 키(admin/posts/comments/
      * attachments, 값=중첩 객체)가 섞여 들어오면, 권한 설정 화면에 raw i18n 키와
@@ -999,7 +999,7 @@ class BoardRequestTest extends ModuleTestCase
     // (board-settings-report-permissions 매니페스트의 field 축 — docblock 은 @scenario 를 1건만 읽으므로 라인 주석으로 병기)
     // @scenario field=both_valid
     /**
-     * 유효한 역할 식별자가 포함된 report_permissions는 통과해야 함 (회귀: issue#413)
+     * 유효한 역할 식별자가 포함된 report_permissions는 통과해야 함 (회귀)
      *
      * @return void 반환값 없음
      *
@@ -1026,7 +1026,7 @@ class BoardRequestTest extends ModuleTestCase
     /**
      * UpdateBoardRequest - 정수 설정 필드의 .integer 위반 시 한국어 라벨 표시 검증
      *
-     * 회귀 (issue#413): messages() 에 .integer 키가 없어 코어 기본 메시지로 폴백할 때,
+     * 회귀: messages() 에 .integer 키가 없어 코어 기본 메시지로 폴백할 때,
      * attributes() 에 필드 라벨이 없으면 :attribute 가 영문 snake_case ("per page")
      * 로 노출되던 문제. attributes() 에서 settings.basic_defaults 라벨을 재사용해
      * 한국어 라벨이 표시되어야 한다.
@@ -1082,7 +1082,7 @@ class BoardRequestTest extends ModuleTestCase
     /**
      * UpdateBoardRequest - per_page .integer 위반 메시지의 영문 로케일 라벨 검증
      *
-     * 회귀 (issue#413): en 로케일에서도 attributes() 라벨("Posts Per Page")이
+     * 회귀: en 로케일에서도 attributes() 라벨("Posts Per Page")이
      * 적용되어 Laravel 의 자동 변환("per page") 대신 정의된 라벨이 표시되어야 한다.
      *
      * @return void 반환값 없음
@@ -1112,7 +1112,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     // ==========================================
-    // 길이 최소/최대 교차 검증 (회귀: issue#413-22-3)
+    // 길이 최소/최대 교차 검증
     // min_*_length > max_*_length 조합이 저장되던 문제
     // ==========================================
 

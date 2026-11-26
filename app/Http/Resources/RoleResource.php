@@ -43,7 +43,7 @@ class RoleResource extends BaseApiResource
             'supports_permission_scope' => $this->resource instanceof Role
                 ? $this->resource->supportsPermissionScope()
                 : $this->getValue('identifier') !== Role::GUEST_IDENTIFIER,
-            // 비밀번호 만료 (#736) — 역할 폼 선택칸이 읽는다(inherit·apply·exempt)
+            // 비밀번호 만료 — 역할 폼 선택칸이 읽는다(inherit·apply·exempt)
             'password_expiry_policy' => $this->passwordExpiryPolicyValue(),
             'users_count' => $this->when(
                 $this->resource->users_count !== null,

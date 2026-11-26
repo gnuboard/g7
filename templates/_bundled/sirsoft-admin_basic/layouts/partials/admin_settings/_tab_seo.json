@@ -411,7 +411,7 @@
                                     "text": "$t:admin.settings.seo.og_image_default_desc"
                                 },
                                 {
-                                    "comment": "첨부 업로더 확장점(#916) — 업로더 플러그인이 mode=\"replace\" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),\n               콜백은 기본 업로더의 이벤트 처리와 같은 동작이다($args[0] → $event). 기본 업로더는 <default> 안에 그대로 둔다.",
+                                    "comment": "첨부 업로더 확장점 — 업로더 플러그인이 mode=\"replace\" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),\n               콜백은 기본 업로더의 이벤트 처리와 같은 동작이다($args[0] → $event). 기본 업로더는 <default> 안에 그대로 둔다.",
                                     "id": "og_image_default_uploader_slot",
                                     "type": "extension_point",
                                     "name": "attachment_uploader",

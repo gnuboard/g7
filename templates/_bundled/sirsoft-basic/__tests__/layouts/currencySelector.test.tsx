@@ -496,7 +496,7 @@ describe('이커머스 헤더 통화 주입 확장 (slot=header_currency)', () =
   // @effects selector_renders_available_currencies
   it('유저 확장 백드롭은 portable 에서 꺼진다 (드로어 클릭 가로채기 방지)', () => {
     const node = userExt.injections[0].components[0];
-    // 이커머스 조각은 자기 CSS 의 접두 빌드 클래스(`ecommerce:fixed`)를 쓴다(#816) — 앞글자를 떼고 읽는다
+    // 이커머스 조각은 자기 CSS 의 접두 빌드 클래스(`ecommerce:fixed`)를 쓴다 — 앞글자를 떼고 읽는다
     const backdrop = (node.children ?? []).find((c: any) => {
       const words = String(c.props?.className ?? '').split(/\s+/).map((w: string) => w.replace(/^ecommerce:/, ''));
       return c.name === 'Div' && words.includes('fixed') && words.includes('inset-0');

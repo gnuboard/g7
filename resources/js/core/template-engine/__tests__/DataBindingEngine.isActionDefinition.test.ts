@@ -1,5 +1,5 @@
 /**
- * DataBindingEngine.isActionDefinition — 분기·참조 모양 액션 판별 (engine-v1.80.0, #753)
+ * DataBindingEngine.isActionDefinition — 분기·참조 모양 액션 판별 (engine-v1.80.0)
  *
  * 콜백 prop 에 담긴 액션 정의는 렌더 시점에 `{{}}` 를 미리 평가하면 안 된다(실행 시점의 최신 상태를 봐야 한다).
  * 판별식이 `handler` + (`params`·`actions`·`target`·`onSuccess`·`onError`) 만 액션으로 봐서,
@@ -12,7 +12,7 @@
 import { describe, it, expect } from 'vitest';
 import { DataBindingEngine } from '../DataBindingEngine';
 
-describe('DataBindingEngine.isActionDefinition (#753)', () => {
+describe('DataBindingEngine.isActionDefinition', () => {
   const engine = new DataBindingEngine();
 
   /**

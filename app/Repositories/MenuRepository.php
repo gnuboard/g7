@@ -481,7 +481,7 @@ class MenuRepository implements MenuRepositoryInterface
         $menuPermissions = (new Menu)->permissions();
         $menuPermissions->getRelated()->newQuery()->whereIn($menuPermissions->getForeignKeyName(), $ids)->delete();
 
-        // 묶음 삭제는 모델 deleted 이벤트를 내지 않는다 — 업로드 아이콘 첨부 정리를 커밋 뒤로 직접 예약한다 (#381).
+        // 묶음 삭제는 모델 deleted 이벤트를 내지 않는다 — 업로드 아이콘 첨부 정리를 커밋 뒤로 직접 예약한다.
         // 리포지토리가 파일을 지우지는 않는다: 노드별 delete 가 모델 이벤트로 하는 일과 같은 예약을 모델 정적 메서드로
         // 대신할 뿐이고, 실제 삭제는 커밋 뒤 MenuIconService 가 한다(롤백 시 파일 보존). 호출처(Module/PluginManager)마다
         // 따로 부르게 두면 새 호출처가 빠뜨려 고아 파일이 생긴다.

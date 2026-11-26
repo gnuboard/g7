@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: issue:#857 이 매니페스트의 조합을 재는 시험은 test_files 의 spec 뿐인데, 그 spec 은 test.describe.skip 상태라(활성화 조건은 spec 머리말) 실행되지 않는다. 건너뛴 시험의 마킹은 커버로 세지 않으므로(docs/testing-guide.md 「describe.skip 인 spec 의 그 축 커버리지는 0」) 조합이 미커버로 남는다. 같은 조합을 재는 다른 실행 시험은 없다(#857 후속 대조). spec 의 skip 을 풀면 이 표식을 걷고 pending_effects 를 effects 로 되돌린다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#857 이 매니페스트의 조합을 재는 시험은 test_files 의 spec 뿐인데, 그 spec 은 test.describe.skip 상태라(활성화 조건은 spec 머리말) 실행되지 않는다. 건너뛴 시험의 마킹은 커버로 세지 않으므로(docs/testing-guide.md 「describe.skip 인 spec 의 그 축 커버리지는 0」) 조합이 미커버로 남는다. 같은 조합을 재는 다른 실행 시험은 없다(후속 대조). spec 의 skip 을 풀면 이 표식을 걷고 pending_effects 를 effects 로 되돌린다.
 
 feature: 통화별 사용 언어(locales) 저장 검증과 오류 표시 (관리자 E2E)
 
@@ -20,7 +20,7 @@ axes:
 effects: []
 
 # 아래 효과는 아직 실행되는 시험이 재지 않는다 — test_files 의 spec 이 test.describe.skip 상태라 건너뛴 시험의 @effects 는
-# 커버가 아니다(#857 후속). spec 의 skip 을 풀면 effects 로 되돌린다.
+# 커버가 아니다. spec 의 skip 을 풀면 effects 로 되돌린다.
 pending_effects:
   - supported_locales_save_without_error              # 지원 언어만이면 저장 실패 토스트와 입력칸 오류가 뜨지 않는다
   - unsupported_locale_error_shown_on_currency_field  # 지원 외 언어가 있으면 그 통화의 locales 입력칸에 오류가 붙는다

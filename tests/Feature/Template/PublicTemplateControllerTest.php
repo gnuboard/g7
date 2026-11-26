@@ -143,7 +143,7 @@ class PublicTemplateControllerTest extends TestCase
             'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
         ]);
 
-        // `?v` 생략 시 현재 확장 캐시 버전으로 폴백하므로 (#588 — `.v0` 사각 키 방지)
+        // `?v` 생략 시 현재 확장 캐시 버전으로 폴백하므로 (`.v0` 사각 키 방지)
         // 버전을 시드해 결정적 키로 검증한다 (getExtensionCacheVersion 은 0 을 반환하지 않음)
         Cache::put('g7:core:ext.cache_version', 1234);
 
@@ -275,9 +275,9 @@ class PublicTemplateControllerTest extends TestCase
     }
 
     /**
-     * 열화 라우트 스냅샷은 `?v` 요청이어도 공개 캐시 헤더를 받지 않는다 (#493 대칭, #122 작업 D)
+     * 열화 라우트 스냅샷은 `?v` 요청이어도 공개 캐시 헤더를 받지 않는다 (대칭, #122 작업 D)
      *
-     * 서버측 캐시 회피(#493)만으로는 부족하다 — 같은 `?v` URL 에 `public, max-age` 가
+     * 서버측 캐시 회피만으로는 부족하다 — 같은 `?v` URL 에 `public, max-age` 가
      * 붙으면 브라우저/CDN 계층이 열화 응답을 1시간 박제하고, 버전은 이미 올라간 뒤라
      * 스스로 회복되지 않는다. 정적 게시 경로(publishTemplate)의 열화 제외와 동일 규율.
      *
@@ -312,7 +312,7 @@ class PublicTemplateControllerTest extends TestCase
     }
 
     /**
-     * config.json 서빙이 캐시를 생성하고 installed manifest 버전을 반환하는지 테스트 (#588, 공개 #119)
+     * config.json 서빙이 캐시를 생성하고 installed manifest 버전을 반환하는지 테스트 (공개 #119)
      *
      * @scenario cache_state=cold,template_type=admin
      *
@@ -356,7 +356,7 @@ class PublicTemplateControllerTest extends TestCase
     }
 
     /**
-     * config.json 캐시 삭제 후 최신 manifest 가 반환되는지 테스트 (#588, 공개 #119)
+     * config.json 캐시 삭제 후 최신 manifest 가 반환되는지 테스트 (공개 #119)
      *
      * 캐시 히트 증명(변조본 서빙) → forget → 실제 파일 버전 복귀 체인.
      * 라이브 재현(sentinel 주입 → cache-clear 무효 → 직접 forget 으로만 해소)의 자동화판.

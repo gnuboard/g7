@@ -14,7 +14,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 게시판 관리 권한의 게시판 스코프 재적용 테스트 (#789 §6.2 · §6.3 B2·B3·B4·B5·B15)
+ * 게시판 관리 권한의 게시판 스코프 재적용 테스트
  *
  * 게시판 관리 권한(`admin.manage`·`manager`)은 스코프 메타 `resource_route_key = board`,
  * `owner_key = created_by` 를 갖는다. 게시판 라우트는 `{slug}` 를 쓰므로 미들웨어의 스코프

@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ContentMediaRepositoryInter
  * 이커머스 본문 미디어 Repository 구현체
  *
  * 이 모듈 범용 첨부 표(`ecommerce_attachments`)의 본문 미디어 행만 다룬다 — `ContentMedia` 의 전역 범위가 컬렉션(`content_media`)을
- * 묶는다(#887). 소유 종류는 `attachmentable_type`, 소유자는 `attachmentable_id`(null 이면 저장 전 임시)다.
+ * 묶는다. 소유 종류는 `attachmentable_type`, 소유자는 `attachmentable_id`(null 이면 저장 전 임시)다.
  */
 class ContentMediaRepository implements ContentMediaRepositoryInterface
 {

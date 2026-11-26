@@ -17,7 +17,7 @@ use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 게시글 본문 미디어 수명 — 휴지통 삭제·복원과 임시 정리 (#887 잠금)
+ * 게시글 본문 미디어 수명 — 휴지통 삭제·복원과 임시 정리 (잠금)
  *
  * 게시글 삭제는 휴지통 정책이라 본문 미디어도 일반 첨부처럼 행만 연쇄 소프트 삭제(trigger_type=cascade)하고 파일은 남긴다 —
  * 복원하면 함께 돌아온다. 파일은 소프트 삭제 첨부 영구 정리(운영자 옵트인)가 지운다. 저장하지 않고 나간 임시 본문 미디어

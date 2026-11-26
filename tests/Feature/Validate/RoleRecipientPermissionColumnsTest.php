@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * 역할 수신자 조회의 eager load 상한 (#599 validate 코어 minor — RoleRepository eager load)
+ * 역할 수신자 조회의 eager load 상한 (validate 코어 minor — RoleRepository eager load)
  *
  * `getUsersByIdentifiers()` 는 알림 수신자의 권한 판정을 위해 `users.roles.permissions` 를 싣는다.
  * 사용자 수는 줄일 수 없지만(전원이 수신자다), 권한 행은 역할마다 수십~수백 건이고 다국어 JSON

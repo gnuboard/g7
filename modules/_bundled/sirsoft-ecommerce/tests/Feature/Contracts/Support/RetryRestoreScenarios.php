@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 
 /**
- * 재결제 복구 특성화 시나리오 — 녹화(결제사 현행 코드)와 대조(결제 계약)가 같은 사전 상태를 쓴다 (#916).
+ * 재결제 복구 특성화 시나리오 — 녹화(결제사 현행 코드)와 대조(결제 계약)가 같은 사전 상태를 쓴다 .
  *
  * 사전 상태는 실제 흐름(결제 실패 처리 → 결제 취소 이력)으로 만들고, 결제사 실패 기록만 각 결제사의 현행 모양대로 쓴다.
  */

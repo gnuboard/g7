@@ -743,7 +743,7 @@ describe('HeroSlider', () => {
 
   // @scenario surface=first_image_eager_rest_lazy
   // @effects slide_images_load_by_priority
-  it('높은 우선순위는 첫 화면의 지금 장에만 — 넘긴 뒤에는 어느 장에도 남기지 않는다(#879)', () => {
+  it('높은 우선순위는 첫 화면의 지금 장에만 — 넘긴 뒤에는 어느 장에도 남기지 않는다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: false }} />);
     const priorities = () => [...container.querySelectorAll('img.hs-slider__image')].map((img) => img.getAttribute('fetchpriority'));
     expect(priorities()).toEqual(['high', null, null]);
@@ -762,7 +762,7 @@ describe('HeroSlider', () => {
     expect(container.querySelectorAll('img')[2].getAttribute('loading')).toBe('eager');
   });
 
-  describe('숨은 장 이미지 지연 (#879)', () => {
+  describe('숨은 장 이미지 지연', () => {
     const EFFECTS = ['slide', 'fade', 'cube', 'flip', 'coverflow', 'creative', 'none'] as const;
     const five = () => [1, 2, 3, 4, 5].map((id) => banner(id));
     /** 장별로 이미지 주소(src)가 붙었는지 */

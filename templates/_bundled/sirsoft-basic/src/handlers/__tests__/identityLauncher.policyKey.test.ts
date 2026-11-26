@@ -1,5 +1,5 @@
 /**
- * sirsoft-basic IDV launcher — challenge 요청에 428 의 정책 키를 싣는다 (#699)
+ * sirsoft-basic IDV launcher — challenge 요청에 428 의 정책 키를 싣는다
  *
  * 라우트·훅 정책의 428 응답은 정책 키를 알려 주지만 launcher 가 challenge 요청 본문에 목적·프로바이더·대상만 실어,
  * 서버가 어떤 정책 때문에 인증하는지 몰랐다. 그래서 운영자가 알림 설정에서 달아 둔 정책별 문구가 쓰이지 않고

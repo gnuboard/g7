@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * API 문서 실측용 샘플 결제 생성 공개 계약 (#916)
+ * API 문서 실측용 샘플 결제 생성 공개 계약 
  *
  * 문서 생성 도구가 실제 주문번호로 조회하므로 DB 행이 생겨야 하고, 여러 번 불러도 한 벌만 있어야 한다.
  */

@@ -52,7 +52,7 @@
                 ]
             },
             {
-                "comment": "브랜드 마크(색 배지/SVG 로고) — 결제 플러그인이 카탈로그 brand_mark 로 선언한 수단(간편결제)만 그리고, 없으면 아이콘을 그린다(#639)",
+                "comment": "브랜드 마크(색 배지/SVG 로고) — 결제 플러그인이 카탈로그 brand_mark 로 선언한 수단(간편결제)만 그리고, 없으면 아이콘을 그린다",
                 "type": "composite",
                 "name": "BrandMark",
                 "if": "{{$method._cached_brand_mark}}",

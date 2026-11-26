@@ -1,4 +1,4 @@
-// e2e:allow 이슈 #509 4번 — banner_enabled 안내 문구/주석 정정만 (레이아웃 구조·핸들러·바인딩 변경 없음, 브라우저 관찰 가능한 동작 변화 없음). Vitest 회귀(위 hint 문자열 검증)로 충분.
+// e2e:allow banner_enabled 안내 문구/주석 정정만 (레이아웃 구조·핸들러·바인딩 변경 없음, 브라우저 관찰 가능한 동작 변화 없음). Vitest 회귀(위 hint 문자열 검증)로 충분.
 /**
  * GDPR 플러그인 환경설정 레이아웃 구조 검증
  *
@@ -255,7 +255,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     /**
-     * 이슈 #509 체크리스트 4번 회귀 테스트 — 라벨/hint + 컨트롤(Input/Toggle/Select) 2단
+     * 회귀 테스트 — 라벨/hint + 컨트롤(Input/Toggle/Select) 2단
      * 배치 필드가 `section-heading-md`(텍스트 스타일 전용, grid 미정의) 를 컨테이너
      * className 으로 사용해 col-span-* 자식이 무효화되고 컨트롤이 아래 줄로 밀려나던
      * 결함. 코드베이스 표준은 `grid-3col-responsive`(grid grid-cols-1 lg:grid-cols-3
@@ -338,7 +338,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
 
     describe('card_cookie_banner', () => {
         /**
-         * 이슈 #509 체크리스트 4번 회귀 테스트 — banner_enabled 안내 문구가 "마이페이지 동의
+         * 회귀 테스트 — banner_enabled 안내 문구가 "마이페이지 동의
          * 관리 카드"까지 이 토글로 일괄 제어되는 것처럼 서술하던 결함. 실제로는 카드가
          * banner_enabled 와 무관하게 동의/철회 이력 존재 여부로만 판정된다
          * (mypage_privacy_tab.test.tsx "카드 표시 조건" 참조). 안내 문구를 실제 동작과
@@ -611,7 +611,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             // 왼쪽 파란 색띠 — 관리자 템플릿 CSS 에 `border-l-blue-500` 규칙이 없어 플러그인 CSS 의 접두 클래스로 둔다
             expect(serialized).toContain('gdpr-accent-info');
             expect(serialized).toContain('circle-info');
-            // 한 줄 + 중간 정렬 (시맨틱 flex-center 로 통일 — #399)
+            // 한 줄 + 중간 정렬 (시맨틱 flex-center 로 통일)
             expect(serialized).toContain('flex-center');
             // 다크모드 가독성: 카드(gray-800)보다 한 단계 어두운 gray-900
             expect(serialized).toContain('dark:bg-gray-900');
@@ -787,7 +787,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('border-gray-200');
             // 카드 내부 에러 Span — Object.entries + find 로 첫 매칭 키의 첫 메시지 추출
             expect(serialized).toContain("Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('blocked_domains.' + category.key + '.'))");
-            // 에러 Span 시각 시맨틱 (form-error) — 텍스트 톤 + 줄바꿈을 한 결로 통일 (#399)
+            // 에러 Span 시각 시맨틱 (form-error) — 텍스트 톤 + 줄바꿈을 한 결로 통일
             expect(serialized).toContain('"gdpr-form-error"');
             // 단, 정적 setState 키 (form.blocked_domains) 는 그대로 유지 (회귀 차단)
             expect(serialized).toContain('"form.blocked_domains"');
@@ -826,11 +826,11 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             const serialized = JSON.stringify(wrapper);
             // 필드 오류 키 접근(대괄호 표기) — 아래 오류 Span 의 if·text 바인딩에 있다
             expect(serialized).toContain(`_local.errors?.['${formField}']`);
-            // 에러 시 시맨틱 input-error 로 통일 (#399 시맨틱 통일 — 옛 border-red-500/focus:ring-red-500 원시 클래스 대체)
+            // 에러 시 시맨틱 input-error 로 통일 (시맨틱 통일 — 옛 border-red-500/focus:ring-red-500 원시 클래스 대체)
             expect(serialized).toContain('input-error');
             // 필드 아래 에러 Span — if 가드 + 첫 메시지 text (코어 단순 패턴)
             expect(serialized).toContain(`_local.errors?.['${formField}']?.[0]`);
-            // 에러 Span 시각 시맨틱 (form-error) — 텍스트 톤 + 줄바꿈을 한 결로 통일 (#399)
+            // 에러 Span 시각 시맨틱 (form-error) — 텍스트 톤 + 줄바꿈을 한 결로 통일
             expect(serialized).toContain('"gdpr-form-error"');
         });
 
@@ -1443,7 +1443,7 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
 /**
  * 정책 버전 snapshot 모달의 처리방침 링크.
  *
- * 1.0.x 는 스냅샷의 슬러그를 페이지 모듈 주소 규칙(`/page/{slug}`)으로 화면에서 조합했다(#509 에서
+ * 1.0.x 는 스냅샷의 슬러그를 페이지 모듈 주소 규칙(`/page/{slug}`)으로 화면에서 조합했다(예전에
  * `/page/` 누락으로 404 가 났던 자리). 1.1.0 부터 운영자가 주소를 직접 적고, 서버 리소스가 스냅샷을
  * 읽어 `privacy_policy.url`(옛 슬러그 스냅샷은 그 시절 링크 경로로 푼 값)과 `legacy_slug` 를 내보낸다.
  * 화면은 그 주소를 그대로 href 로 쓰고 경로를 조합하지 않는다.

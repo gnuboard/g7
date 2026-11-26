@@ -58,7 +58,7 @@ class CommentServiceTest extends ModuleTestCase
         $mockBoard->id = 1;
         $this->boardRepository->shouldReceive('findBySlug')->andReturn($mockBoard);
 
-        // CommentService 생성 (#252: CacheInterface 추가)
+        // CommentService 생성 (CacheInterface 추가)
         $this->service = new CommentService(
             $this->boardRepository,
             $this->commentRepository,

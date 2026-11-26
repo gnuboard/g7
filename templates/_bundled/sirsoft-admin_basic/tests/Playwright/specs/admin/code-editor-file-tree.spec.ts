@@ -1,5 +1,5 @@
 /**
- * sirsoft-admin_basic — 파일 트리 (#476)
+ * sirsoft-admin_basic — 파일 트리
  *
  * 종전 좌측 목록은 144개 파일이 한 줄씩 늘어선 평면 리스트였다. 이름이
  * `partials/admin_identity_logs/_modal_log_detail` 처럼 슬래시가 든 긴 문자열이라 원하는 파일을

@@ -1,9 +1,9 @@
-# audit:allow test-scenario-coverage[cross_product] reason: issue:#857 이 매니페스트의 조합을 재는 시험은 test_files 의 spec 뿐인데, 그 spec 은 test.describe.skip 상태라(활성화 조건은 spec 머리말) 실행되지 않는다. 건너뛴 시험의 마킹은 커버로 세지 않으므로(docs/testing-guide.md 「describe.skip 인 spec 의 그 축 커버리지는 0」) 조합이 미커버로 남는다. 같은 조합을 재는 다른 실행 시험은 없다(#857 후속 대조). spec 의 skip 을 풀면 이 표식을 걷고 pending_effects 를 effects 로 되돌린다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#857 이 매니페스트의 조합을 재는 시험은 test_files 의 spec 뿐인데, 그 spec 은 test.describe.skip 상태라(활성화 조건은 spec 머리말) 실행되지 않는다. 건너뛴 시험의 마킹은 커버로 세지 않으므로(docs/testing-guide.md 「describe.skip 인 spec 의 그 축 커버리지는 0」) 조합이 미커버로 남는다. 같은 조합을 재는 다른 실행 시험은 없다(후속 대조). spec 의 skip 을 풀면 이 표식을 걷고 pending_effects 를 effects 로 되돌린다.
 
 feature: 게시판 첨부 허용 확장자 빈 값 저장 차단 — 첨부를 쓸 때만 최소 1개 필수 (브라우저)
 
 description: |
-  이슈 #413 — 허용 확장자를 비워 저장하면 안내와 반대로 모든 파일 업로드가 거부되던 버그를
+  허용 확장자를 비워 저장하면 안내와 반대로 모든 파일 업로드가 거부되던 버그를
   「빈 값 금지 — 최소 1개 필수」로 바꿨다. 정책 정정 #78 — 그 금지는 첨부를 사용하는 게시판과
   모듈 기본값에만 적용되고, 첨부 미사용이면 확장자는 검증에서 배제된다(그러지 않으면 첨부를 쓰지
   않는 게시판의 무변경 저장까지 422 로 막힌다).
@@ -26,7 +26,7 @@ axes:
 effects: []
 
 # 아래 효과는 아직 실행되는 시험이 재지 않는다 — test_files 의 spec 이 test.describe.skip 상태라 건너뛴 시험의 @effects 는
-# 커버가 아니다(#857 후속). spec 의 skip 을 풀면 effects 로 되돌린다.
+# 커버가 아니다. spec 의 skip 을 풀면 effects 로 되돌린다.
 pending_effects:
   # 환경설정에서 첨부 사용 ON + 빈 확장자 저장 → 최소 1개 안내가 보인다
   - empty_extensions_blocked_on_settings_save_when_upload_enabled

@@ -420,7 +420,7 @@ return [
         ],
     ],
 
-    // Template settings (#434)
+    // Template settings
     'settings' => [
         'updated' => 'Template settings saved.',
         'reset' => 'Template settings were restored to defaults.',

@@ -1,5 +1,5 @@
 /**
- * 사용자 템플릿 Modal 대역용 고정 하단 렌더 (#869 2라운드)
+ * 사용자 템플릿 Modal 대역용 고정 하단 렌더
  *
  * 레이아웃 시험은 템플릿 패키지의 React 와 코어 엔진의 React 가 다른 사본으로 풀려 진짜 Modal 을 그리지 못하고 대역을 쓴다.
  * 사용자 Modal 이 `footer` 를 그리게 되어(확인 창 단추가 고정 하단으로 옮김) 대역도 실물(components/composite/Modal.tsx)과

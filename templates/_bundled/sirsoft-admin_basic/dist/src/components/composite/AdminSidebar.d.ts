@@ -12,7 +12,7 @@ export interface MenuItem {
     };
     slug: string;
     url?: string | null;
-    /** 호환 문자열 아이콘 — FA 클래스일 때만 값, 이미지·SVG 는 null (#381) */
+    /** 호환 문자열 아이콘 — FA 클래스일 때만 값, 이미지·SVG 는 null */
     icon?: string | null;
     /** 구조형 아이콘 (class·image·svg) — 있으면 icon 보다 우선 */
     icon_spec?: MenuIconSpecData | null;

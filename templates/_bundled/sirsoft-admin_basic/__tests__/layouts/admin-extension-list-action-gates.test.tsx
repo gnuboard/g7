@@ -1,6 +1,6 @@
 /**
  * @file admin-extension-list-action-gates.test.tsx
- * @description 확장 목록 카드의 버튼 잠금이 서버의 설치·활성·삭제·업데이트 거절 조건과 맞는지 (#703)
+ * @description 확장 목록 카드의 버튼 잠금이 서버의 설치·활성·삭제·업데이트 거절 조건과 맞는지
  *
  * 서버는 (1) 코어 요구 버전을 만족하지 못하는 확장의 설치·활성을 422(`core_version_mismatch`)로,
  * (2) 설치·삭제·업데이트가 진행 중인 확장의 활성·비활성·삭제·업데이트를 422 로 거절한다.
@@ -118,7 +118,7 @@ function conflictActionsOf(tree: unknown): Json[] {
 describe('확장 목록 — 의존 충돌(409) 후 스위치', () => {
   /**
    * 스위치를 누르면 카드가 먼저 꺼진 모양으로 바뀐다. 서버가 409 로 강제 확인 창을 띄우고 운영자가
-   * 「취소」하면 확장은 그대로 켜져 있는데 스위치만 꺼진 채 남았다(#703 실측) — 409 에서도 목록을 다시
+   * 「취소」하면 확장은 그대로 켜져 있는데 스위치만 꺼진 채 남았다 — 409 에서도 목록을 다시
    * 받아 스위치를 서버 값으로 되맞춘다.
    *
    * @scenario defect=extension_toggle_conflict_cancel
@@ -151,7 +151,7 @@ describe('확장 목록 — 의존 충돌(409) 후 스위치', () => {
 
   /**
    * 모듈·플러그인은 켜기 뒤 화면 파일(JS·CSS)을 몇 초 더 받는다 — 목록이 바뀌자마자 잠금을 풀면 그 사이 다시 끌 수 있어
-   * 받던 파일이 404 가 됐다(#882 결정: 파일까지 받은 뒤 해제). 그래서 격자는 holdUntilResync 로 서버 값 변경에 풀지 않고,
+   * 받던 파일이 404 가 됐다(파일까지 받은 뒤 해제). 그래서 격자는 holdUntilResync 로 서버 값 변경에 풀지 않고,
    * 성공 처리는 후속 작업 묶음(parallel — reloadExtensions 포함)이 끝난 **뒤에** 재동기 신호를 올린다. 언어팩은 화면 파일을
    * 받지 않아 종전대로 서버 값이 바뀌면 푼다(성공 신호 없음 — 있으면 hold 없이도 일찍 풀 뿐 해는 없지만 계약을 하나로 둔다).
    *
@@ -339,7 +339,7 @@ function evalIf(expr: string, isSuper: boolean): unknown {
 describe('확장 목록 — 숨김 포함 토글', () => {
   /**
    * 조건이 관리자 기본 레이아웃에 없는 이름(currentUser)을 읽어 최고관리자에게도 토글이 나타나지 않았다
-   * (#703 실측). 관리자 로그인 응답(current_user)이 주는 is_super 로만 판정해야 한다.
+   *. 관리자 로그인 응답(current_user)이 주는 is_super 로만 판정해야 한다.
    *
    * @scenario defect=extension_hidden_toggle_super_only
    * @effects hidden_toggle_visible_only_to_super_admin
@@ -361,7 +361,7 @@ describe('확장 목록 — 숨김 포함 토글', () => {
 
   /**
    * 숨김 포함 여부를 화면 상태(`_local.showHidden`)에 두면 페이지를 넘길 때(navigate) 그 값이 풀려
-   * 체크는 켜진 채 목록은 숨김을 뺀 채 받았다(#703 실측: 2페이지 요청이 include_hidden=0).
+   * 체크는 켜진 채 목록은 숨김을 뺀 채 받았다(2페이지 요청이 include_hidden=0).
    * 다른 필터처럼 주소(query)에 싣고, 목록 조회·체크 표시가 모두 그 값을 읽어야 한다.
    * 체크를 바꾸면 주소를 바꿔(1페이지로) 다시 받는다 — 바꾸기 전 값을 읽는 한 박자 늦은 재조회도 없다.
    *
@@ -452,7 +452,7 @@ describe('언어팩 목록 조각 — 호스트 창 정합', () => {
   /**
    * 언어팩 목록 조각은 두 호스트(언어팩 관리 화면 · 환경설정 언어팩 탭)가 함께 쓴다. 조각이 여는 창을
    * 호스트가 싣지 않으면 그 호스트에서는 아무 창도 뜨지 않는다 — 환경설정 탭에 자리 충돌 창이 빠져
-   * 있었다(#703 실측).
+   * 있었다.
    *
    * @scenario defect=extension_toggle_conflict_cancel
    * @effects toggle_resynced_after_conflict

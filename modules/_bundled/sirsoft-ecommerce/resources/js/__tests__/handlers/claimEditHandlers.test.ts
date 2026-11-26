@@ -1,6 +1,6 @@
-// e2e:allow 수정 진입 핸들러 단위 테스트 — 브라우저 흐름은 Playwright MCP 라이브 재실측으로 덮었다: 승인 건 RF20260922-1155163369 /edit 진입(SPA·직접 입력) → 안내 후 상세·[저장] 0, 승인 전 건은 수정 화면 유지. (#599 실측, 2026-09-23). / #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
+// e2e:allow 수정 진입 핸들러 단위 테스트 — 브라우저 흐름은 Playwright MCP 라이브 재실측으로 덮었다: 승인 건 RF20260922-1155163369 /edit 진입(SPA·직접 입력) → 안내 후 상세·[저장] 0, 승인 전 건은 수정 화면 유지. (2026-09-23). / 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측과 Vitest 로 고정한다.
 /**
- * 클레임 신청서 **수정(edit) 모드** 핸들러 테스트 (#599 S13)
+ * 클레임 신청서 **수정(edit) 모드** 핸들러 테스트
  *
  * @description
  * 수정 화면은 작성 셸을 재사용한다(§5-1-6). 그래서 조용히 어긋나는 축이 작성 쪽과 다르다:
@@ -337,7 +337,7 @@ describe('클레임 수정 — 진입', () => {
     });
 
     /**
-     * 승인 이후의 신청서는 구매자가 수정 화면을 열지 못한다 (#599 T2-D7 · 운영 결정 2026-09-23)
+     * 승인 이후의 신청서는 구매자가 수정 화면을 열지 못한다 (운영 결정 2026-09-23)
      *
      * 서버는 승인 이후 수정을 422(`claim_not_editable`)로 막는다. 그런데 주소에 `/edit` 을 붙이면
      * 수정 폼이 그대로 열리고 [저장]도 활성이라, 구매자는 다 고쳐 쓴 뒤에야 거절을 받았다
@@ -362,7 +362,7 @@ describe('클레임 수정 — 진입', () => {
         expect(mockLocalState.claimEditSnapshot).toBeUndefined();
         expect(mockLocalState.claimEditMode).toBe(false);
         // 안내는 모듈 키(`sirsoft-ecommerce.user.claim_apply.edit_not_editable`)로 찾고, 번역이 없으면(이 목은
-        // 키를 그대로 돌려준다) 키 원문이 아니라 폴백 문구를 띄운다(#599 validate 2026-09-23).
+        // 키를 그대로 돌려준다) 키 원문이 아니라 폴백 문구를 띄운다(validate 2026-09-23).
         expect(mockG7Core.toast.warning).toHaveBeenCalledWith(expect.stringContaining('승인 이후에는'));
         expect(mockG7Core.dispatch).toHaveBeenCalledWith({
             handler: 'navigate',
@@ -1049,7 +1049,7 @@ describe('클레임 수정 — 저장', () => {
         expect(mockG7Core.dispatch).toHaveBeenCalledWith({
             handler: 'example-pg.requestPayment',
             params: { pgPaymentData: { order_number: 'CP20260901-0001' } },
-            // 실패 안내는 신청서가 플러그인 문구로 직접 한다 — 디스패처의 내부 문구 토스트는 막는다(#855).
+            // 실패 안내는 신청서가 플러그인 문구로 직접 한다 — 디스패처의 내부 문구 토스트는 막는다.
             errorHandling: { default: { handler: 'suppress' } },
         });
         // 결제창으로 가므로 목적지 이동은 하지 않는다 — 두 번 이동하면 결제창이 닫힌다.
@@ -1059,7 +1059,7 @@ describe('클레임 수정 — 저장', () => {
     });
 
     /**
-     * 차액 결제창을 열기 전에 결제 플러그인이 실패하면 문구를 토스트로 알리고 신청서 상세로 보낸다 (#855).
+     * 차액 결제창을 열기 전에 결제 플러그인이 실패하면 문구를 토스트로 알리고 신청서 상세로 보낸다.
      *
      * @scenario claim_type=exchange, screen=edit, entry=detail
      *

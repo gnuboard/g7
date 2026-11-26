@@ -5,7 +5,7 @@ description: |
   갤러리형 목록에 즉시 반영된다. OFF 로 저장하면 갤러리 목록 카드의 눈 아이콘/조회수가
   표시되지 않고, ON(또는 미설정)이면 표시된다.
 
-  배경 (이슈 #413 item 19-4b):
+  배경 (item 19-4b):
     - 갤러리형 목록(types/gallery/index.g7.html) 의 조회수 Span 에 show_view_count 조건이
       없어, 토글 OFF 후에도 갤러리형에서만 조회수가 항상 노출되던 회귀.
     - basic/card 형 목록은 동일 조건("{{posts?.data?.board?.settings?.show_view_count !== false}}")

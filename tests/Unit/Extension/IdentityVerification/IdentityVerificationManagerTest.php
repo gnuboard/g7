@@ -155,7 +155,7 @@ class IdentityVerificationManagerTest extends TestCase
     }
 
     /**
-     * 명시 $providerId 가 등록 + purpose 지원 시 settings/default 보다 우선 적용 (0번 우선순위, refs #275).
+     * 명시 $providerId 가 등록 + purpose 지원 시 settings/default 보다 우선 적용 (0번 우선순위, refs).
      *
      * @scenario call_mode=mode_a_explicit, provider_id_state=valid_registered_supported, purpose=signup
      *
@@ -219,7 +219,7 @@ class IdentityVerificationManagerTest extends TestCase
     }
 
     /**
-     * $providerId = null (기본값) 시 기존 우선순위 유지 — BC 회귀 차단 (refs #275).
+     * $providerId = null (기본값) 시 기존 우선순위 유지 — BC 회귀 차단 (refs).
      *
      * @scenario call_mode=mode_a_explicit, provider_id_state=null_unspecified, purpose=signup
      *

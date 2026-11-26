@@ -1,6 +1,6 @@
 /**
  * @file board-scrap.test.tsx
- * @description 게시글 스크랩(북마크) 기능 레이아웃 구조 검증 (이슈 #524)
+ * @description 게시글 스크랩(북마크) 기능 레이아웃 구조 검증
  *
  * 검증 방식: 레이아웃 JSON 트리 직접 분석 (DOM 비의존).
  *
@@ -63,7 +63,7 @@ function serialized(node: unknown): string {
     return JSON.stringify(node);
 }
 
-describe('이슈 #524 — 게시글 상세 스크랩 버튼 (show.json)', () => {
+describe('게시글 상세 스크랩 버튼 (show.json)', () => {
     const scrapButtons = findByComment(basicShow, '스크랩 버튼');
 
     // @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
@@ -189,7 +189,7 @@ describe('이슈 #524 — 게시글 상세 스크랩 버튼 (show.json)', () => 
     });
 });
 
-describe('이슈 #524 — 마이페이지 스크랩 탭 (scrap.json)', () => {
+describe('마이페이지 스크랩 탭 (scrap.json)', () => {
     // @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
     // @effects mypage_list_sorted_recent_first
     it('scrap 데이터소스가 me/scraps 엔드포인트를 auth_required 로 조회한다', () => {
@@ -226,7 +226,7 @@ describe('이슈 #524 — 마이페이지 스크랩 탭 (scrap.json)', () => {
 
     // @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
     // @effects mypage_delete_opens_confirm_modal
-    it('회귀(#524): 모달 partial 은 최상위 modals 배열에 있어야 렌더된다 (content slot 배치 금지)', () => {
+    it('회귀: 모달 partial 은 최상위 modals 배열에 있어야 렌더된다 (content slot 배치 금지)', () => {
         // content slot 에 두면 모달이 렌더되지 않는다. modals 최상위 배열이 정위치.
         const modals = (scrapPage as any).modals;
         expect(Array.isArray(modals)).toBe(true);
@@ -237,7 +237,7 @@ describe('이슈 #524 — 마이페이지 스크랩 탭 (scrap.json)', () => {
     });
 });
 
-describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
+describe('스크랩 목록 표/카드 (_list.json)', () => {
     // @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
     // @effects mypage_list_includes_deleted_post
     it('PC 표와 모바일 카드 모두 scrap.data.data 배열을 반복 렌더링한다', () => {
@@ -382,7 +382,7 @@ describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
     // @effects mypage_list_empty_state_uses_card_box
     it('회귀: 빈 상태는 마이페이지 마일리지 탭과 동일하게 카드 박스(테두리+배경)로 감싸진다 (배경에 텍스트만 떠 있지 않도록)', () => {
         const empty = findByComment(scrapList, '스크랩 목록 없음')[0];
-        // #399 R-1 — 카드 상자 묶음이 의미 클래스 `card-plain` 으로 바뀌었다. 템플릿 CSS 정의까지 펼쳐 같은 배경·테두리·모서리를 확인한다
+        // 카드 상자 묶음이 의미 클래스 `card-plain` 으로 바뀌었다. 템플릿 CSS 정의까지 펼쳐 같은 배경·테두리·모서리를 확인한다
         expect(String((empty as any).props?.className ?? '').split(/\s+/)).toContain('card-plain');
         const className = expandSemanticClassName((empty as any).props?.className);
         expect(className).toContain('bg-white');
@@ -432,7 +432,7 @@ describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
         it('회귀: 게시판명은 클릭 시 게시판 목록(/board/{slug})으로, 제목은 클릭 시 원글 상세(/board/{slug}/{id})로 각각 독립 이동한다', () => {
             const aliveRow = findByComment(scrapList, '살아있는 원글 행')[0];
             const tds = collectNodes(aliveRow, (n) => (n as any).name === 'Td');
-            // tds[0] 은 선택 체크박스 열(#524) — 내용 열은 그 다음부터다
+            // tds[0] 은 선택 체크박스 열 — 내용 열은 그 다음부터다
             const boardTd = tds[1];
             const titleTd = tds[2];
 
@@ -503,7 +503,7 @@ describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
                 serialized(tr).includes('mypage.scrap.table.board'),
             );
             const ths = collectNodes(headerRow, (n) => (n as any).name === 'Th');
-            // 선택 체크박스 열 1 + 내용 열 6 (#524 선택 삭제)
+            // 선택 체크박스 열 1 + 내용 열 6 (선택 삭제)
             expect(ths.length).toBe(7);
             const [, board, title, author, comments, scrappedAt, manage] = ths as any[];
             for (const th of [board, title]) {
@@ -523,7 +523,7 @@ describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
             for (const rowComment of ['살아있는 원글 행', '삭제된 원글 행']) {
                 const row = findByComment(scrapList, rowComment)[0];
                 const tds = collectNodes(row, (n) => (n as any).name === 'Td');
-                // 선택 체크박스 열 1 + 내용 열 6 (#524 선택 삭제)
+                // 선택 체크박스 열 1 + 내용 열 6 (선택 삭제)
                 expect(tds.length).toBe(7);
                 const [, board, title, author, comments, scrappedAt, manage] = tds as any[];
                 expect(String(board.props?.className ?? '')).toContain('text-left');
@@ -544,7 +544,7 @@ describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
             );
             expect(headerRow).toBeDefined();
             const ths = collectNodes(headerRow, (n) => (n as any).name === 'Th');
-            // 선택 체크박스 열 1 + 내용 열 6 (#524 선택 삭제)
+            // 선택 체크박스 열 1 + 내용 열 6 (선택 삭제)
             expect(ths.length).toBe(7);
             const lastTh = ths[ths.length - 1];
             expect((lastTh as any).text).toBe('$t:mypage.scrap.table.manage');
@@ -661,7 +661,7 @@ describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
 
         // @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
         // @effects mypage_delete_opens_confirm_modal
-        it('회귀(#524): 모바일 해제 버튼의 최상위 트리거 액션은 type 을 가져야 한다 (setState+openModal 을 sequence 로 묶음)', () => {
+        it('회귀: 모바일 해제 버튼의 최상위 트리거 액션은 type 을 가져야 한다 (setState+openModal 을 sequence 로 묶음)', () => {
             const cardWrap = findByComment(scrapList, '스크랩 카드 목록 (모바일)');
             const removeWrap = findByComment(cardWrap[0], '스크랩 해제 버튼');
             // comment 는 버튼을 감싸는 Div(정렬용)에 있으므로, actions 를 가진 실제 Button 노드까지 내려간다.
@@ -698,7 +698,7 @@ describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
     });
 });
 
-describe('이슈 #524 — 해제 확인 모달 (_modal_scrap_delete.json)', () => {
+describe('해제 확인 모달 (_modal_scrap_delete.json)', () => {
     // @scenario action=mypage_delete,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
     // @effects mypage_delete_opens_confirm_modal
     it('모달 id 가 목록의 openModal target 과 일치한다 (scrap_delete_modal)', () => {
@@ -744,7 +744,7 @@ describe('이슈 #524 — 해제 확인 모달 (_modal_scrap_delete.json)', () =
     });
 });
 
-describe('이슈 #524 — 마이페이지 탭 네비게이션 (_tab_navigation.json)', () => {
+describe('마이페이지 탭 네비게이션 (_tab_navigation.json)', () => {
     // @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
     // @effects mypage_tab_follows_board_activity
     it('"스크랩" 탭이 "게시판 활동"(board) 바로 다음에 추가된다', () => {
@@ -756,7 +756,7 @@ describe('이슈 #524 — 마이페이지 탭 네비게이션 (_tab_navigation.j
     });
 });
 
-describe('회귀(#524): 이전글/다음글 이동 시 스크랩 로컬 상태가 형제 상세로 승계되지 않는다 (_navigation.json)', () => {
+describe('회귀: 이전글/다음글 이동 시 스크랩 로컬 상태가 형제 상세로 승계되지 않는다 (_navigation.json)', () => {
     // 재현: A 게시글을 스크랩(버튼 클릭 → _local.isScraped=true 세팅) 후 이전글/다음글로
     // 스크랩하지 않은 B 게시글로 이동하면, show.json 의 스크랩 버튼이
     // `{{_local.isScraped ?? post?.data?.is_scraped}}` 로 값을 읽는다. 네비게이션이
@@ -808,13 +808,13 @@ describe('회귀(#524): 이전글/다음글 이동 시 스크랩 로컬 상태�
     });
 });
 
-// ── #524 WP-A: 마이페이지 스크랩 검색 구분 · 선택 삭제 · 스크랩 중지 행 ──────────────
+// ── 마이페이지 스크랩 검색 구분 · 선택 삭제 · 스크랩 중지 행 ──────────────
 //
 // 고치기 전 마이페이지 스크랩 탭은 검색이 없었고, 해제는 한 건씩만 됐다. 스크랩을 꺼 둔
 // 게시판의 글도 살아 있는 글과 똑같이 보여, 눌러 보고서야 원글로 갈 수 없다는 것을 알았다.
 // 이 묶음은 그 셋을 고정한다 — 검색 세 갈래 · 선택 삭제 · 세 상태(정상·중지·삭제)의 행 구분.
 
-describe('#524 WP-A — 마이페이지 스크랩 검색·선택 삭제·중지 행', () => {
+describe('마이페이지 스크랩 검색·선택 삭제·중지 행', () => {
     const listStr = serialized(scrapList);
 
     // @scenario action=mypage_search, search_field=title_content

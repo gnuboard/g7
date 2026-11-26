@@ -102,7 +102,7 @@
                     <item id="search_member" label="$t:sirsoft-board.admin.scraps.cell.search_member" iconName="magnifying-glass"/>
                   </prop>
                   <on event="onItemClick">
-                    <!-- 반응 관리와 같다 — 「회원 정보 보기」는 항목 자체가 새 탭 링크(href + target=_blank, #757)라 갈래가 없고,
+                    <!-- 반응 관리와 같다 — 「회원 정보 보기」는 항목 자체가 새 탭 링크(href + target=_blank)라 갈래가 없고,
                          「이 회원으로 검색」만 같은 창에서 회원 조건을 갈아끼운다(user_uuid — 목록이 이미 읽는 필터). -->
                     <switch>
                       <case when="search_member">
@@ -117,7 +117,7 @@
                 <span data-if="{{!row.member?.uuid}}" class="board-text-heading">{{row.member?.name}}</span>
                 <badge data-type="composite" data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-board.admin.scraps.badges.withdrawn</badge>
               </div>
-              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다 -->
               <span data-testid="author-real-name" data-if="{{!!row.member?.real_name}}" class="board-text-tertiary" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: row.member?.real_name })}}">{{row.member?.real_name}}</span>
               <span data-if="{{row.member?.email}}" class="board-text-tertiary">({{row.member?.email}})</span>
             </div>
@@ -151,7 +151,7 @@
           <cell>
             <div class="board:flex board:flex-col">
               <span class="board-text-heading">{{row.author_name ?? ''}}</span>
-              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+              <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다 -->
               <span data-testid="author-real-name" data-if="{{!!row.author_real_name}}" class="board-text-tertiary" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: row.author_real_name })}}">{{row.author_real_name}}</span>
             </div>
           </cell>

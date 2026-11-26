@@ -151,7 +151,7 @@ class ExtensionRouteCacheInvalidationTest extends TestCase
                     $rebuildAt,
                     $invalidateAt,
                     $class.'::'.$method->getName().' 이 상태 캐시 무효화보다 먼저 라우트 캐시를 굽는다 — '
-                    .'그 확장의 라우트가 빠진 채 박제되어 오류 없이 404 가 된다 (#519 회귀)'
+                    .'그 확장의 라우트가 빠진 채 박제되어 오류 없이 404 가 된다'
                 );
             }
 

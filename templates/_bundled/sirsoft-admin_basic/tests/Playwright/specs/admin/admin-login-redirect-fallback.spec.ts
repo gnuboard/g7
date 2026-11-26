@@ -1,5 +1,5 @@
 /**
- * sirsoft-admin_basic — 관리자 로그인 복귀 주소의 대체 경로 (#757 추가 11).
+ * sirsoft-admin_basic — 관리자 로그인 복귀 주소의 대체 경로.
  *
  * 로그인 뒤 갈 곳은 `?redirect=` 로 받는다. 사이트 안 경로가 아니면(실행 스킴·`//host`·다른 사이트·상대 경로·빈 값)
  * 엔진이 navigate `fallbackPath="/admin"` 으로 보낸다 — 관리자 첫 화면. 정상 사이트 안 경로는 그대로 돌아간다.
@@ -80,7 +80,7 @@ async function loginWith(browser: Browser, redirect: string | null): Promise<str
   }
 }
 
-test.describe('@sirsoft-admin_basic 관리자 로그인 복귀 주소 (#757 추가 11)', () => {
+test.describe('@sirsoft-admin_basic 관리자 로그인 복귀 주소', () => {
   for (const [label, value] of [
     ['실행 스킴', 'javascript:alert(1)'],
     ['프로토콜 상대 주소', '//evil.example/x'],

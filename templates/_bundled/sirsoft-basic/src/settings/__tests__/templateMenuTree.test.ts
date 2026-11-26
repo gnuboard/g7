@@ -1,5 +1,5 @@
 /**
- * templateMenuTree — 메뉴 편집기의 트리 계산 (#434)
+ * templateMenuTree — 메뉴 편집기의 트리 계산
  *
  * 끌어서 놓기는 「펴기 → 옮기기 → 놓을 깊이 정하기 → 다시 묶기」다. 규칙(2단·자동 항목은 부모가 못 됨·자식 있는 항목은
  * 다른 항목 아래로 못 감)은 서버 검증(`TemplateMenu::structureErrors`)과 같아야 저장이 거절되지 않는다.
@@ -25,7 +25,7 @@ const link = (id: string, children: TemplateMenuNode[] = []): TemplateMenuNode =
 const auto = (id: string): TemplateMenuNode => ({ id, kind: id, children: [] });
 const shape = (items: TemplateMenuNode[]): string[] => items.map((i) => (i.children?.length ? `${i.id}(${i.children.map((c) => c.id).join(',')})` : i.id));
 
-describe('templateMenuTree (#434)', () => {
+describe('templateMenuTree', () => {
   // @scenario case=menu_editor
   // @effects menu_editor_tree_rules
   it('펴고 다시 묶으면 같은 트리다', () => {

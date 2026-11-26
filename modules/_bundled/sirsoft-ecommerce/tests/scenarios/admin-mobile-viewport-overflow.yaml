@@ -11,7 +11,7 @@ description: |
     - 환경설정 기본정보의 `w-80` 고정폭 입력은 폰(0~767px)에서만 전폭 — 태블릿은 넘치지 않는다. 같은 파일이 portable
       프리셋도 쓰므로 mobile 프리셋 대신 같은 범위의 커스텀 `0-767` 로 쓴다(portable 과 mobile/tablet 프리셋 혼용 금지).
 
-  이 매니페스트는 #757 통합 관문 1(굽기 대조)의 컴파일 경고(`responsive_breakpoint_mix`)를 고치며 이 시험을 바꿀 때,
+  이 매니페스트는 굽기 대조의 컴파일 경고(`responsive_breakpoint_mix`)를 고치며 이 시험을 바꿀 때,
   시험에 소유 매니페스트가 없던 상태(기존 부채)를 함께 정리한 것이다.
 
 axes:

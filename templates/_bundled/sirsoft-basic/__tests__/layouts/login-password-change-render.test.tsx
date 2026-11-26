@@ -1,6 +1,6 @@
 /**
  * @file login-password-change-render.test.tsx
- * @description 사용자 로그인 비밀번호 변경 단계 **렌더링·흐름** 회귀 테스트 (#736, sirsoft-basic)
+ * @description 사용자 로그인 비밀번호 변경 단계 **렌더링·흐름** 회귀 테스트 (sirsoft-basic)
  *
  * 형제 파일 `login-password-change-step.test.tsx` 는 파셜 JSON 구조를 단언한다. 이 파일은 파셜을 실제로 렌더하고
  * 그 파셜이 선언한 로그인 액션을 그대로 실행해 코어(AuthManager → 핸들러 반환값 → onSuccess 매핑)를 통과시킨다.
@@ -213,7 +213,7 @@ const CHANGE_STATE = {
 
 const USER = { id: 2, uuid: 'user-uuid', name: '홍길동', email: 'hong@example.com' };
 
-describe('sirsoft-basic 로그인 폼 — 비밀번호 변경 단계 (#736)', () => {
+describe('sirsoft-basic 로그인 폼 — 비밀번호 변경 단계', () => {
   beforeEach(() => {
     setupRegistry();
     apiPost.mockReset();

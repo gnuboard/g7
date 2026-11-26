@@ -23,7 +23,7 @@
   </data-source>
   <!-- 서버 방송 — 값을 쓰지 않고 「바뀌었다」는 신호로만 받아 실시간 소스를 다시 받는다. 방송은 채널의 모든
     연결에 같은 값이라 기본 창(5분)·주소(IP) 없음으로 만들어진다 — 그 값으로 소스를 갈아 끼우면 창을 30분으로
-    고른 화면이 방송마다 「최근 5분」으로 튀고, 주소 열람 권한자의 IP 칸이 비었다(#682 S3 라운드 14, 설계 결정).
+    고른 화면이 방송마다 「최근 5분」으로 튀고, 주소 열람 권한자의 IP 칸이 비었다(설계 결정).
     다시 받으면 이 화면의 창(`query.minutes`)과 보는 사람의 권한이 그대로 반영된다. 소켓이 없는 사이트에서는
     구독만 조용히 실패하고 폴링이 값을 댄다. -->
   <data-source id="analytics_realtime_ws" label_key="$t:editor.data_source.analytics_realtime_ws" type="websocket" channel="core.admin.analytics" event="analytics.realtime.updated" channel_type="private">
@@ -48,7 +48,7 @@
     </fallback>
     <!-- 조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를
          띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을
-         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2). -->
+         열 때마다 전역 오류 토스트가 뜬다. -->
     <error-handling>
       <on-code code="403">
         <suppress/>

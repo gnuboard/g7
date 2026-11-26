@@ -53,7 +53,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 패널 폭', () => {
     await openCodeEditor(page, layoutEditToken);
 
     const measured = await page.evaluate(() => {
-      // 좌측은 이제 `<file-tree-picker>` 다 — 폭은 컴포넌트가 240~480px 로 묶어 소유한다(#476).
+      // 좌측은 이제 `<file-tree-picker>` 다 — 폭은 컴포넌트가 240~480px 로 묶어 소유한다.
       const list = document.querySelector('#file_tree_picker')!;
       const editor = document.querySelector('#editor_card')!;
 

@@ -15,7 +15,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * 템플릿 오버라이드의 「실제로 적용될 행」 판정을 화면 렌더와 편집기 트리가 하나로 쓴다 (#725 W10 · 결정 D5·D9).
+ * 템플릿 오버라이드의 「실제로 적용될 행」 판정을 화면 렌더와 편집기 트리가 하나로 쓴다.
  *
  * 종전에는 판정이 세 벌이었다 — 오버레이는 버전 호환까지 보고 원본으로 대체했고(`getVersionAwareOverlays`),
  * 확장점은 원본을 먼저 지운 뒤 비호환 오버라이드를 건너뛰어 **자리가 비었고**, 편집기 트리는 활성 여부를 보지 않아
@@ -116,7 +116,7 @@ class ExtensionOverrideVisibilityTest extends TestCase
     /**
      * 호환 오버라이드는 **자기 대상의 원본만** 가린다 — 같은 자리의 다른 출처 행과 오버라이드 없는 범위는 그대로다.
      *
-     * 저장소 해석 함수(`resolveOverrides`·`getResolved*`)를 서비스 판정 한 벌로 옮기며(#725) 저장소 단위 테스트에서
+     * 저장소 해석 함수(`resolveOverrides`·`getResolved*`)를 서비스 판정 한 벌로 옮기며 저장소 단위 테스트에서
      * 이관한 관측이다 — 편집기 트리가 화면에 적용되지 않는 「가려진 행」 을 보여 주던 회귀의 잠금 포함.
      *
      * @scenario compile_unit=install,source_health=valid

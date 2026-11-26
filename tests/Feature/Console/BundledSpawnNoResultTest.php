@@ -17,7 +17,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\TestCase;
 
 /**
- * 번들 일괄 업데이트 자식이 정상 종료(0)했는데 결과 줄(`[BUNDLED-RESULT]`)이 없으면 실패 1건으로 센다 (#888).
+ * 번들 일괄 업데이트 자식이 정상 종료(0)했는데 결과 줄(`[BUNDLED-RESULT]`)이 없으면 실패 1건으로 센다.
  *
  * 종전에는 「성공 0 / 실패 0」으로 성공 처리돼 `core:update` 가 0 으로 끝났다. 자식(`core:execute-bundled-updates`)은
  * 대상이 0건이어도 결과 줄을 늘 내므로, 이 판정이 정상 0건을 실패로 잡지 않는다는 것도 함께 확인한다.

@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * 관리자 알림 목록 조회 (#519 회귀)
+ * 관리자 알림 목록 조회
  *
  * 이 목록은 `$user->notifications()` 라는 **관계**를 페이지네이션한다. 상한 페이지네이션
  * 계약으로 옮기면서 그 계약이 빌더만 받도록 좁게 선언돼 있어, 화면 진입만으로 500 이

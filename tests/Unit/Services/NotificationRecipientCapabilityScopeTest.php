@@ -6,7 +6,7 @@ use App\Services\NotificationRecipientCapability;
 use Tests\TestCase;
 
 /**
- * 알림 수신자 권한 판정 메모의 수명이 요청·큐 잡 하나로 끝나는지 (#599 validate).
+ * 알림 수신자 권한 판정 메모의 수명이 요청·큐 잡 하나로 끝나는지.
  *
  * 메모를 `singleton` 으로 두면 큐 워커가 재시작될 때까지 판정이 굳는다 — 알림은 대부분 큐 워커에서
  * 발송되므로, 권한을 뺏긴 사람도 관리자 링크가 든 알림을 계속 받는다. Laravel 은 잡 사이에 `scoped`

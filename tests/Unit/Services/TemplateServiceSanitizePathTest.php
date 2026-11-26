@@ -7,9 +7,9 @@ use ReflectionMethod;
 use Tests\TestCase;
 
 /**
- * TemplateService 자산 경로 정제 회귀 테스트 (이슈 #486 인접 결함 ③).
+ * TemplateService 자산 경로 정제 회귀 테스트 (인접 결함 ③).
  *
- * 정제는 #609 에서 템플릿, 모듈, 플러그인이 함께 쓰는 trait
+ * 정제는 템플릿, 모듈, 플러그인이 함께 쓰는 trait
  * (`SecuresExtensionAssetPath::sanitizeExtensionAssetPath()`)로 옮겨졌다. 이 테스트는 템플릿 통로가
  * 그 정제를 그대로 갖는지를 TemplateService 인스턴스로 잰다.
  *

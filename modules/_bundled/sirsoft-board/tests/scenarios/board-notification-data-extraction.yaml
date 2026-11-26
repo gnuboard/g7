@@ -8,7 +8,7 @@ description: |
   `context.skip=true` 를 실어 템플릿 수신자 규칙이 정책을 우회하지 못하게 한다.
 
   관리자 대상 알림의 게시판 관리자(`board_managers`)와 신고 로그는 Repository 로만 읽는다
-  (#599 validate — validate-p4-board.yaml 참조).
+  (validate-p4-board.yaml 참조).
 
 axes:
   notification_type:

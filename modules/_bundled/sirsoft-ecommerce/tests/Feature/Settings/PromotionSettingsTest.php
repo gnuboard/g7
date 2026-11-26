@@ -7,7 +7,7 @@ use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 쇼핑몰 설정 쿠폰 탭 (#952 P7·P8)
+ * 쇼핑몰 설정 쿠폰 탭
  */
 class PromotionSettingsTest extends ModuleTestCase
 {

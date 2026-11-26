@@ -144,7 +144,7 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
             'mc_refund_points_amount' => null,
         ]);
 
-        $this->assertEquals(new \stdClass, $this->toArray($refund)['mc_refund_total'], '비면 빈 맵({}) — 코어 #758');
+        $this->assertEquals(new \stdClass, $this->toArray($refund)['mc_refund_total'], '비면 빈 맵({}) — 코어 계약');
     }
 
     /**

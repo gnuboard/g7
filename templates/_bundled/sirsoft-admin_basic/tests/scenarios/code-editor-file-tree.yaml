@@ -3,7 +3,7 @@ feature: 코드 편집기의 좌측 파일 트리
 description: |
   좌측 파일 목록이 **평면 1차원 리스트**였다. 관리자 템플릿 하나만 `.g7.html` 144개이고 이름이
   `partials/admin_identity_logs/_modal_log_detail` 처럼 슬래시가 든 긴 문자열이라, 원하는 파일을
-  눈으로 찾는 것이 사실상 불가능했다(#476).
+  눈으로 찾는 것이 사실상 불가능했다.
 
   접근성도 없었다 — 행이 `<div>` + click 이라 role·tabindex 가 붙지 않아 키보드로 닿을 수 없고
   스크린리더는 구조로 읽지 못했다(D9).

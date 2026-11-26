@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  *
- * 코어 재초기화(로케일 전환) 뒤 핸들러 재등록 (#639 ④)
+ * 코어 재초기화(로케일 전환) 뒤 핸들러 재등록
  *
  * 로케일을 바꾸면 코어가 ActionDispatcher 를 새로 만들고 `window.__{Name}.initPlugin()` 을 부른다. 이 플러그인은 그
  * 전역을 두지 않아 ko→en 전환 뒤 `sirsoft-totp.copyToClipboard` 가 디스패처에서 빠졌다(실측 2026-10-05).

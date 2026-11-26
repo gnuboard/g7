@@ -1,4 +1,4 @@
-# 시나리오 매니페스트 — 이커머스 PG 결제 계약 PaymentGatewayBridge (#916 ②, 공개 #83 후속)
+# 시나리오 매니페스트 — 이커머스 PG 결제 계약 PaymentGatewayBridge
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 
 feature: ecommerce_payment_gateway_contract

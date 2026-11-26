@@ -442,7 +442,7 @@ class NotificationDispatchIntegrationTest extends TestCase
             [$user]
         );
 
-        // 받는 사람 이름은 리스너가 직접 읽지 않는다 — 발송 직전에 채널의 표시 이름으로 바뀌는 자리표시자를 넣는다 (#490)
+        // 받는 사람 이름은 리스너가 직접 읽지 않는다 — 발송 직전에 채널의 표시 이름으로 바뀌는 자리표시자를 넣는다
         $this->assertEquals('{recipient_name}', $result['data']['name']);
         $this->assertEquals(config('app.name'), $result['data']['app_name']);
         $this->assertEquals($user->id, $result['context']['trigger_user_id']);
@@ -497,7 +497,7 @@ class NotificationDispatchIntegrationTest extends TestCase
             [$user]
         );
 
-        // 받는 사람 이름은 리스너가 직접 읽지 않는다 — 발송 직전에 채널의 표시 이름으로 바뀌는 자리표시자를 넣는다 (#490)
+        // 받는 사람 이름은 리스너가 직접 읽지 않는다 — 발송 직전에 채널의 표시 이름으로 바뀌는 자리표시자를 넣는다
         $this->assertEquals('{recipient_name}', $result['data']['name']);
         $this->assertEquals($user->id, $result['context']['trigger_user_id']);
         $this->assertStringContainsString('/login', $result['data']['action_url']);

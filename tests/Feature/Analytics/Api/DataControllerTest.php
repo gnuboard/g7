@@ -40,7 +40,7 @@ class DataControllerTest extends AnalyticsApiTestCase
         $this->assertContains('analytics_visits', $tables);
         $this->assertContains('analytics_stats_daily', $tables);
 
-        // 표 이름만으로는 무엇이 쌓이는지 모른다 — 코어 표는 전부 화면 이름이 붙는다(#682 S4 라운드 8).
+        // 표 이름만으로는 무엇이 쌓이는지 모른다 — 코어 표는 전부 화면 이름이 붙는다.
         $unnamed = collect($response->json('data.tables'))
             ->filter(fn (array $row): bool => ! is_string($row['label'] ?? null) || $row['label'] === $row['table'])
             ->pluck('table')->values()->all();

@@ -144,7 +144,6 @@ class OrderPayment extends Model
      * 하위호환: BackedEnum 은 JsonSerializable 이라 API 응답에는 이미 값 문자열('card')이
      * 나가고 있었다. 순수 string 으로 바꿔도 wire format 이 완전히 동일하다.
      *
-     * @see https://github.com/gnuboard/dev-g7/issues/475
      */
 
     /**

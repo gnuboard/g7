@@ -366,7 +366,7 @@ class ModuleService
                 return [
                     'success' => true,
                     'module_info' => $moduleInfo,
-                    // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+                    // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고
                     'layout_warnings' => $result['layout_warnings'] ?? [],
                 ];
             }
@@ -1132,7 +1132,7 @@ class ModuleService
 
                 HookManager::doAction('core.modules.after_refresh_layouts', $moduleName, $result);
 
-                // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+                // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고
                 if (is_array($moduleInfo)) {
                     $moduleInfo['layout_warnings'] = $result['layout_warnings'] ?? [];
                     $moduleInfo['layout_sync'] = $result['layout_sync'] ?? null;

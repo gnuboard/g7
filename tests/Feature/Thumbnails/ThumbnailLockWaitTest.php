@@ -17,7 +17,7 @@ use Tests\TestCase;
 use Tests\Unit\Thumbnails\Support\TestImages;
 
 /**
- * 썸네일 생성 잠금 대기 시간 서버 설정 (#869) — `core.thumbnail.lock_wait_seconds`.
+ * 썸네일 생성 잠금 대기 시간 서버 설정 — `core.thumbnail.lock_wait_seconds`.
  *
  * 같은 원본·같은 규격을 다른 요청이 만들고 있으면 이 시간만큼 기다리고, 넘으면 원본을 낸다(`bypass:error`).
  * 대기는 잠금 유지 시간(30초)보다 길 수 없고 1초보다 짧을 수 없다.

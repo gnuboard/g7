@@ -125,7 +125,7 @@ final class PrivacyPolicyUrl
             return '';
         }
 
-        // 메일을 받는 사람이 여는 화면이라 「사용자 화면 URL」(비면 사이트 주소)을 베이스로 쓴다(#792)
+        // 메일을 받는 사람이 여는 화면이라 「사용자 화면 URL」(비면 사이트 주소)을 베이스로 쓴다
         return str_starts_with($url, '/') ? ScreenUrl::toAbsoluteForLinks($url) : $url;
     }
 
@@ -141,7 +141,7 @@ final class PrivacyPolicyUrl
             return '';
         }
 
-        // 페이지 화면 주소는 화면 주소 헬퍼(page.show)를 거친다(#792 F1-18) — 기본 경로는 그 시절과 같은 /page/{slug}
+        // 페이지 화면 주소는 화면 주소 헬퍼(page.show)를 거친다 — 기본 경로는 그 시절과 같은 /page/{slug}
         return ScreenUrl::path('page.show', self::LEGACY_PAGE_PREFIX.'{slug}', ['slug' => trim($slug)]);
     }
 

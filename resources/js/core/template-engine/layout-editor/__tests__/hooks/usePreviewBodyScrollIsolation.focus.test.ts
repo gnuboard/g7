@@ -1,5 +1,5 @@
 /**
- * usePreviewBodyScrollIsolation — 미리보기 안 자동 포커스가 편집기 문서를 스크롤하지 않는다 (#869 λ 이월 4)
+ * usePreviewBodyScrollIsolation — 미리보기 안 자동 포커스가 편집기 문서를 스크롤하지 않는다 (이월 4)
  *
  * 결함: 편집기를 열자마자 문서가 1155px 내려갔다. sirsoft-popup 의 팝업 대화창(`g7pp-dialog`)이 마운트 때 focus() 를
  * 불렀고, 미리보기는 같은 문서라 브라우저가 편집기 화면 전체를 그 창 쪽으로 스크롤했다. 편집기 생존 동안 미리보기

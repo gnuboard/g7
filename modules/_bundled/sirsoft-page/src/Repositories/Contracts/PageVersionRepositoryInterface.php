@@ -59,7 +59,7 @@ interface PageVersionRepositoryInterface
     public function findForPage(int $pageId, int $id): PageVersion;
 
     /**
-     * 페이지의 어느 버전 본문이든 이 본문 미디어 해시를 참조하는지 확인합니다 (#887).
+     * 페이지의 어느 버전 본문이든 이 본문 미디어 해시를 참조하는지 확인합니다.
      *
      * 버전 본문은 다국어 JSON(배열 캐스트)이라 주소의 `/` 가 `\/` 로 저장되므로, 주소가 아니라 12자 해시로 찾는다.
      *
@@ -70,7 +70,7 @@ interface PageVersionRepositoryInterface
     public function referencesHash(int $pageId, string $hash): bool;
 
     /**
-     * 페이지의 버전 이력을 모두 영구 삭제합니다 (페이지 삭제 정리, #888).
+     * 페이지의 버전 이력을 모두 영구 삭제합니다 (페이지 삭제 정리).
      *
      * @param  int  $pageId  페이지 ID
      * @return int 삭제된 버전 수

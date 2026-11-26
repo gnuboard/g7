@@ -78,7 +78,7 @@ class CreateOrderRequest extends FormRequest
             // 결제 정보
             // 결제수단 화이트리스트는 카탈로그(builtin 8종 + 플러그인 등록 확장수단)가 SSoT.
             // enum cases 로 제한하면 확장 결제수단(간편결제)이 422 로 막혀, 프론트가
-            // payment_method 를 'card' 로 위장해 보낼 수밖에 없게 된다(#475).
+            // payment_method 를 'card' 로 위장해 보낼 수밖에 없게 된다.
             'payment_method' => [
                 'required',
                 'string',
@@ -117,7 +117,7 @@ class CreateOrderRequest extends FormRequest
 
                     $fail(__('sirsoft-ecommerce::validation.order.payment_method_not_selectable'));
                 },
-                // 결제 통화에서 고를 수 없는 수단 차단 (#639 D17). 주문서 표시가 쓰는 판정
+                // 결제 통화에서 고를 수 없는 수단 차단. 주문서 표시가 쓰는 판정
                 // (CheckoutPaymentMethodFilter, 체크아웃 응답 `allowed_payment_methods`)과 같다 — 표시만 거르면
                 // 직접 POST 로 우회된다. 통화는 주문 생성과 같은 규칙(회원 영속 통화 → X-Currency → 기본 통화)으로 구한다.
                 function (string $attribute, mixed $value, callable $fail) {

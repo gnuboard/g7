@@ -243,7 +243,7 @@ describe('TemplateApp 방문자 통계 가드', () => {
     // @effects tracker_defers_sending_so_navigation_is_not_delayed
     it('통계의 routeChange 핸들러는 undefined 를 동기로 돌려준다 — 라우터가 기다릴 것이 없다', async () => {
         // 라우터는 routeChange 핸들러들을 Promise.all 로 기다린다. 누군가 이 화살표를 async 로
-        // 바꾸면 화면 전환이 통계 처리를 기다리게 된다 — 반환값으로 직접 잠근다(#682 R6-D1).
+        // 바꾸면 화면 전환이 통계 처리를 기다리게 된다 — 반환값으로 직접 잠근다.
         const admin = new TemplateApp(makeConfig('admin'));
         await admin.init();
         const withoutAnalytics = (routerBus.handlers.get('routeChange') ?? []).length;

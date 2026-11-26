@@ -144,7 +144,7 @@ return [
     'driver_test_error' => 'An error occurred while testing driver connections.',
     'unknown_driver' => 'Unknown driver.',
 
-    // Web server file delegation check (driver test step 1, #878) — DriverConnectionTester::testFileDelegation()
+    // Web server file delegation check (driver test step 1) — DriverConnectionTester::testFileDelegation()
     'driver_test' => [
         'file_delegation' => [
             'none' => 'Web server file delegation is off. PHP sends the files.',
@@ -769,7 +769,7 @@ return [
         ],
     ],
 
-    // custom 예약 자리(#792) — custom:check·custom:vendor-* 명령과 코어 업데이트 출력
+    // custom 예약 자리 — custom:check·custom:vendor-* 명령과 코어 업데이트 출력
     'custom_reserved' => [
         'check' => [
             'reserved_title' => 'custom reserved locations (never overwritten or deleted by core updates)',
@@ -820,7 +820,7 @@ return [
         'update_failed' => 'Failed to update the GeoIP database.',
     ],
 
-    // 저장은 허용하되 알려야 할 저장소 조합 (#916)
+    // 저장은 허용하되 알려야 할 저장소 조합 
     'warnings' => [
         'private_attachment_same_as_public_asset' => 'Private attachment storage and the public asset disk are the same disk (:disk). If the bucket allows public reads, private originals can be read directly from the bucket URL. Use a bucket or path without a public policy for private originals.',
         'gated_thumbnail_same_as_public_asset' => 'Access-controlled image thumbnails and the public asset disk use the same S3 bucket (:disk). If the bucket allows public reads, thumbnails of access-controlled images can also be read directly from the bucket URL. Make sure no public policy applies to the thumbnail path (thumbnails/).',

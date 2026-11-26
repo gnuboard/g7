@@ -83,7 +83,7 @@ class KcpBridgeController extends PublicBaseController
         $title = e(__('sirsoft-verification_nhnkcp::messages.bridge_page_title'));
         // 보안: 부모창 전달 대상은 브리지 자신의 주소(요청 Host 를 따른다)가 아니라 사이트 주소의 origin.
         $siteOrigin = json_encode(SiteUrl::origin(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
-        // 복귀 주소가 없을 때 갈 홈 — 화면 주소 헬퍼(home)를 거친다(#792 F1-17, 주소 필터·사용자 화면 URL).
+        // 복귀 주소가 없을 때 갈 홈 — 화면 주소 헬퍼(home)를 거친다(주소 필터·사용자 화면 URL).
         // 경로로 돌아오면 마운트 접두사를 채운다 — 리터럴 '/' 는 하위 폴더 배치(https://host/g7/)에서
         // 문서 루트를 가리켜 본인인증을 마친 사용자가 사이트 밖에 떨어진다. 절대 URL·접두사 보유 값은 그대로 둔다.
         $homeUrl = json_encode(AssetUrl::sitePath(ScreenUrl::path('home', '/')), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);

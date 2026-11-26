@@ -4,7 +4,7 @@
         "description": "클레임 신청서 - 요약 카드 안 주문금액 비교(전/후) 접이식 섹션 + 환불 요약 + 환불 불가 안내",
         "editor_label": "$t:user.modal_label.mypage_claims.apply_comparison"
     },
-    "comment": "옛 주문 취소 모달의 주문금액 비교표를 세 유형(취소·환불 / 반품 / 교환) 신청서로 옮긴 것이다(#599 후속 P1·P2). 값은 전부 서버 미리보기 adjustment 가 정한다 — 스냅샷 행은 서버 formatted 를 직독하고 화면은 포맷·합산하지 않는다. 후열은 전열과 다를 때만 강조색이다(옛 모달 규칙). 교환의 후열은 서버가 옵션 치환으로 재계산한 값이며 row_substituted 가 그 근거를 보인다(P5).\nP6 — PC 는 펼침, 모바일(portable 0~1023px)은 접힘으로 연다. 초기값은 핸들러(initClaimApply/initClaimEdit)가 G7Core.ResponsiveManager.matches('portable') 로 세우고, 토글 뒤 상태는 화면을 떠날 때까지 유지된다(새로고침하면 디바이스 기본값으로 돌아간다 — 설계값). _global.isPortable 은 어느 런타임도 세우지 않는 값이라 쓰지 않는다.\nP3-① — adjustment.cancel_blocked 면 사유 + 안내를 이 자리에 남기고 환불 요약을 숨긴다. 표는 그대로 둔다(왜 막혔는지 후열이 말한다). 제출 잠금은 요약 카드의 버튼과 submitClaim 진입 가드가 함께 맡는다.",
+    "comment": "옛 주문 취소 모달의 주문금액 비교표를 세 유형(취소·환불 / 반품 / 교환) 신청서로 옮긴 것이다. 값은 전부 서버 미리보기 adjustment 가 정한다 — 스냅샷 행은 서버 formatted 를 직독하고 화면은 포맷·합산하지 않는다. 후열은 전열과 다를 때만 강조색이다(옛 모달 규칙). 교환의 후열은 서버가 옵션 치환으로 재계산한 값이며 row_substituted 가 그 근거를 보인다(P5).\nP6 — PC 는 펼침, 모바일(portable 0~1023px)은 접힘으로 연다. 초기값은 핸들러(initClaimApply/initClaimEdit)가 G7Core.ResponsiveManager.matches('portable') 로 세우고, 토글 뒤 상태는 화면을 떠날 때까지 유지된다(새로고침하면 디바이스 기본값으로 돌아간다 — 설계값). _global.isPortable 은 어느 런타임도 세우지 않는 값이라 쓰지 않는다.\nP3-① — adjustment.cancel_blocked 면 사유 + 안내를 이 자리에 남기고 환불 요약을 숨긴다. 표는 그대로 둔다(왜 막혔는지 후열이 말한다). 제출 잠금은 요약 카드의 버튼과 submitClaim 진입 가드가 함께 맡는다.",
     "id": "claim_apply_comparison",
     "type": "basic",
     "name": "Div",

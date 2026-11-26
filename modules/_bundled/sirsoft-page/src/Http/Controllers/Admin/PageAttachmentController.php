@@ -138,7 +138,7 @@ class PageAttachmentController extends AdminBaseController
      */
     public function settings(): JsonResponse
     {
-        // 편집기 본문 미디어 업로드 계약을 함께 싣는다 (#883). 표준 길은 `GET admin/content-media/target` 이고(#887),
+        // 편집기 본문 미디어 업로드 계약을 함께 싣는다. 표준 길은 `GET admin/content-media/target` 이고,
         // 이 키는 같은 값을 계속 싣는 호환 별칭이다(폐기 예정 — 옛 화면·복제 레이아웃이 읽는다)
         return $this->success(
             'sirsoft-page::messages.attachment.settings_success',

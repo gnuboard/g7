@@ -27,12 +27,12 @@ import extraFeePartial from '../../../layouts/admin/partials/admin_ecommerce_shi
 import extraFeeTemplateModal from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.json';
 import { asArray, callbacksOf, initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
-/** 확장 생성 CSS — 의미 클래스 사본(`ecommerce-btn` 등)의 실제 정의를 확인한다 (#399 R-1) */
+/** 확장 생성 CSS — 의미 클래스 사본(`ecommerce-btn` 등)의 실제 정의를 확인한다 */
 const EXT_CSS = fs.readFileSync(path.resolve(__dirname, '../../../css/g7-extension.generated.css'), 'utf8');
 
 /**
  * 꺼진 단추 모양 — 인라인 `disabled:opacity-50 disabled:cursor-not-allowed` 는 `ecommerce-btn` 과 함께 쓸 때
- * 뺐다(#399 R-1 P7, `.ecommerce-btn:disabled` 가 이미 준다). 그 정의를 생성 CSS 에서 확인한다.
+ * 뺐다(`.ecommerce-btn:disabled` 가 이미 준다). 그 정의를 생성 CSS 에서 확인한다.
  */
 function expectDisabledLook(className: unknown): void {
     const value = String(className ?? '');
@@ -1460,7 +1460,7 @@ describe('shippingPolicyFormLayouts', () => {
          * @effects shipping_policy_form_extra_fee_template_modal_crud
          */
         it('닫기 버튼 (footer)', () => {
-            // 닫기 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+            // 닫기 단추는 Modal 고정 하단(props.footer)에 있다
             const footer = (extraFeeTemplateModal as any).props?.footer;
             expect(footer?.length ?? 0).toBeGreaterThan(0);
             const json = JSON.stringify(footer);

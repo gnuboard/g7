@@ -1,6 +1,6 @@
 /**
  * @file admin-user-list-bulk-roles.test.tsx
- * @description 회원 목록 — 역할 일괄 추가·제거 창 (#708)
+ * @description 회원 목록 — 역할 일괄 추가·제거 창
  *
  * 실제 파셜 JSON(`_modal_bulk_roles.json`)을 띄워, 서버가 돌려준 결과·거부가 창에 어떻게 남는지 본다.
  * - 제외된 회원이 있으면 창을 닫지 않고 사유별 행을 보여 준다 (라이브에서는 범위 밖 회원이 목록에 안 보여 못 그린 갈래)
@@ -53,7 +53,7 @@ const TestIcon: React.FC<{ name?: string }> = ({ name }) => <i data-icon={name} 
 const TestTagInput: React.FC<{ id?: string; value?: any[] }> = ({ id, value }) => (
   <div data-testid={id} data-value={JSON.stringify(value ?? [])} />
 );
-// 진짜 Modal — 적용·취소 단추가 고정 하단(props.footer)에 있어 Modal 이 그 자리를 그려야 보인다(#869 P1)
+// 진짜 Modal — 적용·취소 단추가 고정 하단(props.footer)에 있어 Modal 이 그 자리를 그려야 보인다
 const TestModal = makeHarnessModal({ forceOpen: true, testId: (props) => `modal-${props.id}` });
 
 function setupTestRegistry(): ComponentRegistry {
@@ -115,7 +115,7 @@ function buildLayout(global: Record<string, any>) {
 
 const translations = { admin: adminKo, common: { cancel: '취소', processing: '처리 중...' } };
 
-describe('회원 목록 — 역할 일괄 변경 창 (#708)', () => {
+describe('회원 목록 — 역할 일괄 변경 창', () => {
   let registry: ComponentRegistry;
   let testUtils: ReturnType<typeof createLayoutTest> | undefined;
 

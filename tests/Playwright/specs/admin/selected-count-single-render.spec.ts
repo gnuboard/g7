@@ -20,7 +20,7 @@ import { test, expect, authenticatePage, issueToken } from '../../fixtures/auth'
 /** 대표 화면 — 게시판 관리자 목록. 중복이 제보된 그 화면 부류다. */
 const LIST_URL = '/admin/board/free';
 
-test.describe('관리자 목록 선택 건수 (#524)', () => {
+test.describe('관리자 목록 선택 건수', () => {
   // @scenario surface=admin_list_selection
   // @effects selected_count_renders_once_after_selecting_a_row
   test('행을 하나 고르면 「N개 선택됨」이 한 번만 뜬다', async ({ page }) => {

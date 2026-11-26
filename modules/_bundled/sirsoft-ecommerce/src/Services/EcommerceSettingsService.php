@@ -1402,7 +1402,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      * 은행 목록을 반환합니다 — 운영자가 비워 두었으면 모듈 기본 목록으로 떨어집니다.
      *
      * 무통장 입금 계좌와 환불 계좌가 이 목록을 함께 쓴다. 환불 계좌는 계좌로 돈이 돌아가는 주문에서
-     * **필수**다(#599 T2-D5) — 그런데 운영자가 목록을 비우면 필수 칸에 고를 은행이 0개가 되어
+     * **필수**다 — 그런데 운영자가 목록을 비우면 필수 칸에 고를 은행이 0개가 되어
      * 구매자는 환불 신청을 영영 할 수 없다(2026-09-23 재실측: 개발 상점의 목록이 빈 배열이라
      * [주문 취소하기] 가 계좌를 적어도 풀리지 않았다). 운영자가 한 곳이라도 등록하면 그 목록을
      * 그대로 쓰고, 비었을 때만 `config/settings/defaults.json` 의 기본 목록을 쓴다.
@@ -1679,7 +1679,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             }
 
             // 간편결제 별칭(toss_kakaopay 등)이 선언한 결제 결과 간편결제사 이름도 보존한다 — 결제수단 칸이 코어 값(card)으로
-            // 저장되는 PG 는 이 값으로만 간편결제 주문을 가를 수 있다(관리자 주문 목록 결제수단 필터, #933).
+            // 저장되는 PG 는 이 값으로만 간편결제 주문을 가를 수 있다(관리자 주문 목록 결제수단 필터).
             if (isset($definition['defaults']['embedded_pg_provider']) && is_string($definition['defaults']['embedded_pg_provider'])) {
                 $entry['embedded_pg_provider'] = $definition['defaults']['embedded_pg_provider'];
             }
@@ -1745,7 +1745,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                     $savedMethods[$index]['core_payment_method'] = $def['defaults']['core_payment_method'];
                 }
 
-                // 간편결제 별칭의 결제 결과 간편결제사 이름도 스냅샷한다 (#933 — 결제수단 필터).
+                // 간편결제 별칭의 결제 결과 간편결제사 이름도 스냅샷한다 (결제수단 필터).
                 if (isset($def['defaults']['embedded_pg_provider']) && is_string($def['defaults']['embedded_pg_provider'])) {
                     $savedMethods[$index]['embedded_pg_provider'] = $def['defaults']['embedded_pg_provider'];
                 }

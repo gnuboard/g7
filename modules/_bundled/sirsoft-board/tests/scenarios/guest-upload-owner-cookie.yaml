@@ -1,4 +1,4 @@
-feature: 비회원 임시 첨부 소유 쿠키 — 연결 전 삭제·순서 변경 (#883 2단계)
+feature: 비회원 임시 첨부 소유 쿠키 — 연결 전 삭제·순서 변경
 
 description: |
   비회원 업로드 응답에 무작위 40자 쿠키(`g7_board_guest_upload`, 경로 `/api/modules/sirsoft-board`, httpOnly,

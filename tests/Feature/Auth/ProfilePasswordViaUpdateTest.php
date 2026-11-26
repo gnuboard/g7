@@ -19,7 +19,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 정보수정 API 의 비밀번호 변경 보강 테스트 (#736 D18)
+ * 정보수정 API 의 비밀번호 변경 보강 테스트
  *
  * `PUT /api/me` 로 비밀번호를 함께 바꿀 때도 전용 경로와 같은 본인인증 정책(`core.profile.password_change`)을
  * 같은 판정으로 걸고, 현재 비밀번호 원문이 훅 인자(큐 작업 표)와 서버 로그에 남지 않는지 본다.

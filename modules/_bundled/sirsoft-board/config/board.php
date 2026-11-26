@@ -9,7 +9,7 @@ return [
     'attachment' => [
         'disk' => env('SIRSOFT_BOARD_ATTACHMENT_DISK') ?: 'modules',
         // .env 로 디스크를 명시했는지 — 명시하면 환경설정 > 드라이버 「비공개 첨부 저장소」 선택보다 우선하고 화면이
-        // 「.env 로 고정된 확장」으로 안내한다(#916 D7). env() 직접 호출은 config:cache 환경에서 null 로 고정되므로 config 에 태운다.
+        // 「.env 로 고정된 확장」으로 안내한다. env() 직접 호출은 config:cache 환경에서 null 로 고정되므로 config 에 태운다.
         // 빈 값(`SIRSOFT_BOARD_ATTACHMENT_DISK=`)은 미명시로 본다.
         'disk_explicit' => env('SIRSOFT_BOARD_ATTACHMENT_DISK') ?: null,
     ],
@@ -180,7 +180,7 @@ return [
         'attachment_purge_retention_days_min' => 1,
         'attachment_purge_retention_days_max' => 3650,
 
-        // 개인정보 보유기간 (일) — 게시물·댓글 작성 IP / 비회원 작성자 정보 (이슈 #636)
+        // 개인정보 보유기간 (일) — 게시물·댓글 작성 IP / 비회원 작성자 정보
         // IP 하한 1일: 0 은 「작성 즉시 파기」가 되어 스팸·분쟁 대응 근거가 사라진다.
         // 비회원 하한 0: 0 은 「비회원 축 미적용」을 뜻한다(파기하지 않음).
         'privacy_ip_retention_days_min' => 1,

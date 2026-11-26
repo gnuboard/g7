@@ -135,10 +135,10 @@ class LayoutFileService
                 'source_type' => LayoutSourceType::Template,
                 'source_identifier' => $templateIdentifier,
                 // 원본 해시는 "파일에서 등록된 행" 의 표식이다 — 되살린 행이 지워진 오버라이드였다면 그 표식을 지워야
-                // 템플릿 갱신의 고아 오버라이드 정리가 운영자가 만든 이 레이아웃을 지우지 않는다 (#703).
+                // 템플릿 갱신의 고아 오버라이드 정리가 운영자가 만든 이 레이아웃을 지우지 않는다.
                 'original_content_hash' => null,
                 'original_content_size' => null,
-                // 원본 본문도 비운다 — 남아 있으면 hasFileOrigin() 이 「파일 출신」으로 읽어 갱신의 고아 정리가 이 화면을 지운다(#888).
+                // 원본 본문도 비운다 — 남아 있으면 hasFileOrigin() 이 「파일 출신」으로 읽어 갱신의 고아 정리가 이 화면을 지운다.
                 'original_content' => null,
                 'updated_by' => $userId,
                 'lock_version' => (int) ($trashed->lock_version ?? 0) + 1,
@@ -216,7 +216,7 @@ class LayoutFileService
         $this->assertOwnedByTemplate($layout, 'layouts.errors.rename_blocked_source_type');
         $this->assertNotReferenced($templateId, $name, 'layouts.errors.rename_blocked_by_reference');
 
-        // 원문 그대로 읽는다 — 캐스트는 `{}` 를 `[]` 로 만들어 이름만 바꿔도 빈 객체가 사라진다 (#758)
+        // 원문 그대로 읽는다 — 캐스트는 `{}` 를 `[]` 로 만들어 이름만 바꿔도 빈 객체가 사라진다
         $oldContent = LayoutEmptyObjects::rawPreserving($layout);
         $content = $oldContent;
 

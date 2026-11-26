@@ -1,6 +1,6 @@
 // e2e:allow Vitest 레이아웃 계약 파일 — 일괄 지정 결과 줄의 「변화 없음」 수(unchanged_count)는 7.1.0 브라우저 실측 조치에서 Playwright 로 게시판 환경설정 카드를 열어 회원 고르기·확인 창·적용까지 처음부터 끝까지 ko/en/ja 재측정했다.
 /**
- * 게시판 환경설정 — 관리자·스텝 일괄 지정 카드가 설정 폼을 오염시키지 않는가 (#708)
+ * 게시판 환경설정 — 관리자·스텝 일괄 지정 카드가 설정 폼을 오염시키지 않는가
  *
  * 회귀 배경(브라우저 실측): 카드가 설정 화면의 자동 바인딩 폼(`data-key="form"`) 안에 있어,
  * `name` 이 있는 라디오 그룹 3개(대상·구분·작업)가 `_local.form.board_bulk_members_*` 로 자동 바인딩됐다.
@@ -32,7 +32,7 @@ function collect(node: any, match: (n: any) => boolean, found: any[] = []): any[
   return found;
 }
 
-describe('게시판 관리자·스텝 일괄 지정 — 설정 폼 자동 바인딩 차단 (#708)', () => {
+describe('게시판 관리자·스텝 일괄 지정 — 설정 폼 자동 바인딩 차단', () => {
   // @scenario member_type=manager, mode=remove, target=selected
   // @effects bulk_members_inputs_do_not_pollute_settings_form
   it('name 을 가진 입력은 모두 자동 바인딩을 끈다 — 값은 전역 boardBulkMembers 만 따른다', () => {
@@ -58,7 +58,7 @@ function evaluate(expression: string, context: Record<string, any>): any {
   return new Function(...Object.keys(context), `return (${body});`)(...Object.values(context));
 }
 
-describe('게시판 관리자·스텝 일괄 지정 — 읽기 전용·요청 본문 (#708)', () => {
+describe('게시판 관리자·스텝 일괄 지정 — 읽기 전용·요청 본문', () => {
   // @scenario member_type=manager, mode=add, target=all
   // @effects role_membership_synced
   it('게시판 수정 권한이 없으면 입력과 적용 버튼이 모두 잠기고, 회원이 없으면 적용이 잠긴다', () => {

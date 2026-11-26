@@ -37,7 +37,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
  * `api:docgen --scope=plugin:sirsoft-pay_kginicis --seed` 실행 시 커맨드가 규약 위치
  * (`Plugins\Sirsoft\PayKginicis\Support\ApiDoc\ApiDocSampleService`)로 자동 발견한다.
  *
- * 주문·결제 행·배송지 생성은 이커머스 공개 계약 {@see PaymentSampleProvisioner} 에 맡긴다(#916) — 이커머스가 자기 팩토리로
+ * 주문·결제 행·배송지 생성은 이커머스 공개 계약 {@see PaymentSampleProvisioner} 에 맡긴다 — 이커머스가 자기 팩토리로
  * 같은 행을 멱등 생성하고 주문번호를 돌려준다(팩토리를 쓰므로 개발 환경 전용). 반환 맵의 `'model' => Order::class` 는
  * docgen 이 라우트 바인딩을 맞추는 클래스 이름 참조라 그대로 둔다.
  */

@@ -1,10 +1,10 @@
 feature: 토스페이먼츠 설정 — 주문서형 결제수단 체크박스 라벨·저장 (브라우저)
 
 description: |
-  Checkbox 컴포넌트는 label prop 을 렌더하지 않는다. 결제수단 토글(#933 이후 12종: 카드·가상계좌·계좌이체·휴대폰·토스페이·
+  Checkbox 컴포넌트는 label prop 을 렌더하지 않는다. 결제수단 토글(12종: 카드·가상계좌·계좌이체·휴대폰·토스페이·
   카카오페이·네이버페이·페이코·삼성페이·애플페이·L.pay·SSG페이)의 라벨이 화면에 보이고, 라벨 클릭이 체크를 토글하며,
   저장 본문이 boolean 이고, 저장 뒤 재진입해도 값이 남는지를 실제 브라우저로 잠근다. 레이아웃 JSON 구조 테스트는
-  라벨 미표시를 잡지 못했다(#454).
+  라벨 미표시를 잡지 못했다.
 
 axes:
   step: [labels_rendered, label_click, save_payload, reload_persisted]

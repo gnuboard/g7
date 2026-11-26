@@ -149,7 +149,7 @@ class ProductReviewImageService
         HookManager::doAction('sirsoft-ecommerce.review-image.before_delete', $image);
 
         // 레코드 삭제와 파일 삭제를 한 트랜잭션으로 묶고 파일은 커밋 뒤에 지운다 — 종전에는 파일을 먼저 지우고 레코드를
-        // 지워, 레코드 삭제가 실패하면 깨진 이미지가 남았다 (StorageTransaction, #883). 행 disk 기준
+        // 지워, 레코드 삭제가 실패하면 깨진 이미지가 남았다 (StorageTransaction). 행 disk 기준
         $result = DB::transaction(function () use ($image) {
             $rowStorage = $this->storageForRow($image->disk);
             if ($rowStorage->exists('images', $image->path)) {

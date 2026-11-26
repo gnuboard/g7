@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * HTTPS 강제 이동 (관리자 환경설정 > 보안 > 「HTTPS 강제 적용」, #888).
+ * HTTPS 강제 이동 (관리자 환경설정 > 보안 > 「HTTPS 강제 적용」).
  *
  * 설정 `security.force_https` 가 켜져 있고 요청이 https 가 아니면, 같은 호스트·경로·쿼리의 https 주소로 보낸다.
  * GET·HEAD 는 301, 그 밖의 메서드는 본문과 메서드를 그대로 다시 보내도록 308 이다(301 은 브라우저가 POST 를 GET 으로 바꾼다).

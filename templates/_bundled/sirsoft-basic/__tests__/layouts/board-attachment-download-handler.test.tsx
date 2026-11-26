@@ -1,6 +1,6 @@
 /**
  * @file board-attachment-download-handler.test.tsx
- * @description 게시판 첨부 다운로드 카드가 토큰 동반 핸들러로 다운로드하는지 회귀 (이슈 #413 item 58b)
+ * @description 게시판 첨부 다운로드 카드가 토큰 동반 핸들러로 다운로드하는지 회귀 (item 58b)
  *
  * 검증 방식: 레이아웃 JSON 트리 직접 분석 (DOM 비의존).
  *
@@ -48,7 +48,7 @@ function findByComment(root: unknown, commentText: string): Node[] {
     );
 }
 
-describe('이슈 #413-58b — 사용자 게시판 첨부 다운로드 핸들러 전환 (_post_attachments.json)', () => {
+describe('58b — 사용자 게시판 첨부 다운로드 핸들러 전환 (_post_attachments.json)', () => {
     it('권한 있을 때 카드는 <A href> 직접 링크가 아니다 (토큰 미동반 회귀 차단)', () => {
         const cards = findByComment(postAttachments, '권한 있을 때');
         expect(cards.length).toBeGreaterThan(0);

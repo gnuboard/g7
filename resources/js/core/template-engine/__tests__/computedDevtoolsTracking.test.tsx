@@ -5,7 +5,7 @@
  *
  * 렌더러가 computed 값을 DevTools 에 알릴 때 의존성 종류를 DevTools 계약(`state` | `datasource` | `computed` |
  * `expression`)에 없는 `_local` 로 넘겼다. 이 값이 의존성 트리 노드의 type 으로 그대로 나가 g7-computed 진단이 계약 밖 값을
- * 받았다. 의존성은 `_local` 상태이므로 종류는 `state`, 경로는 `_local` 이다(#869). 전달부의 `as any` 가 이 어긋남을 가렸다.
+ * 받았다. 의존성은 `_local` 상태이므로 종류는 `state`, 경로는 `_local` 이다. 전달부의 `as any` 가 이 어긋남을 가렸다.
  */
 
 import React from 'react';

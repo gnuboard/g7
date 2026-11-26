@@ -18,11 +18,11 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * 이커머스 본문 미디어 서비스 — 상품 설명·상품 공통 정보 편집기 본문의 이미지·동영상·오디오 (#883 4단계)
+ * 이커머스 본문 미디어 서비스 — 상품 설명·상품 공통 정보 편집기 본문의 이미지·동영상·오디오
  *
  * 상품·공통 정보 서비스, 리소스, 컨트롤러, 정리 명령이 쓰는 종전 호출 모양(소유 종류 + 소유자 ID)을 유지하는 얇은 진입점이다.
  * 흐름은 코어 골격(`EcommerceContentMediaService` → `AbstractContentMediaService`)이 돌리고, 저장소·권한은 이 모듈 어댑터
- * (`EcommerceContentMediaStore`)가 답한다(#887).
+ * (`EcommerceContentMediaStore`)가 답한다.
  *
  * - 저장: 이 모듈 범용 첨부 표 `ecommerce_attachments` 의 `content_media` 컬렉션(`ContentMedia`). 파일은 처음부터 모듈 저장소
  *   `content-media` 카테고리의 최종 경로 `{owner_type}/{Y/m/d}/{uuid}.ext`, 행은 저장 전까지 임시(소유자 null + 임시 키)다.
@@ -98,7 +98,7 @@ class ContentMediaService
     /**
      * 본문(로케일 배열 또는 HTML)과 본문 미디어를 맞춥니다 — 저장 트랜잭션 안에서 부른다.
      *
-     * 순서는 연결 → 복제 → 제거다(#887 — 세 확장 공통 골격). 다른 소유자(다른 상품·공통 정보, 또는 요청자가 다른 임시 키로 올린 것)
+     * 순서는 연결 → 복제 → 제거다(세 확장 공통 골격). 다른 소유자(다른 상품·공통 정보, 또는 요청자가 다른 임시 키로 올린 것)
      * 본문 미디어는 요청자가 원본을 볼 수 있을 때만 이 소유자로 복제하고, 복제분도 문서당 최대 개수에 센다.
      *
      * @param  ContentMediaOwnerType  $ownerType  소유 종류
@@ -128,7 +128,7 @@ class ContentMediaService
     }
 
     /**
-     * 응답 본문의 정식 주소를 서명 주소로 바꿉니다 — 공개되지 않은 소유자일 때 그 소유자가 가진 해시만(#887). 공개면 정식 주소,
+     * 응답 본문의 정식 주소를 서명 주소로 바꿉니다 — 공개되지 않은 소유자일 때 그 소유자가 가진 해시만. 공개면 정식 주소,
      * 봇 렌더도 정식 주소다.
      *
      * @param  mixed  $content  본문
@@ -213,7 +213,7 @@ class ContentMediaService
      * 오래된 본문 미디어를 파일과 함께 영구 삭제합니다 (임시 상품 이미지 정리 명령이 함께 부른다).
      *
      * 1. 끝내 잇지 않은 임시 행 — 올린 지 보존기간이 지난 것(상품·공통 정보 모두).
-     * 2. 본문에서 빠져 소프트 삭제된 행 — 빠진 지 보존기간이 지난 것(#887).
+     * 2. 본문에서 빠져 소프트 삭제된 행 — 빠진 지 보존기간이 지난 것.
      *
      * 행마다 `core.content_media.before_delete` 가 발화한다. `limit` 은 두 종류 각각에 적용한다.
      *

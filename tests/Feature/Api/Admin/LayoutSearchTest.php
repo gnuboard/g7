@@ -17,7 +17,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 레이아웃 **파일명·내용 검색** API 계약 (#476 코드 편집기 개편).
+ * 레이아웃 **파일명·내용 검색** API 계약 (코드 편집기 개편).
  *
  * ## 왜 마크업을 훑는가
  *

@@ -337,7 +337,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   }, []);
 
   // 키보드로 연 메뉴는 열린 직후 첫 항목(ArrowUp 이면 마지막)으로 포커스를 옮긴다 — 메뉴가 포털로 문서 끝에 붙어,
-  // 옮기지 않으면 Tab 이 메뉴 밖 다음 글로 가고 화살표가 움직이지 않았다(#869 8차 8부)
+  // 옮기지 않으면 Tab 이 메뉴 밖 다음 글로 가고 화살표가 움직이지 않았다(8차 8부)
   useEffect(() => {
     if (!showMenu || !pendingEdgeRef.current) return;
     const edge = pendingEdgeRef.current;
@@ -426,10 +426,10 @@ export const UserInfo: React.FC<UserInfoProps> = ({
     : `${defaultColorClass} font-medium truncate max-w-32`.trim();
 
   return (
-    // 메뉴(포털) 안 어디에서든 Esc 로 닫고 이름 단추로 돌아간다 — 종전에는 바깥 클릭과 스크롤로만 닫혔다(#869)
+    // 메뉴(포털) 안 어디에서든 Esc 로 닫고 이름 단추로 돌아간다 — 종전에는 바깥 클릭과 스크롤로만 닫혔다
     <Div ref={containerRef} className={`relative inline-block ${className}`} id={id} {...editorAttrs} onKeyDown={escapeToClose(showMenu, () => setShowMenu(false), buttonRef)}>
       <Div className={LAYOUT_CLASSES[layout]}>
-        {/* 드롭다운 없이 프로필로 가는 이름은 링크 — 새 탭으로 열 수 있다(#757). 드롭다운을 여는 이름은 단추 그대로 */}
+        {/* 드롭다운 없이 프로필로 가는 이름은 링크 — 새 탭으로 열 수 있다. 드롭다운을 여는 이름은 단추 그대로 */}
         {!showDropdown && clickable ? (
           <LinkButton
             href={actualProfilePath}
@@ -480,7 +480,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
         >
           {finalMenuItems.map((item) => {
             const menuItemClass = 'flex items-center justify-start gap-2 w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none cursor-pointer';
-            // 주소로 가는 항목은 링크(새 탭 열기, #757). 동작을 부르는 항목(onClick)은 단추 그대로
+            // 주소로 가는 항목은 링크(새 탭 열기). 동작을 부르는 항목(onClick)은 단추 그대로
             if (!item.onClick && item.path) {
               const path = item.path.replace(/\{\{userId\}\}/g, String(actualUserId ?? ''));
               if (isSameOriginNavPath(path)) {

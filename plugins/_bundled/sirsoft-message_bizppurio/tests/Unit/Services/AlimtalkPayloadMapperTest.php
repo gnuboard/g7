@@ -424,7 +424,7 @@ class AlimtalkPayloadMapperTest extends PureTestCase
      */
     public function test_substitute_text는_임의_텍스트의_변수를_치환한다(): void
     {
-        // 대체 SMS·SMS 단독 본문(sms_body)이 이 공개 진입점으로 치환된다 (#597 §3.5).
+        // 대체 SMS·SMS 단독 본문(sms_body)이 이 공개 진입점으로 치환된다.
         $result = (new AlimtalkPayloadMapper)->substituteText(
             '[샵] #{name}님 #{order_number} 주문',
             ['name' => '김철수', 'order_number' => 'A1'],
@@ -444,7 +444,7 @@ class AlimtalkPayloadMapperTest extends PureTestCase
      */
     public function test_등록_페이로드_형태의_승인_스냅샷을_그대로_소비한다(): void
     {
-        // #597: 발송 소스가 kapi 상세 응답에서 등록 페이로드 스냅샷(approved_content)으로
+        // 발송 소스가 kapi 상세 응답에서 등록 페이로드 스냅샷(approved_content)으로
         // 전환됐다. 두 형태는 필드명이 동일하다는 대응표를 여기서 고정한다:
         //   templateContent→message / buttons[].linkMo→button[].url_mobile /
         //   quickReplies→quickreply / templateTitle→title / templateHeader→header /

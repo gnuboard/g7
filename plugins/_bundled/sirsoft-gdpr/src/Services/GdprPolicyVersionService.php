@@ -110,7 +110,7 @@ class GdprPolicyVersionService
      */
     public function getCurrentVersion(): int
     {
-        // 한 요청에서 미들웨어·동의 제공자·리소스가 여러 번 묻는다 — 요청 메모 (#860, 발행·모델 저장 때 비움)
+        // 한 요청에서 미들웨어·동의 제공자·리소스가 여러 번 묻는다 — 요청 메모 (발행·모델 저장 때 비움)
         $memo = GdprConsentReadMemo::current();
 
         return $memo->policyVersion ??= $this->repository->getCurrentVersion();

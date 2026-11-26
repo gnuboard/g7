@@ -1,7 +1,7 @@
 // e2e:allow 레이아웃 정적 구조(onNotificationRead 액션 모양) 단언 전용 — 새 탭으로 연 알림의 읽음 처리 동작은 NavigationLinks.menus.test.tsx(컴포넌트)와 M1 알림 실측이 덮는다(시나리오 navigation-links.yaml).
 /**
  * @file admin-base-notification-new-tab-read.test.ts
- * @description 새 탭으로 연 링크 알림의 읽음 처리 (#757 링크 단계)
+ * @description 새 탭으로 연 링크 알림의 읽음 처리 (링크 단계)
  *
  * 알림 본문이 `<a href>` 가 되면서 Ctrl·가운데 클릭이나 바깥 주소 알림은 브라우저가 새 탭에서 열고, 이동 콜백
  * (onNotificationClick — 이동 + 읽음)은 불리지 않는다. 그래서 새 탭으로 연 알림이 계속 안 읽음으로 남았다.
@@ -42,7 +42,7 @@ function collectActionsByEvent(input: unknown, eventName: string): Array<Record<
   return out;
 }
 
-describe('관리자 기본 레이아웃 — 새 탭으로 연 알림의 읽음 처리 (#757)', () => {
+describe('관리자 기본 레이아웃 — 새 탭으로 연 알림의 읽음 처리', () => {
   const readActions = collectActionsByEvent(adminBase, 'onNotificationRead');
 
   // @scenario component=notification_center

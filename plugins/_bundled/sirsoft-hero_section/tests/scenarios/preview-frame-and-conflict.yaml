@@ -1,4 +1,4 @@
-feature: 편집 미리보기 구좌 정합 · 동시 수정 충돌 복구 · 긴 문구와 글자 대비 (#810 후속)
+feature: 편집 미리보기 구좌 정합 · 동시 수정 충돌 복구 · 긴 문구와 글자 대비
 
 description: |
   (1) 편집 미리보기는 기기 viewport(PC 1366·모바일 390)를 그대로 두고, 그 안에 활성 사용자 템플릿에서 히어로 확장점까지의
@@ -48,7 +48,7 @@ effects:
   - my_media_change_not_dropped
   - long_text_not_lost
   - preview_without_frame_uses_device_width   # 구좌 틀이 없거나 그 위치에 확장점이 없으면 기기 폭 전체에 그린다
-  - preview_contrast_hint_estimates_without_changing_colors   # 사진 평균색 + 문구 배경으로 어림한 대비가 낮으면 추정값·권장 조치만 알리고 글자색은 바꾸지 않는다(#878 손댄 파일 매핑 부채 정리)
+  - preview_contrast_hint_estimates_without_changing_colors   # 사진 평균색 + 문구 배경으로 어림한 대비가 낮으면 추정값·권장 조치만 알리고 글자색은 바꾸지 않는다(손댄 파일 매핑 부채 정리)
   - preview_overflow_hint_reports_text_scroll   # 지금 기기에서 문구 영역에 스크롤이 생기면(넘김 단추 자리 포함) 줄이기를 권한다
   - blank_defaults_not_reported_as_conflict   # 비어 있는 다국어 칸·표시 기본값은 같은 값으로 보아 충돌 항목으로 내지 않고 최신 revision 으로 적용한다
 

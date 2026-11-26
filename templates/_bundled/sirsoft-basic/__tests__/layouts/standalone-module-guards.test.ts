@@ -1,5 +1,5 @@
 /**
- * 모듈별 단독 사용 — 공통 화면의 모듈 결합 가드 (#822)
+ * 모듈별 단독 사용 — 공통 화면의 모듈 결합 가드
  *
  * @description
  * sirsoft-basic 은 게시판·쇼핑몰·페이지 모듈과 우편번호 플러그인을 필수 의존이 아니라 선택 연동(`integrations`)으로 둔다.
@@ -254,7 +254,7 @@ describe('홈 — 게시판·쇼핑 섹션', () => {
     // @scenario surface=home
     // @effects shared_module_source_guarded
     it.each([
-        // [데이터소스, 추가 조건 — 템플릿 설정으로 숨긴 섹션은 부르지 않는다(#434)]
+        // [데이터소스, 추가 조건 — 템플릿 설정으로 숨긴 섹션은 부르지 않는다]
         ['stats', null],
         ['recent_posts', 'show_feature_row'],
         ['popular_boards', 'show_feature_row'],
@@ -267,7 +267,7 @@ describe('홈 — 게시판·쇼핑 섹션', () => {
     // @effects shared_module_link_guarded
     it('통계 카드 줄·게시판 요약 줄·2행(최근 글·인기 게시판·쇼핑 홍보)은 게시판 가드, 1행 쇼핑 홍보 칸은 게시판 꺼짐 + 쇼핑몰 켜짐', () => {
         const tree = home.slots.content;
-        // 모듈 가드는 그대로, 템플릿 설정(홈 섹션 보이기, 저장값 없으면 보임)이 함께 붙는다 (#434)
+        // 모듈 가드는 그대로, 템플릿 설정(홈 섹션 보이기, 저장값 없으면 보임)이 함께 붙는다
         expect(byId(tree, 'home_stat_cards').if).toBe(guard(`(${BOARD}) && (_global.templateSettings?.home?.show_stats ?? true)`));
         expect(byId(tree, 'home_board_summaries').if).toBe(guard(`(${BOARD}) && (_global.templateSettings?.home?.show_board_summaries ?? true)`));
         expect(byId(tree, 'home_feature_row').if).toBe(guard(`(${BOARD}) && (_global.templateSettings?.home?.show_feature_row ?? true)`));
@@ -410,7 +410,7 @@ describe('마이페이지 탭·회원 프로필·상품 문의 탭', () => {
     // @effects mypage_tabs_follow_active_modules
     it('게시판만 켜진 사이트는 주문·클레임·위시리스트·배송지·적립금·문의·쿠폰함·내 리뷰 탭을 숨긴다', () => {
         const hidden = evaluate(tabs.props.hiddenTabIds, { _global: { modules: settings, activeModules: ['sirsoft-board'] }, _computed: {} });
-        // #952 쿠폰함·내 리뷰도 쇼핑몰 탭이다(활동 기록은 코어라 남는다)
+        // 쿠폰함·내 리뷰도 쇼핑몰 탭이다(활동 기록은 코어라 남는다)
         expect([...hidden].sort()).toEqual(['addresses', 'claims', 'coupons', 'inquiries', 'mileage', 'orders', 'reviews', 'wishlist']);
     });
 

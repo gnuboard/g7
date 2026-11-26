@@ -132,7 +132,7 @@ class RunSeedersOnLanguagePackLifecycle
         // forgetInstance 로 바인딩을 교체하면 캡처된 구 인스턴스의 stale 캐시(활성 팩 목록)가
         // 그대로 남아, 같은 프로세스에서 활성화된 신규 팩이 코어 시더의 번역 필터에 보이지
         // 않는다 (오류 없이 해당 로케일만 미주입). 싱글톤을 유지한 채 내부 캐시만 무효화해
-        // 캡처된 참조에도 전파한다 (#597 에서 실측·교정).
+        // 캡처된 참조에도 전파한다.
         $registry = $this->app->make(LanguagePackRegistry::class);
         $registry->invalidate();
         config([

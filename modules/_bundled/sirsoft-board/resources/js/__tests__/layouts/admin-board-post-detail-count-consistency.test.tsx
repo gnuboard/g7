@@ -1,6 +1,6 @@
 /**
  * @file admin-board-post-detail-count-consistency.test.tsx
- * @description 관리자 게시글 상세 - 카운트 컬럼 정합성 검증 (이슈 #304 Phase 4)
+ * @description 관리자 게시글 상세 - 카운트 컬럼 정합성 검증
  *
  * 검증 방식: 레이아웃 JSON 트리 직접 분석 (DOM 비의존).
  * 검증 목적:
@@ -21,7 +21,7 @@ function stringifyDeep(node: unknown): string {
     return JSON.stringify(node);
 }
 
-describe('이슈 #304 Phase 4 — 관리자 게시글 상세 카운트 컬럼 정합성', () => {
+describe('관리자 게시글 상세 카운트 컬럼 정합성', () => {
     describe('admin_board_post_detail.json — 답글 섹션 헤더', () => {
         it('답글 섹션 표시 조건은 reply_count 서버 컬럼을 사용한다', () => {
             const dump = stringifyDeep(postDetail);

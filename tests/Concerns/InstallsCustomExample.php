@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\View;
 
 /**
- * 시험에서 `custom:example` 견본을 프로젝트 루트 대신 임시 디렉터리에 만들고, 운영과 같은 순서로 등록합니다 (#792 WP-S).
+ * 시험에서 `custom:example` 견본을 프로젝트 루트 대신 임시 디렉터리에 만들고, 운영과 같은 순서로 등록합니다.
  *
  * custom 라우트 등록은 {@see LoadsCustomRoutes} 를 씁니다.
  */

@@ -187,7 +187,7 @@ class SitemapGenerator
 
         if (isset($entry['url']) && is_string($entry['url']) && $entry['url'] !== '') {
             // 보안: 요청 Host 가 아니라 설정 주소 기준 (익명 sitemap 요청 안에서 생성될 수 있다).
-            // 검색엔진에 알릴 주소는 사람이 여는 주소라 「사용자 화면 URL」(비면 사이트 주소) 기준이다(#792 W17).
+            // 검색엔진에 알릴 주소는 사람이 여는 주소라 「사용자 화면 URL」(비면 사이트 주소) 기준이다.
             return ScreenUrl::toAbsolute($entry['url']);
         }
 
@@ -363,7 +363,7 @@ class SitemapGenerator
                 // 301 로 이동하므로(공개#156) 이동 대상 주소를 싣는다
                 $routePath = RequestPath::normalize(ltrim($routePath, '*/'));
 
-                // 검색엔진에 알릴 주소는 사람이 여는 주소라 「사용자 화면 URL」(비면 사이트 주소) 기준이다(#792 W17).
+                // 검색엔진에 알릴 주소는 사람이 여는 주소라 「사용자 화면 URL」(비면 사이트 주소) 기준이다.
                 // 홈은 끝 슬래시 없는 정규형으로 싣는다(공개#156 — 사이트 주소 기준 SiteUrl::absolute 와 같은 모양).
                 // 단 하위 폴더 설치의 마운트 루트는 끝 슬래시 형태가 정본이다 — 웹서버가 `…/g7` 을 `…/g7/` 로
                 // 301 하므로 봇 화면 canonical 과 같은 규칙(SiteUrl::canonicalScreenForm)을 쓴다.

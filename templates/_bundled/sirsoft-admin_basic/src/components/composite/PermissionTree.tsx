@@ -84,7 +84,7 @@ const ScopeDropdown: React.FC<{
   const valueId = `${domId}-scope-value`;
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLDivElement>(null);
-  // 여는 칸 — 고르거나 Esc 로 닫은 뒤 포커스를 돌려받는다(선택지가 사라져 body 로 빠지지 않게, #869 키보드 접근)
+  // 여는 칸 — 고르거나 Esc 로 닫은 뒤 포커스를 돌려받는다(선택지가 사라져 body 로 빠지지 않게, 키보드 접근)
   const buttonRef = useRef<HTMLDivElement>(null);
 
   const currentOption = options.find((opt) => opt.value === value) ?? options[0];
@@ -133,7 +133,7 @@ const ScopeDropdown: React.FC<{
 
   return (
     <Div ref={triggerRef} className="relative flex-shrink-0">
-      {/* 이름 — 종전에는 현재 값(「전체」)만 읽혀 어느 권한의 범위인지 알 수 없었다(#757) */}
+      {/* 이름 — 종전에는 현재 값(「전체」)만 읽혀 어느 권한의 범위인지 알 수 없었다 */}
       <Span id={nameId} className="sr-only">
         {tOr('common.scope_of', `${permissionName} scope`, { name: permissionName })}
       </Span>
@@ -190,7 +190,7 @@ const ScopeDropdown: React.FC<{
                   buttonRef.current?.focus();
                 }}
                 onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
-                // 펼친 선택지도 Tab 으로 닿고 Enter·Space 로 고른다 — 종전에는 여는 단추만 키보드를 받았다(#869 키보드 접근)
+                // 펼친 선택지도 Tab 으로 닿고 Enter·Space 로 고른다 — 종전에는 여는 단추만 키보드를 받았다(키보드 접근)
                 tabIndex={0}
                 onKeyDown={(e: React.KeyboardEvent) => {
                   if (e.key === 'Escape') {
@@ -531,7 +531,7 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
             handleLeafChange(permission.id, e.target.checked);
           }}
           disabled={disabled}
-          // 이름은 권한 이름만 — 감싼 Label 이 설명·범위 값까지 품어 이름이 길게 섞였다(#757). 설명은 부가 설명으로 잇는다
+          // 이름은 권한 이름만 — 감싼 Label 이 설명·범위 값까지 품어 이름이 길게 섞였다. 설명은 부가 설명으로 잇는다
           aria-label={permission.name}
           aria-describedby={descriptionId}
           className="w-4 h-4 mt-0.5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
@@ -674,7 +674,7 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
             onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
             disabled={disabled}
-            // 이름 — 원시 체크박스라 「체크박스」만 읽혔다(역할 추가 61칸, #757). 아코디언 단추 안 배치는 별도 이슈
+            // 이름 — 원시 체크박스라 「체크박스」만 읽혔다(역할 추가 61칸). 아코디언 단추 안 배치는 별도 이슈
             aria-label={tOr('common.select_all_in', `Select all in ${moduleNode.name}`, { name: moduleNode.name })}
             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
           />

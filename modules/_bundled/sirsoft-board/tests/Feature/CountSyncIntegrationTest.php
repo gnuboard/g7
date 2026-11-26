@@ -14,7 +14,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 카운트 동기화 통합 테스트 (이슈 #269 - #11)
+ * 카운트 동기화 통합 테스트 (#11)
  *
  * Queue::fake() 를 사용해 "큐 워커가 없는 환경"을 재현합니다.
  * sync:true 선언으로 Listener 가 즉시 실행되어 DB 카운트가 API 응답 시점에
@@ -83,7 +83,7 @@ class CountSyncIntegrationTest extends ModuleTestCase
 
     /**
      * 큐 워커가 없는 환경에서도 댓글 생성 직후 DB 카운트가 즉시 반영되어야 합니다.
-     * (sync: true 옵션 실증 — 이슈 #269 작업 3 핵심)
+     * (sync: true 옵션 실증)
      *
      * @scenario concern=count_sync, condition=comment_change
      *

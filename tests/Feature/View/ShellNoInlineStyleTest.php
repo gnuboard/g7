@@ -165,7 +165,7 @@ class ShellNoInlineStyleTest extends TestCase
     }
 
     /**
-     * 확장 CSS 의미 칸 층 순서 선언(#816)은 인라인 `<style>` 이 아니라 코어 정적 파일 링크로 템플릿 CSS 링크 **뒤**에
+     * 확장 CSS 의미 칸 층 순서 선언은 인라인 `<style>` 이 아니라 코어 정적 파일 링크로 템플릿 CSS 링크 **뒤**에
      * 실린다. 층 순서는 층 이름이 처음 나온 자리로 정해지므로, 앞에 실리면 템플릿 초기화가 확장 의미 클래스를 이긴다.
      * 종전 `<style>@layer …;</style>` 은 엄격한 스타일 정책(`style-src 'self'`)에서 막혀 순서 선언 자체가 사라졌다.
      *

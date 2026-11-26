@@ -229,7 +229,7 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
             expect(tabChangeAction).toBeDefined();
 
             // 고친 것이 있으면 확인 창을 먼저 띄운다(7.1.0 브라우저 실측 조치 — admin-ecommerce-settings-unsaved-tab-confirm.test.ts).
-            // 고친 것이 없으면 탭 전환 이벤트만 보낸다 — 정리·전역 탭·이동은 탭 본문 틀의 이벤트 받기가 한다(#753)
+            // 고친 것이 없으면 탭 전환 이벤트만 보낸다 — 정리·전역 탭·이동은 탭 본문 틀의 이벤트 받기가 한다
             expect(tabChangeAction.handler).toBe('conditions');
             const directSwitch = tabChangeAction.conditions[1].then;
             expect(directSwitch).toMatchObject({ handler: 'emitEvent', params: { event: 'sirsoft-ecommerce:settings-switch-tab', data: { tab: '{{$args[0]}}' } } });
@@ -276,9 +276,9 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
                 'notification_definitions',
                 'identity_policies',
                 'mileage',
-                // #952 — 생일 쿠폰 회원 항목·쿠폰 만료 임박 알림. 저장은 기본 분기를 그대로 탄다
+                // 생일 쿠폰 회원 항목·쿠폰 만료 임박 알림. 저장은 기본 분기를 그대로 탄다
                 'promotion',
-                // 이슈 #636 — 저장은 기본 분기(`{ _tab: tab, [tab]: form[tab] }`)를 그대로 탄다
+                // 저장은 기본 분기(`{ _tab: tab, [tab]: form[tab] }`)를 그대로 탄다
                 'privacy_retention',
                 // 7.2.0(#17, D15) — 이 모듈이 선언한 예약 작업을 켜고 끄는 탭. 저장 버튼을 쓰지 않는다(그 자리에서 코어 bulk-status)
                 'schedules',
@@ -299,7 +299,7 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
     });
 });
 
-describe('환경설정 저장 본문 — 실제 엔진 평가 (#703)', () => {
+describe('환경설정 저장 본문 — 실제 엔진 평가', () => {
     // 문자열 포함 검사만으로는 식이 평가되는지 알 수 없다. 평가기가 못 읽는 문법(구조분해 매개변수)이 들어가자
     // 본문 전체가 식 원문 문자열로 전송돼 모든 탭 저장이 아무것도 저장하지 못했다 — 실제 엔진으로 평가한다.
     const engine = new DataBindingEngine();

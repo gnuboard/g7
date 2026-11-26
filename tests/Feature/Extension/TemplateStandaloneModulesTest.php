@@ -15,7 +15,7 @@ use ReflectionProperty;
 use Tests\TestCase;
 
 /**
- * sirsoft-basic 모듈별 단독 사용 — 게시판만 켠 사이트 (#822)
+ * sirsoft-basic 모듈별 단독 사용 — 게시판만 켠 사이트
  *
  * sirsoft-basic 의 manifest 가 게시판·쇼핑몰·페이지 모듈과 우편번호 플러그인을 **필수 의존**으로 선언하던 동안
  * 게시판만 켠 사이트는 템플릿을 설치할 수 없었고(의존 검사 예외), 이미 켠 사이트는 매 요청 의존 미들웨어가
@@ -116,13 +116,13 @@ class TemplateStandaloneModulesTest extends TestCase
 
         $this->assertSame([
             'sirsoft-board' => '>=1.2.1',
-            // 쿠폰존·쿠폰함·내 리뷰 화면이 쇼핑몰 1.4.1 의 API 를 쓴다(#952)
+            // 쿠폰존·쿠폰함·내 리뷰 화면이 쇼핑몰 1.4.1 의 API 를 쓴다
             'sirsoft-ecommerce' => '>=1.4.1',
             'sirsoft-page' => '>=1.2.0',
         ], $this->manifest['integrations']['modules'] ?? null);
         $this->assertSame(['sirsoft-daum_postcode' => '>=1.2.0'], $this->manifest['integrations']['plugins'] ?? null);
 
-        // sirsoft-basic 1.4.1 의 코어 요구 판 — 마이페이지 활동 기록의 쪽 이동·기간 조회가 코어 7.2.1 API 를 쓴다(#952).
+        // sirsoft-basic 1.4.1 의 코어 요구 판 — 마이페이지 활동 기록의 쪽 이동·기간 조회가 코어 7.2.1 API 를 쓴다.
         // 단독 사용 판정 키가 없는 코어에서 「모두 켜짐」으로 보는 규칙은 그대로다.
         $this->assertSame('>=7.2.1', $this->manifest['g7_version']);
     }

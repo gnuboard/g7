@@ -10,7 +10,7 @@ use Tests\Concerns\MenuRoleFixtures;
 use Tests\TestCase;
 
 /**
- * MenuService 역할 동기화 — 관리자 역할 상시 포함과 무변화 시 훅 미발화 (#708)
+ * MenuService 역할 동기화 — 관리자 역할 상시 포함과 무변화 시 훅 미발화
  *
  * 메뉴 수정에서 역할을 전부 빼고 저장하면 관리자 역할까지 빠져 관리자 사이드바에서도 메뉴가
  * 사라졌다(화면은 「모든 역할」 로 표기). 수정 경로가 관리자 역할을 항상 남기는지 잠근다.

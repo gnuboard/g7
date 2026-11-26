@@ -1,5 +1,5 @@
 /**
- * 이커머스 관리자 입력칸 이름 — 화면 낭독기가 읽는 이름(접근성 트리) 회귀 (#757).
+ * 이커머스 관리자 입력칸 이름 — 화면 낭독기가 읽는 이름(접근성 트리) 회귀.
  *
  * 배경: 제목이 표식 없는 span·표 열 머리인 칸, 표·반복 행 칸, 체크박스 옆 글자가 label 이 아닌 칸이
  * 이름 없이 「편집 가능 텍스트」·「체크박스」·「스위치」로만 읽혔다. 레이아웃이 「{행 이름} {열 이름}」·
@@ -121,7 +121,7 @@ async function firstNamedCheckbox(page: Page, candidates: string[]): Promise<str
   return undefined;
 }
 
-test.describe('이커머스 관리자 입력칸 이름 (#757)', () => {
+test.describe('이커머스 관리자 입력칸 이름', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('g7_locale', 'ko'));
     await page.setViewportSize({ width: 1400, height: 900 });

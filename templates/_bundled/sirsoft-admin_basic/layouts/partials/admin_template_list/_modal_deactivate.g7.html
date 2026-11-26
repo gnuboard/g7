@@ -6,7 +6,7 @@
     <div class="py-2">
       <p class="text-gray-700 dark:text-gray-300">$t:admin.templates.modals.deactivate_confirm|name={{_global.selectedTemplate.name}}</p>
     </div>
-    <!-- 이 템플릿을 다른 활성 확장이 연동으로 쓰고 있으면(`integrated_by`, 코어 7.1.4 · #822) 그 목록을 함께 보인다 — 막지 않는 안내다.
+    <!-- 이 템플릿을 다른 활성 확장이 연동으로 쓰고 있으면(`integrated_by`, 코어 7.1.4) 그 목록을 함께 보인다 — 막지 않는 안내다.
          템플릿은 끄기 전에 이미 이 확인 창을 거치므로 모듈·플러그인처럼 연동 안내 창을 따로 두지 않고 여기에 싣는다(창 두 번 방지). -->
     <div data-ref="deactivate_integrated_by" data-if="{{(_global.selectedTemplate?.integrated_by ?? []).length &gt; 0}}" class="mt-4">
       <div class="alert-warning">

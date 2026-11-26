@@ -8,7 +8,7 @@ use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use Tests\TestCase;
 
 /**
- * DriverConnectionTester 테스트 (공개 #99 / 내부 #563, A5·A6)
+ * DriverConnectionTester 테스트 (공개 #99)
  *
  * testS3 의 endpoint/path-style 반영·어댑터 선검사, testWebsocket 의
  * client/server 양측 endpoint probe 를 검증합니다.

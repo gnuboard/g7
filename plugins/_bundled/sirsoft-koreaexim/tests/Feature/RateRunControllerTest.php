@@ -106,7 +106,7 @@ class RateRunControllerTest extends PluginTestCase
     /**
      * 뒤집힌 기간 거절 문구가 필드 원문 이름(date to·date from) 대신 화면의 칸 이름을 쓰는지 검증합니다.
      *
-     * 화면이 뒤집힌 기간을 조회하던 때 이 문구가 「date to 필드는 date from 이후…」로 토스트에 떴다(#703 브라우저 실측).
+     * 화면이 뒤집힌 기간을 조회하던 때 이 문구가 「date to 필드는 date from 이후…」로 토스트에 떴다.
      *
      * @effects inverted_date_range_rejection_names_fields
      *

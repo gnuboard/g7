@@ -699,7 +699,7 @@ class GuestClaimApiTest extends ModuleTestCase
         $result = app(UserClaimService::class)->requestReturn($order, [
             'items' => $this->items($order), 'reason_code' => 'changed_mind', 'charge_method' => 'deduct_from_refund', 'requested_by' => null,
         ]);
-        // 송장은 신청서 헤더가 아니라 **상품 행**에 있다(#599 — 다중 송장).
+        // 송장은 신청서 헤더가 아니라 **상품 행**에 있다(다중 송장).
         $result['claim']->returnOptions()->update([
             'collection_carrier_id' => $carrier->id,
             'collection_tracking_number' => '651234567890',
@@ -825,7 +825,7 @@ class GuestClaimApiTest extends ModuleTestCase
             ->assertCreated()
             ->assertJsonPath('data.branch', 'auto');
 
-        // 미지정 → 우선순위상 취소가 먼저 열린다. **환불도 1건**이다(#599 후속 D6) —
+        // 미지정 → 우선순위상 취소가 먼저 열린다. **환불도 1건**이다 —
         // 취소신청서와 환불신청서는 같은 사건의 두 사본이 아니라 다른 사실을 기록하는 별개
         // 문서이므로 한쪽이 다른 쪽을 대표하지 않는다. 예전에는 취소 발 환불을 환불 탭에서
         // 빼, 결제완료 상품을 환불한 고객에게 환불 이력이 아예 보이지 않았다.

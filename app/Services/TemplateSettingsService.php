@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 템플릿 환경설정 서비스 (#434)
+ * 템플릿 환경설정 서비스
  *
  * 모듈 설정과 같은 모양이다 — 섹션(`_meta.categories`)별 기본값 위에 섹션별 저장 파일을 병합해 읽고, 저장은
  * 기존 값 위 병합이다. 다른 점은 템플릿에 PHP 인스턴스가 없어 선언(기본값·칸·노출)을 {@see TemplateSettingsSchema}
@@ -138,7 +138,7 @@ class TemplateSettingsService
      * 설정 화면 레이아웃 이름 — 템플릿이 공급한 화면(`settings/template_settings.*`)이 있으면 `{id}.template_settings`
      * (켜진 관리자 템플릿마다 교차 등록한 행), 화면이나 설정이 없으면 null.
      *
-     * 공용 화면은 없다(#434 D32) — 화면을 그리는 부품이 관리자 템플릿 것이면 다른 관리자 템플릿에서 깨지므로,
+     * 공용 화면은 없다 — 화면을 그리는 부품이 관리자 템플릿 것이면 다른 관리자 템플릿에서 깨지므로,
      * 템플릿이 자기 화면과 부품 묶음(`dist/settings/*`)을 함께 공급한다.
      *
      * @param  string  $identifier  템플릿 식별자
@@ -167,7 +167,7 @@ class TemplateSettingsService
     }
 
     /**
-     * 관리자 화면이 실을 설정 화면 부품 묶음 주소 — 설치된 템플릿(꺼진 것 포함) 중 묶음을 빌드해 둔 것 (#434 D30).
+     * 관리자 화면이 실을 설정 화면 부품 묶음 주소 — 설치된 템플릿(꺼진 것 포함) 중 묶음을 빌드해 둔 것.
      *
      * 플러그인 묶음처럼 관리자 화면을 열 때 함께 싣는다. 꺼진 템플릿 파일은 이 두 규약 경로만 내준다
      * ({@see TemplateService::getAssetFilePath()}).

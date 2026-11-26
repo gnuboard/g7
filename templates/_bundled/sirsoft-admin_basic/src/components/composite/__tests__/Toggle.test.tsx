@@ -221,7 +221,7 @@ describe('Toggle', () => {
   it('다크 모드 스타일이 포함됨', () => {
     const { container } = render(<Toggle />);
 
-    // #399 Phase 1.15: 인라인 'dark:bg-gray-700' 검사 → .toggle-switch-track
+    // 인라인 'dark:bg-gray-700' 검사 → .toggle-switch-track
     // 시맨틱 클래스 검증으로 정합 (jsdom 은 @apply 펼침 없으므로 자산 자체 검증).
     const track = container.querySelector('.toggle-switch-track');
     expect(track).toBeInTheDocument();
@@ -351,7 +351,7 @@ describe('Toggle', () => {
   });
 
   /**
-   * #408 — 게시판 관리 목록처럼 같은 name(is_active)의 스위치가 행마다 있으면 name 을 그대로 id 로 쓰던 종전 코드는
+   * 게시판 관리 목록처럼 같은 name(is_active)의 스위치가 행마다 있으면 name 을 그대로 id 로 쓰던 종전 코드는
    * 화면에 같은 id 를 행 수만큼 냈다(실측 is_active ×10). ExtensionCardGrid 는 확장 표시 이름(공백·한글)이 name 이다.
    *
    * @scenario component=toggle

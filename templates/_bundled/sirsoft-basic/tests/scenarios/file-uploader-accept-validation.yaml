@@ -24,4 +24,4 @@ test_files:
 validation:
   note: |
     판정 식은 FileUploader/utils.ts 의 isFileAccepted 하나이고, useFileUploader 와 이 시험이 같은 함수를 부른다.
-    예전에는 시험 파일 안에 식을 옮겨 적어 제품 식이 바뀌어도 실패하지 않았다(#869 에서 함수로 꺼내 묶음).
+    예전에는 시험 파일 안에 식을 옮겨 적어 제품 식이 바뀌어도 실패하지 않았다(함수로 꺼내 묶음).

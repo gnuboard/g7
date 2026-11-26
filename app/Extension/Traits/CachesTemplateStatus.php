@@ -112,7 +112,7 @@ trait CachesTemplateStatus
      */
     private static function rememberNonEmptyTemplateList(string $key, \Closure $resolver): array
     {
-        // 같은 요청 안에서는 저장소를 한 번만 읽는다 — 목록은 요청 안에서 바뀌지 않고, 바뀌면 무효화가 메모도 비운다(#860)
+        // 같은 요청 안에서는 저장소를 한 번만 읽는다 — 목록은 요청 안에서 바뀌지 않고, 바뀌면 무효화가 메모도 비운다
         $memo = ExtensionStatusMemo::current();
         $memoized = $memo?->get($key);
 
@@ -158,7 +158,7 @@ trait CachesTemplateStatus
         $cache->forget('ext.templates.active_identifiers_user');
         $cache->forget('ext.templates.installed_identifiers');
 
-        // 같은 요청의 목록 메모도 버린다 — 상태를 바꾼 요청의 뒤쪽(활성화 직후 provider boot 등)이 새 목록을 보게(#860)
+        // 같은 요청의 목록 메모도 버린다 — 상태를 바꾼 요청의 뒤쪽(활성화 직후 provider boot 등)이 새 목록을 보게
         ExtensionStatusMemo::forgetCurrent('templates');
 
         // 같은 요청에서 만든 선택 연동 역맵도 버린다 — 상태가 바뀐 뒤의 「연동 중인 확장」 응답이 옛 목록이 되지 않게(7.1.4)

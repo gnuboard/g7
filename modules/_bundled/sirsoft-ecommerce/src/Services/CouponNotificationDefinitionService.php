@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
 
 /**
- * 쿠폰별 발급 알림 종류의 수명 관리 (#952)
+ * 쿠폰별 발급 알림 종류의 수명 관리
  *
  * 발급 알림을 켠 쿠폰마다 알림 종류 `coupon_issued.{쿠폰ID}` 를 G7 알림 템플릿 시스템에 만든다. 채널 켜기/끄기·제목·본문·
  * 미리보기·기본값 복원·문자/알림톡 템플릿은 기존 알림 템플릿 시스템과 커머스 편집 창을 그대로 쓴다.

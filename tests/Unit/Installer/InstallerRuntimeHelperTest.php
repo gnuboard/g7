@@ -647,7 +647,7 @@ ENV;
     }
 
     /**
-     * 이슈 #465 불변식 — runtime.php 의 admin 섹션은 절대 `.env` 로 새어나가지 않는다.
+     * 불변식 — runtime.php 의 admin 섹션은 절대 `.env` 로 새어나가지 않는다.
      *
      * mergeRuntimeIntoEnv 는 db/app.key 만 명시 치환하는 화이트리스트 방식이다.
      * 이후 누군가 "runtime 배열을 통째로 .env 로 덤프" 하는 방식으로 리팩터링하면

@@ -334,7 +334,7 @@ import {
 
 // 파일 내려받기·다국어 태그 편집 창 (관리자 템플릿 핸들러에 기대지 않도록 모듈이 소유)
 import { downloadFileHandler } from './downloadFile';
-// 내보내기 파일 일회용 주소 받기 (#787)
+// 내보내기 파일 일회용 주소 받기
 import { downloadExportFileHandler } from './downloadExportFile';
 import {
     updateMultilingualTagValueHandler,
@@ -632,7 +632,7 @@ export const handlerMap = {
     estimateClaim: estimateClaimHandler,
     submitClaim: submitClaimHandler,
     clearClaimApplyTimers: clearClaimApplyTimers,
-    // 주문금액 비교 섹션(#599 후속) — 환불 우선순위 전환(미리보기 재호출) · 접기/펼치기
+    // 주문금액 비교 섹션 — 환불 우선순위 전환(미리보기 재호출) · 접기/펼치기
     changeClaimRefundPriority: changeClaimRefundPriorityHandler,
     setClaimRefundAccountField: setClaimRefundAccountFieldHandler,
     toggleClaimComparison: toggleClaimComparisonHandler,

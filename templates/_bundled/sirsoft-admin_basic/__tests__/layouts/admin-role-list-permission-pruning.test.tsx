@@ -2,7 +2,7 @@
  * @file admin-role-list-permission-pruning.test.tsx
  * @description 역할 관리 목록 — 권한 배열 프루닝 후 화면 계약 회귀 테스트
  *
- * 회귀 배경 (#518 / 공개 #76):
+ * 회귀 배경 (공개 #76):
  * 역할 목록 응답이 행마다 `permissions` 트리와 `permission_ids`/`permission_values` 를 3중으로
  * 싣고, Repository 가 `with('permissions')` 로 무조건 로드해 행당 `Permission::whereIn()` 이
  * 두 번씩 나갔다. 목록 화면은 이 3필드를 전혀 그리지 않으므로 목록에서 뺐고, 대신 규모를
@@ -144,7 +144,7 @@ function setupTestRegistry(): ComponentRegistry {
     return registry;
 }
 
-describe('역할 관리 목록 — 권한 배열 프루닝 (#518 / 공개 #76)', () => {
+describe('역할 관리 목록 — 권한 배열 프루닝 (공개 #76)', () => {
     let layout: Record<string, any>;
 
     beforeEach(() => {

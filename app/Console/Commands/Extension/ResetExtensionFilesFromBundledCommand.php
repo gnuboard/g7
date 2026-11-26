@@ -13,7 +13,7 @@ use Illuminate\Console\Command;
  * 방향은 늘 번들 폴더 → 활성 폴더다(운영자 `custom/` 은 보존). 활성 폴더를 직접 고친 내용은 사라진다 — 이름에 방향(`from-bundled`)과
  * 파괴성(`reset`)을 넣고, 사람이 읽는 출력은 바꾸기 전에 방향과 교체 대상 수를 늘 먼저 알린다(`--json` 출력에는 섞지 않는다).
  * 판 번호·업그레이드 스텝·레이아웃 본문은 건드리지 않는다(비어 있는 레이아웃 병합 기준만 교체 전 파일로 채운다). 판이 다른 확장은
- * 대상이 아니다(업데이트 명령을 안내한다). 언어팩(`--type=language-pack`, `lang-packs/<id>`)도 대상이다 (#888).
+ * 대상이 아니다(업데이트 명령을 안내한다). 언어팩(`--type=language-pack`, `lang-packs/<id>`)도 대상이다.
  * 종전 이름 `extension:sync-files` 는 하위 호환으로 남긴다({@see SyncExtensionFilesCommand}).
  *
  * @since 7.2.0

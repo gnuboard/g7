@@ -553,7 +553,7 @@
                                     "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
                                 },
                                 {
-                                    "comment": "영세 상품 — 과세 대상이지만 세율 0%(수출 등). 결제사에는 면세로 넘긴다 (#612, 넓은 화면)",
+                                    "comment": "영세 상품 — 과세 대상이지만 세율 0%(수출 등). 결제사에는 면세로 넘긴다 (넓은 화면)",
                                     "type": "basic",
                                     "name": "Button",
                                     "actions": [
@@ -657,7 +657,7 @@
                                     "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
                                 },
                                 {
-                                    "comment": "영세 상품 — 과세 대상이지만 세율 0%(수출 등). 결제사에는 면세로 넘긴다 (#612, 좁은 화면)",
+                                    "comment": "영세 상품 — 과세 대상이지만 세율 0%(수출 등). 결제사에는 면세로 넘긴다 (좁은 화면)",
                                     "type": "basic",
                                     "name": "Button",
                                     "actions": [

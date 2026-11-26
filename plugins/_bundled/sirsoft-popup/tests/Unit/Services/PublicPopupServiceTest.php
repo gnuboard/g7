@@ -14,7 +14,7 @@ use Plugins\Sirsoft\Popup\Tests\PluginTestCase;
 /**
  * 공개 노출 서비스 캐시 테스트 (매니페스트 public-popups.yaml — 캐시·봇 케이스)
  *
- * 캐시 키는 대상(guest·member)·언어, 만료 = min(설정 시간, 다음 상태 전환), 꺼낼 때 기간 재판정(#810 과 같은 두 겹).
+ * 캐시 키는 대상(guest·member)·언어, 만료 = min(설정 시간, 다음 상태 전환), 꺼낼 때 기간 재판정(히어로 섹션 배너 편집과 같은 두 겹).
  */
 class PublicPopupServiceTest extends PluginTestCase
 {

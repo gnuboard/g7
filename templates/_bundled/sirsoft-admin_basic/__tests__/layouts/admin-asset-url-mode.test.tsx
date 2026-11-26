@@ -1,6 +1,6 @@
 /**
  * @file admin-asset-url-mode.test.tsx
- * @description 자산 URL 이중 모드 관련 레이아웃 렌더링 테스트 (이슈 #486 §검증)
+ * @description 자산 URL 이중 모드 관련 레이아웃 렌더링 테스트 (§검증)
  *
  * 계획서 §검증 "회귀 테스트" 표의 레이아웃 렌더링 계층 — `createLayoutTest()` 로
  * **두 모드 각각** 렌더한다.

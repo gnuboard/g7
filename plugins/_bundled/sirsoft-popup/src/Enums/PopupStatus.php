@@ -5,7 +5,7 @@ namespace Plugins\Sirsoft\Popup\Enums;
 use Carbon\CarbonInterface;
 
 /**
- * 팝업 노출 상태 — 저장하지 않고 조회 시점에 기간·사용 여부로 계산한다(cron 없음, #810 과 같은 규칙).
+ * 팝업 노출 상태 — 저장하지 않고 조회 시점에 기간·사용 여부로 계산한다(cron 없음, 히어로 섹션 배너 편집과 같은 규칙).
  *
  * 판정 순서: 비활성 > 예약(시작 전) > 종료(종료 후) > 노출중. 정렬 순위도 이 Enum 의 `rank()` 를 따른다.
  *

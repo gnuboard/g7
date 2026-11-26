@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\WithdrawClaimOnBehalfRequest;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 클레임 요청 검증 문구의 필드 라벨 (#599 — develop 7.1.0 16차 병합 후속)
+ * 클레임 요청 검증 문구의 필드 라벨 (develop 7.1.0 16차 병합 후속)
  *
  * 라벨이 없으면 Laravel 은 필드 키를 풀어쓴 영문을 오류 문구에 넣는다(「sort order 은(는) 올바르지
  * 않습니다」). 클레임 요청들은 `attributes()` 로 키마다 라벨을 주고, 라벨 문구는 언어 파일의

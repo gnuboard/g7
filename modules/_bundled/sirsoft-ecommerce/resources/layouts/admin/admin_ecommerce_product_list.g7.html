@@ -241,7 +241,7 @@
         <field name="key" value="visibleFilters"/>
       </field>
     </action>
-    <!-- 내보내기(#787) — 목록에 들어올 때 다른 화면에서 따라가던 진행 표시를 비운다(반복은 페이지가 바뀔 때 코어가 멈춘다) -->
+    <!-- 내보내기 — 목록에 들어올 때 다른 화면에서 따라가던 진행 표시를 비운다(반복은 페이지가 바뀔 때 코어가 멈춘다) -->
     <set-state target="global" :ecommerceExportTracking="null" :ecommerceExportTrackingDownloading="false"/>
   </init>
   <slot name="content">
@@ -385,7 +385,7 @@
               <icon name="download" class="ecommerce:text-base"/>
               <span>$t:sirsoft-ecommerce.admin.product.excel_download</span>
             </button>
-            <!-- 내보내기(#787) — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 목록 응답의 `abilities.can_export`(내보내기 요청 권한 — 목록 API 가 이미 조회 권한을 요구한다)가 참인
+            <!-- 내보내기 — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 목록 응답의 `abilities.can_export`(내보내기 요청 권한 — 목록 API 가 이미 조회 권한을 요구한다)가 참인
                  운영자에게만 보인다. 창은 상품·주문·마일리지 목록이 함께 쓰는 공용 창이다 -->
             <div data-ref="ecommerce_export_product_actions" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-end ecommerce:gap-3">
               <include src="partials/admin_ecommerce_export/_partial_tracking_status.g7.html"/>
@@ -450,6 +450,6 @@
   <modal src="partials/admin_ecommerce_product_list/_modal_delete_confirm.g7.html"/>
   <!-- 상품 복사 — 어느 구획을 가져올지 고르고 등록 폼을 복사 진입으로 연다 -->
   <modal src="partials/admin_ecommerce_product_list/_modal_copy_product.g7.html"/>
-  <!-- 내보내기 요청 창 — 상품·주문·마일리지 목록이 함께 쓰는 공용 창(#787) -->
+  <!-- 내보내기 요청 창 — 상품·주문·마일리지 목록이 함께 쓰는 공용 창 -->
   <modal src="partials/admin_ecommerce_export/_modal_export_request.g7.html"/>
 </layout>

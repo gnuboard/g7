@@ -1,7 +1,7 @@
 feature: 게시판 New 배지 표시 기간이 게시글 목록에 반영
 
 description: |
-  이슈 #413 item 22-2 — 게시판별 new_display_hours 설정을 저장해도 사용자 게시글
+  게시판별 new_display_hours 설정을 저장해도 사용자 게시글
   목록의 New 판정이 항상 기본값 24시간으로 계산되던 문제를 해소한다.
 
   근본 원인: Post::isNew() 는 board 관계가 로드된 경우에만 게시판 설정값을 사용하는데,

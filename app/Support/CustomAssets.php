@@ -105,7 +105,7 @@ class CustomAssets
      * 정적 게시(`ExtensionStaticCacheService`)와 변경 감지(`CollectsCustomAssets`)가 **같은
      * 열거자**를 쓴다. 종전에는 게시가 `custom/**` 를 재귀로 복사하고 감지는 최상위 css/js 의
      * mtime 만 서명해 범위가 어긋났다 — 문서가 권장하는 `url('./fonts/x.woff2')` 의 글꼴만
-     * 교체하면 게시본이 영영 갱신되지 않았다(#651 F7). 감지 범위와 게시 범위를 한 코드가
+     * 교체하면 게시본이 영영 갱신되지 않았다. 감지 범위와 게시 범위를 한 코드가
      * 정의해야 다시 어긋나지 않는다.
      *
      * 규약 스캔의 **로드 목록**(`forExtension()` — 최상위 css/js) 과는 별개다. 글꼴·이미지는

@@ -10,7 +10,7 @@ use Plugins\Sirsoft\Gdpr\Enums\ConsentAction;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentHistoryRepositoryInterface;
 
 /**
- * 이 플러그인의 동의 변경을 코어 범용 액션 `core.consent.changed` 로 중계합니다 (#639, 결정 D11)
+ * 이 플러그인의 동의 변경을 코어 범용 액션 `core.consent.changed` 로 중계합니다
  *
  * 코어는 이 플러그인의 훅 이름을 모릅니다. `sirsoft-gdpr.consent.granted`·`revoked` 를 받아 쿠키 동의 키
  * (`cookie_{카테고리}`)만 카테고리 이름으로 바꿔 모으고, 요청이 끝날 때 주체마다 한 번만 알립니다 — 배너의
@@ -25,7 +25,7 @@ use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentHistoryRepository
  *
  * 알리는 시점: 웹 요청은 요청 종료 시, 큐 워커는 작업 종료 시 알립니다. 워커는 요청이 끝나지 않으므로 요청 종료
  * 예약만 두면 워커를 끌 때까지 알림이 밀리고, 한 번 예약한 뒤에는 다시 예약하지 않아 이후 작업의 변경을 놓칩니다
- * (#724). 그래서 서비스 프로바이더가 큐 작업 종료(`JobProcessed`)에 {@see drainAfterQueueJob()} 를, 작업 예외
+ *. 그래서 서비스 프로바이더가 큐 작업 종료(`JobProcessed`)에 {@see drainAfterQueueJob()} 를, 작업 예외
  * (`JobExceptionOccurred`)에 {@see discardPending()} 를 부릅니다.
  */
 class GdprConsentChangeRelayListener implements HookListenerInterface

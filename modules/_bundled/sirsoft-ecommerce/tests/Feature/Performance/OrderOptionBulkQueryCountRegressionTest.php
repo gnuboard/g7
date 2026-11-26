@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Tests\Concerns\CountsQueries;
 
 /**
- * 주문 옵션 일괄 처리의 쿼리 수 회귀 테스트 (#519 E3)
+ * 주문 옵션 일괄 처리의 쿼리 수 회귀 테스트
  *
  * 일괄 상태 변경은 항목마다 옵션을 다시 조회했고, 결제완료 전이 가드는 주문마다
  * 다시 조회한 뒤 결제수단을 지연 로드했다. 둘 다 대상이 늘수록 조회가 함께 늘어난다.

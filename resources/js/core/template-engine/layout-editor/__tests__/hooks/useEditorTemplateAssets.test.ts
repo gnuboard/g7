@@ -1,4 +1,4 @@
-// e2e:allow 이슈 #486 단위 A 는 서버 라우트 이중화 전용. 이 파일 변경은 편집기 CSS
+// e2e:allow 자산 URL 서버 라우트 이중화는 서버 쪽 작업이다. 이 파일 변경은 편집기 CSS
 // 엔드포인트 개명(editor/components.css → component-styles.css)을 따라간 기대값 수정뿐이며
 // 브라우저 거동은 불변(URL 은 서버가 생성해 내려주고 hook 은 그대로 fetch).
 // 자산 URL 모드의 브라우저 시나리오 spec 은 자가 복구를 도입하는 단위 D 에서 추가한다.

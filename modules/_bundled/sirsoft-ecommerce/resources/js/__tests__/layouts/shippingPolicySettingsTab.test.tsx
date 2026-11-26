@@ -63,7 +63,7 @@ function flattenAll(node: any): any[] {
     }
     result.push(node);
     if (node.children) result.push(...flattenAll(node.children));
-    if (node.props?.footer) result.push(...flattenAll(node.props.footer)); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
+    if (node.props?.footer) result.push(...flattenAll(node.props.footer)); // 고정 하단 (바닥 단추가 Modal 고정 하단으로 옮김)
     if (node.slots) {
         Object.values(node.slots).forEach((s: any) => result.push(...flattenAll(s)));
     }
@@ -323,7 +323,7 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
          * @effects available_country_add_flow
          */
         it('국가 추가 폼에 코드 Input + 설치 언어마다 반복되는 국가명 Input이 있다', () => {
-            // #459: 이름 입력칸은 ko/en 두 칸 고정이 아니라 $locales 순회로 언어 수만큼 생성된다.
+            // 이름 입력칸은 ko/en 두 칸 고정이 아니라 $locales 순회로 언어 수만큼 생성된다.
             // 따라서 정적 노드 트리에는 name Input 이 "템플릿 1개"로만 존재한다.
             const addForm = findById(allNodes, 'add_country_form');
             const formNodes = flattenAll(addForm);
@@ -353,7 +353,7 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
          * @effects available_country_add_flow
          */
         it('추가 버튼은 코드가 없거나 모든 언어의 이름이 비면 disabled', () => {
-            // #459: 특정 로케일(ko)을 필수로 강제하지 않는다.
+            // 특정 로케일(ko)을 필수로 강제하지 않는다.
             // 백엔드 StoreEcommerceSettingsRequest 도 name 을 array 로만 요구한다.
             const addForm = findById(allNodes, 'add_country_form');
             const formNodes = flattenAll(addForm);

@@ -144,7 +144,7 @@ return [
     'driver_test_error' => '드라이버 연결 테스트 중 오류가 발생했습니다.',
     'unknown_driver' => '알 수 없는 드라이버입니다.',
 
-    // 웹서버 파일 위임 판정 (드라이버 시험 1단계, #878) — DriverConnectionTester::testFileDelegation()
+    // 웹서버 파일 위임 판정 (드라이버 시험 1단계) — DriverConnectionTester::testFileDelegation()
     'driver_test' => [
         'file_delegation' => [
             'none' => '웹서버 파일 위임을 쓰지 않습니다. 파일은 PHP 가 보냅니다.',
@@ -769,7 +769,7 @@ return [
         ],
     ],
 
-    // custom 예약 자리(#792) — custom:check·custom:vendor-* 명령과 코어 업데이트 출력
+    // custom 예약 자리 — custom:check·custom:vendor-* 명령과 코어 업데이트 출력
     'custom_reserved' => [
         'check' => [
             'reserved_title' => 'custom 예약 자리 (코어 업데이트가 덮지도 지우지도 않음)',
@@ -820,7 +820,7 @@ return [
         'update_failed' => 'GeoIP 데이터베이스를 갱신하지 못했습니다.',
     ],
 
-    // 저장은 허용하되 알려야 할 저장소 조합 (#916)
+    // 저장은 허용하되 알려야 할 저장소 조합 
     'warnings' => [
         'private_attachment_same_as_public_asset' => '비공개 첨부 저장소와 공개 자산 디스크가 같은 디스크(:disk)입니다. 버킷에 공개 읽기 정책이 있으면 비공개 원본도 버킷 주소로 직접 읽힐 수 있으니, 비공개 원본은 공개 정책이 없는 버킷이나 경로를 쓰세요.',
         'gated_thumbnail_same_as_public_asset' => '권한이 걸린 이미지 썸네일과 공개 자산 디스크가 같은 S3 버킷(:disk)을 씁니다. 버킷에 공개 읽기 정책이 있으면 권한이 걸린 이미지의 썸네일도 버킷 주소로 직접 읽힐 수 있으니, 썸네일 경로(thumbnails/)에 공개 정책이 걸리지 않았는지 확인하세요.',

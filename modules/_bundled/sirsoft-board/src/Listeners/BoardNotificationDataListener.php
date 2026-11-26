@@ -631,7 +631,7 @@ class BoardNotificationDataListener implements HookListenerInterface
      */
     private function buildAdminPostUrl(string $slug, int $postId): string
     {
-        // 관리자 화면 — 화면 주소 헬퍼의 관리자 범위(베이스 = 사이트 주소, #792)
+        // 관리자 화면 — 화면 주소 헬퍼의 관리자 범위(베이스 = 사이트 주소)
         return ScreenUrl::absoluteForLinks('board.admin.post', '/admin/board/{slug}/post/{id}', ['slug' => $slug, 'id' => $postId], ScreenUrl::SCOPE_ADMIN);
     }
 
@@ -742,7 +742,7 @@ class BoardNotificationDataListener implements HookListenerInterface
      */
     private function buildPostUrl(Board $board, Post $post): string
     {
-        // 회원이 여는 글보기 — 「사용자 화면 URL」·주소 필터를 따른다(#792)
+        // 회원이 여는 글보기 — 「사용자 화면 URL」·주소 필터를 따른다
         return ScreenUrl::toAbsoluteForLinks(BoardScreenUrl::post($board->slug, $post->id));
     }
 

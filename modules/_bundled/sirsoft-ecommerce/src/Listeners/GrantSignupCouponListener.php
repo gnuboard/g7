@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Services\CouponAutoIssueService;
 
 /**
- * 가입 쿠폰 자동발급 리스너 (#952)
+ * 가입 쿠폰 자동발급 리스너
  *
  * 가입 적립금({@see GrantSignupMileageListener})과 같은 규칙이다 — 스스로 가입한 회원에게 발급하고, 본인인증 대기로 가입한
  * 회원은 활성화될 때 발급한다. 관리자가 만든 회원(`core.user.after_create`)은 구독하지 않는다.

@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 주문 목록 "발송일" 정렬 회귀 테스트 (#492 D-19).
+ * 주문 목록 "발송일" 정렬 회귀 테스트.
  *
  * 화면은 "최근 발송순 / 오래된 발송순" 정렬 옵션을 제공하는데 `shipped_at` 은 주문이 아니라
  * 배송 테이블(`ecommerce_order_shippings`)의 컬럼이다. 게이트가 이 값을 막고 있어 옵션을

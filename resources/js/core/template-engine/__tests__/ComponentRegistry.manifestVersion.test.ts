@@ -7,7 +7,7 @@
  *
  * 편집기 호출처(useEditorTemplateAssets)는 버전 미전달 — 옵셔널 파라미터로
  * 하위 호환을 유지하고 그 경로는 v0 캐시 키 + 무버전 URL 을 사용한다
- * (서버는 `?v` 생략 시 현재 버전 폴백 — #588).
+ * (서버는 `?v` 생략 시 현재 버전 폴백).
  *
  * @effects versioned_boot_urls, manifest_cache_keys_are_version_scoped
  */

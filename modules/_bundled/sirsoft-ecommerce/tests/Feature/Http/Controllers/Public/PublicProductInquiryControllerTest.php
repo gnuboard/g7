@@ -445,7 +445,7 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
      * 존재하지 않는 상품은 404 를 반환한다.
      *
      * 상품 파라미터는 라우트 모델 바인딩(product_code 또는 id)으로 해석되므로, 없는 상품은
-     * 컨트롤러에 진입하기 전에 404 가 된다 (#450 상품코드 라우팅 전환). 문의 게시판 설정 여부와
+     * 컨트롤러에 진입하기 전에 404 가 된다 (상품코드 라우팅 전환). 문의 게시판 설정 여부와
      * 무관하다 — 설정 미비로 빈 목록을 주는 경우는 **존재하는 상품**에 한하며 그 계약은
      * `board_slug_미설정_시_빈_목록과_inquiry_available_false를_반환한다` 가 담당한다.
      *

@@ -3518,7 +3518,7 @@
             ]
         },
         {
-            "comment": "검색 영역 - 검색 필드와 버튼 영역 분리. `flex flex-col` 은 기준 display 다 — 768px 이상 구간 값에도 `flex` 를 함께 적는다(구간 값은 className 을 통째로 바꾼다). 빼면 flex-row 가 방향만 정하고 요소는 block 으로 남아 검색행과 버튼행이 두 줄로 갈린다 (#408 시맨틱 치환 때 사라졌던 회귀, 2026-08-26 복원).",
+            "comment": "검색 영역 - 검색 필드와 버튼 영역 분리. `flex flex-col` 은 기준 display 다 — 768px 이상 구간 값에도 `flex` 를 함께 적는다(구간 값은 className 을 통째로 바꾼다). 빼면 flex-row 가 방향만 정하고 요소는 block 으로 남아 검색행과 버튼행이 두 줄로 갈린다 (시맨틱 치환 때 사라졌던 회귀, 2026-08-26 복원).",
             "id": "search_row_wrapper",
             "type": "basic",
             "name": "Div",

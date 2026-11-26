@@ -25,7 +25,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use ReflectionMethod;
 
 /**
- * 선교환 테스트 (#599 후속 §3-3~§3-5 · D1~D3 · D11)
+ * 선교환 테스트
  *
  * 선교환은 새 물건을 먼저 보내고 헌 물건은 기한 안에 받는다. 상태 줄은 발송 단계만 쓰고, 헌 물건의
  * 회수 진행은 상품 행(회수 송장·도착 시각·미회수 표시)이 따로 말한다.

@@ -90,7 +90,7 @@ class UserClaimAttachmentContractTest extends ModuleTestCase
                 'reason_code' => 'changed_mind',
                 'charge_method' => 'deduct_from_refund',
                 'image_ids' => [$image->id],
-                // 이 주문은 계좌로 돈이 돌아가는 결제수단이라 반품 접수에도 계좌가 필요하다(#599 validate P3).
+                // 이 주문은 계좌로 돈이 돌아가는 결제수단이라 반품 접수에도 계좌가 필요하다.
                 // 이 테스트가 보는 것은 첨부 응답 계약이므로 계좌를 채워 접수를 통과시킨다.
                 'refund_bank' => ['bank_code' => '004', 'account_number' => '11122233344', 'holder' => '홍길동'],
             ])

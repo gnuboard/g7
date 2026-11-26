@@ -472,7 +472,7 @@ return [
         'reply_update_failed' => 'Failed to update reply.',
         'reply_delete_failed' => 'Failed to delete reply.',
     ],
-    // 개인정보 보유기간 처리 (이슈 #636) — 코어 보유기간 커맨드·미리보기가 핸들러 이름으로 쓴다
+    // 개인정보 보유기간 처리 — 코어 보유기간 커맨드·미리보기가 핸들러 이름으로 쓴다
     'privacy_retention' => [
         'target_columns' => [
             'title' => 'Title',

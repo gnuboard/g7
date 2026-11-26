@@ -16,7 +16,7 @@ use Tests\Support\Concerns\BuildsLayoutMergeFixtures;
 use Tests\TestCase;
 
 /**
- * 이 서버의 업데이트가 끝나지 않은 채 남아 있으면 `--force` 없는 `*:update` 가 「업데이트 없음」으로 끝내지 않는다 (#888).
+ * 이 서버의 업데이트가 끝나지 않은 채 남아 있으면 `--force` 없는 `*:update` 가 「업데이트 없음」으로 끝내지 않는다.
  *
  * 업데이트는 DB 판을 새 판으로 적은 뒤 업그레이드 스텝·상태 복원·레이아웃 갱신을 한다. 검수 서버(stage)는 공유 상태 칸에
  * `updating` 을 쓰지 않으므로 그 사이에 프로세스가 죽으면 멈춘 업데이트 판정(`StuckUpdateRecovery::looksStale`)이 잡지 못했다.

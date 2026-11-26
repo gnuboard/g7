@@ -275,7 +275,7 @@ describe('Exchange rate history controls', () => {
     const block=nodes(form).find((n:any)=>n.id==='koreaexim_schedule_block');
     // 768px 이상에서 두 칸을 차지한다 — 엔진 responsive 의 768 이상 구간 클래스로 적는다(Tailwind 반응형 접두를 쓰지 않는다).
     expect(String(block.props?.className)).not.toMatch(/col-span-2/);
-    // 구간의 실효 className 은 엔진 규칙(구간 class 가 있으면 통째 교체, 없으면 기본 class) 위에 구간 class-merge 를 덧붙인 값이다 (#399, engine-v1.98.0).
+    // 구간의 실효 className 은 엔진 규칙(구간 class 가 있으면 통째 교체, 없으면 기본 class) 위에 구간 class-merge 를 덧붙인 값이다 (engine-v1.98.0).
     // 접두 토큰끼리 충돌 교체가 되도록 서버가 내려 주는 확장 접두 목록을 계산하는 동안만 세운다.
     const wide=Object.entries(block.responsive??{}).find(([k])=>/^768-$/.test(k)) as [string, any]|undefined;
     const g7Window=window as unknown as {G7Config?: Record<string, unknown>};
@@ -391,7 +391,7 @@ describe('Exchange rate history controls', () => {
   });
 });
 
-describe('알림 수신자 회원 검색 — 빈 검색어 요청 차단 (#703)', () => {
+describe('알림 수신자 회원 검색 — 빈 검색어 요청 차단', () => {
   // 코어 회원 검색 API 는 keyword 가 비면(공백뿐이어도 요청 정리 뒤 빈 값) 422 로 거절한다.
   // 검색칸을 지우면 드롭다운이 빈 문자열로 onSearch 를 부르므로 그때는 요청하지 않아야 한다.
   const userSearchCalls=()=>nodes(tplModal).filter((n:any)=>n?.handler==='apiCall'&&String(n.target).includes('/api/admin/users/search'));

@@ -4,7 +4,7 @@
 #   회귀 가드는 effects 이며 전부 test_files 의 테스트에 @effects 로 귀속되어 있다. 화면 단위 조합은 템플릿 매니페스트
 #   (admin-login-password-change-step·login-password-change-step)와 Playwright spec 이 덮는다.
 
-feature: 엔진 로그인 결과 — 2단계 인증·비밀번호 변경 단계·휴면 해제 안내 (engine-v1.77.0, #736)
+feature: 엔진 로그인 결과 — 2단계 인증·비밀번호 변경 단계·휴면 해제 안내 (engine-v1.77.0)
 
 description: |
   서버는 로그인·2단계 인증 확인에 세 가지 형태의 200 을 돌려준다 — 토큰 발급, 2단계 인증 challenge,

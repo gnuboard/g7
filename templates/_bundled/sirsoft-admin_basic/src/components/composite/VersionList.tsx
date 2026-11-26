@@ -45,7 +45,7 @@ const VersionListItem: React.FC<VersionListItemProps> = React.memo(({ version, i
 
   return (
     <Li
-      // 고르는 목록의 항목 — aria-selected 는 option 에만 뜻이 있다. Tab 으로 닿고 Enter·Space 로 고른다(#869 키보드 접근)
+      // 고르는 목록의 항목 — aria-selected 는 option 에만 뜻이 있다. Tab 으로 닿고 Enter·Space 로 고른다(키보드 접근)
       role="option"
       aria-selected={isSelected}
       tabIndex={0}

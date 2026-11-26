@@ -60,7 +60,7 @@
           <icon name="download" class="ecommerce:text-base"/>
           <span>$t:sirsoft-ecommerce.admin.order.action.excel_download</span>
         </button>
-        <!-- 내보내기(#787) — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 목록 응답의 `abilities.can_export`(내보내기 요청 권한 — 목록 API 가 이미 조회 권한을 요구한다)가 참인
+        <!-- 내보내기 — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 목록 응답의 `abilities.can_export`(내보내기 요청 권한 — 목록 API 가 이미 조회 권한을 요구한다)가 참인
              운영자에게만 보인다. 창은 상품·주문·마일리지 목록이 함께 쓰는 공용 창이다 -->
         <div data-ref="ecommerce_export_order_actions" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-end ecommerce:gap-3">
           <include src="../admin_ecommerce_export/_partial_tracking_status.g7.html"/>
@@ -211,7 +211,7 @@
                 <div class="ecommerce:min-w-0 ecommerce:flex-1">
                   <span data-if="{{!!row.user?.uuid}}" class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate ecommerce:block">{{row.address?.orderer_name || row.user?.name}}</span>
                   <span data-if="{{!row.user?.uuid}}" class="ecommerce:text-gray-600 ecommerce:dark:text-gray-300 ecommerce:truncate ecommerce:block">{{row.address?.orderer_name || row.user?.name}}</span>
-                  <!-- 실명 보조 줄(#490) — 서버가 회원의 실명 키를 줄 때만(회원 조회 권한이 있고 표시 이름과 다를 때) 그린다. 이 칸은 주문서에 적힌 주문자 이름을 먼저 보이므로, 그 이름이 실명과 같으면 같은 글자를 두 번 적지 않는다. -->
+                  <!-- 실명 보조 줄 — 서버가 회원의 실명 키를 줄 때만(회원 조회 권한이 있고 표시 이름과 다를 때) 그린다. 이 칸은 주문서에 적힌 주문자 이름을 먼저 보이므로, 그 이름이 실명과 같으면 같은 글자를 두 번 적지 않는다. -->
                   <span data-if="{{!!row.user?.real_name &amp;&amp; row.user?.real_name !== (row.address?.orderer_name || row.user?.name)}}" data-testid="real-name-sub" role="note" aria-label="{{$t('sirsoft-ecommerce.admin.common.real_name_sub', { name: row.user?.real_name })}}" class="ecommerce:text-xs ecommerce-text-muted ecommerce:truncate ecommerce:block">{{row.user?.real_name}}</span>
                   <!-- 첫구매 표시 -->
                   <span data-if="{{row.is_first_order}}" class="ecommerce:text-xs ecommerce:text-emerald-700 ecommerce:dark:text-emerald-400">$t:sirsoft-ecommerce.admin.order.column.first_order</span>
@@ -220,7 +220,7 @@
             </action-menu>
           </cell>
         </column>
-        <column field="payment_method" header="$t:sirsoft-ecommerce.admin.order.column.payment_method" width="100px" :sortable="false" :required="false" comment="결제 플러그인이 이 칸에 배지(테스트 결제 등)를 덧붙인다. 래퍼 Div 와 결제수단 라벨은 **호스트가 소유**하고, 플러그인은 `columns._patch` → `cellChildren._patch`(by: id) → `children._append` 로 자기 배지만 더한다 — 셋 이상이 함께 설치돼도 서로 지우지 않는다. 라벨 자체를 바꿔야 하는 플러그인(간편결제 표시명 등)은 `children._patch`(by: id)로 `payment_method_label` 노드의 text 만 덮는다(#599). 두 `id` 는 확장이 지목하는 **공개 앵커**이므로 이름을 바꾸지 않는다.">
+        <column field="payment_method" header="$t:sirsoft-ecommerce.admin.order.column.payment_method" width="100px" :sortable="false" :required="false" comment="결제 플러그인이 이 칸에 배지(테스트 결제 등)를 덧붙인다. 래퍼 Div 와 결제수단 라벨은 **호스트가 소유**하고, 플러그인은 `columns._patch` → `cellChildren._patch`(by: id) → `children._append` 로 자기 배지만 더한다 — 셋 이상이 함께 설치돼도 서로 지우지 않는다. 라벨 자체를 바꿔야 하는 플러그인(간편결제 표시명 등)은 `children._patch`(by: id)로 `payment_method_label` 노드의 text 만 덮는다. 두 `id` 는 확장이 지목하는 **공개 앵커**이므로 이름을 바꾸지 않는다.">
           <cell>
             <!-- 결제수단 칸. 이 모듈은 PG 를 모르므로 PG 별 표시는 두 경로로 받는다 — 컬럼을 통째로 넘겨주지 않는다
               (플러그인이 컬럼 전체를 복사해 덮으면 여기 컬럼 개선이 그 사본에 묻혀 사라진다).

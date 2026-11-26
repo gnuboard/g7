@@ -1,5 +1,5 @@
 /**
- * #810 후속 — 사용자 히어로 슬라이더의 Swiper 화면 요소: 기본 모양 좌우 화살표(데스크톱만)·점 표시·PC 마우스 끌기와
+ * 사용자 히어로 슬라이더의 Swiper 화면 요소: 기본 모양 좌우 화살표(데스크톱만)·점 표시·PC 마우스 끌기와
  * 추가 전환 효과(cube·flip·coverflow·creative)가 실브라우저 Swiper 에서 무한 반복과 함께 넘어가는지.
  * @scenario-manifest tests/scenarios/hero-slider.yaml
  *

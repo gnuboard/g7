@@ -8,13 +8,13 @@ use Tests\Helpers\CreatesTemplateSettingsFixtures;
 use Tests\TestCase;
 
 /**
- * 템플릿 설정 첨부 칸 업로드 정책 테스트 (#434)
+ * 템플릿 설정 첨부 칸 업로드 정책 테스트
  *
  * 파비콘이 아닌 템플릿 설정 첨부 칸(`template_settings.{템플릿}.{섹션}.{키}`)은 선언 `accept`(이미지 칸은 이미지 기본 목록)와
  * 전역 허용 목록의 교집합만 받고, 선언 `max_size_kb` 를 넘으면 거부한다.
  *
  * 선언에 없는 칸·없는 템플릿·교집합이 빈 칸의 컬렉션은 아무것도 받지 않는다 — 허용 확장자 훅의 빈 목록은 업로드 요청이
- * 「제한 없음」으로 읽으므로 리스너가 업로드 규칙에 거부 규칙을 더한다(#434 시험 보강 중 발견해 고친 결함).
+ * 「제한 없음」으로 읽으므로 리스너가 업로드 규칙에 거부 규칙을 더한다(시험 보강 중 발견해 고친 결함).
  */
 class TemplateSettingsUploadPolicyTest extends TestCase
 {

@@ -25,7 +25,7 @@ use Modules\Sirsoft\Page\Support\AttachmentThumbnailSourceProvider;
 use Modules\Sirsoft\Page\Tests\FeatureTestCase;
 
 /**
- * 페이지 첨부 미리보기의 이미지 썸네일 계약 (#869)
+ * 페이지 첨부 미리보기의 이미지 썸네일 계약
  *
  * 미리보기 주소에 `?size=`·`?w=` 를 붙이면 발행상태 게이트(미발행은 `pages.read` 관리자·유효 서명만)를
  * 지난 뒤 규격 크기로 줄인 파생본을 낸다. 파라미터가 없으면 종전 원본 응답과 같고, 게이트는 썸네일에도

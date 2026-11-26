@@ -7,7 +7,7 @@ export interface MenuItem {
     slug: string;
     url: string;
     icon: string | null;
-    /** 구조형 아이콘 (#381, 코어 메뉴만 — 이커머스 브랜드·카테고리 목록은 없음) */
+    /** 구조형 아이콘 (코어 메뉴만 — 이커머스 브랜드·카테고리 목록은 없음) */
     icon_spec?: MenuIconSpecData | null;
     order: number;
     is_active: boolean;
@@ -84,7 +84,7 @@ export interface SortableMenuListProps {
     }[];
     /**
      * 항목 편집 주소(행 표현식, 예: `/admin/menus?id={{row.id}}&mode=edit`) — 주면 항목 이름이 그 주소의 링크가 되어
-     * 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」로 그 항목 편집 화면을 연다(#757). 보통 클릭은 지금처럼 onSelect.
+     * 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」로 그 항목 편집 화면을 연다. 보통 클릭은 지금처럼 onSelect.
      * 엔진은 원문을 넘기고(components.json skipBindingKeys) 항목마다 그 항목으로 푼다. 여러 개 선택 모드에서는 링크를 그리지 않는다.
      */
     itemHref?: string;

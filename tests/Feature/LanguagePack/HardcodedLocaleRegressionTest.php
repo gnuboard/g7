@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
- * 이슈 #263 후속 — 활성 언어팩 locale(ja 등)이 백엔드 검증 / 라벨 빌더에서
+ * 활성 언어팩 locale(ja 등)이 백엔드 검증 / 라벨 빌더에서
  * 거부되거나 누락되지 않음을 보장하는 회귀 테스트.
  *
  * 검증 대상 5건:

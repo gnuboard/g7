@@ -1,6 +1,6 @@
 /**
  * @file board-comment-author-buttons.test.tsx
- * @description 게시글 상세 - 본인 댓글/답글 수정·삭제 버튼 표시 조건 테스트 (이슈 #228 B-4)
+ * @description 게시글 상세 - 본인 댓글/답글 수정·삭제 버튼 표시 조건 테스트
  *
  * 검증 항목:
  * 1. 본인 댓글 (is_author=true) + 게시글 권한(can_write_comments=true) → 수정/삭제 버튼 표시
@@ -128,7 +128,7 @@ function makeInitialData(comment: Record<string, any>, postAbilities: Record<str
 // 테스트
 // ============================================================
 
-describe('댓글 수정/삭제 버튼 표시 조건 (이슈 #228 B-4)', () => {
+describe('댓글 수정/삭제 버튼 표시 조건', () => {
   let registry: ComponentRegistry;
 
   beforeEach(() => {

@@ -1258,7 +1258,7 @@ class ProductRepository implements ProductRepositoryInterface
             $query->whereNull('brand_id');
         }
 
-        // 과세여부 필터 — 상품 기본값이 그 값이거나, 옵션 중 하나라도 그 값으로 지정한 상품(#612).
+        // 과세여부 필터 — 상품 기본값이 그 값이거나, 옵션 중 하나라도 그 값으로 지정한 상품.
         // 옵션별 지정을 보지 않으면 「영세」로 걸렀을 때 옵션만 영세인 상품이 빠진다.
         if (! empty($filters['tax_status'])) {
             $taxStatus = $filters['tax_status'];

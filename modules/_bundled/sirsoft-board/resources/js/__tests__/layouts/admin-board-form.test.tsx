@@ -4,7 +4,7 @@
  * @description
  * - 기본 탭(_tab_basic): use_comment/use_reply 토글 제거, secret_mode→show_view_count 순서
  * - 게시글 탭(_tab_post): admin-card → row-stack 직속 평면 구조, use_reply/use_comment/use_file_upload 토글 + 조건부 필드의 if 마이그레이션
- * - 5 partial 모두 root id = `section_*_card` + row-stack 컨테이너 `section_*_fields` 패턴 (#408)
+ * - 5 partial 모두 root id = `section_*_card` + row-stack 컨테이너 `section_*_fields` 패턴
  */
 
 import { describe, it, expect } from 'vitest';
@@ -145,7 +145,7 @@ describe('admin_board_form/_tab_basic.json', () => {
     // @effects board_form_basic_tab_contract
     it('파일이 유효한 JSON 구조이다', () => {
         expect(tabBasic).toBeDefined();
-        // #408: partial root id 패턴 = section_*_card (admin-card 자산 적용)
+        // partial root id 패턴 = section_*_card (admin-card 자산 적용)
         expect(tabBasic.id).toBe('section_basic_card');
     });
 
@@ -161,7 +161,7 @@ describe('admin_board_form/_tab_basic.json', () => {
     // @scenario case=tab_basic
     // @effects board_form_basic_tab_contract
     it('기본 탭에서 secret_mode가 show_view_count보다 앞에 위치한다', () => {
-        // #408: 필드는 section_basic_card 직속이 아닌 row-stack 컨테이너 section_basic_fields 하위
+        // 필드는 section_basic_card 직속이 아닌 row-stack 컨테이너 section_basic_fields 하위
         const fieldsContainer = findById(tabBasic, 'section_basic_fields');
         expect(fieldsContainer).toBeDefined();
 
@@ -188,7 +188,7 @@ describe('admin_board_form/_tab_basic.json', () => {
         expect(fields).toContain('use_report');
     });
 
-    // ── 이슈 #413-15: 관리자 메뉴 추가 토글 ──
+    // ── 관리자 메뉴 추가 토글 ──
 
     // @scenario case=tab_basic
     // @effects board_form_basic_tab_contract
@@ -225,7 +225,7 @@ describe('admin_board_form/_tab_basic.json', () => {
         expect(addToMenuCalls).toHaveLength(0);
     });
 
-    // 이슈 #413-19-3: 카테고리 삭제는 차단하지 않고 '미분류'로 유지(안내문 고지).
+    // 19-3: 카테고리 삭제는 차단하지 않고 '미분류'로 유지(안내문 고지).
     // 동작하지 않던 before_remove/check_category_usage/모달 잔재만 제거한다.
     // @scenario case=tab_basic
     // @effects board_form_basic_tab_contract
@@ -251,7 +251,7 @@ describe('admin_board_form/_tab_basic.json', () => {
         expect(notice.text).toContain('categories_notice');
     });
 
-    // ── 이슈 #413-24: 제한 키워드(blocked_keywords) 게시글 설정 탭 소속 + TagInput 통일 ──
+    // ── 제한 키워드(blocked_keywords) 게시글 설정 탭 소속 + TagInput 통일 ──
 
     // @scenario field=blocked_keywords, tab=basic
     // @effects blocked_keywords_absent_from_basic_tab
@@ -273,7 +273,7 @@ describe('admin_board_form/_tab_basic.json', () => {
 });
 
 // ============================================================
-// admin_board_form.json — 푸터 취소 버튼 (이슈 #413-15 후속)
+// admin_board_form.json — 푸터 취소 버튼 (15 후속)
 // ============================================================
 
 describe('admin_board_form.json 취소 버튼', () => {
@@ -291,13 +291,13 @@ describe('admin_board_form.json 취소 버튼', () => {
         // navigateBack(브라우저 뒤로가기)은 직접 진입 시 목록으로 가지 않으므로 금지
         expect(clickAction.handler).toBe('navigate');
         expect(clickAction.handler).not.toBe('navigateBack');
-        // 목적지는 링크의 href 한 곳이다(#757 D12 — path 없는 navigate 는 클릭한 링크의 href 로 간다)
+        // 목적지는 링크의 href 한 곳이다(path 없는 navigate 는 클릭한 링크의 href 로 간다)
         expect(cancelBtn.name).toBe('A');
         expect(clickAction.params?.path).toBeUndefined();
         expect(cancelBtn.props.href).toBe('/admin/boards');
     });
 
-    // 이슈 #413-19-3: 동작하지 않던 category_remove 모달 제거
+    // 19-3: 동작하지 않던 category_remove 모달 제거
     // @scenario case=cancel_and_cleanup
     // @effects board_form_cancel_link_and_dead_ui_removed
     it('미구현 category_remove 모달이 제거되었다', () => {
@@ -324,7 +324,7 @@ describe('admin_board_form/_tab_post.json', () => {
     // @effects board_form_post_tab_contract
     it('파일이 유효한 JSON 구조이다', () => {
         expect(tabPost).toBeDefined();
-        // #408: partial root id 패턴 = section_*_card (admin-card 자산 적용)
+        // partial root id 패턴 = section_*_card (admin-card 자산 적용)
         expect(tabPost.id).toBe('section_post_card');
     });
 
@@ -358,7 +358,7 @@ describe('admin_board_form/_tab_post.json', () => {
 
     // @scenario case=tab_post
     // @effects board_form_post_tab_contract
-    it('reply_delete_policy_field 가 use_reply ON 조건부로 존재하고 block/cascade Select 를 렌더한다 (#573)', () => {
+    it('reply_delete_policy_field 가 use_reply ON 조건부로 존재하고 block/cascade Select 를 렌더한다', () => {
         const policyField = findById(tabPost, 'reply_delete_policy_field');
         expect(policyField).toBeDefined();
         expect(policyField.if).toBeDefined();
@@ -375,7 +375,7 @@ describe('admin_board_form/_tab_post.json', () => {
 
     // @scenario case=tab_post
     // @effects board_form_post_tab_contract
-    it('reply_delete_policy 라벨/힌트/옵션의 ko 다국어 키가 실재한다 (#573)', () => {
+    it('reply_delete_policy 라벨/힌트/옵션의 ko 다국어 키가 실재한다', () => {
         const field = (koFormLang as any).fields?.reply_delete_policy;
         expect(field).toBeDefined();
         expect(field.label).toBeTruthy();
@@ -453,7 +453,7 @@ describe('admin_board_form/_tab_post.json', () => {
         expect(useFileConditionals.length).toBeGreaterThanOrEqual(2);
     });
 
-    // ── 이슈 #413-24: 제한 키워드 게시글 설정 탭 소속 + TagInput 통일 ──
+    // ── 제한 키워드 게시글 설정 탭 소속 + TagInput 통일 ──
 
     // @scenario field=blocked_keywords, tab=post
     // @effects blocked_keywords_renders_as_taginput_on_post_tab
@@ -546,7 +546,7 @@ describe('admin_board_form/_tab_permissions.json', () => {
     // @effects board_form_permissions_use_uuid
     it('파일이 유효한 JSON 구조이다', () => {
         expect(tabPermissions).toBeDefined();
-        // #408: partial root id 패턴 = section_*_card (admin-card 자산 적용)
+        // partial root id 패턴 = section_*_card (admin-card 자산 적용)
         expect((tabPermissions as any).id).toBe('section_permissions_card');
     });
 

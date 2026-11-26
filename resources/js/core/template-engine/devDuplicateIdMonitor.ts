@@ -1,5 +1,5 @@
 /**
- * 디버그 모드 중복 DOM id 경고 (engine-v1.99.0, #408)
+ * 디버그 모드 중복 DOM id 경고 (engine-v1.99.0)
  *
  * 한 화면에 같은 DOM id 가 둘 이상이면 `getElementById`·`<label for>`·`aria-*` 연결과 확장 주입(target_id)이
  * 첫 요소에만 걸린다. 정적 감사와 전 화면 크롤 E2E 가 모달·시트 열림 같은 상호작용 상태를 다 보지 못하므로,

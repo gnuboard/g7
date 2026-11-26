@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Tests\Concerns\BuildsSecretThread;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * 비밀 답변 열람 경로 규칙 매트릭스 (#789 제보 A·D1·D15·D17·D19)
+ * 비밀 답변 열람 경로 규칙 매트릭스
  *
  * 스레드 A ─┬─ B ── D / └─ C ── E(비회원) 에서 열람자마다 어떤 글의 본문을 받는지를
  * 게시판 설정 `secret_reply_visibility` 세 값 모두에 대해 고정한다. 기대값은 계획서 §3 의 두 표다.

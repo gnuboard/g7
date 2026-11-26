@@ -9,7 +9,7 @@ use Tests\Helpers\CreatesTemplateSettingsFixtures;
 use Tests\TestCase;
 
 /**
- * 템플릿 설정 `menu` 칸 — 사용자 화면 메뉴(2단) 선언·저장 검증·정규화·화면 서술 (#434)
+ * 템플릿 설정 `menu` 칸 — 사용자 화면 메뉴(2단) 선언·저장 검증·정규화·화면 서술
  *
  * 편집기는 끌어서 놓은 트리를 그대로 보내므로, 서버가 구조(자동 항목 1회·깊이·전체 수·id 중복·종류별 필수)를 다시 보고
  * 오류를 그 항목 위치(`header.menu.{i}` · `header.menu.{i}.children.{j}`)에 단다.

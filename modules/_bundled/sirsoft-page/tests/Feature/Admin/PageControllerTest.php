@@ -263,9 +263,9 @@ class PageControllerTest extends FeatureTestCase
     }
 
     /**
-     * '전체'(all) 검색 결과의 total 이 실제 행 수와 일치하는지 확인 (#225 회귀 가드)
+     * '전체'(all) 검색 결과의 total 이 실제 행 수와 일치하는지 확인 (회귀 가드)
      *
-     * 과거 Scout 콜백 내 orWhere('slug') 가 total 카운트를 부풀렸던 회귀(#225)를
+     * 과거 Scout 콜백 내 orWhere('slug') 가 total 카운트를 부풀렸던 회귀를
      * all 검색 통합 후에도 재발하지 않는지 검증한다.
      * 고유 슬러그 토큰으로 결과를 1건으로 한정해 total ↔ 행 수 정합을 본다.
      */
@@ -674,7 +674,7 @@ class PageControllerTest extends FeatureTestCase
         $response->assertStatus(404);
     }
 
-    // ─── 수정 - 슬러그 변경 (Issue #280) ─────────────────
+    // ─── 수정 - 슬러그 변경 ─────────────────
 
     /**
      * 슬러그를 새 값으로 변경하면 DB에 반영됨

@@ -50,7 +50,7 @@ class EcommerceSitemapIndexTest extends ModuleTestCase
 
         $row = SitemapUrl::where('resource_type', 'product')->where('resource_id', '42')->first();
         $this->assertNotNull($row, '전시 상품은 사이트맵에 색인돼야 합니다.');
-        $this->assertStringEndsWith('/products/P42', $row->loc, '사이트맵 상품 주소는 화면과 같은 상품 코드 주소다 (#792 W12)');
+        $this->assertStringEndsWith('/products/P42', $row->loc, '사이트맵 상품 주소는 화면과 같은 상품 코드 주소다');
         $this->assertSame('sirsoft-ecommerce', $row->contributor);
 
         Bus::assertDispatched(GenerateSitemapJob::class);

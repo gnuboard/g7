@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Feature\Coupon\AutoIssue\Concerns\CreatesAut
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 마이페이지 쿠폰함 응답 (#952 C)
+ * 마이페이지 쿠폰함 응답
  */
 class UserCouponBoxResponseTest extends ModuleTestCase
 {

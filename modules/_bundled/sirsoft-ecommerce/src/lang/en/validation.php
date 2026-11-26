@@ -1439,7 +1439,7 @@ return [
         'apply_mileage_deduction' => 'used mileage deduction',
         'record_paid_amount' => 'paid amount record',
 
-        // Admin user list extension filters (#705)
+        // Admin user list extension filters
         'user_filter_mileage_min' => 'minimum mileage balance',
         'user_filter_mileage_max' => 'maximum mileage balance',
         'user_filter_shipping_country' => 'shipping address country',
@@ -1520,7 +1520,7 @@ return [
         'basic_info.privacy_officer_email' => 'Privacy Officer Email',
         'basic_info.mail_order_number' => 'Mail Order Business Number',
         'basic_info.telecom_number' => 'Telecom Business Number',
-        // 내보내기(#787)
+        // 내보내기
         'basic_info.export_retention_days' => 'Export File Retention',
 
         // Language/Currency settings
@@ -1733,7 +1733,7 @@ return [
                 'string' => 'Telecom business number must be a string.',
                 'max' => 'Telecom business number cannot exceed 100 characters.',
             ],
-            // 내보내기(#787)
+            // 내보내기
             'export_retention_days' => [
                 'integer' => 'Export file retention must be a number.',
                 'min' => 'Export file retention (days) must be at least :min.',
@@ -2324,14 +2324,14 @@ return [
             'item_min' => 'Product ID must be at least 1.',
         ],
     ],
-    // 개인정보 보유기간 설정 필드 라벨 (이슈 #636) — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
+    // 개인정보 보유기간 설정 필드 라벨 — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
     'privacy_retention_attributes' => [
         'section' => 'Privacy Retention Settings',
         'enabled' => 'Automatic Order Privacy Retention Processing',
         'retention_years' => 'Order Personal Information Retention Period',
         'mode' => 'Expired Order Processing Mode',
     ],
-    // 요청 필드 라벨 (이슈 #599) — 클레임·주문 목록·배송정책·주문서 FormRequest 의 attributes() 가 키별로 읽는다
+    // 요청 필드 라벨 — 클레임·주문 목록·배송정책·주문서 FormRequest 의 attributes() 가 키별로 읽는다
     'request_attributes' => [
         'claim_type' => 'claim type',
         'items' => 'items',
@@ -2436,7 +2436,7 @@ return [
         'completion' => 'completion options',
         'unreturned_reasons' => 'unreturned reasons',
     ],
-    // 클레임 정책 설정 필드 라벨 (이슈 #599) — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
+    // 클레임 정책 설정 필드 라벨 — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
     'claim_settings_attributes' => [
         'cancellable_statuses' => 'cancellable order statuses',
         'exchange_requestable_statuses' => 'exchange requestable statuses',
@@ -2466,7 +2466,7 @@ return [
         'target_not_owned' => 'Ecommerce identity policies can only target ecommerce points. Hook and custom scopes must start with "sirsoft-ecommerce.", and the route scope must start with "api.modules.sirsoft-ecommerce.".',
         'nothing_to_update' => 'There is nothing to update.',
     ],
-    // 내보내기(#787)
+    // 내보내기
     'export' => [
         'type_invalid' => 'Unsupported export type.',
         'format_invalid' => 'Unsupported file format.',

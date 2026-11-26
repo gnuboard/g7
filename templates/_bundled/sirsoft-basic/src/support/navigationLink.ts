@@ -1,6 +1,6 @@
 // e2e:allow 이번 변경은 코어 링크 API 가 없는 옛 코어(7.1.1·7.1.2) 전용 대체 판정 — 7.1.3 코어 실브라우저에서는 도달하지 않아 Vitest(NavigationLinks.coreLinkApi)로 잠근다. 7.1.3 코어 경로는 Playwright core-link-api spec 이 잰다
 /**
- * 화면 이동 링크 도우미 (sirsoft-basic 공용, #757)
+ * 화면 이동 링크 도우미 (sirsoft-basic 공용)
  *
  * 머리글 메뉴·상품 카드·목록 행·탭·페이지 번호처럼 화면을 옮기는 자리를 `<a href>` 로 그려, 가운데 클릭·Ctrl+클릭·
  * 우클릭 「새 탭에서 열기」가 되게 한다. 보통 클릭(왼쪽 단추·수정키 없음)만 지금처럼 SPA 로 옮기고, 나머지는 브라우저에 맡긴다.
@@ -206,7 +206,7 @@ export function handleLinkClick(event: React.MouseEvent, onPlain: () => void): b
 
 /**
  * 새 창 링크의 rel — `target="_blank"` 면 `noopener noreferrer` 를 합친다(이미 있는 값은 남긴다). 새 창 쪽이 `window.opener`
- * 로 원래 탭을 바꾸지 못하게 하는 보호다(#757). 새 창이 아니면 받은 값을 그대로 돌려준다.
+ * 로 원래 탭을 바꾸지 못하게 하는 보호다. 새 창이 아니면 받은 값을 그대로 돌려준다.
  *
  * @param target 링크의 target
  * @param rel 넘겨받은 rel

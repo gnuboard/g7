@@ -1,7 +1,7 @@
 feature: 삭제된 게시글 상세에서 cascade 하위 데이터 노출 (표시 계층)
 
 description: |
-  이슈 #413 item 69-② 의 표시 계층. 게시글 삭제 연쇄(cascade) soft delete 가
+  게시글 삭제 연쇄의 표시 계층. 게시글 삭제 연쇄(cascade) soft delete 가
   DB/서비스 레벨에 구현된 뒤, 관리 권한자가 삭제된 게시글 상세를 열었을 때
   드러난 두 회귀를 수정한다.
 

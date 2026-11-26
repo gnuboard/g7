@@ -233,7 +233,7 @@ class ChangeDetectorTest extends PureTestCase
     }
 
     /**
-     * display 콜러블이 선언된 필드는 원값으로 비교한 뒤 old·new 를 요약값으로 기록한다 (#381 메뉴 아이콘 SVG).
+     * display 콜러블이 선언된 필드는 원값으로 비교한 뒤 old·new 를 요약값으로 기록한다 (메뉴 아이콘 SVG).
      *
      * @scenario case=text_field_change
      *

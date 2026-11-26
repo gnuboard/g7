@@ -32,7 +32,7 @@ use Tests\Helpers\ProtectsExtensionDirectories;
 use Tests\TestCase;
 
 /**
- * 확장 목록 행이 코어 요구 버전(`requires_core`)을 싣는지 검증 (#703 브라우저 실측)
+ * 확장 목록 행이 코어 요구 버전(`requires_core`)을 싣는지 검증
  *
  * 목록 리소스의 `core_compatible` 은 행의 `requires_core` 로 판정하는데, 목록을 만드는 매니저
  * 메서드(getUninstalled* / getInstalled*WithDetails)가 그 키를 싣지 않아 매니페스트가 코어를

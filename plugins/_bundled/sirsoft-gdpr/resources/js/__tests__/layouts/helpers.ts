@@ -182,7 +182,7 @@ export const TAILWIND_GRAY_500 = 'oklch(55.1% .027 264.364)';
 export const TAILWIND_GRAY_400 = 'oklch(70.7% .022 261.325)';
 
 /**
- * 플러그인 생성 CSS(`resources/css/g7-extension.generated.css`)에서 의미 클래스 사본의 글자색을 읽는다 (#399 R-2).
+ * 플러그인 생성 CSS(`resources/css/g7-extension.generated.css`)에서 의미 클래스 사본의 글자색을 읽는다.
  *
  * 레이아웃이 `gdpr:text-gray-500 gdpr:dark:text-gray-400` 같은 인라인 짝 대신 `gdpr-text-muted` 를 쓰게 되었으므로,
  * 이름만 보지 않고 그 클래스가 플러그인 CSS 에 실제로 같은 색(밝은 화면·다크 화면)으로 정의돼 있는지 확인할 때 쓴다.

@@ -157,7 +157,7 @@ class ExchangeRateUpdateService
             try {
                 $this->gateway->applyExchangeRates($calculation['rates'], 'koreaexim');
             } catch (ExchangeRateSaveException $e) {
-                // 쇼핑몰 설정 저장 실패 — 관리자 「지금 갱신」에서 500 으로 끝나지 않게 실패 이력으로 남긴다(#916).
+                // 쇼핑몰 설정 저장 실패 — 관리자 「지금 갱신」에서 500 으로 끝나지 않게 실패 이력으로 남긴다.
                 // 이 응답은 재적용 원본이 되면 안 되므로 raw_response 를 싣지 않는다.
                 Log::error('[sirsoft-koreaexim] '.$e->getMessage(), ['trigger' => $data['trigger'] instanceof RunTrigger ? $data['trigger']->value : $data['trigger']]);
 
@@ -255,7 +255,7 @@ class ExchangeRateUpdateService
     }
 
     /**
-     * 쇼핑몰 통화 설정을 계산기가 읽는 배열 모양으로 읽습니다(공개 계약 경유, #916).
+     * 쇼핑몰 통화 설정을 계산기가 읽는 배열 모양으로 읽습니다(공개 계약 경유).
      *
      * @return array{default_currency: string, rate_provider: string|null, currencies: array<int, array<string, mixed>>} 통화 설정
      */

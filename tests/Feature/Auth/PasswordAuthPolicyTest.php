@@ -20,7 +20,7 @@ use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
- * 비밀번호 인증 정책 필터 `core.auth.password_auth_decision` (#798 K3 · W1~W4 · W28 · W29)
+ * 비밀번호 인증 정책 필터 `core.auth.password_auth_decision`
  *
  * 확장이 「이 식별자·회원은 비밀번호를 쓰지 못한다」고 답하면 코어가 비밀번호 로그인·재설정·설정·관리자 지정·로그인 중 변경을 막는다.
  * 식별자 기준 판정은 로그인 시도 전(실패 횟수 0), 회원 기준 판정은 비밀번호가 맞은 뒤(틀리면 일반 실패와 같다). 재설정 요청의 회원 기준

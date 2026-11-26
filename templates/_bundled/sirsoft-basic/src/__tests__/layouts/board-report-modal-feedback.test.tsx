@@ -1,6 +1,6 @@
 /**
  * @file board-report-modal-feedback.test.tsx
- * @description 신고 모달 - 제출 후 피드백/상태 반영 검증 (이슈 #413-60)
+ * @description 신고 모달 - 제출 후 피드백/상태 반영 검증 (60)
  *
  * 검수 결과(김은혜, 오류확정):
  *  - 증상2: 신고 성공 후 버튼이 "신고됨"으로 즉시 안 바뀜 (새로고침해야 전환)
@@ -53,7 +53,7 @@ function asArray(x: any): any[] {
   return Array.isArray(x) ? x : [x];
 }
 
-describe('신고 모달 제출 피드백 (이슈 #413-60)', () => {
+describe('신고 모달 제출 피드백 (60)', () => {
   const apiCall = findSubmitApiCall(reportModal);
 
   // @scenario result=succeeded

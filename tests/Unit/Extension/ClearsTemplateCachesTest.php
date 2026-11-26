@@ -371,7 +371,7 @@ class ClearsTemplateCachesTest extends TestCase
     }
 
     /**
-     * 캐시 버전 키는 만료되지 않는다 (#651 F11).
+     * 캐시 버전 키는 만료되지 않는다.
      *
      * 종전에는 `put()` 에 TTL 을 넘기지 않아 `cache.default_ttl`(86400) 로 **매일 만료**됐고,
      * 다음 독자가 `regenerateExtensionCacheVersion()` 으로 새 버전을 만들어 정적 게시본 전체

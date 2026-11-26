@@ -163,7 +163,7 @@ describe('Router 뒤로/앞으로 가기·새로고침 스크롤 복원', () => 
     expect(getScrollRecord('url:/')?.y).toBe(1200);
   });
 
-  // 하위 폴더 설치(`https://host/g7/`) — 라우터는 히스토리에 접두사를 붙인 주소를 싣고(#609 withBasePrefix), 스크롤 기억은
+  // 하위 폴더 설치(`https://host/g7/`) — 라우터는 히스토리에 접두사를 붙인 주소를 싣고(withBasePrefix), 스크롤 기억은
   // 브라우저 주소를 그대로 항목 키로 쓴다. 떠날 때 적는 키와 돌아와 찾는 키가 접두사 유무로 어긋나면 복원할 기억을 찾지 못한다.
   // @scenario entry=popstate, content_timing=already_tall, config_layer=engine_default
   // @effects subpath_mount_scroll_keys_match_history_address

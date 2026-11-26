@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 회원관리 목록 확장 필터 예제 2종 테스트 (#705 D5 — E1 마일리지 잔액 · E2 배송지)
+ * 회원관리 목록 확장 필터 예제 2종 테스트 (E1 마일리지 잔액 · E2 배송지)
  *
  * 코어 회원 목록이 연 확장 필터 규약(`ext_filters[]` → `ext.{확장id}.{키}` → 검증 훅 → 쿼리 훅)을
  * 이커머스가 실제로 써서 목록을 거르는지 끝에서 끝까지 본다. 요청은 화면과 같은 형식

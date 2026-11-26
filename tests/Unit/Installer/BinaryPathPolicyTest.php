@@ -164,7 +164,7 @@ class BinaryPathPolicyTest extends TestCase
     /**
      * 파일 시스템 stat 에 의존하지 않는다 (open_basedir 회귀 가드).
      *
-     * `#361` 은 `is_file()`/`is_executable()` 가드가 시놀로지 DSM 등에서 정상 절대경로를
+     * 이전 수정은 `is_file()`/`is_executable()` 가드가 시놀로지 DSM 등에서 정상 절대경로를
      * false negative 로 거부하는 회귀를 되돌린 이력이다. 존재하지 않는 절대경로가
      * 형태 검사만으로 통과해야 그 회귀가 구조적으로 재발하지 않는다.
      *
@@ -379,7 +379,7 @@ class BinaryPathPolicyTest extends TestCase
             '공백 포함 디렉토리' => [
                 'C:\\Program Files\\PHP\\php.exe C:\\composer\\composer.phar',
                 null,
-                '#361 이 명시한 기존 known_limitation — 악화가 아님',
+                '이전 수정이 명시한 기존 known_limitation — 악화가 아님',
             ],
         ];
     }

@@ -1,5 +1,5 @@
 /**
- * 외부 영상 주소 해석 — PHP 와 JS 가 같은 정규식으로 같은 id 를 낸다 (#883 5단계)
+ * 외부 영상 주소 해석 — PHP 와 JS 가 같은 정규식으로 같은 id 를 낸다
  *
  * 고정본(`resources/js/core/contentPolicy/__tests__/fixtures/render-policy.json`)은 PHP(`EmbedProviderRegistryTest::buildFixture`)가 만든 `render_policy` 와 표본 20개의 PHP
  * 해석 결과다. PHPUnit 이 고정본 = 지금 PHP 출력을 잠그고, 이 시험이 JS 런타임이 같은 결과를 내는지 잠근다.

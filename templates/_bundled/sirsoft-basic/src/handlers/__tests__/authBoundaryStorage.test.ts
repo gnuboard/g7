@@ -1,5 +1,5 @@
 /**
- * 인증 경계에서의 비회원 저장값 정리 테스트 (#639 ⑦)
+ * 인증 경계에서의 비회원 저장값 정리 테스트
  *
  * 배경(브라우저 실측 2026-10-05): 로그아웃해도 `localStorage.g7_cart_key` 와 세션 저장소의 비회원
  * 주문 토큰이 그대로 남아 `_global.guestOrderToken` 에 다시 실렸고, 로그인한 회원의 요청에도
@@ -47,7 +47,7 @@ function createAuthManager(initial: { isAuthenticated: boolean; user: { uuid?: s
     };
 }
 
-describe('authBoundaryStorage (#639 ⑦)', () => {
+describe('authBoundaryStorage', () => {
     let auth: ReturnType<typeof createAuthManager>;
     let setState: ReturnType<typeof vi.fn>;
 
@@ -209,7 +209,7 @@ describe('authBoundaryStorage (#639 ⑦)', () => {
 
     // @scenario surface=auth_boundary, storage=guest_keys
     // @effects login_skips_cart_key_when_ecommerce_off
-    it('쇼핑몰 모듈이 꺼진 사이트(활성 목록에 없음)에서는 로그인해도 카트키 발급 API 를 부르지 않는다 (#822)', async () => {
+    it('쇼핑몰 모듈이 꺼진 사이트(활성 목록에 없음)에서는 로그인해도 카트키 발급 API 를 부르지 않는다', async () => {
         auth = createAuthManager({ isAuthenticated: false, user: null });
         (window as any).G7Core.AuthManager = { getInstance: () => auth };
         (window as any).G7Core.state.get = () => ({ activeModules: ['sirsoft-board'] });

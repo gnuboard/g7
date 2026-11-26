@@ -1,4 +1,4 @@
-<partial description="Claim Detail - Shipping Section (collection + redelivery tracking groups per waybill, deliver per waybill) — #599 row-level tracking">
+<partial description="Claim Detail - Shipping Section (collection + redelivery tracking groups per waybill, deliver per waybill) — row-level tracking">
   <!-- 배송 정보 섹션 (D17-②) — 회수와 재발송은 **한 카드 안의 두 항목**이다. 섹션을 둘로 나누면 탭이 하나 더 생기고, 재발송이 없는 반품에서 빈 탭이 남는다. 이 `if` 는 셸의 탭 배열 조건과 문자 그대로 같아야 한다 (D17-① — 한쪽만 분기하면 탭 클릭이 무반응이거나 scrollSpy 가 없는 탭을 활성화하려다 무시된다). 송장은 **상품 행**마다 있다 — 이 탭은 운송장별로 묶어 보여 주기만 하고 입력칸을 두지 않는다. 운송장 기록·정정은 「신청 상품」 칸에서 상품을 골라 [송장만 저장] 으로 한다(R3 — 한 행을 고쳐도 같은 운송장의 다른 행은 바뀌지 않는다). -->
   <div data-ref="section_shipping_info" data-if="{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}" data-section-id="shipping_info" class="ecommerce:mt-6">
     <div data-ref="claim_shipping_card" class="ecommerce-admin-card">

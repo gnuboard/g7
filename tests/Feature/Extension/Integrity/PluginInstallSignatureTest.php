@@ -7,7 +7,7 @@ use App\Extension\PluginManager;
 use Mockery;
 
 /**
- * 플러그인 수동 설치(ZIP·GitHub)의 패키지 서명 검증 (#916 ④) — 시나리오는 `ExtensionInstallSignatureTestCase`.
+ * 플러그인 수동 설치(ZIP·GitHub)의 패키지 서명 검증 — 시나리오는 `ExtensionInstallSignatureTestCase`.
  *
  * @scenario package-integrity
  */

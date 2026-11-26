@@ -8,7 +8,7 @@
  *
  * 고정 스타일은 admin 템플릿의 `.sticky-footer-buttons` 시맨틱 클래스가 소유한다
  * (`@apply sticky bottom-0 z-10 ...`). 레이아웃은 유틸리티 클래스를 나열하지 않고
- * 이 시맨틱 클래스만 선언한다 (#399 Phase 1.5 전수 시맨틱화).
+ * 이 시맨틱 클래스만 선언한다 (Phase 1.5 전수 시맨틱화).
  */
 
 import { describe, it, expect } from 'vitest';

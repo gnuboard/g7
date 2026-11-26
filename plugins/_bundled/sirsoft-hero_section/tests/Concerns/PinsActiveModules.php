@@ -16,7 +16,7 @@ trait PinsActiveModules
      * 켜진 모듈을 정합니다.
      *
      * 모듈 조회 계약(게시판 `BoardDirectory`, 이커머스 `ProductDirectory`·`CategoryDirectory`)도 바인딩된 것으로 고정한다 — 시험 DB 에
-     * 모듈이 설치돼 있지 않아도 위치가 생긴다. 계약이 없는 옛 모듈 판을 흉내 내려면 `$contractsBound` 를 false 로 준다(#916).
+     * 모듈이 설치돼 있지 않아도 위치가 생긴다. 계약이 없는 옛 모듈 판을 흉내 내려면 `$contractsBound` 를 false 로 준다.
      *
      * @param  array<int, string>  $modules  켜진 모듈 식별자
      * @param  bool  $contractsBound  모듈 조회 계약이 바인딩됐는지

@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Enums;
 
 /**
- * 첫구매 쿠폰 발급 시점 Enum (#952)
+ * 첫구매 쿠폰 발급 시점 Enum
  *
  * 「회원 주문 중 고른 상태 이상에 처음 도달한 주문」 이 첫구매다. 도달 판정은 상태 집합(`reachedStatusValues()`)으로
  * 하며, 취소·반품완료는 어느 시점에서도 도달로 보지 않는다.

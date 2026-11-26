@@ -8,7 +8,7 @@ use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
 
 /**
- * 설치된 템플릿의 환경설정 화면을 활성 관리자 템플릿에 등록합니다 (#434).
+ * 설치된 템플릿의 환경설정 화면을 활성 관리자 템플릿에 등록합니다.
  *
  * 7.2.0 부터 템플릿은 `templates/{id}/settings/template_settings.g7.html` 로 자기 설정 화면을 내놓고, 코어가 그 화면을 켜진 관리자
  * 템플릿에 `{템플릿}.template_settings` 로 등록한다. 등록은 템플릿 설치·업데이트·관리자 템플릿 활성화 때 일어나는데,

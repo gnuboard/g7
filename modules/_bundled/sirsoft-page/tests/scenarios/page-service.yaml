@@ -6,7 +6,7 @@ description: |
   동작 축(case):
     - create          — 생성 시 모델 반환, 버전 1 스냅샷, 발행 생성 시 published_at 설정.
     - update          — 제목 반영, current_version 증가, 새 버전 스냅샷 저장.
-    - delete          — 물리 삭제, 버전 이력을 DB 외래키 연쇄 없이 명시적으로 삭제(#888).
+    - delete          — 물리 삭제, 버전 이력을 DB 외래키 연쇄 없이 명시적으로 삭제.
     - publish         — 단건 발행·미발행 전환.
     - bulk_publish    — 일괄 발행·미발행, 페이지별 after_publish 훅 발화, 실패 시 전체 롤백.
     - restore_version — 지정 버전 내용으로 복원하고 버전 번호를 올린다.

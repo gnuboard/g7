@@ -113,7 +113,7 @@ export interface MultilingualInputProps {
   editorAttrs?: EditorAttrs;
   /**
    * 입력칸 접근 가능한 이름. 켜진 언어가 둘 이상이면 각 칸이 「{이름} ({언어명})」으로 읽힌다.
-   * 없으면 바깥 상자 곁의 라벨(`form-label` 등) 글자를 이름으로 삼는다 — 그때도 언어명을 붙인다(#757).
+   * 없으면 바깥 상자 곁의 라벨(`form-label` 등) 글자를 이름으로 삼는다 — 그때도 언어명을 붙인다.
    */
   ariaLabel?: string;
   /** ariaLabel 과 같은 뜻 — 레이아웃이 `aria-label` 로 줘도 된다 */
@@ -149,7 +149,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
   ariaLabel,
   'aria-label': ariaLabelAttr,
 }) => {
-  // 폭 분기는 엔진 폭으로 고른다 — Tailwind 반응형 접두는 창 폭으로 판정되어 편집기 미리보기·엔진 responsive 와 경계가 갈린다(#869).
+  // 폭 분기는 엔진 폭으로 고른다 — Tailwind 반응형 접두는 창 폭으로 판정되어 편집기 미리보기·엔진 responsive 와 경계가 갈린다.
   const wideLabel = useViewportWidth() >= BREAKPOINTS.md;
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -378,7 +378,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
     return locale?.nativeName || locale?.name || getLocaleDisplayName(localeCode);
   }, [actualAvailableLocales]);
 
-  // 입력칸 이름 — 언어가 둘 이상 켜져 있으면 언어명을 붙인다(D7). 종전에는 이름 prop 이 없어 placeholder 로만 읽혔다(#757)
+  // 입력칸 이름 — 언어가 둘 이상 켜져 있으면 언어명을 붙인다(D7). 종전에는 이름 prop 이 없어 placeholder 로만 읽혔다
   const fieldName = useCallback((localeCode: string): string | undefined => {
     if (!nameBase) return undefined;
     if (actualAvailableLocales.length < 2) return nameBase;

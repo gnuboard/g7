@@ -14,7 +14,7 @@ use Tests\TestCase;
 /**
  * 관리자 — IDV 이력 목록 조회 (회귀/통합).
  *
- * #297 — 본인인증 이력 검색이 user_id 외(target 해시 등)로 동작하지 않던 문제 회귀 방지.
+ * 본인인증 이력 검색이 user_id 외(target 해시 등)로 동작하지 않던 문제 회귀 방지.
  * 응답 구조가 알림 발송 이력과 동일하게 `{data: {data, pagination, abilities}}` 인지 함께 검증.
  */
 class AdminIdentityLogIndexTest extends TestCase

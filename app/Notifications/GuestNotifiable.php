@@ -64,7 +64,7 @@ final class GuestNotifiable implements GuestRecipientInterface, HasLocalePrefere
     }
 
     /**
-     * 사이트 관리자 이메일(환경설정 > 일반 `general.admin_email`) 수신자를 만듭니다 (#888).
+     * 사이트 관리자 이메일(환경설정 > 일반 `general.admin_email`) 수신자를 만듭니다.
      *
      * 수신자 규칙 `site_admin_email` 이 쓴다. 회원 계정이 아니라 주소 하나뿐이므로 다른 비회원 수신자와 같이
      * **메일만** 받는다 — 사이트 알림(database) 등 비회원을 허용하지 않는 채널은 발송 단계에서 건너뛰고,

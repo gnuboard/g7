@@ -3,7 +3,7 @@ feature: 관리자 확장 목록의 업데이트 흐름 — 모듈·플러그인
 description: |
   관리자 › 확장(모듈·플러그인·템플릿) 목록에서 업데이트를 확인하고, 행별 업데이트 버튼으로 확인 창을 열어
   업데이트를 실행하는 흐름. 세 목록은 같은 모양이라 한 매니페스트가 확장 종류 × 화면 영역으로 소유한다.
-  (소유 매니페스트가 없던 세 테스트 파일을 #682 실측 후속에서 묶었다.)
+  (소유 매니페스트가 없던 세 테스트 파일을 이 매니페스트로 묶었다.)
 
 axes:
   kind: [module, plugin, template]
@@ -21,7 +21,7 @@ effects:
   - update_modal_opens_and_closes
   - update_modal_content_lists_versions
   - layout_strategy_choice_is_offered
-  # 「수정 유지」 는 통째 보존이 아니라 병합이다 — 안내 문구가 그 뜻을 말하고, 목록은 유지를 골랐을 때만 보인다 (#727)
+  # 「수정 유지」 는 통째 보존이 아니라 병합이다 — 안내 문구가 그 뜻을 말하고, 목록은 유지를 골랐을 때만 보인다
   - layout_strategy_keep_notice_explains_merge
   - update_modal_buttons_reflect_progress
 

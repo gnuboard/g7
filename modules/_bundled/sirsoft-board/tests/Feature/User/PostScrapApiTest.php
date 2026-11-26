@@ -307,7 +307,7 @@ class PostScrapApiTest extends BoardTestCase
         $response->assertJsonPath('data.data.0.post_id', $secondPost);
         $response->assertJsonPath('data.data.1.post_id', $firstPost);
 
-        // 회귀(#524 브라우저 검수): board_name 은 현재 로케일 문자열이어야 한다.
+        // 회귀(브라우저 검수): board_name 은 현재 로케일 문자열이어야 한다.
         // 다국어 JSON 컬럼을 객체 그대로 반환하면 카드 렌더가 charAt 에서 실패한다.
         $this->assertIsString($response->json('data.data.0.board_name'));
     }

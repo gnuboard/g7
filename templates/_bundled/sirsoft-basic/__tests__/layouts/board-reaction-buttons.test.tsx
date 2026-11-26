@@ -1,6 +1,6 @@
 /**
  * @file board-reaction-buttons.test.tsx
- * @description 게시글 상세 반응(추천/비추천) 버튼 레이아웃 회귀 (이슈 #525)
+ * @description 게시글 상세 반응(추천/비추천) 버튼 레이아웃 회귀
  *
  * 검증 방식: 레이아웃 JSON 트리 직접 분석 (board 파티션 테스트 관례 — show.json 은 partial).
  * 고정 대상:
@@ -41,7 +41,7 @@ function findByComment(root: unknown, commentText: string): Node[] {
     return collectNodes(root, (n) => typeof n.comment === 'string' && (n.comment as string).includes(commentText));
 }
 
-describe('이슈 #525 — 게시글 상세 반응 버튼 (basic/show.json)', () => {
+describe('게시글 상세 반응 버튼 (basic/show.json)', () => {
     // @scenario case=detail_hidden_when_no_active_types
     // @effects reaction_area_hidden_when_no_active_types
     it('반응 영역은 use_reaction + reaction_type_options 존재 시에만 노출된다 (확정 11)', () => {
@@ -250,7 +250,7 @@ describe('이슈 #525 — 게시글 상세 반응 버튼 (basic/show.json)', () 
     });
 });
 
-describe('이슈 #525 — 반응 유형 아이콘 이미지', () => {
+describe('반응 유형 아이콘 이미지', () => {
     const showJson = JSON.stringify(basicShow);
 
     // @scenario case=icon_image_priority_post_detail
@@ -277,7 +277,7 @@ describe('이슈 #525 — 반응 유형 아이콘 이미지', () => {
     });
 });
 
-describe('이슈 #525 — 형제 글 이동 시 반응 상태 초기화 (F14)', () => {
+describe('형제 글 이동 시 반응 상태 초기화 (F14)', () => {
     const navJson = JSON.stringify(navigation);
 
     // @scenario case=navigation_resets_reaction_overrides

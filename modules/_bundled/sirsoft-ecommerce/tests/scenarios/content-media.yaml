@@ -1,13 +1,13 @@
-feature: 이커머스 본문 미디어 — 상품 설명·공통 정보 편집기 본문 이미지·동영상·오디오 (#883 4단계)
+feature: 이커머스 본문 미디어 — 상품 설명·공통 정보 편집기 본문 이미지·동영상·오디오
 
 description: |
-  이 모듈 범용 첨부 표 `ecommerce_attachments` 의 본문 미디어 행(collection = content_media, #887 에 전용 표에서 옮김). 관리자 업로드(`POST admin/content-media`, owner_type 별 권한)는 임시 행을 만들고, 상품·공통
+  이 모듈 범용 첨부 표 `ecommerce_attachments` 의 본문 미디어 행(collection = content_media, 전용 표에서 옮김). 관리자 업로드(`POST admin/content-media`, owner_type 별 권한)는 임시 행을 만들고, 상품·공통
   정보 저장 트랜잭션 안에서 본문(로케일마다)이 참조한 것만 소유자에 잇는다(빠지면 소프트 삭제). 서빙은 상품이면 「전시 중
   또는 관리자 또는 서명」, 공통 정보는 공개. 임시 상품 이미지 정리 명령이 오래된 임시 본문 미디어도 함께 지운다.
   저장 정화(`content` 프로필)는 규칙을 코어 `ContentHtmlPolicy::forStorage()` 에서 받아 후보 스위치와 무관하게 원문을 남기고,
-  어느 서비스에도 맞지 않는 외부 영상(oembed)도 링크로 바꾸지 않고 원문 그대로 저장한다(#887).
+  어느 서비스에도 맞지 않는 외부 영상(oembed)도 링크로 바꾸지 않고 원문 그대로 저장한다.
   본문 이미지 서빙 주소에 `?size=`·`?w=` 를 붙이면 같은 게이트를 지난 뒤 줄인 이미지를 낸다(권한 원본 — private). 서명은 그 두
-  파라미터를 빼고 검증한다. 본문 미디어 이미지는 전용 썸네일 원본 제공자가 소유자에 이어진 행만 센다(#869 와의 접합).
+  파라미터를 빼고 검증한다. 본문 미디어 이미지는 전용 썸네일 원본 제공자가 소유자에 이어진 행만 센다(와의 접합).
 
 axes:
   case: [admin_upload, sync, serve_gate, prune, store_purify, thumbnail]

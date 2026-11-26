@@ -1,6 +1,6 @@
 /**
  * @file auth-register-agreement-binding.test.tsx
- * @description 회원가입 필수 약관 체크박스 — 체크를 풀면 폼 값도 「동의 안 함」이 된다 (#757 후속, audit layout-checkbox-label-and-boolean)
+ * @description 회원가입 필수 약관 체크박스 — 체크를 풀면 폼 값도 「동의 안 함」이 된다 (audit layout-checkbox-label-and-boolean)
  *
  * 결함: 체크박스가 `value="1"` + 폼 자동바인딩에만 기대고 있었다. 가입 화면의 폼 값은 빈 객체로 시작하므로
  *   엔진이 checked 바인딩이 아니라 value 바인딩을 골라, 체크할 때도 풀 때도 `"1"` 을 써 넣었다.

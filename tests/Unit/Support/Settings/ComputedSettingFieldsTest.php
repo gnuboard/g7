@@ -8,7 +8,7 @@ use App\Support\Settings\ComputedSettingFields;
 use Tests\TestCase;
 
 /**
- * 계산 필드 판정 한 곳 — 관리자 설정 서비스(저장에서 빼기·응답에 싣기)와 터미널 설정 명령이 같은 판정을 쓴다 (#887)
+ * 계산 필드 판정 한 곳 — 관리자 설정 서비스(저장에서 빼기·응답에 싣기)와 터미널 설정 명령이 같은 판정을 쓴다
  *
  * @scenario-manifest tests/scenarios/admin-settings-computed-fields.yaml
  */

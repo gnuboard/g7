@@ -1,4 +1,4 @@
-// e2e:allow 행 클래스 식에 선택 여부($selected)를 더한 표시 변경 — Vitest(DataGrid.rowClassName)와 게시판 글 목록 브라우저 계산값 실측(라이트·다크 선택·hover, #816)으로 잠근다.
+// e2e:allow 행 클래스 식에 선택 여부($selected)를 더한 표시 변경 — Vitest(DataGrid.rowClassName)와 게시판 글 목록 브라우저 계산값 실측(라이트·다크 선택·hover)으로 잠근다.
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import type { EditorAttrs } from '../../types';
 import { Table } from '../basic/Table';
@@ -276,7 +276,7 @@ export interface DataGridProps {
   idField?: string;
   /**
    * 행 이름으로 쓸 필드(점 경로, 다국어 객체면 현재 언어 값). 셀 렌더 문맥 `$rowLabel` 과 행 선택 체크박스 이름에 쓰인다.
-   * 없으면 첫 표시 열의 글자 값, 그것도 없으면 「N번째 행」(#757).
+   * 없으면 첫 표시 열의 글자 값, 그것도 없으면 「N번째 행」.
    */
   rowLabelField?: string;
   /**
@@ -329,7 +329,7 @@ export interface DataGridProps {
   serverSidePagination?: boolean;
   serverCurrentPage?: number;
   /**
-   * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/users?page={page}`). 주면 내장 페이지 번호가 링크가 된다(#757).
+   * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/users?page={page}`). 주면 내장 페이지 번호가 링크가 된다.
    */
   pageHref?: string;
   /** 페이지 주소에 현재 주소의 쿼리를 합친다 */
@@ -629,7 +629,7 @@ const evaluateSubRowCondition = (condition: string | undefined, row: any): boole
  * 엔진이 컴포넌트 props 를 그릴 때 이 식을 row 없이 미리 풀면 빈 문자열이 되므로, components.json 의
  * skipBindingKeys 로 원문을 받아 여기서 엔진의 바인딩 해석기(`G7Core.getDataBindingEngine`)로 푼다 —
  * subRowCondition 이 엔진 판정에 위임하는 것과 같은 방식이다. 식이 없는 고정 문자열은 그대로 쓴다.
- * 식은 `$selected` 로 그 행의 선택 여부를 읽을 수 있다(확장 앞글자 배경이 선택 강조를 이기는 것을 피하려고, #816).
+ * 식은 `$selected` 로 그 행의 선택 여부를 읽을 수 있다(확장 앞글자 배경이 선택 강조를 이기는 것을 피하려고).
  *
  * @param rowClassName 행 클래스 문자열 또는 행 표현식
  * @param row 현재 행 데이터
@@ -659,7 +659,7 @@ const resolveRowClassName = (rowClassName: string | undefined, row: any, selecte
  * 행 메뉴 항목의 주소(`href`)를 그 행 문맥으로 평가합니다.
  *
  * `components.json` 의 `skipBindingKeys` 에 `href` 를 두어 엔진이 행 문맥 없이 먼저 풀지 않게 하고(그러면 `{{row.uuid}}` 가
- * 빈 값이 된다), 행마다 여기서 푼다(#757 링크 단계 — 행 메뉴 「보기」「수정」을 새 탭으로 열기).
+ * 빈 값이 된다), 행마다 여기서 푼다(링크 단계 — 행 메뉴 「보기」「수정」을 새 탭으로 열기).
  *
  * @param href 항목 주소 틀 (예: `/admin/users/{{row.uuid}}/edit`)
  * @param row 행 데이터
@@ -728,7 +728,7 @@ const renderCellChildren = (
 ): React.ReactNode => {
   const G7Core = (window as any).G7Core;
   if (G7Core?.renderItemChildren) {
-    // $rowLabel·$rowNumber·$column — 셀 안 칸이 「{행 이름} {열 이름}」으로 이름을 달 수 있게 한다(#757)
+    // $rowLabel·$rowNumber·$column — 셀 안 칸이 「{행 이름} {열 이름}」으로 이름을 달 수 있게 한다
     const context = {
       row,
       value,
@@ -1153,7 +1153,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
   //
   // 서버 페이지네이션 목록에서 `onSortChange` 가 배선돼 있지 않으면 컴포넌트는 서버에
   // 정렬을 요청할 방법이 없다. 그런데도 헤더를 누를 수 있게 두면 **현재 페이지 배열만**
-  // 정렬되고 화살표가 붙어, 전체 건수 기준으로 정렬된 것으로 오인된다 (#492 D-18).
+  // 정렬되고 화살표가 붙어, 전체 건수 기준으로 정렬된 것으로 오인된다.
   // 정렬을 실제로 반영할 수 없는 화면에서는 정렬 가능한 척하지 않는다.
   const headerSortEnabled = sortable && !(serverSidePagination && !onSortChange);
 
@@ -1161,7 +1161,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
     if (!sortField || !sortable || !data) return data || [];
     if (onSortChange) return data;
     // 서버 페이지네이션이면 data 는 "전체 중 이번 페이지" 다. 여기서 정렬하면 그 페이지
-    // 안에서만 순서가 바뀌는데 헤더 화살표는 전체 정렬처럼 보인다 (#492 D-18).
+    // 안에서만 순서가 바뀌는데 헤더 화살표는 전체 정렬처럼 보인다.
     if (serverSidePagination) return data;
 
     return [...data].sort((a, b) => {
@@ -1331,7 +1331,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
     if (!rowLabelField) {
       const first = displayColumns[0];
       const value = first ? row?.[first.field] : undefined;
-      // 숫자·날짜 모양(「2026-10-07T02:50:00+00:00」·「12345」)은 사람이 행을 가리키는 이름이 아니다 — 번호 대체로 내린다(#757 실측)
+      // 숫자·날짜 모양(「2026-10-07T02:50:00+00:00」·「12345」)은 사람이 행을 가리키는 이름이 아니다 — 번호 대체로 내린다
       if (typeof value === 'string' && value.trim() !== '' && !/^[\d\s:.,/+\-TZ]+$/.test(value.trim())) {
         return { label: value.trim(), numbered: false };
       }
@@ -1358,7 +1358,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
    *
    * 행 이름이 있으면 「{이름} 선택」, 없으면 「N번째 행 선택」. 이름이 없어 화면 읽기 프로그램에
    * 「체크박스」 만 읽히던 것을 고친다(7.1.0). 첫 열이 참/거짓인 표에서 모든 행이
-   * 「행 선택」 하나로 뭉치던 것도 번호로 나눈다(#757).
+   * 「행 선택」 하나로 뭉치던 것도 번호로 나눈다.
    */
   const getRowSelectLabel = (row: any, rowNumber: number): string => {
     const { label, numbered } = getRowLabel(row, rowNumber);

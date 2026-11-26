@@ -10,7 +10,7 @@ use App\Models\Analytics\AnalyticsVisit;
  *
  * 경고는 대시보드를 보는 모든 관리자에게 뜨지만, 「보존 설정 열기」 버튼의 목적지(통계 설정
  * 화면)는 `core.analytics.update` 를 요구한다. 그 권한이 없는 관리자에게 버튼을 주면 누르는
- * 순간 권한 없음 화면이다 — 버튼만 빼고 경고는 그대로 둔다(#682 S3 라운드 13).
+ * 순간 권한 없음 화면이다 — 버튼만 빼고 경고는 그대로 둔다.
  */
 class LedgerAlertActionPermissionTest extends AnalyticsApiTestCase
 {

@@ -175,7 +175,7 @@
             "partial": "partials/mypage/profile/_modal_withdraw.json"
         },
         {
-            "comment": "모든 기기에서 로그아웃 확인 (#952)",
+            "comment": "모든 기기에서 로그아웃 확인",
             "partial": "partials/mypage/profile/_modal_logout_all_devices.json"
         }
     ]

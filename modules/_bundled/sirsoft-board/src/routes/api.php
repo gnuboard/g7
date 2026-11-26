@@ -95,7 +95,7 @@ Route::prefix('boards')->middleware(['optional.sanctum', 'throttle:600,1'])->nam
         ->where('hash', '[a-zA-Z0-9]{12}')
         ->name('attachment.preview');
 
-    // 본문 미디어 서빙 (#883) — 권한 미들웨어 없음: <img>·<video> 요청에는 Bearer 가 실리지 않으므로
+    // 본문 미디어 서빙 — 권한 미들웨어 없음: <img>·<video> 요청에는 Bearer 가 실리지 않으므로
     // 서명·글 읽기 권한·비밀/삭제/블라인드 게이트는 컨트롤러(서비스)가 맡는다
     Route::get('/{slug}/content-media/{hash}', [UserContentMediaController::class, 'show'])
         ->where('hash', '[a-zA-Z0-9]{12}')
@@ -136,7 +136,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         ->middleware('permission:admin,sirsoft-board.settings.update')
         ->name('admin.settings.clear-cache');
 
-    // 개인정보 보유기간 처리 대상 건수 미리보기 (와일드카드 라우트보다 먼저 등록, 이슈 #636)
+    // 개인정보 보유기간 처리 대상 건수 미리보기 (와일드카드 라우트보다 먼저 등록)
     Route::get('settings/privacy-retention-preview', [BoardSettingsController::class, 'privacyRetentionPreview'])
         ->middleware('permission:admin,sirsoft-board.settings.read')
         ->name('admin.settings.privacy-retention-preview');
@@ -505,13 +505,13 @@ Route::prefix('admin/board/{slug}/attachments')->middleware(['auth:sanctum', 'ad
         ->name('download');
 });
 
-// 관리자 본문 미디어 업로드 (#883) — 서빙은 사용자 경로(boards/{slug}/content-media/{hash})를 함께 쓴다
+// 관리자 본문 미디어 업로드 — 서빙은 사용자 경로(boards/{slug}/content-media/{hash})를 함께 쓴다
 Route::prefix('admin/board/{slug}/content-media')->middleware(['auth:sanctum', 'admin', 'throttle:60,1'])->name('admin.board.content-media.')->group(function () {
     Route::post('/', [AdminContentMediaController::class, 'upload'])
         ->middleware('permission:admin,sirsoft-board.{slug}.admin.attachments.upload')
         ->name('upload');
 
-    // 편집기 업로드 계약 — 표준 계약 엔드포인트 (#887). 권한은 업로드와 같다
+    // 편집기 업로드 계약 — 표준 계약 엔드포인트. 권한은 업로드와 같다
     Route::get('/target', [AdminContentMediaController::class, 'target'])
         ->middleware('permission:admin,sirsoft-board.{slug}.admin.attachments.upload')
         ->name('target');
@@ -820,14 +820,14 @@ Route::prefix('boards/{slug}/attachments')->middleware(['optional.sanctum', 'thr
         ->name('destroy');
 });
 
-// 본문 미디어 업로드 (#883) — 편집기 본문 이미지·동영상·오디오. 「파일 첨부 사용」과 무관하게 업로드 권한 + 본문 미디어 정책으로 판정
+// 본문 미디어 업로드 — 편집기 본문 이미지·동영상·오디오. 「파일 첨부 사용」과 무관하게 업로드 권한 + 본문 미디어 정책으로 판정
 Route::prefix('boards/{slug}/content-media')->middleware(['optional.sanctum', 'throttle:60,1'])->name('boards.content-media.')->group(function () {
     // 글 번호와 비회원 글 비밀번호를 함께 받을 수 있다 — 비밀번호가 실린 요청만 확인 요청과 같은 제한기로 센다
     Route::post('/', [UserContentMediaController::class, 'upload'])
         ->middleware(['permission:user,sirsoft-board.{slug}.attachments.upload', 'throttle:sirsoft-board.secret-password-verify'])
         ->name('upload');
 
-    // 편집기 업로드 계약 — 표준 계약 엔드포인트 (#887). 권한은 업로드와 같다(비회원 포함). 서빙 경로 `{hash}`(12자)와 겹치지 않는다
+    // 편집기 업로드 계약 — 표준 계약 엔드포인트. 권한은 업로드와 같다(비회원 포함). 서빙 경로 `{hash}`(12자)와 겹치지 않는다
     Route::get('/target', [UserContentMediaController::class, 'target'])
         ->middleware('permission:user,sirsoft-board.{slug}.attachments.upload')
         ->name('target');

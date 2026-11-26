@@ -1,5 +1,5 @@
 /**
- * 주문완료 화면 «이 배송지를 저장하기» — 서버 계약(StoreUserAddressRequest) 일치 테스트 (#599 세션A)
+ * 주문완료 화면 «이 배송지를 저장하기» — 서버 계약(StoreUserAddressRequest) 일치 테스트
  *
  * 배경: 주문완료 화면은 로그인 회원에게 이번 주문의 배송지를 주소록에 남기는 버튼을 준다.
  *   저장은 `POST /api/modules/sirsoft-ecommerce/user/addresses` 하나뿐이고, 그 계약은

@@ -211,7 +211,7 @@ class KginicisHostTrustTest extends PluginTestCase
      * 브라우저가 G7Core.api 로 직접 부르는 주소(서명·닫힘 보고·CBT 토큰·해시·모바일 서명)는 API 라우트 주소다.
      *
      * 절대 URL 은 ApiClient 가 /api 접두를 붙이지 않으므로, 웹 경로(/plugins/...)로 내려 주면 라우트가 없는
-     * 주소로 POST 가 나가 결제창이 열리지 않는다(#639 회귀 잠금).
+     * 주소로 POST 가 나가 결제창이 열리지 않는다(회귀 잠금).
      *
      * @scenario host_header=forged, sink=pg_callback_urls
      *

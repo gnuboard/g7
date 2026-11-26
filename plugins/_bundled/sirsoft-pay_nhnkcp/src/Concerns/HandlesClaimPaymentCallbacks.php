@@ -135,7 +135,7 @@ trait HandlesClaimPaymentCallbacks
      * 주문 경로와 같은 강도 — 대상 존재 / 결제 가능 상태 / 소유자 대조 / KRW / 금액 일치 —
      * 를 클레임 결제 건에 적용한다. 소유자 대조는 결제 건이 딸린 주문을 기준으로 주문 경로와 같은 판정
      * ({@see VerifiesOrderOwnership::orderOwnershipRejection()})을 쓴다 — 회원 주문은 로그인한 본인,
-     * 비회원 주문은 그 주문의 조회 토큰(`X-Guest-Order-Token`)이어야 통과한다(#855). 주문이 사라졌으면
+     * 비회원 주문은 그 주문의 조회 토큰(`X-Guest-Order-Token`)이어야 통과한다. 주문이 사라졌으면
      * 열람자와 무관하게 차단한다(아래 본문 주석).
      *
      * @param  Request  $request  승인키 요청
@@ -164,12 +164,12 @@ trait HandlesClaimPaymentCallbacks
 
         // 부모를 못 읽으면(soft-delete 등) 통과가 아니라 차단이다 — `?->user_id ?? 0` 처럼 접으면
         // 주문이 사라진 결제 건에서 열람자 판정이 0 == 0 으로 통과한다. 라우트가 optional.sanctum 이라
-        // (#883) 비로그인 요청도 여기까지 오므로, 그 방어를 이 함수 밖의 조건에 기대지 않고 이 자리에서 닫는다.
+        // 비로그인 요청도 여기까지 오므로, 그 방어를 이 함수 밖의 조건에 기대지 않고 이 자리에서 닫는다.
         if ($order === null) {
             return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.claim_approval_forbidden', 403);
         }
 
-        // 소유자 판정은 주문 경로와 한 규칙이다(#855) — 회원 주문은 로그인 본인만(아니면 403), 비회원 주문은
+        // 소유자 판정은 주문 경로와 한 규칙이다 — 회원 주문은 로그인 본인만(아니면 403), 비회원 주문은
         // 그 주문의 조회 토큰만(없거나 다른 주문 것이면 401). 결제번호만 아는 제3자는 어느 쪽으로도 통과하지 못한다.
         $ownershipError = $this->orderOwnershipRejection(
             $request,

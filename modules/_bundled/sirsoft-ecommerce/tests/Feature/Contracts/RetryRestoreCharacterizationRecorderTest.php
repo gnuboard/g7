@@ -10,7 +10,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionClass;
 
 /**
- * 재결제 복구 특성화 녹화기 (#916)
+ * 재결제 복구 특성화 녹화기 
  *
  * 결제 계약으로 옮기기 전의 결제사 복구 코드(NHN KCP `RecordsPaymentWindowClosure::restoreRetryableKcpOrder`,
  * 나이스페이먼츠 `PaymentCallbackController::restoreRetryableNicepayOrder`)를 그대로 돌려 결과를 녹화 파일로 남긴다.

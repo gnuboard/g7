@@ -4,7 +4,7 @@ description: |
   엔진은 layout_name 이 바뀔 때만 _local 을 비운다. 상품 수정 → 상품 등록, 배송정책 수정 →
   배송정책 등록은 같은 레이아웃이라 _local.form 이 그대로 남고, init_actions 의 기본값 setState 는
   깊은 병합이라 직전 상품의 product_code·이름, 직전 정책의 id·이름이 등록 화면에 살아남았다
-  (브라우저 실측 2026-09-14, #599). 생성 모드 init_actions 첫 자리에서 form 을 null 로 비운 뒤
+  (브라우저 실측 2026-09-14). 생성 모드 init_actions 첫 자리에서 form 을 null 로 비운 뒤
   기본값을 다시 쓴다(sirsoft-page admin_page_form 선례).
 
   상품 복사 진입(copy_id)은 copy_source 데이터소스가 폼을 채우는데, 문자열 initLocal 은 엔진이

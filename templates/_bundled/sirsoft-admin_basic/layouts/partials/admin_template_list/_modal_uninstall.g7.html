@@ -10,7 +10,7 @@
       </span><span>$t:admin.templates.modals.uninstall_confirm|name={{_global.selectedTemplate.name}}</span></p>
       <p class="mt-2 text-label-subtle">$t:admin.templates.modals.uninstall_warning</p>
     </div>
-    <!-- 이 템플릿을 다른 활성 확장이 연동으로 쓰고 있으면(`integrated_by`, 코어 7.1.4 · #822) 삭제 전에 그 목록을 알린다 — 막지 않는 안내다.
+    <!-- 이 템플릿을 다른 활성 확장이 연동으로 쓰고 있으면(`integrated_by`, 코어 7.1.4) 삭제 전에 그 목록을 알린다 — 막지 않는 안내다.
          옛 코어는 `integrated_by` 를 싣지 않으므로 그려지지 않는다. -->
     <div data-ref="uninstall_integrated_by" data-if="{{!(_global.templateUninstallBackups?.length) &amp;&amp; (_global.selectedTemplate?.integrated_by ?? []).length &gt; 0}}" class="mt-4">
       <div class="alert-warning">

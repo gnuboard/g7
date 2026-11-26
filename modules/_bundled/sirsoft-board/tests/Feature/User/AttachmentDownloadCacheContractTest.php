@@ -76,7 +76,7 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
      */
     private function uploadTextAttachment(): object
     {
-        // 기존 글에 붙이는 업로드는 그 글을 고칠 수 있는 사람만 — 비회원 글은 검증 토큰을 싣는다(#883)
+        // 기존 글에 붙이는 업로드는 그 글을 고칠 수 있는 사람만 — 비회원 글은 검증 토큰을 싣는다
         [$postId, $uploadHeaders] = $this->createGuestPostWithUploadToken([
             'title' => '다운로드 캐시 계약',
             'status' => 'published',

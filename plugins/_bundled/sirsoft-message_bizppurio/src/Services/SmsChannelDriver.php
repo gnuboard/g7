@@ -21,7 +21,7 @@ use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioDispatchRep
 use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioTemplateRepositoryInterface;
 
 /**
- * 코어 알림 시스템의 sms 채널 드라이버 (#597 §3.5).
+ * 코어 알림 시스템의 sms 채널 드라이버.
  *
  * ChannelManager::extend('sms', …)(ServiceProvider::boot)로 등록되어, 코어가
  * `via()` 에서 'sms' 채널을 선택하면 이 드라이버의 send() 가 호출된다. Laravel 채널 계약
@@ -121,7 +121,7 @@ class SmsChannelDriver
             );
         }
 
-        // 알림 변수는 받는 사람 언어로 해석해 쓴다 — 언어별 값({ko: …, en: …})이 그대로 배열로 남으면 치환되지 않는다(#798).
+        // 알림 변수는 받는 사람 언어로 해석해 쓴다 — 언어별 값({ko: …, en: …})이 그대로 배열로 남으면 치환되지 않는다.
         //    전화번호 같은 문자열 변수는 그대로 남는다.
         $data = $notification->getDataFor($notifiable);
 

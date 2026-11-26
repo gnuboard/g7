@@ -1858,7 +1858,7 @@ class SeoMetaResolverTest extends TestCase
      * 회귀: 모듈 템플릿 "{commerce_name} - {product_name}" 에서
      * commerce_name 이 빈 값일 때 선두 "- " 가 남는 회귀를 방지합니다.
      *
-     * issue#300: og:title="- 무선 마우스 #99" 슬랙/페이스북 미리보기 제목 깨짐
+     * og:title="- 무선 마우스 #99" 슬랙/페이스북 미리보기 제목 깨짐
      *
      * @scenario field=title, source=extension_template
      *
@@ -2174,7 +2174,7 @@ class SeoMetaResolverTest extends TestCase
      * 반환하는 환경에서, 기존 substituteVars 의 `(string) $resolvedVars[$matches[1]]` 가
      * "Array to string conversion" → SeoMiddleware catch → SPA fallback 회귀를 차단.
      *
-     * (이 회귀는 #300 작업의 substituteVars 강화에서 도입됨 — 이전 str_replace 기반은
+     * (이 회귀는 substituteVars 강화에서 도입됨 — 이전 str_replace 기반은
      *  array 받아도 fatal 안 났음.)
      *
      * @scenario field=title, source=extension_template

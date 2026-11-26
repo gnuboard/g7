@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * 개발 중 전용 표(`ecommerce_content_media`)에 쌓인 본문 미디어를 이 모듈 범용 첨부 표(`ecommerce_attachments`, collection =
- * `content_media`)로 옮기고 전용 표를 지웁니다 (#887).
+ * `content_media`)로 옮기고 전용 표를 지웁니다.
  *
  * 1.3.4 개발 중 상품 설명·공통 정보 본문 미디어를 전용 표에 두었다가 출시 전에 게시판·페이지와 같은 모양의 범용 첨부 표로 옮겼다.
  * 공개판(1.3.3 이하)에는 전용 표가 없으므로 공개 업그레이드에서는 아무것도 하지 않는다. 이미 전용 표를 만든 개발 설치본만 대상이다.

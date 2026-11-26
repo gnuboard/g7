@@ -1,6 +1,6 @@
 /**
  * @file NotificationCenter.readBatchChunk.test.tsx
- * @description 드롭다운을 닫을 때 읽음 처리 id 를 서버 한도(100건) 단위로 나눠 보낸다 (#703)
+ * @description 드롭다운을 닫을 때 읽음 처리 id 를 서버 한도(100건) 단위로 나눠 보낸다
  *
  * 더보기로 알림을 많이 펼친 뒤 닫으면 화면에 보인 미읽음 id 가 100건을 넘을 수 있다.
  * 읽음 일괄 API(`read-batch`)는 `ids` 를 최대 100건까지만 받으므로(NotificationBatchReadRequest),

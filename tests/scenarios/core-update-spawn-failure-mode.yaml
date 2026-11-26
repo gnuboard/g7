@@ -134,7 +134,7 @@ effects:
   - snapshotOwnershipDetailed_excludes_current_run_staging_root
   - execute_bundled_updates_child_sweeps_empty_staging_directories_left_by_parent
   - apply_mode_incremental_prune_hint_does_not_reference_rollback_command
-  # #658 stale 패키지 매니페스트 3계층 (부모 선정리 / 자식 자가 치유 / 버전 판독 범위)
+  # stale 패키지 매니페스트 3계층 (부모 선정리 / 자식 자가 치유 / 버전 판독 범위)
   - spawnUpgradeStepsProcess_clears_package_manifests_before_proc_open
   - spawn_child_boots_with_regenerated_package_manifest_when_parent_left_stale_dev_manifest
   - bootstrap_app_unlinks_stale_package_manifest_when_update_flag_present
@@ -150,7 +150,7 @@ effects:
   - getCoreVersion_ignores_env_APP_VERSION_outside_update_tree
   - extension_required_core_version_is_validated
   - getCoreVersion_falls_back_to_config_when_env_absent_inside_update_tree
-  # #658 상주 큐 워커 재시작 신호
+  # 상주 큐 워커 재시작 신호
   - core_update_step11_signals_queue_restart
   - core_update_queue_restart_failure_does_not_abort_update
   # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)

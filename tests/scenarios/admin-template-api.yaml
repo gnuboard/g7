@@ -9,7 +9,7 @@ description: |
     - show: 상세 (민감 필드 제외·externals 정규화)
     - install / install_from_file / install_from_github: 설치 세 경로 (식별자 형식·ZIP·GitHub 주소 검증, 도메인 오류 422)
     - activate: 활성화 (의존성 미충족 409·강제 활성화)
-    - deactivate: 비활성화 — 유형의 마지막 활성 템플릿 거절은 TemplateOperationGuardTest 가 본다(#703)
+    - deactivate: 비활성화 — 유형의 마지막 활성 템플릿 거절은 TemplateOperationGuardTest 가 본다
     - uninstall: 삭제
     - changelog: 변경 이력
 

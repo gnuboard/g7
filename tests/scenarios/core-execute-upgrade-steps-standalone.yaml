@@ -94,7 +94,7 @@ effects:
   - ExecuteUpgradeStepsCommand_steps_only_runs_only_upgrade_steps              # 권한 정상화와 사전, 사후 단계 없이 스텝만 호출한다
   - ExecuteUpgradeStepsCommand_steps_only_overrides_standalone_default_steps   # spawn 플래그가 없어도 단독 실행의 다섯 단계 자동 수행보다 우선한다
 
-  # §단독 실행 가드·잠금 (7.2.0, #888) — 새 프로세스는 낡은 메모리 가드 대상이 아니고, 코어 업데이트 실행 잠금을 잡는다
+  # §단독 실행 가드·잠금 (7.2.0) — 새 프로세스는 낡은 메모리 가드 대상이 아니고, 코어 업데이트 실행 잠금을 잡는다
   - standalone_run_is_not_blocked_by_stale_memory_guard
   - standalone_run_takes_core_update_run_lock
 

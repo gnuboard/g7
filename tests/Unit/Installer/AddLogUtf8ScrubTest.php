@@ -12,7 +12,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
 /**
  * 설치 로그 기록 시 UTF-8 정규화(scrub) 회귀 테스트.
  *
- * 배경 (gnuboard/g7#62, dev-g7#445):
+ * 배경 (gnuboard/g7#62):
  *   Vendor 설치 방식 "Composer 실행" + 폴링 모드 조합에서 브라우저 콘솔에
  *   "Unexpected end of JSON input" 이 폭주하고 진행 상황이 표시되지 않는 회귀.
  *

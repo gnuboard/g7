@@ -1,7 +1,7 @@
 feature: 업로드가 실패하면 저장하지 않는다 — 업로드 신호를 쓰는 저장 흐름 전부
 
 description: |
-  업로드가 모두 실패해도 저장 요청이 이어졌다(관리자 환경설정 `POST /api/admin/settings` 의 `site_logo: []`, #869 브라우저 실측).
+  업로드가 모두 실패해도 저장 요청이 이어졌다(관리자 환경설정 `POST /api/admin/settings` 의 `site_logo: []`).
   저장 흐름이 신호마다 결과의 `failedCount` 를 `_local.uploadFailedCount` 에 모으고, 하나라도 실패면 저장 표시를 풀고
   `attachment.upload_failed_save_stopped` 로 알린 뒤 저장 요청을 건너뛴다. 대상은 업로드 신호를 쓰는 저장 시퀀스 전부다
   (관리자 환경설정, 사용자 글쓰기, 게시판 관리자 글쓰기 위아래 둘, 이커머스 상품 폼, 페이지 폼).

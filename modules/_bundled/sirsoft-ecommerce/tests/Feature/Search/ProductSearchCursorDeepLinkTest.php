@@ -7,7 +7,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 상품 검색의 커서 딥링크 회귀 테스트 (#519)
+ * 상품 검색의 커서 딥링크 회귀 테스트
  *
  * 커서 판정은 코어({@see SearchPagePolicy})가 소유하지만, 그 판정에 페이지
  * 번호가 도달하지 않으면 규칙이 무력해진다. 기본값 1 이 적용돼 **모든 요청이 첫 페이지로

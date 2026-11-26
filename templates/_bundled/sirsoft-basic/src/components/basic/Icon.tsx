@@ -116,7 +116,7 @@ export const Icon: React.FC<IconProps> = ({
   const mappedName = iconNameMap[rawName];
 
   // 매핑이 없을 때만 스타일 토큰을 해석한다 — `fas fa-x`·`far fa-x`·`fa-regular fa-x` 를 모두 읽는다.
-  // 종전에는 접두를 해석하지 않아 `fas fa-x` 가 `fas fa-fas fa-x` 로 조합됐다(#381).
+  // 종전에는 접두를 해석하지 않아 `fas fa-x` 가 `fas fa-fas fa-x` 로 조합됐다.
   const parsed = mappedName ? null : parseIconName(rawName);
   const resolvedStyle: IconStyle = parsed?.style ?? iconStyle;
   const iconName = mappedName

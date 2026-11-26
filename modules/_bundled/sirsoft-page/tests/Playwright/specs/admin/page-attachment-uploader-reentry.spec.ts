@@ -1,5 +1,5 @@
 /**
- * 페이지 첨부 — 첨부 업로더 확장점(#916 ③) 기본 경로의 업로드 → 저장 → 재진입.
+ * 페이지 첨부 — 첨부 업로더 확장점 기본 경로의 업로드 → 저장 → 재진입.
  *
  * 레이아웃의 FileUploader 는 `attachment_uploader` 확장점의 default 안으로 옮겨졌다. 대체 업로더가 없는 기본 경로에서
  * 저장 버튼의 `upload:page_attachments` 신호와 결과(`_eventResult`) 모양이 그대로여야 첨부가 페이지에 붙는다. 이 스펙은
@@ -36,7 +36,7 @@ test.describe('페이지 첨부 업로더 확장점 — 업로드 → 저장 →
     await page.locator('input[name="title[ko]"]').fill('E2E 업로더 재진입');
 
     // 등록 화면에서도 업로더는 하나다
-    // #408 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+    // 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
     await expect(page.locator('[id^="file_uploader__"]')).toHaveCount(1);
 
     const [chooser] = await Promise.all([

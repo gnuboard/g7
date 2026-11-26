@@ -59,7 +59,7 @@
   /*
    * 모바일 드로어. 모바일 헤더(.mobile_header_portable, h-16=4rem, relative)가 일반 흐름
    * 최상단에 있으므로, 드로어를 inset-y-0(top:0)로 두면 헤더 영역을 덮어 첫 메뉴 항목이
-   * 잘려 보인다(#450). top 을 헤더 높이(4rem)만큼 내려 드로어가 헤더 아래에서 시작하게 한다.
+   * 잘려 보인다. top 을 헤더 높이(4rem)만큼 내려 드로어가 헤더 아래에서 시작하게 한다.
    */
   .left_sidebar_area_portable {
     @apply fixed left-0 z-50 w-64 transition-transform duration-300 flex flex-col bg-white;
@@ -166,7 +166,7 @@
   /*
    * 헤더 z-index 는 콘텐츠 영역의 .sticky-tab-nav (z-40) 보다 높아야 한다.
    * 헤더가 z-10 이면 자체 stacking context 가 sticky-tab-nav 아래로 깔려
-   * 헤더 내부 UserProfile 드롭다운(z-50) 도 함께 가려짐 (#399 Phase 1.3 회귀).
+   * 헤더 내부 UserProfile 드롭다운(z-50) 도 함께 가려짐.
    */
   .main_header {
     @apply h-16 flex items-center justify-between px-8 bg-white flex-shrink-0 relative z-50;

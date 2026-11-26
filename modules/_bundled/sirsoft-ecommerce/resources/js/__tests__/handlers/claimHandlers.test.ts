@@ -531,7 +531,7 @@ describe('완료 실행 — 페이로드 계약 (D26)', () => {
      *
      * 브라우저에서는 이 축을 잴 수 없다 — 핸들러가 번들 로드 시점에 `G7Core.api` 를
      * 붙잡으므로 페이지 안에서 `fetch`·`api.post` 를 나중에 바꿔도 가로채지지 않는다
-     * (#599 세션2 계획서준수검증 결함2 실측 중 확인 · 반품 4건을 쓰고도 재현 실패).
+     * (세션2 계획서준수검증 결함2 실측 중 확인 · 반품 4건을 쓰고도 재현 실패).
      * 그래서 계약은 여기서 잠근다.
      *
      * @effects completion_failure_keeps_state_and_reports
@@ -1152,7 +1152,7 @@ describe('첨부 새로고침', () => {
     });
 });
 
-describe('반려 사유 — 목록 일괄 (#599 후속 운영 결정)', () => {
+describe('반려 사유 — 목록 일괄 (후속 운영 결정)', () => {
     /**
      * 사유 없이 반려를 고르면 확인 모달을 열지 않는다 — 비워 보내면 구매자 화면의 반려 사유가 빈 칸이 된다.
      *
@@ -1198,7 +1198,7 @@ describe('반려 사유 — 목록 일괄 (#599 후속 운영 결정)', () => {
     });
 });
 
-describe('회수중·발송중 송장 — 목록 일괄 (#599 후속 운영 결정)', () => {
+describe('회수중·발송중 송장 — 목록 일괄 (후속 운영 결정)', () => {
     const TRACKED_ROWS = [
         { ...ROWS[0], collection_carrier_id: 3, collection_tracking_number: 'SAVED-31' },
         { ...ROWS[1], collection_carrier_id: null, collection_tracking_number: null },

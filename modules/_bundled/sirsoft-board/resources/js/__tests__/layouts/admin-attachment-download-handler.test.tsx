@@ -1,6 +1,6 @@
 /**
  * @file admin-attachment-download-handler.test.tsx
- * @description 관리자 게시글/답변 첨부 다운로드 카드가 토큰 동반 핸들러로 다운로드하는지 회귀 (이슈 #413 item 58b)
+ * @description 관리자 게시글/답변 첨부 다운로드 카드가 토큰 동반 핸들러로 다운로드하는지 회귀 (item 58b)
  *
  * 검증 방식: 레이아웃 JSON 트리 직접 분석 (DOM 비의존).
  *
@@ -61,7 +61,7 @@ function findAttachmentCards(root: unknown): Node[] {
 describe.each([
     ['게시글', postCard],
     ['답변', replyCard],
-])('이슈 #413-58b — 관리자 %s 첨부 다운로드 핸들러 전환', (_label, layout) => {
+])('관리자 %s 첨부 다운로드 핸들러 전환', (_label, layout) => {
     /**
      * @scenario card=admin_post
      * @scenario card=admin_reply

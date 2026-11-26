@@ -1,11 +1,11 @@
 /**
  * @file admin-user-form-password-policy.test.tsx
- * @description 관리자 회원 등록·수정 화면의 비밀번호 정책 칸 구조 회귀 테스트 (#736 D11·D19)
+ * @description 관리자 회원 등록·수정 화면의 비밀번호 정책 칸 구조 회귀 테스트
  *
  * - 본인 계정의 새 비밀번호를 입력할 때만 「현재 비밀번호」를 묻는다(D19 — 서버도 같은 확인을 한다).
  * - 다른 회원의 비밀번호를 정하면(등록 포함) 그 회원이 다음 로그인 때 바꿔야 한다는 안내를 띄운다(D11).
  * - 켜진 규칙을 한 줄로 안내하되 재사용 금지는 본인일 때만(다른 회원에게 정해 주는 비밀번호는 재사용 검사를 하지 않는다).
- * - 「비밀번호 만료」 개별 설정은 상세와 같은 「비밀번호」 구획에 서고(#599) 등록 기본값은 「따름」이다.
+ * - 「비밀번호 만료」 개별 설정은 상세와 같은 「비밀번호」 구획에 서고 등록 기본값은 「따름」이다.
  *
  * @since engine-v1.77.0
  */
@@ -28,7 +28,7 @@ const nodes = flatten((form as any).slots?.content ?? (form as any).components);
 const find = (id: string) => nodes.find((n) => n.id === id);
 const SELF = '!!route?.id && route?.id === current_user?.data?.uuid';
 
-describe('관리자 회원 폼 — 비밀번호 정책 (#736)', () => {
+describe('관리자 회원 폼 — 비밀번호 정책', () => {
   /**
    * @scenario actor=self, password=entered
    * @effects self_change_asks_current_password
@@ -103,7 +103,7 @@ describe('관리자 회원 폼 — 비밀번호 정책 (#736)', () => {
   /**
    * 수정 화면끼리 SPA 로 옮기면 같은 레이아웃이라 `_local.form` 이 남고, 데이터 소스(`initLocal="form"`)는 회원 기록만
    * 덮어써 비밀번호 칸은 지우지 않는다 — A 회원에 입력하다 만 비밀번호가 B 회원 폼에 남아 그대로 저장되면 B 의 비밀번호가
-   * 바뀌고 다음 로그인 때 변경을 요구받는다(#736 S2 브라우저 실측). 수정 모드 진입마다 세 칸을 비운다.
+   * 바뀌고 다음 로그인 때 변경을 요구받는다. 수정 모드 진입마다 세 칸을 비운다.
    *
    * @scenario actor=other, password=entered
    * @effects edit_navigation_clears_unsaved_password

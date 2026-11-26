@@ -188,7 +188,7 @@ const ALERTS = [
   { type: 'warning', subtype: 'static_publish_write_failed', icon: 'exclamation-triangle', title: '게시 실패', message: 'm3' },
   // (4) 신규 warning — (3) 과 같은 경로
   { type: 'warning', subtype: 'trusted_proxy_missing', icon: 'exclamation-triangle', title: '신뢰 프록시 미설정', message: 'm4' },
-  // (5) 예약 미실행 (#609) — 이 알림은 종전에 화면이 **이름으로** 알아보게 되어 있었다.
+  // (5) 예약 미실행 — 이 알림은 종전에 화면이 **이름으로** 알아보게 되어 있었다.
   //     그 열거를 심각도 판정이 대체했으므로, 이름이 목록에 없어도 amber 로 나와야 한다.
   //     조치 링크(action_path)까지 실어 상단 승격이 그 링크를 빼앗지 않는지 함께 잰다.
   {
@@ -326,7 +326,7 @@ describe('대시보드 알림 심각도별 배치와 색상', () => {
 
     expect(row).toContain('bg-gray-50');
     expect(row).not.toContain('bg-amber-50');
-    // 회색은 의미 클래스 text-muted 가 준다 — 정의(text-gray-500, 다크 짝)까지 펼쳐 확인한다 (#399)
+    // 회색은 의미 클래스 text-muted 가 준다 — 정의(text-gray-500, 다크 짝)까지 펼쳐 확인한다
     expect(icon.split(/\s+/)).toContain('text-muted');
     expect(expandSemanticClassName(icon)).toContain('text-gray-500');
     expect(expandSemanticClassName(icon)).toContain('dark:text-gray-400');

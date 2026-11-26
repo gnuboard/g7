@@ -1,12 +1,12 @@
 /**
  * @file reviewImageConsumers.test.ts
- * @description 리뷰 목록 첨부 이미지 — 소비처 고정 (#518 / 공개 #76)
+ * @description 리뷰 목록 첨부 이미지 — 소비처 고정 (공개 #76)
  *
  * 회귀 배경:
  * 목록 응답에서 리뷰 첨부 이미지를 빼면서, 관리자 리뷰 목록은 "확장 행이 썸네일을 그린다" 는
  * 실측으로 유지했으나 **공개 상품상세의 리뷰 탭은 놓쳤다**. `shop/show.json` 만 열어보고
  * "리뷰 첨부는 표시하지 않는다" 고 판단했는데, 실제로 그리는 곳은 그 파일이 include 하는
- * 파셜(`partials/shop/detail/_tab_reviews.json`)이었다. 7.1.6(#898)부터는 후기 한 장을 그 탭이 다시
+ * 파셜(`partials/shop/detail/_tab_reviews.json`)이었다. 7.1.6부터는 후기 한 장을 그 탭이 다시
  * include 하는 공용 카드 조각(`templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_review_card.json`)이 그린다 — 후기 모아보기 화면도
  * 같은 조각을 쓴다. 그래서 첨부 소비 단언은 카드 조각을 보고, 탭 → 카드 연결도 함께 확인한다.
  *
@@ -71,7 +71,7 @@ function readReviewCardRawViaTab(): string {
 /**
  * 축 요약(마커 아님 — 평문): surface public_product_review_list, observation consumer_screen. 마킹은 각 it 앞에 있다.
  */
-describe('공개 상품상세 리뷰 탭 — 첨부 이미지 소비 (#518 / 공개 #76)', () => {
+describe('공개 상품상세 리뷰 탭 — 첨부 이미지 소비 (공개 #76)', () => {
     // @scenario surface=public_product_review_list,observation=consumer_screen
     // @effects review_list_images_are_consumed_by_screen
     it('상품상세가 리뷰 탭 파셜을 실제로 포함한다', () => {
@@ -123,7 +123,7 @@ describe('공개 상품상세 리뷰 탭 — 첨부 이미지 소비 (#518 / 공
 /**
  * 축 요약(마커 아님 — 평문): surface admin_product_review_list, observation consumer_screen. 마킹은 각 it 앞에 있다.
  */
-describe('관리자 리뷰 목록 — 첨부 이미지 소비 (#518 / 공개 #76)', () => {
+describe('관리자 리뷰 목록 — 첨부 이미지 소비 (공개 #76)', () => {
     // @scenario surface=admin_product_review_list,observation=consumer_screen
     // @effects review_list_images_are_consumed_by_screen
     it('확장 행이 첨부 이미지를 그리고 미리보기 모달에 배열을 넘긴다', () => {

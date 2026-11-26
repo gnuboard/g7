@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    // Reason sent when closing an unpaid virtual account (moved from the ecommerce key, #916)
+    // Reason sent when closing an unpaid virtual account (moved from the ecommerce key)
     'vbank_close_reason' => 'Order cancelled before deposit',
     'errors' => [
         'cash_receipt_issue_failed' => 'Failed to issue cash receipt.',

@@ -9,7 +9,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 확장 문서 생성기의 재등록 진입점 판정을 고정합니다 (#639 ④).
+ * 확장 문서 생성기의 재등록 진입점 판정을 고정합니다.
  *
  * 로케일을 바꾸면 코어가 ActionDispatcher 를 새로 만들고 `window.__{확장}.initPlugin()` 을 불러
  * 핸들러를 다시 꽂는다. 핸들러를 등록하면서 그 전역을 두지 않은 확장은 언어 전환 뒤 액션이

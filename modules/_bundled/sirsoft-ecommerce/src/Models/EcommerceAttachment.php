@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 /**
- * 이커머스 범용 첨부 모델 — `ecommerce_attachments` (#887)
+ * 이커머스 범용 첨부 모델 — `ecommerce_attachments`
  *
  * 게시판 `board_attachments`·페이지 `page_attachments` 와 같은 모양의 이 모듈 첨부 표다. 쓰임새는 `collection` 으로 나누고,
  * 쓰임새별 규칙(전역 범위·소유 종류·저장 카테고리)은 범위 모델이 갖는다 — 상품 설명·공통 정보 편집기 본문 미디어는

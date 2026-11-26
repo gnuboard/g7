@@ -54,7 +54,7 @@ class AdminIdentityPolicyUpdateRequest extends FormRequest
             // 아래 필드는 source_type=admin 일 때만 Controller 에서 적용
             'key' => ['sometimes', 'string', 'max:120'],
             'scope' => ['sometimes', Rule::enum(IdentityPolicyScope::class)],
-            // 범위가 「사용자 지정」이면 등록된 확장 지점 키만 — 저장된 대상을 그대로 보내면 통과 (7.2.1, #952)
+            // 범위가 「사용자 지정」이면 등록된 확장 지점 키만 — 저장된 대상을 그대로 보내면 통과 (7.2.1)
             'target' => ['sometimes', 'string', 'max:255', new RegisteredIdentityCheckpointRule(fn (): ?string => $this->effectiveScope(), $this->currentPolicy()?->target)],
             'purpose' => ['sometimes', 'string', 'max:64', new RegisteredIdentityPurposeRule(true, unchangedValue: $this->currentPolicy()?->purpose)],
             // priority 동률 차단 — 같은 scope+target 에 동일 priority 활성 정책이 이미 있으면 거부 (자기 자신 제외).

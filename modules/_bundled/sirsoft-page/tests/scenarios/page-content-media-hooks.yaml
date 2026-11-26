@@ -1,4 +1,4 @@
-feature: 페이지 본문 미디어 — 코어 공용 훅 발화 (#887 G2)
+feature: 페이지 본문 미디어 — 코어 공용 훅 발화
 
 description: |
   페이지 본문 미디어 업로드는 코어 골격이 `core.content_media.before_upload` → `filter_upload_file` → `after_upload` 를 한 번씩

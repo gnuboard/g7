@@ -25,7 +25,7 @@ class BroadcastNotificationListener implements HookListenerInterface
     public static function getSubscribedHooks(): array
     {
         // sync: 채널 판정만 그 자리에서 한다 — 큐로 가면 database 가 아닌 발송(본인인증 메일·문자 등)까지
-        // 마스킹 전 본문을 담은 발송 문맥이 큐 인자로 직렬화돼 jobs 테이블에 남는다(#724). 실제 전송은
+        // 마스킹 전 본문을 담은 발송 문맥이 큐 인자로 직렬화돼 jobs 테이블에 남는다. 실제 전송은
         // GenericBroadcastEvent(ShouldBroadcast)가 큐에서 하므로 발송 요청을 늦추지 않는다.
         return [
             'core.notification.after_channel_send' => [

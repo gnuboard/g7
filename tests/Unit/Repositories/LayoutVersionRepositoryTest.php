@@ -848,7 +848,7 @@ class LayoutVersionRepositoryTest extends TestCase
     }
 
     /**
-     * saveVersion 의 부가 요약(병합 출처)은 계산된 카운트와 함께 저장되고, 재계산은 카운트만 다시 쓴다 (#727).
+     * saveVersion 의 부가 요약(병합 출처)은 계산된 카운트와 함께 저장되고, 재계산은 카운트만 다시 쓴다.
      *
      * @effects version_history_marks_extension_update_rows
      *

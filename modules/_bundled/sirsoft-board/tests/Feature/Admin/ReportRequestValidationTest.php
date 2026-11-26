@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Models\Report;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 신고 관리 컨트롤러의 전용 FormRequest 검증 회귀 테스트 (#413-74 구조 정리)
+ * 신고 관리 컨트롤러의 전용 FormRequest 검증 회귀 테스트 (74 구조 정리)
  *
  * index/reporters/getStatusCounts 가 base Request 주입에서 전용 FormRequest 로 전환되며
  * 입력 검증이 컨트롤러 인라인 검사에서 FormRequest 로 이관되었다. 이 전환이 기존 동작

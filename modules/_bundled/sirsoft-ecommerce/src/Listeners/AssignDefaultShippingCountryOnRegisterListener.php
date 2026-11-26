@@ -40,7 +40,7 @@ class AssignDefaultShippingCountryOnRegisterListener implements HookListenerInte
     {
         return [
             // sync: 가입·관리자 생성 직후 연 회원 상세에 배정값이 보여야 한다 — 큐로 가면 워커가 돌 때까지 빈칸이다.
-            // 「이미 설정돼 있으면 유지」 가드로 멱등이다(#724).
+            // 「이미 설정돼 있으면 유지」 가드로 멱등이다.
             // 회원가입(유저 자가 가입)
             'core.auth.after_register' => ['method' => 'handleRegister', 'priority' => 20, 'sync' => true],
             // 관리자 회원생성

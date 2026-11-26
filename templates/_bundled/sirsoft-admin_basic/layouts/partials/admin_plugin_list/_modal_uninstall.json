@@ -283,7 +283,7 @@
             ]
         },
         {
-            "comment": "이 플러그인을 다른 활성 확장이 연동으로 쓰고 있으면(`integrated_by`, 코어 7.1.4 · #822) 삭제 전에 그 목록을 알린다 — 막지 않는 안내다.\n         옛 코어는 `integrated_by` 를 싣지 않으므로 그려지지 않는다.",
+            "comment": "이 플러그인을 다른 활성 확장이 연동으로 쓰고 있으면(`integrated_by`, 코어 7.1.4) 삭제 전에 그 목록을 알린다 — 막지 않는 안내다.\n         옛 코어는 `integrated_by` 를 싣지 않으므로 그려지지 않는다.",
             "id": "uninstall_integrated_by",
             "type": "basic",
             "name": "Div",

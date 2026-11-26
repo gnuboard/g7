@@ -1,5 +1,5 @@
 /**
- * setUserFilterExtHandler 테스트 (#705)
+ * setUserFilterExtHandler 테스트
  *
  * 회원 목록 확장 필터 채널(`ext_filters[]`)의 원소 조립 — 같은 키 교체, 빈 값 제거, 원소 형식,
  * 잘못된 키 무시, 현재 배열을 컨텍스트에서 읽는 폴백.

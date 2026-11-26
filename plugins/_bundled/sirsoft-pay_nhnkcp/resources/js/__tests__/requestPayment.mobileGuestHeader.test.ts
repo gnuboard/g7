@@ -1,6 +1,6 @@
 // e2e:allow 모바일 승인키 요청 헤더·오류 문구 — KCP 모바일 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, Chrome MCP 모바일 에뮬레이션 실측 T2-c 로 승인키 응답까지 확인한다.
 /**
- * 비회원 주문의 모바일 결제 승인키 요청 (#883)
+ * 비회원 주문의 모바일 결제 승인키 요청
  *
  * 승인키 API 는 비회원 주문을 주문 조회 토큰(`X-Guest-Order-Token`)으로 확인한다(결제창 닫힘 보고와 같은 방식).
  * 핸들러는 그 헤더를 실어 보내고, 토큰이 없거나 만료돼 401 이 오면(토큰 없이 보낸 요청이라 코어는 로그인 화면으로
@@ -57,7 +57,7 @@ afterEach(() => {
     document.body.innerHTML = '';
 });
 
-describe('NHN KCP 모바일 승인키 — 비회원 주문 (#883)', () => {
+describe('NHN KCP 모바일 승인키 — 비회원 주문', () => {
     // @scenario request=guest_token_valid
     // @effects guest_order_mobile_approval_with_order_token
     it('승인키 요청에 비회원 주문 조회 토큰 헤더를 싣는다', async () => {
@@ -101,7 +101,7 @@ describe('NHN KCP 모바일 승인키 — 비회원 주문 (#883)', () => {
     });
 });
 
-describe('NHN KCP 모바일 승인키 — 비회원 교환/반품 추가결제 (#855)', () => {
+describe('NHN KCP 모바일 승인키 — 비회원 교환/반품 추가결제', () => {
     const CLAIM_PAYMENT = {
         order_number: 'CP-20261114-0001',
         order_name: '반품 배송비',

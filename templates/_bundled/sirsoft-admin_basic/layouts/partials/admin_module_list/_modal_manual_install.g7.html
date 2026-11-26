@@ -3,7 +3,7 @@
   오류를 두 단으로 보여 준다. 위쪽 붉은 상자는 전체 메시지, 각 입력칸 아래는 그 필드 오류다.
   탭을 옮기거나 값을 고치면 오류를 지운다 — 다른 갈래의 실패가 남아 있으면 이번 입력의 문제로 읽힌다.
   설치 창(`_modal_install`)과 달리 의존·언어팩을 고르는 자리가 없다(무엇이 들었는지 아직 모른다).
-  패키지 무결성(#916): 파일 탭에 서명 파일(.sig.json, 선택) 칸이 있다. 서버가 미서명(409)·서명 불일치(422)로 거절하면 공용 안내 조각이
+  패키지 무결성: 파일 탭에 서명 파일(.sig.json, 선택) 칸이 있다. 서버가 미서명(409)·서명 불일치(422)로 거절하면 공용 안내 조각이
   위쪽에 사유를 그리고, 정책이 허용하면(`can_continue`) 설치 버튼이 「미서명으로 계속」으로 바뀌어 **같은 요청에 `allow_unsigned=1`**
   만 더해 다시 보낸다(서버는 받은 파일을 보관하지 않는다). 입력을 바꾸면 거절 기록도 지워 다음 클릭은 처음 요청이 된다. -->
 <partial description="모듈 수동 설치 모달" editor_label="$t:admin.modal_label.admin_module_list.module_manual_install_modal">
@@ -122,10 +122,10 @@
               <success>
                 <set-state target="global" :isModuleManualInstalling="false" :moduleUploadFile="null" :moduleUploadFileName="null" :moduleUploadSignature="null" :moduleUploadSignatureName="null" :moduleGithubUrl="null" :moduleInstallError="null" :moduleInstallErrors="null" moduleInstallTab="file_upload" :packageIntegrity="null" :packageIntegrityMessage="null"/>
                 <toast type="success" message="$t:admin.modules.install_success"/>
-                <!-- 설치된 패키지의 서명 결과(응답 integrity_status, #916) — 확인됐으면 서명자를, 서명 없이 들였으면 그 사실을 알린다 -->
+                <!-- 설치된 패키지의 서명 결과(응답 integrity_status) — 확인됐으면 서명자를, 서명 없이 들였으면 그 사실을 알린다 -->
                 <toast if="{{response?.data?.integrity_status === 'verified'}}" type="success" message="$t:admin.package_integrity.result_verified|signer={{(response?.data?.integrity_key_id ?? '').split(':')[0]}}"/>
                 <toast if="{{response?.data?.integrity_status === 'unsigned' || response?.data?.integrity_status === 'unverifiable'}}" type="warning" message="$t:admin.package_integrity.result_unsigned"/>
-                <!-- 함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 함께 설치하다 실패한 항목은 상태 뒤에 사유(failure_reason)를 붙인다. 막지 않는 안내라 창을 열지 않는다. -->
+                <!-- 함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4). 함께 설치하다 실패한 항목은 상태 뒤에 사유(failure_reason)를 붙인다. 막지 않는 안내라 창을 열지 않는다. -->
                 <toast if="{{(response?.data?.integration_notices ?? []).length !== 0}}" type="info" message="$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + (n.failure_reason ? ': ' + n.failure_reason : '') + ')').join(', ')}}"/>
                 <refetch-data-source dataSourceId="modules"/>
                 <refetch-data-source dataSourceId="admin_menu"/>

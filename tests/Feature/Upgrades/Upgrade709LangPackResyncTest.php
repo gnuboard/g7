@@ -171,7 +171,7 @@ class Upgrade709LangPackResyncTest extends TestCase
     /**
      * 본인인증 알림 템플릿의 소실된 ja 도 같은 재동기화로 복구된다.
      *
-     * 7.1.0 부터 본인인증 문구는 알림 정의(identity.*)이고 번역은 seed/notifications.json 의 type 키로 온다(#699).
+     * 7.1.0 부터 본인인증 문구는 알림 정의(identity.*)이고 번역은 seed/notifications.json 의 type 키로 온다.
      * 7.0.8 에서 여러 버전을 건너뛰는 업데이트는 이 스텝을 7.1.0 코드 위에서 돌리므로 그 경로를 잠근다.
      *
      * @scenario domain=identity, entry=upgrade_resync

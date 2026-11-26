@@ -31,7 +31,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 클레임 before·filter 훅 신설 검증 (#599 validate 01-#6)
+ * 클레임 before·filter 훅 신설 검증 (validate 01-#6)
  *
  * 클레임 도메인에는 after 훅(`claim.{type}.requested`·`status_changed`·`completed` 등)만 있어 확장이
  * 신청·수정·전이·완료·철회를 **막거나 입력을 바꿀** 자리가 없었다(선례 `order.before_cancel`).
@@ -559,7 +559,7 @@ class ClaimBeforeFilterHooksTest extends ModuleTestCase
     /**
      * 송장을 실은 회수중 전이도 before 훅을 지나고, 막으면 송장도 기록되지 않는지 검증합니다.
      *
-     * 송장 저장은 상태를 옮기지 않는다(#599 후속 운영 결정) — 회수중은 전이가 송장을 실어 들어간다.
+     * 송장 저장은 상태를 옮기지 않는다(후속 운영 결정) — 회수중은 전이가 송장을 실어 들어간다.
      *
      * @return void 반환값 없음
      *
@@ -748,7 +748,7 @@ class ClaimBeforeFilterHooksTest extends ModuleTestCase
     }
 
     /**
-     * 상품 칸 반려 사유도 신청서 칸과 같은 필터(`filter_status_change_data`)를 거치는지 검증합니다. (#599 후속 운영 결정)
+     * 상품 칸 반려 사유도 신청서 칸과 같은 필터(`filter_status_change_data`)를 거치는지 검증합니다. (후속 운영 결정)
      *
      * 같은 「반려 사유」 인데 어느 칸에서 적었느냐에 따라 확장이 손댈 수 있는지가 갈리면 안 된다 — 금칙어
      * 필터 같은 확장이 상품 칸 경로로 우회된다. 받아들이는 키도 헤더 경로와 같다(처리자는 되돌린다).
@@ -797,7 +797,7 @@ class ClaimBeforeFilterHooksTest extends ModuleTestCase
         $this->assertSame((int) $admin->id, (int) $return->fresh()->processed_by);
     }
 
-    // ── 송장만 저장 · 진행 방식 (#599 후속 §3-7) ──
+    // ── 송장만 저장 · 진행 방식 ──
 
     /**
      * 「송장만 저장」 의 before 훅이 막으면 어떤 행에도 송장이 쓰이지 않는다 — 훅은 방향·대상 행·입력을 받는다.

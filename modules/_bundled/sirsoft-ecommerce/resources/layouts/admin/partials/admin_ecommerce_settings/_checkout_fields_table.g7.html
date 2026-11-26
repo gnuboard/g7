@@ -1,4 +1,4 @@
-<!-- 쇼핑몰 설정 — 주문 설정 탭의 **주문서 항목** 구획(#490). 주문서 항목 집합(`sirsoft-ecommerce.order_contact`)의 항목을 표로 그리고,
+<!-- 쇼핑몰 설정 — 주문 설정 탭의 **주문서 항목** 구획. 주문서 항목 집합(`sirsoft-ecommerce.order_contact`)의 항목을 표로 그리고,
   좁은 화면(768px 미만)에서는 같은 배선의 카드 조각(`_checkout_fields_cards`)으로 바꿔 그린다. 한쪽을 고치면 다른 쪽도 같이 본다.
 
   **이 표의 조작은 즉시 저장이다.** 사용, 필수 스위치는 누르자마자 코어 항목 API 로 나가고, 성공이든 실패든 `checkoutFieldDefs` 만
@@ -49,7 +49,7 @@
       <icon name="lock" size="sm" class="ecommerce:mt-0.5 ecommerce:flex-shrink-0"/>
       <span>$t:sirsoft-ecommerce.admin.settings.checkout_fields.no_read_permission</span>
     </div>
-    <!-- 항목 정의를 받는 동안에는 표를 흐린 채 그린다(받기 전 빈 표·켜짐 스위치가 확정값처럼 보이지 않게, #915). 받은 뒤 0건 안내는 아래 checkout_fields_empty 가 맡는다. -->
+    <!-- 항목 정의를 받는 동안에는 표를 흐린 채 그린다(받기 전 빈 표·켜짐 스위치가 확정값처럼 보이지 않게). 받은 뒤 0건 안내는 아래 checkout_fields_empty 가 맡는다. -->
     <div data-ref="checkout_fields_body" data-if="{{!_computed.checkoutFieldsNoReadPermission}}">
       <blur-until-loaded sources="checkoutFieldDefs"/>
       <div data-ref="checkout_fields_instant_notice" class="ecommerce-alert-info ecommerce:mb-4">

@@ -133,7 +133,7 @@ class UserService
                 $data['password'] = Hash::make($data['password']);
             }
 
-            // 비밀번호 만료 설정(#736)을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
+            // 비밀번호 만료 설정을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
             if (array_key_exists('password_expiry_policy', $data) && $data['password_expiry_policy'] === null) {
                 unset($data['password_expiry_policy']);
             }
@@ -279,7 +279,7 @@ class UserService
                 app(PasswordAuthPolicyService::class)->assertCanSetPassword($user, $actor instanceof User ? $actor : null);
             }
 
-            // 비밀번호 만료 설정(#736)을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
+            // 비밀번호 만료 설정을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
             if (array_key_exists('password_expiry_policy', $data) && $data['password_expiry_policy'] === null) {
                 unset($data['password_expiry_policy']);
             }
@@ -1098,7 +1098,7 @@ class UserService
     }
 
     /**
-     * 회원 본인의 활동 기록을 페이지 단위로 조회합니다. (마이페이지 내 활동 기록, 7.2.1 #952)
+     * 회원 본인의 활동 기록을 페이지 단위로 조회합니다. (마이페이지 내 활동 기록, 7.2.1)
      *
      * 회원이 한 일(`log_type=user`)만 고른다 — 그 회원이 관리자이기도 하면 관리자 화면에서 한 작업은 빠진다.
      * 기간은 사이트 날짜로 받아 그날 0시~23시 59분 59초로 자른다.
@@ -1418,7 +1418,7 @@ class UserService
 
         if (empty($userIds)) {
             // 훅에는 실제로 바뀐 회원만 싣는다 — 활동 로그 리스너가 이 목록의 회원마다 「상태 변경」 을 남기므로,
-            // 등급·범위로 제외된 회원을 실으면 바뀌지 않은 회원에게 변경 기록이 생긴다(#736 실측).
+            // 등급·범위로 제외된 회원을 실으면 바뀌지 않은 회원에게 변경 기록이 생긴다.
             HookManager::doAction('sirsoft-core.user.after_bulk_update', [], $status, 0);
 
             return [
@@ -1601,7 +1601,7 @@ class UserService
     /**
      * 회원 등록·수정으로 역할 또는 최고관리자 지정이 바뀌었으면 `core.user.after_update_roles` 를 발행합니다.
      *
-     * 개인정보의 안전성 확보조치 기준 제5조③(권한 부여·변경·말소 내역 3년 보관)의 기록 지점이다(#736 D23).
+     * 개인정보의 안전성 확보조치 기준 제5조③(권한 부여·변경·말소 내역 3년 보관)의 기록 지점이다.
      * 일괄 경로(`bulkUpdateRoles`)는 `core.user.after_bulk_update_roles` 가 따로 남긴다. 바뀐 것이 없으면 발행하지 않는다.
      *
      * @param  User  $user  대상 회원
@@ -1783,7 +1783,7 @@ class UserService
             'name' => app(DisplayNameResolver::class)->resolve($user),
             'status' => $user->status,
             'status_label' => $status?->label() ?? $user->status,
-            // `avatar_url` 은 접근자가 없어 늘 null 이었다 — 아바타 주소의 SSoT 는 getAvatarUrl() 이다 (#869)
+            // `avatar_url` 은 접근자가 없어 늘 null 이었다 — 아바타 주소의 SSoT 는 getAvatarUrl() 이다
             'avatar' => $showAvatar ? $user->getAvatarUrl() : null,
             'bio' => $showBio ? $user->bio : null,
             'created_at' => $showCreatedAt ? TimezoneHelper::toUserDateString($user->created_at) : null,

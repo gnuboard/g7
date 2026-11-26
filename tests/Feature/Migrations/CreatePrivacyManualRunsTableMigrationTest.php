@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
- * privacy_manual_runs 마이그레이션 테스트 (이슈 #636 후속 — 개인정보 조치 직권 실행 기록).
+ * privacy_manual_runs 마이그레이션 테스트 (개인정보 조치 직권 실행 기록).
  *
  * 테이블·컬럼 생성, up→down→up 왕복, 그리고 이 테이블을 읽는 저장소 호출(진행 중 기록 조회·대상별 최신 기록)이
  * 새로 만든 스키마 위에서 그대로 동작하는지를 고정한다 — 스키마만 맞고 저장소 쿼리가 깨지는 유형을 막는다.

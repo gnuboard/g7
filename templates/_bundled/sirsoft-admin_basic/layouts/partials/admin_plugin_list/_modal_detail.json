@@ -13,7 +13,7 @@
             "endpoint": "/api/admin/plugins/{{_global.selectedPlugin.identifier}}",
             "auth_required": true,
             "initGlobal": "selectedPlugin",
-            "comment": "목록 응답에는 의존·권한·훅 같은 속살이 실리지 않아 창을 열 때 그 하나만 따로 받는다. 받은 값은 목록이 골라 둔 자리에 덮어써서, 아래 화면 전체가 같은 값을 읽게 한다. 목록 응답에 없는 항목(코어 요구·언어)의 「없음」은 상세 응답에만 있는 `metadata` 가 온 뒤에만 보인다 — 받기 전에 「없음」이 먼저 보였다가 바뀌지 않게(#915)."
+            "comment": "목록 응답에는 의존·권한·훅 같은 속살이 실리지 않아 창을 열 때 그 하나만 따로 받는다. 받은 값은 목록이 골라 둔 자리에 덮어써서, 아래 화면 전체가 같은 값을 읽게 한다. 목록 응답에 없는 항목(코어 요구·언어)의 「없음」은 상세 응답에만 있는 `metadata` 가 온 뒤에만 보인다 — 받기 전에 「없음」이 먼저 보였다가 바뀌지 않게."
         }
     ],
     "id": "plugin_detail_modal",
@@ -268,7 +268,7 @@
                                                             "name": "Button",
                                                             "actions": [
                                                                 {
-                                                                    "comment": "라이선스 이름을 누르면 전문을 그때 받아 별도 창으로 띄운다 — 전문은 길어 상세 응답에 싣지 않는다. 받은 글은 확장 공용 자리에 담기므로 모듈·템플릿 상세도 같은 창을 쓴다. 버튼이어야 키보드로도 열린다(#736 F 실측).",
+                                                                    "comment": "라이선스 이름을 누르면 전문을 그때 받아 별도 창으로 띄운다 — 전문은 길어 상세 응답에 싣지 않는다. 받은 글은 확장 공용 자리에 담기므로 모듈·템플릿 상세도 같은 창을 쓴다. 버튼이어야 키보드로도 열린다.",
                                                                     "type": "click",
                                                                     "handler": "sequence",
                                                                     "actions": [
@@ -355,7 +355,7 @@
                                                     ]
                                                 },
                                                 {
-                                                    "comment": "패키지 서명(#916) — 설치·업데이트 때 남긴 검증 기록(integrity_status). verified 면 키 ID 콜론 앞(서명자)을 보인다.\n                   기록이 없으면(이 기능 전에 설치했거나 옛 코어) 「기록 없음」이다.",
+                                                    "comment": "패키지 서명 — 설치·업데이트 때 남긴 검증 기록(integrity_status). verified 면 키 ID 콜론 앞(서명자)을 보인다.\n                   기록이 없으면(이 기능 전에 설치했거나 옛 코어) 「기록 없음」이다.",
                                                     "id": "package_signature_field",
                                                     "type": "basic",
                                                     "name": "Div",
@@ -760,7 +760,7 @@
                                     ]
                                 },
                                 {
-                                    "comment": "함께 쓰면 연동되는 확장 (#639) — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로\n            설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다.\n            요구 버전(`required_version`, 무제약 `*` 은 감춘다)·설치 버전을 보이고, 설치됐는데 제약을 못 맞추면(`is_met === false`) 「버전 미달」 배지를 단다(#822).\n            옛 코어는 `is_met` 을 싣지 않으므로 `false` 일 때만 단다 — `!is_met` 이면 옛 코어에서 모든 항목에 배지가 붙는다.",
+                                    "comment": "함께 쓰면 연동되는 확장 — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로\n            설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다.\n            요구 버전(`required_version`, 무제약 `*` 은 감춘다)·설치 버전을 보이고, 설치됐는데 제약을 못 맞추면(`is_met === false`) 「버전 미달」 배지를 단다.\n            옛 코어는 `is_met` 을 싣지 않으므로 `false` 일 때만 단다 — `!is_met` 이면 옛 코어에서 모든 항목에 배지가 붙는다.",
                                     "id": "integrations_section",
                                     "type": "basic",
                                     "name": "Div",
@@ -908,7 +908,7 @@
                                     ]
                                 },
                                 {
-                                    "comment": "다른 확장에 공개하는 PHP 표면 (#916) — manifest `public_api`. 선언이 없으면 절을 그리지 않는다.\n            옛 코어는 `public_api` 를 싣지 않으므로 `?.` 와 `?? []` 로 읽는다.",
+                                    "comment": "다른 확장에 공개하는 PHP 표면  — manifest `public_api`. 선언이 없으면 절을 그리지 않는다.\n            옛 코어는 `public_api` 를 싣지 않으므로 `?.` 와 `?? []` 로 읽는다.",
                                     "id": "public_api_section",
                                     "type": "basic",
                                     "name": "Div",

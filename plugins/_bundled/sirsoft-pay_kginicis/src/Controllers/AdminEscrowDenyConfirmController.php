@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
-// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 결제 행 직접 조회·기록을 이커머스 공개 결제 계약으로 바꾼 내부 전환 (#916)
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 결제 행 직접 조회·기록을 이커머스 공개 결제 계약으로 바꾼 내부 전환 
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -185,7 +185,7 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
 
         } catch (\Exception $e) {
             // PG 거절(resultCode != 00)은 위에서 resultMsg 로 답했다. 여기 오는 것은 통신 실패·HTTP 오류·DB 예외라
-            // 원문(API 주소·cURL 문구·SQL)은 서버 로그에만 남기고 응답에는 일반 문구를 싣는다(#858).
+            // 원문(API 주소·cURL 문구·SQL)은 서버 로그에만 남기고 응답에는 일반 문구를 싣는다.
             Log::error('KG Inicis: escrow deny confirm exception', [
                 'order_number' => $orderNumber,
                 'exception_class' => $e::class,

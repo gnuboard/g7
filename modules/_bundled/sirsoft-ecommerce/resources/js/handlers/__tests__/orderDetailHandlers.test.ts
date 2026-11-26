@@ -578,7 +578,7 @@ describe('orderDetailHandlers', () => {
         });
 
         /**
-         * 실패를 삼키면 레이아웃의 성공 분기(`<close-modal/>`)가 돌아 확인 창이 닫히고 운영자가 고른 세 항목이 사라진다(#747 C12 M3).
+         * 실패를 삼키면 레이아웃의 성공 분기(`<close-modal/>`)가 돌아 확인 창이 닫히고 운영자가 고른 세 항목이 사라진다.
          * 사유 토스트는 한 번만 띄우고, 오류는 다시 던져 레이아웃 `<fail>` 분기(창 유지)로 넘긴다.
          *
          * @scenario handler=process_bulk_change

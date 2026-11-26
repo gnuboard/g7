@@ -4,7 +4,7 @@
  *
  * 예전에는 주입 스크립트(orderCompleteReceiptInjector)가 `/shop/orders/…/complete` 주소 글자를 맞추고 화면의
  * 파란 버튼을 찾아 그 옆에 영수증 버튼을 끼웠다. 쇼핑몰 경로를 바꾸면 조용히 빠졌고, 로그인 토큰을 저장소에서
- * 직접 읽어 Bearer 를 붙였다(#639). 이제 템플릿이 단 결제 금액 요약 자리(order_complete_payment_summary)에
+ * 직접 읽어 Bearer 를 붙였다. 이제 템플릿이 단 결제 금액 요약 자리(order_complete_payment_summary)에
  * 조각이 붙고, 플러그인 API 응답으로 간편결제 이름과 영수증·결제확인서 버튼을 그린다.
  *
  * 시나리오: plugins/_bundled/sirsoft-pay_kginicis/tests/scenarios/order-complete-receipt-fragment.yaml

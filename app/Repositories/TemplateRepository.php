@@ -206,7 +206,7 @@ class TemplateRepository implements TemplateRepositoryInterface
                 return false;
             }
 
-            // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
+            // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다
             $moduleDependencies = ExtensionDependencies::constraints($templateData['dependencies'] ?? [])['modules'];
 
             // 해당 모듈이 의존성에 포함되어 있는지 확인
@@ -247,7 +247,7 @@ class TemplateRepository implements TemplateRepositoryInterface
                 return false;
             }
 
-            // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
+            // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다
             $pluginDependencies = ExtensionDependencies::constraints($templateData['dependencies'] ?? [])['plugins'];
 
             // 해당 플러그인이 의존성에 포함되어 있는지 확인

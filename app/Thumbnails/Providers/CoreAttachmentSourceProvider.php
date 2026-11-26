@@ -58,7 +58,7 @@ class CoreAttachmentSourceProvider implements ThumbnailSourceProvider
      *
      * 코어 첨부 디스크는 종전 규칙(`attachment.disk`)과 지금의 업로드 디스크(`PrivateAttachmentDisk::forCore()` —
      * `ATTACHMENT_DISK` env 명시 > 「비공개 첨부 저장소」 선택 > 종전 규칙) 둘이다. 업로드 디스크를 빠뜨리면 선택한 디스크에
-     * 올린 새 첨부가 「모르는 원본」이 되어 등록 시 미리 생성이 조용히 빠진다(#916).
+     * 올린 새 첨부가 「모르는 원본」이 되어 등록 시 미리 생성이 조용히 빠진다.
      *
      * @param  string  $disk  원본 디스크
      * @param  string  $path  디스크 위 전체 경로

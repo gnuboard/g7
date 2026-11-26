@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 /**
- * 자산 URL 이중 모드 라우트 등록 가드 (이슈 #486 단위 A).
+ * 자산 URL 이중 모드 라우트 등록 가드 (단위 A).
  *
  * 정적 최적화 블록(`location ~* \.(js|css|json)$`)이 있는 서버에서 동적 응답이
  * nginx 에 가로채이지 않도록, 모든 확장자 붙은 동적 엔드포인트는 확장자 없는
@@ -19,7 +19,7 @@ use Tests\TestCase;
 class DualExtensionRouteTest extends TestCase
 {
     /**
-     * 이중 등록이 요구되는 전체 라우트 이름 (계획서 #486 §1 의 23개 + 프로브).
+     * 이중 등록이 요구되는 전체 라우트 이름 (23개 + 프로브).
      *
      * 신규 확장자 엔드포인트를 추가하면 이 목록에도 추가되어야 한다.
      *

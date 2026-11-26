@@ -7,7 +7,7 @@ use Tests\Helpers\CreatesTemplateSettingsFixtures;
 use Tests\TestCase;
 
 /**
- * settings:get / settings:set --template 테스트 (#434)
+ * settings:get / settings:set --template 테스트
  *
  * 화면 저장과 같은 FormRequest·같은 서비스로 저장한다. 첨부 키·계산 키는 지정할 수 없다(조회만).
  */

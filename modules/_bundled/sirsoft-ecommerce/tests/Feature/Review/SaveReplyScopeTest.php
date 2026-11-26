@@ -10,7 +10,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
- * 리뷰 답글 저장의 권한 범위 검사 (#952 W8)
+ * 리뷰 답글 저장의 권한 범위 검사
  *
  * 상태 변경·답글 삭제와 같은 범위(`sirsoft-ecommerce.reviews.update`)를 답글 저장에도 적용한다.
  */

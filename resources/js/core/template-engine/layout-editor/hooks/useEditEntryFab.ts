@@ -94,7 +94,7 @@ export interface RouteMatcherLike {
  *
  * 편집기 트리는 routes 원본 path(`*\/admin/users`, `/board/:slug`)로 노드를 만들고 `?route=` 를 그 값과
  * 정확히 견준다. 브라우저 주소(`/admin/users`, `/board/notice`)를 넘기면 어느 노드와도 맞지 않아 편집기가
- * 빈 상태로 남는다(#869 실측). 라우트 패턴은 사이트 접두사 없이 등록되므로 접두사를 벗긴 주소로 대조한다.
+ * 빈 상태로 남는다. 라우트 패턴은 사이트 접두사 없이 등록되므로 접두사를 벗긴 주소로 대조한다.
  *
  * @param router 코어 라우터(없으면 빈 문자열)
  * @param appPathname 접두사를 벗긴 앱 기준 주소
@@ -203,7 +203,7 @@ export function computeEditEntryFabOffset(
     const w = r.right - r.left;
     const h = r.bottom - r.top;
     if (w <= 0 || h <= 0) continue;
-    // 아래 끝에 붙었거나 그 근처(BOTTOM_ANCHOR_SLACK 안)에 떠 있는 고정 요소 — `bottom-4` 쿠키 동의 배너·토스트 묶음 포함(#869 실측)
+    // 아래 끝에 붙었거나 그 근처(BOTTOM_ANCHOR_SLACK 안)에 떠 있는 고정 요소 — `bottom-4` 쿠키 동의 배너·토스트 묶음 포함
     const isBottomBar = r.pinned !== false && r.bottom >= vh - BOTTOM_ANCHOR_SLACK && r.top >= vh * 0.5;
     const overlapsBand = r.left < bandRight && r.right > bandLeft;
     if (isBottomBar && overlapsBand) bottom = Math.max(bottom, Math.ceil(vh - r.top) + EDIT_ENTRY_FAB_GAP);
@@ -232,7 +232,7 @@ export function isEmbeddedFrame(win: Window): boolean {
  * 사용자 객체에 서버 판정(`can_edit_layouts`)이 실려 있는지.
  *
  * 부팅 때 인증 확인(로그인 사용자 응답)은 싣지만, 로그인 응답(`UserResource::toArray`)은 싣지 않는다. 로그인 뒤
- * SPA 로 이동하면 새로고침 전까지 그 응답이 세션 사용자로 남아 단추가 숨었다(#869 사례 대조).
+ * SPA 로 이동하면 새로고침 전까지 그 응답이 세션 사용자로 남아 단추가 숨었다(사례 대조).
  *
  * @param user AuthManager 사용자
  * @returns 판정 필드가 있으면 true

@@ -425,7 +425,7 @@ describe('상태 의미 토큰 → 글리프 매핑', () => {
 });
 
 /**
- * 이름 속 스타일 토큰 해석 (#381)
+ * 이름 속 스타일 토큰 해석
  *
  * 종전 Icon 은 FA6 장형(fa-solid …)만 읽어 메뉴·레이아웃이 쓰는 `fas fa-users` 를 `fas fa-fas fa-users` 로 조합했고
  * (우연히 보였다) `far`·`fab` 는 스타일을 잃어 solid 로 그렸다. 출력 클래스 전체를 정확히 비교해 스타일 토큰이
@@ -449,7 +449,7 @@ const PREFIX_TABLE: Array<[string, string | undefined, string]> = [
 /** 출력에 나오면 안 되는 「스타일 토큰에 fa- 를 덧붙인」 클래스 */
 const DOUBLED_STYLE_CLASS = /^fa-(fas|far|fab|fal|fad|solid|regular|brands|light|duotone)$/;
 
-describe('Icon — 이름 속 스타일 토큰 해석 (#381)', () => {
+describe('Icon — 이름 속 스타일 토큰 해석', () => {
   /**
    * @scenario component=icon
    * @effects style_prefix_tokens_resolved_once

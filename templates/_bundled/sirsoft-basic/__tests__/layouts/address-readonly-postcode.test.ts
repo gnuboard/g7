@@ -1,5 +1,5 @@
 /**
- * 주소칸 — 우편번호 플러그인이 꺼진 사이트에서는 직접 입력 (#822)
+ * 주소칸 — 우편번호 플러그인이 꺼진 사이트에서는 직접 입력
  *
  * @description
  * 우편번호·기본 주소 칸은 주소 검색 플러그인(sirsoft-daum_postcode)이 채우도록 읽기 전용이었다. 플러그인은 선택 연동이라
@@ -49,11 +49,11 @@ function changeTargets(node: Node): string[] {
         .flatMap((a: Node) => Object.keys(a.params ?? {}).filter((k) => k !== 'target'));
 }
 
-describe('주소칸 읽기 전용 — 우편번호 플러그인 가드 (#822)', () => {
+describe('주소칸 읽기 전용 — 우편번호 플러그인 가드', () => {
     // @scenario surface=profile_edit
     // @effects address_input_editable_without_postcode
     it('회원정보 수정(코어 화면)의 우편번호·주소 칸은 플러그인이 켜져 있을 때만 읽기 전용이다(이메일 칸은 그대로 읽기 전용)', () => {
-        // 주소 칸은 이제 공용 회원 항목 조각의 주소 갈래가 그린다(#490) — 칸 이름은 항목 계약의 부분 경로다.
+        // 주소 칸은 이제 공용 회원 항목 조각의 주소 갈래가 그린다 — 칸 이름은 항목 계약의 부분 경로다.
         const edit = load('partials/mypage/profile/_edit');
         expect(JSON.stringify(edit)).toContain('"partial":"partials/member/_member_fields.json"');
         const fields = load('partials/member/_member_fields');

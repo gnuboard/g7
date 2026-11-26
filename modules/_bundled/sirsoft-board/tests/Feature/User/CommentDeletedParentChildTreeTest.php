@@ -13,7 +13,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 부모 댓글 삭제 시 자식 댓글 트리 보존 테스트 (#413-56-2)
+ * 부모 댓글 삭제 시 자식 댓글 트리 보존 테스트 (56-2)
  *
  * 부모 댓글을 삭제해도 살아있는 자식 댓글이 트리에서 사라지지 않고,
  * 부모는 tombstone("삭제된 댓글입니다")으로 유지되어야 한다.

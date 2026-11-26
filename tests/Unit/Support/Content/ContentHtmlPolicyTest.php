@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
 /**
- * 본문 HTML 규칙 — 후보 켜고 끔·추가 태그 거절·마무리(미디어 출처·속성·외부 영상) (#883 5단계)
+ * 본문 HTML 규칙 — 후보 켜고 끔·추가 태그 거절·마무리(미디어 출처·속성·외부 영상)
  *
  * @scenario-manifest tests/scenarios/content-render-policy.yaml
  */
@@ -60,7 +60,7 @@ class ContentHtmlPolicyTest extends TestCase
 
     /**
      * 마무리 — 외부 출처 video 제거·자기 서빙 video(등록된 서빙 라우트) 유지, 후보 속성만, on*·javascript: 제거, oembed 는 저장 시 http(s)
-     * 주소면 서비스를 몰라도 원문 보존(#887), 봇은 늘 링크.
+     * 주소면 서비스를 몰라도 원문 보존, 봇은 늘 링크.
      *
      * @return void 반환값 없음
      *
@@ -86,7 +86,7 @@ class ContentHtmlPolicyTest extends TestCase
         $this->assertStringNotContainsString('onclick', $stored);
         $this->assertStringNotContainsString('javascript:', $stored);
         $this->assertStringContainsString('<oembed url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"></oembed>', $stored);
-        $this->assertStringContainsString('<oembed url="https://unknown.test/v/1"></oembed>', $stored, '모르는 서비스도 저장 원문은 그대로(#887) — 재생·링크는 표시가 정한다');
+        $this->assertStringContainsString('<oembed url="https://unknown.test/v/1"></oembed>', $stored, '모르는 서비스도 저장 원문은 그대로 — 재생·링크는 표시가 정한다');
         $this->assertStringNotContainsString('<a href="https://unknown.test/v/1"', $stored);
 
         $bot = $policy->finalize($html, 'bot');
@@ -123,7 +123,7 @@ class ContentHtmlPolicyTest extends TestCase
 
     /**
      * 「그림 캡션」 끔 — 표시에서만 캡션(figcaption)을 내용째 지우고 그림은 남긴다. 편집기 금지 목록(forbid_tags)에는 넣지 않아
-     * 저장 원문이 그대로이고(다시 켜면 복원), 저장 마무리(`store`)도 캡션을 건드리지 않는다. 봇 화면(`bot`)은 사람 화면과 같이 지운다 (#887).
+     * 저장 원문이 그대로이고(다시 켜면 복원), 저장 마무리(`store`)도 캡션을 건드리지 않는다. 봇 화면(`bot`)은 사람 화면과 같이 지운다.
      *
      * @return void 반환값 없음
      *
@@ -159,7 +159,7 @@ class ContentHtmlPolicyTest extends TestCase
 
     /**
      * 「외부 영상 삽입」 끔 — 화면 규칙에 oembed 규칙·서비스가 없고, 봇 화면은 원래 주소 nofollow 링크(빈 상자 금지). 사람 화면은
-     * 런타임 `renderEmbeds` 가 같은 링크를 만든다(`ContentPolicyRuntime.test.ts` 「외부 영상 삽입을 끄면」) (#887).
+     * 런타임 `renderEmbeds` 가 같은 링크를 만든다(`ContentPolicyRuntime.test.ts` 「외부 영상 삽입을 끄면」).
      *
      * @return void 반환값 없음
      *
@@ -180,7 +180,7 @@ class ContentHtmlPolicyTest extends TestCase
     }
 
     /**
-     * 저장용 규칙(`forStorage()`) — 후보 스위치·외부 영상 서비스를 모두 꺼도 저장 정화는 그 요소를 지우지 않는다(표시에서만 따름, #887).
+     * 저장용 규칙(`forStorage()`) — 후보 스위치·외부 영상 서비스를 모두 꺼도 저장 정화는 그 요소를 지우지 않는다(표시에서만 따름).
      * 운영자 추가 태그는 설정 그대로. 저장 마무리는 모르는 서비스 oembed 를 원문 보존(url 외 속성만 정리), `javascript:` oembed 와
      * 출처 불일치 미디어는 지운다. 같은 설정의 표시 규칙(`current()`)은 캡션을 지운다.
      *

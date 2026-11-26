@@ -16,7 +16,7 @@ use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
- * 관리자 로그인 인계 `POST /api/auth/admin/login/handoff` (#798 K1)
+ * 관리자 로그인 인계 `POST /api/auth/admin/login/handoff`
  *
  * 외부 인증이 관리자 경로(`admin`)로 발급한 인계 코드를 관리자 로그인 화면이 교환하면 관리자 비밀번호 로그인과 같은 세 형태
  * (인증 완료 · 2단계 인증 · 비밀번호 변경)로 답한다. 관리자가 아닌 회원은 휴면 해제 없이 403, 경로가 다른 코드는 422.

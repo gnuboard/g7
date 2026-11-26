@@ -1,6 +1,6 @@
 /**
  * @file adminRealNameSub.test.tsx
- * @description GDPR 관리자 화면의 회원 실명 보조 줄 (#490)
+ * @description GDPR 관리자 화면의 회원 실명 보조 줄
  *
  * 동의 기록의 회원 칸(`user.name`)과 정책 버전의 발행자(`publisher.name`)는 관리자 영역 표시 이름이다. 서버는 보는 관리자에게
  * 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 같은 묶음에 `real_name` 을 더한다. 화면은 그 키가 있을 때만 이름 아래에

@@ -163,7 +163,7 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 생성 시 반응 기본값이 모듈 환경설정(basic_defaults)에서 시드된다 (이슈 #525 확정 13).
+     * 게시판 생성 시 반응 기본값이 모듈 환경설정(basic_defaults)에서 시드된다 (확정 13).
      *
      * @scenario case=new_board_seeds_reaction_defaults
      *
@@ -263,7 +263,7 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * use_scrap 수정 + 응답 노출 회귀 테스트 (#524 브라우저 검수)
+     * use_scrap 수정 + 응답 노출 회귀 테스트 (브라우저 검수)
      *
      * BoardResource 에 use_scrap 미노출 시 편집 화면 토글이 DB 값을 못 받고,
      * UpdateBoardRequest 에 규칙 미정의 시 저장이 누락된다. 두 경로를 함께 방어한다.
@@ -326,7 +326,7 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * 관리자 게시판 목록에는 역할 소속 사용자 정보가 실리지 않는다 (#518 / 공개 #76).
+     * 관리자 게시판 목록에는 역할 소속 사용자 정보가 실리지 않는다 (공개 #76).
      *
      * 종전에는 행마다 매니저/스텝 역할을 조회해 그 역할에 속한 **사용자 전원의 uuid·이름·이메일**을
      * 목록에 실었다. 목록 화면은 그 값을 쓰지 않으면서 행 수만큼 추가 쿼리가 나가고 개인정보가
@@ -711,7 +711,7 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 상세를 slug 로 조회할 수 있다 (#450 관리자 라우팅 slug 전환)
+     * 게시판 상세를 slug 로 조회할 수 있다 (관리자 라우팅 slug 전환)
      *
      * @scenario case=detail_by_slug
      *
@@ -735,7 +735,7 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * 게시판을 slug 로 수정할 수 있다 (#450)
+     * 게시판을 slug 로 수정할 수 있다
      *
      * @scenario case=update_by_slug
      *
@@ -836,7 +836,7 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * 폼 데이터를 board_slug 로 수정 모드 조회할 수 있다 (#450)
+     * 폼 데이터를 board_slug 로 수정 모드 조회할 수 있다
      *
      * @scenario case=form_data_edit_by_slug
      *
@@ -859,7 +859,7 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * 게시판을 slug 로 관리자 메뉴에 추가할 수 있다 (#450 add-to-menu slug 바인딩)
+     * 게시판을 slug 로 관리자 메뉴에 추가할 수 있다 (add-to-menu slug 바인딩)
      *
      * 라우트 파라미터가 {board} 이므로 컨트롤러가 Board route-model binding 으로
      * slug 를 해석해야 한다. int $id 로 받으면 slug 문자열이 전달될 때 실패한다.
@@ -1216,7 +1216,7 @@ class BoardManagementTest extends ModuleTestCase
      * 게시판 역할 **소속 사용자 조회** 쿼리인지 판정합니다.
      *
      * 권한 체크(`hasPermission`)도 같은 피벗 테이블을 참조하지만 그쪽은 `exists(...)` 서브쿼리이며,
-     * 행마다 실행되는 그 N+1 은 별도 이슈(#519)가 소유한다. 이 테스트는 목록이 게시판마다 역할
+     * 행마다 실행되는 그 N+1 은 별도 이슈가 소유한다. 이 테스트는 목록이 게시판마다 역할
      * 소속 사용자를 다시 끌어오지 않는지만 본다.
      *
      * @param  string  $sql  실행된 SQL

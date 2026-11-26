@@ -1,6 +1,6 @@
 /**
  * @file uploaderRealNameSub.test.tsx
- * @description 업로드 관리 목록의 「올린 사람」 실명 보조 줄 (#490)
+ * @description 업로드 관리 목록의 「올린 사람」 실명 보조 줄
  *
  * 올린 사람 칸의 이름(`uploader_name`)은 관리자 영역 표시 이름이다. 서버는 보는 관리자에게 회원 조회 권한이 있고 실명이
  * 표시 이름과 다를 때만 `uploader_real_name` 을 더한다. 화면은 그 키가 있을 때만 이름 아래에 작은 글씨 보조 줄을 그리고,

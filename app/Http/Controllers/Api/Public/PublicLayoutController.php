@@ -70,7 +70,7 @@ class PublicLayoutController extends PublicBaseController
             // 서버 캐시 키는 **서버 현재** 확장 캐시 버전으로만 조립한다. 클라이언트 `?v=` 는 브라우저
             // HTTP 캐시 우회용 좌표일 뿐 서버 키의 근거가 아니다.
             //
-            // 종전엔 `?v` 의 정수부를 키에 썼다(#588 — nonce 제거). 그런데 레이아웃 편집기는 부팅
+            // 종전엔 `?v` 의 정수부를 키에 썼다(nonce 제거). 그런데 레이아웃 편집기는 부팅
             // 시점 `window.G7Config.cache_version` 에 nonce 만 붙여 계속 요청하고, 저장·복원은
             // `ext.cache_version` 을 `time()` 으로 올리며 `clearPublicServingCache` 는 **현재** 버전
             // 키만 지운다. 그래서 두 번째 bump 부터 부팅 버전 키가 영영 지워지지 않아 초기화·복원·

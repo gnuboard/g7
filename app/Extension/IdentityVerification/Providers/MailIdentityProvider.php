@@ -540,7 +540,7 @@ class MailIdentityProvider implements IdentityVerificationInterface, UserScopedI
      */
     protected function buildSignedLink(string $challengeId, string $linkToken, Carbon $expiresAt, string $screenScope = ScreenUrl::SCOPE_USER): string
     {
-        // 사람이 여는 확인 화면이므로 화면 주소 헬퍼를 거친다(#792) — 주소 필터를 따른다. 회원 화면에서 시작했으면
+        // 사람이 여는 확인 화면이므로 화면 주소 헬퍼를 거친다 — 주소 필터를 따른다. 회원 화면에서 시작했으면
         // 「사용자 화면 URL」 기준, 관리자 화면에서 시작했으면 사이트 주소 기준(사이트 자체의 확인 화면 — 관리자 화면은
         // 「사용자 화면 URL」 쪽에 없다).
         return ScreenUrl::absoluteForLinks('identity.verify', '/identity/verify?challenge={challenge}&token={token}', [

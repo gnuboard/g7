@@ -2,7 +2,7 @@ feature: 사용자 템플릿 Button — 켜진 단추는 손 모양 커서, 잠�
 
 description: |
   Tailwind v4 는 단추 기본 커서를 `default` 로 바꿨다. 사용자 템플릿 Button 의 기본 클래스에 커서가 없어 레이아웃이
-  `cursor-pointer` 를 따로 적지 않은 단추(비회원 글 삭제와 비밀번호 확인 창의 주 단추 등 95곳)가 화살표였다(#869 κ).
+  `cursor-pointer` 를 따로 적지 않은 단추(비회원 글 삭제와 비밀번호 확인 창의 주 단추 등 95곳)가 화살표였다.
   관리자 템플릿 Button(`button` 클래스)과 같이 부품이 `cursor-pointer` 와 `disabled:cursor-not-allowed` 를 기본으로 준다.
   레이아웃이 다른 커서를 주면 그 값이 남는다.
 

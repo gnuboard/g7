@@ -1,6 +1,6 @@
 /**
  * @file sidebar-view-site-link.test.tsx
- * @description 관리자 사이드바 하단 "사이트 보기" 링크 + 모바일 드로어 상단 잘림 수정 회귀 테스트 (이슈 #450)
+ * @description 관리자 사이드바 하단 "사이트 보기" 링크 + 모바일 드로어 상단 잘림 수정 회귀 테스트
  *
  * 검증 항목:
  * 1. _admin_base.json 에 sidebar_footer > "사이트 보기" 링크 노드 존재
@@ -41,7 +41,7 @@ function findById(node: LayoutNode | LayoutNode[] | undefined, id: string): Layo
   return null;
 }
 
-describe('이슈 #450 — 관리자 사이드바 "사이트 보기" 링크', () => {
+describe('관리자 사이드바 "사이트 보기" 링크', () => {
   it('sidebar_footer 노드가 존재한다', () => {
     const footer = findById(adminBase as LayoutNode, 'sidebar_footer');
     expect(footer).not.toBeNull();
@@ -73,7 +73,7 @@ describe('이슈 #450 — 관리자 사이드바 "사이트 보기" 링크', () 
   });
 });
 
-describe('이슈 #450 — 모바일 드로어 상단 잘림 수정 (CSS)', () => {
+describe('모바일 드로어 상단 잘림 수정 (CSS)', () => {
   const css = fs.readFileSync(
     path.resolve(__dirname, '../../styles/layout/_admin_base.css'),
     'utf8',

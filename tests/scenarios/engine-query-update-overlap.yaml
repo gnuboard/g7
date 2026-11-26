@@ -11,7 +11,7 @@ axes:
   case: [older_finishes_first, stale_same_source, newer_finishes_first, stale_previous_tab_source, route_change_during_update, scoped_list_refetch, scoped_during_full_refetch, newer_without_sources, single_call, navigate_param_string, navigate_param_array, navigate_param_absent, navigate_param_blank]
 
 effects:
-  - datasource_if_reevaluated_on_query_update   # 쿼리만 바뀐 이동은 데이터 소스 if 를 새 쿼리로 다시 골라 그 소스만 받는다(#415)
+  - datasource_if_reevaluated_on_query_update   # 쿼리만 바뀐 이동은 데이터 소스 if 를 새 쿼리로 다시 골라 그 소스만 받는다
   - merge_query_href_follows_query_replace      # 주소 교체(쿼리 갱신)를 g7:location-replaced 로 알려 :mergeQuery 링크가 다시 그려진다(engine-v1.82.1)
   - query_context_follows_url_without_refetch   # 다시 받을 소스가 없거나 모두 실패해도 화면 query·_computed 는 새 주소 값(engine-v1.82.1)
   - overlay_held_until_latest_refetch           # 앞 호출이 먼저 끝나도 뒤 호출의 응답(blocking 설정 포함)까지 덮개·대기 표시 유지

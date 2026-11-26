@@ -2,7 +2,7 @@
 // 인위적으로 만들어야 한다. 브라우저가 담당하는 축(업로드 성공 → URL 기입 → 저장)은
 // tests/Playwright/specs/admin/template-lifecycle.spec.ts 가 맡고, 여기서는 경합 자체를 고정한다.
 /**
- * uploadTemplateImage 핸들러 — in-flight 경합 가드 (#597 라운드 5 R2·R3)
+ * uploadTemplateImage 핸들러 — in-flight 경합 가드
  *
  * 라운드 5 이전에는 다음 두 경로가 열려 있었다:
  *  - 업로드가 진행 중인데 파일을 다시 고르면 두 요청이 겹치고, 먼저 끝난 쪽이
@@ -172,7 +172,7 @@ describe('uploadTemplateImage — in-flight 경합 가드', () => {
 });
 
 /**
- * 요청 경로 (#639) — 코어 클라이언트를 우회해 로그인 토큰을 직접 읽고 Bearer 를 붙이던 raw fetch 를
+ * 요청 경로 — 코어 클라이언트를 우회해 로그인 토큰을 직접 읽고 Bearer 를 붙이던 raw fetch 를
  * `G7Core.api` 로 옮겼다. Bearer 부착·401 처리·운영자 로케일 헤더는 코어가 맡는다.
  */
 describe('uploadTemplateImage — 코어 API 클라이언트 경유', () => {

@@ -1,5 +1,5 @@
 /**
- * 개별 게시판 수정 화면 — 숫자 입력 경계값 계약 테스트 (#493 T8)
+ * 개별 게시판 수정 화면 — 숫자 입력 경계값 계약 테스트
  *
  * 배경: 같은 게시판 설정 항목이 두 화면에 있다.
  *   - 일괄(모듈 기본값): `admin_board_settings` → 데이터소스 `settings`(initLocal "form")
@@ -79,7 +79,7 @@ function findNumberInput(node: unknown, name: string): Record<string, unknown> |
     return null;
 }
 
-describe('개별 게시판 수정 화면 — 숫자 입력 경계값 계약 (#493 T8)', () => {
+describe('개별 게시판 수정 화면 — 숫자 입력 경계값 계약', () => {
     it.each(fields)('%s — min/max 가 지정되어 있다', (field, layout) => {
         const props = findNumberInput(layout, field);
 

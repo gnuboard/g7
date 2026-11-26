@@ -1,6 +1,6 @@
 import { apiUrl } from '../support/apiUrl';
 /**
- * detectAssetUrlMode 핸들러 (이슈 #486 §8)
+ * detectAssetUrlMode 핸들러
  *
  * 관리자 환경설정에서 자산 URL 방식을 **브라우저에서** 재감지한다.
  *

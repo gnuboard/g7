@@ -18,7 +18,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 게시글 읽기 스코프의 부가 경로 재적용 테스트 (#789 §6.3 B10~B14)
+ * 게시글 읽기 스코프의 부가 경로 재적용 테스트
  *
  * `posts.read`·`comments.read` 는 스코프 메타(`resource_route_key = post|comment`, `owner_key = user_id`)를
  * 갖지만 게시판 라우트는 `{postId}`·`{commentId}` 를 써서 미들웨어 스코프 검사가 돌지 않는다.

@@ -17,7 +17,7 @@ use Plugins\Sirsoft\MessageBizppurio\Models\BizppurioTemplate;
 use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioTemplateRepositoryInterface;
 
 /**
- * 비즈뿌리오 알림 템플릿 라이프사이클 서비스 (#597).
+ * 비즈뿌리오 알림 템플릿 라이프사이클 서비스.
  *
  * 알림톡 템플릿의 시스템 등록 → 검수 신청 → 승인 후 활성화 흐름을 오케스트레이션한다.
  *
@@ -137,7 +137,7 @@ class BizppurioTemplateService
     }
 
     /**
-     * 발송 설정(알림톡 사용·대체 SMS·SMS 본문·SMS 단독·활성)을 upsert 합니다 (#597 §4.1).
+     * 발송 설정(알림톡 사용·대체 SMS·SMS 본문·SMS 단독·활성)을 upsert 합니다.
      *
      * 알림 설정 탭 행의 토글이 즉시 저장하는 경로다. 대상 행이 없으면 draft 로 생성한다.
      * 알림톡 content 는 이 경로로 변경되지 않으므로 상태 가드가 필요 없다.

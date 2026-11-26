@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 이슈 #263 후속 — 활성 모듈 언어팩이 표시되지 않던 회귀를 차단하는 테스트.
+ * 활성 모듈 언어팩이 표시되지 않던 회귀를 차단하는 테스트.
  *
  * 두 결함을 검증:
  *   1. 프론트엔드: MergeFrontendLanguage 가 module/plugin 팩의 frontend 데이터를

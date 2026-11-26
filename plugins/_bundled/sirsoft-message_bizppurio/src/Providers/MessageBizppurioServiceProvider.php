@@ -32,7 +32,7 @@ class MessageBizppurioServiceProvider extends BasePluginServiceProvider
      * Repository 인터페이스 ↔ 구현체 매핑.
      *
      * - BizppurioDispatchRepository: 발송 이력
-     * - BizppurioTemplateRepository: 알림 템플릿 라이프사이클(#597 — bindings 대체)
+     * - BizppurioTemplateRepository: 알림 템플릿 라이프사이클(bindings 대체)
      *
      * @var array<class-string, class-string>
      */
@@ -62,7 +62,7 @@ class MessageBizppurioServiceProvider extends BasePluginServiceProvider
      * LinkNotificationLogListener 가 같은 인스턴스를 주입받아 refkey 를 주고받는다(A-2).
      *
      * 콘솔 커맨드(bizppurio:sync-template-status)는 plugin.php::getSchedules() 가 30분
-     * 주기로 스케줄한다(#597 §3.4).
+     * 주기로 스케줄한다.
      *
      * @return void 반환값 없음
      */
@@ -115,7 +115,7 @@ class MessageBizppurioServiceProvider extends BasePluginServiceProvider
     {
         parent::boot();
 
-        // 비활성이면 채널 드라이버를 걸지 않는다 (#730 게이트, #860). 비활성 확장의 채널은 코어가
+        // 비활성이면 채널 드라이버를 걸지 않는다. 비활성 확장의 채널은 코어가
         // 사용 가능 채널 목록에서 빼므로(isChannelAvailable) 발송 경로가 이 드라이버를 찾지 않는다.
         if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
             // ChannelManager 는 지연 싱글턴(첫 알림 발송 시 해석)이므로 resolving 콜백으로 등록한다.

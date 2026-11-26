@@ -1,4 +1,4 @@
-feature: 사용자 템플릿 Button — variant·size 를 적으면 의미 클래스가 붙는다 (#399 F12·F13, 7.2.1)
+feature: 사용자 템플릿 Button — variant·size 를 적으면 의미 클래스가 붙는다 (7.2.1)
 
 description: |
   Button 은 `variant`·`size` prop 을 받기만 하고 클래스를 붙이지 않았다. components.json 설명은 6종인데 타입은 4종이라

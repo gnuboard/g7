@@ -24,7 +24,7 @@ use Tests\TestCase;
 class CoreUpdateServiceReloadResyncTest extends TestCase
 {
     // reloadCoreConfigAndResync() 는 권한·메뉴·알림·본인인증 정책을 실제로 시드한다. 트랜잭션으로 감싸지 않으면 그 행이
-    // 테스트 DB 에 남아, 같은 프로세스의 뒤 테스트(빈 표를 전제하는 동기화·업그레이드 테스트)가 깨진다(#699 실측: 9건 잔존).
+    // 테스트 DB 에 남아, 같은 프로세스의 뒤 테스트(빈 표를 전제하는 동기화·업그레이드 테스트)가 깨진다(9건 잔존).
     use RefreshDatabase;
 
     /**
@@ -114,7 +114,7 @@ class CoreUpdateServiceReloadResyncTest extends TestCase
         $this->assertStringContainsString('NotificationDefinitionSeeder', $body, '알림 정의 시더 호출 누락');
         $this->assertStringContainsString('IdentityPolicySeeder', $body, 'IDV 정책 시더 호출 누락');
         // 본인인증 메시지는 7.1.0 부터 알림 정의(category=identity) — NotificationDefinitionSeeder 가 함께 동기화한다.
-        // 옛 IDV 메시지 시더는 호출하지 않는다(그 클래스는 7.0.x 부모 프로세스용 무동작 심으로만 남았다, #699).
+        // 옛 IDV 메시지 시더는 호출하지 않는다(그 클래스는 7.0.x 부모 프로세스용 무동작 심으로만 남았다).
         $this->assertStringNotContainsString('IdentityMessageDefinitionSeeder', $body, '옛 IDV 메시지 시더를 다시 부르면 안 된다');
     }
 

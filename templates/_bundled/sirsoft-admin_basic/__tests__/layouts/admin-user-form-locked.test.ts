@@ -6,7 +6,7 @@
  * (`admin.users.form.fields.locked_by_company`)를 보인다. 잠글 수 있는 칸 목록은 서버
  * `UserLockedFieldsService::LOCKABLE` 을 읽어 대조한다 — 서버가 칸을 늘렸는데 화면이 따라오지 않으면 실패한다.
  *
- * 잠금이 오는 길은 둘이다(#490 6단계부터).
+ * 잠금이 오는 길은 둘이다(6단계부터).
  * - 이메일은 화면의 고정 칸이라 종전대로 회원 응답 `locked_fields` 를 읽는다(수정 모드에서는 계정 식별자라 늘 잠긴다).
  * - 그 밖의 칸(이름, 닉네임, 휴대폰, 전화번호, 언어)은 회원 항목이라 공용 조각(partials/member/_member_fields)이 그린다.
  *   서버가 항목 계약에 `readonly: true`, `locked_reason: 'sso'` 를 실어 주면 조각이 항목을 통째로 입력 컴포넌트에 넘겨 잠그고

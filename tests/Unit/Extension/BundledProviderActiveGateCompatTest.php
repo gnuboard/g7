@@ -6,7 +6,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 번들 확장 provider 의 활성 게이트 호환 구조 (#860 W4, #730 결정 D10)
+ * 번들 확장 provider 의 활성 게이트 호환 구조
  *
  * 비활성 확장의 boot 가 요청 처리에 끼어드는 부수효과(레이트리미터·쿠키 암호화 예외·큐 훅·사이트맵 기여자)를
  * 걸지 않도록 `isExtensionActive()` 게이트 안에 둔다. 게이트 메서드는 7.1.5 코어에 생겼으므로, 옛 코어에서도

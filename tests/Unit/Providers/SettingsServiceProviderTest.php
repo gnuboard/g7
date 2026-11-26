@@ -115,7 +115,7 @@ class SettingsServiceProviderTest extends TestCase
     /**
      * CORE_CATEGORIES 에 identity 카테고리가 포함되어 admin UI 본인인증 설정이 로딩되는지 테스트합니다.
      *
-     * 회귀 차단 (이슈 #275): identity 가 CORE_CATEGORIES 에서 누락되면 admin UI 의
+     * 회귀 차단: identity 가 CORE_CATEGORIES 에서 누락되면 admin UI 의
      * 본인인증 환경설정(기본 프로바이더 / 목적별 / TTL / 최대 시도 횟수) 4개 항목이 모두 무시됨.
      */
     public function test_identity_category_included_in_core_categories(): void
@@ -130,7 +130,7 @@ class SettingsServiceProviderTest extends TestCase
     /**
      * 본인인증 설정이 config('settings.identity.*') dot-path 로 hydrate 되는지 테스트합니다.
      *
-     * 회귀 차단 (이슈 #275): IdentityVerificationManager / MailIdentityProvider /
+     * 회귀 차단: IdentityVerificationManager / MailIdentityProvider /
      * InicisIdentityProvider 등이 `config('settings.identity.*')` 경로로 직접 read 한다.
      * 이 경로 hydration 이 누락되면 admin UI 저장값이 모두 무시되고 코드 fallback 만 사용된다.
      */

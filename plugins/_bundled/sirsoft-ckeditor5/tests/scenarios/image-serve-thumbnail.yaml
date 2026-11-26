@@ -20,10 +20,10 @@ description: |
     8. 원본 파일만 사라진 행은 `?size=` 를 붙여도 무파라미터와 같은 404 다(남은 파생본으로 200 을 내지 않는다).
     9. 제공자 목록 필터는 필터 호출마다 제공자를 새로 만들지 않고 같은 인스턴스를 돌려준다.
     10. 앞선 리스너가 배열이 아닌 값을 넘기면 그 값을 그대로 돌려준다. 나눠 읽는 상한은 최소 1 이다.
-    11. 업로드 목록 이미지는 sm 규격이고(주소는 `preview_url ?? download_url` — 직접 URL 행도 API 주소에 규격, #878),
+    11. 업로드 목록 이미지는 sm 규격이고(주소는 `preview_url ?? download_url` — 직접 URL 행도 API 주소에 규격),
         본문 표시 확장은 호출자가 준 imageSizes 를 HtmlContent 에 넘긴다.
     12. 공개 자산 디스크(CDN) 직접 주소로 저장되는 본문 이미지는 이 서빙 경로를 지나지 않는다 — 업로드 응답 `urls` 의 숫자 후보
-        (API 주소 + `?size=`)가 본문 `srcset` 으로 저장되어 이 경로로 썸네일을 받는다(#878). 응답 계약은
+        (API 주소 + `?size=`)가 본문 `srcset` 으로 저장되어 이 경로로 썸네일을 받는다. 응답 계약은
         tests/scenarios/public-asset-cdn.yaml(`editor_upload_returns_responsive_api_urls_for_direct_rows`)이 소유한다.
 
 axes:

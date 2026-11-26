@@ -2,7 +2,7 @@
 #   결함 목록이다 — 축 값 하나가 결함 하나이고 결함끼리는 조합이 없다(권한 스코프 결함과 요청 빈도
 #   결함을 곱할 이유가 없다). 설정 저장 축(save_path × payload × target_key)은 경로마다 의미 있는
 #   조합만 있다(서비스 경로에는 단건 키가 없다). effects 축은 면제하지 않는다.
-# 시나리오 매니페스트 — HTTP·권한·보안 결함 수정 (#599 validate P3)
+# 시나리오 매니페스트 — HTTP·권한·보안 결함 수정
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 feature: validate_p3_http
 

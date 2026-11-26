@@ -1,5 +1,5 @@
 /**
- * 관리자 답변하기 화면 - 원글 작성자 표시 키 경로 회귀 테스트 (#413-70-1)
+ * 관리자 답변하기 화면 - 원글 작성자 표시 키 경로 회귀 테스트 (70-1)
  *
  * @description
  * 답변하기 폼 상단의 원글 정보 헤더에서 작성자 이름이 '알 수 없음'으로
@@ -47,7 +47,7 @@ function collectTexts(node: any): string[] {
     return results;
 }
 
-describe('관리자 답변하기 - 원글 작성자 키 경로 (#413-70-1)', () => {
+describe('관리자 답변하기 - 원글 작성자 키 경로 (70-1)', () => {
     const texts = collectTexts(parentPost);
 
     it('원글 작성자 이름을 parent_post.author.name 경로로 참조한다', () => {

@@ -4,7 +4,7 @@ import { IconStyle } from './IconTypes';
  *
  * FA5 단축형(`fas`·`far`·`fal`·`fad`·`fab`)과 FA6 장형(`fa-solid`·`fa-regular`·`fa-light`·`fa-duotone`·`fa-brands`)을
  * 모두 읽는다. 종전 Icon 은 장형만 읽어 `fas fa-users` 를 `fas fa-fas fa-users` 로 조합했다(우연히 보임)·
- * `far`·`fab` 는 스타일을 잃었다(#381).
+ * `far`·`fab` 는 스타일을 잃었다.
  *
  * 주의: 이 파일은 sirsoft-admin_basic 과 sirsoft-basic 에 **같은 내용**으로 있다 — 한쪽을 고치면 다른 쪽도 고친다.
  */

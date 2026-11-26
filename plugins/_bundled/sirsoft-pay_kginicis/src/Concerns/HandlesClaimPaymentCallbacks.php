@@ -25,7 +25,7 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
  * 이 플러그인의 콜백·서명 컨트롤러가 함께 쓰는 조각(결제 건 조회, 결제창 실패 복귀,
  * 콜백 락 안의 승인 위임)만 둔다. 승인 확정 뒤 거절의 보상은 승인 리스너의 `voidApproval()` 이 맡는다.
  *
- * 결제 건 조회·청구액 계산은 이커머스 공개 계약 {@see ClaimPaymentLookup} 로 한다(#916). 공개 Support
+ * 결제 건 조회·청구액 계산은 이커머스 공개 계약 {@see ClaimPaymentLookup} 로 한다. 공개 Support
  * (`ClaimPaymentCallback`·`ClaimPaymentRedirect`)가 결제 건 Model 을 받으므로 그 인자만 읽기 전용 Model 조회
  * (`findClaimPaymentModel`)로 얻는다.
  *

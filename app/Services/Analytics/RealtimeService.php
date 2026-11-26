@@ -109,7 +109,7 @@ class RealtimeService
                     'last_action_at' => AnalyticsClock::toSiteDateTimeString($visit->last_action_at),
                     'visitor_type' => $this->enumValue($visit->visitor_type),
                     'country_code' => $visit->country_code,
-                    // 코드는 그대로 두고 화면이 읽을 이름을 덧붙인다(#682 S4 라운드 8).
+                    // 코드는 그대로 두고 화면이 읽을 이름을 덧붙인다.
                     'country_name' => is_string($visit->country_code) && $visit->country_code !== '' ? GeoLabelTranslator::country($visit->country_code) : null,
                     'device_type' => $this->enumValue($visit->device_type),
                     'device_type_label' => CodeLabelTranslator::label('analytics.device_type', $visit->device_type),

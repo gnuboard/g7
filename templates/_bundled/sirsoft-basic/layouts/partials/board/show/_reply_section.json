@@ -242,7 +242,7 @@
                                     "text": "$t:board.posts.detail.reply_secret_content"
                                 },
                                 {
-                                    "comment": "일반 글 내용 — 접힘 상태의 이미지·표 숨김은 !hidden: CKEditor 플러그인의 레이어 밖 `.ck-content img{display:inline}` 이 레이어 안 유틸리티를 이겨 숨긴 이미지가 보이고 내려받혔다(#869 실측)",
+                                    "comment": "일반 글 내용 — 접힘 상태의 이미지·표 숨김은 !hidden: CKEditor 플러그인의 레이어 밖 `.ck-content img{display:inline}` 이 레이어 안 유틸리티를 이겨 숨긴 이미지가 보이고 내려받혔다",
                                     "id": "reply_html_content_{{replyIndex}}",
                                     "type": "extension_point",
                                     "name": "html_content",

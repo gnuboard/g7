@@ -8,7 +8,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 이커머스 개인정보 보유기간 설정·미리보기 API 테스트 (이슈 #636 S5)
+ * 이커머스 개인정보 보유기간 설정·미리보기 API 테스트
  *
  * 「개인정보 보유기간」 탭 저장이 카테고리 화이트리스트·검증 규칙·기본값 세 지점을 모두 지나는지,
  * 전자상거래법 하한(5년)을 서버가 강제하는지, 미리보기 API 가 「꺼짐 = null」 계약을 지키는지를

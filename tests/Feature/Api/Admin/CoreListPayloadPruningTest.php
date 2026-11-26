@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * 코어 목록 응답의 하위 컬렉션 프루닝 회귀 (#518 / 공개 #76)
+ * 코어 목록 응답의 하위 컬렉션 프루닝 회귀 (공개 #76)
  *
  * 목록 화면이 쓰지 않는 하위 컬렉션이 행마다 통째로 직렬화되던 문제를 고정한다. 두 패턴이
  * 원인이었다.
@@ -352,7 +352,7 @@ class CoreListPayloadPruningTest extends TestCase
      * 역할→권한 **관계 eager load** 쿼리인지 판정합니다.
      *
      * 권한 체크(`hasPermission`)도 같은 피벗 테이블을 참조하지만 그쪽은 `exists(...)` 서브쿼리이며,
-     * 행마다 실행되는 그 N+1 은 별도 이슈(#519)가 소유한다. 이 테스트는 목록 쿼리가 권한 집합을
+     * 행마다 실행되는 그 N+1 은 별도 이슈가 소유한다. 이 테스트는 목록 쿼리가 권한 집합을
      * 다시 끌어오지 않는지만 본다.
      *
      * @param  string  $sql  실행된 SQL

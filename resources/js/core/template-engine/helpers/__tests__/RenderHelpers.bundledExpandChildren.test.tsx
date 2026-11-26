@@ -3,7 +3,7 @@
  *
  * 이커머스 상품 관리 목록의 확장 행(`expandChildren`)은 `responsive.portable` 에서 옵션을
  * 카드(`option-row-*`)로, 기본(데스크톱)에서 표(`ecommerce:overflow-x-auto > table`)로 그린다.
- * 클래스 이름은 이 모듈이 자기 CSS 로 싣는 앞글자 이름이다(#816 — `admin-card` → `ecommerce-admin-card`).
+ * 클래스 이름은 이 모듈이 자기 CSS 로 싣는 앞글자 이름이다(`admin-card` → `ecommerce-admin-card`).
  * 편집기 미리보기는 옵션을 불러오는 핸들러를 돌리지 않아 카드 분기(iteration)를 라이브로
  * 볼 수 없으므로, 번들 JSON 을 그대로 읽어 렌더 환경 폭에 따른 분기를 잠근다.
  */

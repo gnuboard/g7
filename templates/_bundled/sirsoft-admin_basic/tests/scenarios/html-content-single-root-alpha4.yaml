@@ -1,5 +1,5 @@
 # HtmlContent 는 Fragment 를 돌려주지만 부모 DOM 에는 본문 Div 하나만 놓인다
-# #869 이월 0 회차(α4): 호출 레이아웃이 첫 자식, 형제 선택자, 줄 자르기로 HtmlContent 를 감쌀 때 기대는 DOM 구조를 잠근다.
+# 호출 레이아웃이 첫 자식, 형제 선택자, 줄 자르기로 HtmlContent 를 감쌀 때 기대는 DOM 구조를 잠근다.
 feature: html_content_single_root_alpha4
 
 description: |

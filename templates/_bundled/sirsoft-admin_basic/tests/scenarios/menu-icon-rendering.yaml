@@ -1,4 +1,4 @@
-feature: sirsoft-admin_basic 관리자 메뉴 아이콘 — FA 클래스 · 이미지 · 인라인 SVG 구조형 값(icon_spec) 렌더·편집 (#381)
+feature: sirsoft-admin_basic 관리자 메뉴 아이콘 — FA 클래스 · 이미지 · 인라인 SVG 구조형 값(icon_spec) 렌더·편집
 
 description: |
   메뉴 API 가 내려주는 구조형 아이콘(icon_spec: class·image·svg)을 사이드바·메뉴 관리 목록·보기 판·편집 필드가

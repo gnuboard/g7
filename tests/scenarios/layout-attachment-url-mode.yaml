@@ -50,7 +50,7 @@ effects:
   - public_asset_disk_resolution_is_not_memoized
   - layout_attachment_cross_template_access_returns_null
   - layout_attachment_missing_file_returns_null
-  # #869 편집기 표시만 썸네일 주소로 받고 저장값은 서버가 준 주소 원문이다
+  # 편집기 표시만 썸네일 주소로 받고 저장값은 서버가 준 주소 원문이다
   - editor_attachment_preview_uses_thumbnail_address
   - editor_attachment_saved_value_stays_original_url
   - editor_tile_preview_keeps_original

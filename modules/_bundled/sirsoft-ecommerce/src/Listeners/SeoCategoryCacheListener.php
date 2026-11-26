@@ -20,7 +20,7 @@ use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
  *
  * 비우기는 저장한 요청 안에서 한다(sync) — 큐로 가면 워커가 돌 때까지(워커가 없으면 TTL 까지) 봇이 옛 화면을
  * 받는다. 본문은 DB::afterCommit 으로 감싸 트랜잭션 안에서 발화하면 커밋 뒤에 비운다 — 커밋 전에 비우면
- * 다른 요청이 옛 데이터로 다시 채울 틈이 생긴다(#724). 트랜잭션 밖이면 즉시 비운다.
+ * 다른 요청이 옛 데이터로 다시 채울 틈이 생긴다. 트랜잭션 밖이면 즉시 비운다.
  */
 class SeoCategoryCacheListener implements HookListenerInterface
 {

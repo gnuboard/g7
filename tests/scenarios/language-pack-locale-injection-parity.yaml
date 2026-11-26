@@ -1,10 +1,10 @@
-feature: 언어팩 로케일 주입·복원 일관성 (#597 보완 실측 후속)
+feature: 언어팩 로케일 주입·복원 일관성
 
 description: |
   활성 언어팩 seed 의 로케일(ja 등)이 시더 필터와 [기본값 복원] 양쪽에서 같은 SSoT 로
   병합되는지 고정한다.
 
-  배경 (2026-08-24 #597 보완 실측에서 실측·확정):
+  배경 (2026-08-24 실측에서 확정):
     - [기본값 복원] 경로(core.notification.filter_default_definitions /
       core.identity.filter_default_message_definitions)가 언어팩 주입에 참여하지 않아,
       복원을 누르면 팩이 주입해 둔 로케일이 config 의 ko/en 만으로 대체되어 영구 소실됐다

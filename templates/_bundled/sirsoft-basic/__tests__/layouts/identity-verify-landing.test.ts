@@ -4,7 +4,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * 본인인증 확인 링크의 착지 화면 (#699)
+ * 본인인증 확인 링크의 착지 화면
  *
  * 메일 프로바이더는 링크 방식(비밀번호 재설정 목적) 메일에 `/identity/verify?challenge=…&token=…` 를 싣는데
  * 이 주소를 받는 화면이 없어 링크가 404 였고, 비밀번호 재설정 정책을 켜면 회원이 비밀번호를 바꿀 수 없었다.

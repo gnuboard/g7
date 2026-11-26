@@ -37,7 +37,7 @@ const findInChildren = (root: any, pred: (n: any) => boolean): any => {
         if (node && typeof node === 'object') {
             if (pred(node)) return node;
             if (Array.isArray(node.children)) stack.push(...node.children);
-            if (Array.isArray(node.props?.footer)) stack.push(...node.props.footer); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
+            if (Array.isArray(node.props?.footer)) stack.push(...node.props.footer); // 고정 하단 (바닥 단추가 Modal 고정 하단으로 옮김)
         }
     }
     return null;
@@ -140,7 +140,7 @@ describe('A23/§B-FAIL-1 — 추가옵션 확인 모달은 openModal/closeModal 
     });
 
     /** @effects not_use_with_rows_opens_clear_modal */
-    it('확인 모달 취소·확인 버튼은 Modal 고정 하단(props.footer)에 있다 (#869 P1 — 640px 이하 세로 쌓기)', () => {
+    it('확인 모달 취소·확인 버튼은 Modal 고정 하단(props.footer)에 있다 (640px 이하 세로 쌓기)', () => {
         const footer = asArray((clearModal as any).props?.footer);
         expect(footer.length).toBeGreaterThan(0);
         const btnTexts = footer.filter((c: any) => c.name === 'Button').map((b: any) => b.text);
@@ -498,7 +498,7 @@ describe('§13-D-FAIL — save_template 모달도 slots.footer 미사용 (버튼
     });
 
     /** @effects save_template_modal_footer_in_children */
-    it('save_template 취소·저장 버튼은 Modal 고정 하단(props.footer)에 있다 (#869 P1 — 640px 이하 세로 쌓기)', () => {
+    it('save_template 취소·저장 버튼은 Modal 고정 하단(props.footer)에 있다 (640px 이하 세로 쌓기)', () => {
         const footer = asArray((saveTemplateModal as any).props?.footer);
         expect(footer.length).toBeGreaterThan(0);
         const btnTexts = footer.filter((c: any) => c.name === 'Button').map((b: any) => b.text);

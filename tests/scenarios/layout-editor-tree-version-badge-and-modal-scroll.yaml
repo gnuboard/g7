@@ -19,7 +19,7 @@ exclusions:
   - { version_change_action: restore, layout_history: none,
       reason: "이력이 없으면 버전 기록 모달에 복원 대상이 없음" }
 effects:
-  - editor_document_scroll_not_smoothed_by_template_css   # 편집 대상 템플릿의 html scroll-behavior:smooth 를 편집기 생존 동안 auto 로 덮음(#869 λ C1·C4)
+  - editor_document_scroll_not_smoothed_by_template_css   # 편집 대상 템플릿의 html scroll-behavior:smooth 를 편집기 생존 동안 auto 로 덮음
   - editor_preview_autofocus_does_not_scroll_editor        # 미리보기 안 자동 포커스(sirsoft-popup 대화창 등)가 편집기 문서를 스크롤하지 않음(preventScroll)
   - editor_layout_fetched_once_with_provider               # 문서 Provider 가 있으면 PreviewCanvas 사본 훅이 같은 레이아웃을 다시 받지 않음
   - editor_routes_response_includes_layout_versions_map

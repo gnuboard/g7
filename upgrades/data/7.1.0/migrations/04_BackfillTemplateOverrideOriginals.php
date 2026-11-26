@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 7.0.x 가 원본 정보 없이 등록한 템플릿 오버라이드 레이아웃 행에 병합 기준(원본 본문·해시·크기)을 채웁니다 (#727 C-1).
+ * 7.0.x 가 원본 정보 없이 등록한 템플릿 오버라이드 레이아웃 행에 병합 기준(원본 본문·해시·크기)을 채웁니다.
  *
  * 7.0.x 의 오버라이드 등록(`templates/{식별자}/layouts/overrides/{모듈}/` 파일 → `template_layouts`,
  * source_type = template, source_identifier = 템플릿 식별자)은 `original_content`·`original_content_hash`·

@@ -1,5 +1,5 @@
 /**
- * 댓글 반응 (#525 WP-D).
+ * 댓글 반응.
  *
  * 실브라우저로 세 갈래를 잰다:
  *   ① 게시판이 반응·댓글 반응을 둘 다 켰을 때만 버튼이 뜬다
@@ -34,7 +34,7 @@ async function openPost(page: Page, slug: string, postId: number, token?: string
   await expect(page.locator('body')).toContainText('댓글', { timeout: 20_000 });
 }
 
-test.describe('댓글 반응 (#525 WP-D)', () => {
+test.describe('댓글 반응', () => {
   // @scenario case=comment_buttons_render_under_both_toggles
   // @effects comment_reaction_group_requires_both_toggles
   test('두 토글이 모두 켜진 게시판에서 댓글마다 반응 버튼이 뜬다', async ({ page, reactionSeed }) => {

@@ -29,7 +29,7 @@ use Plugins\Sirsoft\PayKginicis\Support\CbtCvsResponse;
  * 승인 응답이 이 결제 건·이 청구액의 것인지도 여기서 판정하고, 아니면 여기서 되돌린다(망취소·
  * 취소·환불). 모듈도 `paid_amount` 로 한 번 더 대조하며, 그 거절의 보상은 `claim_payment.void_approval`
  * 필터(이 리스너의 `voidApproval()`)가 맡는다 — 서버 콜백 경로와 클라이언트 승인 API 경로
- * (`claim-payments/{no}/approve`)의 판정·보상이 이 한 클래스에 있다(#599 validate 07 #8).
+ * (`claim-payments/{no}/approve`)의 판정·보상이 이 한 클래스에 있다(validate 07 #8).
  */
 class ClaimPaymentApproveListener implements HookListenerInterface
 {

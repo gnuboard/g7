@@ -6,7 +6,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 마이페이지 내 리뷰 목록 API (#952 E)
+ * 마이페이지 내 리뷰 목록 API
  */
 class UserReviewListTest extends ModuleTestCase
 {

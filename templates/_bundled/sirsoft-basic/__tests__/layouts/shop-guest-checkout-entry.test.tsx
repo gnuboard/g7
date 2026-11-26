@@ -137,7 +137,7 @@ describe('로그인 화면 - 비회원 주문하기 버튼 (Issue #55)', () => {
     // if 식 전체가 {{}} 로 감싸져야 ConditionEvaluator 가 식으로 평가
     expect(guestBlock.if.startsWith('{{')).toBe(true);
     expect(guestBlock.if.endsWith('}}')).toBe(true);
-    // 1.3.0(#822): 쇼핑몰 모듈이 꺼진 사이트에서는 숨긴다
+    // 1.3.0: 쇼핑몰 모듈이 꺼진 사이트에서는 숨긴다
     expect(guestBlock.if).toBe("{{query.redirect && query.redirect.includes('checkout') && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}");
   });
 
@@ -206,7 +206,7 @@ describe('결제하기 엔드포인트 분기 - _checkout_summary (Issue #55)', 
   // @scenario actor=guest
   // @effects checkout_summary_includes_guest_lookup_password_in_body_only_for_guest
   it('body 에 비회원 조회 비밀번호 + 확인이 비로그인일 때만 값으로 전송되어야 한다', () => {
-    // body 는 통짜 표현식이다(#454 확장 병합 칸). 표현식 문자열을 substring 으로 훑는 대신
+    // body 는 통짜 표현식이다(확장 병합 칸). 표현식 문자열을 substring 으로 훑는 대신
     // 실제로 평가해 "회원=null / 비회원=입력값" 동작 자체를 고정한다.
     const engine = new DataBindingEngine();
     const evalBody = (currentUser: unknown) =>
@@ -250,7 +250,7 @@ describe('비회원 조회 비밀번호 입력 섹션 - _checkout_orderer (Issue
   // @effects checkout_orderer_shows_guest_lookup_password_fields_only_when_no_currentUser
   it('비로그인(_global.currentUser?.uuid 없음)일 때만 노출되는 컨테이너가 존재해야 한다', () => {
     expect(guestSection).toBeDefined();
-    // 사용자 정보를 받는 중(undefined)을 비회원으로 읽지 않는다 — 회원에게 비회원 입력란이 잠깐 보였다(#915)
+    // 사용자 정보를 받는 중(undefined)을 비회원으로 읽지 않는다 — 회원에게 비회원 입력란이 잠깐 보였다
     expect(guestSection.if).toBe('{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}');
   });
 
@@ -339,7 +339,7 @@ describe('주문자 이메일 필수 표시 - _checkout_orderer (Issue #55)', ()
     );
     expect(emailLabel).toBeDefined();
 
-    // 필수 표시(*) Span 은 운영자 설정을 읽는 계산값(checkoutFields.orderer_email.required)을 따른다(#490).
+    // 필수 표시(*) Span 은 운영자 설정을 읽는 계산값(checkoutFields.orderer_email.required)을 따른다.
     // 설정이 없는 응답에서 그 계산값은 비로그인(!_global.currentUser?.uuid)일 때만 참이다 — 종전 화면과 같다.
     const requiredMark = asArray(emailLabel?.children).find(
       (c: any) => c.name === 'Span' && c.text === '*'

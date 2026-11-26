@@ -31,7 +31,7 @@ class ItemCalculation
      * @param  string|null  $optionName  옵션명 (조회용)
      * @param  array|null  $additionalOptionsSnapshot  추가옵션 스냅샷 → order_options.additional_options_snapshot
      * @param  MultiCurrencyPrices|null  $multiCurrency  다중 통화 변환 금액
-     * @param  int  $zeroRatedAmount  영세 금액 (과세 금액에 포함, 부가세 0) — #612
+     * @param  int  $zeroRatedAmount  영세 금액 (과세 금액에 포함, 부가세 0)
      * @param  string|null  $taxStatus  확정 과세 종류 (taxable/tax_free/zero_rated) → order_options.tax_status
      * @param  array<string, mixed>  $metadata  플러그인 확장용 메타데이터
      *                                          - deposit_used_share: 예치금 사용 안분액 (예치금 플러그인)

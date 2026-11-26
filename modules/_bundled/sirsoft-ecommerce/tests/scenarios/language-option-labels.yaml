@@ -28,7 +28,7 @@ description: |
 
   파일이 없으면 통과가 아니라 **실패**한다. 자매 테스트
   `ConfirmPurchaseWarningAccuracyTest` 가 「파일 없으면 null → 단언 건너뜀」으로 ja 오역을
-  놓친 전례가 있다(#599 세션2 계획서준수검증 결함1).
+  놓친 전례가 있다(세션2 계획서준수검증 결함1).
 
 axes:
   language_labels:

@@ -1,5 +1,5 @@
 /**
- * 관리자 답변 작성 폼 — 부모글 작성자명 노출 (이슈 #413 item 70).
+ * 관리자 답변 작성 폼 — 부모글 작성자명 노출 (item 70).
  *
  * 답변(reply) 작성 폼 상단의 "원본 게시글" 카드는 부모글의 작성자명을 표시한다.
  * 백엔드 form-meta 응답은 작성자를 `parent_post.author.name` 으로 노출하므로
@@ -25,7 +25,7 @@ const BOARD_SLUG = 'inquiry';
 const PARENT_ID = 100;
 const PARENT_AUTHOR_NAME = '홍길동';
 
-test.describe.skip('관리자 답변 폼 — 부모글 작성자명 노출 (#413)', () => {
+test.describe.skip('관리자 답변 폼 — 부모글 작성자명 노출', () => {
   // @scenario case=manager_reply_to_published_parent
   // @effects reply_form_renders_parent_post_author_name
   test('답변 작성 폼의 원본 게시글 카드에 부모글 작성자명이 노출된다', async ({

@@ -310,7 +310,7 @@ class DashboardBadgeOrderCountTest extends ModuleTestCase
                     if (($action['handler'] ?? null) !== 'navigate') {
                         continue;
                     }
-                    // 배지는 링크다(#757) — 주소는 `props.href` 에 있고 navigate 는 path 없이 그 href 로 간다.
+                    // 배지는 링크다 — 주소는 `props.href` 에 있고 navigate 는 path 없이 그 href 로 간다.
                     // 옛 모양(navigate params.path)도 함께 읽는다.
                     $path = $action['params']['path'] ?? $node['props']['href'] ?? '';
                     $query = explode('?', (string) $path, 2)[1] ?? '';

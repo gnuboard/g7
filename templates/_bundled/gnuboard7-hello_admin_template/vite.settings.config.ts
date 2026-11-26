@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 /**
- * 템플릿 설정 화면 묶음 빌드 (#434 D28·D30)
+ * 템플릿 설정 화면 묶음 빌드
  *
  * 코어가 관리자 화면을 열 때 설치된 템플릿의 `dist/settings/settings.iife.js`·`settings.css` 를 플러그인 묶음처럼 싣는다
  * (이 템플릿이 꺼져 있거나 다른 관리자 템플릿이 켜져 있어도). 규약 경로라 이름을 바꾸지 않는다. Vite 라이브러리 모드는

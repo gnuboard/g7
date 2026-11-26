@@ -124,7 +124,7 @@ class OrderClaimHistoryTest extends ModuleTestCase
 
         $response = $this->actingAs($this->admin)->getJson($this->url($order))->assertOk();
 
-        // counts — 출처로 거르지 않는다 (#599 후속 D6).
+        // counts — 출처로 거르지 않는다.
         //
         // 취소신청서와 환불신청서는 같은 사건의 두 사본이 아니라 다른 사실을 기록하는 별개
         // 문서다. 취소신청서는 "무엇이 주문에서 빠졌는가", 환불신청서는 "얼마를 어떤 수단으로

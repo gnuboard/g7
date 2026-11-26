@@ -14,7 +14,7 @@ use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Services\BoardPermissionService;
 
 /**
- * Playwright E2E · 브라우저 실측용 게시판 개인정보 보유기간 시드 커맨드 (이슈 #636 S5).
+ * Playwright E2E · 브라우저 실측용 게시판 개인정보 보유기간 시드 커맨드.
  *
  * 보유기간 처리는 「작성 후 N일이 지난 행」만 건드리므로, 실측하려면 **오래전에 쓴 것처럼 보이는
  * 글**이 필요하다. 화면·API 로는 작성 시각을 과거로 만들 수 없어 이 커맨드가 그 상태를 고정한다.

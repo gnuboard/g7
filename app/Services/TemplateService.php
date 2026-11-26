@@ -463,7 +463,7 @@ class TemplateService
      *
      * 캐시 키는 `template.config.{identifier}`(1시간)이고 템플릿 생명주기 캐시 무효화(`TemplateManager`)가 지운다.
      * 결과는 `['success' => true, 'data' => template.json]` 또는 `['error' => 'template_not_found'|'config_not_found'|'invalid_json']`
-     * 이다. 오류는 캐시하지 않는다(일시적 상태 회복). 빈 맵(`dependencies.modules: {}` 등)은 `{}` 로 응답하도록 보존해 읽는다 (#758).
+     * 이다. 오류는 캐시하지 않는다(일시적 상태 회복). 빈 맵(`dependencies.modules: {}` 등)은 `{}` 로 응답하도록 보존해 읽는다.
      *
      * @param  string  $identifier  템플릿 식별자
      * @return array{success?: true, data?: array<string, mixed>, error?: string} 읽은 결과
@@ -499,7 +499,7 @@ class TemplateService
     }
 
     /**
-     * 셸 HTML(`G7Config.templateConfig`)에 미리 실을 템플릿 설정 — template.json `expose` 에 제작자가 선언한 키만 (#879).
+     * 셸 HTML(`G7Config.templateConfig`)에 미리 실을 템플릿 설정 — template.json `expose` 에 제작자가 선언한 키만.
      *
      * 설정값의 `expose`(설정 주인이 선언한 키만 G7Config 에 싣는다)와 같은 방식이다. 선언했는데 template.json 에 없는 키는
      * null(「선언했고 값 없음」), 문자열이 아닌 항목·최상위 키 이름 모양이 아닌 항목(`a.b` 등)·예약 이름은 무시하고 중복은 하나로 둔다.
@@ -851,7 +851,7 @@ class TemplateService
     public function getAssetFilePath(string $identifier, string $path): array
     {
         // 1. 활성화된 템플릿 확인 — 설정 화면 부품 묶음(규약 경로 두 파일)만은 꺼진 템플릿도 내준다.
-        //    관리자 화면이 설치된 템플릿 설정 화면을 그 템플릿 부품으로 그리기 때문이다 (#434 D30)
+        //    관리자 화면이 설치된 템플릿 설정 화면을 그 템플릿 부품으로 그리기 때문이다
         $template = $this->templateRepository->findByIdentifier($identifier);
         $servable = $template && (
             $template->status === ExtensionStatus::Active->value
@@ -1142,7 +1142,7 @@ class TemplateService
             $locale
         );
 
-        // 8. 관리자 화면 응답이면 설치된 템플릿(꺼진 것 포함)이 공급한 설정 화면 문구를 `{템플릿id}.{묶음}` 으로 감싸 싣는다 (#434 D28).
+        // 8. 관리자 화면 응답이면 설치된 템플릿(꺼진 것 포함)이 공급한 설정 화면 문구를 `{템플릿id}.{묶음}` 으로 감싸 싣는다.
         //    설정 화면 부품은 그 템플릿 것이고 어느 관리자 템플릿이 켜져 있든 떠야 하므로, 문구도 모듈·플러그인처럼
         //    식별자로 감싸 관리자 응답에 합친다(그 템플릿 언어팩 오버레이 포함). 꺼진 템플릿 문구 조회
         //    (`$includeInactive`)는 이 단계를 건너뛴다 — 설정 라벨 조회가 다시 이 단계를 부르지 않게.
@@ -1159,7 +1159,7 @@ class TemplateService
 
     /**
      * 설치된 템플릿이 공급한 설정 화면 문구를 모읍니다 — 설정 화면(`settings/template_settings.*`)이 있는 템플릿의
-     * 프론트 언어 중 부품 매니페스트가 밝힌 묶음(기본 `settings`)을 `{템플릿id}.{묶음}` 으로 감싼다 (#434).
+     * 프론트 언어 중 부품 매니페스트가 밝힌 묶음(기본 `settings`)을 `{템플릿id}.{묶음}` 으로 감싼다.
      *
      * @param  string  $locale  로케일
      * @return array<string, array<string, mixed>> 템플릿 식별자 => 감싼 문구
@@ -1383,7 +1383,7 @@ class TemplateService
      * 템플릿 routes.json 데이터를 활성화된 모듈의 routes와 병합하여 반환합니다.
      *
      * @param  string  $identifier  템플릿 식별자
-     * @param  bool  $preserveEmptyMaps  routes JSON 의 빈 맵 `{}` 를 보존할지 — 그대로 응답하는 경로만 true (#758).
+     * @param  bool  $preserveEmptyMaps  routes JSON 의 빈 맵 `{}` 를 보존할지 — 그대로 응답하는 경로만 true.
      *                                   SEO·사이트맵처럼 값을 배열로 읽는 PHP 소비자는 기본값(false)을 쓴다
      * @param  bool  $applyRequires  라우트의 `requires`(필요한 활성 모듈·플러그인)가 채워지지 않은 라우트를 뺄지.
      *                               공개 응답·SEO·사이트맵·정적 사본은 기본값(true), 레이아웃 존재 점검처럼
@@ -1427,7 +1427,7 @@ class TemplateService
         }
 
         // 5. 템플릿 routes.json 데이터 로드
-        //    응답용(`$preserveEmptyMaps`)이면 빈 맵 `{}` 를 보존해 읽는다 (#758). SEO·사이트맵처럼 값을 배열로 읽는
+        //    응답용(`$preserveEmptyMaps`)이면 빈 맵 `{}` 를 보존해 읽는다. SEO·사이트맵처럼 값을 배열로 읽는
         //    PHP 소비자는 기본값(연관 배열)을 그대로 쓴다.
         $templateRoutesContent = file_get_contents($routesFilePath);
         $templateRoutesData = $this->decodeRoutesJson((string) $templateRoutesContent, $preserveEmptyMaps);
@@ -1463,7 +1463,7 @@ class TemplateService
             return $route;
         }, $templateRoutesData['routes'] ?? []);
 
-        // 8.5. 템플릿 설정 화면 라우트도 admin 템플릿에만 (#434) — 설치된 모든 템플릿(꺼진 것 포함)
+        // 8.5. 템플릿 설정 화면 라우트도 admin 템플릿에만 — 설치된 모든 템플릿(꺼진 것 포함)
         $templateSettingsRoutes = ($templateType === 'admin')
             ? $this->loadTemplateSettingsRoutesData()
             : [];
@@ -1737,7 +1737,7 @@ class TemplateService
             return ['success' => false, 'data' => null, 'error' => 'routes_not_found'];
         }
 
-        // 2. routes.json 디코드 — 편집기 응답 전용이므로 빈 맵 `{}` 를 보존한다 (#758)
+        // 2. routes.json 디코드 — 편집기 응답 전용이므로 빈 맵 `{}` 를 보존한다
         $templateRoutesData = $this->decodeRoutesJson((string) file_get_contents($routesFilePath), true);
         if (json_last_error() !== JSON_ERROR_NONE || ! is_array($templateRoutesData)) {
             return ['success' => false, 'data' => null, 'error' => 'invalid_json'];
@@ -1959,7 +1959,7 @@ class TemplateService
         $sources = $this->collectLayoutDocumentSources($layoutDir, $partialsDirPrefix);
 
         foreach ($sources as $source) {
-            // 본 레이아웃 실패는 「레이아웃 소스」 로 남긴다 — 확장 조각 문구를 쓰면 확장 파일이 깨진 것으로 읽힌다(#725).
+            // 본 레이아웃 실패는 「레이아웃 소스」 로 남긴다 — 확장 조각 문구를 쓰면 확장 파일이 깨진 것으로 읽힌다.
             $decoded = $this->loadFragmentSource($source, ['context' => 'editor_tree_layout_scan'], null, '레이아웃 소스');
             if ($decoded === null) {
                 continue;
@@ -2330,11 +2330,11 @@ class TemplateService
     }
 
     /**
-     * 템플릿 설정 화면 라우트를 만듭니다 (#434) — 플러그인 설정 라우트 자동 생성과 같은 모양.
+     * 템플릿 설정 화면 라우트를 만듭니다 — 플러그인 설정 라우트 자동 생성과 같은 모양.
      *
      * 설치된 템플릿 중 설정 칸을 선언한 것마다 `(*)/admin/templates/{id}/settings` 꼴(앞의 별표는 마운트 와일드카드) →
      * 템플릿이 공급한 화면 `{id}.template_settings`(활성 관리자 템플릿에 교차 등록된 행). 공용 화면은 없다 — 화면을 공급하지
-     * 않은 템플릿은 라우트를 만들지 않는다(#434 D32). 보기 권한은 템플릿 조회다.
+     * 않은 템플릿은 라우트를 만들지 않는다. 보기 권한은 템플릿 조회다.
      *
      * @return array<int, array<string, mixed>> 라우트 목록
      */
@@ -2370,7 +2370,7 @@ class TemplateService
     }
 
     /**
-     * routes JSON 원문을 디코드합니다 — 응답용이면 빈 맵 `{}` 를 보존합니다 (#758).
+     * routes JSON 원문을 디코드합니다 — 응답용이면 빈 맵 `{}` 를 보존합니다.
      *
      * @param  string  $content  routes JSON 원문
      * @param  bool  $preserveEmptyMaps  빈 맵을 보존할지 (응답 전용 경로만 true)
@@ -2651,7 +2651,7 @@ class TemplateService
     }
 
     /**
-     * 설치 결과 템플릿 정보에 방금 설치가 빈 자리로 등록한 조각 참조 경고를 싣습니다 (#712).
+     * 설치 결과 템플릿 정보에 방금 설치가 빈 자리로 등록한 조각 참조 경고를 싣습니다.
      *
      * 7.0 JSON 레이아웃의 깨진 조각 참조는 설치를 막지 않고 빈 자리로 등록되며, 그 사실을 응답 `data.layout_warnings`
      * 로 알린다(관리자 화면이 경고 토스트로 보여 준다).
@@ -2784,7 +2784,7 @@ class TemplateService
 
                 HookManager::doAction('core.templates.after_refresh_layouts', $identifier, $result);
 
-                // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+                // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고
                 if (is_array($templateInfo)) {
                     $templateInfo['layout_warnings'] = $result['layout_warnings'] ?? [];
                     $templateInfo['layout_sync'] = $result['layout_sync'] ?? null;

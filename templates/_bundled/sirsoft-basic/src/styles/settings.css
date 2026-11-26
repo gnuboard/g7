@@ -1,5 +1,5 @@
 /*
- * sirsoft-basic 템플릿 설정 화면 묶음 CSS (#434 D28·D29)
+ * sirsoft-basic 템플릿 설정 화면 묶음 CSS
  *
  * 관리자 화면에 실린다 — 어느 관리자 템플릿이 켜져 있든. 그래서 화면 초기화(preflight)·사용자 화면 기본 규칙(`@layer base`)은 싣지
  * 않고 테마·유틸리티·설정 화면 부품 의미 클래스(화면 뿌리 `.sirsoft-basic-settings` 안으로 범위를 좁힘)만 싣는다.

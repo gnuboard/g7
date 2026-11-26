@@ -23,7 +23,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 판매자 접수 신청의 고객 쪽 계약 (#599 후속 §3-11 · D8)
+ * 판매자 접수 신청의 고객 쪽 계약
  *
  * 판매자가 고객을 대신해 접수한 교환·반품은 고객(회원·비회원)이 철회·수정할 수 없다. 화면은 같은 판정으로
  * 버튼을 숨기고 「판매자 접수」 를 표시하며, 접수 알림은 판매자 접수 사실을 덧붙인다.

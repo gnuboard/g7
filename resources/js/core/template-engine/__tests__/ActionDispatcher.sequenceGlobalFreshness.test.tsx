@@ -1,4 +1,4 @@
-// e2e:allow 실제 엔진 구조(TemplateApp 전역 상태·renderTemplate·컴포넌트 이벤트 핸들러·named_actions)로 sequence 안 apiCall target 의 `_global` 해석을 잰다 — 브라우저 축은 관리자 템플릿 목록 「레이아웃 갱신」 첫 열기 실측(#888)이 덮는다
+// e2e:allow 실제 엔진 구조(TemplateApp 전역 상태·renderTemplate·컴포넌트 이벤트 핸들러·named_actions)로 sequence 안 apiCall target 의 `_global` 해석을 잰다 — 브라우저 축은 관리자 템플릿 목록 「레이아웃 갱신」 첫 열기 실측이 덮는다
 /**
  * @file ActionDispatcher.sequenceGlobalFreshness.test.tsx
  * @description 액션 `target` 의 `{{_global.*}}` 를 params 와 같이 지금의 전역 상태로 푼다 (engine-v1.96.2)

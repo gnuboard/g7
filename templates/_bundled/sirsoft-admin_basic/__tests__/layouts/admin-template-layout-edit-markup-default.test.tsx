@@ -1,12 +1,12 @@
 /**
  * @file admin-template-layout-edit-markup-default.test.tsx
- * @description 코드 편집기 HTML(.g7.html) 기본화 — 레이아웃 JSON 구조 검증 (#476)
+ * @description 코드 편집기 HTML(.g7.html) 기본화 — 레이아웃 JSON 구조 검증
  *
  * 검증 항목:
  * - 서브탭 기본값이 HTML(`markup`)이고 JSON 탭은 읽기 전용 편집기다
  * - HTML 편집기는 `language=html` 이며 서버 컴파일 마커(`markers`)를 받는다
  * - 타이핑 후 1초 유휴에 `markup-compile` 을 부르는 api-call 이 있고(debounce 1000), 저장·미리보기는 `format=markup` 으로 HTML 버퍼를 보낸다
- * - 본문 조회 데이터소스가 `?with_markup=1` 로 역변환본을 받되 **전역에 심지는 않는다**(#476 개편)
+ * - 본문 조회 데이터소스가 `?with_markup=1` 로 역변환본을 받되 **전역에 심지는 않는다**
  * - 선택 파일 헤더 표기가 `.g7.html` 이다
  * - 내려받기·복사 핸들러 버튼이 있다
  * - 판본 복원이 HTML 버퍼까지 갈아 끼운다
@@ -68,10 +68,10 @@ const stringify = (v: any) => JSON.stringify(v ?? '');
 /** apiCall 의 target 은 액션 레벨 키다(ActionCompiler 허용 목록) — params 에 있는 옛 형태도 함께 본다 */
 const targetOf = (a: any) => a?.target ?? a?.params?.target;
 
-describe('코드 편집기 — HTML 기본 · JSON 읽기 전용 (#476)', () => {
+describe('코드 편집기 — HTML 기본 · JSON 읽기 전용', () => {
   const tabs = findAll(layoutJson, (n) => n.name === 'TabNavigation' && n.id === 'editor_format_tabs');
   const editors = findAll(layoutJson, (n) => n.name === 'CodeEditor');
-  // HTML 편집은 `<code-workspace>` 가 맡는다 — 파일별 버퍼를 소유해야 하기 때문이다(#476 개편).
+  // HTML 편집은 `<code-workspace>` 가 맡는다 — 파일별 버퍼를 소유해야 하기 때문이다.
   // JSON 탭은 편집 버퍼가 없는 읽기 전용 산출물이라 `<code-editor>` 를 그대로 쓴다.
   const markupEditor = findAll(layoutJson, (n) => n.name === 'CodeWorkspace')[0];
   const jsonEditor = editors.find((e) => e.props?.language === 'json');
@@ -157,7 +157,7 @@ describe('코드 편집기 — HTML 기본 · JSON 읽기 전용 (#476)', () => 
    * @effects code_editor_saves_markup_format, code_editor_markup_save_persists
    */
   it('저장·미리보기는 HTML 버퍼를 format=markup 으로 보낸다', () => {
-    // 정의는 문서 층 `named_actions` 한 곳이고 머리말 버튼과 단축키가 함께 참조한다(#476 개편).
+    // 정의는 문서 층 `named_actions` 한 곳이고 머리말 버튼과 단축키가 함께 참조한다.
     const named = Object.values(layoutJson.named_actions ?? {});
     const calls = [...findAll(layoutJson, (n) => Array.isArray(n.actions)).flatMap(actionsOf), ...named.flatMap(flattenActions)]
       .filter((a: any) => a.handler === 'apiCall' && (a.params?.method === 'PUT' || stringify(targetOf(a)).includes('/preview')));
@@ -371,7 +371,7 @@ describe('코드 편집기 — 휴대폰 폭에서 위쪽 정보 접기 (7.1.0 P
     // 폭 분기는 Tailwind 반응형 접두가 아니라 엔진 responsive 로 한다 — 768 이상 구간에서만 hidden
     expect(toggle.props.className.split(/\s+/)).not.toContain('hidden');
     expect(toggle.props.className).not.toMatch(/(^|\s)md:/);
-    // 구간 실효값(기본 className 위에 구간 class-merge, #399)에 hidden 이 있다
+    // 구간 실효값(기본 className 위에 구간 class-merge)에 hidden 이 있다
     expect(rangeClassName(toggle, '768-').split(/\s+/)).toContain('hidden');
     expect(toggle.props['aria-expanded']).toBe("{{_global.codeEditorInfoOpen ? 'true' : 'false'}}");
     expect(toggle.props['aria-controls']).toBe('code_editor_file_desc code_editor_file_meta code_editor_inline_notice');

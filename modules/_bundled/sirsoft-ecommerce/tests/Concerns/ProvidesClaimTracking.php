@@ -6,7 +6,7 @@ use BackedEnum;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 
 /**
- * 회수중·발송중 전이에 실을 테스트 송장 (#599 후속 — 그 두 상태는 송장이 있어야 들어간다)
+ * 회수중·발송중 전이에 실을 테스트 송장 (그 두 상태는 송장이 있어야 들어간다)
  *
  * 흐름을 끝까지 몰아가는 픽스처가 단계마다 `transition($claim, $step, $this->claimTrackingFor($step))`
  * 로 부른다 — 송장이 필요 없는 단계에는 빈 배열이라 기존 호출과 같다.

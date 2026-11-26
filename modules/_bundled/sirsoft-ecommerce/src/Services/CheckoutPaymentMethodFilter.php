@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Extension\HookManager;
 
 /**
- * 결제 통화별 결제수단 제한 (#639 ⑤, 결정 D17)
+ * 결제 통화별 결제수단 제한
  *
  * 「이 통화로 결제할 때 고를 수 있는 수단」을 필터 훅
  * `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency(array $methodIds, string $currency): array` 로

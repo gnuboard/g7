@@ -1,5 +1,5 @@
 /**
- * E2E: 미인증 관리자 화면(로그인·비밀번호 찾기·비밀번호 재설정)의 테마 버튼 (dev-g7#640)
+ * E2E: 미인증 관리자 화면(로그인·비밀번호 찾기·비밀번호 재설정)의 테마 버튼
  *
  * 조합: 세 화면(admin_login · admin_forgot_password · admin_reset_password) × 세 버튼(light · dark · auto) — 아래 라인 마커가 9조합을 선언한다.
  * @effects theme_attribute_and_class_applied, theme_persisted_in_local_storage, theme_survives_reload

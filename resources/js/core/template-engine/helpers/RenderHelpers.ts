@@ -1239,7 +1239,7 @@ export function renderItemChildren(
 
     // 확장점 — 백엔드가 주입한 children 을 이 행 컨텍스트로 그리는 컨테이너다(이름은 컴포넌트가 아니라
     // 확장점 이름). DynamicRenderer 의 확장점과 같은 호스트 규칙을 쓴다. 이 분기가 없으면 셀 안의
-    // 확장점이 「컴포넌트를 찾을 수 없습니다」 로 통째로 버려진다(#703 B2 결제수단 배지).
+    // 확장점이 「컴포넌트를 찾을 수 없습니다」 로 통째로 버려진다(결제수단 배지).
     // @since engine-v1.73.0
     if ((childDef as { type?: string }).type === 'extension_point') {
       const host = buildExtensionPointHostProps(resolveProps(childDef.props, effectiveContext));
@@ -1248,7 +1248,7 @@ export function renderItemChildren(
         : null;
 
       // 호스트는 React 트리의 확장점 scope 를 상속하는 컴포넌트로 그린다 — 정적 호스트 id 에 바깥 scope 를 붙이고,
-      // 자기 id 로 주입 조각에 새 scope 를 연다. 셀을 그리는 컴포넌트(DataGrid 등)는 scope 를 알 수 없어서다 (engine-v1.99.0, #408)
+      // 자기 id 로 주입 조각에 새 scope 를 연다. 셀을 그리는 컴포넌트(DataGrid 등)는 scope 를 알 수 없어서다 (engine-v1.99.0)
       return [
         React.createElement(
           CellExtensionHost,

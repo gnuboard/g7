@@ -1,4 +1,4 @@
-feature: 문자와 알림톡 발송 이력의 받는 사람 이름 (#490)
+feature: 문자와 알림톡 발송 이력의 받는 사람 이름
 
 description: |
   발송 이력(`bizppurio_dispatches.to_name`)은 관리자 화면의 기록물이다. 회원 수신자는 회원 이름 컬럼이 아니라 그 시점의

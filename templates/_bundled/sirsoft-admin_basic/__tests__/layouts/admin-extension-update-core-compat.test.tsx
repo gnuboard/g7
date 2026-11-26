@@ -163,7 +163,7 @@ describe('업데이트 창 — 경고와 강제 업데이트', () => {
     for (const [label, tree, selected, force] of openers) {
       const setStates = collect(tree, (n) => n.handler === 'setState'
         && typeof n.params?.[selected] === 'string' && n.params[selected].includes('$args')
-        // 업데이트 창을 여는 시드는 업데이트 미리보기 요청(…/update/preview)을 함께 정한다(#888)
+        // 업데이트 창을 여는 시드는 업데이트 미리보기 요청(…/update/preview)을 함께 정한다
         && String(n.params?.layoutPreviewRequest ?? '').includes('/update/preview'));
       expect(setStates.length, `${label}: 업데이트 창을 여는 setState 가 없습니다.`).toBeGreaterThan(0);
       for (const s of setStates) {

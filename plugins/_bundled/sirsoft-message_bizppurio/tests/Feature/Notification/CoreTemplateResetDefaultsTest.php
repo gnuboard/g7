@@ -15,7 +15,7 @@ use Plugins\Sirsoft\MessageBizppurio\Listeners\SeedChannelTemplatesListener;
 use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
- * 코어 [기본값 복원]이 플러그인이 시드한 alimtalk 채널 template 에서도 동작한다 (#597 §18.7 C2).
+ * 코어 [기본값 복원]이 플러그인이 시드한 alimtalk 채널 template 에서도 동작한다.
  *
  * 실측 결함: welcome 알림톡 행의 [기본값 복원] → 404 "기본 템플릿 데이터를 찾을 수 없습니다".
  * 플러그인이 시딩 훅(seed.*.notifications.translations)으로 행을 만들어 놓고, 복원 경로가

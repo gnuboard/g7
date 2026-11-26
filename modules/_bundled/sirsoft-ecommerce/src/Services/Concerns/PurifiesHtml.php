@@ -28,7 +28,7 @@ trait PurifiesHtml
     protected ?\HTMLPurifier $purifier = null;
 
     /**
-     * 「본문 콘텐츠」 규칙 정화기 (규칙 해시별, #883)
+     * 「본문 콘텐츠」 규칙 정화기 (규칙 해시별)
      *
      * @var array<string, \HTMLPurifier>
      */
@@ -73,9 +73,9 @@ trait PurifiesHtml
     /**
      * 「본문 콘텐츠」 정의의 이 모듈 판 — 요소 분류·허용 범위를 바꾸면 올린다(정의 캐시 ID 에 붙어 옛 직렬화 정의를 버린다).
      *
-     * 2: 후보 전부 허용(스위치는 표시에서만)·문구 콘텐츠 인라인 분류 (#887)
-     * 3: 저장 규칙·요소 분류를 코어 한 곳(`ContentHtmlPolicy::forStorage`·`HtmlElementCategories`)으로 — 모르는 서비스 oembed 보존 (#887)
-     * 4: 편집기 서식 속성(문단·표·셀·이미지의 style, 병합 셀)과 CSS 속성 목록을 넓힘 — 후보 요소의 style 은 공통 속성 규칙으로 (#895)
+     * 2: 후보 전부 허용(스위치는 표시에서만)·문구 콘텐츠 인라인 분류
+     * 3: 저장 규칙·요소 분류를 코어 한 곳(`ContentHtmlPolicy::forStorage`·`HtmlElementCategories`)으로 — 모르는 서비스 oembed 보존
+     * 4: 편집기 서식 속성(문단·표·셀·이미지의 style, 병합 셀)과 CSS 속성 목록을 넓힘 — 후보 요소의 style 은 공통 속성 규칙으로
      */
     private const PURIFIER_CONTENT_SCHEMA = 4;
 
@@ -109,7 +109,7 @@ trait PurifiesHtml
      */
     protected function purifyHtml(string $html, string $profile = 'baseline'): string
     {
-        // 상품 설명은 코어 「본문 콘텐츠」 후보(그림 캡션·업로드 동영상·오디오·외부 영상)를 스위치와 무관하게 받는다 — 켜고 끄기는 표시에서만 (D20, #887).
+        // 상품 설명은 코어 「본문 콘텐츠」 후보(그림 캡션·업로드 동영상·오디오·외부 영상)를 스위치와 무관하게 받는다 — 켜고 끄기는 표시에서만 (D20).
         // 그 밖(이관 후기 등 외부에서 들어온 HTML)은 기존 허용 목록 그대로다(baseline).
         if ($profile === 'content') {
             return $this->purifyContentHtml($html);
@@ -125,13 +125,13 @@ trait PurifiesHtml
     /**
      * 「본문 콘텐츠」 규칙으로 정화합니다 — 기존 허용 목록 + 후보 요소 전부 + 운영자 추가 태그, 정화 뒤 코어 마무리(미디어 출처·외부 영상 판정).
      *
-     * 후보 스위치(그림 캡션·업로드 동영상·오디오·외부 영상 삽입)와 외부 영상 서비스 켜고 끄기는 **표시에서만** 따른다(#887) — 저장 정화가
+     * 후보 스위치(그림 캡션·업로드 동영상·오디오·외부 영상 삽입)와 외부 영상 서비스 켜고 끄기는 **표시에서만** 따른다 — 저장 정화가
      * 스위치를 따르면 끈 동안 저장한 상품 설명에서 그 요소가 지워져 다시 켜도 돌아오지 않는다. 게시판·페이지가 원문을 보존하고 표시에서
      * 판단하는 것과 같게 한다. 위험 요소(스크립트·이벤트 속성·`javascript:` 주소·금지 태그)와 미디어 출처 검사(이 사이트 서빙 주소만)는
      * 그대로 저장에서 지운다.
      *
      * 저장 규칙은 코어 한 곳(`ContentHtmlPolicy::forStorage()` — 후보 스위치·외부 영상 서비스를 모두 켠 규칙)에서 받고, 요소의 인라인·블록
-     * 분류도 코어 `HtmlElementCategories` 를 쓴다(#887). 그래서 어느 서비스에도 맞지 않는 외부 영상(`<oembed url="https://…">`)도 링크로
+     * 분류도 코어 `HtmlElementCategories` 를 쓴다. 그래서 어느 서비스에도 맞지 않는 외부 영상(`<oembed url="https://…">`)도 링크로
      * 바꾸지 않고 원문 그대로 저장한다 — 표시가 그 시점 규칙으로 판단한다(그 서비스를 나중에 직접 추가하면 다시 영상으로 보인다).
      *
      * 정의 캐시는 규칙 해시(`ContentHtmlPolicy::htmlPurifierDefinition`)에 이 모듈의 정의 판(`PURIFIER_CONTENT_SCHEMA`)을 붙인 ID 로
@@ -150,7 +150,7 @@ trait PurifiesHtml
             $cachePath = $this->resolvePurifierCachePath($failure);
             $this->noticePurifierCacheDisabled($cachePath, $failure);
             $config = $this->buildPurifierConfig($cachePath);
-            // 편집기로 쓰는 본문은 서식 속성을 더 받는다 (#895) — 후보 요소·추가 태그는 아래에서 이 목록에 덧붙인다
+            // 편집기로 쓰는 본문은 서식 속성을 더 받는다 — 후보 요소·추가 태그는 아래에서 이 목록에 덧붙인다
             $config->set('HTML.Allowed', self::PURIFIER_CONTENT_ALLOWED);
             $config->set('CSS.AllowedProperties', self::PURIFIER_CONTENT_CSS);
             $this->extendContentDefinition($config, $definition, $policy->customTags());
@@ -166,7 +166,7 @@ trait PurifiesHtml
      * 추가 태그는 게시판 표시·봇 정화기와 같은 규칙으로 남긴다(D18) — 속성은 받지 않고, 이벤트·`javascript:` 속성은
      * `ContentHtmlPolicy::finalize` 가 한 번 더 지운다.
      *
-     * 요소 분류는 HTML 표준을 따른다(#887) — 「문구 콘텐츠」(phrasing content)인 audio·video·mark 등은 인라인으로 정의해 문단(`<p>`)
+     * 요소 분류는 HTML 표준을 따른다 — 「문구 콘텐츠」(phrasing content)인 audio·video·mark 등은 인라인으로 정의해 문단(`<p>`)
      * 안에 그대로 둔다. 블록으로 정의하면 HTMLPurifier 가 문단을 그 앞에서 닫아 `<p></p><audio>` 처럼 빈 문단을 남기고 요소를 문단 밖으로
      * 뺀다. HTMLPurifier 가 이미 아는 태그(sub·sup·del·ins·address 등)는 다시 정의하지 않고 그 표준 정의를 쓴다.
      *

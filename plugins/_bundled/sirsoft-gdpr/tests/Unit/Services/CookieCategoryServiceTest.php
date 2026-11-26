@@ -165,7 +165,7 @@ class CookieCategoryServiceTest extends PluginTestCase
 
     public function test_get_description_uses_default_even_when_admin_setting_omits_description(): void
     {
-        // 이슈 #430 회귀 가드: 관리자 설정 화면에 설명 편집 UI 가 없어, 운영자가 라벨만 저장하면
+        // 회귀 가드: 관리자 설정 화면에 설명 편집 UI 가 없어, 운영자가 라벨만 저장하면
         // cookie_categories 에 description 이 유실된다. 설명은 관리자 설정이 아니라 항상 코드
         // 기본값에서 가져와야 한다 — 아래처럼 description 이 없는 설정이 저장돼도 기본 설명이 나온다.
         $this->mockSettings([

@@ -45,7 +45,7 @@ class ClearPluginCacheCommand extends Command
      *
      * 실재하는 서버 캐시(플러그인 레이아웃 캐시 + 상태 키 + 미들웨어 인덱스
      * + 버전 포함 키)를 무효화한다.
-     * 종전 forget 대상(plugin.config.{id} 등)은 writer 가 없는 유령 키였다 (#588).
+     * 종전 forget 대상(plugin.config.{id} 등)은 writer 가 없는 유령 키였다.
      * 해석 캐시(layout_resolver.*)는 모듈 레이아웃 전용이라 플러그인은 비대상
      * (LayoutResolverService::resolve 의 fromModules 스코프는 plugin row 를 반환하지 않음).
      *

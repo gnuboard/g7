@@ -269,7 +269,7 @@ class OrderExportType extends AbstractExportType
      */
     public function query(array $filters, ?array $ids, User $requester, ?CarbonInterface $cutoff): Builder
     {
-        // 결제수단 선택지를 목록과 같은 결제 행 조건으로 푼다 — PG 별칭(toss_kakaopay 등)은 코어 값으로 저장된다 (#933).
+        // 결제수단 선택지를 목록과 같은 결제 행 조건으로 푼다 — PG 별칭(toss_kakaopay 등)은 코어 값으로 저장된다.
         $filters = $this->paymentMethods->expandOrderListPaymentFilter($filters);
 
         $query = $this->orders->newExportQuery($filters, $ids, $requester);

@@ -22,7 +22,7 @@ const BANNER = '#gdpr_cookie_banner';
 
 // @scenario case=e2e_guest_login_reappear
 // @effects banner_hidden_for_consented_guest, banner_reappears_after_login_with_no_consent_history, consent_snapshot_follows_member_after_spa_login
-test('#509 보안검토 - 게스트로 동의 완료 후 미동의 계정으로 로그인하면 배너가 다시 노출된다', async ({ page, gdprGuestLoginSeed }) => {
+test('보안검토 - 게스트로 동의 완료 후 미동의 계정으로 로그인하면 배너가 다시 노출된다', async ({ page, gdprGuestLoginSeed }) => {
   // 먼저 baseURL 로 진입해 현재 오리진을 확보한 뒤(하드코딩 회피), 서명된 게스트 세션
   // 쿠키를 심는다 (이미 "모두 동의" 이력이 기록된 상태).
   await page.goto('/');
@@ -60,7 +60,7 @@ test('#509 보안검토 - 게스트로 동의 완료 후 미동의 계정으로 
   // 회귀 가드: 동의 이력 없는 계정으로 전환됐으므로 배너가 다시 노출되어야 한다.
   await expect(page.locator(BANNER)).toBeVisible({ timeout: 15_000 });
 
-  // #639: 배너만이 아니라 코어 동의 런타임도 회원 기준으로 다시 읽어 게스트 동의(분석 허용)를 버린다 —
+  // 배너만이 아니라 코어 동의 런타임도 회원 기준으로 다시 읽어 게스트 동의(분석 허용)를 버린다 —
   // 자동 차단 엔진은 이 스냅샷을 따른다.
   await expect.poll(async () => page.evaluate(() => {
     const snapshot = (window as any).G7Core?.consent?.getSnapshot?.();

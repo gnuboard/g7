@@ -12,7 +12,7 @@ use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
  * 바꿀 수 있던 결함(교차 세션 상태 혼합)의 핵심 게이트를 고정한다.
  *
  * - 최초 claim 세션만 소유자, 다른 세션은 비소유
- * - state 에는 토큰 해시만 저장(원문 아님), redact 후에도 소유 필드 보존(이슈 #465 회귀 가드)
+ * - state 에는 토큰 해시만 저장(원문 아님), redact 후에도 소유 필드 보존(회귀 가드)
  * - 미주장/비소유 세션의 상태변경 → 409, CSRF 불일치 → 403
  */
 class InstallerOwnershipGuardTest extends TestCase

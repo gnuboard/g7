@@ -184,7 +184,7 @@ class ClaimPaymentApproveListener implements HookListenerInterface
             }
 
             // 승인 응답이 이 결제 건·이 금액의 것인지 확인하고, 아니면 **여기서** 망취소한다 — 모듈
-            // 쪽 대조의 거절은 보상이 서버 콜백 경로에만 있다(#599 validate 07 #8). 주문번호는 응답에
+            // 쪽 대조의 거절은 보상이 서버 콜백 경로에만 있다(validate 07 #8). 주문번호는 응답에
             // 없으면 판정하지 않는다. 금액은 결제 확정의 근거이므로 응답에 없거나 숫자가 아니면 불일치로
             // 본다 — 브라우저가 보낸 콜백 금액만으로 결제를 확정하지 않는다.
             $responseMoid = trim((string) ($pgResponse['Moid'] ?? ''));

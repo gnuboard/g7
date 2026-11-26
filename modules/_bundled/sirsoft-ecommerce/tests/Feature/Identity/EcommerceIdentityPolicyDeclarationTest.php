@@ -158,7 +158,7 @@ class EcommerceIdentityPolicyDeclarationTest extends ModuleTestCase
 
     /**
      * 이커머스 모듈의 checkout_verification 본인인증 문구가 알림 정의(category=identity)로 선언되고,
-     * 알림 정의 동기화로 notification_definitions/templates 에 적재된다 (#699 — 옛 identity_message_* 대체).
+     * 알림 정의 동기화로 notification_definitions/templates 에 적재된다 (옛 identity_message_* 대체).
      *
      * @effects checkout_verification_message_declared_as_identity_notification_definition
      *

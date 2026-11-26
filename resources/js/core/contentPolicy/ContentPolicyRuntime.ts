@@ -1,5 +1,5 @@
 /**
- * 본문 콘텐츠 규칙 런타임 — `G7Core.contentPolicy` (engine-v1.90.0, #883 5단계)
+ * 본문 콘텐츠 규칙 런타임 — `G7Core.contentPolicy` (engine-v1.90.0)
  *
  * 코어 환경설정 「본문 콘텐츠」가 정한 규칙(서버가 계산해 `_global.settings.content.render_policy` 로 내려준다)으로 본문 HTML 을
  * 표시용으로 정화하고, 외부 영상 삽입(`<oembed url>`)을 정해진 플레이어 iframe 으로 바꾼다. 템플릿 HtmlContent·편집기 플러그인이 같은
@@ -9,7 +9,7 @@
  *   기본 금지 목록에서 켜진 후보 태그를 빼고 추가 태그를 더하며, 후보 태그는 정해진 속성만, 미디어 `src`·`poster` 는 서빙 주소
  *   패턴에 맞을 때만 남긴다. 그 뒤 `renderEmbeds` 로 외부 영상을 바꾼다. 규칙이 없으면(옛 서버) `null` 을 돌려 호출자가 종전 경로를 쓴다.
  *   꺼진 후보의 표시 제거 태그(`drop_tags`, 캡션 끔이면 figcaption)는 내용째 지운다. `oembed` 는 외부 영상 삽입을 꺼도 정화를 통과시켜
- *   `renderEmbeds` 가 링크로 바꾼다 — 정화가 먼저 지우면 빈 `<figure class="media">` 만 남는다 (engine-v1.90.1, #887).
+ *   `renderEmbeds` 가 링크로 바꾼다 — 정화가 먼저 지우면 빈 `<figure class="media">` 만 남는다 (engine-v1.90.1).
  * - `renderEmbeds(fragment, policy)` — `oembed[url]` 을 켜진 서비스의 **서버가 컴파일한 정규식**에 맞추고, 꺼낸 id 로만 플레이어 주소를
  *   채워 샌드박스 iframe 을 만든다(원본 주소는 iframe 에 넣지 않는다). 맞지 않으면 `rel="noopener noreferrer nofollow"` 링크.
  * - `editorConstraints()` — 편집기가 쓸 서비스 목록·금지 태그·업로드 동영상/오디오 허용.

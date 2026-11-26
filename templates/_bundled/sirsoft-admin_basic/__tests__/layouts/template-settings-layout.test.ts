@@ -1,6 +1,6 @@
 /**
  * @file template-settings-layout.test.ts
- * @description 템플릿이 공급한 설정 화면 레이아웃과 템플릿 목록 「설정」 메뉴를 잠근다 (#434 D28·D32).
+ * @description 템플릿이 공급한 설정 화면 레이아웃과 템플릿 목록 「설정」 메뉴를 잠근다.
  *
  * - 번들 4종은 각자 `settings/template_settings.g7.html`·부품 매니페스트를 두고, 관리자 템플릿 공용 화면은 없다
  * - 화면은 그 템플릿 부품 하나(`{id}.TemplateSettingsScreen`)가 그린다 — 관리자 템플릿 부품에 기대지 않는다
@@ -77,7 +77,7 @@ function find(tree: unknown, predicate: (n: Record<string, any>) => boolean): Re
 const root = templateRoot();
 const bundled = path.dirname(root);
 
-/** 번들 템플릿 4종 — 각자 설정 화면 레이아웃과 화면 부품을 공급한다 (#434 D28·D32) */
+/** 번들 템플릿 4종 — 각자 설정 화면 레이아웃과 화면 부품을 공급한다 */
 const TEMPLATES = ['sirsoft-admin_basic', 'sirsoft-basic', 'gnuboard7-hello_user_template', 'gnuboard7-hello_admin_template'];
 
 /**
@@ -89,7 +89,7 @@ const TEMPLATES = ['sirsoft-admin_basic', 'sirsoft-basic', 'gnuboard7-hello_user
 const settingsLayout = (id: string): Record<string, any> =>
     JSON.parse(fs.readFileSync(path.join(bundled, id, 'settings/template_settings.json'), 'utf-8'));
 
-describe('템플릿이 공급한 설정 화면 (#434 D28·D32)', () => {
+describe('템플릿이 공급한 설정 화면', () => {
     // @scenario case=settings_layout
     // @effects settings_layout_saves_template_settings, no_supplied_screen_means_no_route
     it('번들 4종 모두 자기 설정 화면·부품 매니페스트를 두고, 관리자 템플릿 공용 화면은 없다', () => {
@@ -198,7 +198,7 @@ describe('템플릿이 공급한 설정 화면 (#434 D28·D32)', () => {
     }
 });
 
-describe('템플릿 목록 더보기 「설정」 (#434)', () => {
+describe('템플릿 목록 더보기 「설정」', () => {
     for (const tab of ['_tab_user', '_tab_admin']) {
         // @scenario case=settings_layout
         // @effects list_exposes_settings_route

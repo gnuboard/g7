@@ -12,7 +12,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 블라인드 사유 노출 테스트 (#413-69-1 / #413-70-2 / #413-71-1)
+ * 블라인드 사유 노출 테스트
  *
  * 검증 목적:
  * - 관리(admin.manage) 권한자: 게시글/댓글 상세 응답의 action_logs 에 블라인드 사유 포함
@@ -181,7 +181,7 @@ class BlindReasonExposureTest extends BoardTestCase
     }
 
     /**
-     * 관리 권한자가 블라인드 처리한 댓글 응답에 사유가 action_logs 에 포함된다. (#413-71-1)
+     * 관리 권한자가 블라인드 처리한 댓글 응답에 사유가 action_logs 에 포함된다. (71-1)
      *
      * @scenario concern=blind_reason, condition=viewer_with_access
      *
@@ -217,7 +217,7 @@ class BlindReasonExposureTest extends BoardTestCase
     }
 
     /**
-     * 유저 화면 댓글 목록에는 action_logs 가 노출되지 않는다 (사유 누출 방지). (#413-71-1)
+     * 유저 화면 댓글 목록에는 action_logs 가 노출되지 않는다 (사유 누출 방지). (71-1)
      *
      * @scenario concern=blind_reason, condition=viewer_without_access
      *

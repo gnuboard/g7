@@ -467,7 +467,7 @@ interface LayoutRepositoryInterface
     public function getOverridesByTemplateId(int $templateId): Collection;
 
     /**
-     * 템플릿 설정 화면 행을 조회합니다 (#434) — 활성 관리자 템플릿마다 하나씩 교차 등록된 `{소유}.template_settings`.
+     * 템플릿 설정 화면 행을 조회합니다 — 활성 관리자 템플릿마다 하나씩 교차 등록된 `{소유}.template_settings`.
      *
      * 오버라이드 행도 `source_type=template`·`source_identifier` 가 차 있으므로 이름까지 맞는 행만 고른다.
      *

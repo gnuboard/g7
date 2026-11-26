@@ -1,5 +1,5 @@
 {
-    "comment": "내 리뷰 삭제 확인 창 (#952) — 지우면 사진도 함께 지워지고 되돌릴 수 없다. 대상은 창 고유 전역 이름 공간 `_global.reviewDeleteModal`\n     (reviewId·productName·isDeleting)에 있고 여는 쪽이 매번 비운다. 성공하면 목록을 다시 받는다.",
+    "comment": "내 리뷰 삭제 확인 창 — 지우면 사진도 함께 지워지고 되돌릴 수 없다. 대상은 창 고유 전역 이름 공간 `_global.reviewDeleteModal`\n     (reviewId·productName·isDeleting)에 있고 여는 쪽이 매번 비운다. 성공하면 목록을 다시 받는다.",
     "meta": {
         "is_partial": true,
         "description": "내 리뷰 삭제 확인 모달",

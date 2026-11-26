@@ -7,7 +7,7 @@ use App\Support\Content\ContentHtmlPolicy;
 use Tests\TestCase;
 
 /**
- * 검색엔진(봇) 정화기가 코어 「본문 콘텐츠」 규칙을 따른다 — 후보 태그·운영자 추가 태그·외부 영상 (#883 5단계)
+ * 검색엔진(봇) 정화기가 코어 「본문 콘텐츠」 규칙을 따른다 — 후보 태그·운영자 추가 태그·외부 영상
  *
  * 같은 표본을 클라이언트 `ContentPolicyRuntime.test.ts` 「운영자 추가 태그 svg」 사례가 표시기 쪽에서 판정한다(대표 패리티).
  *
@@ -48,7 +48,7 @@ class HtmlSanitizerContentPolicyTest extends TestCase
 
     /**
      * 「그림 캡션」·「외부 영상 삽입」을 끄면 봇 화면도 사람 화면과 같다 — 캡션만 내용째 지우고 그림은 남기며, 외부 영상은 원래 주소
-     * nofollow 링크(빈 상자 없음). 같은 표본을 표시기 쪽 `ContentPolicyRuntime.test.ts` 끈 상태 사례가 판정한다 (#887).
+     * nofollow 링크(빈 상자 없음). 같은 표본을 표시기 쪽 `ContentPolicyRuntime.test.ts` 끈 상태 사례가 판정한다.
      *
      * @return void 반환값 없음
      *

@@ -233,7 +233,7 @@ class PublicProfileControllerTest extends TestCase
     }
 
     /**
-     * 아바타를 올린 회원의 공개 프로필에 아바타 주소가 실린다 (#869).
+     * 아바타를 올린 회원의 공개 프로필에 아바타 주소가 실린다.
      *
      * 종전에는 접근자가 없는 `$user->avatar_url` 을 읽어 아바타를 올린 회원도 늘 null 이었다 —
      * 공개 프로필 화면에 아바타 대신 기본 아이콘만 보였다. 주소는 `getAvatarUrl()` 과 같아야 한다.

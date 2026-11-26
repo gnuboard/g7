@@ -23,7 +23,7 @@ use Modules\Sirsoft\Board\Support\BoardScreenUrl;
  * 무효화와 색인 한 건(게시글·게시판 행)은 저장한 요청 안에서 한다(sync) — 큐로 가면 워커가 돌 때까지(워커가 없으면
  * TTL 까지) 봇이 고치기 전 글·블라인드한 글을 받는다. 본문은 DB::afterCommit 으로 감싸 트랜잭션 안에서 발화하면
  * 커밋 뒤에 비운다. 상세 페이지 미리 다시 그리기와 게시판 재활성화 때의 게시글 대량 재색인은
- * {@see SeoBoardRegenerateListener}(큐)가 맡는다(#724). 삭제 트랜잭션 안에서 색인을 걷어내는 두 훅
+ * {@see SeoBoardRegenerateListener}(큐)가 맡는다. 삭제 트랜잭션 안에서 색인을 걷어내는 두 훅
  * (`board.posts.before_force_delete`·`board.after_delete`)은 그 트랜잭션과 함께 롤백돼야 하므로 감싸지 않는다.
  *
  * 사이트맵 색인은 부모(게시판)와 자식(게시글)의 생명주기를 함께 따른다 (KVE-2026-2133).

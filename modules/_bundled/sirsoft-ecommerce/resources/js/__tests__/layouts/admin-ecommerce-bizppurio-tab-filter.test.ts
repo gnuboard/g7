@@ -1,6 +1,6 @@
 // e2e:allow 레이아웃 조건식 실평가 전용 — 브라우저 흐름은 비즈뿌리오 플러그인 spec 이 담당한다.
 /**
- * 이커머스 알림 설정 — 채널 서브탭 필터 조합 실평가 (#597 §14.2 T8)
+ * 이커머스 알림 설정 — 채널 서브탭 필터 조합 실평가
  *
  * 이 면의 서브탭 필터는 admin_basic·게시판와 같은 식을 공유한다. 그 동일성은
  * admin_basic 쪽 패리티 테스트가 고정하지만, 그 테스트는 **admin_basic 템플릿의
@@ -90,7 +90,7 @@ function findIterationNode(node: unknown): Record<string, any> | null {
     return null;
 }
 
-describe('이커머스 알림 설정 — 채널 서브탭 필터 실평가 (#597)', () => {
+describe('이커머스 알림 설정 — 채널 서브탭 필터 실평가', () => {
     const layout = JSON.parse(fs.readFileSync(TAB_LAYOUT, 'utf-8'));
     const container = findSubTabsContainer(layout);
     const tabNode = container ? findIterationNode(container) : null;

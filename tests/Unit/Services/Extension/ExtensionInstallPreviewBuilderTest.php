@@ -89,7 +89,7 @@ class ExtensionInstallPreviewBuilderTest extends TestCase
     }
 
     /**
-     * 주어진 관리자 권한만 가진 사용자를 만듭니다 — 동반 설치 기본 선택은 권한이 있어야 켜진다(#764).
+     * 주어진 관리자 권한만 가진 사용자를 만듭니다 — 동반 설치 기본 선택은 권한이 있어야 켜진다.
      *
      * @param  array<int, string>  $permissions  부여할 권한 식별자 목록
      * @return User 생성된 사용자
@@ -153,7 +153,7 @@ class ExtensionInstallPreviewBuilderTest extends TestCase
             'plugins' => ['missing-bar' => '>=2.0.0'],
         ]);
 
-        // 미설치 의존 확장을 함께 설치·활성화할 권한이 있는 관리자 — 권한이 없으면 기본 선택이 꺼진다(#764, 아래 별도 시험)
+        // 미설치 의존 확장을 함께 설치·활성화할 권한이 있는 관리자 — 권한이 없으면 기본 선택이 꺼진다(아래 별도 시험)
         $this->actingAs($this->createAdminWith(['core.modules.install', 'core.modules.activate', 'core.plugins.install', 'core.plugins.activate']));
 
         $preview = $this->builder->build(LanguagePackScope::Template, 'test-preview');
@@ -189,9 +189,9 @@ class ExtensionInstallPreviewBuilderTest extends TestCase
     }
 
     /**
-     * 동반 설치 권한이 없으면 미충족·미설치 의존 확장도 기본 선택하지 않고 선택을 잠근다 — 설치 API 도 같은 판정으로 403 을 낸다(#764).
+     * 동반 설치 권한이 없으면 미충족·미설치 의존 확장도 기본 선택하지 않고 선택을 잠근다 — 설치 API 도 같은 판정으로 403 을 낸다.
      *
-     * 이 계약이 들어오며(#764) 위 시험은 인증 사용자 없이 `default_selected === true` 를 기대한 채 남아 실패했다(7.1.1 출시 전 확인).
+     * 이 계약이 들어오며 위 시험은 인증 사용자 없이 `default_selected === true` 를 기대한 채 남아 실패했다(7.1.1 출시 전 확인).
      *
      * @return void 반환값 없음
      *

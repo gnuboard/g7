@@ -13,7 +13,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 최고관리자 지정 주입 차단 (#798 K15 · P9)
+ * 최고관리자 지정 주입 차단
  *
  * 확장이 회원 생성·수정 데이터 필터로 `is_super` 를 바꿔 넣어도 저장되지 않고 경고가 남는다. 필터 전 값(관리자가 요청한 값)은 그대로다.
  */

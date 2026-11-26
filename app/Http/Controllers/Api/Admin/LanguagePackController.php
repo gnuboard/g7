@@ -144,7 +144,7 @@ class LanguagePackController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('language_packs.manifest_invalid', 422, $e->errors());
         } catch (LanguagePackOperationException $e) {
-            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
@@ -186,7 +186,7 @@ class LanguagePackController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('language_packs.manifest_invalid', 422, $e->errors());
         } catch (LanguagePackOperationException $e) {
-            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
@@ -223,7 +223,7 @@ class LanguagePackController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('language_packs.manifest_invalid', 422, $e->errors());
         } catch (LanguagePackOperationException $e) {
-            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
@@ -267,7 +267,7 @@ class LanguagePackController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('language_packs.manifest_invalid', 422, $e->errors());
         } catch (LanguagePackOperationException $e) {
-            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
@@ -311,7 +311,7 @@ class LanguagePackController extends AdminBaseController
                 'target' => (new LanguagePackResource($e->target))->toArray($request),
             ]);
         } catch (LanguagePackOperationException $e) {
-            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
@@ -361,7 +361,7 @@ class LanguagePackController extends AdminBaseController
             // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
         } catch (LanguagePackOperationException $e) {
-            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
@@ -394,7 +394,7 @@ class LanguagePackController extends AdminBaseController
             // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
         } catch (LanguagePackOperationException $e) {
-            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
@@ -451,7 +451,7 @@ class LanguagePackController extends AdminBaseController
             // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
         } catch (LanguagePackOperationException $e) {
-            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다

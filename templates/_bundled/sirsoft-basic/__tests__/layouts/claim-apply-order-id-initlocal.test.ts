@@ -1,6 +1,6 @@
 /**
  * @file claim-apply-order-id-initlocal.test.ts
- * @description 회원 클레임 신청서 셸의 주문 데이터소스 initLocal 이 주문 ID 를 실제로 읽는다 (#869)
+ * @description 회원 클레임 신청서 셸의 주문 데이터소스 initLocal 이 주문 ID 를 실제로 읽는다
  *
  * 엔진은 데이터소스 initLocal 의 경로를 응답 본문이 아니라 한 겹 벗긴 값(`data.data ?? data` — 주문 객체)에 대고 읽는다
  * (TemplateApp.processInitOptions). 신청 셸은 `claimOrderId` 를 `data.id` 로 적어 주문 객체의 `data.id`(없음)를 읽었고,

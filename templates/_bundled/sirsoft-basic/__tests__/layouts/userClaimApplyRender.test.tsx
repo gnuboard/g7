@@ -1,6 +1,6 @@
 /**
  * @file userClaimApplyRender.test.tsx
- * @description 유저 클레임 신청서 — 금액·오류 자리 **렌더** 회귀 테스트 (#599 S11)
+ * @description 유저 클레임 신청서 — 금액·오류 자리 **렌더** 회귀 테스트
  *
  * 형제 파일 `userClaimApplyExchange.test.tsx` 는 레이아웃 JSON 의 **구조**를 읽는다.
  * 그 형태로는 잡히지 않는 결함이 실재했다 — 2026-08-31 3차 검증에서, 총 청구액의 보조통화
@@ -99,7 +99,7 @@ function asLayout(file: string): any {
   return { components: [inlinePartials(loadPartial(file))] };
 }
 
-// ── 주문금액 비교 섹션 (#599 후속) ─────────────────────────────
+// ── 주문금액 비교 섹션 ─────────────────────────────
 
 const KO_CLAIM = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, '../../lang/partial/ko/claim.json'), 'utf-8')
@@ -706,7 +706,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
 
     const text = container.textContent ?? '';
 
-    // 금액은 번역문의 파라미터다(#599 validate 2026-09-23) — 번역문 밖에서 이어 붙이면 언어마다 어순이 틀린다.
+    // 금액은 번역문의 파라미터다(validate 2026-09-23) — 번역문 밖에서 이어 붙이면 언어마다 어순이 틀린다.
     expect(text).toContain('9,000원 결제하기');
   });
 
@@ -1104,7 +1104,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(buttons[buttons.length - 1].disabled).toBe(true);
   });
 
-  // ── 주문금액 비교 섹션 (#599 후속 — 옛 취소 모달의 비교표 복구) ──────────
+  // ── 주문금액 비교 섹션 (옛 취소 모달의 비교표 복구) ──────────
 
   /**
    * @scenario claim_type=refund, charge_method=none, refund_branch=auto
@@ -1341,7 +1341,7 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
   /**
    * 계좌로 돈이 돌아가는 주문인데 계좌가 비어 있으면 **제출 버튼이 잠긴다**. (T2-D5)
    *
-   * 2026-09-22 #599 실측 — 무통장으로 10,000원을 낸 주문의 환불을 계좌 세 칸을 비운 채
+   * 2026-09-22 실측 — 무통장으로 10,000원을 낸 주문의 환불을 계좌 세 칸을 비운 채
    * 신청해도 접수됐다. 그 뒤 운영자 화면에는 계좌를 적을 자리가 없어, 승인·[환불하기]를 지나
    * **송금 없이 장부만 `completed`** 로 닫혔고 되돌릴 경로도 없었다.
    *

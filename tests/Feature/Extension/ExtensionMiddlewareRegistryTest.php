@@ -42,7 +42,7 @@ class ExtensionMiddlewareRegistryTest extends TestCase
     /**
      * 픽스처 확장 식별자를 테스트 allowlist 에 넣습니다.
      *
-     * 레지스트리는 테스트 allowlist 밖 확장의 선언을 건너뛴다(#609 F11 가드 — allowlist 밖 확장은
+     * 레지스트리는 테스트 allowlist 밖 확장의 선언을 건너뛴다(가드 — allowlist 밖 확장은
      * ServiceProvider 가 등록되지 않아 그 미들웨어를 올리면 요청이 500 이 된다). 픽스처 확장은
      * 실제 디렉터리가 없는 가짜 식별자라, 여기서 허용하지 않으면 모든 선언이 가드에 걸려 빈 결과가 된다.
      * 마이그레이션 대상(`requiredExtensions`)에는 넣지 않는다.

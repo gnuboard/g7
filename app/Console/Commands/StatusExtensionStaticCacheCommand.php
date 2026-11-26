@@ -55,7 +55,7 @@ class StatusExtensionStaticCacheCommand extends Command
 
         // root 로 실행 중이면 여기서 게시하지 말라고 먼저 알린다 — 캐시 락 샤드·병합 번들이 root
         // 소유로 남아 이후 웹 요청의 캐시 쓰기가 Permission denied 로 죽는다(전면 500 실사례).
-        // 중단하지는 않는다 — 상태 점검은 읽기 전용이다. (#651 C1)
+        // 중단하지는 않는다 — 상태 점검은 읽기 전용이다.
         if (self::isRootProcess()) {
             $this->line('  <comment>'.__('extensions.commands.ext_static_status.root_warning', ['command' => $publishHint]).'</comment>');
         }

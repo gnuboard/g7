@@ -422,7 +422,7 @@ class PluginSettingsServiceTest extends TestCase
         $this->assertIsArray($result);
         $this->assertArrayHasKey('version', $result);
         $this->assertArrayHasKey('meta', $result);
-        // `schema` 는 소비처 없는 사어 키라 #476 에서 걷혔다 — 이 설정 화면은 `_admin_base` 를 확장해 본문을 slots 로 채운다.
+        // `schema` 는 소비처 없는 사어 키라 걷혔다 — 이 설정 화면은 `_admin_base` 를 확장해 본문을 slots 로 채운다.
         $this->assertSame('_admin_base', $result['extends'] ?? null);
         $this->assertArrayHasKey('slots', $result);
     }

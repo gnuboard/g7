@@ -191,7 +191,7 @@ describe('admin_page_list.json', () => {
         const createBtn = findById(adminPageList, 'add_page_button');
         expect(createBtn).not.toBeNull();
         const navAction = asArray(createBtn?.actions).find((a: any) => a.handler === 'navigate');
-        // 목적지는 링크 href 한 곳(#757 D12) — path 없는 navigate 는 클릭한 링크의 href 로 간다
+        // 목적지는 링크 href 한 곳 — path 없는 navigate 는 클릭한 링크의 href 로 간다
         expect(createBtn.name).toBe('A');
         expect(navAction.params.path ?? createBtn.props.href).toBe('/admin/pages/create');
     });
@@ -263,7 +263,7 @@ describe('admin_page_list.json', () => {
         expect(ds.errorHandling['403']).toBeDefined();
     });
 
-    // ─── Issue #280: 유저 페이지 이동 링크 ─────────────
+    // ─── 유저 페이지 이동 링크 ─────────────
 
     // @scenario case=list_columns
     // @effects admin_page_list_title_and_slug_columns_link_to_public_page
@@ -664,7 +664,7 @@ describe('admin_page_form.json', () => {
         expect(ds.errorHandling['403']).toBeDefined();
     });
 
-    // ─── Issue #280: 수정 모드 슬러그 편집 가능 ─────────
+    // ─── 수정 모드 슬러그 편집 가능 ─────────
 
     // @scenario case=form_slug
     // @effects admin_page_form_slug_check_resets_and_excludes_current_page
@@ -796,7 +796,7 @@ describe('admin_page_form.json', () => {
         expect(selectChild).toBeDefined();
     });
 
-    // ─── 기본 정보 / SEO 필드 셀 정합 (#408 grid 셀 직속 row-stack 회귀 차단) ───
+    // ─── 기본 정보 / SEO 필드 셀 정합 (grid 셀 직속 row-stack 회귀 차단) ───
 
     // @scenario case=form_field_layout
     // @effects admin_page_form_fields_use_shared_form_assets
@@ -955,7 +955,7 @@ describe('admin_page_form.json', () => {
     it('[M1-a] 검증에러 제목 클래스가 공백으로 분리됨 (font-medium + page-tone-danger, 병합 클래스 금지)', () => {
         // 회귀 배경: "font-mediumtext-danger-soft" 처럼 공백 없이 붙으면 두 클래스 모두 무효
         // → 빌드 CSS 에 해당 클래스 부재 → 빨간색/굵기 미적용.
-        // 위험 글자색은 이 확장 CSS 의 page-tone-danger(라이트·다크 짝, 관리자 템플릿 text-danger-soft 와 같은 색)다(#757).
+        // 위험 글자색은 이 확장 CSS 의 page-tone-danger(라이트·다크 짝, 관리자 템플릿 text-danger-soft 와 같은 색)다.
         const errorBox = findById(adminPageForm, 'error_message_box');
         expect(errorBox).not.toBeNull();
         const boxStr = JSON.stringify(errorBox);

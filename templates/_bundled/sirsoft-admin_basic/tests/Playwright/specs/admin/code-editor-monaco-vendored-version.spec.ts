@@ -44,7 +44,7 @@ async function openCodeEditor(page: Page, token: string): Promise<void> {
   await authenticatePage(page, token);
   await page.goto('/admin/templates/sirsoft-admin_basic/edit');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
-  // 좌측 목록은 `role="tree"` 파일 트리다(#476) — 고정 폭 카드가 아니라 트리가 뜨는 것이 진입 신호다.
+  // 좌측 목록은 `role="tree"` 파일 트리다 — 고정 폭 카드가 아니라 트리가 뜨는 것이 진입 신호다.
   await page.waitForSelector('[role="tree"] [role="treeitem"]', { timeout: 30_000 });
 }
 
@@ -71,7 +71,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 동봉 Monaco', () => {
 
     await openCodeEditor(page, layoutEditToken);
 
-    // 편집기는 파일을 고른 뒤에 마운트된다 — 첫 파일을 연다(편집기 정본이 `.g7.html` 이다, #476).
+    // 편집기는 파일을 고른 뒤에 마운트된다 — 첫 파일을 연다(편집기 정본이 `.g7.html` 이다).
     await page.locator('#editor_card').getByText(/\.g7\.html$/).first().click();
 
     // 고정 대기(3초)는 동봉 Monaco 첫 로드가 느린 환경에서 "아직 요청 전" 을 "요청 0건" 으로 오판한다 —

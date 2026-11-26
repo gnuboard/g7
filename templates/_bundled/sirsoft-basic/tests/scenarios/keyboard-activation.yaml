@@ -2,7 +2,7 @@ feature: 사용자 템플릿 — 눌러 쓰는 비단추 요소의 키보드 접
 
 description: |
   클릭만 받던 칸(클릭을 받는 Flex와 Grid, 첨부 썸네일의 이미지 크게 보기, 링크 없는 알림 항목, 검색어 제안)이 Tab 으로 닿지 않고
-  Enter, Space 로도 동작하지 않았다. 검색어 제안은 입력칸에서 Tab 으로 넘어가면 목록이 닫혔다(#869, 설계 확정 2026-11-08).
+  Enter, Space 로도 동작하지 않았다. 검색어 제안은 입력칸에서 Tab 으로 넘어가면 목록이 닫혔다(설계 확정 2026-11-08).
   부품이 role, tabIndex, Enter 와 Space 동작, 키보드 포커스 표시를 준다(support/keyboardActivation).
 
 # axis 의미:

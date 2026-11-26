@@ -1,4 +1,4 @@
-# 시나리오 매니페스트 — 첨부 업로더 확장점 attachment_uploader 의 레이아웃 주입 (#916 ③, 공개 #83 후속)
+# 시나리오 매니페스트 — 첨부 업로더 확장점 attachment_uploader 의 레이아웃 주입
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 
 feature: attachment_uploader_extension_point

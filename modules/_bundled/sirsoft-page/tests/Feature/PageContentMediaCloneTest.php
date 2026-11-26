@@ -13,7 +13,7 @@ use Modules\Sirsoft\Page\Services\PageService;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 
 /**
- * 다른 페이지의 본문 미디어를 쓴 페이지 저장 — 새 페이지 소유로 복제 (#887)
+ * 다른 페이지의 본문 미디어를 쓴 페이지 저장 — 새 페이지 소유로 복제
  *
  * 종전에는 페이지 A 의 본문 미디어 주소를 페이지 B 가 쓰면 B 에 행이 없어, A 가 미디어를 빼면(행·파일 삭제) B 가 깨졌다.
  * 이제 저장하는 사람이 원본을 볼 수 있으면(발행 또는 열람권) 파일을 복사해 B 소유의 새 해시로 바꾼다. 버전 스냅샷도 바뀐 본문이다.
@@ -40,7 +40,7 @@ class PageContentMediaCloneTest extends ModuleTestCase
     /**
      * 발행된 페이지의 미디어를 두 로케일에서 쓴 페이지는 사본 하나를 갖고, 원본 페이지가 지워져(원본 행·파일 삭제) 사본은 남는다.
      *
-     * 원본 제거는 페이지 삭제로 일으킨다 — 본문에서 빼기만 하면 원본 행은 버전 참조로 남는다(#887 G5, 아래 별도 시험).
+     * 원본 제거는 페이지 삭제로 일으킨다 — 본문에서 빼기만 하면 원본 행은 버전 참조로 남는다(아래 별도 시험).
      *
      * @return void 반환값 없음
      *
@@ -76,7 +76,7 @@ class PageContentMediaCloneTest extends ModuleTestCase
         $media = app(PageContentMediaService::class);
         $this->get($media->signedUrl($copy->hash))->assertStatus(200);
 
-        // #887 G5: 본문에서 빼기만 하면 원본은 버전 참조로 남으므로, 원본 행이 실제로 사라지는 경로(페이지 삭제)로 확인한다
+        // 본문에서 빼기만 하면 원본은 버전 참조로 남으므로, 원본 행이 실제로 사라지는 경로(페이지 삭제)로 확인한다
         app(PageService::class)->deletePage($source);
         $this->assertNull(PageAttachment::query()->where('hash', $hash)->first(), '원본은 지워진다');
         $this->assertNotNull(PageAttachment::query()->find($copy->id), '사본은 남는다');
@@ -141,7 +141,7 @@ class PageContentMediaCloneTest extends ModuleTestCase
     }
 
     /**
-     * 미발행 페이지 응답은 그 페이지가 소유한 해시만 서명하고, 복제되지 않은 다른 페이지 해시는 정식 주소로 둔다 (#887 G8).
+     * 미발행 페이지 응답은 그 페이지가 소유한 해시만 서명하고, 복제되지 않은 다른 페이지 해시는 정식 주소로 둔다.
      *
      * 서명은 「이 페이지 본문을 받을 자격」의 위임이다. 남의 미발행 페이지 해시를 자기 페이지에 넣어 서명 주소를 받아 가지 못하게 한다.
      *

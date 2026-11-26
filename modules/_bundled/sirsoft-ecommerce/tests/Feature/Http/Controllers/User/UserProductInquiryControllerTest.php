@@ -89,7 +89,7 @@ class UserProductInquiryControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 마이페이지 문의 목록의 상품 링크가 상품 id 가 아닌 product_code 로 나간다 (#450).
+     * 마이페이지 문의 목록의 상품 링크가 상품 id 가 아닌 product_code 로 나간다.
      *
      * 회귀: getUserInquiries 의 product.url 이 id 로 하드코딩되어 있어 클릭 시
      * /shop/products/{id} 로 이동하던 버그. product_code 기준으로 수정.

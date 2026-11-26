@@ -1,4 +1,4 @@
-feature: 본문 미디어 코어 골격 — 어댑터 계약·공용 훅·행 디스크·내용 판정 단일화 (#887)
+feature: 본문 미디어 코어 골격 — 어댑터 계약·공용 훅·행 디스크·내용 판정 단일화
 
 description: |
   게시판·페이지·쇼핑몰이 따로 갖던 본문 미디어 흐름(업로드·저장 동기화·서명·서빙·정리)을 코어 골격
@@ -10,7 +10,7 @@ description: |
   - 모든 파일 접근은 행에 기록된 디스크(`RowDiskStorage`), 설정에 없는 디스크는 기본 저장소로 물러난다.
   - 재생 가능 MIME 은 `ContentMediaKind` 한 곳에서 만들고(값 불변), 내용 판정은 `FileContentSniffer` 한 입구(첨부 판정 결과 불변).
   - 이미지에 `?size=`·`?w=` 가 붙으면 게이트를 지난 뒤 업로드 이미지 썸네일 헬퍼로 낸다(늘 권한 원본 — private). 동영상·오디오·Range 는
-    원본 통로 그대로이고, 서명은 `size`·`w` 를 빼고 검증한다 (#869 와의 접합).
+    원본 통로 그대로이고, 서명은 `size`·`w` 를 빼고 검증한다 (와의 접합).
 
 axes:
   case: [upload, filter_rejudge, sync, removal, present, serve, prune, target, register, context, row_disk, sniffer, playable_mime_parity, quoted_filename, thumbnail]

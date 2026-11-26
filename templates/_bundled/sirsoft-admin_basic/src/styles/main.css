@@ -11,7 +11,7 @@
 @import "./components/dashboard.css";
 @import "./layout/_admin_base.css";
 /*
- * 의미 클래스·테마·스캔 앵커는 semantic.css 에 있다 — 템플릿 설정 화면 묶음(settings.css, #434)이 같은 규칙을
+ * 의미 클래스·테마·스캔 앵커는 semantic.css 에 있다 — 템플릿 설정 화면 묶음(settings.css)이 같은 규칙을
  * 화면 초기화(preflight)·기본 글자 규칙 없이 다시 쓰기 때문이다. 그 묶음은 다른 관리자 템플릿 화면 위에 실린다.
  */
 @import "./semantic.css";
@@ -29,7 +29,7 @@
  * ======================================== */
 
 @layer base {
-  /* 본문 HtmlContent 가 확대 가능으로 표시한 이미지(`data-g7-zoom`, role="button")는 확대 커서를 준다(#869 κ) */
+  /* 본문 HtmlContent 가 확대 가능으로 표시한 이미지(`data-g7-zoom`, role="button")는 확대 커서를 준다 */
   [data-g7-zoom] {
     cursor: zoom-in;
   }

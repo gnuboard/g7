@@ -6,7 +6,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Support\ContentMedia\AbstractContentMediaService;
 
 /**
- * 이커머스 본문 미디어 골격 서비스 — 코어 골격에 이 모듈 어댑터와 모듈 저장소를 넘긴다 (#887)
+ * 이커머스 본문 미디어 골격 서비스 — 코어 골격에 이 모듈 어댑터와 모듈 저장소를 넘긴다
  *
  * 업로드·저장 동기화(연결 → 복제 → 제거)·서명·서빙·정리·소유자 삭제 흐름은 코어 `AbstractContentMediaService` 가 돌린다. 공용 훅
  * `core.content_media.*` 도 골격이 발화한다. 상품·공통 정보 코드는 종전 호출 모양을 유지한 `Services\ContentMediaService` 를 쓰고,

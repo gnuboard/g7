@@ -1,6 +1,6 @@
 /**
  * @file admin-real-name-secondary-line.test.ts
- * @description 관리자 화면의 실명 보조 줄 (#490 P17)
+ * @description 관리자 화면의 실명 보조 줄
  *
  * 시나리오 SSoT: tests/scenarios/admin-real-name-secondary-line.yaml
  *

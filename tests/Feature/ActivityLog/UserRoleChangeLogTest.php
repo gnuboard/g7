@@ -15,7 +15,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 회원 등록·수정의 역할 변경 기록 테스트 (#736 D23)
+ * 회원 등록·수정의 역할 변경 기록 테스트
  *
  * 개인정보의 안전성 확보조치 기준 제5조③(권한 부여·변경·말소 내역 3년 보관)의 기록 지점. 회원 등록·수정 화면에서
  * 역할이나 최고관리자 지정이 실제로 바뀌면 `core.user.after_update_roles` 가 나가고 활동 로그 `user.roles_update` 가

@@ -1,5 +1,5 @@
 /**
- * ExtensionIdScope.test.tsx — 확장점 주입 조각의 정적 노드 id DOM 스코프 (engine-v1.99.0, #408)
+ * ExtensionIdScope.test.tsx — 확장점 주입 조각의 정적 노드 id DOM 스코프 (engine-v1.99.0)
  *
  * 조합 요약(마커 아님 — 평문): 정적 id 단일 호스트, 보간 id, 명시 props.id, 중첩 호스트, 호스트 id 없음, 호스트 3개, 슬롯 겹침, 셀 경로, 스코프 함수 계약
  *

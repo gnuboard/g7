@@ -224,7 +224,7 @@ export async function uploadPendingClaimFiles(
             // 파일마다 띄우지 않고 **끝나고 한 번** 장수와 함께 알린다 — 아래 요약 참조.
             logger.error('[uploadPendingClaimFiles] 실패:', error);
             failed += 1;
-            // 비회원 주문 확인 실패(무토큰 401)는 서버 문구(「인증이 필요합니다.」) 대신 주문 조회를 다시 하라고 덧붙인다(#883)
+            // 비회원 주문 확인 실패(무토큰 401)는 서버 문구(「인증이 필요합니다.」) 대신 주문 조회를 다시 하라고 덧붙인다
             firstFailureMessage = firstFailureMessage
                 ?? (isGuestOrderAuthFailure(error) ? guestClaimAuthRequiredMessage() : null)
                 ?? error?.response?.data?.message
@@ -233,7 +233,7 @@ export async function uploadPendingClaimFiles(
         }
     }
 
-    // **몇 장 중 몇 장이 빠졌는지** 한 줄로 말한다 (#599 실측).
+    // **몇 장 중 몇 장이 빠졌는지** 한 줄로 말한다.
     //
     // 종전에는 실패한 파일마다 같은 문구를 한 번씩 띄웠고, 그 문구가 장수를 말하지 않았다.
     // 접수는 성공하므로 마지막에 남는 토스트는 「신청이 접수되었습니다.」였고, 구매자는 사진이
@@ -323,7 +323,7 @@ export function setClaimImageFilesHandler(
     // 「고른 것」과 「보낼 것」 둘을 뜻하게 되고, 그 차이가 화면 어디에도 드러나지 않는다.
     // 업로드 경로(`uploadPendingClaimFiles`)가 같은 술어로 한 번 더 거르므로 실제로 올라가는
     // 파일은 종전에도 옳았지만, 상태가 거짓을 들고 있으면 그 값을 읽는 다음 화면이 틀린다
-    // (2026-09-22 #599 실측 — 거절된 파일이 첨부된 것처럼 남았다).
+    // (2026-09-22 실측 — 거절된 파일이 첨부된 것처럼 남았다).
     G7Core.state.setLocal({ claimImageFiles: accepted });
 }
 

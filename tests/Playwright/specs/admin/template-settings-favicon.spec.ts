@@ -1,5 +1,5 @@
 /**
- * E2E: 템플릿 환경설정 화면·파비콘 head 링크 (#434)
+ * E2E: 템플릿 환경설정 화면·파비콘 head 링크
  *
  * 배경: 설정 화면은 코어가 켜진 관리자 템플릿에 교차 등록한 레이아웃이라, 레이아웃 JSON 단위 시험은 「등록·라우트·렌더」가
  * 실제로 이어지는지 보지 못한다. 파비콘 링크는 서버 `<head>` 산출물이라 브라우저 문서에서만 확인된다.
@@ -15,7 +15,7 @@ import { test, expect, issueToken, issueScopedToken, authenticatePage } from '..
 
 // @scenario case=settings_layout
 // @effects settings_layout_registered_into_active_admin, settings_route_generated, list_exposes_settings_route
-test('#434 - 템플릿 목록 「설정」 으로 설정 화면에 들어간다', async ({ page }) => {
+test('템플릿 목록 「설정」 으로 설정 화면에 들어간다', async ({ page }) => {
   const consoleErrors: string[] = [];
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
@@ -41,7 +41,7 @@ test('#434 - 템플릿 목록 「설정」 으로 설정 화면에 들어간다'
 
 // @scenario case=settings_layout
 // @effects read_only_without_settings_permission
-test('#434 - 보기 권한만 있으면 읽기 전용이다', async ({ page }) => {
+test('보기 권한만 있으면 읽기 전용이다', async ({ page }) => {
   // admin 역할은 전체 권한을 가져 읽기 전용 분기가 열리지 않는다 — 권한 경계는 역할 없이 발급한다
   await authenticatePage(page, issueScopedToken('core.templates.read'));
 
@@ -52,7 +52,7 @@ test('#434 - 보기 권한만 있으면 읽기 전용이다', async ({ page }) =
 
 // @scenario case=settings_layout
 // @effects settings_tabs_per_section
-test('#434 - 섹션마다 탭 하나이고, 고친 값이 있으면 탭 이동 전에 묻는다', async ({ page }) => {
+test('섹션마다 탭 하나이고, 고친 값이 있으면 탭 이동 전에 묻는다', async ({ page }) => {
   const consoleErrors: string[] = [];
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
@@ -89,7 +89,7 @@ const PNG_1PX = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8B
 
 // @scenario surface=spa
 // @effects highest_valid_tier_wins
-test('#434 - 템플릿 → 일반 탭 → 번들 순으로 파비콘이 내려간다', async ({ page, request }) => {
+test('템플릿 → 일반 탭 → 번들 순으로 파비콘이 내려간다', async ({ page, request }) => {
   test.setTimeout(300_000);
   await authenticatePage(page, issueToken('core.templates.read', 'core.templates.settings', 'core.settings.read', 'core.settings.update'));
 
@@ -121,7 +121,7 @@ test('#434 - 템플릿 → 일반 탭 → 번들 순으로 파비콘이 내려�
   };
   const openGeneralTab = async () => {
     await page.goto('/admin/settings');
-    // #408 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+    // 엔진 스코프: 확장점 호스트 아래(기본 내용 포함)의 정적 노드 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
     await page.locator('[id^="site_favicon_uploader__"] input[type=file]').waitFor({ state: 'attached', timeout: 30_000 });
     await expect(page.locator('input[name="general.site_name"]')).not.toHaveValue('', { timeout: 20_000 });
   };
@@ -156,7 +156,7 @@ test('#434 - 템플릿 → 일반 탭 → 번들 순으로 파비콘이 내려�
 
 // @scenario surface=spa
 // @effects highest_valid_tier_wins
-test('#434 - 문서 head 의 파비콘 링크가 이미지로 응답한다', async ({ page, request }) => {
+test('문서 head 의 파비콘 링크가 이미지로 응답한다', async ({ page, request }) => {
   for (const path of ['/', '/admin/login']) {
     await page.goto(path);
     const hrefs = await page.locator('link[rel~="icon"], link[rel="apple-touch-icon"]').evaluateAll((links) =>

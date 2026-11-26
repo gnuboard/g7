@@ -1,6 +1,6 @@
 /**
  * @file buttonAriaDisabled.test.ts
- * @description 단추형 클래스의 비활성 꾸밈은 `disabled:` 와 `aria-disabled:` 를 짝으로 둔다 (#757 링크 단계 W7)
+ * @description 단추형 클래스의 비활성 꾸밈은 `disabled:` 와 `aria-disabled:` 를 짝으로 둔다 (링크 단계 W7)
  *
  * 화면 이동 단추를 `<a href>` 로 바꾸면서 `<a class="button btn btn-primary" disabled="…">` 가 생겼다. 링크에는
  * `:disabled` 가 없어 `disabled:opacity-50` 이 걸리지 않는다 — A 컴포넌트는 비활성 링크에 `aria-disabled="true"` 를

@@ -1,5 +1,5 @@
 /**
- * devDuplicateIdMonitor.test.ts — 디버그 모드 중복 DOM id 경고 (engine-v1.99.0, #408)
+ * devDuplicateIdMonitor.test.ts — 디버그 모드 중복 DOM id 경고 (engine-v1.99.0)
  *
  * 조합 요약(마커 아님 — 평문): 중복 삽입, 같은 id 재삽입, 경로 변경, 해제, 디버그 꺼짐, 디버그 켜짐 배선
  *

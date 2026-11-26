@@ -975,7 +975,7 @@ class ExtensionPendingHelper
     {
         // 부모(`storage/app/temp`)는 최초 1회만 만들어지고 자식만 삭제된다 — sudo 코어 업데이트의
         // 번들 확장 업데이트가 그 최초 생성자면 부모가 root 소유로 굳어, 이후 관리자 화면(웹 계정)의
-        // 확장 업데이트가 임시 폴더를 만들지 못한다 (#651 F14). 부모는 소유권 상속·그룹 쓰기까지
+        // 확장 업데이트가 임시 폴더를 만들지 못한다. 부모는 소유권 상속·그룹 쓰기까지
         // 정합화하는 프리미티브로 확보하고, 자식은 만든 뒤 부모 소유권을 상속시킨다.
         // 확보 실패는 종전 동작(`ensureDirectoryExists` 의 예외 흐름)으로 폴백해 계약을 바꾸지 않는다.
         if (! FilePermissionHelper::ensureWritableDirectory(dirname($tempDir))) {

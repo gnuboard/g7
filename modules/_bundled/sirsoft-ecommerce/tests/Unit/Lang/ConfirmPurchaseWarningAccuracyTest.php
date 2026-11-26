@@ -6,7 +6,7 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 구매확정 경고 문구 정확성 테스트 (S2-D2 회귀 · #599 통합실측 세션2)
+ * 구매확정 경고 문구 정확성 테스트 (S2-D2 회귀)
  *
  * 마이페이지 주문상세의 [구매확정] 모달은
  * `구매확정 후에는 취소/교환/환불이 불가능합니다.` 라고 경고했다.
@@ -45,7 +45,7 @@ class ConfirmPurchaseWarningAccuracyTest extends ModuleTestCase
      * `modules/sirsoft-ecommerce/tests/Unit/Lang` 는 5단계다. 6단계로 고정하면 활성
      * 사본에서 저장소 **밖**(`htdocs/`)을 가리켜, 언어 파일이 멀쩡한데도
      * `assertFileExists` 가 「파일이 없다」로 터진다 — 가드가 스스로를 무력화한다
-     * (#599 계획서 준수 검증 결함).
+     * (계획서 준수 검증 결함).
      *
      * 그래서 `artisan` 과 `composer.json` 이 **함께** 있는 디렉터리를 만날 때까지
      * 올라간다. 둘 중 하나만 보면 다른 PHP 프로젝트에서도 멈출 수 있어 둘 다 요구한다.
@@ -76,7 +76,7 @@ class ConfirmPurchaseWarningAccuracyTest extends ModuleTestCase
      *
      * 템플릿 언어 파셜(ko·en)과 **언어팩**(ja) 은 서로 다른 트리에 산다. 앞의 것만 보면
      * 번역이 딴소리를 해도 검사가 닿지 않는다 — S2-D2 를 고치고도 ja 가 「交換・返金が
-     * できません」으로 남아 있었던 것이 그 구멍이다(#599 세션2 계획서준수검증 결함1).
+     * できません」으로 남아 있었던 것이 그 구멍이다(세션2 계획서준수검증 결함1).
      *
      * @return array<string, string> 사본 이름 => 절대 경로
      */
@@ -213,7 +213,7 @@ class ConfirmPurchaseWarningAccuracyTest extends ModuleTestCase
      *
      * 위의 ko·en 단언은 `templates/…/lang/partial/` 만 본다. 번역은 거기 살지 않는다 —
      * ja 는 `lang-packs/` 에 있고, 그래서 S2-D2 를 고치고도 일본어 화면은 **여전히**
-     * 「交換・返金ができません」이라고 경고했다(#599 세션2 계획서준수검증 결함1).
+     * 「交換・返金ができません」이라고 경고했다(세션2 계획서준수검증 결함1).
      * 일본어 사용자는 정당한 교환·반품을 단념한다.
      *
      * 그 구멍은 두 겹이었다:

@@ -133,7 +133,7 @@ class PartialReferenceNotationCorpusTest extends LayoutMarkupTestCase
         // 0건이라 참조 하한을 걸면 상시 red 지만, 파일 하한이 없으면 순회가 죽어도 침묵한다 —
         // fragment 에 첫 `<include|modal src>` 가 생기는 날 (ㄴ)(ㄷ) 가 그 파일을 못 보는 것이
         // 이 가드가 닫으려던 사각이다.
-        // 템플릿 설정 화면 루트(`settings/`, #434)는 조각을 쓰지 않는 단일 화면이다 — fragment 루트처럼 파일 도달 하한만 건다.
+        // 템플릿 설정 화면 루트(`settings/`)는 조각을 쓰지 않는 단일 화면이다 — fragment 루트처럼 파일 도달 하한만 건다.
         $referenceBearingRoots = array_values(array_filter(
             LayoutCorpus::layoutRoots(),
             fn (string $root): bool => ! str_ends_with(str_replace('\\', '/', $root), 'templates/_bundled/*/settings'),

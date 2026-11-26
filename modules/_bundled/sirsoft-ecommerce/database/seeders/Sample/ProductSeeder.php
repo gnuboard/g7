@@ -243,7 +243,7 @@ class ProductSeeder extends Seeder
             'category_slug' => 'fruits',
             'brand_slug' => null,
         ],
-        // 옵션별 과세 종류 시연 (#612) — 상품 기본값은 과세, 「수출용」 옵션만 영세(세율 0%)
+        // 옵션별 과세 종류 시연 — 상품 기본값은 과세, 「수출용」 옵션만 영세(세율 0%)
         [
             'name' => ['ko' => '배 1박스 (5kg)', 'en' => 'Pear Box (5kg)'],
             'product_code' => 'FR-003',
@@ -1073,7 +1073,7 @@ class ProductSeeder extends Seeder
      * @param  string  $productSku  상품 SKU (옵션 SKU 생성 기준)
      * @param  int  $weightGram  옵션 무게 (g)
      * @param  int  $volumeCubicCm  옵션 부피 (cm³)
-     * @param  array<int, string|null>  $optionTaxStatuses  조합 순서대로의 옵션 과세 종류 (없거나 null = 상품 따름, #612)
+     * @param  array<int, string|null>  $optionTaxStatuses  조합 순서대로의 옵션 과세 종류 (없거나 null = 상품 따름)
      * @return void 반환값 없음
      */
     private function createOptions(Product $product, array $optionGroups, string $productSku, int $weightGram = 500, int $volumeCubicCm = 1000, array $optionTaxStatuses = []): void

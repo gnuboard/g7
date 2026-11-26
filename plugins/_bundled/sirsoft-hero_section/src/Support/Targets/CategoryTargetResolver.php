@@ -11,7 +11,7 @@ use Plugins\Sirsoft\HeroSection\Contracts\TargetSiteUrlsInterface;
  * 상품 카테고리 대상 해석기 — 카테고리 목록 위치(`category_hero`). 저장 키는 카테고리 id, 화면 값은 주소의 slug(없을 때만 숫자 id — slug 가 먼저다).
  *
  * 이름은 상위 경로를 이어 보인다(「의류 › 남성」) — 같은 이름의 하위 카테고리를 관리자가 구분할 수 있게. 이커머스 모듈이 공개한
- * 카테고리 조회 계약({@see CategoryDirectory})만 쓴다(#916).
+ * 카테고리 조회 계약({@see CategoryDirectory})만 쓴다.
  */
 class CategoryTargetResolver implements TargetResolverInterface, TargetSiteUrlsInterface
 {

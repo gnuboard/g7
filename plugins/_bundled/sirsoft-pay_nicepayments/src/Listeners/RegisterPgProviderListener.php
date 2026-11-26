@@ -60,9 +60,9 @@ class RegisterPgProviderListener implements HookListenerInterface
             'supported_methods' => ['card', 'bank', 'vbank', 'phone'],
             // 코어의 provider-agnostic 결제 진입 dispatch — 주문 응답의 pg_payment_handler 로
             // 내려가 템플릿이 그대로 호출한다. 미선언 시 프론트가 응답을 변조해 결제창을
-            // 직접 띄우는 우회가 필요해진다(#475).
+            // 직접 띄우는 우회가 필요해진다.
             'payment_handler' => 'sirsoft-pay_nicepayments.requestPayment',
-            // 식별자를 바꾸기 전(`nicepay`)에 만들어진 결제 행도 이 결제사 것이다 — 입금 통보·환불 같은 쓰기가 막히지 않게 알린다(#916)
+            // 식별자를 바꾸기 전(`nicepay`)에 만들어진 결제 행도 이 결제사 것이다 — 입금 통보·환불 같은 쓰기가 막히지 않게 알린다
             'legacy_ids' => ['nicepay'],
         ];
 

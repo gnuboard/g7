@@ -1,5 +1,5 @@
 {
-    "comment": "주문 완료 화면에 나이스페이먼츠 영수증·매출전표 보기를 덧붙이는 조각. 종전에는 주입 스크립트(orderCompleteReceiptInjector)가 주소 정규식으로 화면을 알아보고 파란 버튼 옆에 「영수증 조회」 버튼을 직접 그렸다 — 그 버튼이 열던 매출전표(type=0)를 이 조각의 링크로 옮겼다(#639).",
+    "comment": "주문 완료 화면에 나이스페이먼츠 영수증·매출전표 보기를 덧붙이는 조각. 종전에는 주입 스크립트(orderCompleteReceiptInjector)가 주소 정규식으로 화면을 알아보고 파란 버튼 옆에 「영수증 조회」 버튼을 직접 그렸다 — 그 버튼이 열던 매출전표(type=0)를 이 조각의 링크로 옮겼다.",
     "target_layout": "shop/order_complete",
     "injections": [
         {

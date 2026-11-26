@@ -10,7 +10,7 @@ use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
 
 /**
- * 쿠폰 발급방법·발급조건·발급 알림 규칙 검증 trait (#952)
+ * 쿠폰 발급방법·발급조건·발급 알림 규칙 검증 trait
  *
  * 판정 기준은 **저장 후 확정될 조합**이다 — 수정은 부분 갱신이라 한쪽만 올 수 있고 나머지는 저장값을 승계한다
  * ({@see ValidatesCouponValidityPair} 와 같은 방식). 생성·수정 요청이 같은 trait 를 써서 강도를 맞춘다.

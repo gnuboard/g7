@@ -302,7 +302,7 @@ export function extractIterationSourcePath(path: string | null | undefined): str
 
 /**
  * @param options.enabled false 면 레이아웃을 요청하지 않는다(기본 true). 문서 Provider 가 이미 같은 레이아웃을 받는
- *   자리(PreviewCanvas 의 레거시 사본)에서 중복 요청을 막는다 — 편집기 첫 적재에서 같은 레이아웃을 두 번 받았다(#869).
+ *   자리(PreviewCanvas 의 레거시 사본)에서 중복 요청을 막는다 — 편집기 첫 적재에서 같은 레이아웃을 두 번 받았다.
  */
 export function useLayoutDocument(options: { enabled?: boolean } = {}): UseLayoutDocumentResult {
   const enabled = options.enabled !== false;
@@ -476,7 +476,7 @@ export function useLayoutDocument(options: { enabled?: boolean } = {}): UseLayou
 
       const rawBody = (body && (body.data || body)) ?? {};
       // 공통 레이아웃·partial·확장 노드의 분기 children·footer 안 노드에도 출처 메타를 잇는다 — 서버는 children 에만
-      // 단다. 없으면 그 노드가 「잠금 없음」으로 판정돼 드래그 핸들·속성 편집이 열린다(#869).
+      // 단다. 없으면 그 노드가 「잠금 없음」으로 판정돼 드래그 핸들·속성 편집이 열린다.
       const raw = Array.isArray((rawBody as any).components)
         ? { ...(rawBody as Record<string, unknown>), components: inheritSourceIntoBranches((rawBody as any).components) }
         : rawBody;

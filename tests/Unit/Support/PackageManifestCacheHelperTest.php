@@ -9,7 +9,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 패키지 매니페스트 캐시 헬퍼 단위 테스트 (dev-g7 #658).
+ * 패키지 매니페스트 캐시 헬퍼 단위 테스트.
  *
  * 이 헬퍼가 삭제 로직의 단일 지점이다 — spawn 직전 선정리(`CoreUpdateCommand`)와 업데이트
  * 마무리(`CoreUpdateService::clearAllCaches()`)가 같은 코드를 쓴다.

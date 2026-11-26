@@ -17,9 +17,9 @@ use Modules\Sirsoft\Page\Services\PageService;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 
 /**
- * 페이지 본문 미디어 — 업로드·연결·서빙 게이트 (#883 4단계)
+ * 페이지 본문 미디어 — 업로드·연결·서빙 게이트
  *
- * 임시로 올린 본문 미디어는 페이지 저장 때 본문(로케일마다)이 참조한 것만 이어지고, 빠져도 이전 버전이 참조하면 남는다(#887). 첨부 연결(파일 이동)은
+ * 임시로 올린 본문 미디어는 페이지 저장 때 본문(로케일마다)이 참조한 것만 이어지고, 빠져도 이전 버전이 참조하면 남는다. 첨부 연결(파일 이동)은
  * 같은 임시 키여도 본문 미디어를 집어 가지 않는다. 서빙은 「발행 또는 열람권 또는 서명」, 응답 본문은 미발행일 때만 서명한다.
  *
  * @scenario-manifest modules/_bundled/sirsoft-page/tests/scenarios/page-content-media.yaml
@@ -83,7 +83,7 @@ class PageContentMediaTest extends ModuleTestCase
         ]);
 
         $this->assertNotNull(PageAttachment::query()->find($a->id));
-        // #887 G5: 본문에서 빠져도 이전 버전 본문이 참조하면 지우지 않고 페이지에 붙인 채 둔다(그 버전으로 복원할 수 있게)
+        // 본문에서 빠져도 이전 버전 본문이 참조하면 지우지 않고 페이지에 붙인 채 둔다(그 버전으로 복원할 수 있게)
         $this->assertSame($page->id, (int) PageAttachment::query()->findOrFail($b->id)->page_id, '본문에서 빠져도 이전 버전이 참조하면 남긴다');
     }
 
@@ -125,7 +125,7 @@ class PageContentMediaTest extends ModuleTestCase
     }
 
     /**
-     * 서빙 라우트가 구간 요청을 받는다 — 1바이트 206 · 끝 기준 206 · 범위 밖 416 (#883 5단계 Responder 경유).
+     * 서빙 라우트가 구간 요청을 받는다 — 1바이트 206 · 끝 기준 206 · 범위 밖 416 (5단계 Responder 경유).
      *
      * @return void 반환값 없음
      *

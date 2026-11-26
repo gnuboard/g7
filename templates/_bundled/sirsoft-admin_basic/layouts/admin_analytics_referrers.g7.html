@@ -3,7 +3,7 @@
   사이트 탭은 한 단계 더 있다 — 도메인 행을 누르면 주소에 `host` 가 실리고, 그 도메인에서 들어온 실제
   주소 목록(`analytics_referrer_urls`)이 공통 표 자리를 대신한다. 집계표는 호스트까지만 쌓여 이 목록만
   원장을 직접 읽는다. 그 자리에서는 CSV 를 감춘다 — 받아지는 것은 사이트 목록이라 화면과 다른 것을 준다
-  (`csvUrl` 을 빈 값으로 두면 기간 바가 단추를 그리지 않는다). #682 라운드 4, 검수 지적 ⑥. -->
+  (`csvUrl` 을 빈 값으로 두면 기간 바가 단추를 그리지 않는다). -->
 <layout name="admin_analytics_referrers" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.analytics.referrers.title"/>
   <!-- 탭 → 리포트 이름. 공통 표와 유형 탭의 도넛이 읽는다. 사이트 탭에서 한 도메인의 주소 목록을 보는 동안에는 표 자리를
@@ -25,7 +25,7 @@
     </error-handling>
   </data-source>
   <!-- 한 유입처의 전체 주소. 집계표에는 호스트까지만 쌓여 이 소스만 원장을 직접 읽는다 —
-       사이트 탭에서 도메인 행을 눌러 `host` 가 주소에 실렸을 때만 부른다(#682 라운드 4, 검수 지적 ⑥). -->
+       사이트 탭에서 도메인 행을 눌러 `host` 가 주소에 실렸을 때만 부른다. -->
   <data-source id="analytics_referrer_urls" label_key="$t:editor.data_source.analytics_referrer_urls" type="api" endpoint="/api/admin/analytics/referrer-urls" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" if="{{(query.tab || 'types') === 'sites' &amp;&amp; !!query.host}}">
     <params host="{{query.host}}" preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}" page="{{query.page || 1}}" per_page="{{query.per_page}}"/>
     <fallback>
@@ -57,7 +57,7 @@
     </fallback>
     <!-- 조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를
          띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을
-         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2). -->
+         열 때마다 전역 오류 토스트가 뜬다. -->
     <error-handling>
       <on-code code="403">
         <suppress/>
@@ -145,7 +145,7 @@
           <sequence>
             <!-- 탭 전환은 `replace` 라 `<init>` 이 다시 돌지 않는다 — 링크 여부를 여기서 새 탭에 맞춰 둬야
               「유형 → 사이트」로 옮긴 표가 글자로만 남거나, 「사이트 → 검색어」로 옮긴 표가 갈 곳 없는 링크로
-              남지 않는다(#682 S3 라운드 14). 새 탭에는 `host` 가 없으므로 사이트 탭이면 켠다. -->
+              남지 않는다. 새 탭에는 `host` 가 없으므로 사이트 탭이면 켠다. -->
             <set-state target="local" labelDrilldownKey="{{$args[0] === 'sites' ? 'host' : ''}}"/>
             <!-- audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 리포트마다 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to·unit·exclude)과 쪽 크기만 query 로 명시해 잇는다. -->
             <navigate path="/admin/analytics/referrers" :replace="true">
@@ -173,7 +173,7 @@
         <div data-ref="referrer_urls_header" class="flex-center gap-3 mb-3">
           <a data-ref="referrer_urls_back" href="/admin/analytics/referrers?tab={{query.tab || 'sites'}}{{_computed.tabQuery}}" class="button btn-icon" aria-label="$t:admin.analytics.referrers.urls_back">
             <on type="click">
-              <!-- 사이트 목록으로 — 링크(#757)라 새 탭으로도 연다. 주소는 href 한 곳: 지금 탭과 기간·쪽 크기(`tabQuery`)만 싣고
+              <!-- 사이트 목록으로 — 링크라 새 탭으로도 연다. 주소는 href 한 곳: 지금 탭과 기간·쪽 크기(`tabQuery`)만 싣고
                    `host` 는 싣지 않아 1쪽 사이트 목록으로 돌아간다(현재 쿼리를 병합하면 지우려는 host 가 남는다). -->
               <sequence>
                 <!-- 사이트 목록으로 돌아오는 것도 `replace` 라 `<init>` 이 다시 돌지 않는다 — 링크를 다시 켠다. -->

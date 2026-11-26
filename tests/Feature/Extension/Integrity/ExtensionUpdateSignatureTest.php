@@ -19,7 +19,7 @@ use Tests\Concerns\PackageSignatureFixtures;
 use Tests\TestCase;
 
 /**
- * 확장 업데이트(GitHub·`--zip`)의 패키지 서명 검증 (#916 ④, D17·D18·D36)
+ * 확장 업데이트(GitHub·`--zip`)의 패키지 서명 검증
  *
  * - `ExtensionManager::acquireGithubUpdate()`: 태그 릴리스의 서명 자산을 받아 검증하고 풀어 둔다. 자산이 없으면 zipball 을 받기
  *   **전에** 미서명 정책을 묻고(409), 확인하면 태그 zipball. 태그가 없으면 「릴리스를 찾지 못함」(브랜치로 물러서지 않음).
@@ -248,7 +248,7 @@ class ExtensionUpdateSignatureTest extends TestCase
 
     /**
      * Artisan `module:update` — `--yes`(`-y`) 는 진행 확인에만 답한다. 미서명 패키지 확인은 대신하지 않아 비대화형은 exit 1,
-     * 대화형은 `-y` 가 있어도 미서명 확인을 묻는다 (#918). 종전에는 `-y` 만 준 비대화형 실행이 미서명을 묻지 않고 받아들였다.
+     * 대화형은 `-y` 가 있어도 미서명 확인을 묻는다. 종전에는 `-y` 만 준 비대화형 실행이 미서명을 묻지 않고 받아들였다.
      *
      * @scenario case=update_command_unsigned_noninteractive
      *

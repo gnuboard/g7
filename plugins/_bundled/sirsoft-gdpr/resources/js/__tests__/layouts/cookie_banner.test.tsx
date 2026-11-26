@@ -106,7 +106,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             //    boolean(gdprBannerDismissed) 만 저장하던 이전 방식은 게스트로 닫은 뒤 미동의 계정으로 로그인해도
             //    배너가 계속 숨겨지는 회귀가 있었다 (닫은 주체를 구분하지 않았기 때문).
             // 5. 동의 상태를 받는 중(undefined)이면 띄우지 않는다 — 설정 응답이 먼저 오면 동의를 마친 방문자에게도
-            //    배너가 잠깐 보였다(#915). 받기에 실패(null)하면 동의를 다시 받도록 띄운다.
+            //    배너가 잠깐 보였다. 받기에 실패(null)하면 동의를 다시 받도록 띄운다.
             // 6. 동의 상태가 지금 사용자의 것(is_member 와 로그인 여부 일치)일 때만 판정한다 — 로그인 직후 앞 게스트의 값을 잇지 않는다.
             expect(banner?.if).toBe(
                 "{{gdprPublicSettings?.data?.banner_enabled === true && gdprMyConsent !== undefined && (gdprMyConsent === null || (gdprMyConsent?.data?.is_member === true) === !!_global.currentUser?.uuid) && gdprMyConsent?.data?.has_consented !== true && _global.gdprBannerDismissedFor !== (_global.currentUser?.uuid ?? 'guest')}}"
@@ -187,7 +187,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             });
 
             /**
-             * 받는 중 — 설정 응답이 먼저 와도 동의 상태(undefined)를 받기 전에는 띄우지 않는다(#915 — 동의를 마친 방문자의 새로고침 깜빡임).
+             * 받는 중 — 설정 응답이 먼저 와도 동의 상태(undefined)를 받기 전에는 띄우지 않는다(동의를 마친 방문자의 새로고침 깜빡임).
              *
              * @scenario surface=visibility
              * @effects banner_waits_for_consent_status
@@ -410,7 +410,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
 
         /** @effects consent_actions_post_expected_categories */
         it('"동의하지 않고 계속하기"(거부) 시 required 카테고리만 true (cookie_ prefix)', () => {
-            // 이슈 #430 — 기존 '필수만 사용'(reject_all) 을 거부 버튼으로 대체. body 는 필수만 true 로 재활용.
+            // 기존 '필수만 사용'(reject_all) 을 거부 버튼으로 대체. body 는 필수만 true 로 재활용.
             expect(text).toContain("['cookie_' + c.key]: c.required === true");
         });
 
@@ -418,7 +418,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
          * @scenario entry=reject, subject=member, category=optional
          * @effects banner_reject_button_sends_intent_reject
          */
-        it('거부 버튼은 POST body 에 intent:\'reject\' 신호를 실어 보낸다 (이슈 #430)', () => {
+        it('거부 버튼은 POST body 에 intent:\'reject\' 신호를 실어 보낸다', () => {
             // 서버가 선택형 미동의 항목을 is_rejected=true 로 저장하도록 하는 명시적 거부 신호.
             expect(text).toContain("intent: 'reject'");
         });
@@ -433,7 +433,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
          * @scenario entry=reject, subject=member, category=optional
          * @effects banner_reject_toast_uses_rejected_saved
          */
-        it('거부 버튼 성공 토스트는 consent.rejected_saved 를 쓴다 (거부인데 "동의가 저장" 오표기 정정, 이슈 #430)', () => {
+        it('거부 버튼 성공 토스트는 consent.rejected_saved 를 쓴다 (거부인데 "동의가 저장" 오표기 정정)', () => {
             // 거부 버튼 apiCall 노드를 격리해 검증 — 배너 전체 text 에는 다른 버튼의 consent.granted 도 있으므로
             // intent:'reject' 를 body 에 가진 apiCall 서브트리 안에서만 rejected_saved 를 확인한다.
             const findRejectApiCall = (node: unknown): Record<string, unknown> | null => {
@@ -498,7 +498,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         it('동의 저장 직후 onSuccess 에서 코어 refreshConsent 핸들러를 호출 (3개 버튼 모두)', () => {
             // 회귀 가드: 동의 저장 직후 코어 동의 런타임을 다시 읽지 않으면 consent:changed 가 오지 않아
             // 자동 차단 엔진 캐시가 그대로다 — G-4 시나리오(분석/마케팅 스크립트 동의 직후 즉시 로드)가
-            // 작동 안 함. 옛 플러그인 전용 syncConsent 는 #639 에서 코어 내장 핸들러로 대체됐다.
+            // 작동 안 함. 옛 플러그인 전용 syncConsent 는 코어 내장 핸들러로 대체됐다.
             const refreshOccurrences = (text.match(/"handler":\s*"refreshConsent"/g) ?? []).length;
             expect(refreshOccurrences).toBeGreaterThanOrEqual(3);
             expect(text).not.toContain('sirsoft-gdpr.syncConsent');
@@ -523,7 +523,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             // 어느 버튼을 클릭했는지 시각적으로 알 수 없음. 식별자 string 으로 변경하여 클릭한 버튼만
             // 스피너 + 라벨 변경, 다른 버튼은 disabled + 원래 라벨 유지.
             // 4 action 식별자: accept_all / reject / save_selection / renew_consent
-            // (이슈 #430 — reject_all 식별자를 reject 로 정리)
+            // (reject_all 식별자를 reject 로 정리)
             expect(text).toContain('"gdprBannerSubmittingAction": "accept_all"');
             expect(text).toContain('"gdprBannerSubmittingAction": "reject"');
             expect(text).toContain('"gdprBannerSubmittingAction": "save_selection"');
@@ -553,7 +553,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
          * @scenario entry=reject, subject=member, category=optional
          * @effects banner_button_order_reject_accept_preferences
          */
-        it('버튼 순서 (이슈 #430): 거부 → 선택 동의 토글 → 모두 동의', () => {
+        it('버튼 순서: 거부 → 선택 동의 토글 → 모두 동의', () => {
             // 제보자 예시/업계 관행 (거부 → 선택 → 전체) 순서.
             // reject_continue(거부) → preferences(선택 동의 토글) → accept_all(모두 동의) 순으로 등장해야 한다.
             const rejectIdx = text.indexOf('sirsoft-gdpr.banner.reject_continue');
@@ -773,9 +773,9 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         /** @effects banner_operator_footer_line_variants */
         it('푸터 라인은 시각적 무게 최소화 — 작은 보조 텍스트 (공통 Tailwind 코어 클래스) + 상단 구분선', () => {
             // 동의 행위 자체에 시선이 가도록 운영 주체는 부드러운 보조 정보로 처리.
-            // 이슈 #430 — 배너는 user 페이지에 렌더되므로 admin 전용 시맨틱(.text-tertiary)은 미해석.
+            // 배너는 user 페이지에 렌더되므로 admin 전용 시맨틱(.text-tertiary)은 미해석.
             // 동등한 공통 Tailwind 코어 클래스로 치환 (회귀 수정).
-            // #399 R-2 — 인라인 짝(gray-500 / 다크 gray-400)이 플러그인 의미 클래스 사본 `gdpr-text-muted` 로 묶였다.
+            // 인라인 짝(gray-500 / 다크 gray-400)이 플러그인 의미 클래스 사본 `gdpr-text-muted` 로 묶였다.
             // 이름만 보지 않고 플러그인 생성 CSS 가 같은 두 색을 정의하는지까지 확인한다.
             const className = (footer?.props as { className?: string })?.className ?? '';
             const tokens = className.split(/\s+/);
@@ -794,7 +794,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
          * @effects banner_uses_builtin_handlers_and_prefixed_keys
          */
         it('핸들러는 G7 내장 핸들러만 사용 (이 플러그인은 핸들러를 등록하지 않는다)', () => {
-            // #639(결정 D22): 플러그인 전용 syncConsent 가 코어 내장 refreshConsent 로 대체돼 이 플러그인은
+            // 플러그인 전용 syncConsent 가 코어 내장 refreshConsent 로 대체돼 이 플러그인은
             // ActionDispatcher 에 핸들러를 등록하지 않는다(plugin.json assets.handlers=false).
             const allowedBuiltins = [
                 'apiCall', 'setState', 'sequence', 'toast', 'refetchDataSource', 'refreshConsent',

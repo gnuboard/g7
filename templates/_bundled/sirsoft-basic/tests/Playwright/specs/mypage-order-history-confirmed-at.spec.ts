@@ -1,5 +1,5 @@
 /**
- * 마이페이지 주문 상세 「주문 이력」에 구매확정일시가 실제로 렌더되는지 검증 (#599 S2-D8).
+ * 마이페이지 주문 상세 「주문 이력」에 구매확정일시가 실제로 렌더되는지 검증.
  *
  * 결함: 주문의 생애주기는 주문 → 결제 → 배송완료 → **구매확정** → (취소) 로 가는데,
  *   「주문 이력」 섹션이 구매확정일시만 빠뜨리고 있었다. 구매확정은 적립이 확정되고
@@ -86,7 +86,7 @@ async function findConfirmedOrder(page: Page): Promise<{ orderNumber: string; co
   });
 }
 
-test.describe('#599 S2-D8 주문 이력 구매확정일시', () => {
+test.describe('D8 주문 이력 구매확정일시', () => {
   /**
    * @scenario order_history_row=confirmed_at
    *

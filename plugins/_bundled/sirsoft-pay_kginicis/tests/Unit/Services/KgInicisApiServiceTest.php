@@ -420,7 +420,7 @@ class KgInicisApiServiceTest extends PluginTestCase
      *
      * 이 값들이 취소 API 가 아닌 거래조회 API 에 붙어 있으면, 조회는 멀쩡히 돌고 취소만
      * 조용히 거절된다 — 운영자에게는 "취소가 안 된다" 로만 보인다. 그래서 단언 대상은
-     * `cancelPayment()` 가 보낸 payload 다. 가상계좌 환불은 전용 경로(`/vacct`)이고 계좌번호는 AES 암호화 대상이다(#747 C8).
+     * `cancelPayment()` 가 보낸 payload 다. 가상계좌 환불은 전용 경로(`/vacct`)이고 계좌번호는 AES 암호화 대상이다.
      *
      * @scenario call=cancel
      *

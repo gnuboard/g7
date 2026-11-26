@@ -1,6 +1,6 @@
 /**
  * @file admin-user-form-member-fields.test.tsx
- * @description 관리자 회원 폼과 회원 상세의 회원 항목 칸 (#490 6단계)
+ * @description 관리자 회원 폼과 회원 상세의 회원 항목 칸
  *
  * 이름, 닉네임, 연락처, 위치, 서명, 자기소개와 운영자가 추가한 항목은 서버가 준 항목 계약(데이터소스 `memberFields`)대로
  * 공용 조각(partials/member/_member_fields, _member_fields_view)이 그린다. 이 파일이 잠그는 것:
@@ -366,7 +366,7 @@ describe('회원 항목 반복 조각 (관리자, 입력)', () => {
     };
     for (const notice of Object.values(notices)) {
       expect(notice).toBeDefined();
-      // #399 R-1 — gray-500 / 다크 gray-400 짝은 의미 클래스 `text-muted` 로 묶였다. 정의(semantic.css)를 펼쳐 같은 짝을 확인한다
+      // gray-500 / 다크 gray-400 짝은 의미 클래스 `text-muted` 로 묶였다. 정의(semantic.css)를 펼쳐 같은 짝을 확인한다
       expect(String(notice.props.className).split(/\s+/)).toEqual(expect.arrayContaining(['text-xs', 'text-muted']));
       expect(expandSemanticTokens(notice.props.className)).toEqual(expect.arrayContaining(['text-xs', 'text-gray-500', 'dark:text-gray-400']));
     }

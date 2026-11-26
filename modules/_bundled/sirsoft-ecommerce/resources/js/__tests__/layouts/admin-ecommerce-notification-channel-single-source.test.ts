@@ -2,7 +2,7 @@
  * @file admin-ecommerce-notification-channel-single-source.test.ts
  * @description 커머스 환경설정 알림 정의 탭 — 채널 표현식 단일 출처 회귀 테스트
  *
- * 회귀 배경 (#518 실측 결함):
+ * 회귀 배경 (실측 결함):
  * 알림 정의 탭의 채널은 URL(`query.channel`)과 페이지 로컬 상태(`_local.activeNotificationChannel`)
  * 두 곳에서 읽히고 있었다. 두 값은 갱신 시점이 다르다 — 다른 설정 탭에 갔다 돌아오면 URL 의
  * channel 은 사라지지만(탭 전환은 목록 상태를 승계하지 않는다) `_local` 은 이전 채널로 남는다.
@@ -12,7 +12,7 @@
  *
  * 그래서 조건은 "두 표현식이 같은가" 가 아니라 "출처가 하나인가" 다.
  *
- * 2차 회귀 (#518 계획서 검증 브라우저 실측, 2026-08-05):
+ * 2차 회귀 (계획서 검증 브라우저 실측, 2026-08-05):
  * 목록 프루닝으로 서버가 `template_channel` 을 받은 요청에만 `templates` 를 싣게 됐는데
  * (`NotificationDefinitionRepository::getPaginated`), 코어 화면만 그 파라미터를 보내도록
  * 고쳐지고 커머스 탭 데이터소스는 빠졌다. 그 결과 10건 전 행이 「이 채널에 대한 템플릿이
@@ -84,7 +84,7 @@ function readLayout(filePath: string): Record<string, any> {
     return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 }
 
-describe('커머스 알림 정의 탭 — 채널 단일 출처 (#518)', () => {
+describe('커머스 알림 정의 탭 — 채널 단일 출처', () => {
     /**
      * @effects ecommerce_notification_channel_reads_single_source
      */
@@ -127,7 +127,7 @@ describe('커머스 알림 정의 탭 — 채널 단일 출처 (#518)', () => {
     });
 });
 
-describe('커머스 알림 정의 탭 — 서버 채널 필터 정합 (#518)', () => {
+describe('커머스 알림 정의 탭 — 서버 채널 필터 정합', () => {
     /**
      * 알림 정의 목록 데이터소스를 찾습니다.
      *

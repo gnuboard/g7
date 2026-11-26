@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 결제 통화별 결제수단 제한 (#639 ⑤, 결정 D17)
+ * 결제 통화별 결제수단 제한
  *
  * 엔화 주문에서 쓸 수 없는 결제수단을 숨기는 일을 결제 플러그인이 브라우저에서 했다 — 주문서
  * 응답을 `window.fetch` 덮어쓰기로 고쳐 버튼만 지웠다. 서버는 그 판정을 몰라 직접 POST 하면

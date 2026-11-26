@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 설치기의 개발자 전용 composer(custom/) vendor 처리 테스트 (#792 F0-5)
+ * 설치기의 개발자 전용 composer(custom/) vendor 처리 테스트
  *
  * vendor 묶음 모드 설치에서 custom/vendor-bundle.zip 이 있고 custom/vendor 가 없으면 풀어 주고, 맞춰져 있으면
  * 건너뛰며, custom/ 이 없으면 아무 일도 하지 않는지 잠근다. 설치 표식 형식은 코어 CustomVendorService 와 같다.

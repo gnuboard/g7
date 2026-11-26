@@ -359,7 +359,7 @@ class EcommerceImageThumbnailTest extends ModuleTestCase
 
     /**
      * 공개 자산 디스크(CDN) 카테고리 행의 공유 카드도 썸네일 기준 주소(`preview_url`, API)로 나가 `size=og` 가 붙는다.
-     * 직접 URL(`download_url`)을 그대로 넘기면 og 규격이 걸리지 않고 원본이 나간다(#878).
+     * 직접 URL(`download_url`)을 그대로 넘기면 og 규격이 걸리지 않고 원본이 나간다.
      *
      * @scenario surface=category_image, thumbnail_query=og_card
      *

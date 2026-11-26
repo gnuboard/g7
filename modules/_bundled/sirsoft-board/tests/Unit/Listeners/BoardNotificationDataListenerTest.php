@@ -62,7 +62,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
     {
         parent::setUp();
 
-        // 회원 알림의 {site_url} 은 사용자 화면 URL, 운영자 알림은 사이트 주소 (#792)
+        // 회원 알림의 {site_url} 은 사용자 화면 URL, 운영자 알림은 사이트 주소
         config(['app.url' => 'https://site.example.test', 'g7_settings.core.general.user_screen_url' => 'https://front.example.test']);
 
         $this->boardRepository = Mockery::mock(BoardRepositoryInterface::class);
@@ -674,7 +674,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
-     * 게시글 작성자가 notify_post_complete를 끄면 post_action에서 빈 결과를 반환합니다 (#413 10-2).
+     * 게시글 작성자가 notify_post_complete를 끄면 post_action에서 빈 결과를 반환합니다 (10-2).
      *
      * 회귀: 기존엔 게이트가 없어 OFF여도 발송 데이터가 생성됨.
      *
@@ -709,7 +709,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
-     * 댓글 작성자가 notify_post_complete를 끄면 post_action에서 빈 결과를 반환합니다 (#413 10-2).
+     * 댓글 작성자가 notify_post_complete를 끄면 post_action에서 빈 결과를 반환합니다 (10-2).
      *
      * @scenario notification_type=post_action
      *
@@ -749,7 +749,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
-     * 알림 설정 레코드가 없으면 post_action에서 빈 결과를 반환합니다 (#413 10-2, 형제 알림과 일관).
+     * 알림 설정 레코드가 없으면 post_action에서 빈 결과를 반환합니다 (10-2, 형제 알림과 일관).
      *
      * @scenario notification_type=post_action
      *
@@ -1165,7 +1165,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
-     * 밖으로 나가는 링크의 주소(`G7_PUBLIC_LINK_URL`)를 정하면 신고 접수 관리자 알림의 링크와 사이트 링크가 그 주소입니다 (#888).
+     * 밖으로 나가는 링크의 주소(`G7_PUBLIC_LINK_URL`)를 정하면 신고 접수 관리자 알림의 링크와 사이트 링크가 그 주소입니다.
      *
      * @scenario notification_type=report_received_admin
      *
@@ -1327,7 +1327,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      *
      * `config('app.url').'/board/…'` 는 후행 슬래시를 그대로 실어 `https://host/g7//board/…` 를
      * 만든다 — 메일 안의 링크가 조용히 깨진다.
-     * 회원 알림 링크는 「사용자 화면 URL」을 따르므로(#792) 그 값을 비워 사이트 주소 폴백을 검사한다.
+     * 회원 알림 링크는 「사용자 화면 URL」을 따르므로 그 값을 비워 사이트 주소 폴백을 검사한다.
      *
      * @scenario base_path=subpath, navigation_direction=navigation
      *

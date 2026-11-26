@@ -1,5 +1,5 @@
 /**
- * 자산 URL 빌더(프론트) 가드 — 이슈 #486 단위 C.
+ * 자산 URL 빌더(프론트) 가드.
  *
  * 단위 C 의 회귀 조건은 "기본 모드에서 치환 이전 URL 문자열과 바이트 동일" 이다.
  * 아래 확장자 모드 기대값은 치환 이전 소스에 하드코딩되어 있던 문자열을 그대로 옮긴 것으로,
@@ -255,7 +255,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
         // @scenario asset_url_mode=extension, base_path=root, fetch_origin=core_bundle
         // @effects frontend_extension_mode_urls_match_pre_builder_strings
         it('ComponentRegistry loadManifest components.json (버전 있음/없음 — #122 작업 B)', () => {
-            // 편집기 경로(버전 미전달)는 무버전 URL 유지 (서버가 현재 버전 폴백 — #588)
+            // 편집기 경로(버전 미전달)는 무버전 URL 유지 (서버가 현재 버전 폴백)
             expect(suffixed('/api/templates/sirsoft-basic/components', 'json')).toBe(
                 '/api/templates/sirsoft-basic/components.json',
             );
@@ -1893,7 +1893,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             // 링크의 소유자. 이 군만 **논리 동형**(주석 제외)으로 잰다 — 위 `withoutBlockComments`
             // 의 주석이 그 근거다.
             //
-            // 동형 대상은 **샘플 템플릿 짝**이다. 7.2.0 링크 개편(#757)에서 실사용 템플릿 둘은 템플릿 지원 모듈
+            // 동형 대상은 **샘플 템플릿 짝**이다. 7.2.0 링크 개편에서 실사용 템플릿 둘은 템플릿 지원 모듈
             // (`support/navigationLink`)을 부르는 판으로, 샘플 둘은 코어 `G7Core.navigation` 을 부르는 판으로 갈렸고,
             // 실사용 사용자 템플릿은 대체 주소(`fallbackHref`, 7.1.1)를 따로 가진다 — 네 벌 동형은 더 이상 성립하지 않는다.
             // 접두사를 붙이는 그 한 줄은 군과 무관하게 아래 「A 컴포넌트가 접두사를 붙인다」 검사가 네 벌 모두를 잰다.

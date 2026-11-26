@@ -18,7 +18,7 @@
  * 언마운트 시 컴포넌트 cleanup 이 자체 복원을 수행한다).
  *
  * 같은 이유로 편집 대상 템플릿 CSS 의 `html { scroll-behavior: smooth }`(sirsoft-basic `main.css`)도 편집기
- * 문서에 걸린다(#869 λ 실측). 그러면 편집기 문서 스크롤이 모두 부드러운 스크롤이 된다. 미리보기 안 컴포넌트가
+ * 문서에 걸린다. 그러면 편집기 문서 스크롤이 모두 부드러운 스크롤이 된다. 미리보기 안 컴포넌트가
  * focus() 하거나 노드를 scrollIntoView 하면 화면이 한동안 움직이고, 그 사이 누른 좌표가 어긋난다(드래그가
  * 시작되지 않음, 열린 ⓘ 메뉴가 포인터 밑을 지나가며 mouseleave 로 닫힘). 편집기 생존 동안 `<html>` 인라인
  * `scroll-behavior: auto` 로 덮고, 언마운트 때 원래 인라인 값으로 되돌린다.
@@ -63,7 +63,7 @@ export function usePreviewBodyScrollIsolation(): void {
     const prevScrollBehavior = html.style.scrollBehavior;
     html.style.scrollBehavior = 'auto';
 
-    // 미리보기 안 요소의 자동 포커스가 편집기 문서를 스크롤하지 않게 한다(#869 λ 이월 4). 실측: sirsoft-popup 의
+    // 미리보기 안 요소의 자동 포커스가 편집기 문서를 스크롤하지 않게 한다(이월 4). 실측: sirsoft-popup 의
     // 팝업 대화창(`g7pp-dialog`)이 마운트 때 focus() 해 편집기를 열자마자 문서가 1155px 내려갔다. 런타임 화면에서는
     // 정상 동작(창이 보이게 스크롤)이지만, 편집기 미리보기는 같은 문서라 편집기 화면 전체가 움직인다. 미리보기 frame
     // 안 요소의 focus 에만 `preventScroll: true` 를 더하고, 그 밖(편집기 chrome·모달)은 그대로 둔다.

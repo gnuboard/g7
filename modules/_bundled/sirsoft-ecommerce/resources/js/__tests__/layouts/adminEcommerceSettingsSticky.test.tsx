@@ -38,7 +38,7 @@ describe('admin_ecommerce_settings 환경설정 sticky 고정', () => {
    * @scenario area=top_tabs
    * @effects settings_top_tabs_stay_fixed_at_every_width
    */
-  it('상단 탭(tab_navigation)이 모든 폭에서 상단에 고정된다 (#399)', () => {
+  it('상단 탭(tab_navigation)이 모든 폭에서 상단에 고정된다', () => {
     const tabNav = findById(adminEcommerceSettingsLayout, 'tab_navigation');
     expect(tabNav).toBeDefined();
 
@@ -67,7 +67,7 @@ describe('admin_ecommerce_settings 환경설정 sticky 고정', () => {
    * @scenario area=footer_buttons
    * @effects settings_footer_buttons_stay_fixed
    */
-  it('하단 버튼(footer_buttons)에 sticky-footer-buttons 시맨틱 자산이 존재해야 한다 (#399)', () => {
+  it('하단 버튼(footer_buttons)에 sticky-footer-buttons 시맨틱 자산이 존재해야 한다', () => {
     const footer = findById(adminEcommerceSettingsLayout, 'footer_buttons');
     expect(footer).toBeDefined();
 

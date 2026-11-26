@@ -8,7 +8,7 @@ use Plugins\Sirsoft\VerificationNhnkcp\Tests\PluginTestCase;
 use Plugins\Sirsoft\VerificationNhnkcp\Http\Controllers\KcpBridgeController;
 
 /**
- * NHN KCP 본인인증 — 브리지 대체 복귀 주소 (#792 WP-U5)
+ * NHN KCP 본인인증 — 브리지 대체 복귀 주소
  *
  * 모바일 브리지가 복귀 주소를 못 찾을 때 가는 홈이 화면 주소 헬퍼(home)를 거치는지 잠근다.
  */

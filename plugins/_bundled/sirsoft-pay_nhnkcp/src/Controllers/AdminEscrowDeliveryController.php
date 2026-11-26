@@ -193,7 +193,7 @@ class AdminEscrowDeliveryController extends AdminBaseController
             ]);
 
         } catch (\Exception $e) {
-            // 원문은 서버 로그에 남기고, 응답 errors 에는 운영자가 봐도 되는 사유만 싣는다(#858).
+            // 원문은 서버 로그에 남기고, 응답 errors 에는 운영자가 봐도 되는 사유만 싣는다.
             Log::error('KCP: escrow delivery register exception', [
                 'order_number' => $orderNumber,
                 'exception_class' => $e::class,

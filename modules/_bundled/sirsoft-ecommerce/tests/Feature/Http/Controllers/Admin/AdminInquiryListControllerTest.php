@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 관리자 상품문의 관리 API Feature 테스트 (이슈 #524 §4.1)
+ * 관리자 상품문의 관리 API Feature 테스트
  *
  * 검증 목적 — 회원이 만든 데이터인데 관리자 표면이 없던 축을 채운다:
  * - 조회와 삭제의 권한이 갈린다

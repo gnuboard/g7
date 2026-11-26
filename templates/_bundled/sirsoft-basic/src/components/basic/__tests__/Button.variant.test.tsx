@@ -1,5 +1,5 @@
 /**
- * Button(sirsoft-basic) — variant·size 의미 클래스 (#399 F12·F13, 7.2.1)
+ * Button(sirsoft-basic) — variant·size 의미 클래스 (7.2.1)
  *
  * @scenario-manifest templates/_bundled/sirsoft-basic/tests/scenarios/button-variant-size.yaml
  */

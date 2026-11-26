@@ -264,7 +264,7 @@ describe('IconSelect', () => {
    * @effects icon_select_detects_prefixed_value, style_prefix_tokens_resolved_once
    */
   it.each([['fa-solid fa-users'], ['fas fa-users'], ['far fa-users']])(
-    'value %j 는 글리프로 비교해 Users 를 선택으로 보인다 (#381)',
+    'value %j 는 글리프로 비교해 Users 를 선택으로 보인다',
     (value) => {
       const { container } = render(<IconSelect value={value} placeholder="아이콘 선택" />);
 
@@ -280,7 +280,7 @@ describe('IconSelect', () => {
    * @scenario component=icon_select
    * @effects icon_select_detects_prefixed_value
    */
-  it('접두 붙은 값으로 연 목록에서 같은 글리프 항목에 체크 표시가 붙는다 (#381)', async () => {
+  it('접두 붙은 값으로 연 목록에서 같은 글리프 항목에 체크 표시가 붙는다', async () => {
     const user = userEvent.setup();
     const { container } = render(<IconSelect value="fa-solid fa-users" />);
 
@@ -295,7 +295,7 @@ describe('IconSelect', () => {
    * @scenario component=icon_select
    * @effects icon_select_detects_prefixed_value
    */
-  it('목록에 없는 글리프(fas fa-rocket)는 선택으로 보지 않는다 (#381)', () => {
+  it('목록에 없는 글리프(fas fa-rocket)는 선택으로 보지 않는다', () => {
     render(<IconSelect value="fas fa-rocket" placeholder="아이콘 선택" />);
 
     expect(screen.getByText('아이콘 선택')).toBeInTheDocument();

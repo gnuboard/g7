@@ -317,7 +317,7 @@ describe('mypage/mileage _list partial', () => {
    * @effects mypage_mileage_tab_renders_balance_history_and_disabled_state
    */
   it('카드/배경 클래스에 다크모드 쌍이 포함된다', () => {
-    // #399 R-1 — 반복 묶음이 의미 클래스(`card-plain`, `text-muted`)로 바뀌었다. 템플릿 CSS 정의(다크 짝 포함)까지 펼쳐 본다
+    // 반복 묶음이 의미 클래스(`card-plain`, `text-muted`)로 바뀌었다. 템플릿 CSS 정의(다크 짝 포함)까지 펼쳐 본다
     const classNames = [...serialize(listPartial).matchAll(/"className":"([^"]*)"/g)].map((m) => m[1]);
     const s = classNames.map((c) => expandSemanticClassName(c)).join(' ');
     expect(s).toContain('dark:bg-gray-800');

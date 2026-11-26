@@ -1,6 +1,6 @@
 /**
  * @file cashReceiptResponsiveRender.test.tsx
- * @description 체크아웃 현금영수증 폼의 반응형 오버라이드 실렌더 검증 (#454 S3, F5)
+ * @description 체크아웃 현금영수증 폼의 반응형 오버라이드 실렌더 검증
  *
  * cashReceiptUi.test.tsx 는 node 환경(렌더 없음)이라 JSON 구조만 대조한다.
  * 그래서 "responsive.portable 이 선언되어 있다" 까지만 알 수 있고,

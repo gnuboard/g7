@@ -35,7 +35,7 @@
  *  13. 출하 카탈로그 **전량**이 미동의 상태에서 저장되고 회수(다음 방문 부팅)까지 남는다 —
  *      항목을 손으로 열거하지 않고 카탈로그에서 기계 파생한다. 쓰기 면제(user-initiated)와
  *      회수 면제는 다른 경로라 쓰기만 재면 「저장은 되는데 다음 방문에 사라지는」 원래 증상을
- *      그대로 통과시킨다. (#609 — 리베이스에서 사라졌던 축을 운영자 설정 구조 위에 복원)
+ *      그대로 통과시킨다. (리베이스에서 사라졌던 축을 운영자 설정 구조 위에 복원)
  *
  * @module sirsoft-gdpr/__tests__/necessaryAllowlistCoverage
  *
@@ -492,8 +492,8 @@ const SHIPPED_CATALOG = parsePhpScopeMap(
     sliceBracketBlock(PLUGIN_PHP, 'DEFAULT_NECESSARY_ALLOWLIST_CATALOG ='),
 );
 // 잠금 집합의 정의처는 `plugin.php` 다 — `NecessaryAllowlist::locked()` 는 그 정의에
-// 위임만 한다(신규 설치 흐름에서 이 클래스의 오토로드 등록보다 먼저 호출되기 때문,
-// dev-g7 205284904). 위임 함수의 본문을 파싱하면 `[` 가 없어 빈 목록이 되고, 그 상태로는
+// 위임만 한다(신규 설치 흐름에서 이 클래스의 오토로드 등록보다 먼저 호출되기 때문).
+//  위임 함수의 본문을 파싱하면 `[` 가 없어 빈 목록이 되고, 그 상태로는
 // 「잠금 집합과 일치하는가」가 아무것도 재지 않는다.
 const PHP_LOCKED = parsePhpScopeMap(
     sliceBracketBlock(PLUGIN_PHP, 'public static function lockedNecessaryStorage(): array'),

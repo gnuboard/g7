@@ -1,9 +1,9 @@
 // e2e:allow 실제 엔진 구조(TemplateApp.handleRouteChange · executeInitActions · renderTemplate · DynamicRenderer · ActionDispatcher)로 init 을 끝까지 기다리는지 잰다 — 브라우저 축은 총괄의 빌드 뒤 실측(장바구니 키 발급 요청 보류, 핸들러 3초 상한)이 덮는다
 /**
  * @file TemplateApp.initActionsTimeout.test.tsx
- * @description 레이아웃 init 동작이 끝날 때까지 첫 화면을 그리지 않는다 — 엔진 init 대기 상한 되돌림 (설계 확정 2026-11-09, #869)
+ * @description 레이아웃 init 동작이 끝날 때까지 첫 화면을 그리지 않는다 — 엔진 init 대기 상한 되돌림 (설계 확정 2026-11-09)
  *
- * 엔진은 init 동작(`<init>`)을 첫 렌더 전에 끝까지 기다린다(종전 동작). #869 에서 8초 상한(`INIT_ACTIONS_MAX_WAIT_MS`)을 두고 상한 뒤
+ * 엔진은 init 동작(`<init>`)을 첫 렌더 전에 끝까지 기다린다(종전 동작). 이제 8초 상한(`INIT_ACTIONS_MAX_WAIT_MS`)을 두고 상한 뒤
  * 그린 화면의 입력을 잠그는 방식까지 넣었다가, 늦게 끝나는 init 의 쓰기와 오류 화면, 경로 이동이 얽혀 경계 결함이 이어져 되돌렸다.
  * 이 시험은 init 이 8초를 넘겨도 첫 화면이 init 결과로 그려지는 종전 동작을 잠근다. 끝없이 보류될 수 있는 부수 요청(장바구니 키 발급)은
  * 핸들러가 따로 상한을 둔다(storageHandlers.test.ts).

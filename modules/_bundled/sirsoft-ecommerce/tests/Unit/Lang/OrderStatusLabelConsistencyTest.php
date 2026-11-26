@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Lang;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 주문상태 라벨 일관성 테스트 (S3-D1 회귀 · #599 통합실측 세션3)
+ * 주문상태 라벨 일관성 테스트 (S3-D1 회귀)
  *
  * 같은 주문상태가 화면마다 다른 이름으로 불리면 운영자가 서로 다른 상태로 읽는다.
  * 관리자 주문상세에서 실제로 그 일이 났다 — 일괄변경 Select 와 진행 단계 스텝퍼는

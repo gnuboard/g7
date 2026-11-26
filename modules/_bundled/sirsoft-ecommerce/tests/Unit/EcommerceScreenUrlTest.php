@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 이커머스 화면 주소 래퍼(EcommerceScreenUrl)·클레임 주소·주문 응답 테스트 (#792 WP-U4 — F1-8~F1-11)
+ * 이커머스 화면 주소 래퍼(EcommerceScreenUrl)·클레임 주소·주문 응답 테스트 (F1-8~F1-11)
  *
  * 사람이 여는 주소는 상점 주소 접두(ShopPathResolver)를 매번 읽어 코어 화면 주소 헬퍼를 거치고, 관리자 링크는
  * 관리자 범위(사이트 주소), 주문 생성 응답의 이동 주소는 래퍼를, 결제 수단 식별 `pg_provider` 는 그대로인지 잠근다.
@@ -141,7 +141,7 @@ class EcommerceScreenUrlTest extends ModuleTestCase
 
     /**
      * 회원에게 가는 이커머스 알림의 {site_url} 은 사용자 화면 URL, 운영자에게 가는 알림은 사이트 주소입니다
-     * (#792). 주문 알림은 수신자가 주문 화면을 열 수 있는 운영자면 사이트 주소로 바뀝니다.
+     *. 주문 알림은 수신자가 주문 화면을 열 수 있는 운영자면 사이트 주소로 바뀝니다.
      *
      * @scenario case=notification_site_url
      *

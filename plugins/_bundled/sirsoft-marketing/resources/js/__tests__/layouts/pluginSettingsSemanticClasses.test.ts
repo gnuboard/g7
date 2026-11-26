@@ -3,11 +3,11 @@
  * @file pluginSettingsSemanticClasses.test.ts
  * @description 마케팅 동의 환경설정 화면의 의미 클래스가 제자리에 붙어 있는지
  *
- * 회귀 배경: 관리자 템플릿 의미 클래스 도입(#408) 때 치환이 한 칸씩 밀렸다. 섹션 제목(「마케팅 채널」「법적 동의 항목」)에
+ * 회귀 배경: 관리자 템플릿 의미 클래스 도입 때 치환이 한 칸씩 밀렸다. 섹션 제목(「마케팅 채널」「법적 동의 항목」)에
  * 오류 강조 클래스(`text-error-strong`)가 붙어 붉은 14px 로 보였고, 저장 오류 상자의 제목에 옅은 오류 클래스,
  * 오류 목록 줄에 섹션 제목 클래스(`section-heading-md`)가 붙어 있었다.
  * 원래 매핑: 입력 줄 = `grid-3col-responsive`, 섹션 제목 = `section-heading-md`, 오류 제목 = `text-error-strong`,
- * 오류 목록 줄 = `text-error-soft` (7.1.0 전수 실측 #408 클래스 밀림 후속).
+ * 오류 목록 줄 = `text-error-soft` (7.1.0 전수 실측에서 드러난 클래스 밀림).
  *
  * @scenario-manifest tests/scenarios/plugin-settings-semantic-classes.yaml
  */

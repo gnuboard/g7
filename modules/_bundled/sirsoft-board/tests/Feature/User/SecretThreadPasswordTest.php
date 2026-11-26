@@ -11,7 +11,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use Modules\Sirsoft\Board\Tests\Concerns\BuildsSecretThread;
 
 /**
- * 스레드 비밀번호 — 답변 화면에서 원글(비회원 조상) 비밀번호로 답변을 연다 (#789 제보 A·D5·D16)
+ * 스레드 비밀번호 — 답변 화면에서 원글(비회원 조상) 비밀번호로 답변을 연다
  *
  * 답변 주소로 바로 들어온 비회원은 열 원글 비밀번호 폼이 없어 「로그인 후 확인」만 봤다.
  * `verify-thread-password` 는 가까운 조상부터 비회원·비밀번호 있음·살아 있는 글을 후보로 비밀번호를

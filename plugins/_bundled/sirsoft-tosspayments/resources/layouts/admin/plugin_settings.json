@@ -1515,7 +1515,7 @@
                                                 "text": "$t:sirsoft-tosspayments.settings.use_escrow_hint"
                                             },
                                             {
-                                                "comment": "에스크로를 쓸 때만 보인다. 폼 값(initLocal)은 설정을 그린 다음 박자에 들어오므로 그 전에는 받은 설정 값으로, 받기 전에는 「안 씀」으로 판단한다 — 받은 직후 한 박자에 안내가 번쩍이지 않게(#915 결함군)",
+                                                "comment": "에스크로를 쓸 때만 보인다. 폼 값(initLocal)은 설정을 그린 다음 박자에 들어오므로 그 전에는 받은 설정 값으로, 받기 전에는 「안 씀」으로 판단한다 — 받은 직후 한 박자에 안내가 번쩍이지 않게",
                                                 "id": "escrow_operation_notice",
                                                 "type": "basic",
                                                 "name": "Div",

@@ -37,7 +37,7 @@ class CreateMenuRequest extends FormRequest
             'name' => ['required', new LocaleRequiredTranslatable(maxLength: 255)],
             'slug' => ['required', 'string', 'max:255', Rule::unique(Menu::class, 'slug')],
             'url' => 'nullable|string|max:500',
-            // 레거시 icon 문자열은 FA 클래스만 받는다(#381) — 이미지·SVG 는 icon_spec 으로. 클래스가 아닌 문자열은 원래 빈 칸으로 저장되던 값이다.
+            // 레거시 icon 문자열은 FA 클래스만 받는다 — 이미지·SVG 는 icon_spec 으로. 클래스가 아닌 문자열은 원래 빈 칸으로 저장되던 값이다.
             'icon' => ['nullable', 'string', 'max:100', 'regex:'.MenuIconSpec::CLASS_PATTERN],
             'icon_spec' => ['nullable', 'array', new MenuIconSpecRule(null)],
             'parent_id' => ['nullable', 'integer', Rule::exists(Menu::class, 'id')],

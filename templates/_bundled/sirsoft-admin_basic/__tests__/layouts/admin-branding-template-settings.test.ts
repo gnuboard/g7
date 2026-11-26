@@ -1,6 +1,6 @@
 /**
  * @file admin-branding-template-settings.test.ts
- * @description 관리자 사이드바·모바일 헤더 로고가 관리자 템플릿 설정 로고를 먼저 쓰고, 비면 사이트 로고로 돌아가는지 잠근다 (#434).
+ * @description 관리자 사이드바·모바일 헤더 로고가 관리자 템플릿 설정 로고를 먼저 쓰고, 비면 사이트 로고로 돌아가는지 잠근다.
  *
  * - 로고 = `_global.templateSettings?.branding?.logo_url`(관리자 전용 변형) → 없으면 환경설정 `site_logo_url`
  * - 데스크톱 사이드바·모바일 헤더 두 곳이 같은 식을 쓴다 — 한쪽만 고치면 뷰포트에 따라 다른 로고가 보인다
@@ -64,7 +64,7 @@ const logoPair = (logoId: string): { logo: Node; name: Node } => {
     return { logo, name };
 };
 
-describe('_admin_base — 관리자 로고는 템플릿 설정 로고 → 사이트 로고 (#434)', () => {
+describe('_admin_base — 관리자 로고는 템플릿 설정 로고 → 사이트 로고', () => {
     // @scenario case=settings_layout
     // @effects template_settings_exposed_to_global, admin_logo_prefers_template_setting
     it.each([

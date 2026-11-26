@@ -1,6 +1,6 @@
 // e2e:allow [에러 처리] 탭 저장 모양 회귀 단위(RTL) — 굽기 산출(최상위 actions)·코드 전용 동작 보존. 라이브는 이력의 Chrome MCP 매트릭스로 보강.
 /**
- * ErrorHandlingForm.actionShape.test.tsx — [에러 처리] 탭이 저장된 동작 모양을 잃지 않는다 (#753)
+ * ErrorHandlingForm.actionShape.test.tsx — [에러 처리] 탭이 저장된 동작 모양을 잃지 않는다
  *
  * 관리자 > 템플릿 > 레이아웃 편집 > 페이지 설정 > 오류 처리 에서:
  *  ① 순차 실행 하위 목록을 `params.actions` 에서만 읽어, 굽기 산출 모양(최상위 `actions`)이면 빈 목록으로 보였다.
@@ -36,7 +36,7 @@ const renderForm = (value: Record<string, unknown>, onChange = vi.fn()) => {
   return onChange;
 };
 
-describe('ErrorHandlingForm — 저장 모양 보존 (#753)', () => {
+describe('ErrorHandlingForm — 저장 모양 보존', () => {
   /**
    * @scenario stored_shape=top_level_actions
    * @effects editor_reads_both_sequence_shapes

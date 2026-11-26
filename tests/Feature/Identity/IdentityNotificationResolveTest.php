@@ -14,7 +14,7 @@ use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
- * 본인인증 알림 해석 계약 테스트 (#699 — 옛 IdentityMessageResolverTest 이식)
+ * 본인인증 알림 해석 계약 테스트 (옛 IdentityMessageResolverTest 이식)
  *
  * 옛 Resolver 의 다섯 계약(목적 정의 선택·목적 비활성 시 기본 폴백·전부 비활성 시 실패·템플릿 비활성 시
  * 실패·정책 정의 우선)이 알림 type 후보 해석에서 그대로 성립하는지, 실제로 기록된 발송 로그의

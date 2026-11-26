@@ -1,4 +1,4 @@
-feature: 웹서버 파일 위임 (X-Sendfile / X-Accel-Redirect, #878)
+feature: 웹서버 파일 위임 (X-Sendfile / X-Accel-Redirect)
 
 description: |
   로컬 파일 응답을 PHP 가 읽어 보내는 대신 웹서버(Apache mod_xsendfile · nginx X-Accel-Redirect)가 보내게 하는

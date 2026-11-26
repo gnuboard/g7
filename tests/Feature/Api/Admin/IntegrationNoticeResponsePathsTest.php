@@ -17,7 +17,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * 관리자 업데이트·파일 설치·GitHub 설치 응답에도 선택 연동 안내가 실린다 (#822 D10·§3.3)
+ * 관리자 업데이트·파일 설치·GitHub 설치 응답에도 선택 연동 안내가 실린다
  *
  * 설치 창(일반 설치)·활성화 응답만 `integration_notices` 를 싣고, 업데이트 응답과 ZIP·GitHub 설치 응답은
  * 빠뜨려 관리자 화면에서 안내가 사라졌다(매니저 결과·Artisan 출력에는 있었음). 세 확장 유형 × 세 경로를 모두 잰다.

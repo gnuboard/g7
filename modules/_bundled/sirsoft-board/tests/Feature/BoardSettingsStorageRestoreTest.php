@@ -8,7 +8,7 @@ use Modules\Sirsoft\Board\Services\BoardSettingsService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 시험이 쓴 게시판 설정이 다음 시험으로 새지 않는지 검증 (#789 P17)
+ * 시험이 쓴 게시판 설정이 다음 시험으로 새지 않는지 검증
  *
  * 설정 저장소는 DB 롤백이 닿지 않는 실제 디렉터리다. 신고 알림 시험이 저장한 `auto_hide_threshold = 100`
  * 이 되돌려지지 않아 뒤에 도는 샘플 시더 시험이 환경에 따라 실패했다. 앞 시험이 쓰고, 뒤 시험이

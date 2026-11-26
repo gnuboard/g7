@@ -25,7 +25,7 @@ use Plugins\Sirsoft\MessageBizppurio\Models\BizppurioTemplate;
 use Plugins\Sirsoft\MessageBizppurio\Services\BizppurioTemplateService;
 
 /**
- * 비즈뿌리오 알림 템플릿 라이프사이클 컨트롤러 (#597 §3.2).
+ * 비즈뿌리오 알림 템플릿 라이프사이클 컨트롤러.
  *
  * 시스템 등록(draft) → 검수 신청(requested) → 승인(approved) 후 발송 활성화의 전 흐름을
  * 담당한다. 발송 판정은 DB 가 유일한 근거이며(실시간 조회 폐지), 카카오와의 상태 정합은

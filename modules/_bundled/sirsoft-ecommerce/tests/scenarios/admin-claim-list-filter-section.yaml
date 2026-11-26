@@ -1,4 +1,4 @@
-feature: 관리자 클레임 목록 필터 섹션 (#599 S8a — D21/D27/D28)
+feature: 관리자 클레임 목록 필터 섹션 (D21/D27/D28)
 
 description: |
   클레임 목록의 필터 카드는 주문관리 `modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_list/_partial_filter_section.g7.html` 의 구조를 정본으로
@@ -63,7 +63,7 @@ effects:
   - requester_search_reads_orderer_name_from_shipping_address
   # 회원구분 축도 같은 계열이다 — 신청자 컬럼(`requested_by`·`cancelled_by`)은 비회원 신청과
   # **운영자 대리 접수**가 똑같이 null 이라 회원 주문의 운영자 접수 건이 「비회원」 목록에 선다.
-  # 판정은 주문의 주인(`order.user_id`)이 한다 — 모델 `isGuestRequest()` 와 같은 기준(#599 세션A).
+  # 판정은 주문의 주인(`order.user_id`)이 한다 — 모델 `isGuestRequest()` 와 같은 기준.
   - claim_list_requester_filter_reads_order_owner
   # 상품명은 다국어 JSON — 평문 like 는 한글을 영영 못 만난다(영문만 걸려 결함이 가려진다)
   - product_name_search_matches_korean_not_only_ascii

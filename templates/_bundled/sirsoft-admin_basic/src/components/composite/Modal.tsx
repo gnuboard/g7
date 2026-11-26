@@ -161,10 +161,10 @@ export const Modal: React.FC<ModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   // 제목 id 는 창마다 달라야 한다 — 고정 `modal-title` 이면 겹친 창(정보 위 라이선스 등)의 이름이
-  // 문서에서 먼저 나온 아래 창 제목으로 읽혔다(#736 F 실측). 클래스 `modal-title` 은 그대로 둔다.
+  // 문서에서 먼저 나온 아래 창 제목으로 읽혔다. 클래스 `modal-title` 은 그대로 둔다.
   const titleId = `modal-title-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
-  // ESC 키로 모달 닫기 — 맨 위 창 하나만 닫는다(#736 S2 — 열린 창마다 리스너가 있어 Esc 한 번에 전부 닫혔다).
+  // ESC 키로 모달 닫기 — 맨 위 창 하나만 닫는다(열린 창마다 리스너가 있어 Esc 한 번에 전부 닫혔다).
   // 순서는 열린 시점으로 정하므로 onClose·closeOnEscape 는 ref 로 읽어 다시 그려져도 순서가 바뀌지 않게 한다.
   const onCloseRef = useRef(onClose);
   const closeOnEscapeRef = useRef(closeOnEscape);
@@ -293,7 +293,7 @@ export const Modal: React.FC<ModalProps> = ({
     const ownerPath = editorSlot ? __componentContext?.componentPath : undefined;
     // 데이터 컨텍스트와 상태 범위는 엔진이 본문 자식을 그릴 때와 같게 준다 — Modal 노드의 확장 컨텍스트와
     // 컴포넌트 컨텍스트. 빈 객체로 그리면 `{{_global.isDeleting}}`·`{{_local.form.x}}` 가 늘 비어
-    // 지우는 중 비활성·진행 표시와 방금 친 값을 읽는 단추가 고정 하단에서 동작하지 않았다(#869 P1).
+    // 지우는 중 비활성·진행 표시와 방금 친 값을 읽는 단추가 고정 하단에서 동작하지 않았다.
     const footerDataContext = __dataContext ?? __componentContext?.parentDataContext ?? {};
 
     return components.map((componentDef, index) => (
@@ -384,7 +384,7 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Footer — 본문 스크롤 영역 밖이라 내용이 길어도 액션 버튼이 항상 보인다.
             640 이하에서는 단추를 세로로 쌓고 폭을 채운다 — 폭 미디어가 없는 바탕(`modal-footer-bar`)에 렌더 폭으로 더한다.
-            단추가 각자 `if` 로 모두 빠지면 줄이 비므로 `empty:hidden` 으로 테두리와 여백까지 숨긴다(#869 C1) */}
+            단추가 각자 `if` 로 모두 빠지면 줄이 비므로 `empty:hidden` 으로 테두리와 여백까지 숨긴다 */}
         {footer && footer.length > 0 && (
           <Div className={isWidthAtMost(renderWidth, NARROW_FOOTER_MAX_WIDTH) ? 'modal-footer-bar empty:hidden flex-col gap-2 [&_.btn]:w-full' : 'modal-footer-bar empty:hidden'}>
             {renderLayoutComponents(footer, 'footer', 'footer')}

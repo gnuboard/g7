@@ -1,6 +1,6 @@
 /**
  * @file admin-notification-template-site-admin-email.test.tsx
- * @description 코어 알림 템플릿 편집 창 — 받는 사람 「사이트 관리자 이메일」 선택지와 안내 (#888)
+ * @description 코어 알림 템플릿 편집 창 — 받는 사람 「사이트 관리자 이메일」 선택지와 안내
  *
  * 받는 사람 규칙의 종류에 「사이트 관리자 이메일」(환경설정 > 일반의 관리자 이메일, 메일만)이 있고, 고르면 값 칸 없이
  * 그 사실과 빈 값의 결과를 밝히는 안내(`rcpt_site_admin_email_hint_*`)만 보인다. 다른 종류에서는 안내가 없다.

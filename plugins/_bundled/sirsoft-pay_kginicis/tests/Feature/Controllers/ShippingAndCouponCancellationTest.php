@@ -67,7 +67,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
         // HookArgumentSerializer PHP 8.1 enum 직렬화 버그 우회
         Queue::fake();
 
-        // 자동 환불(auto_advance_refund)로 취소하므로 환불 실행 권한도 필요하다(#764 서버 권한 정리)
+        // 자동 환불(auto_advance_refund)로 취소하므로 환불 실행 권한도 필요하다(서버 권한 정리)
         $this->adminUser = $this->createAdminUser(['sirsoft-ecommerce.orders.update', 'sirsoft-ecommerce.claims.execute-refund']);
         $this->createCancelSequences();
 
@@ -584,7 +584,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
     }
 
     /**
-     * **접수만 한 취소**는 PG API 를 부르지 않는다. (#599 후속 P2·D3)
+     * **접수만 한 취소**는 PG API 를 부르지 않는다.
      *
      * 예전의 `cancel_pg=false` 자리다. 그 플래그는 없앴다 — 끈 채로 카드 취소를 하면 PG 를
      * 부르지 않고도 환불이 `완료`로 찍혀, **고객 카드는 그대로인데 장부만 환불완료**가 됐다.

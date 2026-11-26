@@ -272,7 +272,7 @@ class PageAttachmentService
             // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
             $newPath = date('Y/m/d').'/'.$attachment->stored_filename;
 
-            // 파일 이동 — 페이지 저장 트랜잭션 안에서는 복사해 두고 커밋되면 원본을 지운다 (StorageTransaction, #883).
+            // 파일 이동 — 페이지 저장 트랜잭션 안에서는 복사해 두고 커밋되면 원본을 지운다 (StorageTransaction).
             // 디스크는 행이 정한다.
             //
             // 읽기 실패를 조용히 지나가지 않는다. 종전에는 `if ($content)` 라 ①읽기 실패
@@ -309,7 +309,7 @@ class PageAttachmentService
         // 같은 클래스의 서빙·삭제·이동·정리 네 경로 중 이 한 지점만 어긋나 있었고, 형제
         // 둘(ecommerce·board)은 이미 disk 별 순회를 갖는다.
         // 부수 작업이라 실패해도 연결을 되돌리지 않는다. 막 옮긴 대용량 파일을 운영체제가
-        // 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던져 저장 전체가 500 이 되고 파일·DB 경로가 어긋났다(#703 게시판 실측).
+        // 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던져 저장 전체가 500 이 되고 파일·DB 경로가 어긋났다(게시판 실측).
         // 원본 삭제가 커밋 뒤라 정리도 커밋 뒤에 한다.
         $tempDisks = $tempAttachments->pluck('disk')->filter()->unique();
         StorageTransaction::afterCommit(function () use ($tempDisks, $tempKey) {
@@ -349,7 +349,7 @@ class PageAttachmentService
         // 삭제가 다른 디스크를 향해 파일이 남고, 행은 지워져 그 파일을 다시
         // 가리키는 것이 사라진다 — 오류도 로그도 없이 스토리지에만 쌓인다.
         //
-        // 트랜잭션 안(페이지 삭제 등)이면 커밋된 뒤에 지워, 롤백되어 행이 되돌아와도 파일이 남게 한다 (#887)
+        // 트랜잭션 안(페이지 삭제 등)이면 커밋된 뒤에 지워, 롤백되어 행이 되돌아와도 파일이 남게 한다
         StorageTransaction::deleteAfterCommit($this->storageForRow($attachment->disk), 'attachments', $attachment->path);
 
         // DB 행 삭제
@@ -369,7 +369,7 @@ class PageAttachmentService
      *
      * 파일 → 행 순서를 지켜, 행이 먼저 사라져 파일을 못 찾는 상태를 만들지 않습니다.
      * 본문 미디어 임시 행(`collection = content_media`)은 대상이 아닙니다 — 코어 골격의 정리
-     * (`PageContentMediaService::pruneStaleTemp`)가 공용 삭제 훅과 함께 지웁니다 (#887).
+     * (`PageContentMediaService::pruneStaleTemp`)가 공용 삭제 훅과 함께 지웁니다.
      *
      * @param  int  $days  보존기간(일)
      * @param  int  $limit  한 회차에 처리할 최대 건수

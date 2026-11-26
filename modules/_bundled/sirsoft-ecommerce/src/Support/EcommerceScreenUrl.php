@@ -7,7 +7,7 @@ namespace Modules\Sirsoft\Ecommerce\Support;
 use App\Support\ScreenUrl;
 
 /**
- * 이커머스 화면 주소 — 코어 화면 주소 헬퍼({@see ScreenUrl})의 이커머스 래퍼 (#792).
+ * 이커머스 화면 주소 — 코어 화면 주소 헬퍼({@see ScreenUrl})의 이커머스 래퍼.
  *
  * 사람이 여는 주소(알림 메일 링크·주문 완료 이동·결제 뒤 복귀·검색·사이트맵)는 이 래퍼로 만들어 「사용자 화면 URL」과
  * 주소 필터 `core.screen_url.filter_path` 를 따른다. 상점 주소 접두(`/shop` 등)는 부를 때마다 {@see ShopPathResolver}
@@ -167,7 +167,7 @@ final class EcommerceScreenUrl
     }
 
     /**
-     * 마이페이지 쿠폰함 — `/mypage/coupons`. (#952)
+     * 마이페이지 쿠폰함 — `/mypage/coupons`.
      *
      * @param  bool  $absolute  절대 URL 여부
      * @return string 주소
@@ -178,7 +178,7 @@ final class EcommerceScreenUrl
     }
 
     /**
-     * 마이페이지 내 리뷰 — `/mypage/reviews`. (#952)
+     * 마이페이지 내 리뷰 — `/mypage/reviews`.
      *
      * @param  bool  $absolute  절대 URL 여부
      * @return string 주소
@@ -189,7 +189,7 @@ final class EcommerceScreenUrl
     }
 
     /**
-     * 쿠폰존 — 상점 주소 하위 `coupons`. (#952)
+     * 쿠폰존 — 상점 주소 하위 `coupons`.
      *
      * @param  bool  $absolute  절대 URL 여부
      * @return string 주소

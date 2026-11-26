@@ -4,7 +4,7 @@
  * `handleSequence()` 는 단계마다 `data` 를 `...context.data` 로 다시 만들어 `_global` 이 sequence 시작 시점의
  * 사본이다. `handleCloseModal()`·`handleOpenModal()` 이 그 사본의 `modalStack` 을 읽으면, 같은 sequence 안의
  * closeModal → openModal 이 방금 닫은 창을 되살린다 — 닫기는 `[]` 를 쓰고 열기는 낡은 `[A]` 에 쌓아 `[A, B]` 를 쓴다
- * (#712 실측: 관리자 확장 목록의 강제 활성 창 → 「언어팩 다시 켜기」 창).
+ * (관리자 확장 목록의 강제 활성 창 → 「언어팩 다시 켜기」 창).
  *
  * 트러블슈팅 `[case:state-setstate-44]` 의 회귀 그물이다.
  */
@@ -140,7 +140,7 @@ describe('ActionDispatcher 창 스택 — sequence 안의 closeModal/openModal',
   });
 
   /**
-   * 창 위에 뜬 안내 창에서 다른 화면으로 보낼 때처럼 `params.all` 을 주면 열린 창을 모두 닫는다 (engine-v1.95.0, #490 D-A3).
+   * 창 위에 뜬 안내 창에서 다른 화면으로 보낼 때처럼 `params.all` 을 주면 열린 창을 모두 닫는다 (engine-v1.95.0).
    *
    * 종전에는 맨 위 창만 닫혀, 장바구니 「옵션 변경」 창 위의 「추가 정보가 필요합니다」 창에서 「입력하러 가기」로 다녀오면
    * 옵션 변경 창이 전역 창 스택에 남아 다시 열려 있었다. 창마다 쌓인 레이아웃 문맥(`$parent` 용)도 함께 비운다.

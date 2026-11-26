@@ -9,7 +9,7 @@ use Plugins\Sirsoft\PayKginicis\Controllers\PaymentCallbackController;
 use Plugins\Sirsoft\PayKginicis\Controllers\UserEscrowConfirmController;
 
 /**
- * KG 이니시스 — 결제 뒤 복귀·에스크로 구매확인 복귀 주소 (#792 WP-U5)
+ * KG 이니시스 — 결제 뒤 복귀·에스크로 구매확인 복귀 주소
  *
  * 결제 성공·실패 뒤 복귀와 에스크로 모바일 복귀가 「사용자 화면 URL」을 베이스로 쓰는지 잠근다(서버가 받는 콜백 주소는 사이트 주소 그대로).
  */

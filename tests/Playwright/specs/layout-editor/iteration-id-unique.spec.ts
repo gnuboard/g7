@@ -12,7 +12,7 @@
  *  - 대시보드 반복 목록·게시판/이커머스 위젯 id 동적화.
  *
  * 본 spec 은 실제 브라우저 DOM 에서 중복 id 0 + 미보간 리터럴 0 을 잠근다(단위/시뮬레이션은
- * 보간 부재로 인한 reconciliation 합쳐짐을 포착하지 못해 실측이 필수 — feedback #238 계열).
+ * 보간 부재로 인한 reconciliation 합쳐짐을 포착하지 못해 실측이 필수).
  *
  * @scenario-manifest tests/scenarios/iteration-id-unique.yaml
  * 축 요약(마커 아님 — 평문): admin_dashboard_render, layout_editor_core_id_chip.

@@ -172,7 +172,7 @@ class VendoredAssetServingTest extends TestCase
     /**
      * AMD 로더는 URL 에 쿼리가 있으면 모듈 id 에 `.js` 를 붙이지 않는다 — 요청 준비 단계가 같은 이름의 `.js` 파일로
      * 경로를 보완하고, 경로 이탈·확장자 검증은 보완된 경로로 그대로 돈다. 확장자를 가로채는 서버에서 Monaco 가 뜨는
-     * 유일한 경로다(#712 후속). 로컬 E2E 가 서비스만 보완하던 첫 판에서 요청 검증(확장자 `main`)에 막혀 HTML 을 받는
+     * 유일한 경로다. 로컬 E2E 가 서비스만 보완하던 첫 판에서 요청 검증(확장자 `main`)에 막혀 HTML 을 받는
      * 것을 잡았다 — 그래서 요청 층에서 잰다.
      *
      * @scenario asset_class=vendored, outcome=loaded
@@ -363,7 +363,7 @@ class VendoredAssetServingTest extends TestCase
     #[Test]
     public function 빌드_산출물_정리가_동봉_자산을_보존한다(): void
     {
-        // `_bundled` 아래에 둔다 — 정리는 소스 디렉토리에서만 수행된다(#619). 활성 경로에서는
+        // `_bundled` 아래에 둔다 — 정리는 소스 디렉토리에서만 수행된다. 활성 경로에서는
         // 경고만 남기고 아무것도 지우지 않으므로, 그 경로에 두면 이 테스트가 재려는 것 자체가
         // 실행되지 않는다.
         $workspace = storage_path('framework/testing/_bundled/prune-'.uniqid());
@@ -506,7 +506,7 @@ class VendoredAssetServingTest extends TestCase
         $method->setAccessible(true);
 
         // publishTemplate 이 custom 원본을 **자기 호출로** 게시하는지 — 소스에 custom 전용 게시 호출이 있고
-        // 그 대상이 게시 루트의 `assets/custom` 임을 구조로 확인한다. #651 F7 부터 custom 게시는 dist 재귀 복사
+        // 그 대상이 게시 루트의 `assets/custom` 임을 구조로 확인한다. 이제 custom 게시는 dist 재귀 복사
         // (`publishDistAssets(…, excludeCustom: false)`)가 아니라 변경 감지와 같은 열거자를 쓰는
         // `publishCustomAssets()` 가 맡는다 — 종전 단언은 그 이전 소스 모양을 찾고 있었다.
         $source = file_get_contents(app_path('Services/ExtensionStaticCacheService.php'));

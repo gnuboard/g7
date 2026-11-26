@@ -6,7 +6,7 @@
  * TemplateApp 이 ErrorHandlingResolver.setTemplateConfig 로 등록하는 값)에 있는 코드인데 이 페이지에 동작이 없으면
  * 행에 〔템플릿〕 출처와 [덮기] 가 나와야 한다.
  *
- * 결함(#869 λ 실측): 셸(PageSettingsModal)이 templateCodes 로 병합본 키를 넘겨, 병합본에 있는 코드는 먼저 〔상속〕
+ * 결함: 셸(PageSettingsModal)이 templateCodes 로 병합본 키를 넘겨, 병합본에 있는 코드는 먼저 〔상속〕
  * 으로 판정되고 병합본에 없는 코드는 템플릿 코드로도 잡히지 않아 [덮기] 가 나올 수 없었다. 또 셸은 레이아웃이 따로
  * 선언한 코드(예 418)가 templateCodes 경로로 행이 된다고 보았지만 행 목록은 표준 코드로만 만들어져 그 코드를 편집기에서
  * 볼 수 없었다. 셸 배선은 PageSettingsModal.test.tsx 의 D-N 시험이 잰다.

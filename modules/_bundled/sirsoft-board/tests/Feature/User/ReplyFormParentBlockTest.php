@@ -12,7 +12,7 @@ use Illuminate\Testing\TestResponse;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 답글 작성 폼 진입 단계 부모글 차단 테스트 (#413-44)
+ * 답글 작성 폼 진입 단계 부모글 차단 테스트 (44)
  *
  * 블라인드/삭제된 부모글에 답글 작성 폼(form-meta/form-data)으로 직접 진입할 때
  * 폼이 열리며 부모글 원문(제목/본문)이 노출되는지 검증합니다.

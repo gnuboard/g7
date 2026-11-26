@@ -335,7 +335,7 @@ interface OrderRepositoryInterface
     public function listIssuedTaxInvoices(int $orderId): Collection;
 
     /**
-     * 회원 주문 중 고른 상태 이상에 도달한 가장 이른 주문을 반환합니다. (#952 첫구매 쿠폰)
+     * 회원 주문 중 고른 상태 이상에 도달한 가장 이른 주문을 반환합니다. (첫구매 쿠폰)
      *
      * 주문일(`ordered_at`)·ID 순 첫 건이다. 취소·반품완료 주문은 대상이 아니다. `$orConfirmedAt` 이면 확정 이력
      * (`confirmed_at`)이 있는 주문도 도달로 본다(구매확정 시점).

@@ -818,7 +818,7 @@ describe('ActionDispatcher - debounce flush', () => {
     });
   });
 
-  describe('flush 이후 데이터 문맥 (#476 — 타이핑 직후 저장)', () => {
+  describe('flush 이후 데이터 문맥 (타이핑 직후 저장)', () => {
     afterEach(() => {
       delete (window as any).G7Core;
     });

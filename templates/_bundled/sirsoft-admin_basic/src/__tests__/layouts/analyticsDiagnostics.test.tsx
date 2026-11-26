@@ -1,6 +1,6 @@
 /**
  * @file analyticsDiagnostics.test.tsx
- * @description 수집 진단 화면 런타임 계약 — 진행률은 방송이 기본, 폴링이 폴백 (이슈 #682 S3)
+ * @description 수집 진단 화면 런타임 계약 — 진행률은 방송이 기본, 폴링이 폴백
  *
  * 잠그는 것: 방송 소스가 `analytics.archive.progress` 를 받아 전역에 담고 끝나면 이력을 다시 받는 것, 소켓이 없고 실행 중 이력이
  * 있을 때만 2초 폴링을 거는 것, 상태 카드 4장이 한 줄 요약행인 것, 수동 집계 버튼이 update 권한과 실행 중 여부로 잠기는 것,
@@ -161,7 +161,7 @@ describe('상태 카드와 버튼', () => {
   // @effects reaggregate_modal_posts_range
   it('재집계 창은 from·to 없이는 잠기고 run_type=reaggregate 로 보내며 큐 안내 뒤 이력을 다시 받는다', () => {
     const btn = nodeById(modal, 'reaggregate_run_button');
-    // 잠금 식을 실제로 평가한다 — `!from` 하나만 문자열로 재면 `!to`·실행 중 잠금을 지워도 초록이었다(#682 S3 R16-D1).
+    // 잠금 식을 실제로 평가한다 — `!from` 하나만 문자열로 재면 `!to`·실행 중 잠금을 지워도 초록이었다.
     const [lockExpr] = scanBindings(String(btn?.props?.disabled ?? '')).map((b) => b.expr);
     expect(lockExpr, '실행 버튼 잠금 식').toBeTruthy();
     const locked = (reagg: Record<string, unknown>, running: boolean): boolean =>
@@ -194,7 +194,7 @@ describe('화면이 읽는 진단 키는 서버가 내려주는 키다', () => {
     // 라운드 4 까지 화면은 `trusted_proxy?.configured` 를 읽었다. 서버가 주는 이름은
     // `trusted_configured` 라서, 프록시 뒤 사이트가 TRUSTED_PROXIES 를 **올바로 설정해도**
     // 배지가 늘 「꺼짐」이었다 — 전 방문자가 1명으로 뭉치는 실제 미설정 사이트와 화면상
-    // 구분되지 않았다(#682 S3 라운드 5, §6.3-2). 오타는 조용하므로 모집단을 PHP 에서 파생한다.
+    // 구분되지 않았다. 오타는 조용하므로 모집단을 PHP 에서 파생한다.
     const php = fs.readFileSync(path.join(REPO_ROOT, 'app/Support/TrustedProxyDiagnostic.php'), 'utf8');
     const serverKeys = new Set([...php.matchAll(/^\s{16}'([a-z0-9_]+)' =>/gm)].map((m) => m[1]));
     expect(serverKeys.size, 'TrustedProxyDiagnostic::forRequest() 가 돌려주는 키').toBeGreaterThanOrEqual(7);

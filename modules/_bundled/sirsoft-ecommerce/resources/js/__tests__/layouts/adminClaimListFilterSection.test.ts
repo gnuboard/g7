@@ -130,7 +130,7 @@ describe('클레임 목록 필터 섹션 — 카드 구조 (D21)', () => {
       { id: 'requesterType_filter_row', order: 7 },
       { id: 'amount_filter_row', order: 8 },
       { id: 'chargePaymentMethod_filter_row', order: 9 },
-      // 관리자 접수 · 회수 기한 초과 · 환불 미접수 체크 묶음(#599 §3-11·§3-12)
+      // 관리자 접수 · 회수 기한 초과 · 환불 미접수 체크 묶음
       { id: 'claimFlags_filter_row', order: 10 },
     ]);
   });

@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Plugins\Sirsoft\MessageBizppurio\Enums\BizppurioTemplateStatus;
 
 /**
- * 비즈뿌리오 알림 템플릿 모델 (#597).
+ * 비즈뿌리오 알림 템플릿 모델.
  *
  * 알림 1건(notification_definitions.type)당 1행. 알림톡 템플릿의 카카오 등록
  * 페이로드(content)·승인 스냅샷(approved_content)·검수 상태와, 대체 SMS/SMS 단독
@@ -104,7 +104,7 @@ class BizppurioTemplate extends Model
     }
 
     /**
-     * 수신자 로케일의 SMS 본문을 반환합니다 (#597 §14.3).
+     * 수신자 로케일의 SMS 본문을 반환합니다.
      *
      * sms_body 는 다국어 맵이다. 코어 NotificationContentBehavior::getLocalizedBody() 와
      * 동일한 해석 규칙을 쓴다 — 해당 로케일이 없거나 비면 사이트 기본 언어 → 영어(#148, `LocalizedValue`),

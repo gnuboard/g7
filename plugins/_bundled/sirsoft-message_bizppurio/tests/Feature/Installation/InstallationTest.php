@@ -188,7 +188,7 @@ class InstallationTest extends PluginTestCase
     /**
      * Phase 4 발송 이력·알림 템플릿 테이블이 마이그레이션으로 생성된다.
      *
-     * bizppurio_notification_bindings 는 #597 개편으로 bizppurio_templates(알림톡 등록
+     * bizppurio_notification_bindings 는 알림톡 템플릿 개편으로 bizppurio_templates(알림톡 등록
      * 페이로드·승인 스냅샷·검수 상태 + SMS 본문)로 대체되었다.
      *
      * @effects phase4_tables_created_with_expected_columns

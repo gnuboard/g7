@@ -8,7 +8,7 @@ use Plugins\Sirsoft\Gdpr\Models\GdprUserConsent;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 
 /**
- * 이슈 #430 — 마이페이지 「내 동의 현황」 각 행의 상태별 표시 필드
+ * 마이페이지 「내 동의 현황」 각 행의 상태별 표시 필드
  * (status / status_label / status_at_formatted) 계산을 검증한다.
  *
  * 프론트 레이아웃은 status 로 색만 분기하고 표시 텍스트·날짜는 서버가 계산한 값을 그대로 렌더하므로,
@@ -86,7 +86,7 @@ class GdprUserConsentResourceTest extends PluginTestCase
 
     public function test_revoked_optional_maps_to_revoked_status_with_revoked_date_label(): void
     {
-        // 이슈 #509 16번 — 철회 이력이 있는 항목은 철회일 + '철회' 라벨을 노출한다
+        // 철회 이력이 있는 항목은 철회일 + '철회' 라벨을 노출한다
         // (배지는 신규 미선택과 함께 '미설정'(unset) 유지 — 배지 통합과 날짜 줄 노출은 별개).
         $consent = new GdprUserConsent([
             'consent_key' => 'cookie_marketing',

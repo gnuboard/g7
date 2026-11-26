@@ -305,7 +305,7 @@ describe('GDPR 알림 템플릿 편집 창 — 채널별 본문 편집기', () =
       expect(evalBinding(String(node.if), channelsCtx('sms', 'plain')), id).toBe(true);
     }
 
-    // 바닥 단추는 Modal 고정 하단(props.footer)에 있다(#869)
+    // 바닥 단추는 Modal 고정 하단(props.footer)에 있다
     const footer = { children: (modal as Json).props.footer } as Json;
     const coreButtons = findAll(footer, (n) => n.name === 'Button' && typeof n.if === 'string');
     expect(coreButtons.length, '미리보기·저장 버튼').toBe(2);

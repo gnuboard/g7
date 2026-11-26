@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderPrivacyRetentionService;
 use Throwable;
 
 /**
- * 종결 주문 개인정보 보유기간 핸들러 (이슈 #636)
+ * 종결 주문 개인정보 보유기간 핸들러
  *
  * 종결된 주문 가운데 종결 후 N년(기본 5년 — 전자상거래법 §6 보존기간)이 지난 것의 주문자·
  * 수령인 개인정보를 운영자가 고른 방식으로 처리합니다. 한 주문 안에서 무엇을 지우는지는
@@ -32,7 +32,7 @@ use Throwable;
  * 테이블을 함께 봅니다 — 주문 상태 두 갈래만 보면 전체취소 뒤 무통장 환불이 아직 송금 전(승인 대기)인
  * 주문까지 파기되어, 환불 계좌 정보가 사라진 채 송금할 수 없게 됩니다.
  *
- * 교환·반품(#599)도 주문 상태를 바꾸지 않고 주문 곁에서 진행되므로 같은 이유로 봅니다 — 구매확정 뒤에도
+ * 교환·반품도 주문 상태를 바꾸지 않고 주문 곁에서 진행되므로 같은 이유로 봅니다 — 구매확정 뒤에도
  * 신청·직권 접수가 가능해, 처리 중인 신청서의 환불 계좌·재배송지를 지우면 회수·재발송·환불을 끝낼 수
  * 없습니다. 거절·철회로 끝난 신청서(환불 포함)는 진행 중이 아니고 종결 시각도 늦추지 않습니다.
  *
@@ -307,7 +307,7 @@ class OrderRetentionHandler implements PrivacyRetentionHandlerInterface
             })
             // 진행 중인 환불이 있으면 종결이 아니다 — 송금 전 환불 계좌 정보를 지우면 환불할 수 없다.
             // 끝난 상태는 enum 이 정한다(완료·거절·철회) — 철회된 환불신청서를 진행 중으로 읽으면 그 주문은
-            // 영영 대상이 되지 못한다(#599 가 철회를 들였다).
+            // 영영 대상이 되지 못한다(철회 상태는 나중에 들어왔다).
             ->whereDoesntHave('refunds', function (Builder $refund) {
                 $refund->whereNotIn('refund_status', self::values(RefundStatusEnum::finalStatuses()));
             })
@@ -316,7 +316,7 @@ class OrderRetentionHandler implements PrivacyRetentionHandlerInterface
                 $refund->where('refund_status', RefundStatusEnum::COMPLETED->value)
                     ->where('refunded_at', '>', $cutoff);
             })
-            // 교환·반품(#599)도 같다 — 진행 중이면 종결이 아니고, 기준일 뒤에 완료됐으면 종결이 그만큼 늦다.
+            // 교환·반품도 같다 — 진행 중이면 종결이 아니고, 기준일 뒤에 완료됐으면 종결이 그만큼 늦다.
             ->whereDoesntHave('exchanges', function (Builder $exchange) {
                 $exchange->whereNotIn('exchange_status', self::values(ExchangeStatusEnum::finalStatuses()));
             })

@@ -4,7 +4,7 @@
  * 템플릿 엔진의 초기화, 렌더링, 데이터 업데이트, 정리 기능 테스트
  * (매니페스트 core-template-engine-entry-nu2.yaml)
  *
- * #869: 건너뛰던 시험 5건을 현재 계약으로 살렸다. 네 건은 initTemplateEngine 이 컴포넌트를 로드하던
+ * 건너뛰던 시험 5건을 현재 계약으로 살렸다. 네 건은 initTemplateEngine 이 컴포넌트를 로드하던
  * 옛 설계를 전제로 했다(지금은 TemplateApp 이 routes.json 과 병렬로 로드). 실패와 롤백은 지금도 인스턴스
  * 준비 중 예외로 일어나므로 그 지점에서 잰다. startTransition 시험은 react 를 실제 구현으로 통과시키는
  * 모의로 호출만 센다.

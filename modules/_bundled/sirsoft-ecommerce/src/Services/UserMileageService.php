@@ -454,7 +454,7 @@ class UserMileageService
         if ($type === MileageTransactionTypeEnum::PURCHASE_EARN
             && $this->ledger->findEarnLotForOption($option->id) !== null) {
             $increased = $this->applyDeltaToExistingEarnLot($order, $option, $currency, $target - $chainEarned);
-            // 증액 경로는 이번에 늘어난 **증액분**만 알린다 (#952)
+            // 증액 경로는 이번에 늘어난 **증액분**만 알린다
             $this->notifyEarned((int) $order->user_id, $amount, $currency, 'purchase', $increased);
 
             return $increased;
@@ -807,7 +807,7 @@ class UserMileageService
      * 왜 그렇게 되는가 — 회수액 기준이 lot 의 `amount`(원 적립액)인데, 그 lot 의 `remaining_amount`
      * 는 사용·만료로 이미 줄어 있을 수 있다. 모자란 만큼은 `recoverPoints()` 가 **다른 lot 에서
      * FIFO 로** 가져갔고, 전액을 가져가면 `shortfall` 이 0 이라 `metadata` 에 흔적조차 남지 않았다.
-     * (2026-09-22 #599 실측: 만료로 잔여 0 이 된 1,260원 적립을 회수하자
+     * (2026-09-22 실측: 만료로 잔여 0 이 된 1,260원 적립을 회수하자
      *  관리자 지급 lot 이 34,000 → 32,740 으로 깎였다. 회원은 같은 1,260원을 소멸과 회수로 두 번 잃었다.)
      *
      * 부분 반품에서 과다 회수되던 것도 함께 사라진다 — 주문옵션이 분할돼도 적립 lot 은 분할 전
@@ -1037,7 +1037,7 @@ class UserMileageService
             'deduct_exceeds_balance',
         );
 
-        // 관리자 차감 알림 (#952) — 금액은 양수로 넘긴다
+        // 관리자 차감 알림 — 금액은 양수로 넘긴다
         try {
             $user = $this->userRepository->findById($userId);
             if ($user !== null) {
@@ -1059,7 +1059,7 @@ class UserMileageService
     }
 
     /**
-     * 마일리지 적립 알림 훅을 발화합니다. (#952)
+     * 마일리지 적립 알림 훅을 발화합니다.
      *
      * 탈퇴 즉시 소멸(forfeit)된 적립·0원 적립·회원이 없는 적립에서는 발화하지 않는다. 기존 `mileage.earn`(결제완료 시점의
      * 「적립 예정」)과는 다른 사건이다. 알림 실패가 적립을 막지 않는다.
@@ -1681,7 +1681,7 @@ class UserMileageService
      * 주문 시 사용(`ORDER_USE`)과 같은 거래 유형을 쓰되 `claim_payment_id` 로 결제 건에 묶는다 —
      * 결제에 쓴 마일리지는 주문 사용과 성격이 같아 분류·배지를 그대로 공유하므로 별도 유형을 두지 않는다.
      *
-     * 멱등은 **이 메서드가 스스로 지킨다**(#599 validate P2 #10). 결제 건 행을 잠근 트랜잭션
+     * 멱등은 **이 메서드가 스스로 지킨다**(validate P2 #10). 결제 건 행을 잠근 트랜잭션
      * 안에서 같은 결제 건의 사용 거래가 있는지 다시 보고, 있으면 그 거래를 돌려준다. 호출부
      * (`ClaimPaymentService::payWithMileage()`)도 잠그지만, 그 계약에만 기대면 잠그지 않는 새
      * 호출부 하나가 같은 결제 건으로 두 번 차감한다.
@@ -1725,7 +1725,7 @@ class UserMileageService
      * 환급 lot 은 원본 만료를 승계하지 않고 신규 발행한다(취소 복원과 같은 정책).
      *
      * 「기환급액 확인 → 환급 거래 생성」은 **결제 건 행을 잠근 트랜잭션 안**에서 한다
-     * (#599 validate P2 #10). 잠금 없이 두 요청(철회와 차액 정산 등)이 같은 기환급액을 읽으면
+     * (validate P2 #10). 잠금 없이 두 요청(철회와 차액 정산 등)이 같은 기환급액을 읽으면
      * 둘 다 상한 안이라고 판단해 각자 lot 을 발행한다 — 낸 마일리지보다 더 돌려준다.
      *
      * @param  int  $userId  사용자 ID

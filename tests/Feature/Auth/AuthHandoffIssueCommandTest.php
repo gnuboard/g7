@@ -13,7 +13,7 @@ use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
- * 무묶음 로그인 인계 발급 명령 `auth:handoff-issue` (#798 K2)
+ * 무묶음 로그인 인계 발급 명령 `auth:handoff-issue`
  *
  * 실측·시험용으로 브라우저에 묶지 않은 코드를 만든다 — 묶음 쿠키 없이 교환되고, 운영 환경에서는 거절한다.
  */

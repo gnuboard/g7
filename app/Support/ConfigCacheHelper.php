@@ -73,7 +73,7 @@ class ConfigCacheHelper
      * config 캐시를 다시 굽습니다 — 임시 파일에 다 구운 뒤 실제 파일과 바꿔 끼웁니다(`AtomicBootstrapCache`).
      *
      * 굽는 동안 실제 파일은 그대로 남아 다른 요청이 계속 쓴다 — 종전처럼 먼저 지우면 그 사이 요청이
-     * 비캐시 부팅하거나 반쯤 쓰인 파일을 만났다(#882).
+     * 비캐시 부팅하거나 반쯤 쓰인 파일을 만났다.
      *
      * 설치 미완료(installer 실행 전) 환경에서는 config:cache 가 불완전한 부팅을
      * 캐시에 박제해 부팅 실패를 유발할 수 있으므로, clear 만 수행하고 재생성은 건너뛴다.
@@ -107,7 +107,7 @@ class ConfigCacheHelper
         }
 
         try {
-            // 먼저 지우지 않는다 — 지운 뒤 굽는 사이 다른 요청이 비캐시 부팅·반쯤 쓰인 파일을 만났다(#882).
+            // 먼저 지우지 않는다 — 지운 뒤 굽는 사이 다른 요청이 비캐시 부팅·반쯤 쓰인 파일을 만났다.
             // 임시 파일에 다 구운 뒤 실제 파일과 바꿔 끼우고, 굽기가 실패하면 그때 낡은 캐시를 지운다.
             AtomicBootstrapCache::regenerate(
                 'APP_CONFIG_CACHE',
@@ -131,7 +131,7 @@ class ConfigCacheHelper
      * 1. `Application` 생성자의 `Container::setInstance()` — 그 순간부터 `app()` 헬퍼가 실행 중인 앱이
      *    아니라 일회용 앱을 가리킨다. 같은 프로세스에서 그 뒤에 등록되는 `app()->terminating()` 콜백은
      *    종료되지 않는 앱에 걸려 **영원히 실행되지 않는다** — 설정 저장 뒤의 확장 캐시 버전 bump 가
-     *    예약한 정적 재게시가 그렇게 조용히 사라졌다(#651 F5 실측: 버전은 올랐는데 게시는 다음 렌더의
+     *    예약한 정적 재게시가 그렇게 조용히 사라졌다(버전은 올랐는데 게시는 다음 렌더의
      *    자가 치유까지 미뤄짐).
      * 2. `registerBaseBindings()` 의 `Facade::clearResolvedInstances()` + `Facade::setFacadeApplication()`
      *    — 그 순간부터 **모든 파사드**(`Artisan`·`Log`·`DB`·`Cache` …)가 일회용 앱에서 새 인스턴스를

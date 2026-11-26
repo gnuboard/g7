@@ -279,7 +279,7 @@ describe('initPreferredCurrency — 게스트 사이트 언어(g7_locale) 기반
     });
 });
 
-describe('initPreferredCurrency — 관리자 화면은 언어로 통화를 추정하지 않는다 (#869 S13)', () => {
+describe('initPreferredCurrency — 관리자 화면은 언어로 통화를 추정하지 않는다', () => {
     /**
      * 2차 브라우저 실측 때의 개발 설치본 통화 설정 — 기본 통화 JPY, ko 는 KRW 하나에 매칭,
      * en 은 CNY 와 EUR 둘에 매칭(기본 아님 → 모호).

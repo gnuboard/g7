@@ -66,7 +66,7 @@ class RegisterTossPaymentMethodsListener implements HookListenerInterface
             'icon' => 'mobile-screen-button',
             'brand_mark' => ['text' => 'S', 'class' => 'paytosspayments:bg-blue-600 paytosspayments:text-white'],
         ],
-        // 애플페이 A/검정, 엘페이 L/보라, SSG페이 SSG/진한 빨강 — 나이스페이먼츠와 같은 배지 (#933)
+        // 애플페이 A/검정, 엘페이 L/보라, SSG페이 SSG/진한 빨강 — 나이스페이먼츠와 같은 배지
         'toss_applepay' => [
             'icon' => 'mobile-screen-button',
             'brand_mark' => ['text' => 'A', 'class' => 'paytosspayments:bg-gray-900 paytosspayments:text-white'],
@@ -182,7 +182,7 @@ class RegisterTossPaymentMethodsListener implements HookListenerInterface
             'defaults' => [
                 // 토스 결제수단은 토스 결제창을 통해서만 처리되므로 PG 를 자기 자신으로 고정한다.
                 // null 로 두면 코어가 PG 없는 결제수단으로 오인해 결제 실패 주문에 관리자 알림이
-                // 발송되고 임시주문이 삭제되어 재결제가 막힌다(#475). 또한 관리자 화면이 "PG 고정"
+                // 발송되고 임시주문이 삭제되어 재결제가 막힌다. 또한 관리자 화면이 "PG 고정"
                 // 배지 대신 선택지가 비어 있는 PG 셀렉트를 그린다 — 토스 PG 는 자기 결제수단 id 를
                 // supported_methods 로 선언하지 않으므로 고를 수 있는 항목이 하나도 없다.
                 'pg_provider' => self::PG_PROVIDER_ID,

@@ -361,7 +361,7 @@ describe('admin_language_pack_list 레이아웃 렌더링 (계획서 §16.10)', 
     testUtils.cleanup();
   });
 
-  it('케이스 78: 카드형 UI — CardGrid 데이터 + 카드별 액션 영역 렌더 (#263 후속)', async () => {
+  it('케이스 78: 카드형 UI — CardGrid 데이터 + 카드별 액션 영역 렌더', async () => {
     const TestCardGrid: React.FC<any> = ({ data, cardColumns, 'data-testid': testId }) => (
       <div data-testid={testId || 'card-grid'}>
         {(data ?? []).map((row: any, idx: number) => (
@@ -438,7 +438,7 @@ describe('admin_language_pack_list 레이아웃 렌더링 (계획서 §16.10)', 
     utils.cleanup();
   });
 
-  it('케이스 79: 미설치 번들 (status=uninstalled) — install 버튼 노출, Toggle 미노출 (#263 후속)', async () => {
+  it('케이스 79: 미설치 번들 (status=uninstalled) — install 버튼 노출, Toggle 미노출', async () => {
     const installVisibilityLayout = {
       version: '1.0.0',
       layout_name: 'lp_install_visibility',

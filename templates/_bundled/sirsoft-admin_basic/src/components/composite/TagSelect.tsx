@@ -76,7 +76,7 @@ export const TagSelect: React.FC<TagSelectProps> = ({
     [options]
   );
 
-  // 지운 뒤 포커스 — 같은 자리의 다음 지우기 단추, 마지막이면 앞 단추, 모두 지웠으면 태그 상자(#869 키보드 접근).
+  // 지운 뒤 포커스 — 같은 자리의 다음 지우기 단추, 마지막이면 앞 단추, 모두 지웠으면 태그 상자(키보드 접근).
   // 입력칸이 없는 부품이라 상자가 마지막 자리다(tabIndex -1 — Tab 순서에는 넣지 않는다)
   const containerRef = useRef<HTMLDivElement>(null);
   const markRemoved = useRemovalFocus(containerRef, '[data-tag-remove]', (remaining, index) => remaining[index - 1] ?? containerRef.current);
@@ -115,7 +115,7 @@ export const TagSelect: React.FC<TagSelectProps> = ({
                 className={`${STYLES.tagRemove} rounded ${FOCUS_VISIBLE_RING}`}
                 data-tag-remove=""
                 onClick={() => handleRemove(item.value)}
-                // Tab 으로 닿고 Enter·Space 로 지운다(#869 키보드 접근)
+                // Tab 으로 닿고 Enter·Space 로 지운다(키보드 접근)
                 {...keyboardActivationProps(() => handleRemove(item.value))}
                 role="button"
                 aria-label={tOr('common.tag_input.remove', `Remove ${item.label}`, { label: item.label })}

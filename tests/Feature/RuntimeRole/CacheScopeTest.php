@@ -13,7 +13,7 @@ use App\Services\SettingsService;
 use Tests\TestCase;
 
 /**
- * 캐시 범위 — 검수 서버(stage)의 Code 범위 키는 `g7:stage:` 아래로 가고 Data 범위 키는 공유한다 (#888).
+ * 캐시 범위 — 검수 서버(stage)의 Code 범위 키는 `g7:stage:` 아래로 가고 Data 범위 키는 공유한다.
  *
  * @scenario-manifest tests/scenarios/runtime-role-cache-scope.yaml
  */
@@ -99,7 +99,7 @@ class CacheScopeTest extends TestCase
     }
 
     /**
-     * 레이아웃 해석 캐시(`layout_resolver.{템플릿ID}.{이름}`)는 서버마다 따로다 — 값이 그 서버 역할의 레이아웃 표 행 ID 라서다 (#888).
+     * 레이아웃 해석 캐시(`layout_resolver.{템플릿ID}.{이름}`)는 서버마다 따로다 — 값이 그 서버 역할의 레이아웃 표 행 ID 라서다.
      *
      * 종전 Code 패턴 `^layout\.` 은 `layout_resolver.` 와 맞지 않아 공유됐다. 검수 서버 전용 행 ID(10억 이상)가 들어가면 운영 서버가
      * 그 ID 로 찾다 null(404)이 되고, 「해석 결과 없음」 표식 0 이 들어가면 상대 서버가 그 화면을 찾지 못했다.
@@ -124,7 +124,7 @@ class CacheScopeTest extends TestCase
     }
 
     /**
-     * 시스템 정보 캐시(`settings.system_info.{locale}`)는 서버마다 따로다 — 판·설치 경로·PHP 등 그 서버의 값이다 (#888).
+     * 시스템 정보 캐시(`settings.system_info.{locale}`)는 서버마다 따로다 — 판·설치 경로·PHP 등 그 서버의 값이다.
      *
      * 공유되면 운영 서버 관리자 [환경설정 > 시스템 정보] 에 검수 서버의 판·경로가 최대 1시간 보였다.
      *
@@ -150,7 +150,7 @@ class CacheScopeTest extends TestCase
     }
 
     /**
-     * 레이아웃 역변환 마크업 캐시(`layout:markup:{ID}:{lock_version}`, 조각은 `layout:markup:ext:…`)는 서버마다 따로다 (#888).
+     * 레이아웃 역변환 마크업 캐시(`layout:markup:{ID}:{lock_version}`, 조각은 `layout:markup:ext:…`)는 서버마다 따로다.
      *
      * 검수 서버 표는 운영 행을 ID·잠금 판 그대로 복사한 뒤 각자 고치므로 같은 `ID:lock_version` 이 서로 다른 본문을 가리킬 수 있다.
      *

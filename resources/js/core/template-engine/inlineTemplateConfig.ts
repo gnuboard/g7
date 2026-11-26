@@ -1,5 +1,5 @@
 /**
- * 셸 HTML 에 실린 템플릿 설정(`G7Config.templateConfig`) 읽기 (@since engine-v1.96.0, #879)
+ * 셸 HTML 에 실린 템플릿 설정(`G7Config.templateConfig`) 읽기 (@since engine-v1.96.0)
  *
  * 서버는 template.json 최상위 `expose` 배열에 제작자가 선언한 키만 셸 HTML 의 `#g7-config` 에 싣는다(선언했는데
  * template.json 에 없는 키는 null — 「선언했고 값 없음」). 선언이 없는 템플릿은 `templateConfig` 자체가 없고, 엔진은

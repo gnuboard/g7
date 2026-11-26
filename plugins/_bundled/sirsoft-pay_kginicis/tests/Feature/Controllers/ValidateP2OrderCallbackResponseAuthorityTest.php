@@ -18,7 +18,7 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 /**
- * KG 이니시스 **주문** 결제 콜백이 승인 금액·결제수단을 PG 승인 응답으로 판정하는지 (#599 validate P2)
+ * KG 이니시스 **주문** 결제 콜백이 승인 금액·결제수단을 PG 승인 응답으로 판정하는지
  *
  * 클레임 경로와 같은 규칙을 주문 경로에도 적용한다.
  * - PC 표준결제: 콜백 `TotPrice` 를 승인 응답보다 먼저 썼다 — 결제창 금액을 바꾼 요청이 청구액을 적어

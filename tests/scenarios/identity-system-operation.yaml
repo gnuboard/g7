@@ -1,9 +1,9 @@
-# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험 주석(@scenario)에서 모은 입력 변종이고, 회귀 가드는 effects 다 — 모든 effect 가 test_files 의 @effects 로 귀속된다(#798 A1).
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험 주석(@scenario)에서 모은 입력 변종이고, 회귀 가드는 effects 다 — 모든 effect 가 test_files 의 @effects 로 귀속된다.
 
-feature: "시스템 작업 문맥과 본인인증 훅 정책 (#798 K19)"
+feature: "시스템 작업 문맥과 본인인증 훅 정책"
 
 description: |
-  시스템 작업 문맥과 본인인증 훅 정책 (#798 K19)
+  시스템 작업 문맥과 본인인증 훅 정책
   운영자가 회원 수정 훅(`core.user.before_update`)에 본인인증 정책을 걸면, 행위자가 없는 시스템 경로(동기화·프로비저닝·예약 탈퇴)는
   대상 회원으로 판정돼 428 로 멈춘다. `SystemOperation::run()` 안에서는 정책을 건너뛰고, 문맥은 중첩과 예외 뒤에도 복원된다.
 

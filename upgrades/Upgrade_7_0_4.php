@@ -12,7 +12,7 @@ use App\Extension\AbstractUpgradeStep;
  *   - migrations/
  *       01_RedactResidualInstallerStateSecrets.php
  *         7.0.3 이하 인스톨러가 storage/installer-state.json 에 평문으로 남긴
- *         관리자/DB 비밀번호를 정리 (이슈 #465)
+ *         관리자/DB 비밀번호를 정리
  *
  * 본 클래스는 `AbstractUpgradeStep` 의 default `run()` 에 위임 — 별도 override 없음.
  *

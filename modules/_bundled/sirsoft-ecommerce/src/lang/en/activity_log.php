@@ -74,7 +74,7 @@ return [
         'complete' => 'Completed',
         'refund' => 'Refunded',
         'execute' => 'Executed',
-        // 내보내기(#787)
+        // 내보내기
         'export' => [
             'request' => 'Request Received',
             'request_denied' => 'Request denied',
@@ -318,7 +318,7 @@ return [
         'claim_payment_cancel' => 'Claim additional payment request cancelled (:payment_number)',
         'claim_image_upload' => 'Claim attachment uploaded (:original_name)',
         'claim_image_delete' => 'Claim attachment deleted (:original_name)',
-        // 내보내기(#787)
+        // 내보내기
         'export_request' => 'Export requested (:file_name)',
         'export_request_denied' => ':type_label export request denied (:reason_label)',
         'export_start' => 'Export started (:file_name)',
@@ -470,7 +470,7 @@ return [
 
     // Display for an entity whose name could not be resolved
     'entity_id_fallback' => 'ID: :id',
-    // 내보내기(#787)
+    // 내보내기
     'export_denied_reasons' => [
         'forbidden' => 'No permission',
         'too_many_pending' => 'Too many requests in progress',

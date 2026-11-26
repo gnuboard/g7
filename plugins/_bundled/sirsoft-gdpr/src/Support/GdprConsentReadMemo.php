@@ -5,7 +5,7 @@ namespace Plugins\Sirsoft\Gdpr\Support;
 use Illuminate\Support\Collection;
 
 /**
- * 한 요청 안의 동의 조회 메모 (#860)
+ * 한 요청 안의 동의 조회 메모
  *
  * 쿠키 동의 미들웨어·동의 제공자·동의 현황 리소스가 한 요청에서 현재 정책 버전과 같은 주체의 동의 행을
  * 여러 번 읽던 것을 한 번으로 줄인다. 서비스는 지금처럼 필요할 때마다 만들고(저장소 교체 등 기존 사용 방식

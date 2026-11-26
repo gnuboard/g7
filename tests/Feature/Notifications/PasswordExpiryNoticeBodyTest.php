@@ -10,7 +10,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 비밀번호 만료 사전 안내 사이트 알림 본문 테스트 (#736)
+ * 비밀번호 만료 사전 안내 사이트 알림 본문 테스트
  *
  * 사이트 알림(database 채널) 본문은 받는 회원 이름으로 시작한다 — 「{name}님, 비밀번호가 {expires_at}에
  * 만료됩니다…」(2026-10-04 결정, 디자인 캔버스 NotificationsUser·NotificationsAdmin). 선언(config)과

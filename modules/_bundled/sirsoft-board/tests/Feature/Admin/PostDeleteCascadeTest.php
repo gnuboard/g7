@@ -10,7 +10,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 게시글 삭제 연쇄 처리 테스트 (#413-69-②)
+ * 게시글 삭제 연쇄 처리 테스트 (69-②)
  *
  * 방법1(연쇄 soft delete + cascade 플래그 기반 선별 복원) 검증:
  * - 게시글 삭제 시 살아있던 댓글·첨부가 cascade soft delete + trigger_type='cascade' 마킹

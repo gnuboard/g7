@@ -1,5 +1,5 @@
 /**
- * templateMenuTree — 템플릿 설정 `menu` 칸(사용자 화면 메뉴, 2단까지)의 트리 계산 (#434)
+ * templateMenuTree — 템플릿 설정 `menu` 칸(사용자 화면 메뉴, 2단까지)의 트리 계산
  *
  * 편집기(`TemplateMenuField`)는 트리를 한 줄 목록으로 펴서 끌어서 놓기를 하고, 놓은 뒤 다시 트리로 묶는다.
  * 그 변환·깊이 판정·이동 규칙을 화면과 떼어 두어 단위 시험으로 잠근다. 규칙은 서버 검증(`TemplateMenu::structureErrors`)과 같다.

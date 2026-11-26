@@ -4,7 +4,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * ColumnSelector 의 `onColumnVisibilityChange` 발화 출처 표기 전수 확인 (#599 S10)
+ * ColumnSelector 의 `onColumnVisibilityChange` 발화 출처 표기 전수 확인
  *
  * 이 콜백은 사람이 체크박스를 누른 순간에만 오는 것이 아니다. 마운트 시 저장값·기본값으로
  * 부모 상태를 맞출 때(`init`)와 동적 컬럼이 새로 생겨 자동 포함될 때(`dynamic`)도 온다.

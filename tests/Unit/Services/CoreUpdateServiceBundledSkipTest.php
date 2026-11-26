@@ -117,7 +117,7 @@ class CoreUpdateServiceBundledSkipTest extends TestCase
         $this->assertFileExists($this->abs($fakeBase, 'modules/_bundled/sirsoft-board/stale-free.php'));
         $this->assertStringContainsString('1.1.2', File::get($this->abs($fakeBase, 'lang-packs/_bundled/g7-core-ja/language-pack.json')));
 
-        // 사용자 자체 _bundled/{id} 보존 (#388)
+        // 사용자 자체 _bundled/{id} 보존
         $this->assertFileExists($this->abs($fakeBase, 'plugins/_bundled/acme-custom/plugin.json'));
 
         // prune 모드만 디스크 번들 내부 stale 을 정리하고, 나머지 모드는 보존한다

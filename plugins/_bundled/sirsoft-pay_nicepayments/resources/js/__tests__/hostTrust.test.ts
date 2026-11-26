@@ -3,7 +3,7 @@
  *
  * - PG 로 보내는 결과 수신 주소는 서버가 사이트 주소로 만든 절대 URL 만 쓴다(브라우저 현재 주소로 조립하지 않는다).
  * - 영수증 링크는 레이아웃 조각이 새 창(target=_blank)으로 열고 opener 를 끊는다(rel=noopener noreferrer). 종전의 주입 스크립트
- *   영수증 창 도우미(openExternalReceiptWindow)는 #639 에서 조각 링크로 대체됐다.
+ *   영수증 창 도우미(openExternalReceiptWindow)는 조각 링크로 대체됐다.
  * - 핸들러 수준: 서버가 상대 경로를 주면 결제 폼을 제출하지 않고, 절대 URL 은 브라우저 주소와 달라도
  *   그대로 ReturnURL 에 싣는다.
  */

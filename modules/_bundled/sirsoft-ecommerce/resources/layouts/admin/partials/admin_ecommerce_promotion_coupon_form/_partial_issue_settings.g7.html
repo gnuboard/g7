@@ -68,7 +68,7 @@
           </div>
         </div>
       </form-field>
-      <!-- 자동발급 쿠폰의 횟수 안내 — 회원당 한도 대신 「조건마다 1회, 생일은 해마다 1회」를 서버가 발급 키로 지킨다(#952) -->
+      <!-- 자동발급 쿠폰의 횟수 안내 — 회원당 한도 대신 「조건마다 1회, 생일은 해마다 1회」를 서버가 발급 키로 지킨다 -->
       <div data-ref="auto_issue_limit_guide" data-if="{{_local.form?.issue_method === 'auto'}}" class="ecommerce:flex ecommerce:items-start ecommerce:gap-2 ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:border ecommerce:border-blue-100 ecommerce:dark:border-blue-800">
         <icon name="circle-info" size="sm" class="ecommerce:text-blue-500 ecommerce:dark:text-blue-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"/>
         <span class="ecommerce:text-sm ecommerce:text-blue-700 ecommerce:dark:text-blue-300">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.auto_issue_limit</span>

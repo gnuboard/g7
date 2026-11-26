@@ -27,7 +27,7 @@ class UserInquiryListRequest extends FormRequest
      *
      * 쿼리 스트링은 언제나 문자열로 도착하는데 Laravel `boolean` 규칙은 `"true"` / `"false"` 를
      * 받지 않는다. 정규화가 없으면 화면이 그 형태로 보내는 순간 목록이 통째로 422 가 된다
-     * (#492 7차 브라우저 실측 D-38 과 같은 원인).
+     * (38 과 같은 원인).
      *
      * @return void
      */

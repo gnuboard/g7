@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterface;
 
 /**
- * 회원관리 목록의 「배송지」 확장 필터 (#705 예제 E2)
+ * 회원관리 목록의 「배송지」 확장 필터 (예제 E2)
  *
  * 두 조건을 맡는다 — 배송지 국가(`shipping_country`)와 배송지 등록 여부(`has_address`, 1=있음/0=없음).
  * 국가를 고르면 그 나라 배송지를 **하나라도** 가진 회원이다. 둘을 함께 걸면 「그 나라 배송지 있음」과

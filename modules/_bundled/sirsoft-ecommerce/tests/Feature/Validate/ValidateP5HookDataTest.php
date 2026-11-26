@@ -40,7 +40,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Tests\Concerns\CountsQueries;
 
 /**
- * 훅·리포지토리·리스너 결함 수정 검증 (#599 validate P5)
+ * 훅·리포지토리·리스너 결함 수정 검증
  *
  * - 첨부 로그 조회가 지워진 첨부의 로그까지 포함한다
  * - 주문상품 상태 동기화 훅은 Service 가 발행한다(Repository 는 쓰기만)

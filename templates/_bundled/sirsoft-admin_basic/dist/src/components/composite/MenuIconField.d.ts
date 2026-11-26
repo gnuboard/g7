@@ -59,7 +59,7 @@ export declare function parseDirectInput(raw: string): {
     errorKey: string | null;
 };
 /**
- * 관리자 메뉴 아이콘 입력 필드 (#381).
+ * 관리자 메뉴 아이콘 입력 필드.
  *
  * 미리보기 + 유형 라벨 + 탭 4개(선택·직접 입력·업로드·SVG 코드). 확장이 선언한 이미지·SVG 아이콘도
  * 미리보기로 보여 「아이콘 선택」으로 비어 보이지 않는다.

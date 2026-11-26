@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
  * 1.2.1 이전에 운영자가 만든 택배사·배송유형·클레임 사유에 생성자 표식(created_by)을 채웁니다.
  *
  * 1.3.0 시더(ShippingCarrierSeeder·ShippingTypeSeeder·ClaimReasonSeeder)는 시드 목록에서 빠진 미사용 행을
- * 정리하되, 운영자가 만든 행은 남기려고 범위를 `created_by IS NULL`(시더가 만든 행)로 좁혔다(#727 W7).
+ * 정리하되, 운영자가 만든 행은 남기려고 범위를 `created_by IS NULL`(시더가 만든 행)로 좁혔다.
  * 그런데 1.2.1 의 관리자 화면은 created_by 를 채우지 않았다 — 1.2.1 시절 운영자가 만든 행도 NULL 이라, 업그레이드 뒤
  * 언어팩 활성화·재시드 때 쓰이지 않은 운영자 행이 시드 잔재로 보여 조용히 지워진다(7.1.0 출시 점검 EU-2).
  *

@@ -41,7 +41,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
 use Modules\Sirsoft\Ecommerce\Services\OrderPrivacyRetentionService;
 
 /**
- * Playwright E2E · 관리자 클레임 상세 실측용 신청서 시드 커맨드 (#757).
+ * Playwright E2E · 관리자 클레임 상세 실측용 신청서 시드 커맨드.
  *
  * 클레임 상세 spec(`admin-claim-detail.spec.ts`)의 세 시험은 **특정 모양의 신청서**가 있어야 끝까지 잰다 —
  * 라이브 DB 에 그런 건이 우연히 있을 때만 돌면 「건너뜀」이 통과로 세어진다. 이 커맨드가 그 셋을 세운다:

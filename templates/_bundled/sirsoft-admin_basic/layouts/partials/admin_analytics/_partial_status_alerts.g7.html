@@ -9,7 +9,7 @@
         <icon name="triangle-exclamation" class="text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"/>
         <p class="text-warning-soft flex-1">$t:admin.analytics.alerts.collection_disabled</p>
         <!-- 안내 버튼은 그 화면에 갈 수 있는 계정에게만 그린다 — 권한이 없으면 눌러도 「필요 권한」 페이지뿐이라
-        안내가 막다른 길이 된다(#682 S3 라운드 3). 문구는 남겨 사실은 계속 알린다. -->
+        안내가 막다른 길이 된다. 문구는 남겨 사실은 계속 알린다. -->
         <a data-ref="collection_disabled_link" href="/admin/analytics/settings?tab=collection" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.update'))}}" class="button text-sm font-medium underline text-yellow-800 dark:text-yellow-200">
           <on type="click">
             <navigate/>
@@ -22,7 +22,7 @@
       `consent_plugin_blocks_cookies` 는 서버가 **`full` 모드에서만** 만든다(`AnalyticsConfig::anonymousFallbackReason`).
       종전 게이트는 `mode === 'consent'` 를 함께 요구해 그 사유와 서로 배타적이었고, 그래서
       「전체 수집 + GDPR 플러그인」 사이트는 실제로 익명 수집 중인데 12면 어디에도 안내가 뜨지 않았다
-      (#682 S3 라운드 8 실측: 설정 full · effective anonymous · 화면 안내 0건). -->
+      (설정 full · effective anonymous · 화면 안내 0건). -->
     <div data-ref="alert_consent_fallback" data-if="{{!!analytics_status?.data?.collection?.anonymous_fallback_reason}}" class="alert-info">
       <div class="flex-center gap-3">
         <icon name="circle-info" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"/>
@@ -31,7 +31,7 @@
     </div>
     <!-- 통계의 집계 경계는 사이트 표준시 자정에 잠겨 있고 시각 표기도 사이트 기준이다(설계 결정).
       보는 사람의 시간대가 그와 다르면 「오늘」의 숫자와 자기 시계가 어긋나 보이므로 그 사실을
-      알린다. 같은 시간대면 군더더기라 띄우지 않는다(#682 S3 라운드 6). -->
+      알린다. 같은 시간대면 군더더기라 띄우지 않는다. -->
     <div data-ref="alert_site_timezone" data-if="{{analytics_status?.data?.timezone_differs === true}}" class="alert-info">
       <div class="flex-center gap-3">
         <icon name="clock" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"/>

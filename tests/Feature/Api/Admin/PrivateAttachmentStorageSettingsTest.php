@@ -11,7 +11,7 @@ use Tests\Concerns\ActsAsSettingsAdmin;
 use Tests\TestCase;
 
 /**
- * 환경설정 > 드라이버 「비공개 첨부 저장소」 저장·주입·화면 메타 (#916)
+ * 환경설정 > 드라이버 「비공개 첨부 저장소」 저장·주입·화면 메타 
  *
  * 카탈로그 = 코어(default·s3) + 플러그인이 `core.settings.available_private_attachment_drivers` 필터로 등록한 디스크.
  * 「기본」은 주입 때 빈 값으로 정규화해 지금까지의 디스크를 따른다. 공개 자산과 같은 디스크는 저장은 되지만 응답 warnings 로 알린다(D5).

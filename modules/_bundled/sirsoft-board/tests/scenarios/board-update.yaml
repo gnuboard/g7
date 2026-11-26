@@ -5,7 +5,7 @@ description: |
   SeoBoardCacheListener 가 이를 구독하여 해당 게시판의 SEO HTML 캐시를 무효화한다.
   이를 통해 봇/검색엔진이 수정 후에도 이전 title/description 을 받는 문제를 해소한다.
 
-  수정 이력 (이슈 #413 item 17-(2)):
+  수정 이력 (item 17-(2)):
     - 증상: 게시판 이름/설명 수정 후에도 봇 요청이 X-SEO-Cache: HIT 로 이전 메타 반환
     - 근본 원인: SeoBoardCacheListener 가 post.* 훅만 구독하고
       sirsoft-board.board.after_update 를 미구독 (훅은 BoardService::updateBoard 에서 정상 발화)

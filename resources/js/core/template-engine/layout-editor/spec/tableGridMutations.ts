@@ -219,7 +219,7 @@ export function removeRow(
     }
     c += ref ? ref.colSpan : 1;
   }
-  // 대상 행에서 시작해 아래로 내려가는 세로 병합 셀은 바로 아래 행으로 옮기고 rowSpan-- (#869: 종전엔 행째
+  // 대상 행에서 시작해 아래로 내려가는 세로 병합 셀은 바로 아래 행으로 옮기고 rowSpan-- (종전엔 행째
   // 버려 아래 행 칸이 왼쪽으로 밀렸다). 아래 행의 셀 인덱스가 어긋나지 않게 오른쪽 셀부터 넣는다.
   const below = grid.rows.find(
     (r) => r.sectionIndex === target.sectionIndex && r.rowIndexInSection === target.rowIndexInSection + 1,
@@ -288,7 +288,7 @@ export function moveRow(
   // 각 밴드의 행은 grid.rows 의 rowIndexInSection 으로 식별 → 섹션 children 의 row 노드.
   const rowsInBand = (band: { start: number; end: number }): number[] =>
     grid.rows
-      // 행 번호는 grid.rows 순번이다 — origin 셀이 없는(통째로 덮인) 행도 밴드에 넣어야 블록과 함께 옮겨진다(#869).
+      // 행 번호는 grid.rows 순번이다 — origin 셀이 없는(통째로 덮인) 행도 밴드에 넣어야 블록과 함께 옮겨진다.
       .filter((r, no) => r.sectionIndex === sectionIndex && no >= band.start && no < band.end)
       .map((r) => r.rowIndexInSection);
 
@@ -396,7 +396,7 @@ export function addColumn(
   const bumped = new Set<EditorNode>();
 
   // 행 번호는 grid.rows 순번이다 — origin 셀이 없는(통째로 덮인) 행을 0행으로 착각하면 그 행에 엉뚱한 칸을
-  // 넣거나 빼 격자가 깨진다(#869).
+  // 넣거나 빼 격자가 깨진다.
   for (const [no, row] of grid.rows.entries()) {
     const leftRef = boundary > 0 ? cellRefAt(grid, no, boundary - 1) : null;
     const rightRef = boundary < grid.colCount ? cellRefAt(grid, no, boundary) : null;
@@ -418,7 +418,7 @@ export function addColumn(
       continue;
     }
     // 경계를 가로지르는 셀이 없으면 이 행에 새 칸이 필요하다 — 경계 양옆이 위에서 내려온 흡수칸이어도
-    // 같다(#869: 종전엔 흡수칸이면 건너뛰어 그 행에 칸이 생기지 않고 표가 깨졌다). 새 칸은 이 행 origin
+    // 같다(종전엔 흡수칸이면 건너뛰어 그 행에 칸이 생기지 않고 표가 깨졌다). 새 칸은 이 행 origin
     // 셀 중 경계 왼쪽의 마지막 셀 뒤에, 없으면 맨 앞에 넣는다.
     const leftOrigins = row.cells.filter((x) => x.gridCol < boundary);
     const afterCellIdx = leftOrigins.length > 0 ? leftOrigins[leftOrigins.length - 1]!.cellIndexInRow : -1;
@@ -456,7 +456,7 @@ export function removeColumn(
   let next = table;
   const handled = new Set<EditorNode>();
   // 행 번호는 grid.rows 순번이다 — origin 셀이 없는(통째로 덮인) 행을 0행으로 착각하면 그 행에 엉뚱한 칸을
-  // 넣거나 빼 격자가 깨진다(#869).
+  // 넣거나 빼 격자가 깨진다.
   for (const no of grid.rows.keys()) {
     const ref = cellRefAt(grid, no, atGridCol);
     if (!ref || handled.has(ref.cell) || ref.gridRow < no) continue;
@@ -513,7 +513,7 @@ export function mergeCells(
   if (top === bottom && left === right) return { table, ok: false, reason: 'single' };
   if (!grid.valid) return { table, ok: false, reason: 'invalid-grid' };
   // 세로 병합은 한 섹션(Thead/Tbody/Tfoot) 안에서만 — HTML rowspan 은 섹션을 넘지 못한다. 넘는 병합을 허용하면
-  // 이후 행 삭제와 추가가 섹션 단위로 셀을 옮기다 병합 셀을 잃어 구멍이 생긴다(#869 λ 실측).
+  // 이후 행 삭제와 추가가 섹션 단위로 셀을 옮기다 병합 셀을 잃어 구멍이 생긴다.
   const areaSections = new Set(grid.rows.slice(top, bottom + 1).map((row) => row.sectionIndex));
   if (areaSections.size > 1) return { table, ok: false, reason: 'section' };
 

@@ -1,5 +1,5 @@
 /**
- * E2E: 환경설정 — `.env` 키 단위 우선 (G7_ENV_PRIORITY) (#641)
+ * E2E: 환경설정 — `.env` 키 단위 우선 (G7_ENV_PRIORITY)
  *
  * 시나리오 매니페스트: tests/scenarios/settings-env-priority.yaml — 마킹은 각 테스트의
  * scenario(k=v 조합)·effects 주석이 담당하며, 헤더 요약 마킹은 파서 형식이 아니다
@@ -40,7 +40,7 @@ async function readSettingsMeta(page: import('@playwright/test').Page): Promise<
 
 // @scenario switch=off, key_state=unlocked, surface=get_meta
 // @effects switch_off_behaves_identically
-test('@smoke #641 - 스위치가 꺼진 설치는 응답 메타에 잠금이 비어 있다', async ({ page }) => {
+test('@smoke 스위치가 꺼진 설치는 응답 메타에 잠금이 비어 있다', async ({ page }) => {
   test.skip(ENV_PRIORITY_ON, '이 블록은 스위치가 꺼진 서버를 전제로 한다');
 
   const token = issueToken('core.settings.read', 'core.settings.update');
@@ -57,7 +57,7 @@ test('@smoke #641 - 스위치가 꺼진 설치는 응답 메타에 잠금이 비
 
 // @scenario switch=off, key_state=unlocked, surface=ui_lock
 // @effects switch_off_behaves_identically
-test('#641 - 스위치가 꺼진 설치는 배너도 잠금 배지도 렌더하지 않는다', async ({ page }) => {
+test('스위치가 꺼진 설치는 배너도 잠금 배지도 렌더하지 않는다', async ({ page }) => {
   test.skip(ENV_PRIORITY_ON, '이 블록은 스위치가 꺼진 서버를 전제로 한다');
 
   const token = issueToken('core.settings.read', 'core.settings.update');
@@ -73,7 +73,7 @@ test('#641 - 스위치가 꺼진 설치는 배너도 잠금 배지도 렌더하�
 
 // @scenario switch=off, key_state=unlocked, surface=post_filter
 // @effects switch_off_behaves_identically
-test('#641 - 스위치가 꺼진 설치의 저장 왕복이 종전과 같다', async ({ page }) => {
+test('스위치가 꺼진 설치의 저장 왕복이 종전과 같다', async ({ page }) => {
   test.skip(ENV_PRIORITY_ON, '이 블록은 스위치가 꺼진 서버를 전제로 한다');
 
   const token = issueToken('core.settings.read', 'core.settings.update');
@@ -113,7 +113,7 @@ test('#641 - 스위치가 꺼진 설치의 저장 왕복이 종전과 같다', a
 
 // @scenario switch=on, key_state=locked_plain, surface=ui_lock
 // @effects badge_and_disabled_rendered, meta_env_locked_uses_frontend_keys
-test('#641 - 스위치가 켜진 서버는 잠긴 필드를 배지와 함께 잠근다', async ({ page }) => {
+test('스위치가 켜진 서버는 잠긴 필드를 배지와 함께 잠근다', async ({ page }) => {
   test.skip(!ENV_PRIORITY_ON, '서버 `.env` 조작이 필요한 축 — G7_E2E_ENV_PRIORITY=1 일 때만 실행');
 
   const token = issueToken('core.settings.read', 'core.settings.update');

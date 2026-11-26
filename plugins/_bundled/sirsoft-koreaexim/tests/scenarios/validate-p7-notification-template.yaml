@@ -1,4 +1,4 @@
-feature: 환율 플러그인 알림 템플릿 편집 창 — 코어 모달 계약 정합 (#599 validate P7)
+feature: 환율 플러그인 알림 템플릿 편집 창 — 코어 모달 계약 정합
 
 description: |
   환율 플러그인의 알림 템플릿 편집 창은 코어 창과 같은 저장 API 를 쓰면서 코어 계약 변경을 따라가지 못했다 —
@@ -32,4 +32,4 @@ test_files:
   - plugins/_bundled/sirsoft-koreaexim/resources/js/__tests__/layouts/koreaeximNotificationTemplateCoreContract.test.ts
 
 notes: |
-  e2e_browser=not_applicable — 레이아웃 표현식 계약 이식. 브라우저 실측은 #599 통합 단계에서 한다.
+  e2e_browser=not_applicable — 레이아웃 표현식 계약 이식. 브라우저 실측은 통합 단계에서 한다.

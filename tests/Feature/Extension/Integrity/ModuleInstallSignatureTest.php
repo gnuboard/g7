@@ -7,7 +7,7 @@ use App\Extension\ModuleManager;
 use Mockery;
 
 /**
- * 모듈 수동 설치(ZIP·GitHub)의 패키지 서명 검증 (#916 ④) — 시나리오는 `ExtensionInstallSignatureTestCase`.
+ * 모듈 수동 설치(ZIP·GitHub)의 패키지 서명 검증 — 시나리오는 `ExtensionInstallSignatureTestCase`.
  *
  * @scenario package-integrity
  */

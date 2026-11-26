@@ -63,7 +63,7 @@ describe('storageInterceptor', () => {
         expect(window.localStorage.getItem('g7_locale')).toBe('ko');
     });
 
-    // dev-g7#640: 화면 테마가 목록에서 빠져 있어, 동의 전에는 테마를 바꿔도 저장이
+    // 화면 테마가 목록에서 빠져 있어, 동의 전에는 테마를 바꿔도 저장이
     // 조용히 버려졌다 (새로고침하면 원래대로). 미인증 화면뿐 아니라 관리자 화면 전체가 같았다.
     it('설정에 등재된 키 (g7_color_scheme) → 항상 통과 (미동의여도)', () => {
         installStorageInterceptor({

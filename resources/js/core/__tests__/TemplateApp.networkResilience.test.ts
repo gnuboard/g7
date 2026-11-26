@@ -1,5 +1,5 @@
 /**
- * TemplateApp 네트워크 복원력 테스트 (#463)
+ * TemplateApp 네트워크 복원력 테스트
  *
  * 페이지 로드 요청 1건의 일시 실패가 앱 전체를 죽이던 결함의 회귀를 막는다.
  *
@@ -110,7 +110,7 @@ function makeConfig(): TemplateAppConfig {
     };
 }
 
-describe('TemplateApp 네트워크 복원력 (#463)', () => {
+describe('TemplateApp 네트워크 복원력', () => {
     let errorSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {

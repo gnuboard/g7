@@ -1,12 +1,12 @@
 /**
- * ProductImageViewer → ImageGallery 시작 사진 회귀 테스트 (#821)
+ * ProductImageViewer → ImageGallery 시작 사진 회귀 테스트
  *
  * 썸네일로 큰 사진을 바꾼 뒤 큰 사진을 누르면 확대 창이 고른 사진으로 열려야 한다.
  * ImageGallery 는 항상 마운트돼 있고 openGallery 가 startIndex 만 바꾸므로,
  * 현재 번호를 useState(startIndex) 초기값으로만 잡으면 매번 첫 사진으로 열린다.
  * 실제 ImageGallery(yet-another-react-lightbox)를 렌더해 카운터 「N / M」 으로 잠근다.
  *
- * 시간 예산(#869): 부하가 걸린 실행에서 첫 시험이 5초 제한에 걸렸다. 잰 결과(단독) 시험 안의 동적 import 가 320ms,
+ * 시간 예산: 부하가 걸린 실행에서 첫 시험이 5초 제한에 걸렸다. 잰 결과(단독) 시험 안의 동적 import 가 320ms,
  * `getByRole` 한 번이 70~260ms(역할과 이름 계산, 숨김 판정용 getComputedStyle), 확대 창 열기가 320~450ms 였다.
  * 모듈은 파일 수집 때 한 번 읽고(제품 모듈이 읽힐 때 G7Core.t 를 잡으므로 vi.hoisted 로 먼저 심는다),
  * 단추는 aria-label 로 찾는다(단추로 좁혀 같은 단추를 고른다). 닫힘은 라이트박스 페이드(250ms)를 기다렸는데, 라이트박스는
@@ -66,7 +66,7 @@ const closeLightbox = () => {
   fireEvent.click(document.querySelector('.yarl__button[aria-label="common.lightbox.close"]') as Element);
 };
 
-describe('ProductImageViewer 확대 창 시작 사진 (#821)', () => {
+describe('ProductImageViewer 확대 창 시작 사진', () => {
   /**
    * @scenario case=third_thumbnail
    * @effects lightbox_opens_at_selected_image

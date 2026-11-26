@@ -7,7 +7,7 @@ use App\Support\ContentMedia\ContentMediaContext;
 use Illuminate\Http\JsonResponse;
 
 /**
- * 표준 편집기 계약 엔드포인트 `GET …/content-media/target` 응답 도우미 (#887)
+ * 표준 편집기 계약 엔드포인트 `GET …/content-media/target` 응답 도우미
  *
  * 편집 화면이 「무엇을 올릴 수 있나」를 받는 길을 확장(모듈·플러그인)마다 같은 모양으로 낸다. 값(종류별 허용·크기·형식·
  * 문서당 최대)은 각 확장 설정이고, 코어는 동영상·오디오 업로드 허용 스위치로만 관여한다(`ContentMediaPolicy::acceptsUpload`).

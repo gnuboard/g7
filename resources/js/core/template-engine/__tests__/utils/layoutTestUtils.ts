@@ -730,7 +730,7 @@ export function createLayoutTest(
       },
       // 컴포넌트 이벤트 버스 — 운영 G7CoreGlobals.initComponentEventSystem 과 같은 계약(on → 해제 함수,
       // emit → 리스너 결과 배열, 리스너가 throw 하면 reject). 없으면 `<on listen>` 이 구독조차 하지 않아
-      // emitEvent ↔ onComponentEvent 흐름을 레이아웃 테스트로 잴 수 없었다(#753).
+      // emitEvent ↔ onComponentEvent 흐름을 레이아웃 테스트로 잴 수 없었다.
       componentEvent: {
         on: (eventName: string, callback: (data?: any) => any) => {
           if (!componentEventListeners.has(eventName)) {

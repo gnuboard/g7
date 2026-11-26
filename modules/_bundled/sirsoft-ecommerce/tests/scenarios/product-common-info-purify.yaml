@@ -1,4 +1,4 @@
-feature: 상품 공통 정보 저장 정화 — 상품 설명과 같은 규칙 (#887)
+feature: 상품 공통 정보 저장 정화 — 상품 설명과 같은 규칙
 
 description: |
   상품 공통 정보 본문(HTML 모드)을 저장할 때 로케일마다 상품 설명과 같은 저장 정화(PurifiesHtml content 프로필 — 코어

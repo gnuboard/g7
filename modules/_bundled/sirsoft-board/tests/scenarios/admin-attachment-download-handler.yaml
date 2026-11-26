@@ -22,7 +22,7 @@ effects:
   - handler_skips_request_without_url
   - handler_throws_on_failure
   - download_failure_shows_error_toast               # 레이아웃 onError 가 실패 안내를 띄운다
-  - reply_card_lists_its_own_attachments             # 원글 상세의 답변 항목이 자기 첨부 목록을 싣는다 (#703 실측 — 종전 attachments: null)
+  - reply_card_lists_its_own_attachments             # 원글 상세의 답변 항목이 자기 첨부 목록을 싣는다 (종전 attachments: null)
   - admin_detail_downloads_post_and_reply_attachments_in_browser  # 실제 화면에서 원글·답변 첨부가 토큰 동반 요청으로 원본 파일명 저장
 
 test_files:

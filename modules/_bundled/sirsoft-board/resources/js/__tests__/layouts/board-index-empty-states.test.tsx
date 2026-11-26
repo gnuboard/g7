@@ -5,7 +5,7 @@
  *
  * 검증 방식: 레이아웃 JSON 트리 구조 직접 분석 (DOM 렌더링 비의존).
  * 빈 상태/로딩/오류 분기는 JSON 의 if 표현식과 컴포넌트 트리로 충분히 검증 가능.
- * (testId 도입을 회피하고 RTL 권장 패턴인 구조 검증으로 통합 — issue #204 후속 결정)
+ * (testId 도입을 회피하고 RTL 권장 패턴인 구조 검증으로 통합)
  */
 
 import { describe, it, expect } from 'vitest';
@@ -70,7 +70,7 @@ describe('게시판 목록 - 빈 상태 / 로딩 / 오류 (JSON 구조 검증)',
             expect(node).not.toBeNull();
             expect(node.if).toContain('Number(query.page) > 1');
             expect(node.if).toContain("posts?.data?.data?.length === 0");
-            // "처음으로" 이동 링크가 함께 존재 — 목적지는 링크 href, 클릭은 경로 없는 navigate(#757)
+            // "처음으로" 이동 링크가 함께 존재 — 목적지는 링크 href, 클릭은 경로 없는 navigate
             const goFirstLink = findByName(node, 'A');
             expect(goFirstLink).not.toBeNull();
             expect(goFirstLink.text).toContain('go_to_first_page');
@@ -100,7 +100,7 @@ describe('게시판 목록 - 빈 상태 / 로딩 / 오류 (JSON 구조 검증)',
             // "검색 결과 없음" 안내 텍스트 + 검색 초기화 버튼
             const noResultsTexts = findAllByText(node, 'no_search_results');
             expect(noResultsTexts.length).toBeGreaterThanOrEqual(1);
-            // 검색 초기화는 조건 없는 목록 주소로 가는 링크(#757)
+            // 검색 초기화는 조건 없는 목록 주소로 가는 링크
             const clearLink = findByName(node, 'A');
             expect(clearLink).not.toBeNull();
             expect(clearLink.text).toContain('clear_search');

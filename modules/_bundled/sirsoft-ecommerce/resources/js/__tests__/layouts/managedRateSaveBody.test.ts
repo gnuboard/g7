@@ -1,5 +1,5 @@
 /**
- * 통화 탭 저장 몸통의 관리 환율 제외 검증 (#703)
+ * 통화 탭 저장 몸통의 관리 환율 제외 검증
  *
  * 회귀 배경: 환율 제공자가 관리하는 통화의 환율 칸은 잠겨 있어 운영자가 바꿀 수 없는데, 저장 버튼이
  * 화면이 받아 둔 환율을 그대로 다시 보냈다. 화면을 연 사이 제공자가 환율을 갱신하면 저장값과 달라져
@@ -50,7 +50,7 @@ function evaluateSaveBody(ctx: Record<string, any>): any {
     );
 }
 
-describe('통화 탭 저장 몸통 — 관리 환율 제외 (#703)', () => {
+describe('통화 탭 저장 몸통 — 관리 환율 제외', () => {
     const ctx = {
         _global: { activeEcommerceSettingsTab: 'language_currency' },
         query: {},

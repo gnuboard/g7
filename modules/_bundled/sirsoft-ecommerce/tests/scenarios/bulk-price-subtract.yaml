@@ -1,4 +1,4 @@
-feature: 판매가 일괄 변경 「인하 + 금액」 (#703)
+feature: 판매가 일괄 변경 「인하 + 금액」
 
 description: |
   상품 목록 판매가 일괄 변경 창의 「인하 + 금액」이 보내는 method=subtract 를 두 일괄 수정 요청이

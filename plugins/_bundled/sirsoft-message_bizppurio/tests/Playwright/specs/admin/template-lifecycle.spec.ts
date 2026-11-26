@@ -1,5 +1,5 @@
 /**
- * E2E: 비즈뿌리오 알림 템플릿 라이프사이클 화면 (#597)
+ * E2E: 비즈뿌리오 알림 템플릿 라이프사이클 화면
  *
  * @scenario bizppurio-template-lifecycle
  * 케이스(마커 아님 — 평문): bizppurio_tab_integration_e2e, bizppurio_compose_modal_e2e, bizppurio_manage_round_trip_e2e
@@ -70,7 +70,7 @@ test.describe('비즈뿌리오 통합 탭 (코어 알림 설정)', () => {
     }
     await expect(tabBar).toContainText('비즈뿌리오', { timeout: 30_000 });
 
-    // 채널 탭은 링크(#757) — 단추만 보면 빈 목록이 된다
+    // 채널 탭은 링크 — 단추만 보면 빈 목록이 된다
     const tabTexts = await tabBar.locator(':is(a, button)').allInnerTexts();
     const joined = tabTexts.join('|');
 
@@ -122,7 +122,7 @@ test.describe('비즈뿌리오 통합 탭 (코어 알림 설정)', () => {
     await editButton.click();
 
     const dialog = page.getByRole('dialog');
-    // #408 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
+    // 엔진 스코프: 확장점 조각의 정적 id 는 DOM 에 {id}__{호스트 id} 로 나가므로 접두어 [id^="{id}__"] 로 찾는다.
     const modal = dialog.locator('[id^="bizppurio_tpl_sections__"]');
     await expect(modal).toBeVisible({ timeout: 15_000 });
     await expect(dialog.locator('[id^="bizppurio_tpl_sms_section__"]')).toBeVisible();

@@ -8,7 +8,7 @@ use App\Extension\Vendor\VendorIntegrityChecker;
 use Illuminate\Console\Command;
 
 /**
- * custom/vendor-bundle.zip 의 SHA256 무결성을 검증합니다 (#792).
+ * custom/vendor-bundle.zip 의 SHA256 무결성을 검증합니다.
  *
  * @since 7.2.0
  */

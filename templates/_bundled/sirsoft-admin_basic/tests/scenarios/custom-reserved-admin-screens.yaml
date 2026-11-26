@@ -1,4 +1,4 @@
-feature: 관리자 화면 — custom 사전 검사 중단 안내와 사용자 화면 URL 칸 (#792)
+feature: 관리자 화면 — custom 사전 검사 중단 안내와 사용자 화면 URL 칸
 
 description: |
   코어 업데이트 확인 결과 창은 새 코어로의 업데이트가 custom 패키지 충돌·예약 경로 파일 때문에 시작 전에

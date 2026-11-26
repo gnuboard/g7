@@ -17,7 +17,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductInquiryService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 상품문의 — 바깥 트랜잭션 안에서 게시판 글 저장이 먼저 커밋된 뒤 바깥이 롤백되는 경로 (#883 3단계 F1)
+ * 상품문의 — 바깥 트랜잭션 안에서 게시판 글 저장이 먼저 커밋된 뒤 바깥이 롤백되는 경로
  *
  * `ProductInquiryService::createInquiry` 는 자기 트랜잭션 안에서 게시판 훅으로 글을 만든다(게시판 `createPost` 의 트랜잭션은
  * savepoint). 글 저장이 첨부를 옮기고 커밋한 뒤 문의 쪽이 실패하면 DB 는 모두 되돌아가는데, `DB::afterRollBack()` 은 이미

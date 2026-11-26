@@ -636,7 +636,7 @@ class ExtensionDeclaredRoleMenuGrantTest extends TestCase
 
     /**
      * 가짜 확장을 이 서버가 불러온 확장 목록에 넣습니다 — 사이드바·메뉴 관리 목록은 DB 활성이면서 이 서버가 불러온
-     * 확장의 메뉴만 보인다(#888). 매니저는 시험마다 새로 만들어지는 앱의 싱글턴이라 따로 되돌리지 않는다.
+     * 확장의 메뉴만 보인다. 매니저는 시험마다 새로 만들어지는 앱의 싱글턴이라 따로 되돌리지 않는다.
      *
      * @param  class-string  $managerClass  확장 매니저 클래스
      * @param  string  $property  로드된 확장을 담는 속성 이름

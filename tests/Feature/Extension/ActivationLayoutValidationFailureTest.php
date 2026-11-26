@@ -13,14 +13,14 @@ use Tests\Support\Concerns\BuildsLayoutMergeFixtures;
 use Tests\TestCase;
 
 /**
- * 레이아웃 검증에 실패한 활성화가 아무 상태도 바꾸지 않는지 검증 (#712 후속)
+ * 레이아웃 검증에 실패한 활성화가 아무 상태도 바꾸지 않는지 검증
  *
  * 예전 `activateModule()` / `activatePlugin()` 은 확장 상태를 먼저 active 로 쓰고, soft delete 된 레이아웃을
  * 되살린 뒤에야 레이아웃 파일을 검증했다. 검증이 예외를 던지면 그 뒤의 라우트 캐시 재굽기·훅은 건너뛰고
  * 상태만 active 로 남아, 레이아웃이 하나도 없는 활성 확장이 생겼다. 관리자 화면은 실패 토스트를 보여 주지만
  * 목록에는 "활성" 으로 뜬다.
  *
- * 7.0 JSON 문서의 깨진 조각 참조는 이제 관용하지만(#712 W1), 데이터 소스 id 중복·`layouts/` 밖 참조·
+ * 7.0 JSON 문서의 깨진 조각 참조는 이제 관용하지만, 데이터 소스 id 중복·`layouts/` 밖 참조·
  * `.g7.html` 컴파일 오류 같은 엄격한 실패는 그대로라 이 갈래가 남는다. 검증을 상태 쓰기보다 먼저 한다.
  */
 class ActivationLayoutValidationFailureTest extends TestCase

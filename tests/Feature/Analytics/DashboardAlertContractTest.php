@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 대시보드 알림 카드의 버튼 계약 — 복구냐 이동이냐를 가르는 두 필드 (이슈 #682 C1).
+ * 대시보드 알림 카드의 버튼 계약 — 복구냐 이동이냐를 가르는 두 필드.
  *
  * 카드는 `recover_endpoint` 가 있으면 복구 버튼(POST), 없고 `action_url` 이 있으면 이동
  * 버튼(navigate)을 그린다. 종류(subtype)로 가르지 않는 것이 이 계약의 핵심이라, 리스너가

@@ -1039,7 +1039,7 @@ class CoreUpdateOrchestrator
 
     /**
      * custom 자리 사전 검사 — 받은 배포본이 custom 예약 자리에 파일을 싣거나 개발자 패키지(custom/composer.lock)가
-     * 새 코어와 맞지 않으면 백업과 파일 적용 전에 멈춘다 (#792, CLI `core:update` 와 같은 판정).
+     * 새 코어와 맞지 않으면 백업과 파일 적용 전에 멈춘다 (CLI `core:update` 와 같은 판정).
      *
      * 멈춘 사실은 기록 파일에 남겨 관리자 업데이트 화면이 같은 새 버전의 중단 사유를 보여 준다. 아직 아무 파일도 바꾸지
      * 않았으므로 되돌리기는 받은 배포본 정리와 유지보수 해제뿐이다(`performRollback` 의 백업 없음 분기).
@@ -1558,7 +1558,7 @@ class CoreUpdateOrchestrator
         $this->service->runMigrations();
 
         // `syncCoreRolesAndPermissions`/`syncCoreMenus` 를 직접 부르지 않는다 — 부팅 시점에
-        // 캐시된 구버전 config 로 sync 가 돌면 신규 권한·메뉴가 누락된다 (#326 회귀).
+        // 캐시된 구버전 config 로 sync 가 돌면 신규 권한·메뉴가 누락된다.
         $this->service->reloadCoreConfigAndResync();
 
         $this->state->appendLog((string) __('settings.core_update.web.log_migrated'));

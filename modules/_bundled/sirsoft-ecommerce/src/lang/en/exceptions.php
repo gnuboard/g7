@@ -206,7 +206,7 @@ return [
     // Shipping Carrier related
     'shipping_carrier_not_found' => 'Shipping carrier not found.',
     'shipping_carrier_in_use' => 'Cannot delete a shipping carrier in use by orders. (Used :count time)|Cannot delete a shipping carrier in use by orders. (Used :count times)',
-    // 내보내기(#787)
+    // 내보내기
     'export' => [
         'enqueue_failed' => 'Could not queue the export job. Please try again shortly.',
         'requester_missing' => 'The requesting operator account no longer exists, so the file was not created.',
@@ -233,7 +233,7 @@ return [
     // Imported review (no member/order) input error
     'imported_review_invalid_field' => 'Invalid imported review input: :field',
 
-    // Public payment contract (Contracts\Payment) errors for payment provider plugins — raised when provider code misuses the contract (#916)
+    // Public payment contract (Contracts\Payment) errors for payment provider plugins — raised when provider code misuses the contract 
     'payment_contract' => [
         'order_not_found' => 'Order not found: :order_number',
         'provider_mismatch' => 'Payment belongs to provider [:owner], not [:caller].',

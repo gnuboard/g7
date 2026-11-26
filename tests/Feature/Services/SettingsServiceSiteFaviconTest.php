@@ -13,7 +13,7 @@ use Tests\Helpers\CreatesTemplateSettingsFixtures;
 use Tests\TestCase;
 
 /**
- * 환경설정 일반 탭 파비콘(site_favicon) 저장·응답 테스트 (#434)
+ * 환경설정 일반 탭 파비콘(site_favicon) 저장·응답 테스트
  *
  * 사이트 로고와 같은 규율 — 제출한 목록이 저장 대상, 그 컬렉션에 실재하는 첨부만, 뺀 첨부는 저장 성공 뒤 파기,
  * 제출하지 않은 저장은 기존 값 유지. 저장 응답은 계산 필드가 실린 공개 설정(frontend_settings)을 함께 준다.

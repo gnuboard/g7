@@ -1,6 +1,6 @@
 /**
  * @file admin-board-scraps-index.test.tsx
- * @description 전 회원 스크랩 관리 화면 (#524 WP-A) — 레이아웃 JSON 계약 회귀.
+ * @description 전 회원 스크랩 관리 화면 — 레이아웃 JSON 계약 회귀.
  *
  * 이 화면이 지키는 계약:
  *  - 조건은 전부 주소(`query.*`)에서 읽는다. 지역 상태로만 조회하면 새로고침·뒤로가기에
@@ -50,7 +50,7 @@ const grid = findById(layout, 'scraps_data_grid');
 const columns = asArray(grid?.props?.columns);
 const modals: Record<string, any> = Object.fromEntries(asArray(layout.modals).map((m: any) => [m.id, m]));
 
-describe('관리자 스크랩 관리 — 레이아웃 계약 (#524 WP-A)', () => {
+describe('관리자 스크랩 관리 — 레이아웃 계약', () => {
     describe('데이터소스 · 권한 · 라우트', () => {
         // @scenario surface=admin_list
         // @effects admin_list_datasource_passes_all_filters

@@ -12,7 +12,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 비밀번호 정책 보안 설정 저장 테스트 (#736 §4.2)
+ * 비밀번호 정책 보안 설정 저장 테스트
  *
  * 새 설정 키가 보안 탭 저장으로 실제 저장되는지(규칙이 없으면 조용히 버려진다), 범위·교차 검증이 422 로
  * 막는지, 숫자 문자열이 정수로 저장되는지, 화면에 내보내는 키가 비밀번호 작성·재사용 규칙 10개뿐인지 본다.
@@ -92,7 +92,7 @@ class PasswordPolicySettingsTest extends TestCase
 
     /**
      * 최소 길이 칸도 숫자 입력칸이 보낸 문자열을 정수로 저장한다 — 비밀번호 정책 카드로 옮긴 기존 칸이 신규 정수 칸과 달리
-     * 문자열 `'10'` 으로 남던 결함(#736 S2 브라우저 실측). defaults.json 이 정수로 선언한 키가 문자열로 굳는 #636 S4 의
+     * 문자열 `'10'` 으로 남던 결함. defaults.json 이 정수로 선언한 키가 문자열로 굳는
      * 정수 문자열 저장 결함과 같은 부류다.
      *
      * @scenario min_length_setting=raised
@@ -111,7 +111,7 @@ class PasswordPolicySettingsTest extends TestCase
 
     /**
      * 같은 보안 탭의 기존 숫자 칸(인증 토큰 유지시간·로그인 시도 횟수·잠금 시간)도 문자열을 정수로 저장한다 —
-     * 화면에서 고쳐 저장하면 `"45"` 로 굳던 결함(#736 전수 실측 O-2). 소비처는 `(int)` 로 읽어 동작은 같았지만
+     * 화면에서 고쳐 저장하면 `"45"` 로 굳던 결함(전수 실측 O-2). 소비처는 `(int)` 로 읽어 동작은 같았지만
      * 기본값(정수)과 저장값의 타입이 갈렸다.
      *
      * @scenario min_length_setting=raised
@@ -137,7 +137,7 @@ class PasswordPolicySettingsTest extends TestCase
 
     /**
      * 인증 토큰 유지시간에 화면 입력칸이 보낸 `"0"`(무한대)도 저장된다 — 검증의 「0 은 허용」 조건이 정수 0 만
-     * 비교해, 문자열 `"0"` 은 「30 이상」 오류로 막히던 결함(#736 전수 실측 O-2 와 같은 원인).
+     * 비교해, 문자열 `"0"` 은 「30 이상」 오류로 막히던 결함(전수 실측 O-2 와 같은 원인).
      *
      * @scenario min_length_setting=raised
      *

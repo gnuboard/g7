@@ -1,6 +1,6 @@
 /**
  * @file TemplateApp.updateQueryParams.condition.test.ts
- * @description replace:true navigate(탭 전환/필터 변경) 경로의 데이터소스 if 재평가 회귀 (#415)
+ * @description replace:true navigate(탭 전환/필터 변경) 경로의 데이터소스 if 재평가 회귀
  *
  * 버그:
  *   updateQueryParams(replace:true navigate 진입점)가 직전 진입 시점에 if 로 필터링된
@@ -102,7 +102,7 @@ const RAW_SOURCES = [
   },
 ];
 
-describe('updateQueryParams 데이터소스 if 재평가 (#415)', () => {
+describe('updateQueryParams 데이터소스 if 재평가', () => {
   let app: TemplateApp;
   let fetchSpy: ReturnType<typeof vi.spyOn>;
 

@@ -1,5 +1,5 @@
 /**
- * E2E: 언어 전환·플러그인 비활성화·조회 전용 관리자 (#810)
+ * E2E: 언어 전환·플러그인 비활성화·조회 전용 관리자
  *
  * @scenario-manifest tests/scenarios/e2e-flows.yaml
  * @effects user_screen_reflects_admin_change, test_data_cleaned_up

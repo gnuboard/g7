@@ -58,12 +58,12 @@
             <span class="sr-only">$t:extensions.view_mode.list_aria</span>
           </button>
         </div>
-        <!-- 최고관리자 전용 — 관리자 로그인 응답(current_user)의 is_super 를 읽는다. 없는 이름(currentUser)을 읽어 최고관리자에게도 안 보이던 문제(#703 실측).
+        <!-- 최고관리자 전용 — 관리자 로그인 응답(current_user)의 is_super 를 읽는다. 없는 이름(currentUser)을 읽어 최고관리자에게도 안 보이던 문제.
              탭 위 별도 줄에 있던 것을 모듈·플러그인 화면처럼 툴바 안(보기 전환과 검색 사이)으로 옮겼다. -->
         <label data-ref="tpl_admin_include_hidden_toggle" data-if="{{current_user?.data?.is_super === true}}" class="flex-center gap-2 text-body cursor-pointer select-none">
           <input type="checkbox" checked="{{query.include_hidden === '1'}}" class="w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400">
             <on type="change">
-              <!-- 숨김 포함 여부는 다른 필터처럼 주소에 싣는다 — 화면 상태(_local)에 두면 페이지를 넘길 때 풀려, 체크는 켜진 채 숨김을 뺀 목록을 받았다(#703 실측). 주소를 바꾸면 목록을 다시 받으므로 따로 재조회하지 않는다 -->
+              <!-- 숨김 포함 여부는 다른 필터처럼 주소에 싣는다 — 화면 상태(_local)에 두면 페이지를 넘길 때 풀려, 체크는 켜진 채 숨김을 뺀 목록을 받았다. 주소를 바꾸면 목록을 다시 받으므로 따로 재조회하지 않는다 -->
               <navigate path="/admin/templates/admin" :mergeQuery="true">
                 <query include_hidden="{{$event.target.checked ? '1' : undefined}}" :page="1"/>
               </navigate>
@@ -157,7 +157,7 @@
           <!-- 활성/비활성은 곧바로 부르지 않고 확인 창을 연다 — 템플릿을 바꾸면 사이트 전면이
                한꺼번에 바뀌므로 되물어야 한다(모듈·플러그인과 다른 점이다).
                스위치는 창이 답을 받을 때까지 서버 값에 둔다 — 창을 닫아도 누른 쪽으로 뒤집힌 채 남지 않게
-               재동기 신호를 올린다(#703 실측). 확인하면 목록을 다시 받아 새 값으로 넘어간다. -->
+               재동기 신호를 올린다. 확인하면 목록을 다시 받아 새 값으로 넘어간다. -->
           <sequence>
             <set-state target="global" extensionToggleResync="{{(_global.extensionToggleResync ?? 0) + 1}}"/>
             <set-state target="global" selectedTemplate="{{$args[1]}}"/>
@@ -197,7 +197,7 @@
         </on>
         <on type="action" event="onPrimaryAction">
           <!-- 미설치면 설치 창이다. 활성 템플릿의 시각 편집기는 주 단추가 새 창 링크(primaryAction.href + target _blank)라
-               이 갈래에 오지 않는다 — 편집하며 결과를 보려면 원래 화면이 남아 있어야 하고, 링크라 주소 복사·새 탭도 된다(#757). -->
+               이 갈래에 오지 않는다 — 편집하며 결과를 보려면 원래 화면이 남아 있어야 하고, 링크라 주소 복사·새 탭도 된다. -->
           <switch on="{{$args[0].status === 'uninstalled' ? 'install' : 'edit'}}">
             <case when="install">
               <sequence>
@@ -212,7 +212,7 @@
                삭제는 창을 먼저 열고 안내 정보를 뒤이어 받는다. -->
           <switch>
             <case when="settings">
-              <!-- audit:allow layout-list-context-navigate-merge-query 템플릿 설정 화면으로 이동 — 목적지는 각 템플릿의 설정 화면(#434)으로, 템플릿 목록 클러스터 밖이다. -->
+              <!-- audit:allow layout-list-context-navigate-merge-query 템플릿 설정 화면으로 이동 — 목적지는 각 템플릿의 설정 화면으로, 템플릿 목록 클러스터 밖이다. -->
               <navigate path="{{$args[1].settings_route}}" fallbackPath="/admin/templates"/>
             </case>
             <case when="view_detail">

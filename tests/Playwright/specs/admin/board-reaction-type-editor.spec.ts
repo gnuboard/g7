@@ -1,5 +1,5 @@
 /**
- * 반응 유형 인라인 편집기 (#525 WP-A).
+ * 반응 유형 인라인 편집기.
  *
  * 실브라우저로 세 갈래를 잰다:
  *   ① 유형을 추가하면 **저장 전에도** 위 체크박스 목록에 선다 — 같은 폼 배열을 보기 때문
@@ -36,7 +36,7 @@ async function openEditor(page: Page, token: string): Promise<void> {
   await expect(page.locator('[data-testid="reaction-type-add-btn"]')).toBeVisible({ timeout: 25_000 });
 }
 
-test.describe('반응 유형 편집기 (#525 WP-A)', () => {
+test.describe('반응 유형 편집기', () => {
   // @scenario case=settings_editor_renders_form_rows
   // @effects settings_editor_iterates_form_reaction_types_not_datasource
   test('등록된 유형이 행으로 서고 비활성 유형은 체크할 수 없다', async ({ page, reactionSeed, settingsToken }) => {

@@ -10,7 +10,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 /**
  * GDPR 거부(rejection) 컬럼 추가 마이그레이션 Installation 스모크 테스트.
  *
- * 이슈 #430 — 쿠키 거부 기능. gdpr_user_consents 테이블에
+ * 쿠키 거부 기능. gdpr_user_consents 테이블에
  * is_rejected / rejected_at 컬럼이 추가되고, up→down→up 왕복이 안전한지 검증.
  *
  * 기존 001 마이그레이션(drop→create)은 수정 금지 대상이므로 add-column 방식의

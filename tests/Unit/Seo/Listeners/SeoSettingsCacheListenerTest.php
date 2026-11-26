@@ -113,7 +113,7 @@ class SeoSettingsCacheListenerTest extends TestCase
 
     /**
      * 「본문 콘텐츠」 탭 저장도 봇 화면 캐시를 비운다 — 봇 화면은 본문 표시 규칙(캡션·외부 영상·추가 태그)으로 정화되므로
-     * 규칙을 바꾸면 캐시된 봇 화면이 옛 규칙으로 남는다(#887 실측: 캡션 끔 저장 뒤 봇 캐시 HIT 에 figcaption 1).
+     * 규칙을 바꾸면 캐시된 봇 화면이 옛 규칙으로 남는다(캡션 끔 저장 뒤 봇 캐시 HIT 에 figcaption 1).
      *
      * @scenario case=core_seo_sync
      *
@@ -155,7 +155,7 @@ class SeoSettingsCacheListenerTest extends TestCase
     }
 
     /**
-     * 일반 탭 저장도 SEO 캐시를 비운다 (#434 결함 ②).
+     * 일반 탭 저장도 SEO 캐시를 비운다 (결함 ②).
      *
      * 봇 화면은 사이트 이름(제목 접미 폴백)·로고·파비콘을 일반 탭에서 읽는다. 종전에는 SEO 탭만 구독해
      * 이름·아이콘을 바꿔도 봇 화면이 캐시 TTL 까지 옛 값이었다.
@@ -176,7 +176,7 @@ class SeoSettingsCacheListenerTest extends TestCase
     }
 
     /**
-     * 템플릿 설정 저장(파비콘 등)도 SEO 캐시를 비운다 (#434).
+     * 템플릿 설정 저장(파비콘 등)도 SEO 캐시를 비운다.
      *
      * @scenario case=core_seo_sync
      *
@@ -196,7 +196,7 @@ class SeoSettingsCacheListenerTest extends TestCase
     }
 
     /**
-     * 템플릿 설정 저장이 실패했으면 캐시를 두는지 확인 (#434).
+     * 템플릿 설정 저장이 실패했으면 캐시를 두는지 확인.
      *
      * @scenario case=core_seo_sync
      *
@@ -231,7 +231,7 @@ class SeoSettingsCacheListenerTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
-    // ─── 업로드 탭 썸네일 설정 (#869) ──────────────────────────
+    // ─── 업로드 탭 썸네일 설정 ──────────────────────────
 
     /**
      * 업로드 탭에서 썸네일 값이 실제로 바뀌면 SEO 캐시를 비웁니다.
@@ -427,7 +427,7 @@ class SeoSettingsCacheListenerTest extends TestCase
     }
 
     /**
-     * 일반 범주 단건 저장도 SEO 캐시를 비운다 (#434 결함 ②).
+     * 일반 범주 단건 저장도 SEO 캐시를 비운다 (결함 ②).
      *
      * @scenario case=core_seo_sync
      *

@@ -1249,7 +1249,7 @@ return [
     'summary_more_error' => '(他 :count 件のエラー)',
     'summary_more_errors' => '(他 :count 件のエラー)',
     'attributes' => [
-        // 회원 활동 기록 기간 조회 (7.2.1, #952)
+        // 회원 활동 기록 기간 조회 (7.2.1)
         'date_from' => '開始日',
         'date_to' => '終了日',
         'system.execution_mode' => '実行方式',

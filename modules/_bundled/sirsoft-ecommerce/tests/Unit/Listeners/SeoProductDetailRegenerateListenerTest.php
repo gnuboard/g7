@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 /**
  * 상품 상세 SEO 캐시 다시 그리기 리스너 (큐) 테스트
  *
- * 캐시 비우기는 SeoProductCacheListener 가 sync 로 하고, 무거운 다시 그리기만 이 리스너가 큐에서 맡는다(#724).
+ * 캐시 비우기는 SeoProductCacheListener 가 sync 로 하고, 무거운 다시 그리기만 이 리스너가 큐에서 맡는다.
  */
 class SeoProductDetailRegenerateListenerTest extends ModuleTestCase
 {

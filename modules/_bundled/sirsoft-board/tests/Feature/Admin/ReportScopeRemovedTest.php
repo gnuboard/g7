@@ -18,7 +18,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 신고 관리 권한의 범위 제거 무회귀 테스트 (#789)
+ * 신고 관리 권한의 범위 제거 무회귀 테스트
  *
  * 신고 관리 권한(`reports.view`·`reports.manage`)의 범위 메타는 `owner_key = reporter_id` 였으나, 1케이스 구조 뒤
  * 케이스 테이블에 신고자 컬럼이 없어 「본인만」·「소유역할」이 어떤 의미로도 일관되게 동작하지 않았다(목록·상세·

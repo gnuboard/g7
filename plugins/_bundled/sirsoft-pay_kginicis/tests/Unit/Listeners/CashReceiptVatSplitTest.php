@@ -13,7 +13,7 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 /**
- * 현금영수증 발급의 공급가액·부가세 분할 (#612 ②)
+ * 현금영수증 발급의 공급가액·부가세 분할
  *
  * 이커머스 1.3.3 은 발급 페이로드에 주문 부가세를 과세 몫 비율로 나눈 `vat_amount` 를 싣는다. 종전처럼 과세 몫을
  * 11 로 나누면 5% 세율 상품·영세(세율 0%)가 섞인 주문에서 부가세가 과다 신고된다. 값이 없으면(구버전 이커머스)

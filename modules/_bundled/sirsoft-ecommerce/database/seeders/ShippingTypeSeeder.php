@@ -100,7 +100,7 @@ class ShippingTypeSeeder extends Seeder implements TranslatableSeederInterface
             ->values()
             ->all();
 
-        // 정리 대상은 시더가 만든 행(created_by IS NULL)뿐이다 — 운영자가 만든 미사용 배송유형은 남긴다(#727).
+        // 정리 대상은 시더가 만든 행(created_by IS NULL)뿐이다 — 운영자가 만든 미사용 배송유형은 남긴다.
         $deleted = $helper->cleanupStale(
             ShippingType::class,
             ['created_by' => null],

@@ -15,7 +15,7 @@ use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
- * 관리자 설정 조회·저장 응답의 화면용 계산 값 (#887)
+ * 관리자 설정 조회·저장 응답의 화면용 계산 값
  *
  * 화면은 저장 응답(`data.settings`)으로 전역 설정을 병합한다. 응답에 공개 설정의 계산 값(`frontend_schema` 의 `computed: true`)이
  * 없으면 같은 탭에서는 페이지 로드 때 받은 옛 계산 값이 남는다(실측: 동영상 업로드 허용을 켜고 저장 → 새로고침 없이 게시글 상세 →

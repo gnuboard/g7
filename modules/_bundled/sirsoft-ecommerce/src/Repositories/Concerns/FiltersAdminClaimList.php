@@ -139,7 +139,7 @@ trait FiltersAdminClaimList
         //
         // 신청자 컬럼(`requested_by`·`cancelled_by`)으로 가르면 안 된다: 비회원 신청과
         // **운영자 대리 접수**가 똑같이 null 이라, 회원 주문의 운영자 접수 건이 「비회원」
-        // 목록에 선다 — 운영자는 연락 수단을 잘못 고른다(#599 세션A 실측 2026-09-21:
+        // 목록에 선다 — 운영자는 연락 수단을 잘못 고른다(세션A 실측 2026-09-21:
         // 회원 주문 20260921-1316400577 의 RF20260921-1412250846·RF20260921-1416278729).
         if (($filters['requester_type'] ?? null) === 'member') {
             $query->whereHas('order', fn ($q) => $q->whereNotNull('user_id'));

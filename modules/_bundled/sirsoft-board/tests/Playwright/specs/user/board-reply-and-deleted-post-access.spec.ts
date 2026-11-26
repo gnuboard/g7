@@ -1,6 +1,6 @@
 /**
  * 블라인드·삭제 부모글 답글 폼 사전 차단 + 삭제 게시글 답변/첨부 접근 — 사용자 페이지
- * (이슈 #413 item 44, 50).
+ * (item 44, 50).
  *
  * 44: 블라인드/삭제된 부모글에 /board/{slug}/write?parent_id=N 으로 직접 진입해도
  *     답글 폼이 열리지 않고(404), 부모글 제목/본문이 노출되지 않는다.
@@ -32,7 +32,7 @@ const BOARD_SLUG = 'inquiry';
 const BLINDED_PARENT_ID = 170;
 const DELETED_PARENT_ID = 265;
 
-test.describe.skip('답글 폼 사전 차단 + 삭제 게시글 답변/첨부 (#413)', () => {
+test.describe.skip('답글 폼 사전 차단 + 삭제 게시글 답변/첨부', () => {
   // 변종(축 아님, 매니페스트 axis 의미 주석): 블라인드 부모글, form_meta 진입 경로
   // @scenario viewer=regular
   // @effects form_meta_blocks_blinded_parent_and_hides_original
@@ -66,7 +66,7 @@ test.describe.skip('답글 폼 사전 차단 + 삭제 게시글 답변/첨부 (#
     await page.goto(`/board/${BOARD_SLUG}/${DELETED_PARENT_ID}`);
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-    // 답변은 글쓰기 주소를 가진 링크(#757)다. 단추로 되돌아가도 거짓 통과하지 않도록 두 역할을 함께 단언한다.
+    // 답변은 글쓰기 주소를 가진 링크다. 단추로 되돌아가도 거짓 통과하지 않도록 두 역할을 함께 단언한다.
     for (const role of ['link', 'button'] as const) {
       await expect(page.getByRole(role, { name: /답변|Reply/ })).toHaveCount(0, {
         timeout: 10_000,

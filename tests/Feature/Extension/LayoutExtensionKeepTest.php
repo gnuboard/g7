@@ -13,7 +13,7 @@ use Tests\Support\Concerns\BuildsLayoutMergeFixtures;
 use Tests\TestCase;
 
 /**
- * 확장 조각(`template_layout_extensions`) 운영자 수정이 업데이트·다른 확장 활성화에 지워지지 않는지 고정한다 (#727).
+ * 확장 조각(`template_layout_extensions`) 운영자 수정이 업데이트·다른 확장 활성화에 지워지지 않는지 고정한다.
  *
  * 결함(수정 전):
  *  - 모듈 keep 업데이트가 refresh **앞에서** 조각을 전략 없이 재등록해 원본 해시까지 파일로 덮어썼다 —

@@ -134,7 +134,7 @@ describe('레이아웃 $t: 키 정의 검사', () => {
 
   // 국가 선택지(회원 폼·회원 목록 국가 필터)는 코드마다 `$t:countries.XX` 를 쓴다.
   // en 파일에 칠레·콜롬비아·페루가 빠지고 다른 세 나라가 들어가 있어, 영어 화면의
-  // 국가 목록에 키 원문이 노출됐다(#705 국가 표시 복원 후 목록 필터까지 번짐).
+  // 국가 목록에 키 원문이 노출됐다(국가 표시 복원 후 목록 필터까지 번짐).
   // @scenario namespace=countries
   // @effects layout_country_keys_defined
   it.each(LOCALES)('countries 네임스페이스의 모든 참조 키가 %s 에 정의되어야 함', (locale) => {

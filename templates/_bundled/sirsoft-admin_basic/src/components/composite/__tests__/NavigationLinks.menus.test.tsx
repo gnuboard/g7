@@ -1,5 +1,5 @@
 /**
- * 관리자 템플릿 합성 컴포넌트의 화면 이동 링크 — 메뉴·알림·카드·바로가기 (#757 링크 단계 L4)
+ * 관리자 템플릿 합성 컴포넌트의 화면 이동 링크 — 메뉴·알림·카드·바로가기 (링크 단계 L4)
  *
  * 프로필 메뉴·알림 항목·드롭다운 메뉴 항목·카드·페이지 머리 바로가기가 클릭으로만 이동해 가운데 클릭·Ctrl+클릭·우클릭
  * 「새 탭에서 열기」가 되지 않았다. 주소는 레이아웃 prop·항목 데이터에서 오고 `<a href>` 는 컴포넌트가 그린다(D14).
@@ -277,7 +277,7 @@ describe('L4 DropdownMenuItem — href 항목', () => {
     expect(item.tagName).toBe('A');
     expect(item).toHaveAttribute('href', '/admin/users/5/edit');
     expect(item).toHaveClass('flex', 'items-center', 'px-4', 'py-3', 'cursor-pointer');
-    // 링크가 없는 항목도 키보드로 닿는 메뉴 항목이지만 링크는 아니다(#869 키보드 접근 — 종전에는 role 없는 div)
+    // 링크가 없는 항목도 키보드로 닿는 메뉴 항목이지만 링크는 아니다(키보드 접근 — 종전에는 role 없는 div)
     const plain = screen.getByRole('menuitem', { name: '삭제' });
     expect(plain.tagName).not.toBe('A');
     expect(plain.tabIndex).toBe(0);

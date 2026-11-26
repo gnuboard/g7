@@ -45,7 +45,7 @@ class GdprConsentService
     ) {}
 
     /**
-     * 회원의 동의 행을 읽습니다 — 쿠키 동의 판정 3종이 한 요청에서 같은 행을 다시 읽지 않게 요청 메모 (#860).
+     * 회원의 동의 행을 읽습니다 — 쿠키 동의 판정 3종이 한 요청에서 같은 행을 다시 읽지 않게 요청 메모.
      *
      * @param  int  $userId  회원 ID
      * @return Collection 동의 행
@@ -112,7 +112,7 @@ class GdprConsentService
      * @param  bool  $value  동의 여부
      * @param  string  $source  변경 경로 (허용 어휘는 {@see ConsentSource} 가 SSoT)
      * @param  array|null  $categories  카테고리 스냅샷 (배너 일괄 변경 시)
-     * @param  bool  $isRejection  명시적 거부 신호 (이슈 #430). 선택형 미동의 항목을 is_rejected=true 로 저장.
+     * @param  bool  $isRejection  명시적 거부 신호. 선택형 미동의 항목을 is_rejected=true 로 저장.
      * @return void
      */
     public function updateConsent(
@@ -133,7 +133,7 @@ class GdprConsentService
 
         $consent = null;
 
-        // 필수 카테고리는 "동의 축"에서 제외한다 (이슈 #430 후속 — 업계 표준 정합).
+        // 필수 카테고리는 "동의 축"에서 제외한다 (업계 표준 정합).
         // 필수 쿠키는 ePrivacy Art.5(3) 면제로 동의 대상이 아니므로, "현재 상태"(status) 테이블에
         // 동의/거부로 저장하지 않는다. 저장하면 "동의하지 않았는데 동의로 표시"되는 모순이 생긴다.
         // 단, history(이력)에는 "이 시점에 배너에서 결정을 내렸다"는 사실을 남긴다 (GDPR Art.7(1) 입증).
@@ -148,7 +148,7 @@ class GdprConsentService
             // policy_version 동일 조건 추가 — 정책 bump 후 같은 값 재요청은 신정책 적용
             // (status.policy_version 갱신 + history INSERT) 으로 이어져야 needs_renewal 이 해소되고
             // GDPR Art.7(1) 입증 책임 (신정책 동의 기록) 도 충족됨.
-            // is_rejected 변화 조건 추가 (이슈 #430) — 미동의(false) 상태에서 거부 신호가 오면
+            // is_rejected 변화 조건 추가 — 미동의(false) 상태에서 거부 신호가 오면
             // is_consented 는 그대로 false 라 기존 가드가 early-return 하여 is_rejected 저장이 누락됐다.
             // 거부(rejected)와 일반 미동의(revoked)를 데이터로 구분하려면 이 조건이 필수.
             if ($existing
@@ -220,7 +220,7 @@ class GdprConsentService
      * @param  string|null  $sessionId  게스트 세션 ID
      * @param  array<string, bool>  $consents  동의 데이터 [key => bool]
      * @param  string  $source  변경 경로
-     * @param  bool  $isRejection  명시적 거부 신호 (이슈 #430). 선택형 미동의 항목을 is_rejected=true 로 저장.
+     * @param  bool  $isRejection  명시적 거부 신호. 선택형 미동의 항목을 is_rejected=true 로 저장.
      * @return void
      */
     public function updateConsents(?int $userId, ?string $sessionId, array $consents, string $source, bool $isRejection = false): void

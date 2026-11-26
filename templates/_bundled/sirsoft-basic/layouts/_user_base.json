@@ -1,5 +1,5 @@
 {
-    "comment": "공개 사용자 화면 전체의 상속원 — 홈·게시판·검색·쇼핑·마이페이지·인증·에러가 모두 이 레이아웃을 extends 하고 자기 본문을 content 슬롯에 넣는다. 여기서 세운 전역값(통화·배송국가·장바구니 키·비회원 주문 토큰)과 헤더/드로어/푸터는 자식이 다시 정의하지 않는다. 상속원이라 이 파일의 변경은 공개 사이트 전 화면에 동시에 닿는다.\n     계산값 siteMenu — 템플릿 설정 header.menu(#434)에서 꺼진 항목·꺼진 모듈의 자동 항목·보이지 않을 대상(회원만·비회원만·특정 역할)을 거른 메뉴.\n     헤더·모바일 드로어·봇 화면이 모두 이 값을 쓴다(따로 판정하면 셋이 어긋난다). 비회원은 역할 guest 로 본다. 보이기는 메뉴 안내일 뿐 접근 제어가 아니다.",
+    "comment": "공개 사용자 화면 전체의 상속원 — 홈·게시판·검색·쇼핑·마이페이지·인증·에러가 모두 이 레이아웃을 extends 하고 자기 본문을 content 슬롯에 넣는다. 여기서 세운 전역값(통화·배송국가·장바구니 키·비회원 주문 토큰)과 헤더/드로어/푸터는 자식이 다시 정의하지 않는다. 상속원이라 이 파일의 변경은 공개 사이트 전 화면에 동시에 닿는다.\n     계산값 siteMenu — 템플릿 설정 header.menu에서 꺼진 항목·꺼진 모듈의 자동 항목·보이지 않을 대상(회원만·비회원만·특정 역할)을 거른 메뉴.\n     헤더·모바일 드로어·봇 화면이 모두 이 값을 쓴다(따로 판정하면 셋이 어긋난다). 비회원은 역할 guest 로 본다. 보이기는 메뉴 안내일 뿐 접근 제어가 아니다.",
     "version": "1.0.0",
     "layout_name": "_user_base",
     "meta": {
@@ -828,7 +828,7 @@
                                     ]
                                 },
                                 {
-                                    "comment": "사용자 정보를 받는 동안 — 링크 없는 같은 크기 자리. 받는 중을 비회원으로 읽어 회원에게 로그인 링크를 주지 않는다(#915).",
+                                    "comment": "사용자 정보를 받는 동안 — 링크 없는 같은 크기 자리. 받는 중을 비회원으로 읽어 회원에게 로그인 링크를 주지 않는다.",
                                     "id": "mobile_user_btn_loading",
                                     "type": "basic",
                                     "name": "Span",
@@ -1431,7 +1431,7 @@
                                                     ]
                                                 },
                                                 {
-                                                    "comment": "쿠폰함(#952) — 쇼핑몰 모듈이 꺼져 있으면 숨긴다.",
+                                                    "comment": "쿠폰함 — 쇼핑몰 모듈이 꺼져 있으면 숨긴다.",
                                                     "id": "mobile_drawer_coupons_link",
                                                     "type": "basic",
                                                     "name": "A",
@@ -1523,7 +1523,7 @@
                             ]
                         },
                         {
-                            "comment": "비로그인 상태 - 로그인/회원가입 버튼. 사용자 정보를 받는 동안(undefined)은 그리지 않는다 — 회원에게 잠깐 보였다(#915).",
+                            "comment": "비로그인 상태 - 로그인/회원가입 버튼. 사용자 정보를 받는 동안(undefined)은 그리지 않는다 — 회원에게 잠깐 보였다.",
                             "type": "basic",
                             "name": "Div",
                             "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}",
@@ -1805,7 +1805,7 @@
                                             "if": "{{item.kind === 'coupons' && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}",
                                             "actions": [
                                                 {
-                                                    "comment": "쿠폰존으로(#952) — 앞머리(shopBase)는 상품 목록과 같다",
+                                                    "comment": "쿠폰존으로 — 앞머리(shopBase)는 상품 목록과 같다",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -2277,7 +2277,7 @@
                                                                     "if": "{{child.kind === 'coupons' && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}",
                                                                     "actions": [
                                                                         {
-                                                                            "comment": "쿠폰존으로(#952)",
+                                                                            "comment": "쿠폰존으로",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [

@@ -1,7 +1,7 @@
 <!-- 쇼핑몰 환경설정 (운영자) — 열 개 탭을 한 레이아웃에 싣고 탭 이름을 URL 쿼리에 남긴다. 탭마다
   필요한 자료가 달라 각 데이터소스에 `if` 로 자기 탭 조건을 걸어 두었고(안 보는 탭 것은 부르지
   않는다), 저장은 아래 버튼 하나가 현재 탭 몫만 골라 보낸다. e2e:allow 탭 전환 이벤트 받기의 세 동작을
-  `<sequence>` 로 감싸 주석 자리를 맞춘 것뿐이라 산출 JSON 은 comment 외 동일하다 — 화면 동작 변화 없음(#789). -->
+  `<sequence>` 로 감싸 주석 자리를 맞춘 것뿐이라 산출 JSON 은 comment 외 동일하다 — 화면 동작 변화 없음. -->
 <layout name="admin_ecommerce_settings" version="1.0.0" extends="_admin_base">
   <meta leave_guard="{{_local.hasChanges === true}}" title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
   <!-- 전 탭의 설정값을 한 덩어리로 받아 폼에 심는다 — 이 한 응답이 열 탭을 모두 덮는다. 탭 전환은 같은 화면으로의 재진입(navigate replace)이라 refetchOnMount 로 다시 받아 폼을 덮는다 — 그래서 저장하지 않은 변경이 있으면 탭 줄이 옮기기 전에 묻는다. 저장 뒤에는 서버가 정규화한 값으로 되맞추려고 다시 받는다 -->
@@ -141,7 +141,7 @@
       </on-code>
     </error-handling>
   </data-source>
-  <!-- 본인인증 「사용자 지정」 범위의 확장 지점 목록 (7.2.1, #952) — 정책 창이 「사용자 지정」 옵션과 대상 select 를 이 목록으로 그린다. 받지 못하면 빈 목록(옵션 숨김) -->
+  <!-- 본인인증 「사용자 지정」 범위의 확장 지점 목록 (7.2.1) — 정책 창이 「사용자 지정」 옵션과 대상 select 를 이 목록으로 그린다. 받지 못하면 빈 목록(옵션 숨김) -->
   <data-source id="identityCheckpoints" label_key="$t:sirsoft-ecommerce.editor.data_source.identityCheckpoints" type="api" endpoint="/api/admin/identity/checkpoints" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'identity_policies'}}" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <fallback>
       <field name="data">
@@ -181,7 +181,7 @@
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
-  <!-- 주문 설정 탭에서만 — 주문서 항목 표(#490)가 읽는 항목 정의. 코어 항목 집합 API 를 이 모듈의 집합(`sirsoft-ecommerce.order_contact`)으로 부른다.
+  <!-- 주문 설정 탭에서만 — 주문서 항목 표가 읽는 항목 정의. 코어 항목 집합 API 를 이 모듈의 집합(`sirsoft-ecommerce.order_contact`)으로 부른다.
        표의 스위치와 창의 저장은 이 소스만 다시 받는다(설정 전체를 다시 받으면 다른 칸에서 고친 값이 덮인다). 도착하면(성공이든 실패든)
        표의 저장 중 표식을 내려 다음 조작을 연다. 조회 권한이 없으면(403) 표지를 남겨 빈 표 대신 이유를 보인다 -->
   <data-source id="checkoutFieldDefs" label_key="$t:sirsoft-ecommerce.editor.data_source.checkoutFieldDefs" type="api" endpoint="/api/admin/field-sets/sirsoft-ecommerce.order_contact/fields" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'order_settings'}}" :auto_fetch="true" :auth_required="true">
@@ -372,13 +372,13 @@
               값까지 덮어쓰기 때문이고, 서버도 `_tab` 으로 검증 범위를 가른다(문의 설정은 여러 탭에
               걸쳐 있어 함께 실린다). 통화 추가가 확정되지 않은 상태면 저장을 막고 안내만 띄운다 —
               그대로 보내면 입력 중이던 통화가 소리 없이 사라진다.
-              리뷰 설정 탭과 기본 정보 탭은 기능별 작성자 표시 이름(`display_name` 의 후기, 문의)을 함께 싣는다(#490) —
+              리뷰 설정 탭과 기본 정보 탭은 기능별 작성자 표시 이름(`display_name` 의 후기, 문의)을 함께 싣는다 —
               두 칸이 그 탭에 있고, 읽기 전용 목록(`display_name_options`)은 싣지 않는다.
               통화 탭은 환율 제공자가 관리하는 기존 통화의 환율을 빼고 보낸다 — 그 칸은 잠겨 있어
               운영자가 바꿀 수 없고, 화면을 연 사이 제공자가 환율을 갱신했으면 받아 둔 값이 저장값과
               달라 저장 전체가 「관리 환율 변경」 오류로 막힌다. 빠진 값은 서버가 저장값으로 채운다.
               키를 빼는 데 구조분해 매개변수를 쓰지 않는다 — 식 평가기가 읽지 못해 본문 전체가 식 원문
-              문자열로 나가 모든 탭 저장이 아무것도 저장하지 못했다(#703 실측). -->
+              문자열로 나가 모든 탭 저장이 아무것도 저장하지 못했다. -->
             <sequence>
               <toast if="{{_local.isAddingMileageCurrency === true || _local.isAddingCurrency === true}}" type="error" message="$t:sirsoft-ecommerce.admin.settings.save_pending_currency"/>
               <!-- 통화 2축과 같은 가드를 사유 3종·배송사·배송유형·배송가능국가의 추가 폼에도 둔다 — 폼을 연 채 저장하면 그 버퍼(*Form)는 form.* 로 옮겨지지 않은 채 조용히 버려지고 성공 토스트가 뜬다. 가드가 열거식이라 새 인라인 폼이 생기면 여기에도 더해야 한다. 문구는 지금 열려 있는 폼만 지목한다 — 종전엔 세 가지를 고정으로 나열해, 배송가능국가 폼만 연 운영자가 열려 있지도 않은 폼을 확정하라는 안내를 받았다($t 는 치환 인자를 받지 않으므로 :forms 자리를 여기서 채운다). -->

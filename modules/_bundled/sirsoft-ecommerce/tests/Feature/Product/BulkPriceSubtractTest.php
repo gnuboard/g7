@@ -10,7 +10,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 판매가 일괄 변경 「인하 + 금액」 회귀 테스트 (#703)
+ * 판매가 일괄 변경 「인하 + 금액」 회귀 테스트
  *
  * 회귀 배경: 상품 목록의 판매가 일괄 변경 창에서 「인하」+금액을 고르면 화면이 `method: 'subtract'` 를
  * 보내는데, 두 일괄 수정 요청은 `set,add,percent` 만 받아 422 로 막혔고 서비스에도 인하 분기가 없었다.

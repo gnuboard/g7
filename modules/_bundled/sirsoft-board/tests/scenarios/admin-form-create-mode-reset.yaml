@@ -5,7 +5,7 @@ description: |
   등록은 같은 레이아웃이라 _local.form 이 남는다. 두 폼은 생성 모드에서도 데이터소스(form-data)가
   폼을 채우는데, 문자열 initLocal 은 엔진이 응답을 기존 _local.form 과 깊은 병합해 두므로
   (TemplateApp processInitOptions) 직전 글의 id, 직전 게시판의 다국어 이름(name.en)이 등록 화면에
-  살아남았다 (브라우저 실측 2026-09-14, #599).
+  살아남았다 (브라우저 실측 2026-09-14).
 
   대응은 둘 다 필요하다: (1) 데이터소스 initLocal 을 replace 맵으로 바꿔 페이로드가 기존 form 과
   병합되지 않게 하고, (2) init_actions 생성 조건에서 form 을 null 로 먼저 비운다.

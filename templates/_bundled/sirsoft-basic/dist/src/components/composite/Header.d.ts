@@ -16,7 +16,7 @@ interface User {
     is_admin?: boolean;
 }
 /**
- * 헤더 메뉴 항목 — 템플릿 설정 `header.menu` (#434). 레이아웃 계산값 `siteMenu` 가 보이기 조건·꺼진 항목을 이미 걸러서 넘긴다.
+ * 헤더 메뉴 항목 — 템플릿 설정 `header.menu`. 레이아웃 계산값 `siteMenu` 가 보이기 조건·꺼진 항목을 이미 걸러서 넘긴다.
  *
  * `kind` 가 `link` 면 운영자가 적은 주소, 그 밖(`home`·`popular`·`shop`·`boards`)은 이 컴포넌트가 그 자리에 그리는 자동 항목이다.
  */
@@ -45,7 +45,7 @@ export declare const pickLocalizedLabel: (label: HeaderMenuItem["label"], locale
 interface HeaderProps {
     /** 사이트 로고 URL */
     logo?: string;
-    /** 다크 모드 로고 URL — 있으면 어두운 화면에서 사이트 로고 대신 보인다(템플릿 설정 `branding.logo_dark`, #434) */
+    /** 다크 모드 로고 URL — 있으면 어두운 화면에서 사이트 로고 대신 보인다(템플릿 설정 `branding.logo_dark`) */
     logoDark?: string;
     /** 테마(라이트/다크) 단추를 보일지 — 기본 true (템플릿 설정 `header.show_theme_toggle`) */
     showThemeToggle?: boolean;
@@ -71,7 +71,7 @@ interface HeaderProps {
     /**
      * 로그인 사용자 정보를 받는 중인가 — true 면 사용자 메뉴 자리에 빈 자리(회색 원 + 이름 막대)를 그리고
      * 로그인·회원가입·주문조회·사용자 메뉴는 그리지 않는다(이름 길이에 따라 받은 뒤 폭이 조금 달라질 수 있다). 레이아웃이 `{{_global.currentUser === undefined}}` 로 넘긴다.
-     * 받는 중을 비회원으로 읽으면 회원이 새로고침할 때 「로그인·회원가입」이 잠깐 보였다가 바뀌고 검색창이 출렁였다(#915).
+     * 받는 중을 비회원으로 읽으면 회원이 새로고침할 때 「로그인·회원가입」이 잠깐 보였다가 바뀌고 검색창이 출렁였다.
      * 기본값 false — 편집기 미리보기·바인딩이 없는 옛 레이아웃은 지금처럼 그린다.
      */
     userLoading?: boolean;
@@ -96,7 +96,7 @@ interface HeaderProps {
     /**
      * 게시판 모듈이 켜져 있는가 — false 면 「인기글」 탭과 게시판 탭·더보기를 그리지 않는다.
      * 기본값 true: 레이아웃이 `_global.activeModules` 로 판정해 넘긴다. 값이 오지 않는 경우(루트 레이아웃을 keep 으로
-     * 업데이트해 새 바인딩이 없는 사이트)에는 지금처럼 보인다(#822).
+     * 업데이트해 새 바인딩이 없는 사이트)에는 지금처럼 보인다.
      */
     boardEnabled?: boolean;
     /** 쇼핑몰 모듈이 켜져 있는가 — false 면 장바구니 단추·「쇼핑」 탭·회원 메뉴의 주문내역·위시리스트·비회원 「주문조회」를 그리지 않는다. 기본값 true(위와 같은 이유) */

@@ -1,5 +1,5 @@
 /**
- * ActionDispatcher — 이벤트 없는 호출 (engine-v1.77.1, #736 S2)
+ * ActionDispatcher — 이벤트 없는 호출 (engine-v1.77.1)
  *
  * 1. 컴포넌트가 콜백을 이벤트 없이 부를 때(`onClose()`) — `createHandler` 가 돌려준 핸들러가 `event.type`·
  *    `preventDefault()` 를 읽다 TypeError 로 거부돼 액션이 실행되지 않았다. 관리자 모달 Escape 가 창을 닫지 못하고

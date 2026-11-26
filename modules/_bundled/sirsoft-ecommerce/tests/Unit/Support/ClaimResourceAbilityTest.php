@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 구매자 조작 가능 판정에 **출처 축**이 들어가는지 (#599 후속 F3)
+ * 구매자 조작 가능 판정에 **출처 축**이 들어가는지
  *
  * 서버는 `source_type !== DIRECT` 인 환불신청서의 철회·수정을 거절한다. 그런데 리소스의
  * `is_withdrawable`/`is_editable` 은 **상태만** 봤다 — 반품·교환에서 이어진 환불신청서와

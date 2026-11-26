@@ -7,7 +7,7 @@ namespace Plugins\Sirsoft\PayKginicis\Concerns;
 use Plugins\Sirsoft\PayKginicis\Exceptions\KgInicisRejectedException;
 
 /**
- * 결제대행사 호출 실패를 화면·기록에 남길 사유로 바꾼다 (#858)
+ * 결제대행사 호출 실패를 화면·기록에 남길 사유로 바꾼다
  *
  * 실패 사유는 쇼핑몰 취소 안내(회원·비회원·관리자 응답), 일본 CBT 대사 기록(관리자 주문 상세 「환불 오류」),
  * 현금영수증 이력(관리자 주문 상세 결제 정보·구매자 응답)에 실린다. KG이니시스가 돌려준 거절 사유(resultMsg —

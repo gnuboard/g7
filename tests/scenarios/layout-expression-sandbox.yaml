@@ -22,7 +22,7 @@ effects:
   - sandbox_escape_blocked
   - dangerous_payload_does_not_set_global
   - whitelisted_globals_stay_callable
-  # #869: 레이아웃 scripts[] 의 if·conditions 가 실제 로드 경로에서 평가되어 참일 때만 로드된다.
+  # 레이아웃 scripts[] 의 if·conditions 가 실제 로드 경로에서 평가되어 참일 때만 로드된다.
   # 종전에는 평가기에 바인딩 엔진 대신 undefined 가 넘어가 `{{...}}` 조건이 늘 거짓이었다.
   # 번들 화면에는 조건 단 스크립트가 없어 브라우저 재현 화면이 없으므로 TemplateApp 실경로 단위 시험이 맡는다.
   - conditional_layout_script_loads_only_when_true
@@ -93,7 +93,7 @@ sub_flows:
         조기 반환하면 그 부착이 조용한 no-op 이 된다.
       - 부착 패리티: Store·Update·UpdateContent·UpdateExtensionContent 4 경로가 동일 강도여야
         한다. 편집기 저장 경로만 빠지면 그 경로가 우회로다.
-      - 안내 문구·링크 예외(#727): 입력 안내 문구(`placeholder`)·링크(`href`) prop 과 액션 요청 본문
+      - 안내 문구·링크 예외: 입력 안내 문구(`placeholder`)·링크(`href`) prop 과 액션 요청 본문
         (`params.body`)은 http(s) 웹 주소를 허용한다(2026-09-30 결정). 실행 스킴·프로토콜 상대 주소·`ftp:` 는
         그 자리에서도 막고, 자원 prop(`src`)·액션 대상은 종전대로 막는다. 번들 화면 전수는 조각을 펼친 저장 형태로
         검사한다 — 파일 한 장씩 보면 조각 안 값이 sink 검사를 받지 않아 관리자 화면 5개의 편집기 저장 422 를 놓쳤다.

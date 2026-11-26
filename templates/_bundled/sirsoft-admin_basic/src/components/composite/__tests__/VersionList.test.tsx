@@ -146,7 +146,7 @@ describe('VersionList', () => {
   describe('접근성', () => {
     // @scenario selection=none
     // @effects list_has_list_semantics
-    it('listbox 역할을 가진 ul 요소를 렌더링해야 함(고르는 목록, #869 키보드 접근)', () => {
+    it('listbox 역할을 가진 ul 요소를 렌더링해야 함(고르는 목록, 키보드 접근)', () => {
       render(<VersionList versions={mockVersions} />);
 
       expect(screen.getByRole('listbox')).toBeInTheDocument();

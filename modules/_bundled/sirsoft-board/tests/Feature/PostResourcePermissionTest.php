@@ -313,7 +313,7 @@ class PostResourcePermissionTest extends BoardTestCase
     }
 
     // ==========================================
-    // can_access_admin 게이트 테스트 (#450)
+    // can_access_admin 게이트 테스트
     // 유저 화면에서 관리자 게시판 화면 진입 크로스링크 노출 여부
     // ==========================================
 
@@ -411,7 +411,7 @@ class PostResourcePermissionTest extends BoardTestCase
     }
 
     /**
-     * User 목록/상세 응답의 board 정보에 id 가 포함된다 (#450)
+     * User 목록/상세 응답의 board 정보에 id 가 포함된다
      *
      * "게시판 관리" 크로스링크가 /admin/boards/:id/edit 로 이동하려면 board id 필요.
      *

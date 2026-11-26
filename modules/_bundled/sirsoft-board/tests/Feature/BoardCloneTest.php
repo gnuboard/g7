@@ -19,7 +19,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 /**
  * 게시판 복제(copyBoard) 회귀 테스트
  *
- * 이슈 #413-16:
+ * 16:
  *  - 16-(1) 복제 저장 시 board_manager_ids 누락 → 422
  *  - 16-(2) 복제 시 권한 미복사 + 역할 identifier 교차 게시판 누수
  *

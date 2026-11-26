@@ -6,7 +6,7 @@ use Tests\Support\Concerns\AssertsLayoutSortOptionGateParity;
 use Tests\TestCase;
 
 /**
- * 화면 정렬 옵션 ↔ 게이트 허용 집합 회귀 가드 — 코어/템플릿/플러그인 (#492 D-19).
+ * 화면 정렬 옵션 ↔ 게이트 허용 집합 회귀 가드 — 코어/템플릿/플러그인.
  *
  * 정렬 제한은 세 계층으로 겹쳐 있다.
  *

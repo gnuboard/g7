@@ -1,7 +1,7 @@
 // e2e:allow 회원 클레임 신청 셸의 주문 404 분기 — 실제 엔진 데이터소스 오류 경로(DataSourceManager → 오류 처리기 → ActionDispatcher)로 고정. 브라우저 시나리오는 tests/Playwright/specs/claim-apply-order-missing.spec.ts
 /**
  * @file claim-apply-order-missing-branch.test.tsx
- * @description 클레임 신청 셸의 주문 조회 404 를 주소(route.claim_number)로 가른다 (#753 X3)
+ * @description 클레임 신청 셸의 주문 조회 404 를 주소(route.claim_number)로 가른다
  *
  * 작성 진입(`/mypage/orders/:order_number/claims/apply/:type`)의 404 는 열 수 없는 주문이라 오류 화면을 세운다.
  * 수정 진입(`/mypage/claims/:claim_number/edit`)은 주소에 주문번호가 없어 첫 호출이 반드시 404 이고 그것이
@@ -76,7 +76,7 @@ async function runOrderSource(routeParams: Record<string, string>) {
   return results;
 }
 
-describe('클레임 신청 셸 — 주문 조회 404 분기 (#753)', () => {
+describe('클레임 신청 셸 — 주문 조회 404 분기', () => {
   /**
    * @scenario entry=create
    * @effects create_404_shows_error_page

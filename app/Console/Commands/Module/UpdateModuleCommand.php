@@ -163,7 +163,7 @@ class UpdateModuleCommand extends Command
                 }
 
                 if (! $checkResult['update_available'] && ! $force) {
-                    // 이 서버의 업데이트가 끝나지 않은 채 남았으면 「업데이트 없음」으로 끝내지 않는다 — DB 판은 이미 새 판이다(#888)
+                    // 이 서버의 업데이트가 끝나지 않은 채 남았으면 「업데이트 없음」으로 끝내지 않는다 — DB 판은 이미 새 판이다
                     if ($this->refuseUnfinishedUpdate('module', $identifier)) {
                         return Command::FAILURE;
                     }

@@ -29,7 +29,7 @@ class FileServingHelperSourceContractTest extends TestCase
         '/response\(\)\s*->\s*(file|download|stream|streamDownload)\s*\(/',
         '/new\s+\\\\?(Symfony\\\\Component\\\\HttpFoundation\\\\)?BinaryFileResponse\s*\(/',
         '/new\s+\\\\?(Symfony\\\\Component\\\\HttpFoundation\\\\)?StreamedResponse\s*\(/',
-        // 웹서버 위임 응답(#878)도 헬퍼(`fileResponse()`)만 만든다 — 컨트롤러가 직접 만들면 ETag·304·nosniff·이름 선언을 건너뛴다.
+        // 웹서버 위임 응답도 헬퍼(`fileResponse()`)만 만든다 — 컨트롤러가 직접 만들면 ETag·304·nosniff·이름 선언을 건너뛴다.
         '/new\s+\\\\?(App\\\\Http\\\\Responses\\\\)?DelegatedFileResponse\s*\(/',
     ];
 
@@ -83,9 +83,9 @@ class FileServingHelperSourceContractTest extends TestCase
     // 45 → 47: develop-7.2.0 4차 병합으로 히어로섹션·팝업 플러그인의 공개 이미지 서빙
     // (`BannerImageController::show()`·`PopupImageController::show()`)이 들어왔다 — 둘 다 코어 헬퍼
     // (`streamedFileResponseFromMeta`·`fileResponse`)를 지나도록 고친 뒤 모집단에 남는다(실측).
-    // 47 → 48: #434 파비콘 공개 서빙(`FaviconController`)이 들어왔다 — issue869 → develop-7.2.0 리베이스 트리 실측
+    // 47 → 48: 파비콘 공개 서빙(`FaviconController`)이 들어왔다
     // (파일별 집계에서 한쪽에만 있는 서빙 메서드는 이것 하나다).
-    // 48 → 49: #878 웹서버 파일 위임 2단계 프로브(`SettingsController::fileDelegationProbe()`)가 들어왔다 —
+    // 48 → 49: 웹서버 파일 위임 2단계 프로브(`SettingsController::fileDelegationProbe()`)가 들어왔다 —
     // 코어 헬퍼 `fileResponse()` 를 지난다.
     private const MIN_FILE_SERVING_METHODS = 49;
 

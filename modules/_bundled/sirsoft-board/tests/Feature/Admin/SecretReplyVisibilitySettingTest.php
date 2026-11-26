@@ -13,7 +13,7 @@ use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 게시판 설정 「비밀 답변 열람 범위」(secret_reply_visibility) 저장·기본값·일괄 적용 (#789 D19)
+ * 게시판 설정 「비밀 답변 열람 범위」(secret_reply_visibility) 저장·기본값·일괄 적용
  *
  * @scenario link=board-secret-thread-visibility
  */

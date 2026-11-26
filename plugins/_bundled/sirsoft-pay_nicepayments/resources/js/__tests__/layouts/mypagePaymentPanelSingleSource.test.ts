@@ -1,11 +1,11 @@
 /**
  * @file mypagePaymentPanelSingleSource.test.ts
- * @description 마이페이지 주문 상세 › 나이스페이먼츠 입금 안내·영수증 행은 레이아웃 조각 하나만 그린다 (#599, #639)
+ * @description 마이페이지 주문 상세 › 나이스페이먼츠 입금 안내·영수증 행은 레이아웃 조각 하나만 그린다
  *
  * 종전에는 조각(user_mypage_order_receipt)과 주입 스크립트(mypageOrderShowInjector)가 같은 「가상계좌 입금 안내」와
  * 「영수증」 행을 각각 그려, 입금 대기 주문은 입금 안내가, 결제 완료 주문은 영수증 행이 두 번 나왔다. 스크립트 쪽은
  * 한국어 고정 글자·자체 날짜 서식이었고 조각 쪽 입금 기한은 가공 전 ISO 값이었다.
- * #639 에서 그 주입 스크립트를 걷어냈다 — 이제 조각만 그리고, 입금 기한은 쇼핑몰이 서식을 입힌
+ * 그 주입 스크립트는 걷어냈다 — 이제 조각만 그리고, 입금 기한은 쇼핑몰이 서식을 입힌
  * vbank_due_at_formatted 를 쓰며, 스크립트가 열던 매출전표(type=0, API 의 receipt_url)는 조각의 영수증 행에 링크로 옮겼다.
  *
  * 시나리오: plugins/_bundled/sirsoft-pay_nicepayments/tests/scenarios/mypage-payment-panel-single-source.yaml

@@ -6,7 +6,7 @@
  * 2. fallback_target 존재 → 해당 영역만 (페이지 전환)
  * 3. 둘 다 미존재         → 전체 페이지 (#app fullpage)
  *
- * #869: 종전에는 TemplateApp.renderSkeletonOverlay 의 로직을 이 파일 안에 베낀 함수(대상 결정, CSS 대상 id,
+ * 종전에는 TemplateApp.renderSkeletonOverlay 의 로직을 이 파일 안에 베낀 함수(대상 결정, CSS 대상 id,
  * 컴포넌트 트리 선택)만 검사해, 원본이 깨져도 통과했다. 지금은 실제 renderSkeletonOverlay 를 부르고, 주입된
  * ::after 규칙과 스켈레톤 컨테이너 위치, 스켈레톤 컴포넌트가 받은 트리를 본다.
  * (매니페스트 core-skeleton-fallback-nu2.yaml)

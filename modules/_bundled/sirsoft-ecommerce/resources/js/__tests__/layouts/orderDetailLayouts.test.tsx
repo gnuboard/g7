@@ -471,7 +471,7 @@ describe('admin_ecommerce_order_detail.json (메인 레이아웃)', () => {
                     'partials/admin_ecommerce_order_detail/_modal_issue_cash_receipt.json',
                     'partials/admin_ecommerce_order_detail/_modal_reset_guest_password.json',
                     'partials/admin_ecommerce_order_detail/_modal_confirm_deposit.json',
-                    // 관리자 직권 교환·반품·취소 접수(#599 §3-11)
+                    // 관리자 직권 교환·반품·취소 접수
                     'partials/admin_ecommerce_order_detail/_modal_admin_claim_request.json',
                 ])
             );
@@ -1036,7 +1036,7 @@ describe('Partial 레이아웃 구조 검증', () => {
         /**
          * 적립 배지는 **셋** 이다 — 취소된 옵션은 지킬 수 없는 「적립예정」을 말하지 않는다 (S1-D19).
          *
-         * 실측(#599 통합실측 세션1 · 1-M · 주문 108): 전량 취소되어 76,500원 전액 환불된
+         * 실측(1-M · 주문 108): 전량 취소되어 76,500원 전액 환불된
          * 주문의 옵션 3행이 각각 `228P 적립예정` · `160P 적립예정` · `440P 적립예정` 을
          * 말하고 있었다. 그 주문의 `purchase_earn` 거래는 0건이고 앞으로도 0건이다.
          *
@@ -1189,7 +1189,7 @@ describe('Partial 레이아웃 구조 검증', () => {
          */
         it('결제 고유 필드는 payment 경로를 유지한다', () => {
             const json = JSON.stringify(paymentInfoPartial);
-            // 결제수단 칸 — 간편결제 표시 이름을 먼저, 없으면 기본 이름 (#933 S5, 주문 목록과 같은 식)
+            // 결제수단 칸 — 간편결제 표시 이름을 먼저, 없으면 기본 이름 (주문 목록과 같은 식)
             expect(json).toContain('{{payment.payment_method_display_label ?? payment.payment_method_label}}');
             expect(json).toContain('payment.paid_at_formatted');
             expect(json).toContain('payment.payment_status_label');
@@ -1350,7 +1350,7 @@ describe('Partial 레이아웃 구조 검증', () => {
          * @effects activity_log_actor_menu_opens_user_detail_in_new_window
          */
         it('회원 메뉴 「회원 정보 보기」가 회원 상세를 새 창 링크로 연다', () => {
-            // #757 결정 — 「이미 새 창」 항목도 실제 주소의 새 창 링크다(메뉴 항목 href + target="_blank").
+            // 「이미 새 창」 항목도 실제 주소의 새 창 링크다(메뉴 항목 href + target="_blank").
             // 주소가 href 에 있어 가운데 클릭·주소 복사가 같은 곳을 가리키고, 항목 동작(openWindow)은 두지 않는다.
             const json = JSON.stringify(activityLogPartial);
             const items: any[] = [];
@@ -1519,7 +1519,7 @@ describe('비회원 조회 비밀번호 재설정', () => {
     });
 });
 
-describe('#599 직권 접수 — 꺼진 버튼의 이유 문구', () => {
+describe('직권 접수 — 꺼진 버튼의 이유 문구', () => {
     /**
      * 배송완료 주문을 고르면 교환·반품은 켜지고 취소·환불만 꺼진다 — 그 한 버튼이 꺼진 이유도 곁에 서야 한다.
      * 셋 다 꺼졌을 때만 안내하면 운영자는 꺼진 [취소·환불 접수] 를 권한 문제로 읽는다(Chrome 실측 P-1).
@@ -1544,7 +1544,7 @@ describe('#599 직권 접수 — 꺼진 버튼의 이유 문구', () => {
     });
 });
 
-describe('#599 직권 접수 — 접수 권한이 없을 때', () => {
+describe('직권 접수 — 접수 권한이 없을 때', () => {
     /**
      * `claims.create` 가 없으면 문맥 조회가 403 이고(fallback `unavailable`), 버튼 셋은 숨지 않고 꺼진 채 선다 —
      * 곁에는 상태 안내 대신 권한 안내가 선다(Chrome 실측 P-6).
@@ -1591,7 +1591,7 @@ describe('#599 직권 접수 — 접수 권한이 없을 때', () => {
     });
 });
 
-describe('#599 직권 접수 — 반품의 환불 칸', () => {
+describe('직권 접수 — 반품의 환불 칸', () => {
     /**
      * 반품 접수는 환불이 따라오므로 종전 취소 창의 두 칸(환불 계좌·환불 우선순위)을 같은 조건으로 세운다 —
      * 계좌는 사람이 송금하는 결제수단에 돌려줄 돈이 있을 때, 우선순위는 PG 환불이 걸릴 때만. 교환에는 서지 않고,
@@ -1640,7 +1640,7 @@ describe('#599 직권 접수 — 반품의 환불 칸', () => {
     });
 });
 
-describe('#599 직권·대리 입력 창 — 글자 수 제한 prop', () => {
+describe('직권·대리 입력 창 — 글자 수 제한 prop', () => {
   /**
    * Textarea 의 글자 수 제한 prop 은 camelCase(`maxLength`)다 — 소문자 `maxlength` 로 쓰면 React 가 모르는 prop 으로
    * 흘려 클라이언트 제한이 걸리지 않는다(validate branch M9). 서버 검증 한도와 같은 값이어야 한다.
@@ -1691,7 +1691,7 @@ describe('직권 접수 — 해외 주문 재발송지 (S2-D8)', () => {
   });
 });
 
-describe('#599 직권 접수 — 청구 미리보기 금액 표기', () => {
+describe('직권 접수 — 청구 미리보기 금액 표기', () => {
   /**
    * 금액 줄은 핸들러가 주문 통화로 만든 `previewFormatted` 를 읽는다 — 응답에 없는 `*_formatted` 키를 읽으면
    * 반품 환불 예정액 줄이 서지 않고 교환 청구액은 단위 없는 숫자로 나온다(Chrome 실측 V-A1-m). 여는 두 버튼은

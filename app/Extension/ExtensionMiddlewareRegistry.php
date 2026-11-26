@@ -52,7 +52,7 @@ class ExtensionMiddlewareRegistry implements ExtensionMiddlewareRegistryInterfac
     protected array $resolveCache = [];
 
     /**
-     * 요청 단위 인덱스 메모 — 게이트가 before·after 두 시점에 찾아도 캐시 저장소는 한 번만 읽는다(#860).
+     * 요청 단위 인덱스 메모 — 게이트가 before·after 두 시점에 찾아도 캐시 저장소는 한 번만 읽는다.
      * 레지스트리가 scoped 라 요청·큐 잡이 끝나면 함께 버려지고, `flush()` 가 같은 요청 안에서도 비운다.
      *
      * @var list<array{timing: string, group: string, predicates: list<array{op: string, arg?: string}>, class: class-string, order: int}>|null
@@ -407,7 +407,7 @@ class ExtensionMiddlewareRegistry implements ExtensionMiddlewareRegistryInterfac
      * 인덱스 캐시를 무효화합니다 (확장 활성/비활성/설치/제거/리로드 시).
      *
      * IDV `IdentityPolicy::flushRouteScopeCache()` 미러 정적 메서드. 이 요청에서 이미 만든 레지스트리의
-     * 인덱스·해석 메모도 비운다 — 상태를 바꾼 요청의 뒤쪽이 옛 인덱스를 쓰지 않게(#860).
+     * 인덱스·해석 메모도 비운다 — 상태를 바꾼 요청의 뒤쪽이 옛 인덱스를 쓰지 않게.
      *
      * @return void 반환값 없음
      */

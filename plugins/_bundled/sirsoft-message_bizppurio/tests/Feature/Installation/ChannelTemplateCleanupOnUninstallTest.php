@@ -102,7 +102,7 @@ class ChannelTemplateCleanupOnUninstallTest extends PluginTestCase
      * 정리 로직(cleanupChannelContributions)은 소유자를 묻지 않고 "우리 채널 template 을
      * 가진 정의" 를 대상으로 하므로, 실제 모듈 설치 여부에 의존하지 않고 모듈 소유 정의를
      * 직접 구성해 검증한다 — 모듈이 활성화된 환경에서만 실행되는 조건부 테스트였다면 이
-     * 경로가 대부분의 실행에서 미검증으로 남는다(#597 브랜치 검증에서 교정).
+     * 경로가 대부분의 실행에서 미검증으로 남는다(브랜치 검증에서 교정).
      *
      * @scenario owner=module
      *

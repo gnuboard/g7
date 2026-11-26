@@ -17,7 +17,7 @@ use Tests\TestCase;
  *  - seeder 에 없는 (extension_type + extension_identifier + type) 조합의 definition 삭제
  *  - definition 삭제 시 그 template 을 정리 코드가 명시적으로 지운다(DB CASCADE 비의존)
  *  - definition 은 유지되지만 channel 이 재구성된 경우: 제거된 channel 의 template 삭제
- *  - 운영자가 고친 항목도 선언에서 빠지면 지운다 — 지우기 직전 활동 로그에 남긴다(#888)
+ *  - 운영자가 고친 항목도 선언에서 빠지면 지운다 — 지우기 직전 활동 로그에 남긴다
  */
 class NotificationSyncHelperTest extends TestCase
 {
@@ -254,7 +254,7 @@ class NotificationSyncHelperTest extends TestCase
 
     /**
      * 정의를 지우면 그 템플릿을 DB CASCADE 가 아니라 정리 코드가 명시적으로 지운다 — FK 를 꺼도 고아가 남지 않는다.
-     * 운영자가 고친 템플릿이 있으면 지우기 직전 활동 로그 `notification_definition.sync_deleted` 에 정의와 템플릿이 남는다(#888).
+     * 운영자가 고친 템플릿이 있으면 지우기 직전 활동 로그 `notification_definition.sync_deleted` 에 정의와 템플릿이 남는다.
      *
      * @scenario case=notification__definition
      *

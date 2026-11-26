@@ -24,7 +24,7 @@ use Plugins\Sirsoft\MessageBizppurio\Services\SmsTypeResolver;
 use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
- * 발송 이력에 남기는 받는 사람 이름 (#490)
+ * 발송 이력에 남기는 받는 사람 이름
  *
  * 문자와 알림톡 발송 이력(`bizppurio_dispatches.to_name`)은 관리자 화면의 기록물이다. 회원 수신자는 그 시점의 관리자 영역
  * (`core:admin`) 표시 이름으로 남기고(코어 알림 발송 이력과 같은 규칙), 비회원 수신자는 넘겨받은 이름을 그대로 남긴다.

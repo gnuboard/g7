@@ -1,5 +1,5 @@
 /**
- * 플러그인 sirsoft-gdpr 레이아웃 — 화면 이동 링크 잠금 시험 (#757 WP-L L6)
+ * 플러그인 sirsoft-gdpr 레이아웃 — 화면 이동 링크 잠금 시험
  *
  * @description
  * 화면 이동을 단추·글자에 붙인 클릭 동작으로만 두면 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 되지 않는다.
@@ -163,7 +163,7 @@ function judgeNavigation(json, rel) {
     return found;
 }
 
-describe('플러그인 sirsoft-gdpr — 화면 이동 링크 (#757)', () => {
+describe('플러그인 sirsoft-gdpr — 화면 이동 링크', () => {
     const files = ROOTS.flatMap((r) => collectJson(path.join(ROOT, r)));
     const found = files.flatMap((f) =>
         judgeNavigation(JSON.parse(fs.readFileSync(f, 'utf8')), path.relative(ROOT, f).split(path.sep).join('/')),

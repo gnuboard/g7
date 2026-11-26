@@ -2,6 +2,7 @@
 
 namespace App\Extension\Helpers;
 
+use App\Extension\Integrity\PackageSignatureFormat;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\File;
@@ -130,16 +131,26 @@ class GithubHelper
             }
         }
 
+        // 서명 파일 이름 — `{base}.sig.json`(7.2.1 이후 올리는 이름, 7.2.0 이 짝으로 보지 않음)을 먼저, 옛 이름
+        // `{base}.zip.sig.json` 을 그다음으로 본다.
+        $signatureFor = static function (string $zipName) use ($byName): ?array {
+            $base = substr($zipName, 0, -4);
+
+            return $byName[$base.PackageSignatureFormat::RELEASE_ASSET_SUFFIX]
+                ?? $byName[$zipName.PackageSignatureFormat::FILE_SUFFIX]
+                ?? null;
+        };
+
         if ($preferredBase !== null && $preferredBase !== '') {
             $zipName = $preferredBase.'.zip';
-            if (isset($byName[$zipName], $byName[$zipName.'.sig.json'])) {
-                return ['zip' => $byName[$zipName], 'signature' => $byName[$zipName.'.sig.json']];
+            if (isset($byName[$zipName]) && ($signature = $signatureFor($zipName)) !== null) {
+                return ['zip' => $byName[$zipName], 'signature' => $signature];
             }
         }
 
         foreach ($byName as $name => $asset) {
-            if (str_ends_with(strtolower($name), '.zip') && isset($byName[$name.'.sig.json'])) {
-                return ['zip' => $asset, 'signature' => $byName[$name.'.sig.json']];
+            if (str_ends_with(strtolower($name), '.zip') && ($signature = $signatureFor($name)) !== null) {
+                return ['zip' => $asset, 'signature' => $signature];
             }
         }
 
@@ -171,7 +182,9 @@ class GithubHelper
 
         try {
             $response = static::request($token, 120)
-                ->withHeaders(['Accept' => 'application/octet-stream'])
+                // withHeaders 는 request() 의 Accept(vnd.github.v3+json) 에 값을 덧붙여(array_merge_recursive) 두 값이
+                // 되고, 그러면 GitHub 은 자산 바이트 대신 메타데이터 JSON 을 준다(7.2.0 결함) — 덮어쓴다.
+                ->replaceHeaders(['Accept' => 'application/octet-stream'])
                 ->sink($savePath)
                 ->get($url);
         } catch (ConnectionException $e) {

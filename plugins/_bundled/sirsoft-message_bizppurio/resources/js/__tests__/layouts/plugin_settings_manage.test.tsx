@@ -1,7 +1,7 @@
 // e2e:allow 관리 화면 mergeQuery 왕복·SMS 모달 저장 왕복 브라우저 흐름은
 // tests/Playwright/specs/admin/template-lifecycle.spec.ts(bizppurio_manage_round_trip_e2e)가 담당.
 /**
- * 플러그인 설정 — 알림 템플릿 관리 탭(DB 목록) 구조 검증 (#597 §4.3)
+ * 플러그인 설정 — 알림 템플릿 관리 탭(DB 목록) 구조 검증
  *
  * 효과 요약(마커 아님, 평문): manage_screen_lists_db_rows_with_merge_query_round_trip, inspection_request_carries_reviewer_comment
  *
@@ -398,7 +398,7 @@ describe('manage — i18n 정합(manage.* 키 가족)', () => {
 /**
  * 효과 요약(마커 아님, 평문): upload_in_progress_locks_save_buttons_not_cancel, sms_modal_edits_body_per_locale_tab
  */
-describe('manage 모달 — 이미지 업로드 배선·SMS 언어 탭 (#597 §15.2 U1 / §15.1)', () => {
+describe('manage 모달 — 이미지 업로드 배선·SMS 언어 탭', () => {
     /**
      * 관리 화면(plugin_settings.json)은 3면 오버레이(notification_tab_*.json)의 패리티 대상이
      * **아니다** — 세 오버레이는 서로 전문 동일성으로 묶여 있지만 이 면은 별도 파일이다.
@@ -454,7 +454,7 @@ describe('manage 모달 — 이미지 업로드 배선·SMS 언어 탭 (#597 §1
     });
 });
 
-describe('manage 모달 — 검수자 전달 의견 (#597 §18.7, 제품 결정 2026-08-23)', () => {
+describe('manage 모달 — 검수자 전달 의견 (제품 결정 2026-08-23)', () => {
     const composeModal = findById(modalRoot, 'modal_bizppurio_template') as AnyNode;
     const sectionsRoot = { children: (sections as { components?: AnyNode[] }).components ?? [] } as AnyNode;
     const collectHandlers = (node: unknown, acc: AnyNode[] = []): AnyNode[] => {

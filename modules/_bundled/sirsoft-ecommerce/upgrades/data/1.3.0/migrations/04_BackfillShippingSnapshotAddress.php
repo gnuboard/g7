@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * 배송정책 스냅샷의 배송지 메타(`address`)가 빈 과거 주문을 주문 배송지로 백필합니다.
  *
- * 배송지 스냅샷은 1.0.0-beta.5(#421)부터 저장되므로, 그 이전에 생성된 주문은
+ * 배송지 스냅샷은 1.0.0-beta.5부터 저장되므로, 그 이전에 생성된 주문은
  * `shipping_policy_applied_snapshot.address` 가 비어 있다. 1.0.5 의 형태 정규화
  * (`06_NormalizeShippingPolicySnapshotShape`)는 스냅샷의 *모양*만 신형으로 옮겼을 뿐
  * 없는 배송지를 채우지는 않았다.

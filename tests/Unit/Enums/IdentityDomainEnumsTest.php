@@ -220,7 +220,7 @@ class IdentityDomainEnumsTest extends TestCase
         $this->assertSame(['core', 'module', 'plugin', 'admin'], IdentityPolicySourceType::values());
     }
 
-    // IdentityMessageScopeType 은 7.1.0 에서 없어졌다 — 본인인증 메시지는 알림 정의 type 규칙(IdentityNotificationType)을 쓴다(#699).
+    // IdentityMessageScopeType 은 7.1.0 에서 없어졌다 — 본인인증 메시지는 알림 정의 type 규칙(IdentityNotificationType)을 쓴다.
 
     // ========================================================================
     // 다국어 라벨 — 모든 enum 의 label() 이 다국어 키로부터 비어있지 않은 문자열을 반환해야 함

@@ -94,7 +94,7 @@ class VisitorController extends AdminBaseController
                 'pageviews' => (int) $row->pageviews,
                 'last_action_at' => AnalyticsClock::toSiteDateTimeString($row->last_action_at),
                 'country_code' => $row->country_code,
-                // 코드(`KR`·`desktop`)는 그대로 두고 화면이 읽을 이름을 덧붙인다(#682 S4 라운드 8).
+                // 코드(`KR`·`desktop`)는 그대로 두고 화면이 읽을 이름을 덧붙인다.
                 'country_name' => self::countryName($row->country_code),
                 'device_type' => $row->device_type,
                 'device_type_label' => CodeLabelTranslator::label('analytics.device_type', $row->device_type),
@@ -344,7 +344,7 @@ class VisitorController extends AdminBaseController
      *
      * 방문자 통계의 집계 경계는 사이트 자정에 잠겨 있으므로 화면의 시각도 사이트 기준이어야
      * 합니다 — 보는 사람 기준으로 보이면 「오늘 KPI」와 목록의 날짜가 서로 다른 하루를
-     * 가리킵니다(#682 S3 라운드 6, 설계 결정). 정보주체 JSON 내보내기는 오프셋이 붙은 ISO8601 이
+     * 가리킵니다(설계 결정). 정보주체 JSON 내보내기는 오프셋이 붙은 ISO8601 이
      * 정본이라 `DataSubjectService` 쪽은 그대로 두고 화면과 CSV 경로에서 바꿉니다 — CSV 는 파일 이름의
      * 기간이 사이트 날짜이므로 행의 시각도 같은 기준이어야 합니다(7.1.0 실측).
      *
@@ -385,7 +385,7 @@ class VisitorController extends AdminBaseController
         $latest = $visits[0] ?? null;
 
         // 회원 신원. 목록 화면과 같은 값을 같은 모양으로 싣는다 — 상세에만 없으면 목록에서
-        // 이름을 보고 들어온 운영자가 카드에서 그 사람을 다시 잃는다(#682 S3 라운드 5, §4.11).
+        // 이름을 보고 들어온 운영자가 카드에서 그 사람을 다시 잃는다.
         // 가명화 구간은 `user_id` 가 지워지고 해시만 남으므로 해시도 함께 내려보낸다.
         $userId = 0;
         $userHash = null;

@@ -29,7 +29,7 @@ axes:
   os: [windows, linux, docker]
   vendor_mode: [auto, composer, bundled]
   reinstall_options: [none, delete_extensions, delete_settings, delete_uploads, delete_vendor]
-  # 웹 설치 마법사 쪽 결함 정리 시험(마무리 구간 재진입·CLI 소유 안내)이 표시하는 표면 (#839)
+  # 웹 설치 마법사 쪽 결함 정리 시험(마무리 구간 재진입·CLI 소유 안내)이 표시하는 표면
   surface: [installer]
 
 effects:

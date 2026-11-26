@@ -44,7 +44,7 @@ describe('DataGrid 접근성 — 선택 체크박스 이름', () => {
    * @scenario control=datagrid_checkbox
    * @effects datagrid_checkboxes_named_by_locale
    */
-  it('머리 체크박스는 「전체 선택」, 행 체크박스는 첫 열 값으로 「회원A 선택」, 값이 없으면 「N번째 행 선택」(#757 — 「행 선택」 뭉침 방지)', () => {
+  it('머리 체크박스는 「전체 선택」, 행 체크박스는 첫 열 값으로 「회원A 선택」, 값이 없으면 「N번째 행 선택」(「행 선택」 뭉침 방지)', () => {
     render(<DataGrid columns={columns} data={rows} selectable selectedIds={[]} onSelectionChange={vi.fn()} idField="id" />);
 
     expect(screen.getByRole('checkbox', { name: '전체 선택' })).toBeTruthy();

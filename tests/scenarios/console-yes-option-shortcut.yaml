@@ -1,4 +1,4 @@
-feature: 확인 생략 옵션 --yes 의 -y 축약과 language-pack:update 의 --yes (#918)
+feature: 확인 생략 옵션 --yes 의 -y 축약과 language-pack:update 의 --yes
 
 description: |
   `--yes`(확인 질문만 생략)를 선언한 명령은 모두 `-y` 축약도 받는다 — `module|plugin|template:update`·`:uninstall`,

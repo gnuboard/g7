@@ -11,7 +11,7 @@ use App\Support\ExtensionIntegrations;
  * manifest 의 `dependencies` 선언을 정방향(내가 의존하는 확장)과 역방향(나에게 의존하는
  * 확장) 양쪽으로 해석합니다.
  *
- * 선택 연동(`integrations`, #639)도 같은 두 방향으로 모읍니다 — 의존과 달리 없어도 동작하지만, 어느 확장이 이 확장의
+ * 선택 연동(`integrations`)도 같은 두 방향으로 모읍니다 — 의존과 달리 없어도 동작하지만, 어느 확장이 이 확장의
  * 화면·훅에 끼어드는지 운영자가 알아야 끄고 켤 때 무엇이 사라지는지 예상할 수 있습니다.
  *
  * 역방향이 이 수집기의 존재 이유입니다 — 운영자가 "이 확장을 끄면 무엇이 같이 죽는가" 를
@@ -181,7 +181,7 @@ class DependencyGraphCollector
     {
         // templates 도 정규화한다 — pluralize() 가 'templates' 를 만드는데 여기에 그 키가
         // 없으면 템플릿의 역방향 의존(`requiredBy`)이 구조적으로 항상 빈 배열이 된다.
-        // 목록형(`["sirsoft-board"]`)은 「버전 무관(*)」으로 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6).
+        // 목록형(`["sirsoft-board"]`)은 「버전 무관(*)」으로 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다.
         return ExtensionDependencies::constraints($record['manifest']['dependencies'] ?? []);
     }
 

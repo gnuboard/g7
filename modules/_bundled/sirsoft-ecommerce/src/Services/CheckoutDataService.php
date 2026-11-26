@@ -39,7 +39,7 @@ class CheckoutDataService
     ) {}
 
     /**
-     * 결제 통화에서 고를 수 있는 결제수단 id 목록을 만듭니다 (#639 D17).
+     * 결제 통화에서 고를 수 있는 결제수단 id 목록을 만듭니다.
      *
      * 후보는 결제수단 화이트리스트 전체이고, 통화 판정은 확장이 필터 훅으로 뺀다. 통화는 계산 결과의 결제 통화를 먼저
      * 쓰고, 없으면 주문 생성과 같은 규칙으로 구한다.
@@ -117,7 +117,7 @@ class CheckoutDataService
             'selected_shipping_country' => ResolveShippingCountry::getCountry(),
             // 무료배송 기준액 결제통화 환산 (B7 — 다통화 정합)
             'free_shipping' => $this->buildFreeShippingInfo($calculationArray),
-            // 결제 통화에서 고를 수 있는 결제수단 id (#639 D17) — 템플릿이 결제수단 버튼을 이 목록으로 거른다.
+            // 결제 통화에서 고를 수 있는 결제수단 id — 템플릿이 결제수단 버튼을 이 목록으로 거른다.
             // 주문 생성 검증(CreateOrderRequest)과 같은 판정이다.
             'allowed_payment_methods' => $this->buildAllowedPaymentMethods($calculationArray),
         ];

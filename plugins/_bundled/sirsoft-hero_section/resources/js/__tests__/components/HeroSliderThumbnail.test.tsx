@@ -268,7 +268,7 @@ describe('HeroSlider 이미지 썸네일 srcset', () => {
 
   // @scenario thumbnail_query=slider_sizes_slot_width
   // @effects hero_slider_sizes_follow_rendered_slot
-  it('차례가 아니어서 주소를 미뤄 둔 장(#879)도 차례가 오면 잰 sizes → srcset → src 순서로 한 번에 붙는다', () => {
+  it('차례가 아니어서 주소를 미뤄 둔 장도 차례가 오면 잰 sizes → srcset → src 순서로 한 번에 붙는다', () => {
     const restore = layoutSlider(1216, 405);
     const seen: string[] = [];
     const setAttribute = Element.prototype.setAttribute;
@@ -300,7 +300,7 @@ describe('HeroSlider 이미지 썸네일 srcset', () => {
 });
 
 /**
- * 공개 자산 디스크(#878) — 응답의 `direct_url`(원본 직접 주소)은 원본 한 장(`src`)과 srcset 의 **마지막 원본 후보**에만 쓴다.
+ * 공개 자산 디스크 — 응답의 `direct_url`(원본 직접 주소)은 원본 한 장(`src`)과 srcset 의 **마지막 원본 후보**에만 쓴다.
  * 축소 후보는 공개 API 주소 `?size=`(서버가 공개 썸네일 디스크로 302) 그대로다. (매니페스트 public-asset-disk.yaml)
  */
 describe('HeroSlider 공개 자산 디스크 직접 주소', () => {

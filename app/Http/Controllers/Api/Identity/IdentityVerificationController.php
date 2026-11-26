@@ -137,7 +137,7 @@ class IdentityVerificationController extends PublicBaseController
         //
         // 코드 전달이 실패해도 챌린지 자체는 만들어진다. 그 상태로 201 을 돌려주면 화면은
         // 「전송된 6자리 코드를 입력해주세요」와 카운트다운을 띄우고, 사용자는 **영영 오지 않을
-        // 코드**를 기다린다(#599 세션A 실측 2026-09-22 · 회원 탈퇴 경로 — 챌린지가 생성 2초 뒤
+        // 코드**를 기다린다(세션A 실측 2026-09-22 · 회원 탈퇴 경로 — 챌린지가 생성 2초 뒤
         // `failed` 인데 API 는 201 을 냈다. 코드는 해시로만 남아 복구할 수 없어 그 환경에서는
         // 회원이 스스로 탈퇴할 방법이 없었다).
         //
@@ -402,7 +402,7 @@ class IdentityVerificationController extends PublicBaseController
      *
      * 보안: 브라우저와 PHP 가 다르게 해석하는 입력(`/\evil.com`·제어 문자·`https://evil.com\@site/`)과
      * scheme·port·userinfo 가 다른 절대 URL 을 모두 거부한다. 판정은 `SiteUrl::isSameOrigin()` 과
-     * `ScreenUrl::isUserScreenOrigin()` 이 소유한다 — 외부 화면(다른 주소의 Next.js 등)으로 돌아가는 복귀를 허용한다(#792).
+     * `ScreenUrl::isUserScreenOrigin()` 이 소유한다 — 외부 화면(다른 주소의 Next.js 등)으로 돌아가는 복귀를 허용한다.
      *
      * @param  string  $url  검사할 복귀 URL
      * @return bool 허용 출처면 true
@@ -428,7 +428,7 @@ class IdentityVerificationController extends PublicBaseController
         }
 
         // 관리자 화면 경로(`/admin`, `/admin/…`)는 사이트 주소로 — 관리자 화면은 「사용자 화면 URL」 쪽에 없다.
-        // 그 밖의 상대 경로는 사용자 화면 베이스(「사용자 화면 URL」, 비면 사이트 주소)로 절대화한다(#792).
+        // 그 밖의 상대 경로는 사용자 화면 베이스(「사용자 화면 URL」, 비면 사이트 주소)로 절대화한다.
         $scope = preg_match('#^/admin(?:[/?\#]|$)#', $url) === 1 ? ScreenUrl::SCOPE_ADMIN : ScreenUrl::SCOPE_USER;
 
         return ScreenUrl::toAbsolute($url, $scope);

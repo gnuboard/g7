@@ -1,6 +1,6 @@
 /**
  * @file Modal.nestedEscape.test.tsx
- * @description admin_basic Modal — 창 위에 창이 열린 상태의 Esc 회귀 테스트 (#736 S2)
+ * @description admin_basic Modal — 창 위에 창이 열린 상태의 Esc 회귀 테스트
  *
  * 열린 모달마다 document keydown 리스너를 걸어, Esc 한 번에 열린 창이 전부 닫혔다(모듈 상세 위 라이선스 창 실측).
  * engine-v1.77.1 이 인자 없는 onClose() 호출을 살리기 전에는 Esc 자체가 TypeError 로 무반응이라 드러나지 않았다.
@@ -70,7 +70,7 @@ describe('[case:components-misc-nested-modal-escape-closes-all] admin_basic Moda
   describe('[case:components-misc-stacked-modal-duplicate-title-id] 겹친 창 제목 id', () => {
     /**
      * 겹친 창이 같은 제목 id(`modal-title`)를 써서 위 창의 접근 가능한 이름이 아래 창 제목으로 읽혔다
-     * (#736 F 영역 실측: 라이선스 창이 「플러그인 정보」로, 수동 설치 창이 「manifest 미리보기」로 읽힘).
+     * (F 영역 실측: 라이선스 창이 「플러그인 정보」로, 수동 설치 창이 「manifest 미리보기」로 읽힘).
      *
      * @scenario stack=two_open, top_escape=enabled
      * @effects stacked_dialogs_label_with_own_title

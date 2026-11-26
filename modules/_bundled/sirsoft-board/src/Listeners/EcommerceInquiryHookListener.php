@@ -149,7 +149,7 @@ class EcommerceInquiryHookListener implements HookListenerInterface
 
             // ip_address: 클라이언트 IP 는 요청 경계(호출 서비스 ProductInquiryService)가 payload 로
             // 주입한다 — Listener 는 request() 를 직접 참조하지 않는다(입력 우회 방지).
-            // 없으면 NULL 로 둔다: board_posts.ip_address 는 nullable 이고(이슈 #636), 예전처럼
+            // 없으면 NULL 로 둔다: board_posts.ip_address 는 nullable 이고, 예전처럼
             // '0.0.0.0' 을 채우면 「모름」이 실제 IP 처럼 남아 보유기간 파기가 그 행을 개인정보가
             // 남은 행으로 센다.
             if (empty($data['ip_address'])) {
@@ -666,7 +666,7 @@ class EcommerceInquiryHookListener implements HookListenerInterface
         }
         $this->attachmentService->purgeByPostIds($postIds);
         // 파일 삭제 실패로 남은 본문 미디어 행도 골격으로 지워 core.content_media.before_delete 를 거치게 한다 —
-        // 아래 일괄 영구 삭제는 남은 일반 첨부 행만 지운다 (#887)
+        // 아래 일괄 영구 삭제는 남은 일반 첨부 행만 지운다
         $this->attachmentService->purgeContentMediaByPostIds($postIds);
 
         $deleted = $this->postRepository->forceDeleteWithRepliesByIds($board->id, $ids);

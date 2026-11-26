@@ -191,7 +191,7 @@ interface MountOptions {
     /**
      * 폼 감싸개 디바운스(ms) — 없으면 원본(300). 「이동 순간에 대기 쓰기가 남아 있다」 가 전제인 사례에서 그 전제를 부하와 무관하게 둔다.
      * 300ms 그대로면 부하로 칸 사이 입력·blur 가 늘어 이동 전에 타이머가 먼저 터지고, 그 쓰기의 확정 렌더가 커밋되기 전에 경로가 바뀌어
-     * 이 사례가 아니라 다른 경쟁(엔진 쪽, 아래 334 사례 주석)을 재게 됐다(#869 G6).
+     * 이 사례가 아니라 다른 경쟁(엔진 쪽, 아래 334 사례 주석)을 재게 됐다.
      */
     debounceMs?: number;
 }
@@ -255,7 +255,7 @@ async function mount(opts: MountOptions = {}): Promise<Mounted> {
         await (app as any).handleRouteChange(routeFor(p));
     };
     // 이동은 기다리지 않고 시작한다(실제 라우터와 같다). 시험은 그 약속을 `navigationDone()` 으로 기다린다 — 주소는 pushState 로
-    // 먼저 바뀌므로 주소만 보고 고정 시간 뒤 단언하면, 부하로 레이아웃 로드·렌더가 늦을 때 앞 화면 DOM 을 단언했다(#869 G6)
+    // 먼저 바뀌므로 주소만 보고 고정 시간 뒤 단언하면, 부하로 레이아웃 로드·렌더가 늦을 때 앞 화면 DOM 을 단언했다
     const router = { navigate: (p: string) => { pendingNavigation = go(p); } };
     (app as any).router = router;
     dispatcher.setDefaultContext({ navigate: router.navigate } as any);
@@ -339,7 +339,7 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
      * @effects destination_field_shows_destination_value
      */
     // 정가를 친 뒤 메모 칸까지 치고 옮기므로 정가 쓰기 대기 창(원본 300ms)의 대부분을 메모 입력이 쓴다. 부하로 그 입력이 늘면 정가 타이머가
-    // 이동 전에 터지고, 그 쓰기의 확정 렌더가 커밋되기 전에 경로가 바뀐다 — 칸이 받은 value 가 '' 로 그대로라 칸이 따라오지 않았다(#869 G6,
+    // 이동 전에 터지고, 그 쓰기의 확정 렌더가 커밋되기 전에 경로가 바뀐다 — 칸이 받은 value 가 '' 로 그대로라 칸이 따라오지 않았다(
     // engine-v1.95.0 에서 change 동작 없는 칸의 쓴 대기 값도 버림 기록을 남겨 고침). 원본 300ms 그대로 두고 부하에서도 통과해야 한다.
     // 이 경쟁은 경로 전환의 상태 초기화가 확정 렌더보다 먼저 같은 렌더에 섞일 때만 난다(React 스케줄러가 밀릴 때) — 부하 없이 매번
     // 만드는 방법이 없어 부하 재현으로 잠근다: 바쁜 루프 8개 + 이 파일 사본 6벌 병렬, 종전 엔진 12회 중 2회 실패 → 수정 뒤 36회 0 실패.
@@ -658,7 +658,7 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
      * 근거: `G7Core.updateQueryParams` 가 주소만 바꾼 경로를 같은 경로 전환 세대 안의 별칭으로 기록하고 경로 가드가 그것을 같은 화면으로 본다 (engine-v1.81.2).
      *
      * 전제는 「replace 순간 정가 쓰기가 대기 중」이다 — 부하로 타이머가 replace 전에 터지면 쓰기가 먼저 끝나고, replace 의 다시 받기가 그 값을
-     * 서버 값으로 되돌린다(쿼리 갱신 계약, 바로 아래 사례). 그래서 디바운스를 길게 줘 전제를 부하와 무관하게 둔다(#869 — 부하에서 본
+     * 서버 값으로 되돌린다(쿼리 갱신 계약, 바로 아래 사례). 그래서 디바운스를 길게 줘 전제를 부하와 무관하게 둔다(부하에서 본
      * `'10000' to be '32222'` 는 이 전제가 깨진 것이지 엔진 결함이 아니었다).
      *
      * @scenario case=replace_navigate_path_change

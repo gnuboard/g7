@@ -219,7 +219,7 @@ class PostNavigationApiTest extends BoardTestCase
     /**
      * 존재하지 않는 게시글 ID → 200 + 빈 prev/next (graceful degradation)
      *
-     * 이슈 #269 이후 navigation 컨트롤러는 getAdjacent 실패를 모두 잡아 빈 응답으로 반환.
+     * navigation 컨트롤러는 getAdjacent 실패를 모두 잡아 빈 응답으로 반환.
      * 500 을 내지 않도록 한 회귀 방지 정책.
      *
      * @effects returns_empty_when_post_not_found

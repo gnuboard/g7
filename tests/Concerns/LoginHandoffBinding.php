@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Testing\TestResponse;
 
 /**
- * 브라우저에 묶인 로그인 인계 코드의 발급·교환 시험 도우미 (#798 K2)
+ * 브라우저에 묶인 로그인 인계 코드의 발급·교환 시험 도우미
  *
  * `LoginHandoffService::issue()` 는 묶음 쿠키(`g7_login_bind`)를 쿠키 대기열에 넣는다. 시험은 그 값을 꺼내 교환 요청에 싣는다 —
  * 쿠키는 암호화 제외 대상이라 `withUnencryptedCookie()` 로, JSON 요청은 `withCredentials()` 가 있어야 쿠키를 싣는다.

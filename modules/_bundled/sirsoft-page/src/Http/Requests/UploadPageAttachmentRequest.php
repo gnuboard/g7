@@ -76,7 +76,7 @@ class UploadPageAttachmentRequest extends FormRequest
         return [
             'file' => $fileRules,
             'page_id' => ['nullable', 'integer', 'min:1'],
-            // 예약 컬렉션(본문 미디어)은 전용 업로드로만 — 일반 첨부로 올려 개수 상한을 피하지 못하게 (#883)
+            // 예약 컬렉션(본문 미디어)은 전용 업로드로만 — 일반 첨부로 올려 개수 상한을 피하지 못하게
             'collection' => ['sometimes', 'string', 'max:100', Rule::notIn(PageAttachment::RESERVED_COLLECTIONS)],
             'temp_key' => $this->tempKeyRules(),
         ];

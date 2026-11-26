@@ -377,7 +377,7 @@ class CbtCallbackController
             }
 
             // 이 사유는 CBT 대사 기록에 남아 관리자 주문 상세 「사유」 칸에 보이고 환불 요청 사유에도 실린다 —
-            // DB·PHP 내부 예외 원문(SQL·서버 경로)은 일반 문구로 바꾸고 원문은 위 로그에 남긴다(#858)
+            // DB·PHP 내부 예외 원문(SQL·서버 경로)은 일반 문구로 바꾸고 원문은 위 로그에 남긴다
             $this->refundApprovedCbtPaymentOrFlagManualReconciliation(
                 $approvedTid,
                 $oid,
@@ -849,7 +849,7 @@ class CbtCallbackController
                 'tid' => $tid,
                 'amount' => $amount,
                 'reason' => $reason,
-                // 이 기록은 관리자 주문 상세 「환불 오류」 칸에 그대로 보인다 — 원문은 위 로그에만 남긴다(#858)
+                // 이 기록은 관리자 주문 상세 「환불 오류」 칸에 그대로 보인다 — 원문은 위 로그에만 남긴다
                 'refund_error' => $this->refundFailureReason($refundException),
                 'refund_result' => null,
                 'is_test_mode' => $this->apiService->isTestMode(),

@@ -279,7 +279,7 @@
                                     },
                                     "children": [
                                         {
-                                            "comment": "관리자 로고 = 템플릿 설정 branding.logo(관리자 전용 변형), 비우면 환경설정 사이트 로고 (#434).\n               원본 대신 md 규격 썸네일. 첫 화면에 보이는 자리라 지연 로딩하지 않는다(eager)",
+                                            "comment": "관리자 로고 = 템플릿 설정 branding.logo(관리자 전용 변형), 비우면 환경설정 사이트 로고.\n               원본 대신 md 규격 썸네일. 첫 화면에 보이는 자리라 지연 로딩하지 않는다(eager)",
                                             "id": "logo_image",
                                             "type": "basic",
                                             "name": "Img",
@@ -557,7 +557,7 @@
                     },
                     "children": [
                         {
-                            "comment": "검수 서버 띠(#888) — 실행 역할이 stage 인 서버(운영 DB 를 공유하는 검수 사이트)에서만 그린다. 셸 설정 `appConfig.runtime_role` 을 읽는다.\n           그 서버에서는 확장·코어·언어팩 변경 API 가 409 로 막히므로, 왜 버튼이 잠겼는지 모든 관리자 화면 맨 위에서 알린다.",
+                            "comment": "검수 서버 띠 — 실행 역할이 stage 인 서버(운영 DB 를 공유하는 검수 사이트)에서만 그린다. 셸 설정 `appConfig.runtime_role` 을 읽는다.\n           그 서버에서는 확장·코어·언어팩 변경 API 가 409 로 막히므로, 왜 버튼이 잠겼는지 모든 관리자 화면 맨 위에서 알린다.",
                             "id": "stage_role_banner",
                             "type": "basic",
                             "name": "Div",

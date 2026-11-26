@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * 내부 API 도구 — 개발자 화면(custom 예약 자리, #792 D10)이 **로그인 회원 자격으로** 코어·확장 API 를 같은
+ * 내부 API 도구 — 개발자 화면(custom 예약 자리)이 **로그인 회원 자격으로** 코어·확장 API 를 같은
  * 프로세스에서 불러 HTML 을 완성하게 한다.
  *
  * ```php

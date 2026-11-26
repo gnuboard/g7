@@ -122,7 +122,7 @@ class RoleService
         $menuIds = array_key_exists('menu_ids', $data) ? (array) $data['menu_ids'] : null;
         unset($data['menu_ids']);
 
-        // 비밀번호 만료 설정(#736)을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
+        // 비밀번호 만료 설정을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
         if (array_key_exists('password_expiry_policy', $data) && $data['password_expiry_policy'] === null) {
             unset($data['password_expiry_policy']);
         }
@@ -188,7 +188,7 @@ class RoleService
         $menuIds = array_key_exists('menu_ids', $data) ? (array) $data['menu_ids'] : null;
         unset($data['menu_ids']);
 
-        // 비밀번호 만료 설정(#736)을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
+        // 비밀번호 만료 설정을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
         if (array_key_exists('password_expiry_policy', $data) && $data['password_expiry_policy'] === null) {
             unset($data['password_expiry_policy']);
         }

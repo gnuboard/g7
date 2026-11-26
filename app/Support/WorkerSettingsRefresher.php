@@ -77,7 +77,7 @@ class WorkerSettingsRefresher
         }
 
         // 알림 채널 매니저(싱글톤)는 만든 채널 드라이버를 들고 있고, 드라이버는 생성자로 받은 플러그인 설정 서비스를
-        // 들고 있다 — 버려서 다음 발송이 이 작업의 설정 서비스로 드라이버를 다시 만들게 한다(#860)
+        // 들고 있다 — 버려서 다음 발송이 이 작업의 설정 서비스로 드라이버를 다시 만들게 한다
         if (app()->resolved(ChannelManager::class)) {
             app(ChannelManager::class)->forgetDrivers();
         }

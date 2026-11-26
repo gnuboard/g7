@@ -10,7 +10,7 @@
  * 편집기 플러그인이 있으면 그 표시기가, 없으면 템플릿의 `HtmlContent`(정화 포함)가 그린다. 텍스트 모드 본문도
  * 같은 확장점이 `isHtml=false` 로 그린다(줄바꿈 보존).
  *
- * 본문 서식 클래스는 이 모듈 앞글자(`ecommerce:prose …`)로 쓴다 — 확장 CSS 자기 공급 규약(#816)에 따라 모듈 CSS
+ * 본문 서식 클래스는 이 모듈 앞글자(`ecommerce:prose …`)로 쓴다 — 확장 CSS 자기 공급 규약에 따라 모듈 CSS
  * (`dist/css/module.css`, typography 플러그인을 실은 접두 빌드)가 규칙을 싣고, 보기 패널(`_panel_view`)도 같은 클래스를 쓴다.
  *
  * @scenario-manifest modules/_bundled/sirsoft-ecommerce/tests/scenarios/product-form-common-info-preview.yaml

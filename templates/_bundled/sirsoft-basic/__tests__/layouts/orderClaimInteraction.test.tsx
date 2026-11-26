@@ -1,4 +1,4 @@
-/** 주문 상품 선택·클레임 부분 갱신 회귀 (#599). @vitest-environment jsdom */
+/** 주문 상품 선택·클레임 부분 갱신 회귀. @vitest-environment jsdom */
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';

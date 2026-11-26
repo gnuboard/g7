@@ -90,7 +90,7 @@ class AnonymizeService
         ]);
 
         // 진단 화면은 이 표의 행 하나를 진행률의 출처로 삼는다 — 집계가 아닌 실행도 같은 자리에
-        // 뜨므로 같은 채널로 알린다(#682 S3 라운드 2).
+        // 뜨므로 같은 채널로 알린다.
         $this->broadcastRunProgress($run);
 
         try {

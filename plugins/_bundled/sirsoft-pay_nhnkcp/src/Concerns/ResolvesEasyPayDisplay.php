@@ -85,7 +85,7 @@ trait ResolvesEasyPayDisplay
             $provider = $this->stringOrNull(self::EASY_PAY_METHODS[$selectedPaymentMethod]['provider'] ?? null);
         }
 
-        // 간편결제는 결제수단 칸에 자기 id(예: `nhnkcp_kakaopay`)로 저장된다 — meta 가 비어도 그 id 로 제공자를 찾는다 (#933 S7).
+        // 간편결제는 결제수단 칸에 자기 id(예: `nhnkcp_kakaopay`)로 저장된다 — meta 가 비어도 그 id 로 제공자를 찾는다.
         $storedMethod = $this->stringOrNull($payment->paymentMethod);
         if ($provider === null && $storedMethod !== null && isset(self::EASY_PAY_METHODS[$storedMethod])) {
             $provider = $this->stringOrNull(self::EASY_PAY_METHODS[$storedMethod]['provider'] ?? null);
@@ -107,7 +107,7 @@ trait ResolvesEasyPayDisplay
      * 결제수단 코드의 표시 라벨을 반환합니다.
      *
      * 이 플러그인의 간편결제 id(코어 결제수단이 아닌 자기 id)로 저장된 결제는 원시 id 대신 PG 이름을 쓴다 —
-     * 표시 라벨이 「카카오페이 (nhnkcp_kakaopay)」 가 아니라 「카카오페이 (PG 이름)」 이 된다 (#933 S7).
+     * 표시 라벨이 「카카오페이 (nhnkcp_kakaopay)」 가 아니라 「카카오페이 (PG 이름)」 이 된다.
      * 카탈로그 `_cached_name` 은 쓰지 않는다 — PG 마다 이름 형식(폭 없는 공백·PG 꼬리)이 달라 라벨 모양이 어긋난다.
      *
      * @param  string|null  $method  결제수단 코드

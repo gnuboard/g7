@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * playwright:seed-claim-detail — 관리자 클레임 상세 E2E 가 끝까지 잴 신청서 셋을 세우고, 워커별로 지운다 (#757).
+ * playwright:seed-claim-detail — 관리자 클레임 상세 E2E 가 끝까지 잴 신청서 셋을 세우고, 워커별로 지운다.
  *
  * 상세 spec 의 세 시험(옵션 변경 교환의 소계·차액 · 상품 1건 승인 반품의 송장 입력 · 계좌 빈 승인 환불의 확인 창)은
  * 운영 데이터에 그 모양이 없으면 건너뛰어 통과로 세어졌다. 이 커맨드가 그 전제를 세우는데, 브라우저가 보는 값은

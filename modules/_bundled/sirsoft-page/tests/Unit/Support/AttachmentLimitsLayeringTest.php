@@ -9,9 +9,9 @@ use Modules\Sirsoft\Page\Support\AttachmentLimits;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 
 /**
- * 첨부 공개 설정(publicLimits)의 계층 역전 제거 (#599 validate page minor)
+ * 첨부 공개 설정(publicLimits)의 계층 역전 제거 (validate page minor)
  *
- * #599 가 화면용 공개 설정 `PageAttachmentService::publicLimits()` 를 만들면서 허용 형식 폴백을
+ * 이전 변경이 화면용 공개 설정 `PageAttachmentService::publicLimits()` 를 만들면서 허용 형식 폴백을
  * `UploadPageAttachmentRequest::FALLBACK_ALLOWED_TYPES`(private → public 으로 열어)에서 읽었다.
  * Service 가 HTTP 계층(FormRequest)에 기대는 역전이다. 해석을 하위 지점(AttachmentLimits)으로
  * 내리고 두 계층이 그것을 함께 쓴다.

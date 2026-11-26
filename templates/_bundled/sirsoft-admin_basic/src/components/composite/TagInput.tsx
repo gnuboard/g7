@@ -1,4 +1,4 @@
-// e2e:allow 스타일 정책 강제 시 react-select(emotion) 규칙을 생성형 시트로 — 브라우저 회귀는 tests/Playwright/specs/smoke/strict-csp.spec.ts (S) 태그 입력, 단위는 TagInput.styleCsp.test.tsx. 종전: #887 화면 읽기 알림의 항목 이름 추출만 고침(만들기 행 label 이 요소라 「[object Object] 선택됨」) — 보이는 화면 변화 없음, 실제 react-select 경로 회귀는 TagInput.a11yCreateAnnounce.test.tsx. 종전: 편집기 선택 결함#6 수정(react-select Fragment 루트에 id/editorAttrs 미도달 → 4개 렌더분기 Div 래핑). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/속성편집/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 TagInput.test.tsx editorAttrs/id passthrough describe.
+// e2e:allow 스타일 정책 강제 시 react-select(emotion) 규칙을 생성형 시트로 — 브라우저 회귀는 tests/Playwright/specs/smoke/strict-csp.spec.ts (S) 태그 입력, 단위는 TagInput.styleCsp.test.tsx. 종전: 화면 읽기 알림의 항목 이름 추출만 고침(만들기 행 label 이 요소라 「[object Object] 선택됨」) — 보이는 화면 변화 없음, 실제 react-select 경로 회귀는 TagInput.a11yCreateAnnounce.test.tsx. 종전: 편집기 선택 결함#6 수정(react-select Fragment 루트에 id/editorAttrs 미도달 → 4개 렌더분기 Div 래핑). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/속성편집/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 TagInput.test.tsx editorAttrs/id passthrough describe.
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { linkAdjacentLabel } from '../../hooks/useAdjacentLabel';
 import Select, { components, MultiValue, SingleValue, ActionMeta, InputActionMeta } from 'react-select';
@@ -53,7 +53,7 @@ const createLabelParts = (): [string, string] => {
 
 /**
  * 안내문에 넣을 항목 이름 — 새 값 만들기 행의 label 은 화면용 요소(createLabelFormatter 의 <span>)라 react-select 가
- * 그대로 넘기면 문자열 자리에서 「[object Object]」 로 읽혔다(#887, 본문 콘텐츠 「운영자 추가 태그」 실측). 만들기 행은
+ * 그대로 넘기면 문자열 자리에서 「[object Object]」 로 읽혔다(본문 콘텐츠 「운영자 추가 태그」 실측). 만들기 행은
  * 친 값(value)으로, 그 밖에 문자열이 아닌 label 도 value 로 읽는다.
  */
 const announceLabel = (label: unknown, option?: any): string => {
@@ -214,7 +214,7 @@ export interface TagInputProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (data-editor-* 등 — 편집 모드 선택용) */
   editorAttrs?: EditorAttrs;
-  /** 입력칸 접근 가능한 이름 — 있으면 곁 라벨을 잇지 않는다(#757) */
+  /** 입력칸 접근 가능한 이름 — 있으면 곁 라벨을 잇지 않는다 */
   'aria-label'?: string;
   /** 입력칸 이름이 될 요소 id — 있으면 곁 라벨을 잇지 않는다 */
   'aria-labelledby'?: string;
@@ -679,7 +679,7 @@ export const TagInput: React.FC<TagInputProps> = ({
   // 곁 라벨을 입력칸 이름으로 잇는다 — 라벨과 형제로 놓여 이름 없는 combobox 로 읽혔다(7.1.0 실측)
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    // 레이아웃이 이름을 줬으면 그것이 이름이다 — 종전에는 aria-label 을 받지 않아 레이아웃이 줘도 버려졌다(#757)
+    // 레이아웃이 이름을 줬으면 그것이 이름이다 — 종전에는 aria-label 을 받지 않아 레이아웃이 줘도 버려졌다
     if (ariaLabel || ariaLabelledBy) return;
     // react-select 입력칸은 여러 겹 안쪽이라 라벨 탐색은 이 부품의 루트에서 시작한다
     linkAdjacentLabel(rootRef.current?.querySelector<HTMLInputElement>('input:not([type="hidden"])') ?? null, false, rootRef.current);

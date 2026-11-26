@@ -1,4 +1,4 @@
-// audit:allow seo-renderer-parity-sync #883 표시 규칙을 코어 「본문 콘텐츠」(G7Core.contentPolicy)로 옮겼다 — 봇 정화기 HtmlSanitizer 도 같은 ContentHtmlPolicy 로 후보 태그를 살리고 마무리한다(외부 영상은 봇에 링크)
+// audit:allow seo-renderer-parity-sync 표시 규칙을 코어 「본문 콘텐츠」(G7Core.contentPolicy)로 옮겼다 — 봇 정화기 HtmlSanitizer 도 같은 ContentHtmlPolicy 로 후보 태그를 살리고 마무리한다(외부 영상은 봇에 링크)
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 // @ts-ignore - DOMPurify 타입 정의 없음
 import DOMPurify from 'dompurify';
@@ -177,7 +177,7 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
     };
     // 코어 「본문 콘텐츠」 규칙(G7Core.contentPolicy, engine-v1.90.0)이 있으면 그 규칙으로 정화한다 — 켜진 후보(그림 캡션·업로드 동영상·
     // 오디오·외부 영상)를 살리고 외부 영상은 정해진 플레이어 iframe 으로 바꾼다. prop 으로 덧붙인 금지는 규칙으로 풀 수 없다.
-    // 규칙이 없으면(옛 코어) 종전 경로다 (#883)
+    // 규칙이 없으면(옛 코어) 종전 경로다
     // 본문 서식 지연 장치(G7Core.inlineStyle)가 있으면 style 속성을 `data-g7-style` 로 받아 붙인 뒤 CSSOM 으로 입힌다 — 엄격한 스타일
     // 정책(`style-src-attr 'none'`)에서 HTML 문자열의 style 속성이 막히기 때문이다. 장치가 없으면(옛 코어) 종전 그대로다 (공개 #163)
     const deferStyle = getInlineStyleApi() !== null;

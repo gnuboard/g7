@@ -70,7 +70,7 @@ describe('관리자 첨부 안내 — 선언 (#81 L-01)', () => {
         const node = findById(attachmentsPartial, DESC_ID);
         const tokens = String(node.props.className ?? '').split(/\s+/);
 
-        // 인라인 회색 쌍(text-gray-500 + dark:text-gray-400)은 확장 사본 의미 클래스 board-text-muted 로 묶였다(#399 R-1 P1).
+        // 인라인 회색 쌍(text-gray-500 + dark:text-gray-400)은 확장 사본 의미 클래스 board-text-muted 로 묶였다.
         // 그 클래스가 다크 짝을 갖는지는 확장 생성 CSS 에서 직접 확인한다.
         if (tokens.includes('board-text-muted')) {
             const css = fs.readFileSync(path.resolve(__dirname, '../../../css/g7-extension.generated.css'), 'utf8');

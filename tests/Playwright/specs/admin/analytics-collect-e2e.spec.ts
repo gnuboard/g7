@@ -1,5 +1,5 @@
 /**
- * E2E: 방문자 통계 비콘 왕복 (이슈 #682 S1)
+ * E2E: 방문자 통계 비콘 왕복
  *
  * 단위·Feature 테스트는 트래커와 적재 파이프라인을 **따로** 잠근다. 그 사이의 배선
  * — 사용자 화면이 실제로 부팅될 때 트래커가 켜지고, 라우트 이동이 비콘을 만들고,
@@ -300,7 +300,7 @@ test.describe('방문자 통계 수집 → 집계 → 관리자 화면 (전체 �
     // 방문이 원장에 닿지 않는다(비콘은 204 를 받는다). 이 흐름만 잠시 풀고 finally 에서 되돌린다.
     //
     // 적재 방식 설정은 없앴다 — 수집 리스너가 `sync => true` 라 워커가 없어도 비콘이 요청 안에서
-    // 원장에 닿는다(#682 S3 라운드 6). 예전에는 여기서 `dispatch_mode: 'sync'` 를 함께 고정해야
+    // 원장에 닿는다. 예전에는 여기서 `dispatch_mode: 'sync'` 를 함께 고정해야
     // 아래 집계가 빈손으로 끝나지 않았다.
     await guard.apply({ block_headless: false });
 
@@ -351,7 +351,7 @@ test.describe('방문자 통계 비콘 — 동의 연동 모드', () => {
   test('동의한 방문자가 새로고침한 첫 화면도 비콘을 보낸다', async ({ page }) => {
     // 첫 화면 비콘은 부팅 직후 나가 동의 조회보다 늘 먼저다. 트래커가 그 순간의 「모름」을 미동의로
     // 버리면, 동의한 방문자가 새로 들어오거나 새로고침한 화면이 한 건도 남지 않는다 — 메뉴 이동은
-    // 세어지니 단위 테스트와 SPA 실측만으로는 드러나지 않았다(#682 S3 라운드 13 브라우저 실측).
+    // 세어지니 단위 테스트와 SPA 실측만으로는 드러나지 않았다.
     const adminToken = issueToken('core.analytics.read', 'core.analytics.update');
     const guard = new AnalyticsSettingsGuard(page.request, adminToken);
 
@@ -373,7 +373,7 @@ test.describe('방문자 통계 비콘 — 동의 연동 모드', () => {
 
       // 같은 배너가 두 벌 그려지는 설치가 있어(겹친 위쪽이 아래쪽의 클릭을 가린다) 위쪽을 누른다.
       // 동의 저장 요청이 끝나기 전에 새로고침하면 그 요청이 취소돼 동의가 남지 않는다 — 저장 응답을 받고
-      // 새로고침한다(#682 S3 라운드 14: 저장이 빨랐던 첫 회만 통과하고 반복 실행에서 3/4 실패했다).
+      // 새로고침한다(저장이 빨랐던 첫 회만 통과하고 반복 실행에서 3/4 실패했다).
       await Promise.all([
         page.waitForResponse((res) => res.url().includes('/consent/cookie') && res.request().method() === 'POST'),
         page.locator('#gdpr_cookie_banner').last().getByRole('button', { name: /Accept All|모두 동의/ }).click(),

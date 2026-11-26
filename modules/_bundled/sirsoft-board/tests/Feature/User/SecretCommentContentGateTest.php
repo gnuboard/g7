@@ -377,7 +377,7 @@ class SecretCommentContentGateTest extends BoardTestCase
     }
 
     /**
-     * 스레드 앵커는 조상·자손 글의 비밀 댓글을 보고, 형제 가지 글의 비밀 댓글은 못 본다 (#789 D12 — canView 재사용).
+     * 스레드 앵커는 조상·자손 글의 비밀 댓글을 보고, 형제 가지 글의 비밀 댓글은 못 본다 (canView 재사용).
      *
      * @scenario viewer=thread_anchor
      *

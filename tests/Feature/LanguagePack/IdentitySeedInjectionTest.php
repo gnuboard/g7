@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 본인인증 알림의 언어팩(ja) 주입 검증 (#699 — 옛 seed/identity_messages.json 경로 대체)
+ * 본인인증 알림의 언어팩(ja) 주입 검증 (옛 seed/identity_messages.json 경로 대체)
  *
  * 7.1.0 부터 본인인증 메시지의 번역은 코어 언어팩 seed/notifications.json 의 `identity.*` type 키로
  * 공급된다. 실제 주입 경로는 언어팩 활성화 훅(SyncDatabaseTranslations::handleActivated)이다 —

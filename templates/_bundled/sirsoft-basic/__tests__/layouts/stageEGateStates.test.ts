@@ -159,7 +159,7 @@ describe('단계 E — 통합검색 서브탭 게이트 상태 + posts/pages 본
     }
   });
 
-  // 탭의 SSoT 가 전역 상태(`_global.searchActiveTab`)에서 URL 쿼리(`query.type`)로 바뀌었다(#519).
+  // 탭의 SSoT 가 전역 상태(`_global.searchActiveTab`)에서 URL 쿼리(`query.type`)로 바뀌었다.
   // 편집기 상태 패치도 같은 경로로 줘야 캔버스에서 서브탭이 실제로 갈린다 — 옛 경로로 두면
   // 세 변종이 모두 'all' 탭으로 렌더되고, 그 사실이 화면상 오류 없이 조용히 지나간다.
   it('각 서브탭 상태는 query.q + query.type 을 패치한다 (게이트 경로)', () => {

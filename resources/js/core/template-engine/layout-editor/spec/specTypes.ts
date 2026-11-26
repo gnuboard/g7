@@ -292,7 +292,7 @@ export interface EditorControlSpec {
   label?: string;
   /**
    * apply 선언 — 컨트롤 값을 노드에 쓰는 방식(`classToken`/`styleProp`/`cssVar`/`propValue`/`nodeKey`, 원칙 4.8).
-   * 런타임 값은 늘 객체다(번들 editor-spec 621건 전수, 코드·시험의 문자열 사용 0건 — #869). 종전 `string` 선언은
+   * 런타임 값은 늘 객체다(번들 editor-spec 621건 전수, 코드·시험의 문자열 사용 0건). 종전 `string` 선언은
    * 실제와 달라 사용처마다 `as unknown as` 캐스팅이 필요했다.
    */
   apply?: RecipeApply;

@@ -20,7 +20,7 @@ use Tests\TestCase;
 use Tests\Unit\Thumbnails\Support\TestImages;
 
 /**
- * 썸네일 캐시 관리 API 테스트 — stats·purge·pregenerate (#869)
+ * 썸네일 캐시 관리 API 테스트 — stats·purge·pregenerate
  *
  * 저장 위치는 원본 분류(공개·권한)별 두 줄이다. 두 분류가 같은 디스크를 써도 따로 세고 따로 지워야 한다 —
  * 공개만 비웠는데 권한 이미지 썸네일이 사라지면 안 된다. 분류는 원본 제공자 판정을 따른다:

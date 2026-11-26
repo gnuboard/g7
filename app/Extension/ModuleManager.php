@@ -158,7 +158,7 @@ class ModuleManager implements ModuleManagerInterface
     protected array $bundledModules = [];
 
     /**
-     * _pending / _bundled 메타를 이번 로드 주기에 읽었는지 — 처음 읽힐 때까지 미룬다(#860)
+     * _pending / _bundled 메타를 이번 로드 주기에 읽었는지 — 처음 읽힐 때까지 미룬다
      */
     protected bool $pendingAndBundledLoaded = false;
 
@@ -309,7 +309,7 @@ class ModuleManager implements ModuleManagerInterface
 
         // _pending / _bundled 디렉토리의 모듈 메타데이터 로드
         // _pending / _bundled 메타는 관리 목록·업데이트 확인처럼 실제로 쓰는 곳이 처음 읽을 때 로드한다 — 부팅마다
-        // 미설치 번들 매니페스트까지 읽지 않게(#860). 다시 load 하면 지연 상태를 처음으로 돌린다.
+        // 미설치 번들 매니페스트까지 읽지 않게. 다시 load 하면 지연 상태를 처음으로 돌린다.
         $this->pendingModules = [];
         $this->bundledModules = [];
         $this->pendingAndBundledLoaded = false;
@@ -645,7 +645,7 @@ class ModuleManager implements ModuleManagerInterface
             // SEO 변수명 중복 검증
             $this->validateSeoVariables($module, 'module');
 
-            // 전역 상태 공개 계약 이름 충돌 검증 (#639)
+            // 전역 상태 공개 계약 이름 충돌 검증
             $this->validateStateContracts('module:'.$module->getIdentifier(), $module->getStateContracts());
 
             // 최근 검색어 범위 선언(search_scopes) 형식 검사 — 틀린 항목은 버리고 경고로만 알린다(설치를 막지 않음, 7.1.5)
@@ -883,7 +883,7 @@ class ModuleManager implements ModuleManagerInterface
             $this->extensionManager->warnPhpExtensionRequirements('module', $module->getIdentifier(), $phpExtensionPath);
         }
 
-        // 전역 상태 공개 계약 이름 충돌 검증 — 꺼져 있던 사이 다른 확장이 같은 이름을 가졌을 수 있다 (#639)
+        // 전역 상태 공개 계약 이름 충돌 검증 — 꺼져 있던 사이 다른 확장이 같은 이름을 가졌을 수 있다
         $this->validateStateContracts('module:'.$module->getIdentifier(), $module->getStateContracts());
 
         // 최근 검색어 범위 선언(search_scopes) 형식 검사 — 틀린 항목은 버리고 경고로만 알린다(설치를 막지 않음, 7.1.5)
@@ -910,7 +910,7 @@ class ModuleManager implements ModuleManagerInterface
 
         // 레이아웃 파일 검증을 상태 쓰기보다 먼저 한다 — 엄격한 검증 실패(데이터 소스 id 중복·layouts 밖 참조·
         // .g7.html 컴파일 오류)면 여기서 예외가 올라가 상태·soft delete 행이 그대로 남는다. 예전에는 active 로 쓴 뒤
-        // 등록 단계에서 실패해, 레이아웃이 하나도 없는 활성 모듈이 남았다(#712 실측). 결과는 등록 단계가 그대로 쓴다.
+        // 등록 단계에서 실패해, 레이아웃이 하나도 없는 활성 모듈이 남았다. 결과는 등록 단계가 그대로 쓴다.
         $validatedLayouts = $this->validateModuleLayoutFiles($moduleName);
 
         $result = $module->activate();
@@ -940,7 +940,7 @@ class ModuleManager implements ModuleManagerInterface
             // 모듈 레이아웃 등록 (새로운 레이아웃 또는 업데이트)
             $layoutsRegistered = $this->registerModuleLayouts($moduleName, $validatedLayouts);
 
-            // 7.0 JSON 레이아웃의 깨진 조각 참조는 빈 자리로 등록됐다 — 결과에 실어 화면·CLI 가 알린다 (#712).
+            // 7.0 JSON 레이아웃의 깨진 조각 참조는 빈 자리로 등록됐다 — 결과에 실어 화면·CLI 가 알린다.
             // 검증이 돌지 않았으면(레이아웃 디렉토리 없음) 보관소에 남은 다른 확장의 경고를 싣지 않는다.
             $layoutWarnings = $this->takeLayoutIncludeWarnings();
             if ($validatedLayouts === null) {
@@ -1297,7 +1297,7 @@ class ModuleManager implements ModuleManagerInterface
         // MySQL에서 DROP TABLE 등 DDL 문은 암시적 커밋을 유발하므로 트랜잭션 외부에서 실행
         $onProgress?->__invoke('data_cleanup', __('extensions.progress.data_cleanup'));
         if ($deleteData) {
-            // 기본 디스크 밖(비공개 첨부 저장소·공개 자산 디스크)의 모듈 폴더 — 모듈 설정이 든 로컬 폴더를 지우기 전에 판정한다 (#916 D28)
+            // 기본 디스크 밖(비공개 첨부 저장소·공개 자산 디스크)의 모듈 폴더 — 모듈 설정이 든 로컬 폴더를 지우기 전에 판정한다
             $remoteDisks = ExtensionRemoteStorageCleanup::resolveDisks($module, 'module');
             // 동적 데이터 정리 (마이그레이션 롤백 전에 실행해야 메타 테이블 조회 가능)
             $this->cleanupDynamicModuleData($module);
@@ -1535,7 +1535,7 @@ class ModuleManager implements ModuleManagerInterface
                     'description' => $this->getLocalizedValue($module->getDescription(), $locale),
                     'dependencies' => $this->enrichDependencies($module->getDependencies()),
                     'integrations' => $this->enrichIntegrations($module->getIntegrationConstraints()),
-                    // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 (#916)
+                    // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 
                     'public_api' => $module->getPublicApi(),
                     'requires_core' => $module->getRequiredCoreVersion(),
                     'status' => 'uninstalled',
@@ -1559,7 +1559,7 @@ class ModuleManager implements ModuleManagerInterface
                     'description' => $this->getLocalizedValue($metadata['description'] ?? '', $locale),
                     'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
                     'integrations' => $this->enrichIntegrations($metadata['integrations'] ?? []),
-                    // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 (#916)
+                    // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 
                     'public_api' => PublicApiManifest::normalize($metadata['public_api'] ?? null, 'Modules\\'.ExtensionManager::directoryToNamespace($identifier)),
                     'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
@@ -1583,7 +1583,7 @@ class ModuleManager implements ModuleManagerInterface
                     'description' => $this->getLocalizedValue($metadata['description'] ?? '', $locale),
                     'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
                     'integrations' => $this->enrichIntegrations($metadata['integrations'] ?? []),
-                    // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 (#916)
+                    // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 
                     'public_api' => PublicApiManifest::normalize($metadata['public_api'] ?? null, 'Modules\\'.ExtensionManager::directoryToNamespace($identifier)),
                     'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
@@ -1660,7 +1660,7 @@ class ModuleManager implements ModuleManagerInterface
                     'description' => $this->getLocalizedValue($descriptionJson, $locale),
                     'dependencies' => $this->enrichDependencies($module->getDependencies()),
                     'integrations' => $this->enrichIntegrations($module->getIntegrationConstraints()),
-                    // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 (#916)
+                    // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 
                     'public_api' => $module->getPublicApi(),
                     'requires_core' => $module->getRequiredCoreVersion(),
                     'status' => $record->status,
@@ -1830,7 +1830,7 @@ class ModuleManager implements ModuleManagerInterface
             'requires_core' => $module->getRequiredCoreVersion(),
             'dependencies' => $this->enrichDependencies($module->getDependencies()),
             'integrations' => $this->enrichIntegrations($module->getIntegrationConstraints()),
-            // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 (#916)
+            // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 
             'public_api' => $module->getPublicApi(),
             'permissions' => $module->getPermissions()['categories'] ?? [],
             'roles' => method_exists($module, 'getRoles') ? $module->getRoles() : [],
@@ -1888,7 +1888,7 @@ class ModuleManager implements ModuleManagerInterface
                 'requires_core' => $module->getRequiredCoreVersion(),
                 'dependencies' => $this->enrichDependencies($module->getDependencies()),
                 'integrations' => $this->enrichIntegrations($module->getIntegrationConstraints()),
-                // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 (#916)
+                // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 
                 'public_api' => $module->getPublicApi(),
                 'permissions' => $module->getPermissions()['categories'] ?? [],
                 'roles' => method_exists($module, 'getRoles') ? $module->getRoles() : [],
@@ -1960,7 +1960,7 @@ class ModuleManager implements ModuleManagerInterface
             'requires_core' => $metadata['g7_version'] ?? null,
             'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
             'integrations' => $this->enrichIntegrations($metadata['integrations'] ?? []),
-            // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 (#916)
+            // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 
             'public_api' => PublicApiManifest::normalize($metadata['public_api'] ?? null, 'Modules\\'.ExtensionManager::directoryToNamespace($metadata['identifier'] ?? $moduleName)),
             'permissions' => $metadata['permissions']['categories'] ?? $metadata['permissions'] ?? [],
             'roles' => $metadata['roles'] ?? [],
@@ -2126,7 +2126,7 @@ class ModuleManager implements ModuleManagerInterface
     }
 
     /**
-     * 선택 연동 선언(`integrations`)을 화면 표시용으로 보강합니다 (#639).
+     * 선택 연동 선언(`integrations`)을 화면 표시용으로 보강합니다.
      *
      * @param  mixed  $integrations  manifest 의 integrations 값
      * @return array<int, array<string, mixed>> 보강된 연동 목록
@@ -2282,7 +2282,7 @@ class ModuleManager implements ModuleManagerInterface
         }
 
         // 디렉토리 생성 — sudo 코어 업데이트(번들 확장 업데이트 프롬프트) 경로에서 root 로 만들어지면
-        // `storage/app/modules` 는 restore_ownership 제외 경로라 되돌려지지 않는다 → 부모 소유권 상속 (#651)
+        // `storage/app/modules` 는 restore_ownership 제외 경로라 되돌려지지 않는다 → 부모 소유권 상속
         if (! File::isDirectory($settingsDir)) {
             File::makeDirectory($settingsDir, 0755, true);
             FilePermissionHelper::inheritOwnershipFromParent($settingsDir);
@@ -3937,7 +3937,7 @@ class ModuleManager implements ModuleManagerInterface
      * registerModuleLayouts()는 updateOrCreate를 사용하므로 기존 등록 중복은 안전합니다.
      *
      * 템플릿 활성화는 켜는 템플릿의 종류(`$onlyType`)만 넘긴다 — 그 종류의 화면만 컴파일하고, 한 모듈의 실패는 그 모듈만
-     * 로그로 남기고 건너뛴다(#725 D6). 종전에는 사용자 템플릿을 켤 때도 관리자 화면까지 검증했고, 무관한 모듈의 화면 하나가
+     * 로그로 남기고 건너뛴다. 종전에는 사용자 템플릿을 켤 때도 관리자 화면까지 검증했고, 무관한 모듈의 화면 하나가
      * 깨지면 예외가 번져 활성화 트랜잭션 전체가 되돌아갔다. 인자 없는 호출은 종전과 같다(전 종류 · 실패는 예외).
      *
      * @param  string|null  $onlyType  이 종류(`admin`·`user`)의 화면만 등록 — null 이면 전부
@@ -4038,7 +4038,7 @@ class ModuleManager implements ModuleManagerInterface
 
         // 레이아웃 검증 (등록 전 모든 레이아웃 파일 유효성 검사)
         // 공통 Trait 메서드 사용 (recursive=true: 모듈은 하위 디렉토리 전체 스캔)
-        // 종류 필터는 파일 수집 단계에서 건다 — 다른 종류의 화면은 컴파일조차 하지 않는다(#725 D6).
+        // 종류 필터는 파일 수집 단계에서 건다 — 다른 종류의 화면은 컴파일조차 하지 않는다.
         $this->onlyLayoutTargetType = $onlyType;
 
         try {
@@ -4219,7 +4219,7 @@ class ModuleManager implements ModuleManagerInterface
         if (File::exists($layoutsPath)) {
             $validatedLayouts = $this->validateLayoutFiles($layoutsPath, $identifier, 'module', true);
 
-            // 7.0 JSON 레이아웃의 깨진 조각 참조는 빈 자리로 등록된다 — 결과에 실어 알린다 (#712).
+            // 7.0 JSON 레이아웃의 깨진 조각 참조는 빈 자리로 등록된다 — 결과에 실어 알린다.
             // 검증이 돈 경우에만 꺼낸다 — 디렉토리가 없을 때 꺼내면 다른 확장이 남긴 경고가 섞인다.
             $layoutWarnings = $this->takeLayoutIncludeWarnings();
         }
@@ -4377,13 +4377,13 @@ class ModuleManager implements ModuleManagerInterface
         $liveKeys = $this->fragmentSourceKeys($module->getExtensionsPath(), $extensionFiles);
 
         // 정의·백업 기준은 템플릿과 무관하다(컴파일이 템플릿을 보지 않는다) — 템플릿 루프 밖에서 한 번만 읽는다. 루프 안에서
-        // 읽으면 깨진 조각 하나가 활성 템플릿 수만큼 실패 로그를 남기고, 붙지도 않는 템플릿 이름이 원인처럼 찍혔다(#725).
+        // 읽으면 깨진 조각 하나가 활성 템플릿 수만큼 실패 로그를 남기고, 붙지도 않는 템플릿 이름이 원인처럼 찍혔다.
         $definitions = $this->loadFragmentDefinitions($module->getExtensionsPath(), $extensionFiles, ['module' => $identifier]);
         $backupFragments = $this->layoutSynchronizer()->compileBackupFragments($backupPath, $identifier);
 
         foreach ($allTemplates as $template) {
 
-            // 등록 + 백필된 옛 키 행 잇기 + 오등록·고아 행 정리를 한 번에 한다 (#703) — 등록만 하면 7.0.11 에서
+            // 등록 + 백필된 옛 키 행 잇기 + 오등록·고아 행 정리를 한 번에 한다 — 등록만 하면 7.0.11 에서
             // 올라온 설치의 옛 키 행과 재활성화가 되살린 행이 새 행과 함께 살아 같은 조각이 두 번 주입된다.
             // 활성화는 keep(운영자 수정 보존), 업데이트는 그 업데이트의 전략(keep/overwrite)을 따르고 백업의 이전 판을 병합 기준으로 쓴다.
             $stats = $this->layoutExtensionService->syncSourceFragmentsToTemplate(
@@ -4442,7 +4442,7 @@ class ModuleManager implements ModuleManagerInterface
     protected function restoreLayoutExtensions(ModuleInterface $module): void
     {
         try {
-            // 소스에 실재하는 조각 키의 행만 되살린다 — 고아 정리가 지운 옛 행까지 살리면 두 번 주입된다 (#703).
+            // 소스에 실재하는 조각 키의 행만 되살린다 — 고아 정리가 지운 옛 행까지 살리면 두 번 주입된다.
             // 키 집합은 조각 디렉토리를 규약(CollectsFragmentSources)으로 직접 훑어 얻는다. 목록 밖 행은 뒤따르는
             // 등록이 withTrashed 조회로 필요한 만큼 되살린다.
             $restoredCount = $this->layoutExtensionService->restoreBySource(
@@ -5310,7 +5310,7 @@ class ModuleManager implements ModuleManagerInterface
         // 다운그레이드 차단 — fromVersion > toVersion 인 경우 force=false 면 차단.
         // force=true 는 의도적 다운그레이드 (장애 롤백 등) 허용. lang pack 정책과 일관.
         if ($fromVersion && version_compare($toVersion, $fromVersion, '<') && ! $force) {
-            // 받아 둔 ZIP 소스 임시 디렉토리 — 이 차단은 바깥 try 앞이라 그 catch 의 정리를 지나지 않는다 (#916)
+            // 받아 둔 ZIP 소스 임시 디렉토리 — 이 차단은 바깥 try 앞이라 그 catch 의 정리를 지나지 않는다 
             if ($zipTempDir && File::isDirectory($zipTempDir)) {
                 File::deleteDirectory($zipTempDir);
             }
@@ -5641,7 +5641,7 @@ class ModuleManager implements ModuleManagerInterface
             $statusUpdating = false;
 
             // 받아 둔 ZIP·GitHub 소스 임시 디렉토리 — 스테이징의 finally 보다 앞(백업 생성·진행 기록·상태 변경)에서 실패하면
-            // 여기로 바로 온다. 스테이징을 지났으면 이미 지워져 있다(두 번 지워도 안전, #916).
+            // 여기로 바로 온다. 스테이징을 지났으면 이미 지워져 있다(두 번 지워도 안전).
             if ($zipTempDir && File::isDirectory($zipTempDir)) {
                 File::deleteDirectory($zipTempDir);
             }
@@ -5694,7 +5694,7 @@ class ModuleManager implements ModuleManagerInterface
 
             // 검색봇 화면 캐시(seo.page.*·사이트맵)도 비운다 — 「업데이트 중」 창에 렌더된 봇 화면은 이 모듈이 꺼진 것으로
             // (`_global.activeModules`·`activePlugins` 에 없음, routes `requires` 미충족) 남는다. 성공 경로는 after_update 훅 구독자가
-            // 비우지만 실패 경로는 그 훅을 발화하지 않는다(#822). 리스너는 예외를 삼키므로 실패 처리를 깨지 않는다.
+            // 비우지만 실패 경로는 그 훅을 발화하지 않는다. 리스너는 예외를 삼키므로 실패 처리를 깨지 않는다.
             app(SeoExtensionCacheListener::class)->onExtensionChanged($identifier);
 
             // 업데이트 도중 새 판 기준으로 다시 만든 훅 캐시·확장 autoload 를 지금 디스크(되돌린 판) 기준으로 맞춘다 — 남겨 두면 되돌린

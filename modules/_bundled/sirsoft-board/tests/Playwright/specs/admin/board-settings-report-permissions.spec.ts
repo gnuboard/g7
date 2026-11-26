@@ -1,5 +1,5 @@
 /**
- * 게시판 환경설정 "신고 정책" 탭 — 신고 관리 권한 검증 및 에러 표시 (이슈 #413 item 8).
+ * 게시판 환경설정 "신고 정책" 탭 — 신고 관리 권한 검증 및 에러 표시 (item 8).
  *
  * view_roles / manage_roles 를 빈 배열로 저장 시 FormRequest 가 차단하고,
  * 해당 섹션 내 TagInput 에 빨간 테두리(input-error 클래스)와 인라인 에러 메시지가 표시된다.
@@ -23,7 +23,7 @@ import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 
 const SETTINGS_URL = '/admin/boards/settings?tab=report_policy';
 
-test.describe.skip('게시판 환경설정 신고 정책 — 신고 관리 권한 검증 (#413)', () => {
+test.describe.skip('게시판 환경설정 신고 정책 — 신고 관리 권한 검증', () => {
   // @scenario field=view_roles
   // @effects view_roles_empty_blocked_by_validation, inline_error_shown_below_view_roles_taginput, taginput_shows_red_border_on_error
   test('view_roles 빈 배열 제출 시 섹션 내 에러가 표시된다', async ({

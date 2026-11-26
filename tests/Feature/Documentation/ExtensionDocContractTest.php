@@ -10,7 +10,7 @@ use App\Support\ExtensionDoc\TestPathCollector;
 use Tests\TestCase;
 
 /**
- * 확장 개발자 문서 계약 (#601)
+ * 확장 개발자 문서 계약
  *
  * 세션 훅은 CI 에서 돌지 않는다. 문서 체계를 실제로 잠그는 것은 이 테스트다.
  *
@@ -1216,7 +1216,7 @@ class ExtensionDocContractTest extends TestCase
     /**
      * 확장 문서의 「활동 로그 훅」 표가 리스너의 실제 구독과 일치하는지 단언합니다.
      *
-     * 이 목록은 코어 `docs/backend/activity-log-hooks.md` 에서 확장 소유로 옮겨온 것이고(#601),
+     * 이 목록은 코어 `docs/backend/activity-log-hooks.md` 에서 확장 소유로 옮겨온 것이고,
      * 옮겨올 당시 코어 문서가 이미 낡아 있었다. 리스너가 `before_*` 훅 구독을 걷어내고
      * **Service 가 스냅샷을 `after_*` 인자로 넘기는** 구조로 바뀌었는데 표는 그대로였다 —
      * 없는 구독 31행이 실려 있었고 실제 구독 13건이 빠져 있었으며, 소계·총계·메서드 이름까지

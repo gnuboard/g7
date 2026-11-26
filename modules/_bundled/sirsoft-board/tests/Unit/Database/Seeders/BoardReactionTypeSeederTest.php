@@ -11,7 +11,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  * BoardReactionTypeSeeder 검증.
  *
  * 시더 실행 후 추천(like)/비추천(dislike) 2건이 정확한 code·아이콘·ko/en/ja
- * 라벨로 등록되는지 확인한다 (이슈 #525 1단계 시더 작성 검증).
+ * 라벨로 등록되는지 확인한다 (1단계 시더 작성 검증).
  */
 class BoardReactionTypeSeederTest extends ModuleTestCase
 {

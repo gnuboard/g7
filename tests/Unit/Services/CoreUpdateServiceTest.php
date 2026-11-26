@@ -1701,7 +1701,7 @@ MD;
      * GitHub 모양(감싼 폴더의 폴더 항목이 맨 앞)에 Mac 재압축 부속 폴더(`__MACOSX/`)까지 붙은 ZIP 도 감싼 폴더를 벗긴 루트를 돌려주는지 확인합니다.
      *
      * 부속 폴더가 함께 풀리면 해제 결과 최상위가 폴더 둘이 되어 래퍼 판정이 실패하고, `core:update --zip` 이
-     * 「잘못된 패키지」로 멈췄다(#971).
+     * 「잘못된 패키지」로 멈췄다.
      *
      * @effects extractZipToPending_returns_package_root_for_flat_and_wrapped_zip
      *
@@ -1907,7 +1907,7 @@ return ['version' => '7.2.0'];",
     }
 
     /**
-     * end-to-end 회귀 (공개 #64 / 내부 #452): 코어 업데이트가 번들 확장의 변경된
+     * end-to-end 회귀 (공개 #64): 코어 업데이트가 번들 확장의 변경된
      * `_bundled` 파일을 실제로 반영합니다.
      *
      * computeApplyList(3-way 산출) → applyUpdate(적용) 전 체인을 실제 config 조합

@@ -11,7 +11,7 @@ namespace Tests\Support\Concerns;
  * 된다. 표현식 평가는 조용히 undefined 를 내므로 오류도 로그도 남지 않고, 그 조건에 걸린
  * 노드가 영영 나타나지 않거나(혹은 반대로 늘 나타나) 운영자는 이유를 알 수 없다.
  *
- * 실제 사례(#599): `sirsoft-pay_kginicis` 의 테스트결제 배지가 `nicepay_test_map` ·
+ * 실제 사례: `sirsoft-pay_kginicis` 의 테스트결제 배지가 `nicepay_test_map` ·
  * `nhnkcp_test_map` 을 함께 보는데 그 플러그인은 `kginicis_test_map` 하나만 선언했다.
  * KG이니시스만 설치한 사이트에서는 미정의 참조였고, 셋 다 설치한 사이트에서는 남의 PG
  * 테스트 결제에까지 「KG이니시스」 배지 문구가 붙었다.

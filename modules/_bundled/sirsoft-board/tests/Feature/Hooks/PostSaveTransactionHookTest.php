@@ -19,7 +19,7 @@ use Modules\Sirsoft\Board\Tests\Fixtures\AsyncTransactionHookProbeListener;
 use Modules\Sirsoft\Board\Tests\Fixtures\TransactionHookProbeListener;
 
 /**
- * 글 저장 트랜잭션 안 훅 `before_create_commit`·`before_update_commit` (#883 3단계)
+ * 글 저장 트랜잭션 안 훅 `before_create_commit`·`before_update_commit`
  *
  * 기존 `after_*` 는 커밋 뒤라 확장이 같은 트랜잭션에서 자기 데이터를 저장할 자리가 없었다. 새 훅은 트랜잭션 안·글 ID 확정·
  * 첨부 연결 뒤에 돈다. sync 리스너의 예외는 저장 전체를 되돌리고, 옮긴 파일도 제자리로 돌아간다(StorageTransaction).

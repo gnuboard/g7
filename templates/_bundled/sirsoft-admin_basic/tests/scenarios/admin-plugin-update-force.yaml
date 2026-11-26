@@ -18,7 +18,7 @@ effects:
   - compatible_update_skips_force_checkbox     # 호환되면 안내·체크박스 없이 진행 버튼이 활성이다
   - force_checkbox_toggles_global_flag         # 체크박스 변경이 _global.pluginForceUpdate 를 토글한다
   - confirm_sends_force_in_update_body         # 진행 버튼의 업데이트 요청 본문에 force 값이 실린다
-  - modal_footer_reads_modal_node_context      # 고정 하단의 진행 단추가 창을 연 뒤 바뀐 전역 값을 따라간다(#869 P1)
+  - modal_footer_reads_modal_node_context      # 고정 하단의 진행 단추가 창을 연 뒤 바뀐 전역 값을 따라간다
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_plugin_list._modal_update.force.test.tsx

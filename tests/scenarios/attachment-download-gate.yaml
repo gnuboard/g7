@@ -1,4 +1,4 @@
-feature: 코어 첨부 다운로드 판정 필터와 비활성 확장 규칙 (#887)
+feature: 코어 첨부 다운로드 판정 필터와 비활성 확장 규칙
 
 description: |
   코어 공개 다운로드(`GET /api/attachment/{hash}` → `AttachmentService::getFileInfo`·`download`)는 확장을 모른다. 행을 만든 확장이

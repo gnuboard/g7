@@ -7,7 +7,7 @@ export declare const SECRET_VIEW_EXPIRES_AT_STORAGE_NAME = "g7_board_secret_view
  */
 export declare function issueCartKeyFromApi(): Promise<string | null>;
 /**
- * 장바구니 키 발급을 미리 시작한다 — 템플릿 번들이 실릴 때 한 번 부른다 (#879).
+ * 장바구니 키 발급을 미리 시작한다 — 템플릿 번들이 실릴 때 한 번 부른다.
  *
  * 종전에는 레이아웃을 받은 뒤 init_actions 의 `initCartKey` 에서야 발급 요청이 나가, 첫 화면 전 PHP 왕복이 레이아웃 → 키로
  * 줄줄이 이어졌다. 저장된 키가 없고 쇼핑몰 모듈이 켜져 있으면 여기서 요청을 시작해 레이아웃 요청과 겹치게 한다. 렌더 전에
@@ -48,7 +48,7 @@ export declare function getCartKeyHandler(_action?: any, _context?: any): string
  */
 export declare function clearCartKeyHandler(_action?: any, _context?: any): void;
 /**
- * 장바구니 키가 필요한 동작 앞에서 키를 갖춘다 (#869 ρ J2).
+ * 장바구니 키가 필요한 동작 앞에서 키를 갖춘다.
  *
  * 저장된 키가 있으면 그것을 싣고, 없으면(init 의 발급이 실패한 경우) 새로 요청해 응답을 기다린다. 레이아웃은 담기, 바로 구매처럼 키가
  * 필요한 동작의 sequence 맨 앞에 둔다. 받지 못하면 null 로 끝나고 동작은 종전처럼 서버 응답대로 처리된다.

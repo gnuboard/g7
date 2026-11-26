@@ -17,12 +17,12 @@ use Illuminate\Database\Eloquent\Model;
 class ActivityLogService
 {
     /**
-     * 활동 로그(접속기록) 법정 최소 보관 일수 — 개인정보의 안전성 확보조치 기준 제8조 접속기록 1년(#736 D14).
+     * 활동 로그(접속기록) 법정 최소 보관 일수 — 개인정보의 안전성 확보조치 기준 제8조 접속기록 1년.
      */
     public const LEGAL_MIN_RETENTION_DAYS = 365;
 
     /**
-     * 권한 부여·변경·말소 기록 법정 보관 일수 — 같은 기준 제5조③ 3년(#736 D14). 설정 키가 없을 때의 기본값.
+     * 권한 부여·변경·말소 기록 법정 보관 일수 — 같은 기준 제5조③ 3년. 설정 키가 없을 때의 기본값.
      */
     public const LEGAL_PERMISSION_RECORD_DAYS = 1095;
 
@@ -134,7 +134,7 @@ class ActivityLogService
      *
      * 두 단계로 지운다 — 일반 로그는 적용 보관 일수, 역할·권한 변경 기록
      * (`core.activity_log.long_retention_actions`)은 그 값과 3년(`long_retention_days`) 중 긴 쪽이 지난 것만.
-     * 개인정보의 안전성 확보조치 기준 제5조③(권한 부여·변경·말소 내역 3년 보관, #736 D14). 훅에는 적용 보관 일수를 싣는다.
+     * 개인정보의 안전성 확보조치 기준 제5조③(권한 부여·변경·말소 내역 3년 보관). 훅에는 적용 보관 일수를 싣는다.
      *
      * @param  int|null  $days  보존 기간 (일) — null 이면 환경설정 「활동 로그 보관 기간」, 어느 쪽이든 최소 365일
      * @return int 삭제된 건수

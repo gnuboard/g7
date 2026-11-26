@@ -1,5 +1,5 @@
 /**
- * 상품 옵션별 과세 종류(영세) 브라우저 왕복 (#612).
+ * 상품 옵션별 과세 종류(영세) 브라우저 왕복.
  *
  * @scenario product-option-tax-status
  * @effects option_tax_status_persists_after_reload,
@@ -95,7 +95,7 @@ async function createProduct(page: any, suffix: string, exportTaxStatus: string 
   });
 }
 
-test.describe('상품 옵션별 과세 종류 (#612)', () => {
+test.describe('상품 옵션별 과세 종류', () => {
   // @scenario surface=admin_detail, option_override=zero_rated
   // @effects option_tax_status_persists_after_reload
   test('옵션 과세 종류를 영세로 저장하면 새로고침 후에도 영세로 남는다', async ({ page, shippingBoundaryToken }) => {

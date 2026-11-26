@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      *
-     * 주문의 영세 금액을 따로 기록한다 (#612). 영세는 과세표준(total_tax_amount)에 포함되고
+     * 주문의 영세 금액을 따로 기록한다. 영세는 과세표준(total_tax_amount)에 포함되고
      * 부가세는 0 이라, 결제사·현금영수증에 면세로 넘기거나 공급가액을 구할 때 이 몫을 빼내야 한다.
      * 기존 주문은 0 이 맞다 — 영세를 지정할 수단이 없었다.
      */

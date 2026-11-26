@@ -240,7 +240,7 @@ class ClaimPaymentCallbackTest extends PluginTestCase
      * 주문이 사라진 결제 건의 승인키 요청은 통과가 아니라 차단이다. (K9)
      *
      * 부모를 못 읽었을 때 `?->user_id ?? 0` 으로 접으면 열람자 판정이 0 == 0 이 되어
-     * 통과한다 — 라우트가 `optional.sanctum` 이라(#883) 그 방어는 게이트 안에 있어야 한다.
+     * 통과한다 — 라우트가 `optional.sanctum` 이라 그 방어는 게이트 안에 있어야 한다.
      *
      * @return void 반환값 없음
      *
@@ -290,7 +290,7 @@ class ClaimPaymentCallbackTest extends PluginTestCase
     }
 
     /**
-     * 비회원 주문의 결제 건은 그 주문의 조회 토큰으로 승인키를 받는다. (#855)
+     * 비회원 주문의 결제 건은 그 주문의 조회 토큰으로 승인키를 받는다.
      *
      * 비회원이 휴대폰으로 비회원 주문 조회 → 교환/반품 신청서 상세 → 추가결제 [결제하기] 를 누르면 결제 핸들러가
      * 조회 토큰(`X-Guest-Order-Token`)을 실어 승인키를 요청한다. 종전에는 로그인 회원만 통과해 403 이었다.
@@ -315,7 +315,7 @@ class ClaimPaymentCallbackTest extends PluginTestCase
     }
 
     /**
-     * 비회원 주문의 결제 건을 조회 토큰 없이 요청하면 401 이고 KCP 를 부르지 않는다. (#855)
+     * 비회원 주문의 결제 건을 조회 토큰 없이 요청하면 401 이고 KCP 를 부르지 않는다.
      *
      * 결제번호만 아는 제3자가 남의 추가결제 창을 열 수 없어야 한다.
      *
@@ -336,7 +336,7 @@ class ClaimPaymentCallbackTest extends PluginTestCase
     }
 
     /**
-     * 다른 비회원 주문의 조회 토큰으로는 승인키를 받을 수 없다 (401). (#855)
+     * 다른 비회원 주문의 조회 토큰으로는 승인키를 받을 수 없다 (401).
      *
      * @return void 반환값 없음
      *
@@ -357,7 +357,7 @@ class ClaimPaymentCallbackTest extends PluginTestCase
     }
 
     /**
-     * 회원 주문의 결제 건은 비로그인 요청이면 비회원 토큰을 붙여도 403 이다. (#855 대조군)
+     * 회원 주문의 결제 건은 비로그인 요청이면 비회원 토큰을 붙여도 403 이다. (대조군)
      *
      * 회원 주문은 회원 판정만 한다 — 비회원 토큰으로 회원 주문의 추가결제 창이 열리지 않는다.
      *

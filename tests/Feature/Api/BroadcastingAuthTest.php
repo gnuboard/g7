@@ -183,7 +183,7 @@ class BroadcastingAuthTest extends TestCase
      * 채널 정의(`routes/channels.php`)가 여전히 로드되어야 한다.
      *
      * `withRouting(channels: ...)` 인자를 제거했으므로 채널 등록은 전적으로
-     * `BroadcastChannelRegistrar::ensureRegistered()`(인가 라우트가 호출, #860 전에는
+     * `BroadcastChannelRegistrar::ensureRegistered()`(인가 라우트가 호출, 종전에는
      * `BroadcastServiceProvider::boot()` 의 `require`)에 달려 있다. 이 로드가 사라지면
      * 예외 없이 **모든 private 채널 구독이 403** 이 된다 — 콜백이 없는 채널은 거부되기 때문.
      *
@@ -210,7 +210,7 @@ class BroadcastingAuthTest extends TestCase
      */
     private function channelCallback(string $channel): \Closure
     {
-        // 채널은 부팅이 아니라 인가 라우트가 등록기로 등록한다(#860) — 웹소켓을 켠 상태로 같은 경로를 거친다
+        // 채널은 부팅이 아니라 인가 라우트가 등록기로 등록한다 — 웹소켓을 켠 상태로 같은 경로를 거친다
         if (config('broadcasting.default') === 'null') {
             Config::set('broadcasting.default', 'log');
         }

@@ -380,7 +380,7 @@ function isResponsiveBranchContainer(containerPath: string): boolean {
 /**
  * 가상 컨테이너의 DOM 요소 — prop 슬롯 배열·디바이스 분기 children 은 자기 노드가 없으므로 첫 항목 요소의
  * 부모(컴포넌트가 그 배열을 그리는 자리)를 컨테이너로 본다. 분기 컨테이너를 못 찾아 건너뛰면 모바일 보기에서
- * 분기 안 자식을 끌어도 같은 분기 안에 드롭 칸이 생기지 않았다(#869 λ 실측 C2, HEAD 에서도 재현).
+ * 분기 안 자식을 끌어도 같은 분기 안에 드롭 칸이 생기지 않았다(HEAD 에서도 재현).
  */
 function propSlotContainerEl(frameEl: HTMLElement, containerDomPath: string): HTMLElement | null {
   const first = frameEl.querySelector<HTMLElement>(`[data-editor-path^="${cssEscape(containerDomPath)}."]`);

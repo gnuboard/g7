@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\PostService;
 
 /**
- * 이미지 썸네일 브라우저 실측 — 게시판 데이터 (이슈 #869).
+ * 이미지 썸네일 브라우저 실측 — 게시판 데이터.
  *
  * 개발 DB 전용 샘플 시더다. `--sample` 묶음에 넣지 않으므로 `--class` 로 지정했을 때만 돈다.
  * 코어 `Database\Seeders\Sample\ThumbnailMeasureSeeder` 가 만든 작성자 회원이 있어야 돈다.

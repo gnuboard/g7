@@ -30,7 +30,7 @@ trait ClearsTemplateCaches
      * `regenerateExtensionCacheVersion()` 으로 새 `time()` 을 만들고, 그것은 정적 게시본
      * (`public/build/ext/{v}/`, 실측 715파일·40MB) **전체 재생성** + 병합 번들 재병합 + 전
      * 방문자의 자산 URL 변경이다. TTL 을 넘기지 않으면 `AbstractCacheDriver::put()` 이
-     * `cache.default_ttl`(기본 86400) 을 적용해 그 재생성이 **매일** 우발적으로 일어났다(#651 F11).
+     * `cache.default_ttl`(기본 86400) 을 적용해 그 재생성이 **매일** 우발적으로 일어났다.
      *
      * 영구 저장의 두 후보를 쓰지 않는 이유:
      *  - `forever()` 는 `CacheInterface` 밖이다 — 인터페이스 확장은 확장 공개 표면 변경이라
@@ -233,7 +233,7 @@ trait ClearsTemplateCaches
      *
      * 버전 키와 **같은 고정 스토어·같은 코어 네임스페이스**를 쓴다. 서명이 버전 키와 다른
      * 스토어에 저장되면(`app(CacheInterface::class)` 재바인딩 등) "첫 관측은 기록만" 규칙이
-     * 스토어마다 따로 성립해 실제 변경 1회를 조용히 삼킨다(#651 F8). 서명을 쓰는 뷰 컴포저와
+     * 스토어마다 따로 성립해 실제 변경 1회를 조용히 삼킨다. 서명을 쓰는 뷰 컴포저와
      * 지우는 관리 API 가 같은 통로를 써야 하므로 트레이트가 공급한다.
      *
      * @return CacheInterface 코어 네임스페이스 캐시 드라이버

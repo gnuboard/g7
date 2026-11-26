@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
-// 개발자 라우트(custom 예약 자리, #792) — `routes/custom.php` 가 있으면 맨 앞에서 등록한다.
+// 개발자 라우트(custom 예약 자리) — `routes/custom.php` 가 있으면 맨 앞에서 등록한다.
 // 아래 G7 화면 catch-all(`/admin/{any?}`·`/{any?}`)보다 먼저 등록돼야 라라벨 라우트 순서대로 개발자 화면이 이긴다.
 // 이 파일은 이미 web 그룹이라 미들웨어 묶음 `custom.screen` 만 더 씌운다. 코어 예약 주소를 가리는 라우트는 등록하지 않는다.
 CustomRoutes::load(app('router'));

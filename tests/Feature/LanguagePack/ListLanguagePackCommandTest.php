@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 /**
- * language-pack:list 커맨드 회귀 테스트 (이슈 #496 결손 2 — B1).
+ * language-pack:list 커맨드 회귀 테스트 (결손 2 — B1).
  *
  * 커맨드가 repository->paginate() 직접 호출에서 Service::list() 경유로 전환되어,
  * 설치된 DB 행뿐 아니라 (1) 번들에 있으나 미설치(uninstalled) 및 (2) DB active 인데

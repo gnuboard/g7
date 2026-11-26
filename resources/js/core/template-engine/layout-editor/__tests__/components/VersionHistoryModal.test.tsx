@@ -134,7 +134,7 @@ describe('VersionHistoryModal — 목록/상태', () => {
 
   // @scenario area=version_list
   // @effects version_latest_before_overwrite_row_keeps_restore
-  it('맨 위 판이 덮기 전 운영자 판(before_overwrite)이면 최신이어도 복원 버튼을 보인다 (#888)', async () => {
+  it('맨 위 판이 덮기 전 운영자 판(before_overwrite)이면 최신이어도 복원 버튼을 보인다', async () => {
     // 동기화가 운영자 판을 새 판으로 덮기 직전에 남긴 판이 맨 위 — 지금 본문은 새 판이라 이 판으로 되돌릴 수 있어야 한다
     mockFetch(() =>
       listOk([
@@ -154,7 +154,7 @@ describe('VersionHistoryModal — 목록/상태', () => {
 
   // @scenario area=version_list
   // @effects version_row_sync_author_shows_system
-  it('저장자 없이 동기화가 남긴 판(출처 있음)은 「시스템」, 출처 없는 옛 판은 「알 수 없음」 (#888)', async () => {
+  it('저장자 없이 동기화가 남긴 판(출처 있음)은 「시스템」, 출처 없는 옛 판은 「알 수 없음」', async () => {
     mockFetch(() =>
       listOk([
         {
@@ -413,7 +413,7 @@ describe('VersionHistoryModal — 확장 타겟', () => {
   });
 });
 
-describe('VersionHistoryModal — 더 보기 (#518 / 공개 #76)', () => {
+describe('VersionHistoryModal — 더 보기 (공개 #76)', () => {
   // @scenario area=load_more
   // @effects version_load_more_only_when_limit_filled
   it('첫 조회에 기본 상한을 붙이고, 상한 미만이면 더 보기 버튼이 없다', async () => {
@@ -427,5 +427,5 @@ describe('VersionHistoryModal — 더 보기 (#518 / 공개 #76)', () => {
 
   // 상한 논리(상한을 채운 응답의 hasMore, loadMore 의 상한 확장과 재조회, 서버 최대 상한 클램프)는 행을 그리지 않는
   // __tests__/hooks/useLayoutVersions.loadMore.test.tsx 가, 단추 연결은 VersionHistoryModal.loadMore.test.tsx 가 잰다.
-  // 종전에는 여기서 상한만큼 행을 jsdom 에 그려(최대 누적 1,500행) 동시 실행 부하에서 제한 시간을 넘겼다(#869).
+  // 종전에는 여기서 상한만큼 행을 jsdom 에 그려(최대 누적 1,500행) 동시 실행 부하에서 제한 시간을 넘겼다.
 });

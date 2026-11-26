@@ -20,7 +20,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * IDV provider 해석 우선순위 매트릭스 (refs #275).
+ * IDV provider 해석 우선순위 매트릭스 (refs).
  *
  * Mode A (Controller / Service::start providerId 명시) 와
  * Mode B (signup_after_create 정책 → Listener → Service::start) 양쪽에서

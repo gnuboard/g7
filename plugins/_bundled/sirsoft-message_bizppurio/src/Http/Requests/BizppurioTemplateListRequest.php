@@ -9,7 +9,7 @@ use Illuminate\Validation\Rule;
 use Plugins\Sirsoft\MessageBizppurio\Enums\BizppurioTemplateStatus;
 
 /**
- * 비즈뿌리오 알림 템플릿 DB 목록 조회 검증 (#597 §3.6 관리 화면).
+ * 비즈뿌리오 알림 템플릿 DB 목록 조회 검증 (§3.6 관리 화면).
  */
 class BizppurioTemplateListRequest extends FormRequest
 {

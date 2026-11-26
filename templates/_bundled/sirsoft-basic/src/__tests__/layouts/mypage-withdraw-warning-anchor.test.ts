@@ -50,7 +50,7 @@ describe('탈퇴 확인 창 — 경고 목록 확장 앵커 (Q20)', () => {
 
   /**
    * 경고 목록 안에 확장점(`withdraw_warnings`)이 있어야 한다 — 서버 오버레이 주입은 모달 안 노드를 찾지 못하고,
-   * 확장점 주입만 모달 트리까지 순회한다(#747 C12 W1).
+   * 확장점 주입만 모달 트리까지 순회한다.
    *
    * @scenario refund_credit=present
    * @effects withdraw_modal_warns_refund_credit_forfeiture

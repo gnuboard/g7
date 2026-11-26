@@ -51,7 +51,7 @@ class PageRepository implements PageRepositoryInterface
         //  - title: 제목만 (Scout searchableColumns 는 title+content 를 함께 검색하므로 사용하지 않음)
         //  - slug : 슬러그만
         //  - all  : 제목 + 슬러그 (본문 content 은 검색 대상 아님 — UI '제목 또는 슬러그로 검색')
-        // (Scout 콜백에 slug orWhere 를 넣으면 total 카운트가 부풀려지는 회귀가 있어 #225 에서 제거됨)
+        // (Scout 콜백에 slug orWhere 를 넣으면 total 카운트가 부풀려지는 회귀가 있어 제거됨)
         $query = Page::query();
 
         // 권한 스코프 필터링
@@ -287,7 +287,7 @@ class PageRepository implements PageRepositoryInterface
                 // 제목은 다국어 JSON 컬럼이라 FULLTEXT 에 의존하지 않고 로케일별 JSON 경로로 찾는다
                 // (메뉴 목록과 동일한 관례).
                 //
-                // 실측 배경 (#492 D-25): 운영 DB 에서 `MATCH(title)` 이 **어떤 키워드로도** 0 을
+                // 실측 배경: 운영 DB 에서 `MATCH(title)` 이 **어떤 키워드로도** 0 을
                 // 반환했다 — `이용약관`(제목 전체) · `약관`(부분) · `Terms` · `Service` 전부 0 인데
                 // 같은 행을 `LIKE` 로는 찾는다. 인덱스는 `WITH PARSER ngram` 으로 존재하고
                 // `ngram_token_size=2` 인데도 그렇다. 즉 이 컬럼의 FT 인덱스가 실제 행을 담고

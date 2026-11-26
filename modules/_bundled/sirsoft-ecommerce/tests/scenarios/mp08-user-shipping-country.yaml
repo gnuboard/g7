@@ -61,8 +61,8 @@ effects:
   - shipping_country_sent_as_request_header       # X-Shipping-Country 전역 헤더
   - mypage_view_shows_saved_country               # 마이페이지 보기 화면 읽기전용 배송국가 카드
   - addressbook_country_branch_domestic_intl      # 주소록 추가/수정 폼 국가 Select + 국내/해외 입력 분기
-  - country_name_localized_per_locale             # #459 — 국가명 $localized + fallbackKey 현지화
-  - country_name_input_per_locale                 # #459 — 국가 추가 폼 이름 입력칸 $locales 순회
+  - country_name_localized_per_locale             # 국가명 $localized + fallbackKey 현지화
+  - country_name_input_per_locale                 # 국가 추가 폼 이름 입력칸 $locales 순회
   - admin_order_detail_country_branch             # D7 — 관리자 주문상세 국내/해외 분기 폼
 
 test_files:

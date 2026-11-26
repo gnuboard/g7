@@ -103,7 +103,7 @@ export function decorateContentImages(root: DocumentFragment | Element, options:
       img.setAttribute('aria-label', options.zoomLabel((img.getAttribute('alt') ?? '').trim()));
       // 누를 수 있다는 표시(확대 커서)는 템플릿 CSS 의 `[data-g7-zoom] { cursor: zoom-in }`(@layer base)이 준다 — 작성자가
       // 적은 인라인 커서가 그보다 우선한다. 종전처럼 style 속성에 커서를 덧붙이면 직렬화한 HTML 문자열의 style 속성이 엄격한
-      // 스타일 정책(`style-src-attr 'none'`)에서 버려지고, 작성자 서식도 바뀐다 (공개 #163 × #869)
+      // 스타일 정책(`style-src-attr 'none'`)에서 버려지고, 작성자 서식도 바뀐다 (공개 #163 ×)
     }
   }
 }

@@ -2,7 +2,7 @@
  * 팝업 플러그인 E2E 공통 — 토큰 발급(코어 fixture), 사양이 만든 팝업만 지우는 정리, 사용자 화면 이동·레이어 찾기.
  *
  * 사양은 자기가 만든 팝업만 바꾸고 끝에서 지운다(운영 팝업을 다시 저장하지 않는다). 공개 API 응답이 아니라 그 응답이 그린
- * 레이어 요소를 기다린다(데이터 응답 뒤 관찰 — #810 교훈).
+ * 레이어 요소를 기다린다(데이터 응답 뒤 관찰 — 히어로 섹션 배너 시험에서 얻은 교훈).
  */
 import { test as base, expect, type APIRequestContext, type Page } from '@playwright/test';
 import { issueToken, issueScopedToken, authenticatePage } from '../../../../../../tests/Playwright/fixtures/auth';

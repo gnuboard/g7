@@ -1,4 +1,4 @@
-feature: 비즈뿌리오 알림톡 템플릿 라이프사이클 (#597)
+feature: 비즈뿌리오 알림톡 템플릿 라이프사이클
 
 description: |
   알림톡 템플릿을 시스템에서 작성(draft) → 검수 신청(requested) → 카카오 승인(approved)
@@ -79,7 +79,7 @@ effects:
   # 이미지 업로드 프록시 (S2 — 부록 A-7)
   - image_upload_proxies_to_kapi_and_returns_url
   - image_upload_rejects_out_of_spec_file_before_kapi
-  # 상한 안내가 두 화면·서버 상수와 어긋나지 않는다 (#599 후속 F8)
+  # 상한 안내가 두 화면·서버 상수와 어긋나지 않는다
   - template_image_hint_matches_the_server_constraint
   - template_image_widget_copies_stay_identical
   - template_image_hint_keeps_numbers_out_of_the_sentence
@@ -147,7 +147,7 @@ effects:
   - upload_in_progress_locks_save_buttons_not_cancel
   - upload_rejects_concurrent_selection_while_in_flight
   - upload_result_discarded_when_modal_reseeded
-  # 업로드 요청 경로 (#639) — 코어 API 클라이언트 경유(Bearer·401·로케일은 코어), 실패 시 이미지 값 무효화
+  # 업로드 요청 경로 — 코어 API 클라이언트 경유(Bearer·401·로케일은 코어), 실패 시 이미지 값 무효화
   - image_upload_sent_through_core_api_client
   - image_upload_failure_clears_image_value
   # 화면·서버 판정 일치 (라운드 5)

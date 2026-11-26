@@ -15,7 +15,7 @@ use Tests\TestCase;
 use Tests\Unit\Thumbnails\Support\TestImages;
 
 /**
- * 썸네일 명령 테스트 — `thumbnails:prune`·`thumbnails:pregenerate` (#869)
+ * 썸네일 명령 테스트 — `thumbnails:prune`·`thumbnails:pregenerate`
  *
  * 정리는 썸네일 디스크의 `thumbnails/` 아래에서 규격이 바뀐 파일·없는 규격 파일·원본이 없어진 파일·
  * `--days` 를 넘긴 파일만 지우고 현재 규격의 살아 있는 파생본은 남겨야 한다. 미리 만들기는 원본 제공자를

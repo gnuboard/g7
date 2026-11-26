@@ -4,7 +4,7 @@
  * 서버는 `X-Guest-Order-Token` 으로 비회원 주문 소유자를 확인한다. 토큰은 이커머스가 약속한 공개 상태 계약
  * `_global.guestOrderToken` 에서만 읽는다 — 종전에는 코어 저장소 키(sessionStorage `g7_guest_order_token`)와
  * 로그인 토큰(localStorage `auth_token`)을 직접 읽어 Bearer 를 손수 붙였다. 엔진이 저장 방식을 바꾸면 조용히
- * 깨지고, 코어의 401 처리도 우회한다(#639).
+ * 깨지고, 코어의 401 처리도 우회한다.
  *
  * 시나리오: plugins/_bundled/sirsoft-pay_nicepayments/tests/scenarios/public-core-api-only.yaml
  */

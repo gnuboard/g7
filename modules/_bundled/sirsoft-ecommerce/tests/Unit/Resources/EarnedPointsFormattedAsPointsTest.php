@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 장바구니·주문서는 `+710P`(`Summary::mileage_formatted` → `number_format().'P'`), 주문완료·
  * 비회원 주문상세·관리자 주문목록은 `+710원`(`*_earned_points_amount_formatted` →
  * `formatOrderCurrency()`). 구매자는 주문서에서 주문완료로 넘어가는 한 클릭 사이에 단위가
- * 바뀌는 것을 본다(#599 세션A 실측 2026-09-21 · 주문 20260921-1536333520).
+ * 바뀌는 것을 본다(세션A 실측 2026-09-21 · 주문 20260921-1536333520).
  *
  * 같은 도메인의 관리자 주문상세·클레임 비교표는 이미 `710P` 라 어긋난 쪽이 드러났고,
  * ja 언어팩의 마일리지 만료 알림도 단위가 `ポイント` 로 일관된다.
