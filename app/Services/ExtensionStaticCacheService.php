@@ -87,6 +87,9 @@ class ExtensionStaticCacheService
     /** terminating 게시 예약 플래그 (프로세스당 1회) */
     private static bool $publishScheduled = false;
 
+    /** {@see withoutScheduledPublish()} 중첩 깊이 — 0 보다 크면 게시를 예약하지 않는다 */
+    private static int $publishSuppressDepth = 0;
+
     /** 테스트 전용 — root 프로세스 판정 오버라이드 (null = 실판정) */
     private static ?bool $rootProcessForTesting = null;
 
@@ -309,6 +312,28 @@ class ExtensionStaticCacheService
     }
 
     /**
+     * 콜백이 도는 동안 게시를 예약하지 않습니다 — 여러 확장을 차례로 바꾸는 일괄 업데이트의 항목 프로세스용.
+     *
+     * 코어 업데이트의 번들 단계는 항목마다 새 프로세스로 돌고, 프로세스마다 끝에서 전 로케일 문구 병합·전 템플릿 산출물
+     * 복사를 다시 했다(항목당 수 초 × 수십 항목 — 7.2.0 → 7.2.1 실측 31개). 항목 프로세스는 이 래퍼로 감싸 게시를 건너뛰고,
+     * 일괄을 시작한 쪽(웹 업데이트 마무리·명령줄 일괄 명령)이 끝에서 한 번 {@see schedulePublishOnTerminate()} 를 부른다.
+     * 그 사이 게시본이 옛 버전이어도 화면은 API 폴백으로 정상이고, 다음 웹 렌더의 자가 치유가 같은 일을 한다.
+     *
+     * @param  callable  $callback  묶을 작업
+     * @return mixed 콜백 반환값
+     */
+    public static function withoutScheduledPublish(callable $callback): mixed
+    {
+        self::$publishSuppressDepth++;
+
+        try {
+            return $callback();
+        } finally {
+            self::$publishSuppressDepth--;
+        }
+    }
+
+    /**
      * 수명주기 이벤트에서 호출되는 terminating 게시 예약.
      *
      * `incrementExtensionCacheVersion()` 내부 단일 지점에서 호출된다.
@@ -322,7 +347,7 @@ class ExtensionStaticCacheService
      */
     public static function schedulePublishOnTerminate(): void
     {
-        if (self::$publishScheduled || ! app()->environment('production')) {
+        if (self::$publishScheduled || self::$publishSuppressDepth > 0 || ! app()->environment('production')) {
             return;
         }
 

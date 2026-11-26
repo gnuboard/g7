@@ -15,6 +15,7 @@ use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
 use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
+use App\Services\ExtensionStaticCacheService;
 use App\Services\LanguagePackService;
 use App\Support\ConfigCacheHelper;
 use App\Support\ExecutionEnvironment;
@@ -175,20 +176,32 @@ class ExecuteBundledUpdatesCommand extends Command
 
         $items = self::flattenItems($modules, $plugins, $templates, $langPacks);
         $outcome = null;
+        $deferStaticPublish = self::defersStaticPublish($manifest);
 
         if (self::shouldRunEachItemInFreshProcess($items, $isItemProcess, $this->canSpawnProcess())) {
-            $outcome = $this->runEachItemInFreshProcess($items);
+            $outcome = $this->runEachItemInFreshProcess($items, $deferStaticPublish);
         }
 
         if ($outcome === null) {
             // 새 프로세스를 띄울 수 없는 서버: 같은 프로세스에서 차례로 돈다. 확장마다 config·라우트 캐시를 다시 굽는
             // 일회용 앱 부팅이 쌓이지 않도록 재굽기를 끝에 한 번으로 모은다. proc_open 이 없으니 그 사이 캐시를 읽는
             // 새 프로세스(composer·훅 캐시·언어팩 단계)도 뜨지 않는다.
-            $outcome = self::shouldDeferCacheRebuilds($items, $this->canSpawnProcess())
+            $runInProcess = fn () => self::shouldDeferCacheRebuilds($items, $this->canSpawnProcess())
                 ? ConfigCacheHelper::deferRebuilds(fn () => RouteCacheHelper::deferRebuilds(
                     fn () => $this->runItemsInProcess($modules, $plugins, $templates, $langPacks)
                 ))
                 : $this->runItemsInProcess($modules, $plugins, $templates, $langPacks);
+
+            // 일괄을 시작한 쪽이 끝에서 한 번 게시한다 — 항목마다 전 로케일 문구 병합·전 템플릿 산출물 복사를 되풀이하지 않는다
+            $outcome = $deferStaticPublish
+                ? ExtensionStaticCacheService::withoutScheduledPublish($runInProcess)
+                : $runInProcess();
+        }
+
+        // 항목 프로세스를 띄운 바깥 프로세스(명령줄 코어 업데이트의 일괄 자식)는 끝에서 한 번만 게시를 예약한다.
+        // 웹 코어 업데이트는 항목마다 이 명령을 따로 부르므로(항목 프로세스) 마무리 단계가 예약한다.
+        if ($deferStaticPublish && ! $isItemProcess) {
+            ExtensionStaticCacheService::schedulePublishOnTerminate();
         }
 
         $success = $outcome['success'];
@@ -270,6 +283,20 @@ class ExecuteBundledUpdatesCommand extends Command
     public static function shouldRunEachItemInFreshProcess(array $items, bool $isItemProcess, bool $canSpawn): bool
     {
         return ! $isItemProcess && $canSpawn && count($items) > 1;
+    }
+
+    /**
+     * 매니페스트가 항목마다의 정적 게시를 미루라고 하는지 답합니다.
+     *
+     * 웹 코어 업데이트(항목마다 이 명령을 부르고 마무리에서 한 번 게시)와 명령줄 코어 업데이트(일괄 자식이 끝에서 한 번
+     * 게시)가 싣는다. 표시가 없는 옛 부모·단독 실행은 종전대로 항목마다 게시한다.
+     *
+     * @param  array<string, mixed>  $manifest  매니페스트
+     * @return bool 미루면 true
+     */
+    public static function defersStaticPublish(array $manifest): bool
+    {
+        return ($manifest['defer_static_publish'] ?? false) === true;
     }
 
     /**
@@ -365,9 +392,10 @@ class ExecuteBundledUpdatesCommand extends Command
      * 프로세스에서 처리한다. 항목 프로세스가 잠금 저장소 장애로 멈췄다고 알리면 남은 항목을 띄우지 않고 건너뛴 수로 센다(#161 D8).
      *
      * @param  array<int, array{type: string, identifier: string, strategy: string|null}>  $items  항목 목록
+     * @param  bool  $deferStaticPublish  항목 프로세스가 정적 게시를 건너뛰게 할지 (이 프로세스가 끝에서 한 번 예약)
      * @return array{success: int, failed: int, failed_items: array<int, array<string, mixed>>, skipped: int, aborted: bool, abort_reported: bool}|null 집계, 프로세스를 쓸 수 없으면 null
      */
-    private function runEachItemInFreshProcess(array $items): ?array
+    private function runEachItemInFreshProcess(array $items, bool $deferStaticPublish = false): ?array
     {
         if (! $this->canSpawnProcess()) {
             return null;
@@ -377,11 +405,18 @@ class ExecuteBundledUpdatesCommand extends Command
         $items = array_values($items);
 
         foreach ($items as $index => $item) {
-            $run = $this->runManifestInFreshProcess(self::manifestForItem($item), ['--item-process']);
+            $itemManifest = self::manifestForItem($item);
+
+            if ($deferStaticPublish) {
+                $itemManifest['defer_static_publish'] = true;
+            }
+
+            $run = $this->runManifestInFreshProcess($itemManifest, ['--item-process']);
 
             if ($run === null) {
-                $single = self::manifestForItem($item);
-                $outcome = $this->runItemsInProcess($single['modules'], $single['plugins'], $single['templates'], $single['lang_packs']);
+                $single = $itemManifest;
+                $runSingle = fn () => $this->runItemsInProcess($single['modules'], $single['plugins'], $single['templates'], $single['lang_packs']);
+                $outcome = $deferStaticPublish ? ExtensionStaticCacheService::withoutScheduledPublish($runSingle) : $runSingle();
                 $itemAborted = $outcome['aborted'];
             } else {
                 $itemAborted = (bool) ($run['payload']['aborted'] ?? false);

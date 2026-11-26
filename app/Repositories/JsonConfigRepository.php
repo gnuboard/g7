@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Exceptions\PhpExtensionUnavailableException;
 use App\Support\PhpExtensionProbe;
+use App\Support\SettingsFilePermission;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -263,6 +264,7 @@ class JsonConfigRepository implements ConfigRepositoryInterface
             // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
             // 설정 JSON 은 부팅 자체가 의존하는 자료라 드라이버 추상화보다 부팅 순서가 우선한다.
             $fullPath = Storage::disk(self::STORAGE_DISK)->path($path);
+            $created = ! is_file($fullPath);
             $handle = fopen($fullPath, 'c');
 
             if ($handle === false) {
@@ -287,6 +289,9 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
                 return false;
             }
+
+            // 새로 만든 파일은 만든 프로세스의 umask 를 따르지 않고 설정 폴더가 허용하는 범위로 맞춘다
+            SettingsFilePermission::apply($fullPath, $created);
 
             // 캐시 무효화 — 저장한 카테고리와 전체 맵 양쪽을 비운다.
             // 한쪽만 비우면 저장 직후 조회가 이전 값을 돌려준다.
@@ -531,7 +536,12 @@ class JsonConfigRepository implements ConfigRepositoryInterface
                 // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
                 // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
                 // 설정 JSON 은 부팅 자체가 의존하는 자료라 드라이버 추상화보다 부팅 순서가 우선한다.
-                Storage::disk(self::STORAGE_DISK)->put($categoryPath, $content);
+                $settingsDisk = Storage::disk(self::STORAGE_DISK);
+                $restoredPath = $settingsDisk->path($categoryPath);
+                $restoredCreated = ! is_file($restoredPath);
+                $settingsDisk->put($categoryPath, $content);
+                // 디스크 쓰기는 기본 공개 권한(0644)으로 남길 수 있다 — 설정 폴더가 허용하는 범위로 맞춘다
+                SettingsFilePermission::apply($restoredPath, $restoredCreated);
             }
         }
 

@@ -147,6 +147,7 @@ class CoreUpdateStepContractTest extends TestCase
                 'api.admin.core-update.status',
                 'api.admin.core-update.advance',
                 'api.admin.core-update.dismiss',
+                'api.admin.core-update.selection',
             ], true)) {
                 $registered[] = $route->uri();
             }

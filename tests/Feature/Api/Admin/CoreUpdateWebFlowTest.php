@@ -175,6 +175,7 @@ class CoreUpdateWebFlowTest extends TestCase
         $this->asAdmin($token)->postJson('/api/admin/core-update/start')->assertForbidden();
         $this->asAdmin($token)->postJson('/api/admin/core-update/advance')->assertForbidden();
         $this->asAdmin($token)->postJson('/api/admin/core-update/dismiss')->assertForbidden();
+        $this->asAdmin($token)->postJson('/api/admin/core-update/selection', ['kind' => 'bundled_updates', 'items' => []])->assertForbidden();
 
         // 확인·변경사항은 종전 권한 그대로여야 한다 — 등급을 나눈다는 것이 기존 화면을
         // 막는다는 뜻은 아니다.
@@ -293,6 +294,33 @@ class CoreUpdateWebFlowTest extends TestCase
 
         $this->asAdmin($token)
             ->postJson('/api/admin/core-update/advance')
+            ->assertStatus(409);
+    }
+
+    /**
+     * 진행 중 선택 제출(7.2.1)은 종류·항목 형식을 검증하고, 진행 중인 실행이 없으면 거절한다.
+     *
+     * @scenario actor=with_permission, run_state=idle
+     *
+     * @effects selection_submit_validates_and_requires_a_waiting_run
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function test_selection_submit_validates_and_requires_a_waiting_run(): void
+    {
+        [, $token] = $this->adminWith(['core.settings.read', 'core.system.update']);
+
+        $this->asAdmin($token)
+            ->postJson('/api/admin/core-update/selection', ['kind' => 'force', 'items' => []])
+            ->assertStatus(422)->assertJsonValidationErrors(['kind']);
+
+        $this->asAdmin($token)
+            ->postJson('/api/admin/core-update/selection', ['kind' => 'bundled_updates', 'items' => [['key' => 'plugin:x', 'selected' => true, 'strategy' => 'replace']]])
+            ->assertStatus(422)->assertJsonValidationErrors(['items.0.strategy']);
+
+        $this->asAdmin($token)
+            ->postJson('/api/admin/core-update/selection', ['kind' => 'bundled_updates', 'items' => [['key' => 'plugin:x', 'selected' => true]]])
             ->assertStatus(409);
     }
 

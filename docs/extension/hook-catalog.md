@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (745)
+- [코어](#코어) (746)
 - [기본 제공 확장](#기본-제공-확장) (19)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -155,6 +155,7 @@
 | `core.content_media.filter_upload_file` | filter | 2 |  |
 | `core.core_update.completed` | action | 4 |  |
 | `core.core_update.failed` | action | 5 |  |
+| `core.core_update.selection_validation_rules` | filter | 2 |  |
 | `core.core_update.start_validation_rules` | filter | 2 |  |
 | `core.core_update.started` | action | 4 |  |
 | `core.csp.trusted_style_hosts` | filter | 1 |  |

@@ -1,4 +1,5 @@
-<!-- 코어 새 버전 확인 결과 창 — 있으면 버전과 이력을, 없으면 최신이라는 안내를 보여 준다.
+<!-- e2e:allow 진행 중 번들 선택 창·확인 창 링크·미서명 경고는 새 판으로 올라가는 실제 코어 업데이트 도중에만 나타나 E2E 로 재현할 대상 릴리스가 없다 — 레이아웃·핸들러 단위 시험이 잠그고, 개선분이 든 시험 릴리스로 서버 재시험 때 브라우저 실측.
+  코어 새 버전 확인 결과 창 — 있으면 버전과 이력을, 없으면 최신이라는 안내를 보여 준다.
   올리는 것은 여기서 하지 않고 안내 창(`_modal_core_update_guide`)으로 넘긴다. -->
 <partial description="코어 업데이트 확인 결과 모달" editor_label="$t:admin.modal_label.admin_settings.core_update_result_modal">
   <modal data-type="composite" data-ref="core_update_result_modal" title="$t:admin.settings.info.update_result_title" size="md">
@@ -96,6 +97,20 @@
         <icon data-if="{{_local.loadingChangelog}}" name="spinner" class="spinner-sm"/>
         <span>$t:admin.settings.info.view_changelog</span>
       </button>
+      <!-- 웹 업데이트 탭으로 — 업데이트 권한이 있을 때만. 같은 화면의 탭 이동이라 실제 주소를 가진 링크다(새 탭·주소 복사). 누르면 동작이 이동을 맡는다 — 이 창을 닫고 탭을 「업데이트」로 옮긴다(탭 전환 창과 같은 두 자리: 전역 탭 상태 + 주소 query) -->
+      <a data-if="{{$parent._local.coreUpdateInfo?.update_available &amp;&amp; (_global.settingsAbilities?.can_core_update ?? false)}}" href="/admin/settings?tab=update" class="btn btn-primary btn-sm rounded-md">
+        <on type="click">
+          <sequence>
+            <close-modal target="core_update_result_modal"/>
+            <set-state target="global" activeSettingsTab="update"/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 업데이트 탭은 정보 탭의 목록 상태를 물려받지 않는다. -->
+            <navigate path="/admin/settings">
+              <query tab="update"/>
+            </navigate>
+          </sequence>
+        </on>
+        $t:admin.settings.info.go_to_update_tab
+      </a>
       <button data-if="{{$parent._local.coreUpdateInfo?.update_available}}" type="button" class="btn btn-secondary btn-sm rounded-md">
         <on type="click">
           <open-modal target="core_update_guide_modal"/>

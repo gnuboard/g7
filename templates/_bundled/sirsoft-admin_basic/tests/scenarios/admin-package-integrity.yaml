@@ -18,13 +18,14 @@ description: |
   - 스케줄 등록 창: Artisan 유형일 때만 --allow-unsigned 도움말.
 
 axes:
-  case: [manual_install_signature_field, manual_install_verified_toast,manual_install_unsigned_continue, manual_install_github_unsigned_continue, manual_install_unsigned_blocked, manual_install_signature_invalid, manual_install_operation_lock_409, update_unsigned_continue, update_unsigned_blocked, update_signature_invalid, language_pack_install_tabs, language_pack_install_url_unsigned_continue, language_pack_install_file_signature, language_pack_update_unsigned_continue, extension_detail_signature_badge, language_pack_detail_signature_badge, trust_key_card_render, trust_key_card_sodium_missing, trust_key_add_submit, trust_key_add_validation_error, trust_key_delete_submit, core_update_signature_badge, core_update_start_unsigned_panel, schedule_form_allow_unsigned_hint, core_update_start_unsigned, core_update_start_continue_unsigned, core_update_start_operation_lock, core_update_start_signature_invalid]
+  case: [manual_install_signature_field, manual_install_verified_toast,manual_install_unsigned_continue, manual_install_github_unsigned_continue, manual_install_unsigned_blocked, manual_install_signature_invalid, manual_install_operation_lock_409, update_unsigned_continue, update_unsigned_reason_once, update_unsigned_blocked, update_signature_invalid, language_pack_install_tabs, language_pack_install_url_unsigned_continue, language_pack_install_file_signature, language_pack_update_unsigned_continue, extension_detail_signature_badge, language_pack_detail_signature_badge, trust_key_card_render, trust_key_card_sodium_missing, trust_key_add_submit, trust_key_add_validation_error, trust_key_delete_submit, core_update_signature_badge, core_update_start_unsigned_panel, schedule_form_allow_unsigned_hint, core_update_start_unsigned, core_update_start_continue_unsigned, core_update_start_operation_lock, core_update_start_signature_invalid]
 
 effects:
   # 설치·업데이트 창
   - manual_install_zip_tab_has_signature_file_input   # 수동 설치 ZIP 탭에 서명 파일(.json) 칸이 있다
   - verified_toast_names_signer                       # 서명 확인 설치의 성공 토스트가 서명자(key_id 콜론 앞)를 채운다 — 단추가 창 고정 하단(props.footer)에 있어도
   - unsigned_panel_shown                              # 409 미서명이면 경고 패널을 그린다
+  - unsigned_reason_shown_once                        # 큰 문구가 사유를 이미 품으면 사유 문단을 다시 그리지 않는다
   - install_button_becomes_continue_unsigned          # 설치 버튼이 「미서명으로 계속」으로 바뀐다
   - update_button_becomes_continue_unsigned           # 업데이트 버튼이 「미서명으로 계속」으로 바뀐다
   - retry_sends_same_body_with_allow_unsigned         # 「미서명으로 계속」은 같은 본문에 allow_unsigned=1 만 더해 다시 보낸다

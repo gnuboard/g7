@@ -2207,6 +2207,30 @@ if (! function_exists('publishStaticCacheSSE')) {
     }
 }
 
+if (! function_exists('generateSitemapSSE')) {
+    /**
+     * 설치 완료 직후 사이트맵을 한 번 만든다.
+     *
+     * 이 지점이 없으면 사이트맵은 첫 `/sitemap.xml` 요청이 생성을 예약할 때까지 없다 — 그 첫 요청(대개 검색엔진 봇)은
+     * 「생성 중」 503 을 받는다(7.2.0 → 7.2.1 업데이트 실측에서 설치 뒤 처음 온 요청이 503). 큐 드라이버와 무관하게
+     * 이 자리에서 동기로 만든다(`--sync` — 새 사이트라 금방 끝난다). best_effort — 실패해도 설치는 완료 처리한다
+     * (첫 요청이 종전처럼 생성을 예약한다).
+     *
+     * @return array 태스크 실행 결과
+     */
+    function generateSitemapSSE(): array
+    {
+        return executeArtisanCommandSSE(
+            command: 'seo:generate-sitemap',
+            parameters: ['--sync' => true],
+            taskId: 'sitemap_generate',
+            taskNameKey: 'task_sitemap_generate',
+            successMsgKey: 'log_sitemap_generate_success',
+            errorMsgKey: 'error_sitemap_generate_failed'
+        );
+    }
+}
+
 if (! function_exists('createSettingsJsonSSE')) {
     function createSettingsJsonSSE(): array
     {
@@ -2342,6 +2366,23 @@ if (! function_exists('createSettingsJsonSSE')) {
                         'message_params' => ['path' => $filePath],
                     ];
                 }
+                // 설정 파일 권한은 설정 폴더가 허용하는 범위를 넘지 않게 한다(앱의 `App\Support\SettingsFilePermission` 과
+                // 같은 규칙 — 설치기는 앱 클래스를 불러오지 않아 여기 같은 계산을 둔다). 파일을 만든 프로세스의 umask 를 따르면
+                // 먼저 만들어진 파일만 권한이 달라진다(7.2.0 실측: 확장 설치 하위 프로세스가 먼저 만든 identity.json 만 0664).
+                // 범위를 넘는 비트만 걷어내고 넓히지 않는다 — 폴더가 허용한 접근(웹호스팅의 755 폴더)은 그대로 둔다.
+                if (PHP_OS_FAMILY !== 'Windows' && installerHasFunction('chmod')) {
+                    $settingsDirMode = @fileperms($settingsDir);
+                    $settingsFileMode = @fileperms($filePath);
+
+                    if ($settingsDirMode !== false && $settingsFileMode !== false) {
+                        $settingsTargetMode = $settingsFileMode & 0777 & ($settingsDirMode & 0666);
+
+                        if (($settingsFileMode & 0777) !== $settingsTargetMode) {
+                            @chmod($filePath, $settingsTargetMode);
+                        }
+                    }
+                }
+
                 // 비밀이 실린 파일은 소유자 전용으로 좁힌다.
                 //
                 // `core_update.json` 에는 프라이빗 저장소 GitHub PAT 가 들어간다. R3 이
@@ -2630,6 +2671,10 @@ if (! function_exists('buildInstallationTaskList')) {
         // 부트스트랩 리소스 정적 게시(bake) 최초 수행 — 없으면 첫 방문자가 자가 치유(1회 API
         // 폴백)를 겪는다. best_effort — 실패해도 설치는 완료.
         $tasks[] = ['id' => 'static_publish', 'function' => 'publishStaticCacheSSE', 'best_effort' => true];
+
+        // 사이트맵 최초 생성 — 없으면 첫 `/sitemap.xml` 요청(대개 검색엔진 봇)이 「생성 중」 503 을 받는다.
+        // best_effort — 실패해도 설치는 완료(첫 요청이 종전처럼 생성을 예약한다).
+        $tasks[] = ['id' => 'sitemap_generate', 'function' => 'generateSitemapSSE', 'best_effort' => true];
 
         foreach ($tasks as &$task) {
             $task['target'] = $task['target'] ?? null;

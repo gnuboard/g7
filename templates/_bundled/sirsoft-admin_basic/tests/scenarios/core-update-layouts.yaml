@@ -11,6 +11,7 @@ axes:
 effects:
   - maintenance_page_structure
   - update_result_reflects_availability
+  - result_modal_links_to_update_tab
   - changelog_renders_versions
   - guide_shows_command
 

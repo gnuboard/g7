@@ -144,7 +144,7 @@ class CoreUpdateRunState
             return;
         }
 
-        File::ensureDirectoryExists(dirname($path), 0755, true);
+        File::ensureDirectoryExists(dirname($path), 0775, true);
         $this->writeAtomically($path, (string) json_encode($files, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 
@@ -477,7 +477,7 @@ class CoreUpdateRunState
             return;
         }
 
-        File::ensureDirectoryExists(dirname($path), 0755, true);
+        File::ensureDirectoryExists(dirname($path), 0775, true);
         $this->writeAtomically($path, (string) json_encode(array_values($applyList), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 
@@ -517,7 +517,7 @@ class CoreUpdateRunState
             return;
         }
 
-        File::ensureDirectoryExists(dirname($path), 0755, true);
+        File::ensureDirectoryExists(dirname($path), 0775, true);
         $this->writeAtomically($path, (string) json_encode($progress, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 
@@ -796,7 +796,7 @@ class CoreUpdateRunState
         $directory = dirname($this->path);
 
         if (! is_dir($directory)) {
-            File::ensureDirectoryExists($directory, 0755, true);
+            File::ensureDirectoryExists($directory, 0775, true);
         }
 
         $encoded = json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -830,7 +830,7 @@ class CoreUpdateRunState
         $directory = dirname($path);
 
         if (! is_dir($directory)) {
-            File::ensureDirectoryExists($directory, 0755, true);
+            File::ensureDirectoryExists($directory, 0775, true);
         }
 
         $tempPath = $path.'.tmp.'.bin2hex(random_bytes(6));

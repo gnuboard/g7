@@ -14,6 +14,9 @@ use App\Extension\AbstractUpgradeStep;
  *         봇용 페이지 캐시를 1회 전량 무효화한다. 7.2.1 봇 렌더러는 레이아웃 폭별 덮어쓰기의 덧붙이기 클래스
  *         (`classMerge`)와 조건부 클래스(`classMap`)를 적용하는데, 7.2.0 렌더러가 두 키를 무시하고 저장한 결과물이
  *         캐시 수명 동안 계속 서빙되는 것을 막는다.
+ *       02_NarrowSettingsFilePermissions.php
+ *         사이트 설정 파일(`storage/app/settings/*.json`) 권한에서 설정 폴더 범위를 넘는 비트만 걷어낸다. 7.2.0 까지는
+ *         만든 프로세스의 umask 를 따라 일부 파일(`identity.json`)만 0664 였다. 넓히지 않아 웹호스팅 읽기는 그대로다.
  *
  * 본 클래스는 `AbstractUpgradeStep` 의 default `run()` 에 위임 — 별도 override 없음.
  *

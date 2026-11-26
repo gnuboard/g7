@@ -13,7 +13,7 @@ import { downloadMarkupFileHandler } from './downloadMarkupFile';
 import { copyMarkupToClipboardHandler } from './copyMarkupToClipboard';
 import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './detectAssetUrlModeHandler';
 import { copyToClipboardHandler } from './copyToClipboardHandler';
-import { startCoreUpdateHandler, resumeCoreUpdateHandler, autoResumeCoreUpdateHandler, dismissCoreUpdateHandler, refreshCoreUpdateStatusHandler } from './coreUpdateHandler';
+import { startCoreUpdateHandler, resumeCoreUpdateHandler, autoResumeCoreUpdateHandler, dismissCoreUpdateHandler, refreshCoreUpdateStatusHandler, submitCoreUpdateSelectionHandler } from './coreUpdateHandler';
 import { rememberIdentityClaimHandler } from './identityLauncher';
 /**
  * 핸들러 맵
@@ -32,6 +32,7 @@ export declare const handlerMap: {
     readonly autoResumeCoreUpdate: typeof autoResumeCoreUpdateHandler;
     readonly dismissCoreUpdate: typeof dismissCoreUpdateHandler;
     readonly refreshCoreUpdateStatus: typeof refreshCoreUpdateStatusHandler;
+    readonly submitCoreUpdateSelection: typeof submitCoreUpdateSelectionHandler;
     readonly setTheme: typeof setThemeHandler;
     readonly initTheme: typeof initThemeHandler;
     readonly scrollToSection: typeof scrollToSectionHandler;

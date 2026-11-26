@@ -42,6 +42,14 @@ export declare function refreshCoreUpdateStatusHandler(): Promise<any>;
  */
 export declare function startCoreUpdateHandler(action?: any): Promise<void>;
 /**
+ * 진행 중에 물은 선택을 보내고 이어서 진행한다 (7.2.1).
+ *
+ * 화면은 항목마다 운영자가 바꾼 값만 `_global.coreUpdateChoices`(`{key: {selected, strategy}}`)에 둔다. 바꾸지 않은
+ * 항목은 선택 창이 보여 준 기본값으로 보낸다 — 번들 업데이트는 「올림」·항목의 기본 전략, 새로 들어온 미배치 번들은
+ * 「배치하지 않음」(명령줄 비대화형 기본과 같다). 서버가 받으면 대기가 풀리고, 이 핸들러가 다시 단계를 몬다.
+ */
+export declare function submitCoreUpdateSelectionHandler(): Promise<void>;
+/**
  * 중단된 진행을 이어받는다.
  *
  * 브라우저를 닫았다 열었거나 한 단계가 네트워크 오류로 끊긴 뒤의 복귀 경로다.

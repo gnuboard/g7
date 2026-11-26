@@ -53,6 +53,7 @@ use Database\Seeders\CoreScheduleSeeder;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Dotenv\Dotenv;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Env;
 use Illuminate\Support\Facades\App;
@@ -157,6 +158,24 @@ class CoreUpdateService
      * 파일 자체가 남는 경우의 정리용이다.
      */
     private const RUN_LOCK_STALE_SECONDS = 3600;
+
+    /**
+     * 그룹 쓰기 정상화에서 루트가 g-w 여도 g+w 로 승격하는 경로.
+     *
+     * 운영자 정책 보존 대상이 아니라 업데이트·롤백이 만들고 쓰는 임시 산출물·기록 영역이다. 백업 폴더는 sudo 업데이트가
+     * 0755 로 만들면 웹 계정이 그 안에 mkdir 하지 못한다. 기록 폴더 두 곳(`core_update`·`core-update`)은 웹 업데이트와
+     * 명령줄 업데이트가 함께 쓰는데, 소유자와 웹서버 계정이 같은 그룹으로 갈린 서버에서 한쪽이 0755 로 만들면 다른 쪽이
+     * 기록을 쓰지 못한다. 목록 순회 대상은 `app.update.restore_ownership_group_writable` 이고, 여기 있어도 그 목록에
+     * 없으면 건드리지 않는다.
+     *
+     * @var list<string>
+     */
+    public const FORCE_GROUP_WRITABLE_PATHS = [
+        'storage/app/extension_backups',
+        'storage/app/core_backups',
+        'storage/app/core_update',
+        'storage/app/core-update',
+    ];
 
     /**
      * spawn 실패 시 처리 방식 — `app.update.spawn_failure_mode` 하나만 읽는다(코드 쪽 폴백값을 따로 두지 않는다).
@@ -566,7 +585,7 @@ class CoreUpdateService
             // 이름은 백업 이름 SSoT 가 만든다 — 정리자(`StorageLeftoverPruneService`)의 판정
             // 정규식도 같은 곳을 보므로 한쪽만 바뀌는 일이 없다. 같은 초 충돌 접미사도 거기서 온다.
             $directory = storage_path('app'.DIRECTORY_SEPARATOR.'core-update'.DIRECTORY_SEPARATOR.BackupDirectoryName::stamp());
-            File::ensureDirectoryExists($directory);
+            File::ensureDirectoryExists($directory, 0775, true);
 
             $path = $directory.DIRECTORY_SEPARATOR.'index.php';
             $suffix = 1;
@@ -2047,7 +2066,7 @@ class CoreUpdateService
         $reason = null;
 
         try {
-            File::ensureDirectoryExists(dirname($ledgerPath));
+            File::ensureDirectoryExists(dirname($ledgerPath), 0775, true);
             $written = File::put($ledgerPath, $encoded);
         } catch (\Throwable $e) {
             $written = false;
@@ -3688,30 +3707,46 @@ class CoreUpdateService
     }
 
     /**
-     * 상주 중인 큐 워커에 정상 종료 후 재시작 신호를 보냅니다.
+     * 상주 중인 큐 워커와 실시간 알림 서버(Reverb)에 정상 종료 후 재시작 신호를 보냅니다.
      *
-     * 큐 워커는 부팅이 한 번뿐이라 코어 코드·config·확장 목록을 기동 시점 상태로 물고 있다.
-     * 코어 업데이트가 파일을 전부 교체해도 워커는 옛 코드로 잡을 계속 처리하며, 그 사실이
-     * 오류로 드러나지 않는다 — 운영자가 워커를 손수 재시작할 때까지 조용히 어긋난 채 돈다.
+     * 두 프로세스 모두 부팅이 한 번뿐이라 코어 코드·config·확장 목록을 기동 시점 상태로 물고 있다.
+     * 코어 업데이트가 파일을 전부 교체해도 옛 코드로 계속 돌며, 그 사실이 오류로 드러나지 않는다 —
+     * 운영자가 손수 재시작할 때까지 조용히 어긋난 채 돈다(7.2.0 → 7.2.1 실측: 워커는 다시 떴고 Reverb 는 그대로).
      *
-     * 캐시가 새 코드 기준으로 정리된 뒤(`clearAllCaches()` 직후) 호출해야 워커가 새 캐시로
-     * 재기동한다. 신호 전송 실패는 업데이트 결과를 되돌리지 않는다 (경고 로깅 후 계속).
+     * 신호는 둘 다 캐시 키다(`queue:restart`·`reverb:restart`). 상주 프로세스가 그 키를 보고 스스로 멈추면
+     * 프로세스 관리자(supervisor 등)가 새 코드로 다시 띄운다. 상주 프로세스가 없는 사이트에서는 키 하나씩을
+     * 쓰고 끝난다. Reverb 패키지가 없거나 명령이 등록되지 않은 사이트는 Reverb 신호를 건너뛴다.
      *
-     * @return void
+     * 캐시가 새 코드 기준으로 정리된 뒤(`clearAllCaches()` 직후) 호출해야 새 캐시로 재기동한다.
+     * 신호 전송 실패는 업데이트 결과를 되돌리지 않는다 (경고 로깅 후 계속).
+     *
+     * @return void 반환값 없음
      */
     public function signalQueueRestart(): void
     {
-        // 검수 서버의 재시작 신호는 공유 캐시를 거쳐 운영 서버 워커까지 재시작시킨다
+        // 검수 서버의 재시작 신호는 공유 캐시를 거쳐 운영 서버 상주 프로세스까지 재시작시킨다
         if (RuntimeRole::isStage()) {
             return;
         }
 
+        $commands = ['queue:restart'];
+
         try {
-            Artisan::call('queue:restart');
-        } catch (\Throwable $e) {
-            Log::channel('upgrade')->warning('queue:restart 실행 실패 (업데이트는 계속 진행)', [
-                'error' => $e->getMessage(),
-            ]);
+            if (array_key_exists('reverb:restart', app(Kernel::class)->all())) {
+                $commands[] = 'reverb:restart';
+            }
+        } catch (\Throwable) {
+            // 명령 목록을 못 읽으면 큐 신호만 보낸다
+        }
+
+        foreach ($commands as $command) {
+            try {
+                Artisan::call($command);
+            } catch (\Throwable $e) {
+                Log::channel('upgrade')->warning($command.' 실행 실패 (업데이트는 계속 진행)', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 
@@ -4270,15 +4305,9 @@ class CoreUpdateService
                 'storage',
                 'bootstrap/cache',
             ]));
-            // 백업 디렉토리는 운영자 정책 보존 대상이 아니라 업데이트/롤백이 생성·소비·삭제하는
-            // 임시 산출물이다. sudo 업데이트가 이들을 g-w(0755) 로 만들어 두면 이후 www-data 가
-            // 그 안에 백업을 mkdir 하지 못한다(mkdir(): Permission denied). 따라서 이 경로들은
-            // force=true 로 정상화하여 루트가 g-w 라도 g+w 승격 후 하위까지 재귀 전파한다.
-            // (그 외 경로는 force=false — 운영자가 의도적으로 차단한 그룹 쓰기 정책을 보존.)
-            $forceGroupWritablePaths = [
-                'storage/app/extension_backups',
-                'storage/app/core_backups',
-            ];
+            // 백업·기록 폴더는 force=true 로 정상화하여 루트가 g-w 라도 g+w 승격 후 하위까지 재귀 전파한다
+            // (근거는 FORCE_GROUP_WRITABLE_PATHS). 그 외 경로는 force=false — 운영자가 의도적으로 차단한 그룹 쓰기 정책을 보존.
+            $forceGroupWritablePaths = self::FORCE_GROUP_WRITABLE_PATHS;
 
             for (; $index < count($groupWritableTargets); $index++) {
                 $target = (string) $groupWritableTargets[$index];

@@ -1,3 +1,4 @@
+// e2e:allow 진행 중 번들 선택 창·확인 창 링크·미서명 경고는 새 판으로 올라가는 실제 코어 업데이트 도중에만 나타나 E2E 로 재현할 대상 릴리스가 없다 — 레이아웃·핸들러 단위 시험이 잠그고, 개선분이 든 시험 릴리스로 서버 재시험 때 브라우저 실측
 /**
  * 코어 업데이트 웹 단계 실행 핸들러 (W6 · 이슈 #609 G6)
  *
@@ -31,6 +32,9 @@ const ADVANCE_URL = '/api/admin/core-update/advance';
 
 /** 기록 정리 경로. */
 const DISMISS_URL = '/api/admin/core-update/dismiss';
+
+/** 진행 중 선택 제출 경로 (7.2.1). */
+const SELECTION_URL = '/api/admin/core-update/selection';
 
 /**
  * 반복 호출 상한.
@@ -169,6 +173,20 @@ function unwrap(response: any): any {
  */
 function isActive(status: any): boolean {
     return ACTIVE_STATUSES.includes(status?.run?.status);
+}
+
+/**
+ * 서버가 운영자의 선택을 기다리는지 판정한다 (7.2.1 — 번들 배치·번들 업데이트 항목).
+ *
+ * 기다리는 동안 다음 단계를 부르면 같은 자리에서 맴돌기만 하므로 진행 반복을 멈추고 선택 창을 보인다.
+ *
+ * @param status 상태 페이로드
+ * @returns 선택을 기다리면 true
+ */
+function isAwaitingSelection(status: any): boolean {
+    const awaiting = status?.run?.awaiting;
+
+    return awaiting !== null && typeof awaiting === 'object' && typeof awaiting.kind === 'string';
 }
 
 /**
@@ -338,7 +356,8 @@ async function drive(initial?: any): Promise<any> {
     let status = initial ?? (await refreshCoreUpdateStatusHandler());
     let failures = 0;
 
-    for (let i = 0; i < MAX_ADVANCES && isActive(status); i++) {
+    // 선택을 기다리는 동안은 부르지 않는다 — 운영자가 고르고 [계속] 을 누르면 그 핸들러가 다시 몬다
+    for (let i = 0; i < MAX_ADVANCES && isActive(status) && !isAwaitingSelection(status); i++) {
         try {
             status = unwrap(await G7Core.api.post(ADVANCE_URL, {}, { timeout: clientWaitMs(status) }));
             publish(status);
@@ -381,7 +400,7 @@ async function drive(initial?: any): Promise<any> {
         }
     }
 
-    if (isActive(status)) {
+    if (isActive(status) && !isAwaitingSelection(status)) {
         logger.warn('반복 호출 상한에 도달했습니다 — 진행 상태는 서버에 남아 있습니다.');
         G7Core?.toast?.error?.(
             G7Core?.t?.('admin.settings.core_update.advance_limit')
@@ -421,6 +440,9 @@ export async function startCoreUpdateHandler(action?: any): Promise<void> {
         // 무결성을 아는 화면의 표식 — 늘 싣는다. 서버는 이 표식이 없는 착수를 「미서명으로 계속」을 그릴 수 없는
         // 옛 화면(7.1.x 템플릿 복사본)으로 보고 미서명 배포본을 확인 없이 허용한다(#916 옛 화면 호환).
         integrity_aware: true,
+        // 진행 중 번들 선택을 그릴 수 있는 화면의 표식(7.2.1) — 서버는 이 표식이 있을 때만 명령줄처럼 멈춰 묻는다.
+        // 없으면(옛 화면) 묻지 않고 종전대로 진행한다 — 옛 화면은 선택 창을 그리지 못해 멈춘 채 남기 때문이다.
+        ask_bundled_selection: true,
     };
 
     // 수동 ZIP 은 **고른 경우에만** 싣는다 — 빈 값을 보내면 서버가 그것을 지정으로
@@ -460,6 +482,62 @@ export async function startCoreUpdateHandler(action?: any): Promise<void> {
             publishIntegrity(null, null);
             G7Core?.toast?.error?.(messageOf(error));
         }
+        await refreshCoreUpdateStatusHandler();
+    } finally {
+        publishBusy(false);
+    }
+}
+
+/**
+ * 진행 중에 물은 선택을 보내고 이어서 진행한다 (7.2.1).
+ *
+ * 화면은 항목마다 운영자가 바꾼 값만 `_global.coreUpdateChoices`(`{key: {selected, strategy}}`)에 둔다. 바꾸지 않은
+ * 항목은 선택 창이 보여 준 기본값으로 보낸다 — 번들 업데이트는 「올림」·항목의 기본 전략, 새로 들어온 미배치 번들은
+ * 「배치하지 않음」(명령줄 비대화형 기본과 같다). 서버가 받으면 대기가 풀리고, 이 핸들러가 다시 단계를 몬다.
+ */
+export async function submitCoreUpdateSelectionHandler(): Promise<void> {
+    const G7Core = (window as any).G7Core;
+
+    if (!G7Core?.api?.post) {
+        logger.error('G7Core.api.post 이 초기화되지 않아 선택을 보낼 수 없습니다.');
+
+        return;
+    }
+
+    const globalState = G7Core?.state?.get?.() ?? {};
+    const awaiting = globalState?.coreUpdateStatus?.run?.awaiting;
+
+    if (!awaiting || typeof awaiting.kind !== 'string') {
+        // 이미 다른 창·요청이 답했다 — 최신 상태를 읽어 이어간다
+        await driveFrom();
+
+        return;
+    }
+
+    const choices: Record<string, { selected?: boolean; strategy?: string }> = globalState?.coreUpdateChoices ?? {};
+    const selectsByDefault = awaiting.kind === 'bundled_updates';
+    const items = (Array.isArray(awaiting.items) ? awaiting.items : []).map((item: any) => {
+        const choice = choices[item.key] ?? {};
+        const strategy = choice.strategy ?? item.strategy ?? awaiting.default_strategy ?? 'overwrite';
+
+        return {
+            key: item.key,
+            selected: typeof choice.selected === 'boolean' ? choice.selected : selectsByDefault,
+            strategy: strategy === 'keep' ? 'keep' : 'overwrite',
+        };
+    });
+
+    publishBusy(true);
+
+    try {
+        const status = unwrap(await G7Core.api.post(SELECTION_URL, { kind: awaiting.kind, items }));
+        G7Core?.state?.setGlobal?.({ coreUpdateChoices: null });
+        publish(status);
+
+        await drive(status);
+    } catch (error) {
+        logger.error('코어 업데이트 선택 저장 실패', error);
+        G7Core?.toast?.error?.(messageOf(error));
         await refreshCoreUpdateStatusHandler();
     } finally {
         publishBusy(false);

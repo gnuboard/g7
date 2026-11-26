@@ -1174,7 +1174,7 @@ class BundledSourcePlanner
         $path = $this->recordPath();
         $dir = dirname($path);
         $created = ! is_dir($dir);
-        File::ensureDirectoryExists($dir);
+        File::ensureDirectoryExists($dir, 0775, true);
         File::put($path, (string) json_encode($record, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
         // sudo 로 돈 업데이트·명령이 root 소유로 남기면 웹 계정이 안내를 읽지 못한다 — 부모 소유권을 상속한다

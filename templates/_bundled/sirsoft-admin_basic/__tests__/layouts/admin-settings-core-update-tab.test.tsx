@@ -162,7 +162,8 @@ describe('환경설정 업데이트 탭 — 진행·실패 표시', () => {
     // 실재한 적 없는 이름을 `not.toContain` 하면 모집단이 0 이라 무엇을 넣어도 통과한다.
     // 그래서 **이 화면이 쓰는 코어 업데이트 핸들러 전량**을 세고 허용 목록과 대조한다 —
     // 중단 성격의 핸들러가 새로 배선되면 그 자리에서 red 가 된다.
-    const allowed = ['startCoreUpdate', 'resumeCoreUpdate', 'autoResumeCoreUpdate', 'dismissCoreUpdate', 'refreshCoreUpdateStatus'];
+    // submitCoreUpdateSelection(7.2.1) 은 서버가 멈춰 물은 선택에 답하고 **이어서 진행**하는 핸들러다 — 중단 성격이 아니다.
+    const allowed = ['startCoreUpdate', 'resumeCoreUpdate', 'autoResumeCoreUpdate', 'dismissCoreUpdate', 'refreshCoreUpdateStatus', 'submitCoreUpdateSelection'];
     const used = Array.from(new Set(
       collect(updateTab, (obj) => typeof obj.handler === 'string' && (obj.handler as string).endsWith('CoreUpdate') === false && /CoreUpdate/.test(obj.handler as string))
         .map((obj) => obj.handler as string)
@@ -468,5 +469,38 @@ describe('환경설정 업데이트 탭 — 다국어', () => {
     [koAdmin, enAdmin, jaAdmin].forEach((pack) => {
       expect(lookup(pack as unknown as Json, 'settings.tabs.update')).toBeTruthy();
     });
+  });
+});
+
+describe('환경설정 업데이트 탭 — 진행 중 번들 선택 (7.2.1)', () => {
+  const panel = collect(updateTab, (obj) => obj.id === 'core_update_selection')[0];
+
+  // @scenario actor=with_permission, run_state=running
+  // @effects selection_panel_shows_only_while_awaiting
+  it('선택 패널은 서버가 선택을 기다릴 때만 보이고, [계속] 이 선택 제출 핸들러를 부른다', () => {
+    expect(panel, '선택 패널이 없다').toBeDefined();
+    expect(String(panel.if)).toContain("status === 'running'");
+    expect(String(panel.if)).toContain('awaiting?.kind');
+
+    const proceed = collect(panel, (obj) => obj.id === 'core_update_selection_continue')[0];
+    expect(JSON.stringify(proceed.actions)).toContain('submitCoreUpdateSelection');
+  });
+
+  // @scenario actor=with_permission, run_state=running
+  // @effects selection_panel_shows_only_while_awaiting
+  it('항목 체크 기본값은 번들 업데이트면 올림, 미배치 번들이면 배치 안 함이고, 레이아웃 선택은 레이아웃이 있는 확장에만 있다', () => {
+    const source = JSON.stringify(panel);
+
+    expect(source).toContain("(_computed.coreUpdateRun?.awaiting?.kind === 'bundled_updates')");
+    expect(source).toContain('choiceItem.has_layouts === true');
+    expect(source).toContain("'core_update_strategy_' + choiceItem.key");
+  });
+
+  // @scenario actor=with_permission, run_state=running
+  // @effects selection_panel_shows_only_while_awaiting
+  it('선택을 기다리는 동안 [이어서 진행] 은 숨는다 (눌러도 같은 자리에 머문다)', () => {
+    const resume = collect(updateTab, (obj) => obj.id === 'core_update_resume_button')[0];
+
+    expect(String(resume.if)).toContain('!_computed.coreUpdateRun?.awaiting?.kind');
   });
 });

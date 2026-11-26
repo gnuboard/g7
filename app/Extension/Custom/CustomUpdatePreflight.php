@@ -97,7 +97,7 @@ class CustomUpdatePreflight
     public static function record(string $toVersion, array $result): void
     {
         $path = self::recordPath();
-        File::ensureDirectoryExists(dirname($path));
+        File::ensureDirectoryExists(dirname($path), 0775, true);
         File::put($path, json_encode([
             'to_version' => $toVersion,
             'checked_at' => now()->toIso8601String(),

@@ -1,4 +1,5 @@
-<!-- 패키지 무결성 거절 안내(#916) — 확장·언어팩 설치·업데이트 창과 코어 업데이트 탭이 함께 쓴다.
+<!-- e2e:allow 진행 중 번들 선택 창·확인 창 링크·미서명 경고는 새 판으로 올라가는 실제 코어 업데이트 도중에만 나타나 E2E 로 재현할 대상 릴리스가 없다 — 레이아웃·핸들러 단위 시험이 잠그고, 개선분이 든 시험 릴리스로 서버 재시험 때 브라우저 실측.
+  패키지 무결성 거절 안내(#916) — 확장·언어팩 설치·업데이트 창과 코어 업데이트 탭이 함께 쓴다.
   읽는 값은 둘이다: `_global.packageIntegrity`(서버 응답 `errors.integrity` 그대로)와 `_global.packageIntegrityMessage`(응답 `message`).
   두 값은 각 창의 실패 갈래가 **무결성 표지(`errors.package_unsigned`·`package_signature_invalid`·`package_signer_untrusted`)가 있을 때만**
   채운다 — 같은 409 를 작업 잠금(`errors.operation_in_progress`)도 쓰므로 상태 코드로 가르지 않는다.
@@ -19,7 +20,8 @@
         <p data-if="{{_global.packageIntegrity?.status === 'unsigned'}}" class="text-sm font-medium text-warning-soft">$t:admin.package_integrity.unsigned_title</p>
         <p data-if="{{_global.packageIntegrity?.status === 'unverifiable'}}" class="text-sm font-medium text-warning-soft">$t:admin.package_integrity.unverifiable_title</p>
         <p data-if="{{!!_global.packageIntegrityMessage}}" class="text-warning-soft break-words">{{_global.packageIntegrityMessage}}</p>
-        <p data-if="{{!!_global.packageIntegrity?.message &amp;&amp; _global.packageIntegrity?.message !== _global.packageIntegrityMessage}}" class="text-warning-soft break-words">{{_global.packageIntegrity?.message}}</p>
+        <!-- 사유 문단은 큰 문구가 그 사유를 품지 않을 때만 — 서버 문구가 「…를 눌러 설치하세요. {사유}」로 사유를 이미 싣는 경우 두 번 보였다 -->
+        <p data-if="{{!!_global.packageIntegrity?.message &amp;&amp; !String(_global.packageIntegrityMessage ?? '').includes(_global.packageIntegrity?.message)}}" class="text-warning-soft break-words">{{_global.packageIntegrity?.message}}</p>
         <p data-if="{{!!_global.packageIntegrity?.package?.identifier}}" class="text-warning-soft font-mono text-xs break-all">$t:admin.package_integrity.package|identifier={{_global.packageIntegrity?.package?.identifier ?? ''}}|version={{_global.packageIntegrity?.package?.version ?? ''}}</p>
         <p data-if="{{_global.packageIntegrity?.can_continue === true}}" class="text-warning-soft">$t:admin.package_integrity.continue_hint</p>
         <p data-if="{{_global.packageIntegrity?.can_continue !== true}}" class="text-warning-soft">$t:admin.package_integrity.blocked_hint</p>

@@ -1,3 +1,4 @@
+// e2e:allow 진행 중 번들 선택 창·확인 창 링크·미서명 경고는 새 판으로 올라가는 실제 코어 업데이트 도중에만 나타나 E2E 로 재현할 대상 릴리스가 없다 — 레이아웃·핸들러 단위 시험이 잠그고, 개선분이 든 시험 릴리스로 서버 재시험 때 브라우저 실측
 /**
  * 커스텀 액션 핸들러 Export
  *
@@ -44,6 +45,7 @@ import {
   autoResumeCoreUpdateHandler,
   dismissCoreUpdateHandler,
   refreshCoreUpdateStatusHandler,
+  submitCoreUpdateSelectionHandler,
 } from './coreUpdateHandler';
 import { rememberIdentityClaimHandler } from './identityLauncher';
 
@@ -69,6 +71,8 @@ export const handlerMap = {
   autoResumeCoreUpdate: autoResumeCoreUpdateHandler,
   dismissCoreUpdate: dismissCoreUpdateHandler,
   refreshCoreUpdateStatus: refreshCoreUpdateStatusHandler,
+  // 진행 중 선택(번들 배치·번들 업데이트 항목) 제출 뒤 이어서 진행 (7.2.1)
+  submitCoreUpdateSelection: submitCoreUpdateSelectionHandler,
   setTheme: setThemeHandler,
   initTheme: initThemeHandler,
   scrollToSection: scrollToSectionHandler,

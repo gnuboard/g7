@@ -282,6 +282,8 @@ class InstallerStepwiseRunnerTest extends TestCase
             // 부트스트랩 리소스 정적 게시 — 없으면 첫 방문자가 자가 치유(1회 API 폴백)를 겪는다.
             // SSE 인라인 목록에만 있던 것을 목록 SSoT(buildInstallationTaskList)로 옮겼다.
             'static_publish',
+            // 사이트맵 최초 생성(7.2.1) — 없으면 첫 `/sitemap.xml` 요청(대개 검색엔진 봇)이 「생성 중」 503 을 받는다.
+            'sitemap_generate',
         ], $keys);
 
         $byKey = array_column($tasks, null, 'key');
@@ -292,6 +294,7 @@ class InstallerStepwiseRunnerTest extends TestCase
         $this->assertTrue($byKey['user_template_install:sirsoft-basic']['skippable'], '사용자 템플릿도 선택 확장이다');
         $this->assertTrue($byKey['config_cache']['best_effort']);
         $this->assertTrue($byKey['route_cache']['best_effort'], '라우트 캐시 실패가 완료된 설치를 실패로 뒤집으면 안 된다');
+        $this->assertTrue($byKey['sitemap_generate']['best_effort'], '사이트맵 미리 만들기 실패가 완료된 설치를 실패로 뒤집으면 안 된다(첫 요청이 생성을 예약한다)');
     }
 
     /**

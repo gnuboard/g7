@@ -313,6 +313,7 @@ return [
     'task_config_cache' => 'Building Configuration Cache',
     'task_route_cache' => 'Building Route Cache',
     'task_static_publish' => 'Publishing Static Bootstrap Resources',
+    'task_sitemap_generate' => 'Generating Sitemap',
     'task_unknown' => 'Unknown Task',
 
     // Task Group Names
@@ -473,12 +474,14 @@ return [
     'error_config_cache_failed' => 'Configuration cache build failed',
     'error_route_cache_failed' => 'Route cache build failed (site still works; it is rebuilt when an extension is installed or changed)',
     'error_static_publish_failed' => 'Static bootstrap resource publishing failed (site still works via API fallback)',
+    'error_sitemap_generate_failed' => 'Could not generate the sitemap in advance (the first /sitemap.xml request will schedule it)',
 
     // Log Messages - Worker (Cache)
     'log_cache_clear_success' => 'Cache clearing completed',
     'log_config_cache_success' => 'Configuration cache built',
     'log_route_cache_success' => 'Route cache built',
     'log_static_publish_success' => 'Static bootstrap resources published',
+    'log_sitemap_generate_success' => 'Sitemap generated',
 
     // Error Messages - Worker (Settings JSON)
     'error_settings_json_failed' => 'Settings file creation failed',

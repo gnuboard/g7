@@ -59,6 +59,7 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
         'config_cache' => ['config_cache'],
         'route_cache' => ['route_cache'],
         'static_publish' => ['static_publish'],
+        'sitemap_generate' => ['sitemap_generate'],
     ];
 
     /** 이 공정이 소유한 매니페스트 — 면제를 좁히는 대상이다. */

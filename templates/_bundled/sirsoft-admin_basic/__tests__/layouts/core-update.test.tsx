@@ -478,6 +478,27 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       expect(noUpdateSection.if).toBe('{{!$parent._local.coreUpdateInfo?.update_available}}');
     });
 
+    // 회귀 가드(7.2.1 출시 전 웹 코어 업데이트 실측): 확인 창이 「터미널에서 업데이트」만 안내해 웹 업데이트 탭으로
+    // 갈 길이 없었다 — 업데이트 권한이 있으면 창을 닫고 「업데이트」 탭으로 옮기는 버튼을 둔다.
+    // @scenario surface=result_modal
+    // @effects result_modal_links_to_update_tab
+    it('업데이트 권한이 있으면 「업데이트 탭으로」 링크가 창을 닫고 업데이트 탭으로 옮긴다', () => {
+      // 같은 화면의 탭 이동이라 실제 주소를 가진 링크다(#757 — 새 탭·주소 복사). 누르면 동작이 이동을 맡는다.
+      const links = findAllInTree(modal.props?.footer ?? [], (n: any) => n.name === 'A');
+      const goBtn = links.find((b: any) => (b.text ?? '') === '$t:admin.settings.info.go_to_update_tab');
+      expect(goBtn).toBeDefined();
+      expect(goBtn.props?.href).toBe('/admin/settings?tab=update');
+      expect(goBtn.if).toBe('{{$parent._local.coreUpdateInfo?.update_available && (_global.settingsAbilities?.can_core_update ?? false)}}');
+
+      const close = findAction(goBtn.actions, (a: any) => a.handler === 'closeModal');
+      const tab = findAction(goBtn.actions, (a: any) => a.handler === 'setState' && a.params?.activeSettingsTab === 'update');
+      const nav = findAction(goBtn.actions, (a: any) => a.handler === 'navigate');
+      expect(close?.target).toBe('core_update_result_modal');
+      expect(tab).toBeDefined();
+      expect(nav?.params?.path).toBe('/admin/settings');
+      expect(nav?.params?.query?.tab).toBe('update');
+    });
+
     // @scenario surface=result_modal
     // @effects update_result_reflects_availability
     it('변경사항 보기 버튼에 changelog API 호출 액션이 있다 (closeModal 없이 직접 apiCall)', () => {

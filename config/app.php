@@ -414,9 +414,12 @@ return [
         // 자동 정상화되므로 상위 루트만 지정하면 충분. 환경변수로 재정의 가능.
         //  - public/build/ext: 정적 게시본(#122) — php-fpm 이 재게시/GC 를 수행하므로
         //    restore_ownership 과 같은 근거로 g+w 정상화 대상.
+        //  - storage/app/core_update(미배치 번들 기록·사용자 정의 사전 점검), storage/app/core-update(웹 실행 상태·
+        //    출하 목록·배포 조각 원장): 업데이트가 만들고 쓰는 기록 영역 — 웹 계정과 명령줄 계정이 함께 쓴다. 백업 폴더처럼
+        //    루트가 g-w 여도 승격한다(`CoreUpdateService::FORCE_GROUP_WRITABLE_PATHS`).
         'restore_ownership_group_writable' => array_filter(array_map('trim', explode(',', env(
             'G7_UPDATE_RESTORE_OWNERSHIP_GROUP_WRITABLE',
-            'storage/logs,storage/framework,storage/app/core_pending,storage/app/extension_backups,storage/app/core_backups,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending,public/build/ext'
+            'storage/logs,storage/framework,storage/app/core_pending,storage/app/extension_backups,storage/app/core_backups,storage/app/core_update,storage/app/core-update,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending,public/build/ext'
         )))),
 
         // spawn 자식 프로세스 실패 시 동작 모드.

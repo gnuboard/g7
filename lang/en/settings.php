@@ -331,6 +331,9 @@ return [
             'advanced' => 'The step has been performed.',
             'advance_failed' => 'Failed to perform the step.',
             'dismissed' => 'The update record has been cleared.',
+            'selection_saved' => 'Selection received. Continuing the update.',
+            'selection_failed' => 'Failed to save the selection.',
+            'selection_not_awaited' => 'That selection is not being awaited right now. Refresh the screen and check again.',
             'dismiss_failed' => 'Failed to clear the update record.',
 
             // Run control
@@ -354,6 +357,10 @@ return [
                 'rebuild_search_index' => 'rebuild the search index',
                 'layout_strategy' => 'layout handling',
                 'zip_file' => 'uploaded ZIP file',
+                'ask_bundled_selection' => 'ask for bundled selection during the update',
+                'selection_kind' => 'selection kind',
+                'selection_items' => 'selection items',
+                'selection_selected' => 'selected',
             ],
             'zip_not_newer' => 'The version in the selected ZIP (:to) is not newer than the current version (:from). Web updates do not support forced re-application.',
 
@@ -416,6 +423,13 @@ return [
             'log_bundled_skipped' => 'Bundled extensions and language packs were not selected',
             'log_bundled_none' => 'No bundled extension or language pack has a newer version',
             'log_bundled_placement' => 'Official bundle placement — :placed placed, :unplaced not placed (bundles this site has not installed are skipped in this update)',
+            'log_selection_waiting' => 'Waiting for the :kind selection (:count) — choose on the screen and click [Continue]',
+            'log_selection_received' => 'Received the :kind selection (:selected of :total)',
+            'log_bundled_none_selected' => 'No bundled extension or language pack was selected for update',
+            'selection_kinds' => [
+                'bundled_sources' => 'placement of newly shipped official bundles',
+                'bundled_updates' => 'bundled extension and language pack update',
+            ],
             'log_bundled_record_restored' => 'Restored the official bundle placement record to its pre-update state',
             'log_bundled' => 'Bundled extensions and language packs updated (:success succeeded, :failed failed)',
             'log_spawn_fallback' => 'A separate process could not be started - running inside this request instead (:reason)',

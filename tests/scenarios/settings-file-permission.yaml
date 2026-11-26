@@ -1,0 +1,17 @@
+feature: 사이트 설정 파일 권한
+
+description: |
+  사이트 설정 파일(storage/app/settings/*.json) 권한이 설정 폴더가 허용하는 범위를 넘지 않는지 — 새 파일은 그 범위 + 부모 폴더 소유·그룹 상속(root 실행만),
+  이미 있는 파일은 범위를 넘는 비트만 걷어내는지 잰다(웹호스팅의 755 폴더에서 nobody 읽기를 깨지 않음). 설정 저장·백업 복원·설치기·7.2.1 업그레이드 스텝이
+  같은 판정(SettingsFilePermission)을 쓴다.
+
+axes:
+  file_state: [created, existing]
+
+effects:
+  - settings_file_created_follows_directory_scope
+  - settings_file_existing_drops_bits_beyond_directory_scope
+
+test_files:
+  - tests/Unit/Support/SettingsFilePermissionTest.php
+  - tests/Unit/Upgrades/NarrowSettingsFilePermissionsTest.php
