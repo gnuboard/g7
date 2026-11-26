@@ -156,7 +156,7 @@
 | `props.titleSuffix` | ❌ | 제목 **뒤**에 렌더링할 컴포넌트 배열. `.g7.html` 마크업은 `<title-suffix>…</title-suffix>` |
 | `props.footer` | ❌ | 본문 스크롤 밖 고정 하단 영역에 렌더링할 컴포넌트 **배열** (취소/확인 버튼). `.g7.html` 마크업은 `<footer>…</footer>` ([layout-markup.md](layout-markup.md) §Modal footer). ⚠️ **취소/확인 버튼을 `children` 마지막에 두지 말 것** — `Modal` 은 `props.footer` 를 별도 표면으로 렌더한다(S8 신설, F5) |
 
-`footer` 는 두 번들 템플릿(`sirsoft-admin_basic`, `sirsoft-basic`)의 `Modal` 이 모두 같은 계약으로 그린다(사용자 템플릿은 7.2.0 부터, #869). `titlePrefix`·`titleSuffix` 는 `sirsoft-admin_basic` 의 `Modal` 에만 있다 — `sirsoft-basic` 의 `Modal` 은 이 둘을 구조분해하지 않고 rest spread 도 없어 값이 소멸한다.
+`footer` 는 두 번들 템플릿(`sirsoft-admin_basic`, `sirsoft-basic`)의 `Modal` 이 모두 같은 계약으로 그린다(사용자 템플릿은 7.2.0 부터). `titlePrefix`·`titleSuffix` 는 `sirsoft-admin_basic` 의 `Modal` 에만 있다 — `sirsoft-basic` 의 `Modal` 은 이 둘을 구조분해하지 않고 rest spread 도 없어 값이 소멸한다.
 
 ### 금지 속성
 
@@ -566,7 +566,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 
 > **회귀 배경 (F5)**: 이전에는 `Modal` 에 `footer` 표면이 없어 `props.footer` 가 렌더되지 않았고, 마크업이 버튼을 `children` 마지막 Div 로 우회 배치했다. S8 이 `props.footer` 표면을 신설(S16 F5 로 12개 모달 버튼 복원)했으므로 이제 `props.footer` 가 정본이다.
 >
-> **적용 범위 — 두 번들 템플릿**: `props.footer` 는 `sirsoft-admin_basic` 과 `sirsoft-basic` 의 `Modal` 이 같은 계약(본문 스크롤 밖 `modal-footer-bar`, 본문 자식과 같은 데이터 컨텍스트, 렌더 폭 640px 이하 세로 쌓기)으로 그린다. 사용자 템플릿 `Modal` 은 7.2.0 전까지 이 prop 을 받지 않아 넘기면 조용히 사라졌다(#869 에서 지원) — 7.2.0 전 사용자 템플릿과 함께 쓰는 확장은 하단 버튼을 `children` 안에 둔다. props 표면 대조: [component-props.md §Modal](component-props.md#modal-컴포넌트).
+> **적용 범위 — 두 번들 템플릿**: `props.footer` 는 `sirsoft-admin_basic` 과 `sirsoft-basic` 의 `Modal` 이 같은 계약(본문 스크롤 밖 `modal-footer-bar`, 본문 자식과 같은 데이터 컨텍스트, 렌더 폭 640px 이하 세로 쌓기)으로 그린다. 사용자 템플릿 `Modal` 은 7.2.0 전까지 이 prop 을 받지 않아 넘기면 조용히 사라졌다 — 7.2.0 전 사용자 템플릿과 함께 쓰는 확장은 하단 버튼을 `children` 안에 둔다. props 표면 대조: [component-props.md §Modal](component-props.md#modal-컴포넌트).
 
 ### 하단 버튼이 방금 입력한 값을 읽는 창도 `props.footer` 를 쓴다
 
@@ -575,16 +575,16 @@ Modal 노드의 확장 컨텍스트(`__componentContext.parentDataContext`)와 �
 `disabled`·`if`·액션 인자가 창을 연 뒤 본문에서 바뀐 `_global.{창}.form.*`·`_local.*` 를 읽는다.
 
 > **회귀 배경**: 7.2.0 전까지 `Modal` 은 고정 하단을 빈 데이터 컨텍스트·자기 상태 범위로 그렸다. 입력을 받아 그 값으로
-> 분기하는 창(IP 접근 제한 규칙·본인인증 정책 편집 등)의 「적용」이 늘 "입력하세요" 로 되돌아가(#636 브라우저 실측) 단추를
+> 분기하는 창(IP 접근 제한 규칙·본인인증 정책 편집 등)의 「적용」이 늘 "입력하세요" 로 되돌아가(브라우저 실측) 단추를
 > 본문 맨 아래 줄로 우회했고, 그 줄은 640px 이하에서 세로로 쌓이지 않았다. Modal 을 고쳐 모든 확인 창의 단추를 고정 하단으로
-> 모았다(#869). 회귀 시험: `admin-settings-ip-restriction.test.tsx`(진짜 Modal 로 창을 그려 고정 하단 「적용」이 방금 친 값을
+> 모았다. 회귀 시험: `admin-settings-ip-restriction.test.tsx`(진짜 Modal 로 창을 그려 고정 하단 「적용」이 방금 친 값을
 > 읽는지 잰다), `admin_plugin_list._modal_update.force.test.tsx`(창을 연 뒤 켠 체크박스로 진행 단추가 풀린다).
 
 ### 확장 지점을 품은 바닥 줄도 `props.footer` 에 둔다
 
 서버의 확장 처리(레이아웃 확장 주입)는 `children` 과 함께 Modal 의 `footer`·`titlePrefix`·`titleSuffix` 도 걷는다 —
 고정 하단 안의 `<extension-point>` 에도 조각이 주입되고, 오버레이(`target_id` 주입·`inject_props`)도 고정 하단 안의 단추를
-찾는다(#869). 그래서 알림 템플릿 편집 창처럼 바닥 줄에 확장 지점이 있는 창도 단추를 `<footer>` 에 둔다.
+찾는다. 그래서 알림 템플릿 편집 창처럼 바닥 줄에 확장 지점이 있는 창도 단추를 `<footer>` 에 둔다.
 
 왼쪽에 떨어져 놓일 단추(미리보기 등)는 `mr-auto`(확장은 `{접두}:mr-auto`)로 오른쪽 묶음과 떨어뜨리고, 640px 이하에서는
 Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로 준다.
@@ -616,7 +616,7 @@ Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로
 `_local` 은 **두 곳**에 산다 — 화면이 읽는 저장소(React 로컬 상태)와 저장·플러그인이 읽는 저장소
 (`_global._local`)다. 엔진은 모달의 `$parent._local` 쓰기를 **일부러 미러에서 빼 둔다**(모달이 페이지
 상태를 오염시키던 사례 때문이다). 그래서 창에서 부모 폼만 고치면 **표에는 보이는데 저장 요청 본문에는
-실리지 않아**, 운영자는 「저장했는데 방금 넣은 값이 사라졌다」를 겪는다(#636 브라우저 실측).
+실리지 않아**, 운영자는 「저장했는데 방금 넣은 값이 사라졌다」를 겪는다(브라우저 실측).
 
 > engine-v1.81.2 부터 대상이 페이지(첫 모달을 연 화면)인 `$parent._local`·`$root._local` 쓰기와
 > `setLocal({ scope: 'parent' | 'root' })` 는 엔진이 쓴 키만 `_global._local` 에도 얹는다(모달 자신의 상태는 넣지 않는다).
@@ -666,7 +666,7 @@ Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로
 </on>
 ```
 
-> 번들 예: 이커머스 환경설정 `_modal_unsaved_tab_switch` + `admin_ecommerce_settings` 의 탭 본문 틀(#753).
+> 번들 예: 이커머스 환경설정 `_modal_unsaved_tab_switch` + `admin_ecommerce_settings` 의 탭 본문 틀.
 
 ### Footer 스타일 규칙
 

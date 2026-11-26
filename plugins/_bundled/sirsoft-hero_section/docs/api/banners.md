@@ -266,7 +266,7 @@ _단건 응답: 만든 배너 상세(조회 응답과 같은 모양)._
 | images.pc.hash | string | `FCm6p4tnL4qnOmwOHdqbgaoxqNZQmUaowSsWI…` | 공개 주소에 쓰는 64자 해시(불변) |
 | images.pc.device | string | `pc` | 기기 `pc`·`mobile` |
 | images.pc.url | string | `/api/plugins/sirsoft-hero_section/ima…` | 공개 이미지 주소(인증 불필요) |
-| images.pc.download_url | string | `/api/plugins/sirsoft-hero_section/ima…` | 원본 한 장의 주소 — 공개 자산 디스크(public·CDN) 행이면 `direct_url`, 아니면 `url` 과 같음(#878) |
+| images.pc.download_url | string | `/api/plugins/sirsoft-hero_section/ima…` | 원본 한 장의 주소 — 공개 자산 디스크(public·CDN) 행이면 `direct_url`, 아니면 `url` 과 같음 |
 | images.pc.preview_url | string | `/api/plugins/sirsoft-hero_section/ima…` | 썸네일 기준 공개 API 주소(`url` 과 같음) — 관리자 업로더·목록 미리보기가 `?size=` 를 붙여 받는다 |
 | images.pc.direct_url | string\|null | `null` | 행 disk 의 직접 주소(공개 자산 디스크 행만, 사이트 마운트 접두사 없는 절대 주소). 아니면 null |
 | images.pc.original_filename | string | `pc.jpg` | 올린 파일의 원래 이름 |
@@ -870,7 +870,7 @@ _단건 응답: 수정 화면용 상세(다국어 원본·이미지 2종)._
 | images.pc.hash | string | `FCm6p4tnL4qnOmwOHdqbgaoxqNZQmUaowSsWI…` | 공개 주소에 쓰는 64자 해시(불변) |
 | images.pc.device | string | `pc` | 기기 `pc`·`mobile` |
 | images.pc.url | string | `/api/plugins/sirsoft-hero_section/ima…` | 공개 이미지 주소(인증 불필요) |
-| images.pc.download_url | string | `/api/plugins/sirsoft-hero_section/ima…` | 원본 한 장의 주소 — 공개 자산 디스크(public·CDN) 행이면 `direct_url`, 아니면 `url` 과 같음(#878) |
+| images.pc.download_url | string | `/api/plugins/sirsoft-hero_section/ima…` | 원본 한 장의 주소 — 공개 자산 디스크(public·CDN) 행이면 `direct_url`, 아니면 `url` 과 같음 |
 | images.pc.preview_url | string | `/api/plugins/sirsoft-hero_section/ima…` | 썸네일 기준 공개 API 주소(`url` 과 같음) — 관리자 업로더·목록 미리보기가 `?size=` 를 붙여 받는다 |
 | images.pc.direct_url | string\|null | `null` | 행 disk 의 직접 주소(공개 자산 디스크 행만, 사이트 마운트 접두사 없는 절대 주소). 아니면 null |
 | images.pc.original_filename | string | `pc.jpg` | 올린 파일의 원래 이름 |
@@ -1033,7 +1033,7 @@ _단건 응답: 고친 배너 상세(조회 응답과 같은 모양)._
 | images.pc.hash | string | `FCm6p4tnL4qnOmwOHdqbgaoxqNZQmUaowSsWI…` | 공개 주소에 쓰는 64자 해시(불변) |
 | images.pc.device | string | `pc` | 기기 `pc`·`mobile` |
 | images.pc.url | string | `/api/plugins/sirsoft-hero_section/ima…` | 공개 이미지 주소(인증 불필요) |
-| images.pc.download_url | string | `/api/plugins/sirsoft-hero_section/ima…` | 원본 한 장의 주소 — 공개 자산 디스크(public·CDN) 행이면 `direct_url`, 아니면 `url` 과 같음(#878) |
+| images.pc.download_url | string | `/api/plugins/sirsoft-hero_section/ima…` | 원본 한 장의 주소 — 공개 자산 디스크(public·CDN) 행이면 `direct_url`, 아니면 `url` 과 같음 |
 | images.pc.preview_url | string | `/api/plugins/sirsoft-hero_section/ima…` | 썸네일 기준 공개 API 주소(`url` 과 같음) — 관리자 업로더·목록 미리보기가 `?size=` 를 붙여 받는다 |
 | images.pc.direct_url | string\|null | `null` | 행 disk 의 직접 주소(공개 자산 디스크 행만, 사이트 마운트 접두사 없는 절대 주소). 아니면 null |
 | images.pc.original_filename | string | `pc.jpg` | 올린 파일의 원래 이름 |

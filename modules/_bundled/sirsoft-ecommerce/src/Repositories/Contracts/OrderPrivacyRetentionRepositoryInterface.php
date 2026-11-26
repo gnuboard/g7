@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 /**
- * 종결 주문 개인정보 보유기간 처리 Repository 인터페이스 (이슈 #636)
+ * 종결 주문 개인정보 보유기간 처리 Repository 인터페이스
  *
  * 주문 한 건에 딸린 행들의 개인정보를 지우거나 행째 영구 삭제합니다. 무엇을 지우는지(컬럼·테이블
  * 전수)는 이 저장소가, 언제·어떤 순서로 하는지는 서비스가 정합니다.

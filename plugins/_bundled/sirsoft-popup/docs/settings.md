@@ -29,7 +29,7 @@
 <!-- @intent START -->
 표시 방식 키(`pc_*`·`mobile_style`·`dim_background`·`close_on_backdrop`·`autoplay*`·`dismiss_*`)는 모든 팝업에 똑같이 적용된다. 사용자 화면은 이 값을 `_global.plugins` 로 노출하지 않고 공개 API 응답에 팝업과 함께 싣는다(같은 캐시 세대). 설정을 저장하면 공개 캐시를 비운다. 읽을 때 `Support\DisplaySettings` 가 범위를 한 번 더 맞춘다(설정 파일을 직접 고쳐도 레이어가 깨지지 않게).
 
-`public_asset_disk`(#878)는 팝업 이미지(카테고리 `images`)를 둘 공개 자산 디스크다(환경설정 「저장소」 카드). 비우면 코어 환경설정 > 드라이버 > 공개 자산 디스크를 따르고, 카탈로그(설정 응답의 `available_public_asset_disks`) 밖 값은 422 다. 바꾸면 **새로 올리는 이미지부터** 그 디스크에 저장되고 행 `disk` 에 기록된다 — 이미 올린 이미지는 행 disk 에서 그대로 서빙·삭제되고, 팝업 복사는 원본 디스크에서 읽어 지금 디스크에 쓴다. 공개 디스크(public·CDN) 행은 응답에 `direct_url` 이 실리고 사용자 레이어가 원본을 그 주소로 받는다. 공개 디스크(public)는 서버에 `php artisan storage:link` 가 있어야 직접 주소가 웹서버로 나간다. 설정을 다시 비워도 그 디스크에 올린 이미지는 계속 직접 주소로 열린다.
+`public_asset_disk`는 팝업 이미지(카테고리 `images`)를 둘 공개 자산 디스크다(환경설정 「저장소」 카드). 비우면 코어 환경설정 > 드라이버 > 공개 자산 디스크를 따르고, 카탈로그(설정 응답의 `available_public_asset_disks`) 밖 값은 422 다. 바꾸면 **새로 올리는 이미지부터** 그 디스크에 저장되고 행 `disk` 에 기록된다 — 이미 올린 이미지는 행 disk 에서 그대로 서빙·삭제되고, 팝업 복사는 원본 디스크에서 읽어 지금 디스크에 쓴다. 공개 디스크(public·CDN) 행은 응답에 `direct_url` 이 실리고 사용자 레이어가 원본을 그 주소로 받는다. 공개 디스크(public)는 서버에 `php artisan storage:link` 가 있어야 직접 주소가 웹서버로 나간다. 설정을 다시 비워도 그 디스크에 올린 이미지는 계속 직접 주소로 열린다.
 
 설정 화면이 업로드 한도 안내를 받는 노출 설정 조회(`GET admin/display-settings`)는 팝업 조회 권한 또는 「플러그인 보기」(`core.plugins.read`)로 열린다(OR) — 플러그인 설정 화면은 코어 계약대로 보기 권한으로 읽기 전용 진입하므로, 이 조회가 팝업 권한만 받으면 들어갈 때마다 403 알림이 뜬다. 팝업 조회·편집은 계속 팝업 권한만.
 <!-- @intent END -->
@@ -61,7 +61,7 @@
 ## 설정 화면 권한
 
 - 들어가기: 「플러그인 보기」(`core.plugins.read`). 「플러그인 수정」 권한이 없으면 읽기 전용 안내와 함께 보이고 입력·저장·변경 단추가 잠깁니다 — 화면 계산값 `isPluginReadOnly` 는 조회 응답 `abilities.can_update !== true` 입니다.
-- 저장·변경: 서버가 수정 권한으로 막습니다(아래 「라우트」 표의 권한). 화면 진입 권한을 「수정」으로 올리지 마세요 — 보기 권한만 있는 운영자가 「레이아웃 접근 권한이 없습니다」 오류 화면만 보게 됩니다(#434, 잠금 시험 `tests/Unit/Plugins/PluginSettingsLayoutPermissionTest.php`).
+- 저장·변경: 서버가 수정 권한으로 막습니다(아래 「라우트」 표의 권한). 화면 진입 권한을 「수정」으로 올리지 마세요 — 보기 권한만 있는 운영자가 「레이아웃 접근 권한이 없습니다」 오류 화면만 보게 됩니다(잠금 시험 `tests/Unit/Plugins/PluginSettingsLayoutPermissionTest.php`).
 
 ## 라우트
 

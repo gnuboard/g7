@@ -69,7 +69,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toProfileArray()` 산물
 | last_login_human | string\|null | `1일 전` | 마지막 로그인 시각의 상대 표현 (`diffForHumans()` 산물) |
 | created_at | string\|null | `2026-07-06 19:15:16` | 가입 일시 (사용자 시간대 기준) |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 |
-| password_changed_at | string\|null | `2026-07-01 10:20:00` | 비밀번호 마지막 변경 일시 (사용자 시간대, 기능 도입 전 회원은 null — #736) |
+| password_changed_at | string\|null | `2026-07-01 10:20:00` | 비밀번호 마지막 변경 일시 (사용자 시간대, 기능 도입 전 회원은 null) |
 | password_expires_at | string\|null | `2026-09-29 10:20:00` | 비밀번호 만료 예정 일시 — 만료가 적용되지 않으면 null |
 | password_expiry_days_left | integer\|null | `3` | 만료까지 남은 날수 (지났으면 0, 적용되지 않으면 null) |
 
@@ -142,8 +142,8 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toProfileArray()` 산물
 | display_name_kind | body | string\|null | 아니오 | 운영자가 허용한 종류 | 표시 이름 종류 선택. 보내지 않으면 지금 값 유지, null 이면 고른 종류를 지운다(회원 기본 종류로 보인다). 고를 권한이 없거나 허용하지 않은 종류면 422 |
 | custom_fields.{키} | body | 항목 유형에 따름 | 항목 설정에 따름 | 항목 설정에 따름 | 운영자가 추가한 회원 항목의 값. 범위가 「본인 수정」인 항목만 받는다. 파일, 이미지 항목은 이 본문이 아니라 `POST /api/me/fields/{key}/file` 로 올린다. 폼 경로와 오류 키는 `GET /api/me/fields` 의 `fields[].name` 이다 |
 | email | body | email | 예 | max 255 | 이메일 주소. 항목이 아닌 고정 칸이라 늘 필수다 |
-| password | body | string | 아니오 | 보안 설정의 작성 규칙 | 새 비밀번호 — 보안 설정의 작성 규칙(길이·특수문자·조합·추측 방지)을 따른다. 바꾸면 현재 기기만 남기고 다른 기기는 로그아웃된다(#736) |
-| current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`(#736 D18). 비밀번호가 없는 회원(외부 인증 전용)이 보내면 그 값은 버린다(7.2.0) |
+| password | body | string | 아니오 | 보안 설정의 작성 규칙 | 새 비밀번호 — 보안 설정의 작성 규칙(길이·특수문자·조합·추측 방지)을 따른다. 바꾸면 현재 기기만 남기고 다른 기기는 로그아웃된다 |
+| current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`. 비밀번호가 없는 회원(외부 인증 전용)이 보내면 그 값은 버린다(7.2.0) |
 | language | body | string | 아니오 | — | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
@@ -293,7 +293,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — `s
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`core.profile.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지. 오류 키는 항목의 폼 경로다). 잠긴 칸에 현재 값과 다른 값을 보낸 경우도 422 다: 본인인증으로 채워져 잠긴 항목(`fields.validation.locked_identity`), 외부가 관리하는 칸(`user.field_locked`), 변경 주기가 지나지 않은 닉네임. 표시 이름 종류를 고를 권한이 없거나 허용하지 않은 종류를 보낸 경우는 `errors.display_name_kind`, 적용될 종류가 닉네임이 필요한데 닉네임이 비면 `errors.nickname` |
-| 428 | Precondition Required | `password` 를 보냈는데 비밀번호 변경 본인인증 정책(`core.profile.password_change`)이 요구하는 인증을 마치지 않은 경우 — 인증 뒤 `verification_token` 으로 다시 요청한다 (#736 D18). 이메일·전화(`phone`)·휴대폰(`mobile`)을 **저장된 값과 다르게** 보냈는데 연락처 변경 본인인증 정책(`core.profile.contact_change`, 기본 켜짐)의 인증을 마치지 않은 경우도 같다 — 같은 값·앞뒤 공백·빈 칸(=null)은 변경이 아니고, 관리자는 대상이 아니다 |
+| 428 | Precondition Required | `password` 를 보냈는데 비밀번호 변경 본인인증 정책(`core.profile.password_change`)이 요구하는 인증을 마치지 않은 경우 — 인증 뒤 `verification_token` 으로 다시 요청한다. 이메일·전화(`phone`)·휴대폰(`mobile`)을 **저장된 값과 다르게** 보냈는데 연락처 변경 본인인증 정책(`core.profile.contact_change`, 기본 켜짐)의 인증을 마치지 않은 경우도 같다 — 같은 값·앞뒤 공백·빈 칸(=null)은 변경이 아니고, 관리자는 대상이 아니다 |
 
 <!-- @generated:end -->
 

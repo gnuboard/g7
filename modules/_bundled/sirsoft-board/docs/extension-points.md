@@ -192,7 +192,7 @@
 자기 데이터를 저장하는 자리라 리스너는 `'sync' => true` 로 구독하고(아니면 커밋 뒤에 돈다), 예외를 던지면 글·첨부 연결·옮긴 파일까지
 모두 되돌아갑니다(파일은 코어 `StorageTransaction`). 커밋 전이라 외부 호출·알림은 `after_*` 에서 합니다.
 
-**본문 미디어(1.2.3, 코어 7.1.5 #887)** — 편집기 본문 이미지·동영상·오디오의 업로드·영구 삭제는 코어 본문 미디어 골격이
+**본문 미디어(1.2.3, 코어 7.1.5)** — 편집기 본문 이미지·동영상·오디오의 업로드·영구 삭제는 코어 본문 미디어 골격이
 돌리므로 게시판 첨부 훅(`sirsoft-board.attachment.*`)이 아니라 **코어 공용 훅** `core.content_media.before_upload` →
 `filter_upload_file` → `after_upload`, `core.content_media.before_delete` 가 발화합니다. 마지막 인자 `ContentMediaContext` 의
 `extension` 이 `sirsoft-board`, `documentType` 이 `post`, `scope` 가 게시판 슬러그, `documentId` 가 글 번호(업로드 때는 null)입니다.
@@ -205,7 +205,7 @@
 두 필터는 Model(`Post.php`) 안에서 직접 발행되는 예외적인 자리입니다 — Service 를 거치지 않는
 지연 평가(썸네일 추출, 검색 색인 갱신 여부 판단)라 Model 이 직접 훅을 겁니다.
 
-개인정보 보유기간 핸들러 두 개(`src/Privacy/`, 이슈 #636)는 코어 prune 훅 규약(7.0.7)을 따라
+개인정보 보유기간 핸들러 두 개(`src/Privacy/`)는 코어 prune 훅 규약(7.0.7)을 따라
 처리 전후로 `sirsoft-board.author_ip.before_prune`(보존일) / `.after_prune`(보존일, 건수),
 `sirsoft-board.guest_author.before_prune` / `.after_prune` 을 발행합니다. **`--dry-run` 에서는
 발행하지 않습니다** — 리허설에서 리스너가 돌았다고 착각하지 않도록 실제 처리 때만 발행합니다.
@@ -781,7 +781,7 @@ Repository 로만 합니다 — 역할 사용자는 `RoleRepositoryInterface::ge
 ## 활동 로그 훅
 
 > 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 34개입니다.
-> 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다(#601) —
+> 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다 —
 > 확장이 훅을 더할 때 코어 문서를 고쳐야 하던 역방향 의존을 없애기 위해서입니다. 코어 문서에는
 > 총계와 이 문서로의 링크만 남습니다.
 

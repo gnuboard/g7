@@ -94,7 +94,7 @@
 
 **편집기 본문 미디어**(`page_attachments.collection = content_media`): 흐름은 코어 골격
 `AbstractContentMediaService` 를 상속한 `PageContentMediaFlow` 가 돌리고, 페이지 몫(행 표·게이트·제거
-정책)은 어댑터 `Services/ContentMedia/PageContentMediaStore` 가 답합니다(#887). 호출자는 진입점
+정책)은 어댑터 `Services/ContentMedia/PageContentMediaStore` 가 답합니다. 호출자는 진입점
 `PageContentMediaService` 를 씁니다. 페이지 저장 트랜잭션 안에서 연결 → 복제 → 제거 순서로 맞추고, 본문에서
 빠진 것은 **어느 버전 본문도 참조하지 않을 때만** 지웁니다 — 버전 복원이 미디어를 되살릴 수 있어야 하므로
 버전이 참조하면 페이지에 붙인 채 두고 페이지 삭제 때 정리합니다. 버전 복원도 복원 본문을 정규화·동기화한 뒤
@@ -155,7 +155,7 @@
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-page` 재실행 + `docs/api/**` 갱신
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰지 않았으면 빌드 없이 update 만, 새 클래스(`page:` 유틸리티·`page-*`)를 쓰면 `module:build` 로 자기 CSS 를 다시 만든다(「화면 클래스 규약」)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
-- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
+- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, 공개 #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
 - [ ] 페이지 저장 경로를 추가·변경했다면 버전 스냅샷 적재와 `current_version` 증가가 같은 트랜잭션에 있는지 확인
 - [ ] 첨부를 내보내는 경로를 추가하면 발행 상태 게이트를 그 자리에서 재적용 (부모에서 한 번 판정하고 끝나지 않는다)
 - [ ] 코어 검색·SEO·ckeditor5 의 훅 이름이 바뀌면 이 모듈의 구독 5종이 조용히 끊기므로 함께 확인
@@ -172,13 +172,13 @@
 | 버전 복원을 현재 행 덮어쓰기로 구현 | 복원도 새 버전을 만든다 (`current_version` +1 후 스냅샷) | 되돌린 사실이 이력에서 사라지면 "누가 언제 무엇으로 되돌렸는가"를 추적할 수 없다 |
 | 첨부 공개 서빙(`download`)에만 발행 상태를 확인하고 `preview` 는 그대로 노출 | 두 경로 모두 같은 게이트를 재적용 | 한쪽만 막으면 같은 파일이 형제 엔드포인트로 새어나간다 |
 | 첨부 URL 을 순번 ID 로 조립 | 해시 경로(`/pages/attachment/{hash}`) | ID 노출은 다른 페이지의 첨부를 훑을 수 있는 열쇠가 된다 |
-| 본문에서 빠진 본문 미디어를 버전 참조와 상관없이 지우기, 또는 버전 복원에서 본문 미디어 동기화를 건너뛰기 | 제거는 어댑터 `handleRemoved`(버전 참조가 없을 때만 골격 `$purge`), 복원은 `normalizeContent` → `syncWithContent` 뒤 스냅샷 | 이전 버전으로 복원하면 이미지가 깨진다 — 되돌리기 수단이 버전 이력뿐인 도메인이다(#887). 다른 페이지 소유 미디어가 섞인 버전은 복원 때 복제해야 원본이 지워져도 남는다 |
+| 본문에서 빠진 본문 미디어를 버전 참조와 상관없이 지우기, 또는 버전 복원에서 본문 미디어 동기화를 건너뛰기 | 제거는 어댑터 `handleRemoved`(버전 참조가 없을 때만 골격 `$purge`), 복원은 `normalizeContent` → `syncWithContent` 뒤 스냅샷 | 이전 버전으로 복원하면 이미지가 깨진다 — 되돌리기 수단이 버전 이력뿐인 도메인이다. 다른 페이지 소유 미디어가 섞인 버전은 복원 때 복제해야 원본이 지워져도 남는다 |
 | 본문 미디어 파일을 주입 저장소(지금 기본 디스크)로 직접 읽고·지우기 | 골격의 `storageFor($row)`(행에 기록된 `disk`, `RowDiskStorage`)를 거친다 | 운영자가 기본 디스크를 바꾸면 옛 행이 404·복제 실패·파일 잔존이 된다 |
 | 소프트 삭제를 다시 도입 | 삭제는 실삭제, 되돌리기는 버전 이력 | 지운 페이지가 남아 있으면 같은 slug 를 다시 쓸 수 없고, slug 는 이 도메인에서 주소 그 자체다 |
 | 첨부 개수·용량 상한을 서비스에 리터럴로 재클램프 | 설정(`attachment.*`) 을 읽고 검증은 FormRequest 에 둔다 | 이중 클램프가 생기면 설정을 올려도 반영되지 않는다 |
 | 페이지 목록을 만들기 위해 공개 목록 API 를 추가 | 목록이 필요하면 게시판 모듈을 쓴다 | 페이지는 "주소 하나 = 문서 하나" 도메인이다. 목록을 들이면 게시판과 역할이 겹치면서 둘 다 애매해진다 |
 | 요청의 `temp_key` 를 형식 검증 없이 `temp/{temp_key}` 경로에 넣거나, 임시 첨부가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 조회된 임시 첨부가 있을 때만 이동·정리 | 페이지 첨부는 basePath 없이 저장해 게시판보다 얕다 — 순회 키 한 단계로 모듈 저장소 루트에 닿는다 (게시판 KVE-2026-2349 와 같은 패턴) |
-| 임시 첨부를 본경로로 옮긴 뒤 임시 디렉토리 정리(`deleteDirectory('attachments', 'temp/{temp_key}')`)의 예외를 그대로 던지게 두기 | `PageAttachmentService::linkTempAttachmentsWithMove()` 처럼 정리만 `try/catch` 로 감싸 경고 로그(`페이지 임시 첨부 디렉토리 정리 실패`)를 남기고 연결 결과는 그대로 반환 | 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던져 페이지 저장 전체가 500 으로 되돌아가고 파일·DB 경로가 어긋난다(#703 게시판 실측과 같은 구조). 정리에 실패해 남는 것은 빈 임시 디렉토리뿐이다 |
+| 임시 첨부를 본경로로 옮긴 뒤 임시 디렉토리 정리(`deleteDirectory('attachments', 'temp/{temp_key}')`)의 예외를 그대로 던지게 두기 | `PageAttachmentService::linkTempAttachmentsWithMove()` 처럼 정리만 `try/catch` 로 감싸 경고 로그(`페이지 임시 첨부 디렉토리 정리 실패`)를 남기고 연결 결과는 그대로 반환 | 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던져 페이지 저장 전체가 500 으로 되돌아가고 파일·DB 경로가 어긋난다(게시판과 같은 구조). 정리에 실패해 남는 것은 빈 임시 디렉토리뿐이다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행

@@ -115,7 +115,7 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 칸은 입력할 때마다(300ms 디바운스) 코어 회원 검색 `GET /api/admin/users/search` 를 부릅니다. 이
 호출에는 `if="{{String($args[0] ?? '').trim() !== ''}}"` 조건이 걸려 있어 **검색어가 비거나 공백뿐이면
 부르지 않습니다** — 회원 검색은 빈 검색어를 422 로 거절하므로, 조건이 없던 때는 검색칸을 지우거나
-공백만 적을 때마다 요청이 거절되고 검색 결과가 비었습니다(#703). 길이(`length > 0`)만 보면 공백이
+공백만 적을 때마다 요청이 거절되고 검색 결과가 비었습니다. 길이(`length > 0`)만 보면 공백이
 통과하므로 `trim()` 비교를 유지합니다. 같은 창의 「역할」 칸은 역할 목록 API 가 빈 검색어에 전체를
 돌려주므로 조건이 없습니다. 회원 검색 결과(`userSearchResults`)와 역할 검색 결과(`roleSearchResults`)는
 `_global.board_notification_template_form_modal` 안의 서로 다른 키에 담습니다 — 한 자리를 나눠 쓰면
@@ -124,7 +124,7 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 게시판 폼 「권한」 탭(`admin_board_form/_tab_permissions`)의 운영자·단계 승인자 태그 입력은 회원 목록
 `GET /api/admin/users` 에 검색어를 필터 값(`filters[0][value]`)으로 보냅니다. 이 API 는 빈 필터 값을 지우고
 전체 회원을 돌려주므로, 다른 회원 검색 칸과 같이 검색어 없는 조회를 보내지 않도록 두 칸의 호출에 `if="{{String($event.target.value ?? '').trim() !== ''}}"` 가 걸려 있습니다 — 태그
-입력은 검색칸을 지울 때 빈 문자열로 `onInputChange` 를 부르기 때문입니다(#703). 두 칸의 결과는
+입력은 검색칸을 지울 때 빈 문자열로 `onInputChange` 를 부르기 때문입니다. 두 칸의 결과는
 `managerSearchResults`·`stepSearchResults` 로 나눠 담습니다.
 
 신고·반응·스크랩 관리 목록의 빠른 기간 버튼은 날짜 식에서 「오늘」을 **계정 시간대**(`current_user?.data?.timezone`

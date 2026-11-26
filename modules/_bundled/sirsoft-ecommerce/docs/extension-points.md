@@ -690,7 +690,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 `before_update_commit(Product, data, snapshot)`. 트랜잭션 클로저 안 마지막 저장 뒤에 돕니다. 리스너는 `'sync' => true` 로
 구독하고, 예외는 상품 저장 전체(옵션·이미지 연결·옮긴 파일 포함)를 되돌립니다. 기존 `after_*` 는 커밋 뒤 그대로입니다.
 
-상품 설명·공통 정보 편집기 **본문 미디어**(1.3.4)는 이 모듈 훅을 따로 두지 않고 코어 공용 훅 `core.content_media.*` 를 씁니다(#887) —
+상품 설명·공통 정보 편집기 **본문 미디어**(1.3.4)는 이 모듈 훅을 따로 두지 않고 코어 공용 훅 `core.content_media.*` 를 씁니다 —
 업로드 1건마다 `before_upload`·`filter_upload_file`·`after_upload`, 영구 삭제(소유자 삭제·보존기간 뒤 정리) 직전에만 `before_delete`.
 리스너는 두 번째 인자 `ContentMediaContext` 의 `extension = sirsoft-ecommerce`, `documentType = product|common_info` 로 이 모듈의
 미디어를 가립니다. 본문에서 빠져 소프트 삭제될 때는 발화하지 않습니다.
@@ -716,7 +716,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 | `claim_payment.approve` · `claim_payment.refund` · `claim_payment.void_approval` | 3 | 클레임 추가결제(`CP` 채번)의 PG 승인·환급, 그리고 PG 는 승인했지만 모듈이 금액 불일치로 거절한 승인의 망취소 보상(`void_approval` — 선택 구현, `ClaimPaymentService`) — 결제 플러그인이 구현하는 필터. 계약(인자·반환 키·멱등 규칙)의 단일 출처는 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` |
 | `claim-image.*` | 3 | 첨부 업로드 파일 검사(filter)와 업로드·삭제 후처리 |
 
-### 취소·환불 축의 훅 계약 (#599 후속)
+### 취소·환불 축의 훅 계약
 
 `claim.refund.status_changed` 는 **네 번째 인수로 컨텍스트 배열**을 받습니다. 자동 전이는 한
 번의 취소로 `접수 → 승인 → 완료` 세 단계를 실제로 밟는데, 그때마다 알림을 보내면 고객이 문자
@@ -732,7 +732,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 지급하며, 지급 기록이 원장에 남지 않으면 응답한 리스너가 없는 것으로 보고 실패시킵니다. 구독자는
 반드시 `'sync' => true` 로 구독합니다.
 
-### 수동 결제 처리·재활성 훅 (#747 C3)
+### 수동 결제 처리·재활성 훅
 
 관리자가 결제 전 주문을 결제완료 이후로 직접 올리거나 취소 주문·상품을 되살리면, 확인 창의 세 항목(재고
 차감·사용 마일리지 차감·결제금액 기록)과 재활성 복원이 상태 변경과 **같은 트랜잭션**에서 적용됩니다.
@@ -752,7 +752,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 단계). 리스너 안의 자체 저장(메타 기록 등)은 실패해도 예외를 던지지 마세요 — 돈은 이미 나간 뒤라
 예외가 장부만 롤백시킵니다.
 
-### 클레임 훅은 커밋 뒤에 발화합니다 (#599 validate)
+### 클레임 훅은 커밋 뒤에 발화합니다
 
 교환·반품·환불신청 서비스와 관리자 클레임 서비스가 내는 `claim.{type}.*` 훅(접수·상태 전이·
 상품 단위 전이·금액 수정·상품 단위 처리 안내)과 교환 재발송의 `order_option.after_sync_status` 는
@@ -767,7 +767,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 호출자 트랜잭션과 **함께 되돌아가야 하는** 구독(금전 복원 — `'sync' => true`)은 이 훅들이 아니라
 금액·쿠폰·마일리지 축의 훅에 붙습니다. 클레임 훅에 롤백 연동이 필요한 쓰기를 걸지 마세요.
 
-### 클레임 before·filter 훅 — 막고 바꾸는 자리 (#599 validate)
+### 클레임 before·filter 훅 — 막고 바꾸는 자리
 
 위 after 훅과 반대로, 아래 훅은 **쓰기 전에 동기로** 발화합니다(트랜잭션·잠금 전. 헤더 동기화만
 상품 전이 트랜잭션 안). before 리스너가 예외를 던지면 그 동작은 아무것도 쓰지 않고 끝납니다.
@@ -814,7 +814,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 위 `claim.refund.before_request` 입니다. 교환·반품 완료가 스스로 접수하는 차액·환불 신청서는
 `claim.refund.before_request` 를 지나지 않습니다 — 그 자리는 `claim.{exchange|return}.before_complete` 입니다.
 
-### 상품 행 송장·선교환·판매자 접수 훅 (#599 상품 행 송장)
+### 상품 행 송장·선교환·판매자 접수 훅
 
 송장은 **상품 행마다** 있습니다(교환 행은 회수·재발송, 반품 행은 회수). 헤더 송장 칸은 없습니다 —
 `order_exchanges`·`order_returns` 의 송장 컬럼을 읽던 확장은 행(`order_exchange_options`·
@@ -848,7 +848,7 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 
 | 능력 키 | 뜻 | 미선언 시 기본값 |
 |---|---|---|
-| `needs_pg` | PG 결제창이 필요한가 | `true` (오판 비용이 반대 방향에서 더 큼 — #475) |
+| `needs_pg` | PG 결제창이 필요한가 | `true` (오판 비용이 반대 방향에서 더 큼) |
 | `pg_locked` | 관리자가 다른 PG 로 바꿀 수 없는가 | `false` |
 | `refund_method` | 대응 환불 수단 (`pg` · `bank` · `points`) | PG 필요 여부로 판정 |
 | `customer_selectable` | 고객이 주문서에서 직접 고를 수 있는가 | `point`·`deposit`·`free` 외 `true` |
@@ -891,7 +891,7 @@ pg_provider = P` 에서 같은 코어의 **활성** 간편결제 별칭이 찾�
 알아야 하면 소스에서 `HookManager::` 호출부를 직접 확인합니다.
 
 `sirsoft-ecommerce.order.before_prune`(보존일) / `.after_prune`(보존일, 건수)는 종결 주문 개인정보
-보유기간 핸들러(이슈 #636)가 코어 prune 훅 규약(7.0.7)에 따라 발행합니다. **`--dry-run` 에서는
+보유기간 핸들러가 코어 prune 훅 규약(7.0.7)에 따라 발행합니다. **`--dry-run` 에서는
 발행하지 않습니다.** 삭제 방식이면 주문을 영구 삭제한 뒤(트랜잭션 커밋 후) 주문마다 관리자 삭제와 같은
 `sirsoft-ecommerce.order.after_delete`(주문 모델)를 발행합니다 — 주문 활동 로그가 「주문 삭제」를 남기고,
 주문 삭제에 반응하는 확장은 같은 훅으로 자기 자료를 정리합니다. 구독자가 받는 시점에 주문 행은 이미
@@ -927,7 +927,7 @@ pg_provider = P` 에서 같은 코어의 **활성** 간편결제 별칭이 찾�
 data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습니다. 문자·알림톡 채널은 이 모듈의
 주문 모델을 읽지 않고 그 키만 읽습니다. 연락처가 없거나 회원 주문이면 키를 넣지 않습니다.
 
-### 내보내기 — 형식·유형·항목을 더하는 방법 (#787)
+### 내보내기 — 형식·유형·항목을 더하는 방법
 
 내보내기는 「무엇을(유형·항목)」과 「어떻게 쓰는가(형식)」를 나눠 둡니다. 기본은 CSV 한 형식과 주문내역·상품내역·마일리지
 내역 세 유형이고, 다른 확장(플러그인)은 아래 필터로 더하거나 바꿉니다. 이 모듈의 코드를 고칠 필요가 없습니다.
@@ -1610,7 +1610,7 @@ scoped 인스턴스만 비우므로 싱글톤이면 재시작 전까지 옛 값�
 - **주문 완료 화면은 결제 금액 요약 id 에 붙인다.** 템플릿은 주문 완료 화면(`shop/order_complete`)의 결제 금액 요약 칸에
   `id="order_complete_payment_summary"` 를 단다. 영수증·매출전표·가상계좌 안내 조각은 이 id 에 `append_child` 로 붙이고,
   화면 주소(`/shop/orders/…/complete`)를 글자로 맞춰 끼우는 스크립트를 쓰지 않는다 — 쇼핑몰 경로를 바꾼 설치본에서 조용히
-  빠진다(#639 에서 번들 PG 세 플러그인이 조각으로 옮김).
+  빠진다(번들 PG 세 플러그인은 조각으로 옮김).
 - **결제 방법 행의 간편결제 이름은 표시 라벨 훅으로 채운다(1.4.1).** 결제 방법 값은 주문 결제 응답의
   `payment_method_display_label ?? payment_method_label` 이다 — 사용자 화면은 템플릿이 단 `id="order_payment_method_row"`(같은
   `_payment` 조각의 결제 방법 행), 관리자 주문 상세는 이 모듈이 단 `id="payment_method_block_{결제 순번}"`, 관리자 클레임 상세 주문 결제
@@ -1663,7 +1663,7 @@ scoped 인스턴스만 비우므로 싱글톤이면 재시작 전까지 옛 값�
 (결제수단 id — 이 모듈의 결제수단 카탈로그 id)를 단다(sirsoft-basic `partials/shop/_checkout_payment`). 칸을 찾는 플러그인은
 이 id·표식으로만 찾고, 칸 제목이나 버튼 이름 글자로 찾지 않는다 — 글자는 언어마다 다르다. 표식이 없는 버튼은 건드리지 않는다.
 
-**결제 통화에 따라 고를 수 없는 수단은 버튼을 숨기지 말고 서버 훅으로 뺀다(#639).** 필터 훅
+**결제 통화에 따라 고를 수 없는 수단은 버튼을 숨기지 말고 서버 훅으로 뺀다.** 필터 훅
 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency(array $methodIds, string $currency): array` 에 답하면,
 이 모듈이 그 판정을 두 곳에 쓴다.
 
@@ -1688,7 +1688,7 @@ NHN KCP·나이스페이먼츠·토스페이먼츠)은 이 표식으로만 항�
 
 ### 다른 확장이 읽는 전역 상태 (상태 계약)
 
-이 모듈은 아래 전역 상태(`_global`) 키를 매니페스트 `state_contracts` 로 공개한다(#639). 결제 플러그인·템플릿 조각처럼 다른 확장이
+이 모듈은 아래 전역 상태(`_global`) 키를 매니페스트 `state_contracts` 로 공개한다. 결제 플러그인·템플릿 조각처럼 다른 확장이
 쇼핑몰 값을 읽어야 하면 이 키만 읽고, 여기 없는 쇼핑몰 화면의 전역 키(목록 필터·모달 상태 등)에는 기대지 않는다 — 내부 값이라 예고
 없이 바뀐다. 브라우저에서는 `G7Core.stateContracts.get('<이름>')` 으로 소유자·모양을 확인할 수 있다.
 
@@ -2067,7 +2067,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 > 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 **152종**입니다
 > (등록 건수는 154건 — `order.after_create` 와 `order-option.after_confirm` 은 관리자 관점과
 > 구매자 관점 두 리스너가 각각 구독합니다).
-> 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다(#601) —
+> 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다 —
 > 확장이 훅을 더할 때 코어 문서를 고쳐야 하던 역방향 의존을 없애기 위해서입니다. 코어 문서에는
 > 총계와 이 문서로의 링크만 남습니다.
 
@@ -2443,7 +2443,7 @@ LogType 은 요청 주체로 정해진다(관리자 화면이면 Admin, 고객 �
 
 **파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/ExportActivityLogListener.php`
 
-상품·주문·마일리지 내보내기(#787). 작업 행이 지워진 뒤에도 해석되도록 `loggable_type`/`loggable_id` 와 파일 이름을 직접 남긴다.
+상품·주문·마일리지 내보내기. 작업 행이 지워진 뒤에도 해석되도록 `loggable_type`/`loggable_id` 와 파일 이름을 직접 남긴다.
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|

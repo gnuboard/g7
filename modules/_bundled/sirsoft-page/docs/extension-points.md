@@ -51,7 +51,7 @@ CRUD 동작을 바꾸고 싶으면 이 셋 중 하나를 잡습니다.
 **편집기 본문 미디어(`collection = content_media`)는 `attachment.*` 훅을 발화하지 않습니다.** 업로드와
 영구 삭제는 코어 골격이 공용 훅 `core.content_media.before_upload`·`filter_upload_file`·`after_upload`·
 `before_delete` 를 발화하고, 리스너는 문맥(`ContentMediaContext` — 확장 `sirsoft-page`, 문서 `page`,
-페이지 ID)으로 페이지 본문 미디어인지 압니다(#887, 코어 [본문 미디어 계약](../../../../docs/extension/content-media.md)).
+페이지 ID)으로 페이지 본문 미디어인지 압니다(코어 [본문 미디어 계약](../../../../docs/extension/content-media.md)).
 첨부 훅까지 발화하면 첨부 리스너(활동 로그 등)가 본문 미디어를 첨부로 오인합니다. `before_delete` 는
 영구 삭제 직전에만 옵니다 — 본문에서 빠졌어도 버전이 참조해 남겨 두는 동안에는 오지 않고, 페이지 삭제·
 임시 정리 때 옵니다.
@@ -207,7 +207,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 상시 동작합니다(보존 기간은 커맨드 옵션). 편집기 본문에 올리고 저장하지 않은 본문 미디어
 (`collection = content_media` 임시 행)도 같은 기준으로 함께 지웁니다 — 본문 미디어는 코어 골격의 정리
 (`pruneStale`)가 행 디스크에서 지우고 행마다 `core.content_media.before_delete` 를 발화하며, 비워진 날짜
-디렉터리(`content-media/Y/m/d`)도 그 디스크에서 지웁니다(#887). 출력 건수는 둘을 합친 값입니다.
+디렉터리(`content-media/Y/m/d`)도 그 디스크에서 지웁니다. 출력 건수는 둘을 합친 값입니다.
 
 이미 페이지에 연결된 첨부는 이 스케줄의 대상이 아닙니다. 페이지를 지우면 그 첨부와 본문 미디어(버전이
 참조해 남겨 둔 것 포함)는 삭제 흐름 안에서 함께 정리됩니다(파일은 커밋 뒤).
@@ -231,7 +231,7 @@ _등록하는 알림 정의가 없습니다._
 ## 활동 로그 훅
 
 > 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 7개입니다.
-> 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다(#601) —
+> 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다 —
 > 확장이 훅을 더할 때 코어 문서를 고쳐야 하던 역방향 의존을 없애기 위해서입니다. 코어 문서에는
 > 총계와 이 문서로의 링크만 남습니다.
 

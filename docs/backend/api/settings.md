@@ -172,9 +172,9 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | general | object | `{"site_name":"그누보드7","site_url":"https:\/\/api.example.com","sit…` | 일반 탭 설정 그룹 (사이트명·사이트 URL·설명·관리자 이메일·타임존·기본 언어·통화·사이트 로고·사이트 파비콘 첨부). site_logo·site_favicon 은 SettingsService 가 별도 주입한 첨부 정보(업로더 초기 파일). 공개 계산 필드 `site_logo_url`·`site_favicon_url` 은 이 관리자 응답에는 없고 저장 응답 `frontend_settings`·셸 `G7Config.settings` 에 있다 |
-| security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다. IP 접근 제한 3키(`ip_restriction_enabled`·`admin_allowed_ips`·`ip_restriction_rules`)도 이 그룹에 실린다 — 의미는 아래 「IP 접근 제한」 절. 비밀번호 정책 키(`password_min_length`·`require_password_special_char` 와 `password_*` 16키 — 작성 규칙·재사용 금지·만료, 서버가 기록하는 만료 기준 시작일 `password_expiry_started_at` 포함 — #736)도 이 그룹에 실린다 — 범위·기본값은 `POST /api/admin/settings` 의 `security.password_*` 행. 활동 로그(접속기록) 보관 기간 `activity_log_retention_days`(정수 일, 기본 365)도 이 그룹이다. 콘텐츠 보안 정책 2키(`csp_mode` 기본 `off`·`csp_extra_script_hosts` 기본 `[]`, #158)와 스타일 정책 3키(`csp_style_mode` 기본 `off`·`csp_style_level` 기본 `basic`·`csp_extra_style_hosts` 기본 `[]`, 7.1.6)도 이 그룹이다 — 의미는 `POST /api/admin/settings` 의 `security.csp_*` 행. 미서명 패키지 차단 `extension_block_unsigned`(boolean, 기본 false, 7.2.0)도 이 그룹이다 — 의미는 `POST /api/admin/settings` 의 `security.extension_block_unsigned` 행 |
+| security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다. IP 접근 제한 3키(`ip_restriction_enabled`·`admin_allowed_ips`·`ip_restriction_rules`)도 이 그룹에 실린다 — 의미는 아래 「IP 접근 제한」 절. 비밀번호 정책 키(`password_min_length`·`require_password_special_char` 와 `password_*` 16키 — 작성 규칙·재사용 금지·만료, 서버가 기록하는 만료 기준 시작일 `password_expiry_started_at` 포함)도 이 그룹에 실린다 — 범위·기본값은 `POST /api/admin/settings` 의 `security.password_*` 행. 활동 로그(접속기록) 보관 기간 `activity_log_retention_days`(정수 일, 기본 365)도 이 그룹이다. 콘텐츠 보안 정책 2키(`csp_mode` 기본 `off`·`csp_extra_script_hosts` 기본 `[]`, 공개 #158)와 스타일 정책 3키(`csp_style_mode` 기본 `off`·`csp_style_level` 기본 `basic`·`csp_extra_style_hosts` 기본 `[]`, 7.1.6)도 이 그룹이다 — 의미는 `POST /api/admin/settings` 의 `security.csp_*` 행. 미서명 패키지 차단 `extension_block_unsigned`(boolean, 기본 false, 7.2.0)도 이 그룹이다 — 의미는 `POST /api/admin/settings` 의 `security.extension_block_unsigned` 행 |
 | mail | object | `{"mailer":"smtp","host":"","port":587,"username":"","pass…` | 메일 탭 설정 그룹 (메일러 종류(smtp/mailgun/ses)·SMTP 호스트/포트/인증 정보·암호화 방식·발신자 주소/이름·Mailgun/SES 자격 정보) |
-| upload | object | `{"max_file_size":10,"allowed_extensions":["jpg","jpeg","p…` | 업로드 탭 설정 그룹 (최대 파일 크기(MB)·허용 확장자 목록·이미지 최대 가로/세로·이미지 품질). `thumbnail_presets` 와 `thumbnail_presets_rows` 는 저장 행이 아니라 레지스트리가 합친 썸네일 규격 표(고정 5행, og, 켜진 확장 규격, 운영자 규격 — 행마다 `kind` fixed/og/extension/custom, 확장 행 `defaults`, og 행 `size_readonly`)다 (#869). 행마다 `label` 은 확장이 등록한 표시 이름의 로케일 맵(`{"ko":"배너 목록","en":"Banner list"}`)이고, 이름을 등록하지 않은 확장 행과 고정·og·운영자 행은 null 이다(화면은 null 이면 `name` 을 보인다). 표시 전용이라 저장하지 않는다. `thumbnail_presets_rows` 는 응답 전용이라 저장 요청에 실려 와도 버린다 |
+| upload | object | `{"max_file_size":10,"allowed_extensions":["jpg","jpeg","p…` | 업로드 탭 설정 그룹 (최대 파일 크기(MB)·허용 확장자 목록·이미지 최대 가로/세로·이미지 품질). `thumbnail_presets` 와 `thumbnail_presets_rows` 는 저장 행이 아니라 레지스트리가 합친 썸네일 규격 표(고정 5행, og, 켜진 확장 규격, 운영자 규격 — 행마다 `kind` fixed/og/extension/custom, 확장 행 `defaults`, og 행 `size_readonly`)다. 행마다 `label` 은 확장이 등록한 표시 이름의 로케일 맵(`{"ko":"배너 목록","en":"Banner list"}`)이고, 이름을 등록하지 않은 확장 행과 고정·og·운영자 행은 null 이다(화면은 null 이면 `name` 을 보인다). 표시 전용이라 저장하지 않는다. `thumbnail_presets_rows` 는 응답 전용이라 저장 요청에 실려 와도 버린다 |
 | seo | object | `{"meta_title_suffix":null,"meta_description":null,"meta_k…` | SEO 탭 설정 그룹 (메타 타이틀 접미사·메타 설명/키워드·검색엔진 인증 코드·봇 감지·OG/Twitter 기본값·SEO 캐시·사이트맵·생성기 설정) |
 | advanced | object | `{"cache_enabled":true,"cache_default_ttl":86400,"layout_c…` | 고급 탭 설정 그룹 (캐시·디버그·코어 업데이트·GeoIP 설정을 한 탭으로 합친 병합 뷰). cache/debug 카테고리 값이 함께 노출됨. `geoip_last_updated_at`(저장된 ISO8601) 옆에 화면 표시용 `geoip_last_updated_at_formatted`(보는 사람 시간대 `Y-m-d H:i:s`)가 함께 실린다 — 저장 요청에 실려 와도 서버가 버린다 |
 | cache | object | `{"cache_enabled":true,"cache_default_ttl":86400,"layout_c…` | 캐시 원본 카테고리 (전역 캐시 사용·기본 TTL·레이아웃/통계/SEO 캐시 사용 및 TTL). advanced 탭에 병합되면서 개별 접근용으로 별도 노출된 파생 뷰 |
@@ -187,7 +187,7 @@ _단건 응답: `data` 객체의 필드._
 | pagination | object | `{"pagination_result_cap":10000,"pagination_max_page":1000}` | 목록 한계값 카테고리 — 총 건수를 정확히 세는 상한과 직접 요청할 수 있는 최대 페이지 번호 |
 | system | object | `{"execution_mode":"auto","cron_mode":"auto","cron_allowed…` | 실행 방식·예약 작업 카테고리 — 커맨드 실행 모드와 웹 크론 설정. 호출 번호(토큰)는 이 응답에 실리지 않는다 |
 | privacy | object | `{"withdrawn_retention_enabled":false,"withdrawn_retention_…` | 개인정보 탭 설정 그룹 (탈퇴 회원 잔여정보 2차 파기 사용 여부·보유일, 휴면 전환 사용 여부·전환 기준일·사전 통지 선행일, 휴면 후 자동 탈퇴 사용 여부·기준일). 전 항목 기본 꺼짐 |
-| available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분), `file_delegation` 은 웹서버 파일 위임 방식 선택지 (none/x-sendfile/x-accel-redirect, #878) |
+| available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분), `file_delegation` 은 웹서버 파일 위임 방식 선택지 (none/x-sendfile/x-accel-redirect) |
 | scheduler_enabled_on_this_server | boolean | `true` | 이 요청을 처리한 서버가 스케줄을 실행하는지(`RuntimeRole::schedulerEnabled()` — `G7_SCHEDULER=off` 이거나 검수 서버면 false). 서버마다 다를 수 있다 — 환경설정 화면은 false 일 때 「이 서버는 스케줄 실행이 꺼져 있다」 안내 띠를 띄운다. 공유 설정 `system.cron_mode` 와의 차이는 [스케줄 문서](../scheduling.md) 「5. 중복 방지·다중 서버·점검 모드」 참조 |
 | _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 필드로 구성 |
 | _meta.limits | object | `{"upload_max_file_size_min":1,"upload_max_file_size_max":1024,…}` | 각 설정 항목의 min/max 경계값 맵 (`config/core.php` 의 `settings_limits` 가 SSoT, 화면 입력 힌트와 FormRequest 검증이 같은 값을 공유) |
@@ -195,15 +195,15 @@ _단건 응답: `data` 객체의 필드._
 | _meta.env_locked | object | `{"general.site_name":true,"advanced.debug_mode":true}` | `.env` 에 값이 명시되어 편집이 잠긴 필드 목록. 키는 **화면이 쓰는 프론트엔드 키**(`frontend_key`/`merge_into` 변환 후 — 예: `debug.mode` → `advanced.debug_mode`)이며 값은 항상 true. 병합 대상 카테고리와 원본 카테고리 양쪽에 실린다(설정값 자체가 두 위치에 실리는 것과 같은 규칙). 스위치가 꺼져 있으면 빈 객체. 잠긴 필드는 저장 요청에 포함되어도 서버가 제거하므로 값이 반영되지 않는다. 잠긴 필드의 값은 저장값이 아니라 실제로 적용 중인 값으로 내려가되, 비밀번호·시크릿·토큰 등 민감 항목은 그 대체를 하지 않는다 |
 | _meta.consent_providers | array | `[{"id":"sirsoft-gdpr","label":"쿠키 동의 배너 (sirsoft-gdpr)"}]` | 등록된 동의 관리 제공자 `{id, label}` 목록 — 개인정보 탭 「동의 관리 제공자」 선택 상자의 항목. 동의 수집을 꺼 둔 제공자도 실린다(고를 수 있다) |
 | _meta.consent_selection | object | `{"state":"auto","reason":null,"provider_id":"sirsoft-gdpr","provider_label":"GDPR …"}` | 지금 선택 상태. `state` 는 `none`·`auto`·`selected`·`ambiguous`·`missing`, `reason` 은 `none` 의 사유(`no_provider`·`provider_unavailable`) |
-| _meta.queue_connection_options | array | `[{"name":"database","driver":"database"},{"name":"database-long","driver":"database"},{"name":"redis","driver":"redis"}]` | 드라이버 탭 「큐 워커」 의 등록 연결 선택지 — `config/queue.php` 연결 중 드라이버가 `sync`·`null` 이 아닌 것 (#139) |
+| _meta.queue_connection_options | array | `[{"name":"database","driver":"database"},{"name":"database-long","driver":"database"},{"name":"redis","driver":"redis"}]` | 드라이버 탭 「큐 워커」 의 등록 연결 선택지 — `config/queue.php` 연결 중 드라이버가 `sync`·`null` 이 아닌 것 (공개 #139) |
 | _meta.public_disk_hardening | object\|null | `{"ok":true,"nosniff":true,"disposition":true,"status":200,"checked_at":"2026-11-10T21:00:00+09:00","rules_written":true}` | 드라이버 탭 「공개 자산 스토리지」 카드의 경고 판정 메타(7.1.6). 공개 자산 디스크를 로컬 공개 디스크(`public`)로 두고 드라이버 탭을 저장하면 서버가 `/storage` 직접 주소의 응답 헤더를 점검해 남긴 결과다. `ok` 는 nosniff 와 내려받기 지시가 모두 있으면 true, 응답은 받았는데 하나라도 없으면 false(화면이 경고), 서버가 자기 주소에 닿지 못해 판정할 수 없으면 null. 점검한 적이 없거나 다른 디스크를 쓰면 필드 값이 null `ok` 는 점검 파일이 내려왔는데(200) 헤더가 없거나 접근이 막혔을 때(403) `false`, 리다이렉트·404·서버 오류처럼 확인할 수 없는 응답이면 `null`(경고 없음). `rules_written` 은 저장 때 웹서버 규칙 파일(`storage/app/public/.htaccess`)을 지금 설정으로 썼는지다 — `false` 면 헤더가 붙어 있어도 규칙은 옛 내용이라 화면이 따로 경고한다. 규칙 파일을 못 쓰면 다른 디스크를 써도 `{ok: null, rules_written: false}` 가 남는다 |
-| _meta.csp | object | `{"override":null,"preview":"script-src 'self' t1.daumcdn.net t1.kakaocdn.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; report-uri /api/csp-report","auto_hosts":["t1.kakaocdn.net","t1.daumcdn.net"],"style_override":null,"style_preview":"style-src-elem 'self'; report-uri /api/csp-report","style_auto_hosts":[]}` | 보안 탭 「콘텐츠 보안 정책」 카드가 읽는 메타(#158). `override`: `.env G7_CSP_MODE` 탈출구 값(`off`·`report_only`·`enforce`, 없으면 null — 값이 있으면 화면이 모드 선택을 잠근다) · `preview`: **저장된 값** 기준으로 붙을 정책 문자열(모드가 끔이어도 미리 보여 준다) · `auto_hosts`: 활성 확장 선언(`trusted_script_hosts`·템플릿 externals 외부 script)에서 자동 합산된 호스트. 스타일 정책 3키(7.1.6) — `style_override`: `.env G7_CSP_STYLE_MODE` 탈출구 값(`off`·`report_only`·`enforce`, 없으면 null — 값이 있으면 화면이 스타일 모드 선택을 잠근다. `G7_CSP_MODE` 와 독립) · `style_preview`: **저장된 값** 기준으로 붙을 스타일 정책 문자열(강도 `basic` 은 `style-src-elem 'self' …; report-uri …`, `strict` 는 `style-src 'self' …; style-src-attr 'none'; report-uri …`. 모드가 끔이어도 미리 보여 준다) · `style_auto_hosts`: 켜진 모듈·플러그인의 `trusted_style_hosts` 선언(+ 필터 훅 `core.csp.trusted_style_hosts`)과 활성 관리자·사용자 템플릿 externals 의 외부 스타일시트(`style`·`webfont`·`as` 가 `style` 인 `preload`)에서 자동 합산된 호스트 |
-| _meta.favicon | object\|null | `{"user":{"source":"template","template_identifier":"sirsoft-basic","template_name":"Basic","settings_route":"/admin/templates/sirsoft-basic/settings"},"admin":{…}}` | 화면 종류별(사용자·관리자) 현재 파비콘 계층(`template`·`core`·`custom_ico`·`bundled`)과 활성 템플릿·설정 화면 경로 — 일반 탭 파비콘 칸 아래 「○○ 템플릿 설정의 파비콘이 우선 적용됩니다」 안내용 (#434). 해석 실패 시 null |
-| _meta.thumbnail_engine_available | boolean | `true` | 이 서버에 쓸 수 있는 이미지 처리 엔진(`drivers.image_driver` 가 고른 엔진, 쓸 수 없으면 gd)이 있는지 (#869). false 면 썸네일 없이 원본을 내고 업로드 축소도 하지 않는다. 업로드 탭은 이 값으로 「엔진 없음」 안내를 띄운다 |
-| _meta.thumbnail_disk_options | object | `{"public":[{"id":"thumbnails","label":{"ko":"서버 비공개 저장소 (기본)",…}},{"id":"public",…}],"gated":[{"id":"thumbnails",…},{"id":"s3",…}]}` | 업로드 탭 썸네일 「저장 위치」 선택지 (#869). `public` 은 `thumbnails` 와 공개 자산 디스크 카탈로그(`available_drivers.public_asset` 에서 `none` 제외), `gated` 는 `thumbnails` 와 `s3`(이 서버에서 S3 어댑터를 쓸 수 있을 때만). `label` 은 `available_drivers` 와 같은 로케일 맵. 저장 검증(`upload.thumbnail_disk_public`/`_gated`)이 같은 목록을 쓴다 |
-| _meta.thumbnail_server_defaults | object | `{"generate_per_minute":120,"lock_wait_seconds":10,"max_source_pixels":16000000,"pregenerate_batch":20,"pregenerate_time_budget":15,"purge_time_budget":10}` | 업로드 탭 「고급」 칸(썸네일 서버 보호 값)을 비웠을 때 쓰는 값 — `.env` 의 `G7_THUMBNAIL_*` 가 있으면 그 값, 없으면 기본값 (`config('core.thumbnail_server_defaults')`). 화면은 칸의 placeholder 로 보인다 (#869) |
+| _meta.csp | object | `{"override":null,"preview":"script-src 'self' t1.daumcdn.net t1.kakaocdn.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; report-uri /api/csp-report","auto_hosts":["t1.kakaocdn.net","t1.daumcdn.net"],"style_override":null,"style_preview":"style-src-elem 'self'; report-uri /api/csp-report","style_auto_hosts":[]}` | 보안 탭 「콘텐츠 보안 정책」 카드가 읽는 메타(공개 #158). `override`: `.env G7_CSP_MODE` 탈출구 값(`off`·`report_only`·`enforce`, 없으면 null — 값이 있으면 화면이 모드 선택을 잠근다) · `preview`: **저장된 값** 기준으로 붙을 정책 문자열(모드가 끔이어도 미리 보여 준다) · `auto_hosts`: 활성 확장 선언(`trusted_script_hosts`·템플릿 externals 외부 script)에서 자동 합산된 호스트. 스타일 정책 3키(7.1.6) — `style_override`: `.env G7_CSP_STYLE_MODE` 탈출구 값(`off`·`report_only`·`enforce`, 없으면 null — 값이 있으면 화면이 스타일 모드 선택을 잠근다. `G7_CSP_MODE` 와 독립) · `style_preview`: **저장된 값** 기준으로 붙을 스타일 정책 문자열(강도 `basic` 은 `style-src-elem 'self' …; report-uri …`, `strict` 는 `style-src 'self' …; style-src-attr 'none'; report-uri …`. 모드가 끔이어도 미리 보여 준다) · `style_auto_hosts`: 켜진 모듈·플러그인의 `trusted_style_hosts` 선언(+ 필터 훅 `core.csp.trusted_style_hosts`)과 활성 관리자·사용자 템플릿 externals 의 외부 스타일시트(`style`·`webfont`·`as` 가 `style` 인 `preload`)에서 자동 합산된 호스트 |
+| _meta.favicon | object\|null | `{"user":{"source":"template","template_identifier":"sirsoft-basic","template_name":"Basic","settings_route":"/admin/templates/sirsoft-basic/settings"},"admin":{…}}` | 화면 종류별(사용자·관리자) 현재 파비콘 계층(`template`·`core`·`custom_ico`·`bundled`)과 활성 템플릿·설정 화면 경로 — 일반 탭 파비콘 칸 아래 「○○ 템플릿 설정의 파비콘이 우선 적용됩니다」 안내용. 해석 실패 시 null |
+| _meta.thumbnail_engine_available | boolean | `true` | 이 서버에 쓸 수 있는 이미지 처리 엔진(`drivers.image_driver` 가 고른 엔진, 쓸 수 없으면 gd)이 있는지. false 면 썸네일 없이 원본을 내고 업로드 축소도 하지 않는다. 업로드 탭은 이 값으로 「엔진 없음」 안내를 띄운다 |
+| _meta.thumbnail_disk_options | object | `{"public":[{"id":"thumbnails","label":{"ko":"서버 비공개 저장소 (기본)",…}},{"id":"public",…}],"gated":[{"id":"thumbnails",…},{"id":"s3",…}]}` | 업로드 탭 썸네일 「저장 위치」 선택지. `public` 은 `thumbnails` 와 공개 자산 디스크 카탈로그(`available_drivers.public_asset` 에서 `none` 제외), `gated` 는 `thumbnails` 와 `s3`(이 서버에서 S3 어댑터를 쓸 수 있을 때만). `label` 은 `available_drivers` 와 같은 로케일 맵. 저장 검증(`upload.thumbnail_disk_public`/`_gated`)이 같은 목록을 쓴다 |
+| _meta.thumbnail_server_defaults | object | `{"generate_per_minute":120,"lock_wait_seconds":10,"max_source_pixels":16000000,"pregenerate_batch":20,"pregenerate_time_budget":15,"purge_time_budget":10}` | 업로드 탭 「고급」 칸(썸네일 서버 보호 값)을 비웠을 때 쓰는 값 — `.env` 의 `G7_THUMBNAIL_*` 가 있으면 그 값, 없으면 기본값 (`config('core.thumbnail_server_defaults')`). 화면은 칸의 placeholder 로 보인다 |
 | _meta.search_scopes | array | `[{"scope":"core.site","owner":"core","owner_label":"코어","label":"통합 검색","default_max_count":10,"default_retention_days":0}]` | 개인정보 탭 「최근 검색어」 카드의 범위 메타(7.1.5) — 코어 `core.site` + 활성 모듈·플러그인이 manifest `search_scopes` 로 선언한 범위, 선언 순서. `owner` 는 `core`·`module:{id}`·`plugin:{id}`, `label`·`owner_label` 은 요청 언어 글자, `default_*` 는 선언값(없으면 10개·0=기한 없음) |
-| _meta.file_delegation | object | `{"mode":"none","base_path":"/var/www/g7","accel_prefix":"/_g7_sendfile/","accel_mapping":"/var/www/g7/=/_g7_sendfile/","nginx_alias_path":"/var/www/g7"}` | 드라이버 탭 「웹서버 파일 위임」 카드가 읽는 메타 (#878). `mode`: **지금 적용 중인** 위임 방식(저장값이 아니라 `.env` 잠금까지 반영한 `core.file_serving.delegation`) · `base_path`: 설치 위치 실경로(심볼릭 링크를 푼 값 — Apache `XSendFilePath`·nginx `alias` 안내에 쓴다) · `accel_prefix`: nginx internal 위치 접두사 · `accel_mapping`: 앱이 만드는 `X-Accel-Mapping` 값(`<실경로>/=<접두사>`) · `nginx_alias_path`: nginx `alias` 안내에 쓰는 실경로(구분자를 `/` 로 바꾼 값 — Windows 경로도 nginx 문법대로 적히게). 상세: [file-serving-delegation.md](../file-serving-delegation.md) |
+| _meta.file_delegation | object | `{"mode":"none","base_path":"/var/www/g7","accel_prefix":"/_g7_sendfile/","accel_mapping":"/var/www/g7/=/_g7_sendfile/","nginx_alias_path":"/var/www/g7"}` | 드라이버 탭 「웹서버 파일 위임」 카드가 읽는 메타. `mode`: **지금 적용 중인** 위임 방식(저장값이 아니라 `.env` 잠금까지 반영한 `core.file_serving.delegation`) · `base_path`: 설치 위치 실경로(심볼릭 링크를 푼 값 — Apache `XSendFilePath`·nginx `alias` 안내에 쓴다) · `accel_prefix`: nginx internal 위치 접두사 · `accel_mapping`: 앱이 만드는 `X-Accel-Mapping` 값(`<실경로>/=<접두사>`) · `nginx_alias_path`: nginx `alias` 안내에 쓰는 실경로(구분자를 `/` 로 바꾼 값 — Windows 경로도 nginx 문법대로 적히게). 상세: [file-serving-delegation.md](../file-serving-delegation.md) |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -350,7 +350,7 @@ HTTP/1.1 200
 | upload.image_quality | body | integer | 아니오 | min 1, max 100 | 이미지 리사이즈 시 압축 품질 (1~100) |
 | upload.orphan_cleanup_enabled | body | boolean | 아니오 | — | 고아 첨부(소유자 없이 남은 첨부) 자동 정리 활성화 여부. **기본 false** — 사용자 파일을 실제로 파기하므로 운영자가 직접 켜야 동작하며, 예약 작업(`attachments:prune-orphans --scheduled`)이 이 값을 false 폴백으로 재확인한다 |
 | upload.orphan_retention_days | body | integer | 아니오 | min 1, max 3650 | 고아 첨부 보존기간(일, 기본 30). 폼 작성 중 이탈을 감안한 유예 기간이다. 하한·상한은 `config('core.settings_limits.upload_orphan_retention_days_*')` 가 정하며 화면 입력도 같은 값을 읽는다 |
-| upload.thumbnail_enabled | body | boolean | 아니오 | — | 이미지 썸네일 사용 여부 (기본 true). 끄면 모든 이미지를 원본으로 낸다 (#869) |
+| upload.thumbnail_enabled | body | boolean | 아니오 | — | 이미지 썸네일 사용 여부 (기본 true). 끄면 모든 이미지를 원본으로 낸다 |
 | upload.thumbnail_presets | body | array | 아니오 | 최대 `settings_limits.upload_thumbnail_presets_max`(30) 행, 표 전체 기준 | 썸네일 규격 표. 조회 응답의 `upload.thumbnail_presets` 를 고쳐 그대로 보낸다. 저장 때 `ThumbnailPresetSettings::mergeForSave` 가 고정 슬롯 5행을 늘 보충하고, og 행은 저장하지 않으며(크기는 SEO 탭), 지금 꺼진 확장의 수정값은 기존 저장본에서 이어 붙인다. 오류 키는 `upload.thumbnail_presets.{i}.{칸}` |
 | upload.thumbnail_presets.*.name | body | string | 예 | 중복 불가. 운영자 행 `^[a-z][a-z0-9_]{1,31}$`, 예약어(xs/sm/md/lg/xl/og) 불가. `true`/`false`/`null`/`undefined` 는 행 종류와 무관하게 불가(레이아웃 파이프가 리터럴로 읽는다). 고정 행(`source=core`)과 확장 행(`source`=확장 식별자)은 이름 변경 불가, 확장 형식 이름은 켜진 확장이 등록한 것만 | 규격 이름 (`?size=` 값) |
 | upload.thumbnail_presets.*.source | body | string | 아니오 | max 100 | 규격 출처 (core/custom/확장 식별자). 행 종류 판정에 쓰고 저장값은 서버가 다시 정한다 |
@@ -369,12 +369,12 @@ HTTP/1.1 200
 | upload.thumbnail_disk_gated | body | string | 아니오 | `_meta.thumbnail_disk_options.gated` 의 id (thumbnails, s3, 비공개 첨부 저장소 선택지 디스크. 공개 자산 디스크는 s3 를 빼고 422) | 권한이 걸린 이미지 썸네일 저장 디스크 (기본 thumbnails). 늘 서버를 거쳐 스트림으로 낸다. 공개 자산 디스크도 s3 이면 저장 응답 `warnings` 에 같은 버킷 경고(키 `upload.thumbnail_disk_gated`) |
 | upload.thumbnail_prune_enabled | body | boolean | 아니오 | — | 썸네일 정리 스케줄(`thumbnails:prune --scheduled`, 매일 05:20) 사용 여부 (기본 true) |
 | upload.thumbnail_animated_original | body | boolean | 아니오 | — | 움직이는 이미지(GIF·WebP·APNG)를 썸네일 대신 원본으로 낼지 (기본 true, 끄면 첫 프레임 썸네일. 확장 필터 `core.thumbnail.filter_animated_original` 가 바꿀 수 있다) |
-| upload.thumbnail_generate_per_minute | body | integer | 아니오 | min 1, max 10000 | IP 하나가 1분에 새로 만들게 할 수 있는 썸네일 수. 비우면(null) `.env` 의 `G7_THUMBNAIL_GENERATE_PER_MINUTE` 또는 120. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 (#869) |
-| upload.thumbnail_lock_wait_seconds | body | integer | 아니오 | min 1, max 30 | 같은 썸네일을 다른 요청이 만들고 있을 때 기다리는 시간(초). 비우면 `G7_THUMBNAIL_LOCK_WAIT_SECONDS` 또는 10. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 (#869) |
-| upload.thumbnail_max_source_pixels | body | integer | 아니오 | min 1000000, max 100000000 | 썸네일을 만들 원본의 픽셀 수 상한(넘으면 원본, `memory_limit` 으로 한 번 더 줄인다). 비우면 `G7_THUMBNAIL_MAX_SOURCE_PIXELS` 또는 16000000. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 (#869) |
-| upload.thumbnail_pregenerate_batch | body | integer | 아니오 | min 1, max 500 | 「기존 이미지 썸네일 만들기」와 `thumbnails:pregenerate` 가 한 번에 처리하는 원본 수. 비우면 `G7_THUMBNAIL_PREGENERATE_BATCH` 또는 20. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 (#869) |
-| upload.thumbnail_pregenerate_time_budget | body | integer | 아니오 | min 1, max 60 | 「기존 이미지 썸네일 만들기」 한 번 호출의 시간 예산(초). 비우면 `G7_THUMBNAIL_PREGENERATE_TIME_BUDGET` 또는 15. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 (#869) |
-| upload.thumbnail_purge_time_budget | body | integer | 아니오 | min 1, max 60 | 썸네일 「비우기」 한 번 호출의 시간 예산(초). 비우면 `G7_THUMBNAIL_PURGE_TIME_BUDGET` 또는 10. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 (#869) |
+| upload.thumbnail_generate_per_minute | body | integer | 아니오 | min 1, max 10000 | IP 하나가 1분에 새로 만들게 할 수 있는 썸네일 수. 비우면(null) `.env` 의 `G7_THUMBNAIL_GENERATE_PER_MINUTE` 또는 120. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 |
+| upload.thumbnail_lock_wait_seconds | body | integer | 아니오 | min 1, max 30 | 같은 썸네일을 다른 요청이 만들고 있을 때 기다리는 시간(초). 비우면 `G7_THUMBNAIL_LOCK_WAIT_SECONDS` 또는 10. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 |
+| upload.thumbnail_max_source_pixels | body | integer | 아니오 | min 1000000, max 100000000 | 썸네일을 만들 원본의 픽셀 수 상한(넘으면 원본, `memory_limit` 으로 한 번 더 줄인다). 비우면 `G7_THUMBNAIL_MAX_SOURCE_PIXELS` 또는 16000000. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 |
+| upload.thumbnail_pregenerate_batch | body | integer | 아니오 | min 1, max 500 | 「기존 이미지 썸네일 만들기」와 `thumbnails:pregenerate` 가 한 번에 처리하는 원본 수. 비우면 `G7_THUMBNAIL_PREGENERATE_BATCH` 또는 20. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 |
+| upload.thumbnail_pregenerate_time_budget | body | integer | 아니오 | min 1, max 60 | 「기존 이미지 썸네일 만들기」 한 번 호출의 시간 예산(초). 비우면 `G7_THUMBNAIL_PREGENERATE_TIME_BUDGET` 또는 15. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 |
+| upload.thumbnail_purge_time_budget | body | integer | 아니오 | min 1, max 60 | 썸네일 「비우기」 한 번 호출의 시간 예산(초). 비우면 `G7_THUMBNAIL_PURGE_TIME_BUDGET` 또는 10. 범위는 `settings_limits.upload_thumbnail_*`, `.env` 우선 모드에서 `.env` 가 정한 키는 저장에서 빠지고 `_meta.env_locked` 에 실린다 |
 | seo.meta_title_suffix | body | string | 아니오 | max 100 | 모든 페이지 SEO 제목 뒤에 붙는 접미 문구 |
 | seo.meta_description | body | string | 아니오 | max 160 | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
 | seo.meta_keywords | body | string | 아니오 | max 255 | SEO 메타 키워드 (검색엔진 노출 키워드, 쉼표 구분) |
@@ -423,7 +423,7 @@ HTTP/1.1 200
 | security.ip_restriction_rules.*.ips.* | body | string | 아니오 | IPv4·IPv6·CIDR | 허용 항목 |
 | security.ip_restriction_rules.*.memo | body | string | 아니오 | max 255 | 운영자 메모 |
 | security.ip_restriction_rules.*.enabled | body | boolean | 아니오 | — | 규칙 사용 여부 (미지정 = 사용). 삭제하지 않고 잠시 끌 때 쓴다 |
-| security.csp_mode | body | string | 아니오 | `off`·`report_only`·`enforce` | 콘텐츠 보안 정책 헤더 모드 (#158, 기본 `off`). `report_only` 는 `Content-Security-Policy-Report-Only`, `enforce` 는 `Content-Security-Policy` 를 사이트 HTML 응답에 붙인다. `.env G7_CSP_MODE` 가 있으면 저장값과 무관하게 그 값이 적용된다 |
+| security.csp_mode | body | string | 아니오 | `off`·`report_only`·`enforce` | 콘텐츠 보안 정책 헤더 모드 (공개 #158, 기본 `off`). `report_only` 는 `Content-Security-Policy-Report-Only`, `enforce` 는 `Content-Security-Policy` 를 사이트 HTML 응답에 붙인다. `.env G7_CSP_MODE` 가 있으면 저장값과 무관하게 그 값이 적용된다 |
 | security.csp_extra_script_hosts | body | array | 아니오 | max 50 | `script-src` 에 더할 운영자 추가 호스트. 활성 확장이 선언한 호스트는 자동으로 들어가므로 그 밖의 호스트만 넣는다. 앞뒤 공백 제거·소문자화·빈 항목·중복은 저장 전에 정리된다 |
 | security.csp_extra_script_hosts.* | body | string | 아니오 | 호스트 소스 (`cdn.example.com`·`*.example.com`·`https://cdn.example.com`·`cdn.example.com:8443`) | 따옴표·세미콜론·공백·`'unsafe-*'` 같은 키워드·`data:`·`*` 단독·`http://` 는 422 (정책 문자열에 그대로 이어 붙이므로) |
 | security.csp_style_mode | body | string | 아니오 | `off`·`report_only`·`enforce` | 스타일 정책 헤더 모드 (7.1.6, 기본 `off`). 스크립트 정책(`csp_mode`)과 따로 정한다 — 두 모드가 같으면 한 헤더에 함께 실리고, 다르면 `Content-Security-Policy` 와 `Content-Security-Policy-Report-Only` 가 하나씩 나간다. `.env G7_CSP_STYLE_MODE` 가 있으면 저장값과 무관하게 그 값이 적용된다 |
@@ -486,8 +486,8 @@ HTTP/1.1 200
 | drivers.session_driver | body | string | 아니오 | — | 세션 드라이버 (file/database/redis) |
 | drivers.session_lifetime | body | integer | 아니오 | min 1, max 43200 | 세션 유효 시간 (분) |
 | drivers.queue_driver | body | string | 아니오 | — | 큐 드라이버 (sync/database/redis) |
-| drivers.queue_connections | body | string[] | 아니오 | 각 원소 `_meta.queue_connection_options` 의 name, 중복 불가, 현재 큐 드라이버 연결 포함 | 이 서버가 워커를 돌리는 큐 연결 (#139). 빈 배열이면 현재 큐 드라이버 연결 하나로 저장된다 |
-| drivers.queue_names | body | object | 아니오 | `{연결: string[]}`, 연결당 1~20개, 큐 이름 `^[A-Za-z0-9][A-Za-z0-9_.-]*$`·64자 이하·연결 안 중복 불가 | 연결별로 워커가 보는 큐 이름 (#139). 키가 없는 등록 연결은 기본값(`*-long` 은 `long`, 그 밖은 `default`)으로 저장되고, 등록하지 않은 연결의 키는 버려진다 |
+| drivers.queue_connections | body | string[] | 아니오 | 각 원소 `_meta.queue_connection_options` 의 name, 중복 불가, 현재 큐 드라이버 연결 포함 | 이 서버가 워커를 돌리는 큐 연결 (공개 #139). 빈 배열이면 현재 큐 드라이버 연결 하나로 저장된다 |
+| drivers.queue_names | body | object | 아니오 | `{연결: string[]}`, 연결당 1~20개, 큐 이름 `^[A-Za-z0-9][A-Za-z0-9_.-]*$`·64자 이하·연결 안 중복 불가 | 연결별로 워커가 보는 큐 이름 (공개 #139). 키가 없는 등록 연결은 기본값(`*-long` 은 `long`, 그 밖은 `default`)으로 저장되고, 등록하지 않은 연결의 키는 버려진다 |
 | drivers.queue_job_log_enabled | body | boolean | 아니오 | — | 큐 작업 처리 기록(`queue_job_logs`) 사용 여부 (기본 true) — [큐 관리](../queue-management.md) |
 | drivers.queue_record_retention_days | body | integer | 아니오 | min 1, max 90 (`core.settings_limits.drivers_queue_record_retention_days_min/max`) | 큐 처리 기록·실패 작업 공통 보관 기간(일, 기본 7) — 매일 `queue:prune-records` 가 정리 |
 | drivers.websocket_enabled | body | boolean | 아니오 | — | WebSocket 사용 여부 |
@@ -502,13 +502,13 @@ HTTP/1.1 200
 | drivers.websocket_server_port | body | integer | 아니오 | min 1, max 65535 | WebSocket 서버 포트 번호 (서버측 발행 대상) |
 | drivers.websocket_server_scheme | body | string | 아니오 | — | WebSocket 서버 스킴 (http/https — 서버측 발행 대상) |
 | drivers.search_engine_driver | body | string | 아니오 | — | 검색 엔진 드라이버 (Scout 엔진 선택) |
-| drivers.image_driver | body | string | 아니오 | max 100, 코어 엔진은 이 서버에서 쓸 수 있어야 함, 그 밖은 `available_drivers.image` 에 있어야 함 | 이미지 처리 엔진 (gd/imagick + 플러그인 등록 엔진, 기본 gd, #869). `available_drivers.image` 는 이 서버에서 쓸 수 없는 코어 엔진을 빼고 낸다(imagick 확장이 없으면 gd 만). 쓸 수 없는 엔진을 직접 보내면 422 와 사유(`settings.driver_unusable_*_extension`) |
+| drivers.image_driver | body | string | 아니오 | max 100, 코어 엔진은 이 서버에서 쓸 수 있어야 함, 그 밖은 `available_drivers.image` 에 있어야 함 | 이미지 처리 엔진 (gd/imagick + 플러그인 등록 엔진, 기본 gd). `available_drivers.image` 는 이 서버에서 쓸 수 없는 코어 엔진을 빼고 낸다(imagick 확장이 없으면 gd 만). 쓸 수 없는 엔진을 직접 보내면 422 와 사유(`settings.driver_unusable_*_extension`) |
 | drivers.log_driver | body | string | 아니오 | — | 로그 드라이버 (single/daily/stack) |
 | drivers.log_level | body | string | 아니오 | — | 로그 레벨 (debug/info/warning/error 등) |
 | drivers.log_days | body | integer | 아니오 | min 1, max 365 | 로그 파일 보관 일수 |
 | drivers.public_asset_disk | body | string | 아니오 | max 100 | 공개 자산 직접 URL 서빙 디스크 (none/public/s3 + 플러그인 훅 등록 디스크). 카탈로그(`available_drivers.public_asset`)에 없는 값은 422 |
 | drivers.public_asset_extensions | body | string | 아니오 | 500자 이하 | 공개 디스크로 내보낼 확장자 (콤마 문자열 또는 배열, 기본 `jpg,jpeg,png,gif,webp,avif`). 이 목록 밖의 파일은 공개 디스크에 저장하지 않는다. 빈 목록은 422 |
-| drivers.file_delegation | body | string | 아니오 | max 50, `available_drivers.file_delegation` 의 id (none/x-sendfile/x-accel-redirect) | 웹서버 파일 위임 방식 (기본 none, #878). 로컬 파일 응답의 본문을 웹서버가 보내게 한다. 카탈로그에 없는 값은 422(`validation.settings.file_delegation_invalid`). `.env` 의 `G7_FILE_DELEGATION` 과 짝이며, `.env` 우선 모드에서 그 값이 있으면 저장에서 빠지고 `_meta.env_locked` 에 실린다 |
+| drivers.file_delegation | body | string | 아니오 | max 50, `available_drivers.file_delegation` 의 id (none/x-sendfile/x-accel-redirect) | 웹서버 파일 위임 방식 (기본 none). 로컬 파일 응답의 본문을 웹서버가 보내게 한다. 카탈로그에 없는 값은 422(`validation.settings.file_delegation_invalid`). `.env` 의 `G7_FILE_DELEGATION` 과 짝이며, `.env` 우선 모드에서 그 값이 있으면 저장에서 빠지고 `_meta.env_locked` 에 실린다 |
 | drivers.file_delegation_accel_prefix | body | string | `drivers.file_delegation` 이 `x-accel-redirect` 면 예 | max 255, `/` 로 시작하고 끝나며 세그먼트는 영숫자와 `._-` (점만으로 된 세그먼트 불가) | nginx internal 위치 접두사 (기본 `/_g7_sendfile/`). 앞뒤 공백을 떼고 끝 `/` 를 붙여 저장한다. 누락은 `validation.settings.file_delegation_accel_prefix_required`, 형식 오류는 `validation.settings.file_delegation_accel_prefix_format` 로 422. `.env` 의 `G7_FILE_DELEGATION_ACCEL_PREFIX` 와 짝 |
 | identity.default_provider | body | string | 아니오 | max 100 | 본인인증 기본 프로바이더 (목적별로 지정되지 않은 경우 사용). 예: `g7:core.mail` |
 | identity.purpose_providers | body | array | 아니오 | — | 본인인증 목적(Purpose)별 프로바이더 매핑. 미지정 목적은 기본 프로바이더를 사용 |
@@ -808,7 +808,7 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
-**큐 워커 등록 검증 (#139, `drivers` 탭)**
+**큐 워커 등록 검증 (공개 #139, `drivers` 탭)**
 
 | # | 경우 | 오류 키 | 메시지 키 (`validation.settings.*`) |
 | --- | --- | --- | --- |
@@ -822,15 +822,15 @@ _단건 응답: `data` 객체의 필드._
 | V8 | 64자 초과 | `drivers.queue_names.{연결}.N` | `queue_name_max` |
 | V9 | 한 연결 안에서 같은 큐 이름 두 번 (연결이 다르면 허용) | `drivers.queue_names.{연결}` | `queue_name_duplicate` (`:connection`, `:name`) |
 
-연결당 20개 초과는 `queue_names_max`. 조회·저장 응답의 `drivers.queue_names` 는 비어 있어도 객체(`{}`)로 내려간다 — 배열(`[]`)이면 화면이 붙인 키가 저장 본문에서 사라진다(#758 과 같은 결함군).
+연결당 20개 초과는 `queue_names_max`. 조회·저장 응답의 `drivers.queue_names` 는 비어 있어도 객체(`{}`)로 내려간다 — 배열(`[]`)이면 화면이 붙인 키가 저장 본문에서 사라진다.
 
 **설명**
 
 통합 환경설정 화면에서 한 탭의 설정을 일괄 저장합니다. `_tab` 으로 활성 탭을 지정하면 해당 탭의 필드만 필수 검증되고 다른 탭 필드는 nullable 로 처리되므로, 탭 단위로 부분 저장할 수 있습니다. 저장 성공 시 응답 `data.settings` 에 갱신된 전체 설정과 `available_drivers` 를 함께 반환하여, 프론트엔드가 새로고침 없이 전역 상태를 갱신할 수 있습니다. 검증 실패 시 422, 그 외 오류 시 500 을 반환합니다.
 
-**공개 설정 동봉(#434)** 저장 응답에는 `data.settings`(관리자 형태) 외에 `data.frontend_settings`(셸 `G7Config.settings` 와 같은 공개 설정 — 계산 필드 `general.site_logo_url`·`general.site_favicon_url` 포함)가 함께 실린다. 화면은 저장 직후 전역 설정(`_global.settings`)을 이 값으로 바꾼다 — 관리자 형태로 바꾸면 계산 필드가 없어 상단 로고가 새로고침 전까지 사라졌다. 일반 탭의 `general.site_favicon` 은 첨부 ID 배열(최대 1개, `site_favicon` 컬렉션에 실재하는 첨부만)이며, 제출하지 않으면 기존 값을 유지하고 빠진 첨부는 저장 성공 뒤 파기한다.
+**공개 설정 동봉** 저장 응답에는 `data.settings`(관리자 형태) 외에 `data.frontend_settings`(셸 `G7Config.settings` 와 같은 공개 설정 — 계산 필드 `general.site_logo_url`·`general.site_favicon_url` 포함)가 함께 실린다. 화면은 저장 직후 전역 설정(`_global.settings`)을 이 값으로 바꾼다 — 관리자 형태로 바꾸면 계산 필드가 없어 상단 로고가 새로고침 전까지 사라졌다. 일반 탭의 `general.site_favicon` 은 첨부 ID 배열(최대 1개, `site_favicon` 컬렉션에 실재하는 첨부만)이며, 제출하지 않으면 기존 값을 유지하고 빠진 첨부는 저장 성공 뒤 파기한다.
 
-**파비콘 우선순위·서빙(#434)** 브라우저 탭 아이콘은 화면 종류마다 위 계층부터 고른다 — ① 그 화면 종류의 활성 템플릿 설정 `branding.favicon`(사용자 화면 = 활성 사용자 템플릿, 관리자 화면 = 활성 관리자 템플릿) ② 이 API 의 `general.site_favicon` ③ 기본 아이콘(운영자가 `public/favicon.ico` 를 직접 바꿔 두었으면 그것 하나, 아니면 코어 번들 `public/assets/core/favicon/` 의 ico·svg·apple-touch 3종). 첨부 행이 지워졌거나 형식이 목록(ico·png·svg·gif·jpeg·webp) 밖이면 다음 계층으로 내려간다. 지금 어느 계층이 쓰이는지는 조회 응답 `_meta.favicon` 이 알린다. 업로드한 파비콘은 공개 경로 `GET /api/favicon/{hash}`([첨부 API](attachment.md))로만 나간다 — 파비콘 컬렉션 첨부만, 형식별 `Content-Type`·`X-Content-Type-Options: nosniff`·1년 `immutable` 캐시(교체하면 새 첨부라 주소가 바뀜), svg 는 스크립트를 막는 CSP. 오류·점검·DB 접속 오류 화면과 설치 마법사는 DB 를 보지 않으므로 ③ 만 쓴다. 코어 업데이트는 운영자가 넣은 `public/favicon.ico` 를 덮지 않는다([코어 업데이트](../core-update-system.md)). 템플릿 쪽 형식은 [템플릿 환경설정](../../extension/template-settings.md).
+**파비콘 우선순위·서빙** 브라우저 탭 아이콘은 화면 종류마다 위 계층부터 고른다 — ① 그 화면 종류의 활성 템플릿 설정 `branding.favicon`(사용자 화면 = 활성 사용자 템플릿, 관리자 화면 = 활성 관리자 템플릿) ② 이 API 의 `general.site_favicon` ③ 기본 아이콘(운영자가 `public/favicon.ico` 를 직접 바꿔 두었으면 그것 하나, 아니면 코어 번들 `public/assets/core/favicon/` 의 ico·svg·apple-touch 3종). 첨부 행이 지워졌거나 형식이 목록(ico·png·svg·gif·jpeg·webp) 밖이면 다음 계층으로 내려간다. 지금 어느 계층이 쓰이는지는 조회 응답 `_meta.favicon` 이 알린다. 업로드한 파비콘은 공개 경로 `GET /api/favicon/{hash}`([첨부 API](attachment.md))로만 나간다 — 파비콘 컬렉션 첨부만, 형식별 `Content-Type`·`X-Content-Type-Options: nosniff`·1년 `immutable` 캐시(교체하면 새 첨부라 주소가 바뀜), svg 는 스크립트를 막는 CSP. 오류·점검·DB 접속 오류 화면과 설치 마법사는 DB 를 보지 않으므로 ③ 만 쓴다. 코어 업데이트는 운영자가 넣은 `public/favicon.ico` 를 덮지 않는다([코어 업데이트](../core-update-system.md)). 템플릿 쪽 형식은 [템플릿 환경설정](../../extension/template-settings.md).
 
 
 ### GET /api/admin/settings/privacy-preview
@@ -987,7 +987,7 @@ HTTP/1.1 200
 
 **설명**
 
-비밀번호 만료 처리(`auth:process-password-expiry`)의 **사전 안내·만료 처리 대상 수를 미리** 돌려줍니다 (#736). 관리자 > 환경설정 > 보안 탭 「비밀번호 만료」 카드의 대상 배지가 이 값을 씁니다. 읽기 전용입니다.
+비밀번호 만료 처리(`auth:process-password-expiry`)의 **사전 안내·만료 처리 대상 수를 미리** 돌려줍니다. 관리자 > 환경설정 > 보안 탭 「비밀번호 만료」 카드의 대상 배지가 이 값을 씁니다. 읽기 전용입니다.
 
 건수는 배치·명단(`GET /api/admin/privacy/password-expiry-targets/{stage}`)·직권 실행과 **같은 쿼리**를 지납니다 — 활성 회원, 관리자 지정 변경 대기자 제외, 적용 범위(회원 개별 > 역할 > 사이트 범위), 날짜 경계(기준일 = max(마지막 변경일 ?? 시작일, 시작일)), 이번 주기 미처리. 기능이 꺼져 있어도 셉니다 — 켜기 전에 규모를 확인하는 자리입니다. `{key}` 와일드카드 라우트보다 먼저 등록돼 그 라우트에 흡수되지 않습니다.
 
@@ -1509,7 +1509,7 @@ _단건 응답: `data` 객체의 필드._
 | database_config | object | `{"has_read_write_split":false,"write":{"host":"localhost"…` | DB 연결 구성 요약. has_read_write_split(읽기/쓰기 분리 여부)·write(쓰기 연결 정보)·read(읽기 replica 목록, write 와 동일하면 제외) |
 | timezone | string | `UTC` | 애플리케이션 기본 타임존 (`config('app.timezone')`) |
 | server_time | string | `2026-08-04 12:53:55` | 서버 현재 시각 (Y-m-d H:i:s) |
-| extra_sections | array | `[]` | 확장이 필터 훅 `core.settings.filter_system_info_sections` 로 더한 정보 카드 목록(7.2.0, #888). 각 원소 `{id, title, badge, rows, list, notice}` — `id`(확장 식별자로 시작하는 문자열)·`title`(문자열)·`rows`(`[{label, value, mono}]`, 값은 문자열)는 늘 있고, `badge`(`{text, tone}`)·`list`(`{title, items, collapsible}`)·`notice`(`{tone, text}`)는 없으면 `null`. `tone` 은 `neutral`·`success`·`warning`·`danger`. 서버가 형식을 검증해 틀린 섹션은 버리고(경고 로그), 리스너가 던지면 그 리스너 섹션만 빠진다(응답은 200). 코어 정보의 1시간 캐시와 무관하게 매 요청 새로 계산한다. 리스너가 없으면 빈 배열 |
+| extra_sections | array | `[]` | 확장이 필터 훅 `core.settings.filter_system_info_sections` 로 더한 정보 카드 목록(7.2.0). 각 원소 `{id, title, badge, rows, list, notice}` — `id`(확장 식별자로 시작하는 문자열)·`title`(문자열)·`rows`(`[{label, value, mono}]`, 값은 문자열)는 늘 있고, `badge`(`{text, tone}`)·`list`(`{title, items, collapsible}`)·`notice`(`{tone, text}`)는 없으면 `null`. `tone` 은 `neutral`·`success`·`warning`·`danger`. 서버가 형식을 검증해 틀린 섹션은 버리고(경고 로그), 리스너가 던지면 그 리스너 섹션만 빠진다(응답은 200). 코어 정보의 1시간 캐시와 무관하게 매 요청 새로 계산한다. 리스너가 없으면 빈 배열 |
 
 **응답 예시**
 
@@ -1804,7 +1804,7 @@ HTTP/1.1 200
 
 **설명**
 
-환경설정 → 드라이버 탭 「큐 워커」 구역이 읽는 상태입니다(#139). 판정은 **운영자가 등록한 연결·큐 목록**으로 하고, 워커 생존 신호(하트비트)는 큐별로 표시만 합니다. 신호는 워커 루프(`Illuminate\Queue\Events\Looping`)와 잡 시작(`JobProcessing` — `--once` 워커용)마다 프로세스당 30초에 한 번 캐시(`queue:heartbeat:{connection}:{queue}`)에 남습니다. 코어 잡 전용 큐(사이트맵 생성 `sitemap`)는 운영자가 등록하지 않아도 큐 드라이버 연결에 잡이 쌓이므로, 등록 목록에 없으면 `rows` 와 `commands` 에 `dedicated: true` 항목으로 함께 싣습니다(워커 1개 전용 명령, `--timeout=1800`). 등록 큐 항목은 `dedicated: false` 입니다. 읽기 전용이며 입력이 없습니다. 등록 규칙은 위 `POST /api/admin/settings` 의 「큐 워커 등록 검증」, 리스너가 큐를 고르는 방법은 [hooks.md](../../extension/hooks.md) 「큐 옵션 — 등록 큐만 허용·폴백·timeout 클램프」 를 보세요.
+환경설정 → 드라이버 탭 「큐 워커」 구역이 읽는 상태입니다(공개 #139). 판정은 **운영자가 등록한 연결·큐 목록**으로 하고, 워커 생존 신호(하트비트)는 큐별로 표시만 합니다. 신호는 워커 루프(`Illuminate\Queue\Events\Looping`)와 잡 시작(`JobProcessing` — `--once` 워커용)마다 프로세스당 30초에 한 번 캐시(`queue:heartbeat:{connection}:{queue}`)에 남습니다. 코어 잡 전용 큐(사이트맵 생성 `sitemap`)는 운영자가 등록하지 않아도 큐 드라이버 연결에 잡이 쌓이므로, 등록 목록에 없으면 `rows` 와 `commands` 에 `dedicated: true` 항목으로 함께 싣습니다(워커 1개 전용 명령, `--timeout=1800`). 등록 큐 항목은 `dedicated: false` 입니다. 읽기 전용이며 입력이 없습니다. 등록 규칙은 위 `POST /api/admin/settings` 의 「큐 워커 등록 검증」, 리스너가 큐를 고르는 방법은 [hooks.md](../../extension/hooks.md) 「큐 옵션 — 등록 큐만 허용·폴백·timeout 클램프」 를 보세요.
 
 
 ### POST /api/admin/settings/static-cache/republish
@@ -1945,7 +1945,7 @@ Cache-Control: no-store, private
 
 **설명**
 
-웹서버 파일 위임(#878)이 실제로 동작하는지 확인하는 2단계 검사입니다. 코어 파일 헬퍼(`fileResponse()`)로 작은 JSON 파일을 내보내므로 **저장된(적용 중인) 위임 설정**으로 나갑니다 — 위임이 켜져 있으면 앱은 본문 대신 `X-Sendfile`/`X-Accel-Redirect` 헤더만 세우고, 웹서버가 그 헤더를 소비해 파일을 보내야 본문이 도착합니다.
+웹서버 파일 위임이 실제로 동작하는지 확인하는 2단계 검사입니다. 코어 파일 헬퍼(`fileResponse()`)로 작은 JSON 파일을 내보내므로 **저장된(적용 중인) 위임 설정**으로 나갑니다 — 위임이 켜져 있으면 앱은 본문 대신 `X-Sendfile`/`X-Accel-Redirect` 헤더만 세우고, 웹서버가 그 헤더를 소비해 파일을 보내야 본문이 도착합니다.
 
 - 본문이 비어 있다(헤더에 `X-Sendfile`·`X-Accel-Redirect` 가 그대로 보인다) → 웹서버가 위임 헤더를 모른다(Apache `mod_xsendfile` 미설치·`XSendFile Off`).
 - 404 → nginx internal location 이 없거나 경로가 다르다.
@@ -2560,7 +2560,7 @@ HTTP/1.1 200
 | websocket_server_host | body | string | 아니오 | max 255 | WebSocket 서버(백엔드 발송용) 호스트 주소 — 미입력 시 클라이언트 값으로 폴백 |
 | websocket_server_port | body | integer | 아니오 | min 1, max 65535 | WebSocket 서버 포트 번호 — 미입력 시 클라이언트 값으로 폴백 |
 | websocket_server_scheme | body | string | 아니오 | — | WebSocket 서버 스킴 (http/https) — 미입력 시 클라이언트 값으로 폴백 |
-| file_delegation | body | string | 아니오 | none/x-sendfile/x-accel-redirect | 웹서버 파일 위임 방식 — 실리면 `results.file_delegation` 정적 판정을 낸다(#878) |
+| file_delegation | body | string | 아니오 | none/x-sendfile/x-accel-redirect | 웹서버 파일 위임 방식 — 실리면 `results.file_delegation` 정적 판정을 낸다 |
 | file_delegation_accel_prefix | body | string | 아니오 | max 255, 저장 규칙과 같은 형식 | nginx internal 위치 접두사 — 비우면 적용 중인 값 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.test_driver_connection_validation_rules`).
@@ -2571,7 +2571,7 @@ HTTP/1.1 200
 
 > 사용 불능 드라이버(어댑터 클래스·PHP 확장 부재)는 저장/테스트 모두 422 (`validation.settings.driver_unusable`) 로 거부됩니다.
 
-> 웹서버 파일 위임(`file_delegation`) 판정은 연결 시험이 아니라 **정적 판정**입니다(#878). 확정할 수 있는 실패만 `success=false` 로 냅니다 — Apache 인데 `mod_xsendfile` 이 로드되어 있지 않다(`apache_get_modules()` 로 읽을 수 있을 때), 고른 방식과 웹서버 종류(`SERVER_SOFTWARE`)가 어긋난다. 그 밖(PHP-FPM 처럼 모듈 목록을 못 읽는 경우, nginx 인데 internal location 유무를 모르는 경우)은 `success=true` 와 「저장한 뒤 실제 전송 확인」 안내를 냅니다. 실제 전송은 [GET /api/admin/settings/file-delegation-probe](#get-apiadminsettingsfile-delegation-probe) 로 확인합니다.
+> 웹서버 파일 위임(`file_delegation`) 판정은 연결 시험이 아니라 **정적 판정**입니다. 확정할 수 있는 실패만 `success=false` 로 냅니다 — Apache 인데 `mod_xsendfile` 이 로드되어 있지 않다(`apache_get_modules()` 로 읽을 수 있을 때), 고른 방식과 웹서버 종류(`SERVER_SOFTWARE`)가 어긋난다. 그 밖(PHP-FPM 처럼 모듈 목록을 못 읽는 경우, nginx 인데 internal location 유무를 모르는 경우)은 `success=true` 와 「저장한 뒤 실제 전송 확인」 안내를 냅니다. 실제 전송은 [GET /api/admin/settings/file-delegation-probe](#get-apiadminsettingsfile-delegation-probe) 로 확인합니다.
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.test_driver_connection_validation_rules`).
 

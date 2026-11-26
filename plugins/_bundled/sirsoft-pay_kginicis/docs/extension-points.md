@@ -105,7 +105,7 @@ API 가 그 자리에서 환불하므로 `true` 입니다. 예외는 `kginicis_j
 
 > 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 1개입니다.
 > 위 「구독 훅」 절이 이 확장의 구독 전량을 싣고, 이 절은 그중 **기록을 남기는 것**만 추립니다.
-> 코어 `docs/backend/activity-log-hooks.md` 에는 총계와 이 문서로의 링크만 남습니다(#601).
+> 코어 `docs/backend/activity-log-hooks.md` 에는 총계와 이 문서로의 링크만 남습니다.
 
 > 새 항목을 추가하면 코어 `lang/{ko,en}/activity_log.php` 의 action 라벨과 description 본문,
 > 그리고 번들 일본어 팩까지 함께 정의해야 합니다 — **플러그인 lang 파일에 넣으면 action 라벨이
@@ -182,7 +182,7 @@ KG 이니시스가 보이지 않습니다. 나머지는 전부 부가 UI(`Ensure
 실제 결제 로직과는 분리돼 있어 이 조각만 비활성화해도 결제 자체는 영향받지 않습니다.
 
 예전에는 이 일들 중 상당수를 화면 주입 스크립트가 했습니다(주소 글자 매칭, DOM 폴링, `window.fetch`·`history.pushState`
-덮어쓰기, 로그인 토큰 직접 읽기). #639 에서 모두 조각과 서버 훅으로 옮겼습니다. 조각이 붙는 자리는 이커머스·템플릿이 약속한
+덮어쓰기, 로그인 토큰 직접 읽기). 1.2.0 에서 모두 조각과 서버 훅으로 옮겼습니다. 조각이 붙는 자리는 이커머스·템플릿이 약속한
 id·확장점만 씁니다 — `mypage_order_payment_provider_slot`(템플릿), `order_complete_payment_summary`(템플릿 `shop/order_complete`),
 `payment_method_block_{{payIdx}}`(이커머스 관리자 주문 상세). 대상 쪽이 그 자리를 없애면 조각은 오류 없이 사라지므로, 대상
 확장을 올린 뒤에는 화면에 여전히 나타나는지 확인합니다.

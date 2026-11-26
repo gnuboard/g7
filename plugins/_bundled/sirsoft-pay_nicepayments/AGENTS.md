@@ -121,7 +121,7 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰지 않았으면 빌드 없이 update 만, 새 클래스(`paynicepayments:` 유틸리티·`pay-nicepayments-*`)를 쓰면 `plugin:build` 로 자기 CSS 를 다시 만든다(「화면 클래스 규약」)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
-- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
+- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, 공개 #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
 - [ ] 승인/취소 흐름을 고칠 때 `before_*`/`after_*` 훅 순서와 우선순위(`PaymentRefundListener` < `CancelActivityLogListener`)를 유지 — 로그가 실제 처리보다 먼저 실행되면 안 된다
 - [ ] 인증 실패(1단계)와 승인 실패(2단계)의 사용자 안내 방식(silent redirect vs `?error=`)을 구분 유지 — §1 "의도적으로 하지 않는 것" 참고
 - [ ] IP 화이트리스트(`VbankNotifyIpWhitelist`) 대상 라우트를 추가/변경하면 미들웨어 부착 대상(targets)도 함께 갱신
@@ -144,7 +144,7 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 승인 성공 응답을 콜백 `Moid` 주문에 그대로 반영 | 승인 응답의 `Moid`·`Amt` 가 콜백과 같을 때만 반영, 다르면 망취소 | 다른 주문의 인증값으로 받은 승인이 엉뚱한 주문에 붙는다 |
 | sign-data 의 재결제 복구(취소→결제대기)를 주문자 연락처 대조로 허용 | 복구는 주문 소유자(`requestOwnsOrder`)만 — 서명 발급(상태 불변)만 연락처 대조 유지 | 연락처만 알면 남의 취소 주문이 결제대기로 되살아났다 (KVE-2026-2434) |
 | 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
-| 주문목록 「결제수단」 칸을 통째로 교체해 배지를 달기 | `columns._patch`(by: field) → `cellChildren._patch`(by: id) → `children._append` 로 자기 배지만 더한다 | 통째 교체는 함께 설치된 다른 결제 플러그인의 배지를 지운다 — priority 가 가장 높은 하나만 남는다. 호스트가 래퍼(`payment_method_cell`)와 라벨(`payment_method_label`)을 소유하므로 그 `id` 를 앵커로 쓴다(#599) |
+| 주문목록 「결제수단」 칸을 통째로 교체해 배지를 달기 | `columns._patch`(by: field) → `cellChildren._patch`(by: id) → `children._append` 로 자기 배지만 더한다 | 통째 교체는 함께 설치된 다른 결제 플러그인의 배지를 지운다 — priority 가 가장 높은 하나만 남는다. 호스트가 래퍼(`payment_method_cell`)와 라벨(`payment_method_label`)을 소유하므로 그 `id` 를 앵커로 쓴다 |
 | 화면 확장의 표현식에서 **다른 결제 플러그인이 선언한 데이터소스**를 참조 | 자기 `data_sources[]` 에 선언한 것만 읽는다 | 그 플러그인이 없는 사이트에서 미정의 참조가 되고, 표현식은 오류 없이 조용히 undefined 를 내므로 판정이 어긋나도 드러나지 않는다 |
 | 관리자 응답 `errors` 에 예외 원문(`$e->getMessage()`)을 그대로 싣기 | 결제대행사 거절은 `NicePayRejectedException` 의 사유(ResultMsg)만 싣고, 그 밖은 번역된 일반 문구 + 서버 로그(디버그 모드만 원문) | `errors` 배열은 코어의 운영 모드 500 차단을 거치지 않는다 — 통신 예외의 결제대행사 API 주소·cURL 문구, DB 예외의 SQL·접속 정보가 그대로 화면에 나간다 |
 | 이커머스 Model 정적 조회(`Order::query()` 등)·`DB::table`·`getTable()`·내부 Service/Repository(`OrderProcessingService`, `GuestOrderAuthService` 등)·`ecommerce_format_price()`·이커머스 저장 파일 직접 사용 | 이커머스 공개 결제 계약(`PaymentGatewayBridge` 생성자 주입, 리스너는 `app(PaymentLookup::class)` 같은 공개 인터페이스)과 `PriceFormatter`. 훅 인자 Model 은 속성만 읽고 판정 값은 `describePayment()` 등 DTO 로 | 이커머스 내부 구현은 예고 없이 바뀐다. 계약이 잠금 순서(주문 → 결제 행)와 결제사 범위(자기 결제 행만)를 강제한다. 정적 검사 `extension-internal-symbol-reference` 가 막는다 |

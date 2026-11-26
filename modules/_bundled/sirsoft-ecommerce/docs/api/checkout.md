@@ -113,7 +113,7 @@ _단건 응답: `data` 객체의 필드 (`CheckoutDataService::buildResponseData
 | has_unshippable_items | boolean | `false` | 선택된 배송국가로 배송 불가한 상품이 1개라도 있으면 `true` (주문하기 차단 플래그) |
 | selected_shipping_country | string | `KR` | 현재 선택된 배송 국가 코드 |
 | free_shipping | object | `{...}` | 무료배송 기준액 정보 (아래 "free_shipping" 표) |
-| allowed_payment_methods | string[] | `["card","dbank"]` | 결제 통화에서 고를 수 있는 결제수단 id (#639). 결제수단 화이트리스트를 필터 훅 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency` 로 거른 결과이고, 템플릿이 결제수단 버튼을 이 목록으로 거른다. 주문 생성 검증(`POST /user/orders` 의 `payment_method`)과 같은 판정이다 |
+| allowed_payment_methods | string[] | `["card","dbank"]` | 결제 통화에서 고를 수 있는 결제수단 id. 결제수단 화이트리스트를 필터 훅 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency` 로 거른 결과이고, 템플릿이 결제수단 버튼을 이 목록으로 거른다. 주문 생성 검증(`POST /user/orders` 의 `payment_method`)과 같은 판정이다 |
 | order_fields | object | — | 주문서 항목 설정. 운영자가 주문 설정의 「주문서 항목」 표에서 정한 값으로, 화면이 이 값대로 칸을 그린다. 조회와 다시 계산 응답이 같은 값을 싣는다 |
 | order_fields.fields_version | string | `1f0c9a7be4d2` | 주문서 항목 집합(`sirsoft-ecommerce.order_contact`)의 정의 버전 |
 | order_fields.builtin | object | `{"orderer_email":{"enabled":true,"required":false},"address_detail":{"enabled":true,"required":true},"shipping_memo":{"enabled":true,"required":false}}` | 주문자 이메일, 상세 주소, 배송 메모의 사용과 필수. 비회원이면 `orderer_email` 은 설정과 무관하게 `{enabled: true, required: true}` |
@@ -522,7 +522,7 @@ _단건 응답: `data` 객체의 필드. GET `/api/modules/sirsoft-ecommerce/che
 | has_unshippable_items | boolean | `false` | 선택된 배송국가로 배송 불가한 상품 존재 여부 |
 | selected_shipping_country | string | `KR` | 현재 선택된 배송 국가 코드 |
 | free_shipping | object | `{...}` | 무료배송 기준액 정보 (`enabled` / `threshold_base` / `threshold_multi_currency` / `remaining_base` / `remaining_multi_currency`) |
-| allowed_payment_methods | string[] | `["card","dbank"]` | 결제 통화에서 고를 수 있는 결제수단 id (조회 응답과 같은 판정, #639) |
+| allowed_payment_methods | string[] | `["card","dbank"]` | 결제 통화에서 고를 수 있는 결제수단 id (조회 응답과 같은 판정) |
 | order_fields | object | — | 주문서 항목 설정. 운영자가 주문 설정의 「주문서 항목」 표에서 정한 값으로, 화면이 이 값대로 칸을 그린다. 조회와 다시 계산 응답이 같은 값을 싣는다 |
 | order_fields.fields_version | string | `1f0c9a7be4d2` | 주문서 항목 집합(`sirsoft-ecommerce.order_contact`)의 정의 버전 |
 | order_fields.builtin | object | `{"orderer_email":{"enabled":true,"required":false},"address_detail":{"enabled":true,"required":true},"shipping_memo":{"enabled":true,"required":false}}` | 주문자 이메일, 상세 주소, 배송 메모의 사용과 필수. 비회원이면 `orderer_email` 은 설정과 무관하게 `{enabled: true, required: true}` |

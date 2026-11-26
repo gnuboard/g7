@@ -605,7 +605,7 @@ public function exemptRoutes(array $routes, Request $request): array
 
 ### 시스템 정보 카드 훅 (7.2.0)
 
-관리자 환경설정 > 정보 탭의 「시스템 정보」 카드 옆에 확장이 카드를 더합니다(#888). 코어는 카드를 그리는 일반 렌더러(배지·항목·접는 목록·알림)만
+관리자 환경설정 > 정보 탭의 「시스템 정보」 카드 옆에 확장이 카드를 더합니다. 코어는 카드를 그리는 일반 렌더러(배지·항목·접는 목록·알림)만
 갖고, 무엇을 싣는지는 확장이 정합니다 — 예: 서버 상태를 보여 주는 플러그인이 큐 적체·디스크 경고를 한 카드로 냅니다.
 
 | 훅 | 종류 | 인자 | 쓰임 |
@@ -743,7 +743,7 @@ core.content_media.filter_upload_file   # (UploadedFile, ctx) → UploadedFile �
 core.content_media.after_upload         # (행, ctx) 행 생성 뒤
 core.content_media.before_delete        # (행, ctx) 행·파일 영구 삭제 직전에만 — 소프트 삭제 때는 발화하지 않는다
 
-# 스토리지 공개 URL 훅 (Filter) — StorageInterface::url() 결과 공급/수정/차단 (공개#100)
+# 스토리지 공개 URL 훅 (Filter) — StorageInterface::url() 결과 공급/수정/차단 (공개 #100)
 # 컨텍스트 6키는 아래 "스토리지·드라이버 확장 훅 페이로드" 표 참조
 core.storage.filter_url
 
@@ -764,7 +764,7 @@ sirsoft-ecommerce.order.before_prune            sirsoft-ecommerce.order.after_pr
 sirsoft-board.author_ip.before_prune            sirsoft-board.author_ip.after_prune
 sirsoft-board.guest_author.before_prune         sirsoft-board.guest_author.after_prune
 
-# 본문 첫 내부 이미지 썸네일 캐시 (Filter, 공개#22) — 각 모델 saving 이벤트가 발행.
+# 본문 첫 내부 이미지 썸네일 캐시 (Filter, 공개 #22) — 각 모델 saving 이벤트가 발행.
 # 값 = 추출된 첫 내부 이미지 URL(없으면 null), 인자 = (값, 모델, 전체 후보 src 배열).
 # 확장이 후보를 대체(CDN prefix 승격 등)하거나 차단(null 반환)할 수 있다.
 # 특정 에디터 확장에 의존하지 않는다 — 페이로드는 일반 HTML 파싱 결과뿐이다.
@@ -857,7 +857,7 @@ core.layout.search_validation_rules
 # 드라이버 확장 훅 (Filter) — 플러그인이 새 드라이버를 등록
 # 항목 3키 구조는 아래 "스토리지·드라이버 확장 훅 페이로드" 표 참조
 core.settings.available_storage_drivers
-core.settings.available_public_asset_drivers   # 공개 자산 직접 URL 서빙 디스크 (공개#100)
+core.settings.available_public_asset_drivers   # 공개 자산 직접 URL 서빙 디스크 (공개 #100)
 core.settings.available_image_drivers          # 이미지 처리 엔진 (구현체는 core.thumbnail.filter_processors)
 core.settings.available_cache_drivers
 core.settings.available_session_drivers

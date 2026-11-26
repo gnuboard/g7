@@ -26,7 +26,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderTaxInvoice;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPrivacyRetentionRepositoryInterface;
 
 /**
- * 종결 주문 개인정보 보유기간 처리 Repository (이슈 #636)
+ * 종결 주문 개인정보 보유기간 처리 Repository
  *
  * 모든 갱신은 `toBase()` 로 모델 이벤트·수정 시각 갱신 없이 한다 — 파기는 주문 변경이 아니고,
  * 주문의 `updated_at` 은 레거시 주문의 종결 시각 대용으로도 쓰인다.

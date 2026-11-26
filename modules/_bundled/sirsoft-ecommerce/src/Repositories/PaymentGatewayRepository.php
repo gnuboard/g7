@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\PaymentGatewayRepositoryInterface;
 
 /**
- * 결제사 플러그인 공개 계약 구현 전용 저장소 (#916)
+ * 결제사 플러그인 공개 계약 구현 전용 저장소
  */
 class PaymentGatewayRepository implements PaymentGatewayRepositoryInterface
 {

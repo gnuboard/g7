@@ -105,7 +105,7 @@ PG 를 모르므로 간편결제(PAYCO·네이버페이 등)로 결제한 주문
 
 > 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 1개입니다.
 > 위 「구독 훅」 절이 이 확장의 구독 전량을 싣고, 이 절은 그중 **기록을 남기는 것**만 추립니다.
-> 코어 `docs/backend/activity-log-hooks.md` 에는 총계와 이 문서로의 링크만 남습니다(#601).
+> 코어 `docs/backend/activity-log-hooks.md` 에는 총계와 이 문서로의 링크만 남습니다.
 
 > 새 항목을 추가하면 코어 `lang/{ko,en}/activity_log.php` 의 action 라벨과 description 본문,
 > 그리고 번들 일본어 팩까지 함께 정의해야 합니다 — **플러그인 lang 파일에 넣으면 action 라벨이
@@ -189,7 +189,7 @@ auto-discovery 대상이라는 뜻이 아니라 이 저장소의 전 리스너 �
 결제 정보 카드 partial 에 `<extension-point name="mypage_order_payment_provider_slot">` 을 둡니다 — 기본
 사용자 템플릿(sirsoft-basic)은 `partials/mypage/orders/_payment` 에 두고 있습니다.
 
-**화면에 붙는 표시는 전부 이 조각들이 맡습니다 (#639).** 예전에는 주입 스크립트가 주소 정규식으로 화면을
+**화면에 붙는 표시는 전부 이 조각들이 맡습니다.** 예전에는 주입 스크립트가 주소 정규식으로 화면을
 판정하고 DOM 을 폴링해 남의 화면 글자를 고치거나 버튼을 손으로 만들어 붙였습니다(관리자 주문 상세 결제수단 칸,
 관리자 결제수단 설정의 브랜드 배지·애플페이 안내, 내 주문 상세·주문 완료의 영수증·모의입금). 그 스크립트는
 `window.fetch`·`history.pushState` 를 덮어쓰고 로그인 토큰을 저장소에서 직접 읽었으므로 모두 지웠습니다.

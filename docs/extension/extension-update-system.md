@@ -1036,7 +1036,7 @@ Body: { "layout_strategy": "keep" }
 - **syncRole()**: `user_overrides`에 기록된 필드(name, description)만 건너뛰고 나머지 갱신
 - **syncPermission()**: 항상 확장 정의값으로 덮어쓰기 (Permission은 user_overrides 없음)
 - **syncRolePermissions()**: `user_overrides`에 기록된 **개별 권한 식별자**만 보호, 나머지 DB 기반 diff로 attach/detach
-- **cleanupStalePermissions()**: 확장에서 제거된 권한 삭제 + 역할 연결 해제 (**자동 호출 폐기 #135** — UpgradeStep에서 명시적 호출 전용)
+- **cleanupStalePermissions()**: 확장에서 제거된 권한 삭제 + 역할 연결 해제 (**자동 호출 폐기** — UpgradeStep에서 명시적 호출 전용)
 
 ### 역할-권한 할당 동기화 (syncAllRoleAssignments)
 
@@ -1065,7 +1065,7 @@ Body: { "layout_strategy": "keep" }
 - **비교 필드**: `user_overrides`에 기록된 필드만 건너뜀 (name, icon, order, url 중)
 - **항상 확장 정의값**: parent_id, is_active (사용자 보존 대상 아님)
 - **syncMenuRecursive()**: 재귀 구조 처리 + 다국어 name 역호환
-- **cleanupStaleMenus()**: 자식 포함 cascade 삭제 (**자동 호출 폐기 #135** — UpgradeStep에서 명시적 호출 전용)
+- **cleanupStaleMenus()**: 자식 포함 cascade 삭제 (**자동 호출 폐기** — UpgradeStep에서 명시적 호출 전용)
 - **메뉴-역할 할당**: 확장 동기화는 **기존 메뉴의 역할을 건드리지 않는다** — 역할은 메뉴를 새로 만들 때만 붙인다(관리자 역할 + 설치자 역할). 활성화·업데이트 때 기본 역할을 다시 붙이는 확장 코드는 메뉴 `user_overrides` 에 그 역할 식별자가 있으면(운영자가 그 역할을 바꾼 이력) 건너뛰어야 한다 — 번들 `sirsoft-gdpr` 의 개인정보 역할 부여가 이 규칙을 따른다
 
 ```text
@@ -1088,7 +1088,7 @@ Body: { "layout_strategy": "keep" }
 | `MenuUserOverridesListener` | `core.menu.before_update` | 변경된 필드명 (name, icon, order, url, is_active, parent_id) |
 | `MenuUserOverridesListener` | `core.menu.after_sync_roles` | 변경된 개별 역할 식별자 |
 
-> 메뉴 순서 변경(드래그 저장 — 계층·평탄 두 경로)은 리스너가 아니라 `UserOverridesAwareBuilder` 가 기록한다. 두 경로 모두 `Menu::where()->update()` 라 **실제로 순서가 바뀐 메뉴에만** `order` 가 표식된다(#727 — 종전 `core.menu.after_update_order` 구독은 payload 의 모든 메뉴를 표식해 새 버전의 순서 변경이 영영 안 들어왔다).
+> 메뉴 순서 변경(드래그 저장 — 계층·평탄 두 경로)은 리스너가 아니라 `UserOverridesAwareBuilder` 가 기록한다. 두 경로 모두 `Menu::where()->update()` 라 **실제로 순서가 바뀐 메뉴에만** `order` 가 표식된다(종전 `core.menu.after_update_order` 구독은 payload 의 모든 메뉴를 표식해 새 버전의 순서 변경이 영영 안 들어왔다).
 
 ### HasUserOverrides Trait — 표준 추상 (7.0.0-beta.2 신규)
 

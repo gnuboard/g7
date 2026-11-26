@@ -46,7 +46,7 @@ _단건 응답: 올린 이미지(관리자 업로더 첨부 모양 + `url`·`dev
 | hash | string | `FCm6p4tnL4qnOmwOHdqbgaoxqNZQmUaowSsWI…` | 공개 주소에 쓰는 64자 해시(불변) |
 | device | string | `pc` | 기기 `pc`·`mobile` |
 | url | string | `/api/plugins/sirsoft-hero_section/ima…` | 공개 이미지 주소(인증 불필요). 사이트 마운트 접두사 포함 — 하위 폴더 설치(`/g7/`)면 `/g7/api/plugins/…` |
-| download_url | string | `/api/plugins/sirsoft-hero_section/ima…` | 원본 한 장의 주소 — 공개 자산 디스크(public·CDN) 행이면 `direct_url`, 아니면 `url` 과 같음(#878) |
+| download_url | string | `/api/plugins/sirsoft-hero_section/ima…` | 원본 한 장의 주소 — 공개 자산 디스크(public·CDN) 행이면 `direct_url`, 아니면 `url` 과 같음 |
 | preview_url | string | `/api/plugins/sirsoft-hero_section/ima…` | 썸네일 기준 공개 API 주소(`url` 과 같음) — 관리자 업로더·목록 미리보기가 `?size=` 를 붙여 받는다 |
 | direct_url | string\|null | `null` | 행 disk 의 직접 주소(공개 자산 디스크 행만, 사이트 마운트 접두사 없는 절대 주소). 아니면 null |
 | original_filename | string | `pc.jpg` | 올린 파일의 원래 이름 |
@@ -146,6 +146,6 @@ _본문 없음: `data` 는 `null` 이다. 아직 배너에 붙지 않은 임시 
 아직 배너에 붙지 않은 임시 이미지를 지운다(파일 포함). 배너에 붙은 이미지(PC·모바일)는 422 — 배너 수정 저장의 `pc_image_id`·`mobile_image_id` 로만 바꾸거나 뺀다. 관리자 화면은 이 주소를 부르지 않는다 — 등록·수정 모두 화면에서만 빼고, 저장이 남은 이미지 ID 만 붙인다(붙지 않은 임시 이미지는 매일 정리 명령이 지운다).
 
 
-### 공개 자산 디스크와 주소 필드 (#878)
+### 공개 자산 디스크와 주소 필드
 
 플러그인 설정 `public_asset_disk`(비우면 코어 공개 자산 디스크)가 public·CDN 디스크면 새로 올리는 파일이 그 디스크에 저장되고 행 `disk` 에 기록된다. `url`·`preview_url` 은 언제나 공개 API 주소(같은 출처 — 썸네일 `?size=`·관리 목록 미리보기·캔버스 색 추출의 기준)이고, `direct_url` 은 행 disk 가 직접 주소를 낼 때만 채워진다. `download_url` 은 `direct_url ?? url` 이다. 관리자 업로더는 `preview_url` 을 우선해 썸네일을 그리고, 교차 출처 `download_url` 은 인증 요청 없이 그대로 쓴다.

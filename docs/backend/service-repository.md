@@ -759,7 +759,7 @@ return $this->name[$locale]
     ?? '';
 ```
 
-`app.fallback_locale`(env `APP_FALLBACK_LOCALE`)은 번역 키(`__()`)의 대체 언어 전용이고 다국어 **값** 대체에는 쓰지 않습니다 — 한국어가 기본이 아닌 사이트에서 빈 값이 한국어로 채워지던 문제(#148)의 원인이었습니다. 화면 코드는 `G7Core.locale.pick(값)`·`$localized(값)` 를 씁니다. 새 직접 색인은 `tests/Unit/I18n/MultilingualValueFallbackGuardTest.php` 가 막습니다(값 표시가 아닌 동등 비교·필수 언어 검증·로케일별 생성은 허용 목록에 사유와 함께).
+`app.fallback_locale`(env `APP_FALLBACK_LOCALE`)은 번역 키(`__()`)의 대체 언어 전용이고 다국어 **값** 대체에는 쓰지 않습니다 — 한국어가 기본이 아닌 사이트에서 빈 값이 한국어로 채워지던 문제(공개 #148)의 원인이었습니다. 화면 코드는 `G7Core.locale.pick(값)`·`$localized(값)` 를 씁니다. 새 직접 색인은 `tests/Unit/I18n/MultilingualValueFallbackGuardTest.php` 가 막습니다(값 표시가 아닌 동등 비교·필수 언어 검증·로케일별 생성은 허용 목록에 사유와 함께).
 
 #### 다국어 라벨이 들어간 비즈니스 로직 (copy 접미사 등)
 
@@ -1288,7 +1288,7 @@ $query->orderBy('created_at', 'desc')->orderBy('id', 'desc')->paginate($perPage)
 위험하다.
 
 동률은 드문 일이 아니다 — 시더·일괄 등록·대량 마이그레이션은 여러 행에 같은 `created_at` 을
-남긴다(#492 실측: `roles.created_at` 한 타임스탬프에 최대 10행, 110건 목록에서 고유 키 109개).
+남긴다(실측: `roles.created_at` 한 타임스탬프에 최대 10행, 110건 목록에서 고유 키 109개).
 
 판정은 눈으로 하지 않는다. 전 페이지를 순회해 키를 모으고 **합집합 크기 = 총건수**, 인접 페이지
 교집합 = ∅ 를 확인한다.

@@ -14,7 +14,7 @@ use Plugins\Sirsoft\MessageBizppurio\Models\BizppurioTemplate;
 use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioTemplateRepositoryInterface;
 
 /**
- * 비즈뿌리오 알림 템플릿 Repository 구현체 (#597).
+ * 비즈뿌리오 알림 템플릿 Repository 구현체.
  */
 class BizppurioTemplateRepository implements BizppurioTemplateRepositoryInterface
 {

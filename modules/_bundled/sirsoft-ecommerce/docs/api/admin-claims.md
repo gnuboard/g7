@@ -417,7 +417,7 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 | refund_shipping_amount / refund_shipping_amount_formatted | number\|null / string\|null | `0` / `0원` | 환불 예정액의 배송비 몫 (반품만 — 교환은 `null`) |
 | blocked_reason | string\|null | `claim_refund_request_exists` | 접수 불가 사유. `claim_refund_request_exists` 이미 접수됨 / `claim_refund_not_applicable` 환불 대상 없음 — 둘은 뜻이 달라 화면이 구분해 알린다 |
 | already_filed | boolean | `false` | 이 신청서에 살아 있는 환불신청서가 있는지 |
-| earn_recovery | boolean | `true` | 완료 시 적립 예정분이 사라지는지 — 회원 주문이고, 완료 대상 중 **아직 적립이 나가지 않은** 주문옵션이 있을 때만 `true`. 이미 적립된 상품은 완료해도 되돌리지 않으므로(#599 T2-D13) `false` |
+| earn_recovery | boolean | `true` | 완료 시 적립 예정분이 사라지는지 — 회원 주문이고, 완료 대상 중 **아직 적립이 나가지 않은** 주문옵션이 있을 때만 `true`. 이미 적립된 상품은 완료해도 되돌리지 않으므로 `false` |
 | currency_code | string | `KRW` | 표기 통화 (거래 시점 동결) |
 
 **progress_steps 항목**
@@ -530,7 +530,7 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 | completion.create_refund_request | boolean | completion 과 함께 필수 | 환불신청서를 지금 접수할지 — `false` 면 `order_refunds` 를 만들지 않는다. 반품은 **회차마다** 환불이 연결되지 않은 완료 상품으로 접수한다(S7) |
 | completion.unreturned | object | 아니오 | 선교환 「미회수로 완료」 — 행 ID → `{reason}`(필수, max 2000). 그 행은 재고를 복구하지 않고 `unreturned_at`·`unreturned_reason` 이 남는다 |
 
-**회수중·발송중은 송장이 있어야 들어갑니다**(#599 후속, R6). 택배가 물건을 싣고 가는 중이라는 사실이라,
+**회수중·발송중은 송장이 있어야 들어갑니다**. 택배가 물건을 싣고 가는 중이라는 사실이라,
 송장 없이 들어가면 고객 알림의 운송장 칸이 빈 채로 나갑니다. 판정은 **옮겨지는 상품 행마다**입니다 — 요청이
 송장을 싣지 않으면 각 행이 이미 가진 자기 송장이 있어야 하고, 다른 행의 송장을 빌려 쓰지 않습니다. 세 입구
 (이 API·목록 일괄·상품 단위)가 같은 규칙이며 서비스(`RecordsClaimTracking`)도 한 번 더 막습니다(`claim_tracking_required`).
@@ -1247,7 +1247,7 @@ PG 가 승인한 직후 장부 확정이 실패하면 신청서는 `approved` �
 있어도 줄이 서지 않고, 입금된 가상계좌의 PG 환불은 PG 가 고객 계좌로 송금하므로 줄과 칸이 섭니다.
 
 막지 않던 동안에는 계좌가 빈 채로 실행돼 **돈은 나가지 않았는데 신청서만 `completed` 로
-닫혔고**, 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었습니다(2026-09-22 #599 실측).
+닫혔고**, 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었습니다(2026-09-22 실측).
 
 **응답 예시 (200)**
 

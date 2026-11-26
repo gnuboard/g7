@@ -196,7 +196,7 @@ HookManager::addAction(
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스는 자기 앞글자(`bizppurio:` 접두 유틸리티 · `bizppurio-*`)로만 쓰고, 새 클래스를 쓰면 `php artisan plugin:build sirsoft-message_bizppurio --production` 으로 `dist/css/plugin.css` 를 다시 만든다(템플릿 CSS 에 기대지 않는다)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
-- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
+- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, 공개 #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
 - [ ] webhook 라우트를 추가·변경했다면 `getMiddleware()` 의 `targets` 에 그 라우트 이름을 함께 추가 (누락 시 인증 없는 공개 경로가 된다)
 - [ ] 결과 코드 분류(성공/재시도/잔액부족/영구실패)를 바꿨다면 `lang/{ko,en}/result_codes.php` 의 사유 문구도 함께 갱신
 - [ ] 코어 알림 시스템(채널 등록·발송 로그 훅)이 바뀌면 이 플러그인의 구독 4종이 조용히 끊기므로 함께 확인

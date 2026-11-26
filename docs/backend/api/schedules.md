@@ -958,7 +958,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 스케줄 실행 보안 정책의 유효 값(기본 정책 `config/schedule_security.php` + 서버 관리자 덮어쓰기 파일 `storage/app/schedule_security.json`)을 항목별 출처와 함께 읽기 전용으로 조회합니다(#17). `core.schedules.read` 권한이 필요합니다. 화면에서 정책을 바꾸는 API 는 없습니다 — 서버 관리자가 덮어쓰기 파일(더하기만, 기본 거부 항목은 풀 수 없음)과 `.env`(Shell)로 바꿉니다. 덮어쓰기 파일 형식이 어긋나면 파일 전체를 무시하고 `override_file.valid=false`·`error` 로 알립니다. 파일 형식: [스케줄 관리 문서 「보안 정책 덮어쓰기」](../scheduling.md#101-보안-정책-덮어쓰기-storageappschedule_securityjson).
+**설명** 스케줄 실행 보안 정책의 유효 값(기본 정책 `config/schedule_security.php` + 서버 관리자 덮어쓰기 파일 `storage/app/schedule_security.json`)을 항목별 출처와 함께 읽기 전용으로 조회합니다. `core.schedules.read` 권한이 필요합니다. 화면에서 정책을 바꾸는 API 는 없습니다 — 서버 관리자가 덮어쓰기 파일(더하기만, 기본 거부 항목은 풀 수 없음)과 `.env`(Shell)로 바꿉니다. 덮어쓰기 파일 형식이 어긋나면 파일 전체를 무시하고 `override_file.valid=false`·`error` 로 알립니다. 파일 형식: [스케줄 관리 문서 「보안 정책 덮어쓰기」](../scheduling.md#101-보안-정책-덮어쓰기-storageappschedule_securityjson).
 
 
 ### DELETE /api/admin/schedules/{schedule}

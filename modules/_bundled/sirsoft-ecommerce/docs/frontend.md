@@ -385,7 +385,7 @@
 
 ### 클레임 추가결제의 결제 플러그인 실패
 
-클레임 결제 진입(`payClaimOutstanding`·`submitClaim`·`saveClaimEdit`)은 결제 시작 API 가 지목한 결제 플러그인 핸들러를 `resources/js/utils/claimPgDispatch.ts` 의 `claimPgDispatchAction()` 으로 만든 동작으로 부른다 — 이 동작은 디스패처의 기본 오류 처리를 `suppress` 로 막아 내부 문구(「Failed to execute action: …」) 토스트가 뜨지 않게 한다. 결제 플러그인은 결제창을 열기 전에 실패하면 사용자 문구를 담은 오류를 던지고(계약: `docs/api/claim-payments.md` 「결제 플러그인 연동 계약」), 디스패처는 그 오류를 `{ success: false, error }` 로 돌려준다. 핸들러는 `claimPgDispatchFailureMessage()` 로 문구를 꺼내(원래 오류 `error.originalError.message`, 비면 `user.claim.pay.failed`) 신청서 상세는 `isPayingClaim` 을 내리고 `claimPayError`(버튼 아래)에 남기며, 신청·수정 직후의 결제는 토스트로 알린 뒤 신청서 상세로 옮긴다(1.4.0, #855). 결과를 보지 않으면 결제창이 열리지 않았는데도 진행 표시가 「결제 진행 중…」에 멈춘다 — 결제창이 열리는 동안 일부러 끄지 않기 때문이다.
+클레임 결제 진입(`payClaimOutstanding`·`submitClaim`·`saveClaimEdit`)은 결제 시작 API 가 지목한 결제 플러그인 핸들러를 `resources/js/utils/claimPgDispatch.ts` 의 `claimPgDispatchAction()` 으로 만든 동작으로 부른다 — 이 동작은 디스패처의 기본 오류 처리를 `suppress` 로 막아 내부 문구(「Failed to execute action: …」) 토스트가 뜨지 않게 한다. 결제 플러그인은 결제창을 열기 전에 실패하면 사용자 문구를 담은 오류를 던지고(계약: `docs/api/claim-payments.md` 「결제 플러그인 연동 계약」), 디스패처는 그 오류를 `{ success: false, error }` 로 돌려준다. 핸들러는 `claimPgDispatchFailureMessage()` 로 문구를 꺼내(원래 오류 `error.originalError.message`, 비면 `user.claim.pay.failed`) 신청서 상세는 `isPayingClaim` 을 내리고 `claimPayError`(버튼 아래)에 남기며, 신청·수정 직후의 결제는 토스트로 알린 뒤 신청서 상세로 옮긴다(1.4.0). 결과를 보지 않으면 결제창이 열리지 않았는데도 진행 표시가 「결제 진행 중…」에 멈춘다 — 결제창이 열리는 동안 일부러 끄지 않기 때문이다.
 
 ## 액션 핸들러
 
@@ -664,7 +664,7 @@ store 를, 그것도 없으면 취소 여부만 봅니다. 구매자 신청서 �
 | 배송정책·주소 | `testShippingApi` · `updateExtraFeeField` · `changeShippingAddress` | 외부 배송비 API 시험 호출과 주소 변경 |
 | 클레임 | `claimHandlers.ts` · `claimListHandlers.ts` · `claimApplyHandlers.ts` · `claimImageHandlers.ts` 의 핸들러 | 관리자 일괄 전이·완료 모달, **신청서 단위 전이**(`executeClaimStatusTransition`), 환불신청서 수동 접수(`storeClaimRefundRequest`), 운영자 대리 첨부(업로드는 `composite/FileUploader` 가 직접 하고 핸들러는 `refreshClaimAttachments` · `clearClaimImages` 로 목록만 되읽는다), 구매자 신청서 작성(교환 상품 선택·실시간 요약)·첨부 업로드 — 템플릿 화면도 이 핸들러를 쓴다 |
 
-취소·환불 축에서 유의할 계약 둘이 있습니다(#599 후속).
+취소·환불 축에서 유의할 계약 둘이 있습니다.
 
 - **접수 후 이동 주소는 서버가 정합니다.** `submitClaim` 은 응답에 실린 신청서의 `claim_type`
   으로 `successPath` 의 `type` 을 덮어씁니다(`resolveClaimSuccessPath`). 화면이 주문 전체 기준

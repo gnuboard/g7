@@ -807,14 +807,14 @@
 | `app/Extension/ModuleManager.php` | `module.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/ModuleManager.php` | `module.*.roles.translations` | 문자열 보간 조립 |
 | `app/Extension/ModuleManager.php` | `module.*.permissions.translations` | 문자열 보간 조립 |
-| `app/Extension/ModuleManager.php` | `seed.*.schedules.translations` | 문자열 보간 조립 — 확장 스케줄 언어팩 필터 (#17, 7.2.0) |
+| `app/Extension/ModuleManager.php` | `seed.*.schedules.translations` | 문자열 보간 조립 — 확장 스케줄 언어팩 필터 (7.2.0) |
 | `app/Extension/ModuleManager.php` | `seed.*.notifications.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.admin_menus.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.roles.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.permissions.translations` | 문자열 보간 조립 |
-| `app/Extension/PluginManager.php` | `seed.*.schedules.translations` | 문자열 보간 조립 — 확장 스케줄 언어팩 필터 (#17, 7.2.0) |
+| `app/Extension/PluginManager.php` | `seed.*.schedules.translations` | 문자열 보간 조립 — 확장 스케줄 언어팩 필터 (7.2.0) |
 | `app/Extension/PluginManager.php` | `seed.*.notifications.translations` | 문자열 보간 조립 |
 | `app/Extension/TemplateManager.php` | `template.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/TemplateManager.php` | `template.*.manifest.translations` | 문자열 보간 조립 |
@@ -825,6 +825,6 @@
 | `app/Seo/Editor/SeoOgPreviewService.php` | `core.seo.filter_og_data`<br>`core.seo.filter_twitter_data` | buildKeyCascade() 호출부가 리터럴로 넘긴다 |
 | `app/Services/Analytics/ReportMailService.php` | `core.analytics.weekly_report_ready`<br>`core.analytics.monthly_report_ready` | 기간(weekly·monthly)별 리포트 |
 | `app/Services/DriverRegistryService.php` | `core.settings.available_*_drivers` | 드라이버 카테고리별 필터 |
-| `app/Services/Extension/ExtensionDeclarativeCleanupPlanner.php` | `seed.*.schedules.translations` | 문자열 보간 조립 — 업데이트 미리보기의 스케줄 정리 계획이 매니저와 같은 언어팩 필터를 적용 (#888, 7.2.0) |
+| `app/Services/Extension/ExtensionDeclarativeCleanupPlanner.php` | `seed.*.schedules.translations` | 문자열 보간 조립 — 업데이트 미리보기의 스케줄 정리 계획이 매니저와 같은 언어팩 필터를 적용 (7.2.0) |
 | `app/Services/NotificationChannelService.php` | `*.notification.channels` | 도메인 채널 후보 필터 — 알림 정의의 hook_prefix 로 조립(코어 core.notification.channels 다음) |
 | `database/seeders/Concerns/LoadsConfigSeedWithLangPackFilter.php` | `seed.*.translations` | 설정 시드 언어팩 필터 — 호출부가 키를 넘긴다(seed.notifications.translations 등) |

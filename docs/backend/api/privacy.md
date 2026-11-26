@@ -274,7 +274,7 @@ HTTP/1.1 200
 
 **설명**
 
-관리자 > 환경설정 > 보안 탭 「비밀번호 만료」 카드의 「대상 보기」가 개인정보 탭과 같은 명단 창으로 부릅니다 (#736). 명단은 `auth:process-password-expiry` 가 그 단계에서 처리할 회원과 같은 쿼리에서 나오며, 만료 기능이 꺼져 있어도 저장된 값으로 돌려줍니다.
+관리자 > 환경설정 > 보안 탭 「비밀번호 만료」 카드의 「대상 보기」가 개인정보 탭과 같은 명단 창으로 부릅니다. 명단은 `auth:process-password-expiry` 가 그 단계에서 처리할 회원과 같은 쿼리에서 나오며, 만료 기능이 꺼져 있어도 저장된 값으로 돌려줍니다.
 
 ### GET /api/admin/privacy/manual-runs
 <!-- @generated:start:api.admin.privacy.manual-runs.index -->
@@ -514,7 +514,7 @@ Content-Type: application/json
 | 403 | Forbidden | 대상이 선언한 실행 권한 중 하나라도 없거나 적용 범위가 전체가 아닌 경우 |
 | 404 | Not Found | 등록되지 않은 대상 키 |
 | 409 | Conflict | 같은 대상에 처리 대기·처리 중인 실행이 있음 — `errors.run` 에 그 기록 |
-| 409 | Conflict | 토글이 켜져 있어야 하는 대상(`password_expiry:{notice\|expire}`)인데 기능이 꺼져 있음 — `errors.run` 없음, 메시지 `exceptions.privacy_manual_run_disabled` (#736) |
+| 409 | Conflict | 토글이 켜져 있어야 하는 대상(`password_expiry:{notice\|expire}`)인데 기능이 꺼져 있음 — `errors.run` 없음, 메시지 `exceptions.privacy_manual_run_disabled` |
 | 422 | Unprocessable Entity | `skip_waiting` 이 boolean 이 아닌 경우 |
 | 500 | Server Error | 접수가 실패한 경우 (로그 참조) |
 

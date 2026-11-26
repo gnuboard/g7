@@ -260,7 +260,7 @@ Apache 는 게시 트리에 포함된 `.htaccess` 가 같은 캐시 헤더와 `m
 
 - 정적 우선 URL 규칙은 서버측 `AssetUrl` 과 프론트측 `assetUrl.ts`(+ 자가 복구 파샬 역변환)가 **항상 쌍으로** 수정되어야 한다 — 한쪽만 바꾸면 그 자산만 404 가 된다.
 - 게시 산출물(`public/build/ext/`)은 git 미추적·release 페이로드 제외다. `public/build/core/` 는 계속 추적한다 (배포 산출물) — 혼동 금지.
-- 루트 `npm run build`(기본 vite 앱 빌드)는 더 이상 `public/build` 를 비우지 않는다 — 루트 vite config 가 `build.emptyOutDir: false` 를 명시한다. 종전에는 기본값 `true` 로 `core`(폴백 없는 코어 3번들)와 `ext`(게시본)가 함께 지워졌고, 이미 배달된 HTML 의 immutable URL 은 재게시로도 복구되지 않았다(공개 #70 · #122). 잔존 구 해시 산출물은 `manifest.json` 이 선택하므로 참조되지 않는 사표이며, 산출물 정리 책임은 빌드 커맨드(`PrunesBuildOutput`)가 진다. 저장소의 모든 vite config 는 이 규약을 명시해야 한다 — 기본값 의존은 자동 검증이 차단한다.
+- 루트 `npm run build`(기본 vite 앱 빌드)는 더 이상 `public/build` 를 비우지 않는다 — 루트 vite config 가 `build.emptyOutDir: false` 를 명시한다. 종전에는 기본값 `true` 로 `core`(폴백 없는 코어 3번들)와 `ext`(게시본)가 함께 지워졌고, 이미 배달된 HTML 의 immutable URL 은 재게시로도 복구되지 않았다(공개 #70 · 공개 #122). 잔존 구 해시 산출물은 `manifest.json` 이 선택하므로 참조되지 않는 사표이며, 산출물 정리 책임은 빌드 커맨드(`PrunesBuildOutput`)가 진다. 저장소의 모든 vite config 는 이 규약을 명시해야 한다 — 기본값 의존은 자동 검증이 차단한다.
 - 확장 병합 번들의 생성 규율은 [module-assets.md "서버측 번들 병합"](../extension/module-assets.md) 이 소유한다. 본 게시는 그 산출물의 **사본**만 만든다.
 
 ## 10. 오리진 처리 용량(첫 방문 요청과 PHP 동시 처리 상한)

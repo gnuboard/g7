@@ -339,7 +339,7 @@ happy path 만 다루고 다크모드·반응형·빈/로딩/에러 상태·다�
 
 ### Playwright E2E 동반 의무
 
-프론트엔드(레이아웃 `.g7.html`·`.json`, 컴포넌트 TSX, 엔진 TS, 핸들러 TS) 변경은 Playwright spec 동반 추가·수정이 함께 요구된다. 단위 테스트(Vitest)만으로 완료를 선언하지 않는다 — 위지윅 발행 회귀 #238 은 단위 4건 green 상태에서 브라우저 재현으로만 드러났다.
+프론트엔드(레이아웃 `.g7.html`·`.json`, 컴포넌트 TSX, 엔진 TS, 핸들러 TS) 변경은 Playwright spec 동반 추가·수정이 함께 요구된다. 단위 테스트(Vitest)만으로 완료를 선언하지 않는다 — 위지윅 발행 회귀는 단위 4건 green 상태에서 브라우저 재현으로만 드러났다.
 
 자동 차단: audit 룰 `frontend-change-requires-e2e`(변경셋에 spec 미동반 시 error). 면제는 변경 파일 헤더의 `// e2e:allow <사유>` 또는 시나리오 매니페스트(`tests/scenarios/*.yaml`) 동반 갱신.
 

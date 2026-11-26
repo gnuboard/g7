@@ -64,7 +64,7 @@ _등록하는 액션 핸들러가 없습니다._
 
 <!-- @intent START -->
 이 플러그인은 액션 핸들러를 등록하지 않습니다(`plugin.json` 의 `assets.handlers` 가 `false`). 예전의
-`sirsoft-gdpr.syncConsent` 는 #639 에서 없어졌고, 배너·마이페이지 레이아웃은 동의 저장 성공 뒤 코어 내장
+`sirsoft-gdpr.syncConsent` 는 1.1.0 에서 없어졌고, 배너·마이페이지 레이아웃은 동의 저장 성공 뒤 코어 내장
 핸들러 `refreshConsent` 를 부릅니다. 흐름은 이렇습니다.
 
 | 단계 | 누가 | 무엇을 |

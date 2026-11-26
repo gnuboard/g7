@@ -295,14 +295,14 @@ guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 �
 `status`·답변은 입력에 키가 있을 때만 덮어쓰고, 지운 후기는 되살리지 않음). HTML 본문은 상품 설명과 같은
 `Services\Concerns\PurifiesHtml` 의 기본 허용 목록(`baseline`)으로 정화합니다 — 상품 설명은 여기에 코어 「본문 콘텐츠」
 후보 요소 전부(그림 캡션·업로드 동영상·오디오·외부 영상)와 운영자 추가 태그를 더한 `content` 프로필로 정화하며, 후보
-스위치·외부 영상 서비스 켜고 끄기는 표시에서만 따릅니다(끈 동안 저장해도 원문이 남아 다시 켜면 돌아옴, #887). `content` 프로필은 편집기가 싣는 서식 속성(문단·제목·목록·표·셀·이미지의 `style`, 병합 셀의 `colspan`·`rowspan`)과 그 CSS 속성 목록(`PURIFIER_CONTENT_ALLOWED`·`PURIFIER_CONTENT_CSS`)을 더 받습니다 — 허용 목록을 고치면 정의 판(`PURIFIER_CONTENT_SCHEMA`)을 올려 옛 정의 캐시를 버리고, `position`·`background-image` 처럼 화면을 덮거나 밖으로 요청을 내는 속성은 넣지 않습니다. 후기(`baseline`)에는 이 목록을 쓰지 않습니다. 후기를 읽는 코드에서 `$review->user`·`orderOption` 을
+스위치·외부 영상 서비스 켜고 끄기는 표시에서만 따릅니다(끈 동안 저장해도 원문이 남아 다시 켜면 돌아옴). `content` 프로필은 편집기가 싣는 서식 속성(문단·제목·목록·표·셀·이미지의 `style`, 병합 셀의 `colspan`·`rowspan`)과 그 CSS 속성 목록(`PURIFIER_CONTENT_ALLOWED`·`PURIFIER_CONTENT_CSS`)을 더 받습니다 — 허용 목록을 고치면 정의 판(`PURIFIER_CONTENT_SCHEMA`)을 올려 옛 정의 캐시를 버리고, `position`·`background-image` 처럼 화면을 덮거나 밖으로 요청을 내는 속성은 넣지 않습니다. 후기(`baseline`)에는 이 목록을 쓰지 않습니다. 후기를 읽는 코드에서 `$review->user`·`orderOption` 을
 null 아님으로 가정하지 마세요 — 작성자 표시는 `ProductReview::displayAuthorName()`, 응답은
 `author_name`·`is_imported` 를 씁니다. 주문 옵션 파기 연쇄(`purgeForOrderOptions`)·옵션 필터·별점 분포 조인은
 `order_option_id` 로 묶으므로 이 후기를 자연히 건너뛰거나(옵션 필터) 그대로 셉니다(별점·상품 목록 집계).
 
 **본문 미디어 저장소(1.3.4)**: 상품 설명·공통 정보 편집기 본문의 이미지·동영상·오디오는 이 모듈의 범용 첨부 표
 `ecommerce_attachments`(게시판·페이지 첨부 표와 같은 모양)에 `collection = content_media` 로 둡니다(소유 = `attachmentable_type/id`,
-저장 전 임시 = `attachmentable_id` null + `temp_key`, #887). 이 행은 반드시 범위 모델 `Models\ContentMedia` 와 `ContentMediaRepositoryInterface`
+저장 전 임시 = `attachmentable_id` null + `temp_key`). 이 행은 반드시 범위 모델 `Models\ContentMedia` 와 `ContentMediaRepositoryInterface`
 로만 읽고 씁니다 — 전역 범위가 같은 표의 다른 컬렉션을 막습니다. 흐름(업로드·저장 동기화 **연결 → 복제 → 제거**·서명·서빙·정리·소유자 삭제)은
 코어 골격 `AbstractContentMediaService` 를 상속한 `Services\ContentMedia\EcommerceContentMediaService` 가 돌리고, 저장소·권한은 어댑터
 `EcommerceContentMediaStore` 가 답합니다. 상품·공통 정보·리소스·컨트롤러는 종전 호출 모양을 유지한 `Services\ContentMediaService` 를 씁니다.
@@ -390,13 +390,13 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-ecommerce` 재실행 + `docs/api/**` 갱신
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰지 않았으면 빌드 없이 update 만, 새 클래스(`ecommerce:` 유틸리티·`ecommerce-*`)를 쓰면 `module:build` 로 자기 CSS 를 다시 만든다(「화면 클래스 규약」)
-- [ ] 레이아웃에 입력칸을 새로 그리면 화면 낭독기가 읽을 이름을 단다 — 제목이 표식 없는 span·표 열 머리면 그 제목 키로 `aria-label`, 체크박스·라디오 옆 글자는 칸과 한 `<label>` 로 감싸고, 목록형 선택칸(`options`·SearchableDropdown)은 placeholder 가 아니라 `aria-label`(정렬 `common.sort_order`·쪽당 개수 `common.per_page`·검색 대상 `common.search_field`)을 단다. 표·반복 행 칸은 「{행 이름} {열 이름}」(`common.row_cell`)으로, DataGrid 셀·펼침 안에서는 `$t:defer:` 로 쓰고(행 문맥 없이 먼저 번역되면 행 이름이 빈다), 행 선택을 켠 DataGrid 는 `rowLabelField` 를 화면에 보이는 식별자로 정한다. 잠금: `resources/js/__tests__/layouts/adminControlNames.test.ts`(#757)
+- [ ] 레이아웃에 입력칸을 새로 그리면 화면 낭독기가 읽을 이름을 단다 — 제목이 표식 없는 span·표 열 머리면 그 제목 키로 `aria-label`, 체크박스·라디오 옆 글자는 칸과 한 `<label>` 로 감싸고, 목록형 선택칸(`options`·SearchableDropdown)은 placeholder 가 아니라 `aria-label`(정렬 `common.sort_order`·쪽당 개수 `common.per_page`·검색 대상 `common.search_field`)을 단다. 표·반복 행 칸은 「{행 이름} {열 이름}」(`common.row_cell`)으로, DataGrid 셀·펼침 안에서는 `$t:defer:` 로 쓰고(행 문맥 없이 먼저 번역되면 행 이름이 빈다), 행 선택을 켠 DataGrid 는 `rowLabelField` 를 화면에 보이는 식별자로 정한다. 잠금: `resources/js/__tests__/layouts/adminControlNames.test.ts`
 - [ ] 창(모달) 안에서 반복 행을 눌러 고르게 하면(회원 검색 결과 등) 그 행은 `<button type="button">`(또는 링크)로 그린다 — 클릭만 받는 `<div>` 는 Tab 으로 닿지 않아 키보드로 고를 수 없다. 단추 안에는 `<div>` 대신 `<span class="block">` 으로 줄을 나눈다. 보이는 제목 없이 placeholder 만 있는 숫자칸은 `aria-label` 을 단다(Playwright 접근 이름 계산은 숫자칸 placeholder 를 이름으로 치지 않는다). 잠금: `resources/js/__tests__/layouts/adminModalRowKeyboard.test.ts`
 - [ ] 클릭으로 무언가를 고르거나 펼치는 영역(필터 칩·기간 빠른 선택·구획 머리·목록 카드·사진)은 `<div>`·`<img>` 에 `<on type="click">` 을 달지 않고 `<button type="button">` 으로 그린다 — 고르는 칩·카드는 `aria-pressed`, 접는 머리는 `aria-expanded`, 스위치는 `role="switch"`·`aria-checked`. 관리자 `.button` 이 `inline-flex justify-center` 를 넣으므로 폭을 채우는 자리는 `w-full justify-start text-left`(앞선 CSS 가 display 를 정하던 `card-header` 는 `flex` 도) 를 함께 둔다. 표 행처럼 단추가 될 수 없는 자리는 자기 동작 없는 대리 단추(상태 속성 + 이름)를 품는다. 잠금: `resources/js/__tests__/layouts/adminClickOnlyKeyboard.test.tsx`
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
-- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
-- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
+- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, 공개 #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
+- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(공개 #148)
 - [ ] 금액 계산 경로를 건드렸다면 여섯 소비 지점(상품 상세·장바구니·체크아웃·주문 생성·결제 검증·부분 취소)에 같은 결과가 도달하는지 확인
 - [ ] 통화가 관여하는 표시·기록을 추가할 때 다국어 문구는 `:amount` 로 중립, 과거 거래 표기는 `currency_snapshot` 경유
 - [ ] 회원 항목 선언(`getFields()`)을 바꿀 때는 `src/lang/{ko,en}/fields.php` 의 이름과 안내 문구, 값 핸들러(`Fields\UserPreferenceFieldHandler`), 선택지 리스너(`UserPreferenceFieldDefinitionListener`), 응답 리스너가 같은 키를 쓰는지 함께 확인한다. 두 칸의 검증이나 저장을 `core.user.*` 훅 리스너로 다시 만들지 않는다(이중 검증, 이중 저장)
@@ -426,14 +426,14 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 마일리지 잔액 캐시를 서비스에서 직접 증감 | 원장에 기록한 뒤 같은 트랜잭션 마지막에 캐시 재계산 | 두 곳을 각각 갱신하면 원장 합계와 캐시가 어긋나고, 정합 교정 스케줄(`reconcile-mileage-balance`)이 매번 되돌린다 |
 | 과거 주문 표시에 현재 통화 설정(`getDecimalPlaces($code)`)을 조회 | 주문의 `currency_snapshot` 을 함께 넘긴다 | 운영자가 그 통화를 삭제하면 폴백(2자리)이 적용되어 `¥14,835` 가 `¥14,835.00` 이 된다. 금액 계산은 스냅샷을 쓰는데 표기만 현재 설정을 따르면 같은 화면 안에서 근거가 갈린다 |
 | 다국어 문구에 `:amount원` / `:amount円` 처럼 통화 기호를 박기 | 문구는 `:amount` 로 중립, 호출부가 `ecommerce_format_price($amount, $currency)` 로 포맷 | UI 언어가 통화를 결정하게 되어 기본 통화가 다른 상점에서 단위만 틀린 금액이 나간다 |
-| 금액 비교에 `bccomp()` 등 bcmath 함수 사용 | `Support\DecimalComparator::compare($a, $b)` (소수 4자리) | bcmath 는 코어 「선택」 확장이고 이 모듈은 `ext-bcmath` 를 선언하지 않는다 — 없는 서버에서 주문 상세·취소가 500 이 된다(#151). `NoBcmathUsageTest` 가 0건을 잠근다 |
+| 금액 비교에 `bccomp()` 등 bcmath 함수 사용 | `Support\DecimalComparator::compare($a, $b)` (소수 4자리) | bcmath 는 코어 「선택」 확장이고 이 모듈은 `ext-bcmath` 를 선언하지 않는다 — 없는 서버에서 주문 상세·취소가 500 이 된다(공개 #151). `NoBcmathUsageTest` 가 0건을 잠근다 |
 | 쿠폰·마일리지 복원 훅을 기본 설정(큐)으로 구독 | `'sync' => true` | 커밋 뒤 실행이라 예외를 던져도 롤백되지 않는다 — 오류 응답만 나가고 차감된 쿠폰은 그대로 남는다 |
 | 특정 PG 이름을 이 모듈 코드에 분기로 넣기 (`if ($pg === 'tosspayments')`) | 결제수단 카탈로그 선언(`needs_pg`/`pg_locked`/`pg_provider`/`auto_approve_refund`)과 `payment.*` 훅 | PG 가 늘 때마다 이 모듈이 커지고, 플러그인만 설치하면 되는 구조가 깨진다 |
 | 주문번호·상품코드를 `max(id)+1` 이나 타임스탬프 조합으로 직접 생성 | `SequenceService::generateCode()` | 채번은 DB UNIQUE 제약과 함께 원자적으로 수행된다 — 직접 생성은 동시 주문에서 중복을 만든다 |
 | 취소·환불을 주문 단위로 처리 | 옵션 단위(`OrderCancelOption`/`OrderRefundOption`) | 부분 취소가 이 도메인의 기본이며, 주문 단위로 처리하면 남은 옵션의 안분 금액이 계산되지 않는다 |
 | 요청의 `temp_key` · `image_temp_key` 를 형식 검증 없이 `products/temp/{키}` 경로에 넣거나, 임시 이미지가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 조회된 임시 이미지가 있을 때만 이동·정리 | 순회 키가 정리 경로를 모듈 저장소 루트로 끌어올린다 (게시판 KVE-2026-2349 와 같은 패턴) |
-| 임시 이미지를 본경로로 옮긴 뒤 임시 디렉토리 정리(`deleteDirectory('images', 'products/temp/{키}')`)의 예외를 그대로 던지게 두기 | `ProductImageService::linkTempImages()` 처럼 disk 별 정리 전체를 `try/catch` 로 감싸 경고 로그(`상품 임시 이미지 디렉토리 정리 실패`)를 남기고 연결 수는 그대로 반환 | 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던져 상품 저장 전체가 500 으로 되돌아가고 파일·DB 경로가 어긋난다(#703 게시판 실측과 같은 구조). 정리에 실패해 남는 것은 빈 임시 디렉토리뿐이다 |
-| 관리자 화면에서 코어 회원 검색(`GET /api/admin/users/search`)을 검색어 조건 없이, 또는 길이(`length > 0`)만 보고 부르기 | `if="{{String($args[0] ?? '').trim() !== ''}}"`(`onSearch` 인자) 또는 `if="{{String($event.target.value ?? '').trim() !== ''}}"`(입력 이벤트)로 비거나 공백뿐이면 부르지 않는다. 입력칸 아래에 결과 목록을 직접 그리는 창(마일리지 수동 지급/차감·쿠폰 직접 발급)은 목록 표시·비우기도 같은 `trim()` 조건을 쓴다 | 회원 검색은 빈 검색어를 422 로 거절한다(공백은 서버 요청 정리에서 지워져 빈 값이 된다). 조건이 없던 알림 템플릿 「특정 회원」 수신자·주문 목록 주문자 필터·쿠폰 목록 만든 사람 필터는 검색칸을 지울 때마다, 길이만 보던 마일리지 수동 지급/차감 창·쿠폰 직접 발급 창은 공백만 적으면 거절되어 결과가 비거나 오류 안내가 떴다(#703) |
+| 임시 이미지를 본경로로 옮긴 뒤 임시 디렉토리 정리(`deleteDirectory('images', 'products/temp/{키}')`)의 예외를 그대로 던지게 두기 | `ProductImageService::linkTempImages()` 처럼 disk 별 정리 전체를 `try/catch` 로 감싸 경고 로그(`상품 임시 이미지 디렉토리 정리 실패`)를 남기고 연결 수는 그대로 반환 | 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던져 상품 저장 전체가 500 으로 되돌아가고 파일·DB 경로가 어긋난다(게시판과 같은 구조). 정리에 실패해 남는 것은 빈 임시 디렉토리뿐이다 |
+| 관리자 화면에서 코어 회원 검색(`GET /api/admin/users/search`)을 검색어 조건 없이, 또는 길이(`length > 0`)만 보고 부르기 | `if="{{String($args[0] ?? '').trim() !== ''}}"`(`onSearch` 인자) 또는 `if="{{String($event.target.value ?? '').trim() !== ''}}"`(입력 이벤트)로 비거나 공백뿐이면 부르지 않는다. 입력칸 아래에 결과 목록을 직접 그리는 창(마일리지 수동 지급/차감·쿠폰 직접 발급)은 목록 표시·비우기도 같은 `trim()` 조건을 쓴다 | 회원 검색은 빈 검색어를 422 로 거절한다(공백은 서버 요청 정리에서 지워져 빈 값이 된다). 조건이 없던 알림 템플릿 「특정 회원」 수신자·주문 목록 주문자 필터·쿠폰 목록 만든 사람 필터는 검색칸을 지울 때마다, 길이만 보던 마일리지 수동 지급/차감 창·쿠폰 직접 발급 창은 공백만 적으면 거절되어 결과가 비거나 오류 안내가 떴다 |
 | 본문 미디어를 `EcommerceAttachment`·`DB::table('ecommerce_attachments')` 로 범위 없이 조회·삭제하거나 파일을 주입 저장소로 직접 지우기 | `Models\ContentMedia`(범위 모델) + `ContentMediaRepositoryInterface`, 삭제는 `ContentMediaPurger`·골격 `pruneStale`(행 디스크 기준) | 범용 표는 다른 컬렉션 행과 함께 쓴다 — 범위 없는 조회는 남의 첨부를 지우고, 골격을 거치지 않으면 `core.content_media.before_delete` 가 빠지고 디스크를 바꾼 뒤의 옛 행 파일을 엉뚱한 디스크에서 찾는다 |
 | 레이아웃·TSX 에서 Lucide·Heroicons 식 아이콘 이름(`x-circle`·`refresh-cw`·`more-horizontal`·`alert-circle`·`chevrons-left`·`arrow-down-tray` 등) | Font Awesome 6.4.0 이름(`circle-xmark`·`arrows-rotate`·`ellipsis`·`circle-exclamation`·`angles-left`·`download`) | 관리자 템플릿 `Icon` 은 이름을 `fa-{이름}` 로만 바꾼다 — FA 에 없는 이름은 오류 없이 **빈칸**으로 그려진다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
 | `OrderCancel` 을 `recordCancellation()` 밖에서 만들기 | 그 메서드 한 지점 | 만드는 지점이 둘이면 합계 재계산·누적 컬럼 갱신이 경로마다 갈리고, 같은 취소가 경로에 따라 다른 장부를 남긴다 |
@@ -449,7 +449,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | PG 호출 뒤에 같은 트랜잭션에서 장부를 쓰기 | 되돌릴 수 있는 쓰기를 모두 끝낸 뒤 PG 를 마지막에 부르고, 완료는 그 행 UPDATE 1회 | PG 성공 뒤 쓰기가 실패하면 장부만 롤백되고 돈은 나간다 — NICE·KG·KCP 는 멱등키가 없어 재실행이 이중 환불이 된다 |
 | `DB::transaction(..., attempts>1)` 로 환불 실행 감싸기 | attempts 1 | 교착 재시도가 클로저를 다시 돌려 PG 를 두 번 부른다 |
 | 레이아웃·확장 조각의 메뉴·목록 단추에 폭(`w-full`·`flex-1`)만 주고 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다 | 템플릿 기본 단추가 가운데 정렬을 넣는다(사용자 `Button` 의 `justify-center` 병합, 관리자 `.button`) — 헤더 통화·배송 국가 목록이 이렇게 가운데로 갔다 |
-| 현금영수증·결제 실패 이력의 사유 칸(`error_message`)에 프로바이더 예외 원문을 그대로 저장 | `CashReceiptService::providerExceptionResult()` — 운영 모드는 `cash_receipt.errors.issue_failed`·`cancel_failed`, 원문은 서버 로그(디버그 모드만 원문). 결제 플러그인은 결제대행사 거절 사유만 원문으로 넘긴다 | 이력 사유는 `CashReceiptResource` 로 관리자 주문 상세와 구매자 응답에 그대로 보인다 — 결제대행사 API 주소·cURL 문구·서버 경로가 화면에 나간다(#858) |
+| 현금영수증·결제 실패 이력의 사유 칸(`error_message`)에 프로바이더 예외 원문을 그대로 저장 | `CashReceiptService::providerExceptionResult()` — 운영 모드는 `cash_receipt.errors.issue_failed`·`cancel_failed`, 원문은 서버 로그(디버그 모드만 원문). 결제 플러그인은 결제대행사 거절 사유만 원문으로 넘긴다 | 이력 사유는 `CashReceiptResource` 로 관리자 주문 상세와 구매자 응답에 그대로 보인다 — 결제대행사 API 주소·cURL 문구·서버 경로가 화면에 나간다 |
 <!-- @intent END -->
 
 ### 환불 후 주문 헤더 동기화 계약 (S3-D17)

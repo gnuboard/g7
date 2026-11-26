@@ -8,7 +8,7 @@ use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\BirthdayMemberRepositoryInterface;
 
 /**
- * 생일 회원 조회 Repository 구현체 (#952)
+ * 생일 회원 조회 Repository 구현체
  */
 class BirthdayMemberRepository implements BirthdayMemberRepositoryInterface
 {

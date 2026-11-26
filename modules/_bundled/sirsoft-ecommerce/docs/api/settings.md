@@ -52,7 +52,7 @@ _단건 응답: `data` 객체의 필드._
 | inquiry | object | `{"board_slug":"inquiry"}` | 문의 연동 설정 (문의 게시판 slug) |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":1…` | 알림 채널 설정 (채널 ID·활성 여부·정렬 순서) |
 | mileage | object | `{"enabled":false,"default_earn_rate":1,"earn_trigger":"co…` | 마일리지 설정 (사용 여부·기본 적립률·적립 트리거·통화별 규칙·소멸/소멸 알림·실제 활성 알림 채널 포함) |
-| privacy_retention | object | `{"enabled":false,"retention_years":5,"mode":"anonymize"}` | 종결 주문 개인정보 보유기간 설정(이슈 #636) — 사용 여부(기본 false)·보유기간(년, 최소 5)·처리 방식(`anonymize`/`delete`) |
+| privacy_retention | object | `{"enabled":false,"retention_years":5,"mode":"anonymize"}` | 종결 주문 개인정보 보유기간 설정 — 사용 여부(기본 false)·보유기간(년, 최소 5)·처리 방식(`anonymize`/`delete`) |
 | claim | object | `{"exchange_reasons":[…],"return_reasons":[…],"refund_reaso…` | 클레임 설정. **정책 스칼라**(신청 가능 상태 4축·신청 기간·허용 청구 방식/결제수단·자동 승인 3종·첨부 상한·완료 처리 기본값)와 **DB 관리 대상인 사유 카탈로그 3종**(`exchange_reasons`·`return_reasons`·`refund_reasons` — 각 항목은 코드·다국어명·귀책 유형·노출/활성 여부) |
 | available_pg_providers | array | `[{"id":"kginicis","name_key":"sirsoft-pay_kginicis::provi…` | 설치된 PG 플러그인이 훅으로 등록한 PG 제공자 목록 (id·name_key·지원 결제수단) |
 | available_rate_providers | array | `[{"id":"koreaexim","name_key":"sirsoft-koreaexim::provide…` | 환율 제공자 플러그인이 훅(`sirsoft-ecommerce.currency.registered_rate_providers`)으로 등록한 제공자 목록 (`id`, `name_key`, `name`, `settings_url` 과 관리 통화 정보 등 — 항목 키는 제공자가 정한다). 등록만으로 자동 선택하지 않는다 |
@@ -622,7 +622,7 @@ HTTP/1.1 200
 | review_settings.max_images | body | integer | 아니오 | min 0, max 20 | 리뷰 1건당 첨부 가능한 이미지 수 (0 = 이미지 첨부 불가) |
 | review_settings.max_image_size_mb | body | integer | 아니오 | min 1, max 50 | 리뷰 이미지 파일 1개의 최대 용량(MB) |
 | review_settings.author_name_masking | body | string | 아니오 | `middle`, `none` | 공개 후기의 작성자 이름 가림 방식 (`middle`=가운데 가림, `none`=가리지 않음) |
-| privacy_retention | body | array | 아니오 | — | 종결 주문 개인정보 보유기간 섹션(이슈 #636). 「개인정보 보유기간」 탭 저장이 `_tab: privacy_retention` 과 함께 보낸다. 코어 보유기간 커맨드(`privacy:process-retention`)가 핸들러 `sirsoft-ecommerce.order` 를 통해 이 값을 읽어 매일 실행한다 |
+| privacy_retention | body | array | 아니오 | — | 종결 주문 개인정보 보유기간 섹션. 「개인정보 보유기간」 탭 저장이 `_tab: privacy_retention` 과 함께 보낸다. 코어 보유기간 커맨드(`privacy:process-retention`)가 핸들러 `sirsoft-ecommerce.order` 를 통해 이 값을 읽어 매일 실행한다 |
 | privacy_retention.enabled | body | boolean | 아니오 | — | 보유기간 처리 사용 여부. **기본 false** — 되돌릴 수 없는 처리라 운영자가 직접 켜야 하며, 핸들러가 실행 시점에 false 폴백으로 다시 읽는다 |
 | privacy_retention.retention_years | body | integer | 예 | min 5, max 20 | 주문 종결(구매확정·취소, 진행 중 환불·교환·반품 없음) 후 보유기간(년, 기본 5). 하한 5년은 전자상거래법 §6 보존기간이라 서버가 강제하고, 판독부도 5년 바닥값을 둔다. 한계값은 `config('sirsoft-ecommerce.limits')` |
 | privacy_retention.mode | body | string | 예 | `anonymize`, `delete` | 처리 방식(기본 `anonymize`). `anonymize` 는 주문자·수령인 이름·연락처·주소(NOT NULL 칸은 `***`, nullable 칸은 NULL)·구매자·입금·환불 계좌 명의·IP·관리자 메모와 교환·반품·환불 신청서의 환불 계좌·상세 사유·관리자 메모·교환 재배송지를 지우고 주문번호·금액·상태는 남긴다. `delete` 는 주문과 결제·배송·취소·환불·현금영수증·세금계산서·옵션·주소와 교환·반품·클레임 결제·클레임 첨부(파일 포함)를 명시 삭제하고 그 주문의 상품 리뷰를 이미지째 지우며, 쿠폰 발급·마일리지 거래는 주문·클레임 결제·환불 연결만 끊는다 |
@@ -856,7 +856,7 @@ _단건 응답: `data` 객체의 필드._
 | inquiry | object | `{"board_slug":"inquiry"}` | 문의 연동 설정 (문의 게시판 slug) |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":1…` | 알림 채널 설정 (채널 ID·활성 여부·정렬 순서) |
 | mileage | object | `{"enabled":false,"default_earn_rate":1,"earn_trigger":"co…` | 마일리지 설정 (사용 여부·기본 적립률·적립 트리거·통화별 규칙·소멸/소멸 알림·실제 활성 알림 채널 포함) |
-| privacy_retention | object | `{"enabled":false,"retention_years":5,"mode":"anonymize"}` | 종결 주문 개인정보 보유기간 설정(이슈 #636) — 사용 여부(기본 false)·보유기간(년, 최소 5)·처리 방식(`anonymize`/`delete`) |
+| privacy_retention | object | `{"enabled":false,"retention_years":5,"mode":"anonymize"}` | 종결 주문 개인정보 보유기간 설정 — 사용 여부(기본 false)·보유기간(년, 최소 5)·처리 방식(`anonymize`/`delete`) |
 | claim | object | `{"exchange_reasons":[…],"return_reasons":[…],"refund_reaso…` | 클레임 설정. **정책 스칼라**(신청 가능 상태 4축·신청 기간·허용 청구 방식/결제수단·자동 승인 3종·첨부 상한·완료 처리 기본값)와 **DB 관리 대상인 사유 카탈로그 3종**(`exchange_reasons`·`return_reasons`·`refund_reasons` — 각 항목은 코드·다국어명·귀책 유형·노출/활성 여부) |
 | available_pg_providers | array | `[{"id":"kginicis","name_key":"sirsoft-pay_kginicis::provi…` | 설치된 PG 플러그인이 훅으로 등록한 PG 제공자 목록 (id·name_key·지원 결제수단) |
 | available_rate_providers | array | `[{"id":"koreaexim","name_key":"sirsoft-koreaexim::provide…` | 환율 제공자 플러그인이 훅(`sirsoft-ecommerce.currency.registered_rate_providers`)으로 등록한 제공자 목록 (`id`, `name_key`, `name`, `settings_url` 과 관리 통화 정보 등 — 항목 키는 제공자가 정한다). 등록만으로 자동 선택하지 않는다 |
@@ -1390,7 +1390,7 @@ _단건 응답: `data` 객체의 필드._
 | inquiry | object | `{"board_slug":"inquiry"}` | 문의 연동 설정 (문의 게시판 slug) |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":1…` | 알림 채널 설정 (채널 ID·활성 여부·정렬 순서) |
 | mileage | object | `{"enabled":false,"default_earn_rate":1,"earn_trigger":"co…` | 마일리지 설정 (사용 여부·기본 적립률·적립 트리거·통화별 규칙·소멸/소멸 알림·실제 활성 알림 채널 포함) |
-| privacy_retention | object | `{"enabled":false,"retention_years":5,"mode":"anonymize"}` | 종결 주문 개인정보 보유기간 설정(이슈 #636) — 사용 여부(기본 false)·보유기간(년, 최소 5)·처리 방식(`anonymize`/`delete`) |
+| privacy_retention | object | `{"enabled":false,"retention_years":5,"mode":"anonymize"}` | 종결 주문 개인정보 보유기간 설정 — 사용 여부(기본 false)·보유기간(년, 최소 5)·처리 방식(`anonymize`/`delete`) |
 
 **응답 예시**
 
@@ -1793,7 +1793,7 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
-**설명** 종결 주문 개인정보 보유기간 처리 대상 건수를 미리 조회합니다(이슈 #636). 「개인정보 보유기간」 탭의 대상 건수 뱃지가 쓰며, 코어 보유기간 커맨드의 `--dry-run` 과 **같은 조건식**(`OrderRetentionHandler::preview()`)을 지나 화면 숫자와 실제 처리 건수가 같습니다. **저장된 설정 기준**이라 값을 바꾼 뒤 저장하기 전에는 이전 설정의 건수입니다. **꺼져 있어도 건수를 셉니다** — 켜기 전에 규모를 확인하는 자리입니다. 「꺼짐」과 「대상 0건」은 `enabled` 로 구분합니다. 주문 명단은 코어의 공통 대상 목록 API(`/api/admin/privacy/retention-targets/sirsoft-ecommerce.order`)가 이 모듈 핸들러를 식별자로 찾아 내려주며, 주문 읽기 권한이 없으면 403 입니다.
+**설명** 종결 주문 개인정보 보유기간 처리 대상 건수를 미리 조회합니다. 「개인정보 보유기간」 탭의 대상 건수 뱃지가 쓰며, 코어 보유기간 커맨드의 `--dry-run` 과 **같은 조건식**(`OrderRetentionHandler::preview()`)을 지나 화면 숫자와 실제 처리 건수가 같습니다. **저장된 설정 기준**이라 값을 바꾼 뒤 저장하기 전에는 이전 설정의 건수입니다. **꺼져 있어도 건수를 셉니다** — 켜기 전에 규모를 확인하는 자리입니다. 「꺼짐」과 「대상 0건」은 `enabled` 로 구분합니다. 주문 명단은 코어의 공통 대상 목록 API(`/api/admin/privacy/retention-targets/sirsoft-ecommerce.order`)가 이 모듈 핸들러를 식별자로 찾아 내려주며, 주문 읽기 권한이 없으면 403 입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/settings/{category}

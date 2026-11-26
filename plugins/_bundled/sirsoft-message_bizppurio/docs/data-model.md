@@ -114,8 +114,8 @@ PHP Enum 은 없지만 **닫힌 어휘가 셋** 있습니다.
 |---|---|---|
 | `BizppurioDispatchRepository` | 구현 | 비즈뿌리오 발송 이력 Repository 구현체. |
 | `BizppurioDispatchRepositoryInterface` | 인터페이스 | 비즈뿌리오 발송 이력 Repository 계약. |
-| `BizppurioTemplateRepository` | 구현 | 비즈뿌리오 알림 템플릿 Repository 구현체 (#597). |
-| `BizppurioTemplateRepositoryInterface` | 인터페이스 | 비즈뿌리오 알림 템플릿 Repository 인터페이스 (#597). |
+| `BizppurioTemplateRepository` | 구현 | 비즈뿌리오 알림 템플릿 Repository 구현체. |
+| `BizppurioTemplateRepositoryInterface` | 인터페이스 | 비즈뿌리오 알림 템플릿 Repository 인터페이스. |
 <!-- @generated:repositories END -->
 
 <!-- @intent START -->

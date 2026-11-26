@@ -168,7 +168,7 @@
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-marketing` 재실행 + `docs/api/**` 갱신
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스는 자기 앞글자(`marketing:` 접두 유틸리티 · `marketing-*`)로만 쓰고, 새 클래스를 쓰면 `php artisan plugin:build sirsoft-marketing --production` 으로 `dist/css/plugin.css` 를 다시 만든다(템플릿 CSS 에 기대지 않는다)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
-- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
+- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, 공개 #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
 - [ ] 동의 상태를 바꾸는 경로를 추가했다면 이력 적재(`user_marketing_consent_histories`)가 같은 트랜잭션에 있는지 확인
 - [ ] 리스너가 구독하는 코어 훅(`core.field.filter_definitions`, `core.auth.register_validation_rules`, `core.user.before_delete`, `core.user.filter_resource_data`, `core.plugin_settings.filter_save_data`, `core.plugin_settings.after_save`)이나 회원 항목 계약(`App\Fields\Contracts\FieldValueHandlerInterface`)의 이름, 인자가 바뀌면 이 플러그인이 조용히 끊기므로, 코어 회원 흐름 변경 시 함께 확인
 - [ ] 동의 값의 검증과 저장은 회원 항목 선언(`Plugin::getFields()` → `src/Fields/MarketingConsentFields.php`)과 저장소 어댑터(`src/Fields/MarketingConsentFieldHandler.php`)가 한다 — 검증 규칙 필터나 저장 액션 훅을 다시 구독하지 않는다(잠금: `tests/Unit/Listeners/MarketingConsentListenerTest.php`, `tests/Feature/MarketingConsentFieldsTest.php`)

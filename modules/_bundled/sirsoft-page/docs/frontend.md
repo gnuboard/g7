@@ -35,7 +35,7 @@
 "제한 없음" 이 그 숫자 상한으로 바뀝니다.
 
 본문 편집기(`html_editor` 확장점)의 업로드 계약 `mediaUpload` 는 데이터 소스 `contentMediaTarget`
-(`GET admin/content-media/target`, 표준 계약 엔드포인트 — #887)에서 받아 폼 임시 키를 `fields.temp_key` 에
+(`GET admin/content-media/target`, 표준 계약 엔드포인트)에서 받아 폼 임시 키를 `fields.temp_key` 에
 더합니다. 편집기는 처음 세워질 때의 계약만 쓰므로 이 소스를 받기(실패 포함 — 실패하면 `null`) 전에는 세우지
 않습니다. 받는 종류가 없거나 등록·수정 권한이 없으면 `null` 이라 편집기는 업로드 단추 없이 종전대로 동작합니다.
 첨부 설정 응답의 `content_media` 는 서버가 호환으로 계속 싣지만 화면은 더 읽지 않습니다.

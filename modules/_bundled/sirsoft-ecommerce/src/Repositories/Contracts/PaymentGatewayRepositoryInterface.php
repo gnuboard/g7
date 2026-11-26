@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 
 /**
- * 결제사 플러그인 공개 계약(PaymentGatewayBridge) 구현 전용 저장소 (#916)
+ * 결제사 플러그인 공개 계약(PaymentGatewayBridge) 구현 전용 저장소
  *
  * 결제 행 조회 조건(criteria) 키:
  * - order_number(string), order_id(int), transaction_id(string)

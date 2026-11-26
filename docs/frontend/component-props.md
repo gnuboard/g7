@@ -487,7 +487,7 @@ export interface DataGridProps {
   // 페이지네이션
   pagination?: boolean;             // 페이지네이션 활성화
   pageSize?: number;                // 페이지당 행 수
-  pageHref?: string;                // 페이지 주소 틀 — {page} 자리에 번호. 주면 페이지 번호가 링크(#757)
+  pageHref?: string;                // 페이지 주소 틀 — {page} 자리에 번호. 주면 페이지 번호가 링크
   pageHrefMergeQuery?: boolean;     // 페이지 주소에 현재 쿼리 합치기
 
   // 컬럼 표시/숨김
@@ -1223,7 +1223,7 @@ export interface ModalProps {
 ### 서브트리 Props 는 템플릿마다 다르다
 
 `footer` 는 **두 번들 템플릿 `Modal` 모두**가 같은 계약으로 그린다(본문 스크롤 밖 `modal-footer-bar`, 본문 자식과 같은
-데이터 컨텍스트, 렌더 폭 640px 이하 세로 쌓기 — `sirsoft-basic` 은 7.2.0 부터, #869). `titlePrefix`/`titleSuffix` 두 표면은
+데이터 컨텍스트, 렌더 폭 640px 이하 세로 쌓기 — `sirsoft-basic` 은 7.2.0 부터). `titlePrefix`/`titleSuffix` 두 표면은
 **`sirsoft-admin_basic` 의 `Modal` 에만 구현**되어 있다([Modal.tsx](../../templates/_bundled/sirsoft-admin_basic/src/components/composite/Modal.tsx) `ModalProps`).
 `sirsoft-basic` 의 `Modal` 은 그 둘을 받지 않으므로 사용자 템플릿 모달에 넘기면 **조용히 렌더되지 않는다**.
 
@@ -1471,7 +1471,7 @@ id prop 사용: scrollIntoView 등 DOM selector로 접근해야 할 때 필수 �
 
 ## A · Pagination 링크
 
-**템플릿**: `sirsoft-admin_basic`, `sirsoft-basic` (#757 — 두 템플릿의 prop 이름·뜻이 같다)
+**템플릿**: `sirsoft-admin_basic`, `sirsoft-basic` (두 템플릿의 prop 이름·뜻이 같다)
 
 화면을 옮기는 자리는 `<a href>` 로 그려야 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 된다(SPA 는 클릭 때 주소를 정하므로 단추로 그리면 새 탭이 없다). 보통 클릭(왼쪽 단추·수정키 없음·`target` 없음·`download` 없음)만 지금처럼 SPA 로 옮기고, 나머지는 브라우저에 맡긴다. 보통 클릭인지는 엔진 `G7Core.navigation.isPlainLeftClick` 한 곳이 판정한다 — 컴포넌트는 그 결과만 쓰고 규칙을 따로 두지 않는다. 판정 API 가 없는 옛 엔진에서는 종전처럼 SPA 로 옮긴다.
 

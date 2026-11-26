@@ -374,7 +374,7 @@ auto·접힘으로 되돌립니다 — 한 곳이라도 빠지면 직전에 고�
   - 분기 기준은 **provider 목록을 늘려도 따라오도록** 코어가 내려주는 값을 그대로 씁니다 —
     수단이 추가될 때마다 화면에 조건을 덧대지 않습니다.
 
-### `admin_login.json` 의 비밀번호 변경 단계 (#736, engine-v1.77.0)
+### `admin_login.json` 의 비밀번호 변경 단계 (engine-v1.77.0)
 
 비밀번호가 만료됐거나 관리자가 정해 준 비밀번호면 로그인·인증번호 확인 응답이 토큰 대신 변경 단계를 돌려줍니다
 (`response.password_change_required`). 2단계 인증과 같은 짜임의 **3단계**로 처리합니다(상태 `_local.passwordChange`).
@@ -390,7 +390,7 @@ auto·접힘으로 되돌립니다 — 한 곳이라도 빠지면 직전에 고�
   화면(`admin_reset_password`)·회원 등록/수정 화면도 같은 줄을 씁니다.
 - 휴면 해제 토스트는 모든 최종 성공 지점에 있습니다 — engine-v1.76.0 전에는 엔진이 `dormancy_restored` 를 버려 뜨지 않았습니다.
 
-### 보안 탭 「비밀번호 정책」·「비밀번호 만료」 카드 (#736)
+### 보안 탭 「비밀번호 정책」·「비밀번호 만료」 카드
 
 `partials/admin_settings/_tab_security_password_policy` 조각이 보안 설정 카드 뒤·접근 제한 카드 앞에 들어갑니다(최소 길이·특수문자 칸도
 이 조각으로 옮겼다 — data-ref 유지). 체크박스는 자동 바인딩을 끄고 change 로 직접 담고, 조건부 칸은 느슨하게 참 판정합니다. 숫자 칸의
@@ -424,12 +424,12 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 - `public_disk_rules_write_failed_warning` — `rules_written === false`: 저장 때 규칙 파일(`.htaccess`)을 지금 설정으로 쓰지 못함(권한).
   헤더는 옛 규칙 파일로도 붙으므로 `ok` 와 상관없이 보입니다. 값이 없는 옛 결과는 경고하지 않습니다.
 
-### 회원 등록·수정·상세 / 역할 폼의 비밀번호 칸 (#736)
+### 회원 등록·수정·상세 / 역할 폼의 비밀번호 칸
 
 - 회원 수정에서 **본인** 계정의 새 비밀번호를 입력하면 「현재 비밀번호」 칸이 나타납니다(서버도 같은 확인·재사용 검사). **다른 회원**의
   비밀번호를 정하면(등록 포함) 「다음 로그인 때 비밀번호를 바꿔야 한다」 안내가 뜹니다.
 - 상세의 「비밀번호」 구획(마지막 변경·만료 예정·다음 로그인 때 변경 필요·연기 종료·만료 개별 설정)과 같은 자리·같은 순서로 수정 화면에도
-  「비밀번호」 구획이 섭니다(#599 상세↔수정 정합). 기록 칸은 잠긴 글자이고 「비밀번호 만료」(따름/적용/제외) 선택만 고칩니다.
+  「비밀번호」 구획이 섭니다(상세↔수정 정합). 기록 칸은 잠긴 글자이고 「비밀번호 만료」(따름/적용/제외) 선택만 고칩니다.
 - 역할 폼의 「비밀번호 만료」(사이트 설정 따름/적용/제외)는 저장 본문에 `password_expiry_policy` 로 실립니다.
 
 **금지 — 같은 시퀀스·onSuccess 안에서 방금 저장한 상태를 다시 읽지 않습니다**
@@ -601,7 +601,7 @@ GDPR 배너)을 코어 대시보드 위젯 형태로만 받고, 이 템플릿이
 ## 이관 원문 상세
 
 > 아래는 코어 `docs/frontend/templates/sirsoft-admin_basic/layouts.md` 에 있던 원문을
-> 이 문서로 옮긴 것입니다(#601). 페이지 맵 트리와 화면 유형별 패턴 상세가 여기에 있습니다.
+> 이 문서로 옮긴 것입니다. 페이지 맵 트리와 화면 유형별 패턴 상세가 여기에 있습니다.
 > 이관 시점 그대로 보존하되, 현재 코드와 어긋나는 부분에는 정정 주석을 달았습니다 —
 > 레이아웃·라우트의 SSoT 는 위 「레이아웃 목록」·「라우트 매핑」 블록입니다.
 
@@ -622,7 +622,7 @@ _admin_base.g7.html (베이스 레이아웃)
 ├── admin_dashboard.g7.html (대시보드)
 ├── admin_login.g7.html (로그인 — _admin_base 미상속)
 │
-├── 방문자 통계 (#682 S3)
+├── 방문자 통계
 │   ├── admin_analytics_overview.g7.html (개요 — KPI·추이·상위 3열·실시간 한 줄)
 │   ├── admin_analytics_pages.g7.html (페이지 — 인기·진입·이탈 탭)
 │   ├── admin_analytics_referrers.g7.html (유입 경로 — 유형·사이트·검색어·캠페인 탭)
@@ -660,8 +660,8 @@ _admin_base.g7.html (베이스 레이아웃)
 │   │   ├── _partial_filter_section.g7.html (필터 카드 — 기본/상세 슬롯·검색편집·빠른 기간·확장 필터 자리)
 │   │   └── _modal_bulk_roles.g7.html (선택 회원 역할 일괄 추가·제거 창)
 │   └── partials/member/
-│       ├── _member_fields.g7.html (회원 항목 입력 반복 조각 — 회원 추가와 수정 화면이 구획마다 `data-each="memberFieldGroup in …"` 안에서 부름, #490)
-│       └── _member_fields_view.g7.html (회원 항목 보기 조각 — 회원 상세가 같은 방식으로 부르고 `display_value` 를 보임, 값이 없으면 「-」, #490)
+│       ├── _member_fields.g7.html (회원 항목 입력 반복 조각 — 회원 추가와 수정 화면이 구획마다 `data-each="memberFieldGroup in …"` 안에서 부름)
+│       └── _member_fields_view.g7.html (회원 항목 보기 조각 — 회원 상세가 같은 방식으로 부르고 `display_value` 를 보임, 값이 없으면 「-」)
 │
 ├── 역할 관리
 │   ├── admin_role_list.g7.html (목록)
@@ -726,7 +726,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_identity_policies.g7.html (인증 정책 — 정책 조회 권한이 없으면 목록 대신 권한 안내)
 │           ├── _tab_identity_providers.g7.html (인증 수단 — 프로바이더 설정 조회 권한이 없으면 목록 대신 권한 안내)
 │           ├── _tab_language_packs.g7.html (언어팩 — 언어팩 조회 권한이 없으면 탭 항목 숨김, 직접 진입은 권한 안내)
-│           ├── _tab_member.g7.html (회원 — 가입 항목, 표시 이름, 닉네임 정책 세 구획을 담는 껍데기. 하위 탭 막대는 부모 화면 고정 머리에 있고 `member_section_*` 구획으로 스크롤, #490)
+│           ├── _tab_member.g7.html (회원 — 가입 항목, 표시 이름, 닉네임 정책 세 구획을 담는 껍데기. 하위 탭 막대는 부모 화면 고정 머리에 있고 `member_section_*` 구획으로 스크롤)
 │           ├── _tab_member_fields.g7.html (회원 > 가입 항목 표 — 스위치와 순서는 즉시 저장, 설정 폼과 「변경 있음」은 건드리지 않음)
 │           ├── _tab_member_fields_cards.g7.html (회원 > 가입 항목의 768px 미만 카드 판 — 표와 같은 배선에 「위로」「아래로」 순서 단추)
 │           ├── _tab_member_display_name.g7.html (회원 > 표시 이름 — 고를 수 있는 종류, 회원 기본 종류(아래에 이 값을 쓰는 영역, computed `memberDefaultKindUsage`), 자리별 방식(따름, 고정, 회원 선택). 하단 「저장」으로 보냄)
@@ -837,7 +837,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _partial_filter.g7.html
 │           └── _modal_log_detail.g7.html
 │
-├── 2단계 인증 (#657)
+├── 2단계 인증
 │   ├── auth/identity_challenge.g7.html (인증 챌린지 화면)
 │   ├── admin_identity_logs.g7.html (인증 로그)
 │   │   └── partials/admin_identity_logs/_modal_purge_confirm.g7.html
@@ -1024,7 +1024,7 @@ slots.content:
 
 **상태 배지 색**: 정적 파일 상태(일반 탭)·사이트맵 진행(SEO 탭) 배지처럼 값에 따라 색을 바꾸는 배지는 `<class-map key="{{…}}">` 안에
 `<variant when="값">클래스</variant>` 로 적는다. 굽기 결과는 노드 최상위 `classMap` 이고 엔진은 그 자리만 읽는다 — 컴포넌트 속성으로
-`classMap` 을 넘기면 색이 적용되지 않고 DOM 에 `classmap="[object Object]"` 로 샌다(#703 에서 두 배지를 이렇게 바로잡음).
+`classMap` 을 넘기면 색이 적용되지 않고 DOM 에 `classmap="[object Object]"` 로 샌다(두 배지를 이렇게 바로잡음).
 
 **사이트맵 진행 폴링·「지금 생성」**: 실시간 연결이 없으면 `sitemap_status` 데이터 소스가 진행 중(`queued`·`running`·`writing`)일 때만
 3초 폴링을 켜고, **그 밖의 모든 값**(완료·실패·진행상황 없음 `null`)에서 끈다. 「완료/실패일 때만 끔」으로 두면 상태 캐시가 만료돼
@@ -1036,7 +1036,7 @@ slots.content:
 **언어팩 탭의 빌려 온 창**: 언어팩 탭은 언어팩 관리 화면의 목록 조각(`admin_language_pack_list/_content`)을 그대로 쓰므로,
 그 조각이 여는 창도 `admin_settings.g7.html` 이 같은 조각 파일(`partials/admin_language_pack_list/_modal_*`)을 `<modal>` 로
 선언해야 동작이 이어진다(사본을 두지 않는다). 같은 로케일 자리를 두 언어팩이 다툴 때 스위치의 409 갈래가 여는
-`_modal_slot_conflict` 도 여기에 포함된다 — 이 선언이 빠져 있어 환경설정에서는 충돌 때 아무 창도 뜨지 않았다(#703).
+`_modal_slot_conflict` 도 여기에 포함된다 — 이 선언이 빠져 있어 환경설정에서는 충돌 때 아무 창도 뜨지 않았다.
 목록 조각이 여는 창을 늘리면 이 화면의 선언도 함께 늘린다.
 
 ---
@@ -1077,7 +1077,7 @@ modals:
   `<navigate path="…" :mergeQuery="true"><query include_hidden="{{$event.target.checked ? '1' : undefined}}" :page="1"/></navigate>`
   로 주소만 바꾼다(주소가 바뀌면 목록을 다시 받으므로 따로 `refetch-data-source` 하지 않는다). 종전의
   `_local.showHidden` 은 페이지를 넘기면 풀려 체크는 켜진 채 숨김을 뺀 목록을 받았고, `set-state` 직후 재조회가
-  이전 값으로 나가 한 박자 늦게 반영됐다(#703). 이 값을 화면 상태로 되돌리지 않는다.
+  이전 값으로 나가 한 박자 늦게 반영됐다. 이 값을 화면 상태로 되돌리지 않는다.
 - 템플릿 관리의 종류 탭 전환(`tab_navigation` 의 `change`)은 다른 주소(`/admin/templates/{type}`)로의 이동이라 쿼리를
   넘기지 않지만, `include_hidden` 만은 `<query include_hidden="{{query.include_hidden === '1' ? '1' : undefined}}"/>` 로
   이어 준다 — 보는 방식이지 목록 상태가 아니기 때문이다. 검색어·쪽은 탭마다 다른 목록이라 넘기지 않는다.
@@ -1089,7 +1089,7 @@ modals:
   `/preview/{token}` 으로 고정하면 관리자 템플릿 레이아웃이 사용자 셸에서 활성 사용자 템플릿 자원으로 그려진다.
 - 이 체크는 최고관리자 전용이며 `data-if="{{current_user?.data?.is_super === true}}"` 로 가린다 — 관리자 로그인
   응답 전역 이름은 `current_user` 이고 값은 `data` 아래에 있다. 존재하지 않는 `currentUser` 를 읽어 최고관리자에게도
-  체크가 보이지 않던 것을 #703 에서 바로잡았다.
+  체크가 보이지 않던 것을 바로잡았다.
 - 체크는 모듈·플러그인·템플릿(사용자/관리자 탭 각각) 화면 모두 **툴바 안** [보기 전환, 체크, 검색] 순서다. 툴바는
   `flex flex-wrap items-center gap-x-4 gap-y-3` 한 줄 구조이고, PC 는 보기 전환의 `mr-auto` 가 체크와 검색을 오른쪽으로
   밀어 체크가 검색칸 바로 왼쪽(16px)에 붙는다. 모바일(portable)은 보기 전환에서 `mr-auto` 를 빼 체크가 보기 전환 바로

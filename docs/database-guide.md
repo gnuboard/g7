@@ -935,7 +935,7 @@ return $name[$locale]
     ?? '';
 ```
 
-`APP_FALLBACK_LOCALE` 은 번역 키 대체 전용입니다. 다국어 값을 그 값으로 색인하면 한국어가 기본이 아닌 사이트에서도 빈 값이 한국어로 채워집니다(#148). 강제 검사: `tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`.
+`APP_FALLBACK_LOCALE` 은 번역 키 대체 전용입니다. 다국어 값을 그 값으로 색인하면 한국어가 기본이 아닌 사이트에서도 빈 값이 한국어로 채워집니다(공개 #148). 강제 검사: `tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`.
 
 #### 새 언어 추가 절차
 

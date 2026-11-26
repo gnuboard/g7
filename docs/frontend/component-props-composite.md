@@ -821,19 +821,19 @@ G7에서는 콘텐츠의 렌더링 모드를 DB의 `*_mode` 컬럼(`'text'` / `'
 | Prop | 타입 | 기본값 | 설명 |
 | ---- | ---- | ------ | ---- |
 | `aria-label` | string | 「섹션 이동」 | 좁은 화면 선택 상자의 이름. 없으면 공용 문구 「섹션 이동」(`common.section_navigation`)이 이름이 된다 — 이름이 없으면 현재 탭 글자만 읽혀 무엇을 고르는 칸인지 알 수 없다 |
-| `tabs[].href` | string | - | 탭이 가리키는 주소(예: `/admin/settings?tab=mail`). 주면 넓은 화면 탭을 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열린다. 보통 클릭은 지금처럼 `onTabChange`(저장 안 한 변경 확인 흐름 유지), TabNavigationScroll 은 종전 스크롤 이동. 비활성 탭은 종전 단추 (#757) |
+| `tabs[].href` | string | - | 탭이 가리키는 주소(예: `/admin/settings?tab=mail`). 주면 넓은 화면 탭을 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열린다. 보통 클릭은 지금처럼 `onTabChange`(저장 안 한 변경 확인 흐름 유지), TabNavigationScroll 은 종전 스크롤 이동. 비활성 탭은 종전 단추 |
 
 사용자 템플릿(`sirsoft-basic`) TabNavigation 도 `tabs[].href` 를 받는다 — 주면 그 탭이 `<a role="tab" aria-selected href>`, 묶음은 `role="tablist"`(화살표 키 이동·좁은 화면 선택 상자는 없다). 사용자 템플릿에만 있는 prop:
 
 | Prop | 타입 | 기본값 | 설명 |
 | ---- | ---- | ------ | ---- |
-| `tabHrefMergeQuery` | boolean | `false` | 탭 주소(`tabs[].href`)에 현재 주소의 쿼리를 합친다(탭 주소 자신의 키가 이긴다). 같은 화면 안에서 쿼리만 바꾸는 탭(예: 상품 상세 `?tab=`)이 목록 문맥을 이고 갈 때 (#757) |
+| `tabHrefMergeQuery` | boolean | `false` | 탭 주소(`tabs[].href`)에 현재 주소의 쿼리를 합친다(탭 주소 자신의 키가 이긴다). 같은 화면 안에서 쿼리만 바꾸는 탭(예: 상품 상세 `?tab=`)이 목록 문맥을 이고 갈 때 |
 
 ---
 
 ## 메뉴 · 카드 · 바로가기 링크
 
-**템플릿**: `sirsoft-admin_basic`, `sirsoft-basic`(표의 「사용자 템플릿」 행) (#757)
+**템플릿**: `sirsoft-admin_basic`, `sirsoft-basic`(표의 「사용자 템플릿」 행)
 
 화면을 옮기는 항목에 주소를 주면 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 된다. 보통 클릭은 지금처럼 각 컴포넌트의 콜백으로 간다. 보통 클릭 판정은 엔진 `G7Core.navigation.isPlainLeftClick` 한 곳이다([A · Pagination 링크](component-props.md#a--pagination-링크)). 현재 쿼리를 합치는 항목(페이지 번호·행 메뉴·탭 등)은 주소 변경을 구독해(`G7Core.navigation.subscribeLocationSearch`) 쿼리만 바뀌어도 `href` 를 다시 그린다(engine-v1.82.1). 바깥 주소(다른 출처 `http(s)://`)는 `target="_blank" rel="noopener noreferrer"` 로 그리고 SPA 이동을 하지 않는다. 실행 스킴(`javascript:`)·`#`·빈 값은 링크로 그리지 않는다.
 

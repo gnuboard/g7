@@ -295,7 +295,7 @@ onIsHtmlChange({ target: { name: 'content_mode', checked: true } })
 | `onReady` | `function` | ❌ | - | 편집기 준비 완료 콜백 |
 
 > **`theme="auto"` 가 기본값인 이유.** 종전 기본값은 `vs-dark` 하드코딩이라 사이트가 라이트
-> 모드여도 편집기만 검은 판이었다(#476 D8). `auto` 는 마운트 시점의 `dark` 클래스를 곧바로
+> 모드여도 편집기만 검은 판이었다. `auto` 는 마운트 시점의 `dark` 클래스를 곧바로
 > 반영하고, 이후 전환은 `MutationObserver` 로 따라간다 — 부모 재렌더 없이도 함께 바뀐다.
 
 > **`modelKey` 는 `<Editor path>` 로 넘어간다.** 모델을 직접 만들어 `setModel()` 하지 않는다 —

@@ -111,7 +111,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] 아이콘 컨테이너(`w-N h-N` 상자) 안의 `<icon>` 은 컨테이너와 **다른 줄**에 둔다 — `AuthoringDebtLedgerTest` 가 줄 단위로 `<icon` 과 박스 크기 표기를 함께 재므로 한 줄에 있으면 글리프가 박스 크기를 쓴 것으로 읽힌다(3차 병합 후속, 확장 관리 모달 9파일 선례). 새 `<on>`(자식 있는 액션)·`<data-source>`·`<modal>` 은 S21 주석 자리를 비워 두지 않는다 — `CommentAnchorStageLedgerTest` 가 완료 단락(S21.4·S21.5)의 잔여 앵커 0 을 잠근다
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
-- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
+- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(공개 #148)
 - [ ] 컴포넌트가 브라우저 저장소에 새 키를 적으면 `template.json` 의 `necessary_storage` 에 선언한다(코어 7.1.3+) — GDPR 동의 플러그인은 필수 목록(출하 목록·확장 제공·템플릿 선언) 밖의 키를 동의 전에 버리고 부팅 때 정리한다. 레이아웃 편집기 키는 종전대로 `g7le.` 접두(출하 목록)를 쓴다. 쓴 직후 되읽어 성공을 확인한다
 - [ ] 필수 컴포넌트(35개) 의 Props 시그니처를 깨는 변경은 전체 번들 확장 관리자 화면에 영향 — 변경 전 `src/components/{basic,composite}/` 의 실사용처를 넓게 확인
 - [ ] `_admin_base.g7.html` 슬롯 구조(`content` 슬롯 등) 변경 시 그 슬롯에 의존하는 모든 화면(145개 레이아웃 대다수) 영향 검토
@@ -119,9 +119,9 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec/` 블록을 함께 갱신 — 컴포넌트는 팔레트·역량·중첩 **넷 다** 손대야 편집기에서 온전히 동작하고, 하나만 빠지면 절반만 동작한다. 반영은 `php artisan template:update sirsoft-admin_basic --force` (편집기는 활성 디렉토리만 읽는다)
 - [ ] 로그인 화면의 2단계 인증·비밀번호 변경 단계를 고쳤다면 세 단계 `if` 의 상보성과 `login`/`loginTwoFactor`/`loginPasswordChange` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호·변경 단계에서 Enter 가 새 challenge 를 발급한다
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_role_form`·`admin_user_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고 `state.form` 기본값을 다시 쓴다 — 엔진은 `layout_name` 이 바뀔 때만 `_local` 을 비우므로 수정 → 등록 SPA 이동에서 직전 값이 등록 폼에 남는다. 새 폼 레이아웃을 같은 구조로 만들면 같은 액션을 둔다(트러블슈팅 state-global 사례 7)
-- [ ] 사이트·회원·게시판 이름처럼 입력값을 그리는 글은 넘침을 막는다 — 모바일 상단 좌측 칸은 `min-w-0 flex-1`(이름 `truncate`, 우측 `flex-shrink-0`), 블록 제목·설명은 `break-words`, 이름·이메일 같은 좁은 칸은 `truncate` + 폭 상한. `.admin_layout_root` 가 `overflow-hidden` 이라 문서 넘침은 늘 0 이므로 우측 묶음 clip 이나 `#right_content_area` 초과분으로 잰다 (#143)
+- [ ] 사이트·회원·게시판 이름처럼 입력값을 그리는 글은 넘침을 막는다 — 모바일 상단 좌측 칸은 `min-w-0 flex-1`(이름 `truncate`, 우측 `flex-shrink-0`), 블록 제목·설명은 `break-words`, 이름·이메일 같은 좁은 칸은 `truncate` + 폭 상한. `.admin_layout_root` 가 `overflow-hidden` 이라 문서 넘침은 늘 0 이므로 우측 묶음 clip 이나 `#right_content_area` 초과분으로 잰다 (공개 #143)
 - [ ] 확장·언어팩 작업(설치·활성화·업데이트·레이아웃 갱신) 성공 갈래를 새로 만들면 응답 `data.warnings` 를 `_global.lifecycleWarnings` 에 담고(`lifecycleWarningsOpen` 은 false) 경고가 있을 때만 `lifecycle_warnings_modal` 을 연다 — 그 화면에 `layouts/partials/_modal_lifecycle_warnings.g7.html` 을 포함한다. 항목 `level` 이 `notice`(실패 아닌 안내)뿐이면 창이 안내 제목·파란 상자로 바뀐다(코어 7.1.3). 항목 `cause` 가 `declaration`(확장 manifest 선언 형식 오류 — 다시 실행해도 같음)이면 항목 아래에 「확장 개발자가 고칠 선언」 안내가 붙고, 실패가 모두 그런 항목이면 「다시 실행하세요」 문구 대신 `declaration_description` 을 쓴다(코어 7.1.5). `admin-extension-lifecycle-warnings-modal.test.tsx` 가 성공 갈래 전수를 잠근다
-- [ ] 확장(모듈·플러그인·템플릿)·언어팩·코어 업데이트의 수명주기 단추(설치·켜기/끄기·업데이트·삭제·시작)를 새로 만들면 검수 서버(셸 설정 `_global.appConfig?.runtime_role === 'stage'`)에서 잠근다 — 단추는 `disabled` + `title`(`$t:admin.stage_role.locked_hint`), 카드 항목은 `disabled`·`title`/`disabledReason`. 서버는 그 API 를 409 `errors.stage_role_locked` 로 막으므로 화면이 먼저 알린다(#888). `admin-stage-role-gating.test.tsx` 가 지금 자리들을 잠근다
+- [ ] 확장(모듈·플러그인·템플릿)·언어팩·코어 업데이트의 수명주기 단추(설치·켜기/끄기·업데이트·삭제·시작)를 새로 만들면 검수 서버(셸 설정 `_global.appConfig?.runtime_role === 'stage'`)에서 잠근다 — 단추는 `disabled` + `title`(`$t:admin.stage_role.locked_hint`), 카드 항목은 `disabled`·`title`/`disabledReason`. 서버는 그 API 를 409 `errors.stage_role_locked` 로 막으므로 화면이 먼저 알린다. `admin-stage-role-gating.test.tsx` 가 지금 자리들을 잠근다
 - [ ] `_admin_base` 자식 레이아웃에 progressive 데이터소스를 추가하면 `transition_overlay.wait_for` 에도 같은 ID 를 넣는다 — 레이아웃 테스트(`admin-base-transition-overlay`)가 누락을 잡는다
 
 ## 6. 금지 패턴
@@ -129,7 +129,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
-| 받은 뒤에만 뜻이 있는 안내·경고를 `!ds?.data?.x`·`ds?.data?.y !== true`·`(_local.form?.z ?? []).length === 0` 만으로 판정 | `{{ds !== undefined && (…)}}`(폼 값이면 폼을 채우는 소스로 가드), `?? 0` 숫자는 그 소스를 기다리는 `blur_until_loaded` 아래 | 화면이 먼저 그려진 뒤 받는 데이터는 받기 전 `undefined` 다 — 「잠금 아님」·「권한 없음」·「sync 드라이버」·「0건」이 먼저 보였다가 바뀐다(#915, `__tests__/layouts/loadingNegativeState.test.tsx` 가 전수로 잠근다) |
+| 받은 뒤에만 뜻이 있는 안내·경고를 `!ds?.data?.x`·`ds?.data?.y !== true`·`(_local.form?.z ?? []).length === 0` 만으로 판정 | `{{ds !== undefined && (…)}}`(폼 값이면 폼을 채우는 소스로 가드), `?? 0` 숫자는 그 소스를 기다리는 `blur_until_loaded` 아래 | 화면이 먼저 그려진 뒤 받는 데이터는 받기 전 `undefined` 다 — 「잠금 아님」·「권한 없음」·「sync 드라이버」·「0건」이 먼저 보였다가 바뀐다(`__tests__/layouts/loadingNegativeState.test.tsx` 가 전수로 잠근다) |
 | 링크 컴포넌트에 주소 구독 훅·내부 링크 판정·새 창 rel 규칙을 따로 구현 | `G7Core.navigation.useLocationSearch`·`resolveInternalHref`·`mergeRelForTarget` 를 부르고(engine-v1.83.0), 그 API 가 없는 옛 코어에만 짧은 대체를 둔다(내부 링크는 `/` 경로와 경로가 `//` 로 시작하지 않는 같은 출처 `http(s)://` 주소 — 7.1.2 템플릿과 같은 결과라 알림·메뉴의 전체 주소가 새 탭으로 열리지 않는다) | 템플릿마다 사본이 갈라져 엔진 수정을 템플릿마다 옮겨야 했고, 같은 출처 `//다른호스트` 주소를 내부 링크로 본 사본이 생겼다(7.1.3) |
 | `AdminSidebar`·메뉴 관리 화면의 메뉴 아이콘을 `<I className={item.icon}>`·`Icon name=…` 으로 직접 렌더 | `MenuIcon spec={item.icon_spec} icon={item.icon} fallbackIcon=…` — FA 클래스는 `I`+원문 클래스(종전 출력과 같다), 이미지·SVG 는 `icon_spec` 으로 그린다 | 메뉴 API 의 `icon` 은 FA 클래스일 때만 값이고 이미지·SVG 메뉴는 `null` 이다(코어 7.2.1). 직접 렌더하면 그 메뉴들이 빈 칸이 되고, SVG 는 정제 없이 그리면 XSS 경로가 된다 |
 | 필수 컴포넌트 목록 밖의 이 템플릿 전용 컴포넌트를 모듈 레이아웃에서 사용 | 필수 컴포넌트(config/template.php) 만 사용 | 다른 admin 템플릿으로 교체 시 그 화면만 깨진다 |
@@ -174,7 +174,7 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 심기의 제한 시간은 두 단계다. 로더 스크립트를 받기 전까지는 3초(`PRIME_SCRIPT_TIMEOUT_MS` — 자산이 영영
 오지 않을 때 화면이 굳지 않게), 로더가 `vs/editor/editor.main` 을 요청한 뒤에는 60초 안전 제한
 (`PRIME_LOADING_TIMEOUT_MS`)과 AMD errback 이 끝을 정한다. 확장자를 가로채는 서버에서는 자산이 PHP 를 거쳐
-청크 하나에 1초 가까이 걸려 3초 안에 끝나지 않는다(#712 실측). 제한 시간이 지났는데 심기가 넣은 로더
+청크 하나에 1초 가까이 걸려 3초 안에 끝나지 않는다(실측). 제한 시간이 지났는데 심기가 넣은 로더
 (`script[data-g7-monaco-loader]`)가 아직 `window.monaco` 를 채우지 못했으면 `loader.init()` 을 **부르지 않고**
 평문 폴백으로 넘긴다 — 라이브러리 `init()` 은 `window.monaco.editor` 가 없으면 자기 `loader.js` 를 또 넣기
 때문이다. [다시 시도]는 그 사이 심기가 끝났으면 정상 경로를 탄다. errback 으로 끝난 심기(청크를 하나라도 받지
@@ -191,7 +191,7 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 규칙**으로 갈아 끼우고(앞 종류의 `value`·`display_names`·`relation` 은 버린다 — 남기면 회원 UUID 가 역할로
 저장돼 수신자 0명), 관련 사용자면 정의가 선언한 첫 `relation` 을 채운다(서버가 선언 안의 값만 받는다).
 「행위자 제외」는 역할↔특정 회원 사이에서만 이어 간다. 이 규칙을 바꾸면 네 벌을 함께 바꾼다.
-수신자 유형 선택지(값 칸 없는 「사이트 관리자 이메일」 `site_admin_email` 과 고르면 뜨는 안내 포함, #888)와 정의 탭 받는 사람 요약도
+수신자 유형 선택지(값 칸 없는 「사이트 관리자 이메일」 `site_admin_email` 과 고르면 뜨는 안내 포함)와 정의 탭 받는 사람 요약도
 같은 목록이어야 한다 — 개인정보 동의(`sirsoft-gdpr`)·소셜 로그인(`sirsoft-social_login`) 플러그인 사본까지 다섯 벌을 함께 바꾼다
 (문구는 이 템플릿의 `admin.settings.notification_definitions.recipients.*` 키를 그대로 쓴다).
 
