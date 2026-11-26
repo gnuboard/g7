@@ -34,6 +34,8 @@ class UpdateBizppurioDeliveryRequest extends FormRequest
 
     /**
      * 라우트 파라미터(notificationType)를 검증 대상에 병합합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {

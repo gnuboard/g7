@@ -31,6 +31,11 @@ describe('actionRecipes.json — 핸들러 계약 일치', () => {
   describe('target 형 액션 (params 가 아니라 top-level target)', () => {
     // setLocale 은 엔진 빌트인(ActionDispatcher), setTheme/initTheme 은 템플릿 핸들러.
     // 셋 다 action.target 만 읽고 params 는 보지 않는다.
+    /**
+     * setLocale·setTheme·initTheme 레시피가 top-level target 으로 구워진다.
+     * @scenario component=action_recipes
+     * @effects recipe_target_actions_use_top_level_target
+     */
     it.each(['setLocale', 'setTheme', 'initTheme'])('%s 는 top-level target 으로 굽는다', (id) => {
       const build = recipes[id]?.build;
       expect(build).toBeDefined();
@@ -40,6 +45,11 @@ describe('actionRecipes.json — 핸들러 계약 일치', () => {
     });
   });
 
+  /**
+   * scrollToSection 레시피가 핸들러가 읽는 params.targetId 를 쓴다.
+   * @scenario component=action_recipes
+   * @effects recipe_params_match_handler_contract
+   */
   it('scrollToSection 은 params.targetId 로 굽는다 (sectionId 아님)', () => {
     const build = recipes.scrollToSection?.build;
     expect(build.params).toEqual({ targetId: '{{targetId}}' });
@@ -47,6 +57,11 @@ describe('actionRecipes.json — 핸들러 계약 일치', () => {
     expect(paramKeys('scrollToSection')).toEqual(['targetId']);
   });
 
+  /**
+   * setDateRange 의 preset 선택지가 핸들러 유효값 안에 있다.
+   * @scenario component=action_recipes
+   * @effects recipe_params_match_handler_contract
+   */
   it('setDateRange 의 preset 선택지는 핸들러 유효값 안에 있다', () => {
     // setDateRangeHandler 의 DatePreset 타입
     const validPresets = ['today', 'week', 'month', '3months', '6months', '1year'];
@@ -60,6 +75,11 @@ describe('actionRecipes.json — 핸들러 계약 일치', () => {
     expect(values).toContain('1year');
   });
 
+  /**
+   * toggleFilterVisibility 레시피가 storageKey 와 filterId 를 모두 넘긴다.
+   * @scenario component=action_recipes
+   * @effects recipe_params_match_handler_contract
+   */
   it('toggleFilterVisibility 는 storageKey + filterId 를 모두 넘긴다', () => {
     const build = recipes.toggleFilterVisibility?.build;
     expect(build.params).toEqual({
@@ -70,18 +90,33 @@ describe('actionRecipes.json — 핸들러 계약 일치', () => {
     expect(paramKeys('toggleFilterVisibility').sort()).toEqual(['filterId', 'storageKey']);
   });
 
+  /**
+   * initFilterVisibility 레시피가 storageKey 를 넘긴다.
+   * @scenario component=action_recipes
+   * @effects recipe_params_match_handler_contract
+   */
   it('initFilterVisibility 는 storageKey 를 넘긴다 (없으면 핸들러가 조기 반환)', () => {
     const build = recipes.initFilterVisibility?.build;
     expect(build.params).toEqual({ storageKey: '{{storageKey}}' });
     expect(paramKeys('initFilterVisibility')).toEqual(['storageKey']);
   });
 
+  /**
+   * saveMultilingualTag 레시피가 인자를 넘기지 않는다.
+   * @scenario component=action_recipes
+   * @effects recipe_params_match_handler_contract
+   */
   it('saveMultilingualTag 은 인자를 받지 않는다 (핸들러가 전역 편집 상태만 읽음)', () => {
     const recipe = recipes.saveMultilingualTag;
     expect(recipe.build.params).toBeUndefined();
     expect(recipe.params).toEqual([]);
   });
 
+  /**
+   * changeState 레시피가 상태 범위를 params.target 으로 넘긴다.
+   * @scenario component=action_recipes
+   * @effects recipe_params_match_handler_contract
+   */
   it('changeState 는 setState 의 상태 범위를 params.target 으로 넘긴다', () => {
     // handleSetState 는 resolvedParams 에서 target 을 읽는다 (루트 action.target 은 무시).
     // 루트에 두면 기본값 'component' 로 떨어져, 나중에 global 을 고를 수 있게 되는 순간

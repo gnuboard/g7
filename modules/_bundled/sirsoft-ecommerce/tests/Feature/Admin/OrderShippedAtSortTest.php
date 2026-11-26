@@ -47,6 +47,8 @@ class OrderShippedAtSortTest extends ModuleTestCase
      *
      * 주문은 팩토리를 쓰되 사용자를 1명으로 고정하고(기본값은 주문마다 User 생성),
      * 배송 행은 모델 이벤트가 필요 없으므로 쿼리 빌더로 한 번에 넣는다.
+     *
+     * @return void 반환값 없음
      */
     private function seedOrders(): void
     {
@@ -118,6 +120,10 @@ class OrderShippedAtSortTest extends ModuleTestCase
 
     /**
      * 관계 테이블 컬럼(발송일) 정렬의 세 불변식을 함께 검증한다.
+     *
+     * @scenario case=shipped_at_sort
+     * @effects shipped_at_sort_orders_by_aggregated_shipment_date, shipped_at_sort_keeps_total_count, shipped_at_sort_keeps_orders_without_shipments
+     * @return void 반환값 없음
      */
     public function test_발송일_정렬은_집계기준_정확하고_총건수와_미발송주문을_보존한다(): void
     {
@@ -151,6 +157,10 @@ class OrderShippedAtSortTest extends ModuleTestCase
 
     /**
      * 화면이 제공하는 발송일 정렬 옵션이 게이트에서 422 가 되지 않아야 한다.
+     *
+     * @scenario case=shipped_at_sort
+     * @effects shipped_at_sort_passes_the_gate
+     * @return void 반환값 없음
      */
     public function test_발송일_정렬_요청이_422가_아니다(): void
     {

@@ -26,7 +26,11 @@ class ListLanguagePackCommandTest extends TestCase
     use RefreshDatabase;
 
     /**
+     * 설치본 폴더가 없는 active 행이 목록에 「파일 없음」 표기와 함께 나온다.
+     *
      * @effects cli_list_surfaces_uninstalled_and_drift
+     *
+     * @return void 반환값 없음
      */
     public function test_lists_drift_row_with_files_missing_marker(): void
     {
@@ -57,7 +61,11 @@ class ListLanguagePackCommandTest extends TestCase
     }
 
     /**
+     * 아직 설치하지 않은 번들 언어팩이 uninstalled 상태로 목록에 나온다.
+     *
      * @effects cli_list_surfaces_uninstalled_and_drift
+     *
+     * @return void 반환값 없음
      */
     public function test_lists_uninstalled_bundle_pack(): void
     {
@@ -70,6 +78,13 @@ class ListLanguagePackCommandTest extends TestCase
         $this->assertStringContainsString('uninstalled', $out, '미설치 번들은 uninstalled 상태로 표기되어야 함');
     }
 
+    /**
+     * --scope=core 로 거르면 코어 팩만 나오고 모듈 팩은 빠진다.
+     *
+     * @effects cli_list_scope_filter_limits_output
+     *
+     * @return void 반환값 없음
+     */
     public function test_scope_filter_limits_output(): void
     {
         $exit = Artisan::call('language-pack:list', ['--scope' => 'core']);

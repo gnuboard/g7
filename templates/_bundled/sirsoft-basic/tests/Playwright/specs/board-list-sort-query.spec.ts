@@ -67,6 +67,8 @@ async function findPublicBoardSlug(page: Page): Promise<string | null> {
 }
 
 test.describe('사용자 게시판 목록 — URL 정렬 파라미터', () => {
+  // @scenario layer=browser, url_sort=present
+  // @effects url_sort_reaches_list_request
   test('URL 의 sort_by/sort_order 가 목록 요청에 실린다', async ({ page }) => {
     const slug = await findPublicBoardSlug(page);
     test.skip(!slug, '공개 게시판이 없어 검증할 수 없습니다');
@@ -85,6 +87,8 @@ test.describe('사용자 게시판 목록 — URL 정렬 파라미터', () => {
     expect(params.get('sort_order'), 'sort_order 파라미터').toBe('desc');
   });
 
+  // @scenario layer=browser, url_sort=absent
+  // @effects absent_url_sort_not_sent_preserving_board_setting
   test('URL 에 정렬이 없으면 정렬 파라미터를 보내지 않는다 (게시판 설정 보존)', async ({ page }) => {
     const slug = await findPublicBoardSlug(page);
     test.skip(!slug, '공개 게시판이 없어 검증할 수 없습니다');

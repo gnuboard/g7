@@ -46,6 +46,11 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
         'DB_PREFIX', 'APP_KEY',
     ];
 
+    /**
+     * 앱 루트를 임시 폴더로 돌리고 환경변수 원본을 저장한 뒤 업그레이드 스텝 클래스를 읽어 온다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -79,6 +84,11 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
         $this->cleanupArtifacts();
     }
 
+    /**
+     * 남은 runtime.php 를 지우고 환경변수를 원본으로 되돌린 뒤 임시 앱 루트를 걷는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->cleanupArtifacts();
@@ -102,6 +112,11 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 남아 있는 runtime.php 를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     private function cleanupArtifacts(): void
     {
         if (is_file($this->runtimePath)) {
@@ -109,11 +124,22 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
         }
     }
 
+    /**
+     * beta.6 에서 beta.7 로 올리는 업그레이드 맥락을 만든다.
+     *
+     * @return UpgradeContext 업그레이드 스텝에 넘길 맥락
+     */
     private function context(): UpgradeContext
     {
         return new UpgradeContext('7.0.0-beta.6', '7.0.0-beta.7', '7.0.0-beta.7');
     }
 
+    /**
+     * 주어진 배열을 반환하는 runtime.php 를 쓴다.
+     *
+     * @param array $data runtime.php 가 반환할 설정 배열
+     * @return void 반환값 없음
+     */
     private function writeRuntime(array $data): void
     {
         $dir = dirname($this->runtimePath);
@@ -124,6 +150,11 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
         file_put_contents($this->runtimePath, $php);
     }
 
+    /**
+     * DB 쓰기 자격증명·접두사·APP_KEY 가 든 표본 runtime 설정을 만든다.
+     *
+     * @return array 표본 runtime 설정 배열
+     */
     private function sampleRuntime(): array
     {
         return [
@@ -144,6 +175,12 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
         ];
     }
 
+    /**
+     * .env 파일 내용을 통째로 쓴다.
+     *
+     * @param string $content .env 에 쓸 내용
+     * @return void 반환값 없음
+     */
     private function writeEnv(string $content): void
     {
         file_put_contents($this->envPath, $content);
@@ -152,6 +189,13 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     // -----------------------------------------------------------------------
     // axis 1: 정상 finalize — .env 머지 + runtime 삭제 + state.json 삭제
     // -----------------------------------------------------------------------
+    /**
+     * runtime.php 가 남고 .env 에 완료 표시가 없으면 자격증명·APP_KEY·완료 표시를 .env 에 합치고 runtime.php 를 지운다.
+     *
+     * @effects upgrade_step_auto_finalizes_orphaned_runtime_when_env_not_marked_completed
+     *
+     * @return void 반환값 없음
+     */
     public function test_finalizes_orphaned_runtime_and_merges_env(): void
     {
         $runtime = $this->sampleRuntime();
@@ -172,6 +216,13 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     // -----------------------------------------------------------------------
     // axis 2: state.json 부재 시에도 멱등 (.env 머지 + runtime 삭제)
     // -----------------------------------------------------------------------
+    /**
+     * state.json 이 없어도 .env 머지와 runtime.php 삭제가 끝난다.
+     *
+     * @effects upgrade_step_auto_finalizes_orphaned_runtime_when_env_not_marked_completed
+     *
+     * @return void 반환값 없음
+     */
     public function test_finalizes_when_state_json_missing(): void
     {
         $this->writeRuntime($this->sampleRuntime());
@@ -193,6 +244,13 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     // -----------------------------------------------------------------------
     // axis 3: runtime.php 부재 → no-op
     // -----------------------------------------------------------------------
+    /**
+     * runtime.php 가 없으면 아무것도 하지 않아 .env 가 그대로다.
+     *
+     * @effects upgrade_step_skips_when_runtime_php_is_absent_idempotent_noop
+     *
+     * @return void 반환값 없음
+     */
     public function test_noop_when_runtime_absent(): void
     {
         if (is_file($this->runtimePath)) {
@@ -210,6 +268,13 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     // -----------------------------------------------------------------------
     // axis 4: .env 의 INSTALLER_COMPLETED=true + runtime 잔존 → 보존 + warn
     // -----------------------------------------------------------------------
+    /**
+     * .env 에 INSTALLER_COMPLETED=true 가 있으면 runtime.php 를 지우지 않고 .env 도 바꾸지 않는다.
+     *
+     * @effects upgrade_step_warns_when_env_marked_completed_but_runtime_php_still_exists_no_auto_delete
+     *
+     * @return void 반환값 없음
+     */
     public function test_preserves_runtime_when_env_marked_completed(): void
     {
         $runtime = $this->sampleRuntime();
@@ -228,6 +293,13 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     // -----------------------------------------------------------------------
     // axis 5: .env 부재 + .env.example 만 존재 → .env.example 기반 신규 생성
     // -----------------------------------------------------------------------
+    /**
+     * .env 가 없으면 .env.example 을 바탕으로 새 .env 를 만들어 자격증명을 합친다.
+     *
+     * @effects upgrade_step_falls_back_to_env_example_when_env_file_is_absent
+     *
+     * @return void 반환값 없음
+     */
     public function test_creates_env_from_example_when_env_absent(): void
     {
         if (! is_file($this->envExamplePath)) {
@@ -252,6 +324,13 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     // -----------------------------------------------------------------------
     // axis 6: runtime.php 가 배열 아닌 형식 → 보존, skip
     // -----------------------------------------------------------------------
+    /**
+     * runtime.php 가 배열을 반환하지 않으면 건너뛰어 runtime.php 와 .env 를 그대로 둔다.
+     *
+     * @effects upgrade_step_keeps_runtime_php_and_env_when_runtime_returns_non_array
+     *
+     * @return void 반환값 없음
+     */
     public function test_preserves_runtime_when_format_invalid(): void
     {
         $dir = dirname($this->runtimePath);
@@ -273,6 +352,13 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     // -----------------------------------------------------------------------
     // axis 7: .env 의 truthy 변형 ("1", quoted "true") 도 보존 트리거
     // -----------------------------------------------------------------------
+    /**
+     * 완료 표시가 1·따옴표 친 true·yes 여도 완료로 보고 runtime.php 와 .env 를 그대로 둔다.
+     *
+     * @effects upgrade_step_warns_when_env_marked_completed_but_runtime_php_still_exists_no_auto_delete
+     *
+     * @return void 반환값 없음
+     */
     public function test_preserves_runtime_for_truthy_variants(): void
     {
         $runtime = $this->sampleRuntime();
@@ -309,6 +395,13 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     // axis 8: 기존 .env 의 권한/그룹 보존 — CLI 사용자와 PHP-FPM 사용자가 다른 환경
     //         (자체 구축 서버: jjh:www-data 0640)
     // -----------------------------------------------------------------------
+    /**
+     * 원래 있던 .env 의 0640 권한이 머지 뒤에도 그대로다.
+     *
+     * @effects upgrade_step_preserves_existing_env_mode_uid_gid_when_env_existed_before_merge
+     *
+     * @return void 반환값 없음
+     */
     public function test_preserves_env_mode_when_env_existed(): void
     {
         if (DIRECTORY_SEPARATOR === '\\') {
@@ -339,6 +432,13 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     //         0600 으로 강제 다운그레이드 한 것이었음. 운영자가 의도해서 0600 을 둔
     //         경우 (단일 사용자 환경) 도 같은 정책 — 기존 권한이 SSoT
     // -----------------------------------------------------------------------
+    /**
+     * 운영자가 0600 으로 잠근 .env 도 머지 뒤 권한이 그대로다.
+     *
+     * @effects upgrade_step_preserves_strict_0600_env_mode_when_owner_intent_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_preserves_strict_env_mode_unchanged(): void
     {
         if (DIRECTORY_SEPARATOR === '\\') {
@@ -362,6 +462,13 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     // axis 10: .env 가 새로 생성될 때 default 권한이 0640 — 0600 으로 강제 금지
     //          (회귀 가드 — PHP-FPM 사용자가 그룹으로만 묶인 환경 보호)
     // -----------------------------------------------------------------------
+    /**
+     * 새로 만든 .env 의 기본 권한은 그룹이 읽을 수 있는 0640 이다.
+     *
+     * @effects upgrade_step_uses_0640_default_permission_for_newly_created_env_not_0600
+     *
+     * @return void 반환값 없음
+     */
     public function test_new_env_uses_group_readable_default_permission(): void
     {
         if (DIRECTORY_SEPARATOR === '\\') {
@@ -394,6 +501,13 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     //          www-data 그룹 자동 식별. 단일 사용자 환경(카페24)에서는 동일 그룹이
     //          유지되므로 회귀 없음
     // -----------------------------------------------------------------------
+    /**
+     * 새로 만든 .env 가 bootstrap/cache 폴더의 그룹을 이어받는다.
+     *
+     * @effects upgrade_step_detects_web_server_group_from_bootstrap_cache_for_new_env
+     *
+     * @return void 반환값 없음
+     */
     public function test_new_env_inherits_group_from_bootstrap_cache(): void
     {
         if (DIRECTORY_SEPARATOR === '\\') {
@@ -453,6 +567,13 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     //   자격증명을 반영하는지 검증한다. 한시적 보정 — beta.8 이후 환경에서는 .env 가
     //   이미 정상이므로 트리거 안 됨.
     // -----------------------------------------------------------------------
+    /**
+     * 머지 뒤 현재 프로세스의 getenv·$_ENV 도 새 쓰기·읽기 자격증명으로 바뀐다.
+     *
+     * @effects upgrade_step_refreshes_parent_process_env_with_merged_db_write_credentials, upgrade_step_refreshes_parent_process_env_with_merged_db_read_credentials
+     *
+     * @return void 반환값 없음
+     */
     public function test_refreshes_process_env_with_merged_credentials(): void
     {
         // .env.example 잔존 상태 시뮬레이션 (DB_WRITE_USERNAME=root, DB_WRITE_PASSWORD=)

@@ -18,8 +18,11 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 class GdprCookieConsentControllerTest extends PluginTestCase
 {
     /**
-     * @param  array<string, mixed>  $values
-     * @return void
+     * 플러그인 설정 서비스를 목으로 바꿔, 주어진 키에는 주어진 값을 돌려주게 한다.
+     *
+     * @param  array<string, mixed>  $values  설정 키별로 돌려줄 값
+     *
+     * @return void 반환값 없음
      */
     private function mockSettings(array $values): void
     {
@@ -30,6 +33,15 @@ class GdprCookieConsentControllerTest extends PluginTestCase
         $this->app->instance(PluginSettingsService::class, $mock);
     }
 
+    /**
+     * 비회원이 동의를 저장하면 켠 항목은 granted, 끈 항목은 revoked 로 이력이 남는다.
+     *
+     * @scenario layer=controller, subject=guest
+     *
+     * @effects guest_consent_records_granted_and_revoked_history
+     *
+     * @return void 반환값 없음
+     */
     public function test_guest_can_store_cookie_consent(): void
     {
         $this->mockSettings(['cookie_policy_version' => '1.0']);
@@ -58,6 +70,15 @@ class GdprCookieConsentControllerTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * 회원이 동의를 저장하면 현재 상태 행이 생긴다.
+     *
+     * @scenario layer=controller, subject=member
+     *
+     * @effects member_consent_creates_status_row
+     *
+     * @return void 반환값 없음
+     */
     public function test_authenticated_user_consent_creates_status_row(): void
     {
         $this->mockSettings(['cookie_policy_version' => '1.0']);
@@ -76,6 +97,15 @@ class GdprCookieConsentControllerTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * 필수 항목을 끄는 요청은 422 로 막힌다.
+     *
+     * @scenario layer=controller, subject=guest
+     *
+     * @effects required_category_revoke_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_required_category_revoke_is_blocked(): void
     {
         $this->mockSettings(['cookie_policy_version' => '1.0']);
@@ -86,6 +116,15 @@ class GdprCookieConsentControllerTest extends PluginTestCase
         ])->assertStatus(422);
     }
 
+    /**
+     * 모르는 항목 키로 보내면 422 로 막힌다.
+     *
+     * @scenario layer=controller, subject=guest
+     *
+     * @effects unknown_consent_key_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_invalid_consent_key_is_rejected(): void
     {
         $this->mockSettings(['cookie_policy_version' => '1.0']);
@@ -96,6 +135,15 @@ class GdprCookieConsentControllerTest extends PluginTestCase
         ])->assertStatus(422);
     }
 
+    /**
+     * 모르는 출처로 보내면 422 로 막힌다.
+     *
+     * @scenario layer=controller, subject=guest
+     *
+     * @effects unknown_source_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_invalid_source_is_rejected(): void
     {
         $this->postJson('/api/plugins/sirsoft-gdpr/consent/cookie', [
@@ -104,6 +152,15 @@ class GdprCookieConsentControllerTest extends PluginTestCase
         ])->assertStatus(422);
     }
 
+    /**
+     * 처음 온 방문자의 상태 조회는 has_consented=false 다.
+     *
+     * @scenario layer=controller, subject=guest
+     *
+     * @effects status_false_for_new_visitor
+     *
+     * @return void 반환값 없음
+     */
     public function test_status_returns_false_for_new_visitor(): void
     {
         $this->mockSettings(['cookie_policy_version' => '1.0']);
@@ -113,6 +170,15 @@ class GdprCookieConsentControllerTest extends PluginTestCase
             ->assertJsonPath('data.has_consented', false);
     }
 
+    /**
+     * 비회원의 상태 조회는 is_member=false 를 돌려준다.
+     *
+     * @scenario layer=controller, subject=guest
+     *
+     * @effects status_exposes_is_member_flag
+     *
+     * @return void 반환값 없음
+     */
     public function test_status_exposes_is_member_false_for_guest(): void
     {
         // 회귀 가드: 배너 layout 의 회원 한정 keep_consent 버튼 분기에 사용되는 is_member SSoT.
@@ -124,6 +190,15 @@ class GdprCookieConsentControllerTest extends PluginTestCase
             ->assertJsonPath('data.is_member', false);
     }
 
+    /**
+     * 회원의 상태 조회는 is_member=true 를 돌려준다.
+     *
+     * @scenario layer=controller, subject=member
+     *
+     * @effects status_exposes_is_member_flag
+     *
+     * @return void 반환값 없음
+     */
     public function test_status_exposes_is_member_true_for_authenticated_user(): void
     {
         // 회귀 가드: 회원 (sanctum 토큰) 호출 시 is_member=true. 본 필드가 없어 layout 의 옛
@@ -136,6 +211,15 @@ class GdprCookieConsentControllerTest extends PluginTestCase
             ->assertJsonPath('data.is_member', true);
     }
 
+    /**
+     * 신규 비회원이 저장하면 UUID session_id 와 서명된 gdpr_session 쿠키를 받는다.
+     *
+     * @scenario layer=controller, subject=guest
+     *
+     * @effects guest_store_issues_signed_gdpr_session_cookie
+     *
+     * @return void 반환값 없음
+     */
     public function test_store_issues_gdpr_session_cookie_for_new_guest(): void
     {
         $this->mockSettings(['cookie_policy_version' => '1.0']);
@@ -167,6 +251,12 @@ class GdprCookieConsentControllerTest extends PluginTestCase
     /**
      * 회귀 가드: gdpr_session 쿠키 값을 임의로 조작해 보내면 서버가 그 값을 신뢰하지 않고
      * 새로운(다른) session_id 로 취급해야 한다 — 서명 없는 값을 그대로 신뢰하던 결함 회귀 방지.
+     *
+     * @scenario layer=controller, subject=guest
+     *
+     * @effects tampered_gdpr_session_cookie_not_trusted
+     *
+     * @return void 반환값 없음
      */
     public function test_tampered_gdpr_session_cookie_is_not_trusted(): void
     {
@@ -184,6 +274,15 @@ class GdprCookieConsentControllerTest extends PluginTestCase
         $this->assertNotSame($forgedSessionId, $response->json('data.session_id'), '서명 없는 위조 session_id 는 신뢰되면 안 됨');
     }
 
+    /**
+     * 비회원 저장 뒤 응답의 session_id 로 서비스에서 현재 동의가 조회된다.
+     *
+     * @scenario layer=controller, subject=guest
+     *
+     * @effects guest_consent_found_by_session_id
+     *
+     * @return void 반환값 없음
+     */
     public function test_guest_consent_persists_via_service_with_session_id(): void
     {
         // 회귀 가드: 게스트 동의 저장 후 Service 단에서 sessionId 로 조회 시 has_consented:true.
@@ -211,6 +310,15 @@ class GdprCookieConsentControllerTest extends PluginTestCase
         );
     }
 
+    /**
+     * 회원이 동의한 뒤 상태 조회는 has_consented=true 다.
+     *
+     * @scenario layer=controller, subject=member
+     *
+     * @effects status_true_after_member_consent
+     *
+     * @return void 반환값 없음
+     */
     public function test_status_returns_true_for_authenticated_user_with_consent(): void
     {
         $this->mockSettings(['cookie_policy_version' => '1.0']);
@@ -228,6 +336,15 @@ class GdprCookieConsentControllerTest extends PluginTestCase
             ->assertJsonPath('data.has_consented', true);
     }
 
+    /**
+     * 동의 뒤 정책 버전이 오르면 상태 조회는 has_consented=false 가 된다.
+     *
+     * @scenario layer=controller, subject=member
+     *
+     * @effects status_false_after_policy_version_bump
+     *
+     * @return void 반환값 없음
+     */
     public function test_status_returns_false_when_policy_version_changed(): void
     {
         // 동의 시점 정책 버전 v1 (마이그레이션 시드)
@@ -262,7 +379,11 @@ class GdprCookieConsentControllerTest extends PluginTestCase
      * actingAs() 를 사용하는 기존 test_authenticated_user_consent_creates_status_row 는
      * 미들웨어를 우회하므로 이 회귀를 잡지 못한다 — 반드시 실제 토큰으로 검증할 것.
      *
-     * @return void
+     * @scenario layer=controller, subject=member
+     *
+     * @effects real_bearer_token_consent_persists_user_id
+     *
+     * @return void 반환값 없음
      */
     public function test_consent_with_real_sanctum_token_persists_user_id(): void
     {
@@ -297,7 +418,11 @@ class GdprCookieConsentControllerTest extends PluginTestCase
      *
      * 미들웨어가 없으면 위조 토큰이 그냥 게스트로 통과해 history 에만 기록되는 무결성 결함이 발생.
      *
-     * @return void
+     * @scenario layer=controller, subject=guest
+     *
+     * @effects forged_bearer_token_rejected_401
+     *
+     * @return void 반환값 없음
      */
     public function test_consent_with_forged_token_is_rejected(): void
     {
@@ -314,7 +439,11 @@ class GdprCookieConsentControllerTest extends PluginTestCase
     /**
      * 회귀 가드: 토큰 없이 호출하면 게스트로 통과 (optional.sanctum 의 정상 동작).
      *
-     * @return void
+     * @scenario layer=controller, subject=guest
+     *
+     * @effects missing_token_falls_back_to_guest
+     *
+     * @return void 반환값 없음
      */
     public function test_consent_without_token_falls_back_to_guest(): void
     {
@@ -335,7 +464,11 @@ class GdprCookieConsentControllerTest extends PluginTestCase
      *
      * 미들웨어 누락 회귀 시 토큰을 보내도 게스트로 처리되어 has_consented:false 가 된다.
      *
-     * @return void
+     * @scenario layer=controller, subject=member
+     *
+     * @effects real_bearer_token_status_reflects_member_consent
+     *
+     * @return void 반환값 없음
      */
     public function test_status_with_real_sanctum_token_reflects_user_consent(): void
     {
@@ -359,6 +492,12 @@ class GdprCookieConsentControllerTest extends PluginTestCase
 
     /**
      * 작업 5 (B-2) — 신규 게스트 (이력 0건) 의 status 응답에 needs_renewal=false + current_policy_version 포함.
+     *
+     * @scenario layer=controller, subject=guest
+     *
+     * @effects status_needs_renewal_false_for_new_guest
+     *
+     * @return void 반환값 없음
      */
     public function test_status_response_includes_needs_renewal_false_for_new_guest(): void
     {
@@ -379,6 +518,12 @@ class GdprCookieConsentControllerTest extends PluginTestCase
      * 게스트 시나리오는 EncryptCookies 미들웨어와 테스트 환경 cookie 처리 불일치로 별도 검증
      * 어려움 → 작업 12 시나리오 매니페스트 + 수동 검증으로 위임. Service::hasAnyConsentHistory
      * 자체는 게스트/회원 동일 로직이라 회원 검증으로 동작 보장.
+     *
+     * @scenario layer=controller, subject=member
+     *
+     * @effects status_needs_renewal_true_for_outdated_member_consent
+     *
+     * @return void 반환값 없음
      */
     public function test_status_response_includes_needs_renewal_true_for_outdated_user_consent(): void
     {
@@ -412,6 +557,12 @@ class GdprCookieConsentControllerTest extends PluginTestCase
      * 결함 시점: updateConsent 의 noop 가드가 is_consented 만 비교 → 같은 값 재제출이 즉시 return →
      * status.policy_version 이 v1 에 머물러 needs_renewal 영구 true (새로고침해도 배너 사라지지 않음).
      * 가드는 (is_consented 동일) AND (policy_version 동일) 일 때만 noop 이어야 함.
+     *
+     * @scenario layer=controller, subject=member
+     *
+     * @effects status_needs_renewal_false_after_re_accept
+     *
+     * @return void 반환값 없음
      */
     public function test_status_returns_needs_renewal_false_after_re_accept_for_new_policy_version(): void
     {
@@ -456,7 +607,11 @@ class GdprCookieConsentControllerTest extends PluginTestCase
      * 동의 철회 시 cookie 파기는 클라이언트 functionalCleaner 가 단독 담당 (allowlist 외 전체 파기).
      * 서버는 후속 응답에서 CookieConsentMiddleware 가 allowlist 외 모든 Set-Cookie 를 제거.
      *
-     * @return void
+     * @scenario layer=controller, subject=guest
+     *
+     * @effects controller_does_not_dispatch_extra_cookies_on_functional_decline
+     *
+     * @return void 반환값 없음
      */
     public function test_consent_response_does_not_dispatch_extra_cookies_on_functional_decline(): void
     {
@@ -484,9 +639,13 @@ class GdprCookieConsentControllerTest extends PluginTestCase
     // ===== intent:'reject' 거부 저장 (컨트롤러 경로) =====
 
     /**
+     * 회원이 거부(intent:'reject')를 보내면 선택 항목은 거부로 남고, 필수 항목은 상태에 남지 않으며, 거부 저장 메시지가 온다.
+     *
      * @scenario entry=reject, subject=member, category=optional
      *
      * @effects member_rejection_intent_marks_optional_as_rejected, required_category_excluded_from_status, reject_controller_response_uses_rejected_saved_message
+     *
+     * @return void 반환값 없음
      */
     public function test_member_rejection_intent_marks_optional_as_rejected(): void
     {
@@ -528,9 +687,13 @@ class GdprCookieConsentControllerTest extends PluginTestCase
     }
 
     /**
+     * 비회원이 거부를 보내면 선택 항목 이력이 rejected 로 남는다.
+     *
      * @scenario entry=reject, subject=guest, category=optional
      *
      * @effects guest_rejection_intent_records_history_as_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_rejection_intent_records_history_as_rejected(): void
     {
@@ -553,9 +716,13 @@ class GdprCookieConsentControllerTest extends PluginTestCase
     }
 
     /**
+     * intent 에 'reject' 가 아닌 값을 보내면 422 로 막힌다.
+     *
      * @scenario entry=reject, subject=guest, category=required
      *
      * @effects rejection_intent_invalid_value_is_rejected_by_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_rejection_intent_invalid_value_is_rejected_by_validation(): void
     {
@@ -570,9 +737,13 @@ class GdprCookieConsentControllerTest extends PluginTestCase
     }
 
     /**
+     * intent 없이 끈 항목은 거부가 아니라 철회(revoked)로 남는다.
+     *
      * @scenario entry=save_selection, subject=member, category=optional
      *
      * @effects without_intent_regression_stores_revoked_not_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_without_intent_regression_stores_revoked_not_rejected(): void
     {
@@ -608,6 +779,8 @@ class GdprCookieConsentControllerTest extends PluginTestCase
      * @scenario entry=reject, subject=member, category=required
      *
      * @effects rejection_makes_banner_not_reappear_for_member
+     *
+     * @return void 반환값 없음
      */
     public function test_rejection_makes_banner_not_reappear_for_member(): void
     {

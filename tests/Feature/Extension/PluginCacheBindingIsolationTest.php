@@ -25,8 +25,12 @@ use Tests\TestCase;
 class PluginCacheBindingIsolationTest extends TestCase
 {
     /**
+     * 모든 서비스 프로바이더가 부팅된 뒤에도 전역 CacheInterface 는 코어 캐시 드라이버로 풀린다.
+     *
      * @scenario extension_kind=plugin,service_kind=cache_service,global_binding_state=installed_before_provider,manager_state=plugin_resolved,consumer_type=single_class
      * @effects global_cache_interface_binding_remains_core_cache_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_global_cache_interface_resolves_to_core_cache_driver(): void
     {
@@ -42,8 +46,12 @@ class PluginCacheBindingIsolationTest extends TestCase
     }
 
     /**
+     * 전역 StorageInterface 는 바인딩이 없거나, 있어도 플러그인·모듈 스토리지 드라이버가 아니다.
+     *
      * @scenario extension_kind=plugin,service_kind=storage_service,global_binding_state=absent,manager_state=plugin_resolved,consumer_type=no_registration
      * @effects global_storage_interface_binding_remains_core_storage_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_global_storage_interface_is_not_bound_to_extension_driver(): void
     {
@@ -72,8 +80,12 @@ class PluginCacheBindingIsolationTest extends TestCase
     }
 
     /**
+     * 코어 캐시 키는 g7:core: 접두사로 풀리고 저장·확인·삭제가 코어 영역에서 동작한다.
+     *
      * @scenario extension_kind=plugin,service_kind=cache_service,global_binding_state=installed_before_provider,manager_state=plugin_resolved,consumer_type=single_class
      * @effects layout_service_ext_cache_version_key_written_to_core_namespace
+     *
+     * @return void 반환값 없음
      */
     public function test_core_cache_writes_use_core_namespace_prefix(): void
     {

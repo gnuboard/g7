@@ -57,6 +57,11 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
         'is_active',
     ];
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -108,9 +113,12 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
 
     #[Test]
     /**
+     * 기본 목록은 국가별 설정 중첩 블록을 빼고 화면이 그리는 필드만 싣는다.
+     *
      * @scenario endpoint=admin_list,opt_in=default
      *
      * @effects list_omits_nested_country_setting_blocks, list_keeps_fields_the_screen_draws
+     * @return void 반환값 없음
      */
     public function test_list_carries_only_the_fields_the_screen_draws(): void
     {
@@ -144,9 +152,12 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
 
     #[Test]
     /**
+     * 전체 컬럼을 켜지 않아도 목록 요약 값은 그대로 계산된다.
+     *
      * @scenario endpoint=admin_list,opt_in=default
      *
      * @effects list_keeps_fields_the_screen_draws
+     * @return void 반환값 없음
      */
     public function test_list_still_computes_summaries_without_opt_in(): void
     {
@@ -165,9 +176,12 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
 
     #[Test]
     /**
+     * 목록은 비활성 국가 설정도 함께 싣는다.
+     *
      * @scenario endpoint=admin_list,opt_in=default
      *
      * @effects list_includes_inactive_country_settings
+     * @return void 반환값 없음
      */
     public function test_list_includes_inactive_country_settings(): void
     {
@@ -187,9 +201,12 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
 
     #[Test]
     /**
+     * 요약은 불러온 경로와 상관없이 활성 국가 설정만 센다.
+     *
      * @scenario endpoint=admin_list,opt_in=default
      *
      * @effects summaries_count_only_active_settings_regardless_of_load_path
+     * @return void 반환값 없음
      */
     public function test_summaries_count_only_active_settings_regardless_of_load_path(): void
     {
@@ -212,9 +229,12 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
 
     #[Test]
     /**
+     * 국가별 설정을 켜면 전체 국가 설정 블록이 돌아온다.
+     *
      * @scenario endpoint=admin_list,opt_in=with_country_settings
      *
      * @effects opt_in_restores_full_country_settings
+     * @return void 반환값 없음
      */
     public function test_opt_in_restores_full_country_settings(): void
     {
@@ -233,9 +253,12 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
 
     #[Test]
     /**
+     * 켜기 파라미터는 쿼리스트링의 불리언 표기를 모두 받는다.
+     *
      * @scenario endpoint=admin_list,opt_in=with_country_settings
      *
      * @effects opt_in_accepts_query_string_boolean_forms
+     * @return void 반환값 없음
      */
     public function test_opt_in_accepts_query_string_boolean_forms(): void
     {
@@ -267,9 +290,12 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
 
     #[Test]
     /**
+     * 기본 목록의 국가 설정 조회 쿼리 수가 정책 수에 따라 늘지 않는다.
+     *
      * @scenario endpoint=admin_list,opt_in=default
      *
      * @effects country_setting_queries_do_not_grow_with_rows
+     * @return void 반환값 없음
      */
     public function test_default_list_country_setting_queries_do_not_grow_with_rows(): void
     {
@@ -278,9 +304,12 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
 
     #[Test]
     /**
+     * 활성 목록의 국가 설정 조회 쿼리 수가 정책 수에 따라 늘지 않는다.
+     *
      * @scenario endpoint=active_list,opt_in=default
      *
      * @effects country_setting_queries_do_not_grow_with_rows
+     * @return void 반환값 없음
      */
     public function test_active_list_country_setting_queries_do_not_grow_with_rows(): void
     {
@@ -294,7 +323,7 @@ class ShippingPolicyListPayloadTest extends ModuleTestCase
      * 국가별 설정 조회 쿼리 수가 정책 수에 비례하지 않음을 단언합니다.
      *
      * @param  string  $url  측정할 엔드포인트
-     * @return void
+     * @return void 반환값 없음
      */
     private function assertCountrySettingQueriesAreConstant(string $url): void
     {

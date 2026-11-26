@@ -20,6 +20,11 @@ class TemplateLanguageServingTest extends TestCase
 
     private TemplateService $templateService;
 
+    /**
+     * 기본 관리자 템플릿을 설치·활성화하고 비활성 사용자 템플릿을 만든 뒤 캐시를 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,6 +53,10 @@ class TemplateLanguageServingTest extends TestCase
 
     /**
      * 한국어 언어 파일 조회 성공 테스트
+     *
+     * @effects fallback_api_serves_template_language_file
+     *
+     * @return void 반환값 없음
      */
     public function test_can_retrieve_korean_language_file(): void
     {
@@ -62,6 +71,10 @@ class TemplateLanguageServingTest extends TestCase
 
     /**
      * 영어 언어 파일 조회 성공 테스트
+     *
+     * @effects fallback_api_serves_template_language_file
+     *
+     * @return void 반환값 없음
      */
     public function test_can_retrieve_english_language_file(): void
     {
@@ -76,6 +89,10 @@ class TemplateLanguageServingTest extends TestCase
 
     /**
      * 지원하지 않는 로케일 요청 시 404 반환
+     *
+     * @effects fallback_api_rejects_unsupported_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_unsupported_locale_returns_404(): void
     {
@@ -95,6 +112,10 @@ class TemplateLanguageServingTest extends TestCase
 
     /**
      * 존재하지 않는 템플릿 요청 시 404 반환
+     *
+     * @effects fallback_api_rejects_inactive_or_missing_template
+     *
+     * @return void 반환값 없음
      */
     public function test_nonexistent_template_returns_404(): void
     {
@@ -111,6 +132,10 @@ class TemplateLanguageServingTest extends TestCase
 
     /**
      * 비활성화된 템플릿 요청 시 404 반환
+     *
+     * @effects fallback_api_rejects_inactive_or_missing_template
+     *
+     * @return void 반환값 없음
      */
     public function test_inactive_template_returns_404(): void
     {
@@ -127,6 +152,10 @@ class TemplateLanguageServingTest extends TestCase
 
     /**
      * 언어 파일이 캐싱되는지 확인
+     *
+     * @effects fallback_api_caches_payload_under_cache_version
+     *
+     * @return void 반환값 없음
      */
     public function test_language_file_is_cached(): void
     {
@@ -152,6 +181,10 @@ class TemplateLanguageServingTest extends TestCase
 
     /**
      * Cache-Control 헤더가 설정되는지 확인
+     *
+     * @effects fallback_api_sets_public_cache_headers_in_production
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_control_header_is_set(): void
     {
@@ -171,6 +204,10 @@ class TemplateLanguageServingTest extends TestCase
 
     /**
      * lang If-None-Match 일치 시 304 (조건부 캐시 — #122 작업 C)
+     *
+     * @effects fallback_api_serves_etag_304
+     *
+     * @return void 반환값 없음
      */
     public function test_language_returns_304_with_matching_etag(): void
     {
@@ -194,6 +231,8 @@ class TemplateLanguageServingTest extends TestCase
      * 개발 환경에서 lang 은 no-cache (파일 수정 즉시 반영 — F10)
      *
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=dev, trigger=manual_command, process_user=web
+     *
+     * @return void 반환값 없음
      */
     public function test_language_no_cache_in_development(): void
     {
@@ -209,6 +248,10 @@ class TemplateLanguageServingTest extends TestCase
 
     /**
      * 잘못된 로케일 형식 요청 시 404 반환
+     *
+     * @effects fallback_api_rejects_unsupported_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_invalid_locale_format_returns_404(): void
     {

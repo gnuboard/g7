@@ -19,6 +19,12 @@ class TemplateServiceLocalizationTest extends TestCase
 
     /**
      * 한국어 로케일에서 템플릿 오류 메시지 테스트
+     *
+     * @scenario locale=ko, check=params
+     *
+     * @effects template_error_message_error_param_replaced
+     *
+     * @return void 반환값 없음
      */
     public function test_korean_template_error_messages(): void
     {
@@ -38,6 +44,12 @@ class TemplateServiceLocalizationTest extends TestCase
 
     /**
      * 영어 로케일에서 템플릿 오류 메시지 테스트
+     *
+     * @scenario locale=en, check=content
+     *
+     * @effects template_error_message_error_param_replaced
+     *
+     * @return void 반환값 없음
      */
     public function test_english_template_error_messages(): void
     {
@@ -56,6 +68,10 @@ class TemplateServiceLocalizationTest extends TestCase
 
     /**
      * 로케일 전환 시 메시지 변경 확인 테스트
+     *
+     * @effects template_error_messages_switch_with_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_locale_switching_changes_messages(): void
     {
@@ -75,6 +91,12 @@ class TemplateServiceLocalizationTest extends TestCase
 
     /**
      * 기타 템플릿 메시지 다국어 지원 테스트
+     *
+     * @scenario locale=ko, check=content
+     *
+     * @effects template_lang_representative_content
+     *
+     * @return void 반환값 없음
      */
     public function test_other_template_messages_localization(): void
     {

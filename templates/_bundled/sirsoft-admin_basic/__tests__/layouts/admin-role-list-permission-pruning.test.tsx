@@ -17,9 +17,7 @@
  *
  * 한쪽만 보면 어느 방향으로 되돌아가도 통과한다 — 그래서 같은 파일에서 함께 고정한다.
  *
- * @scenario resource=role,endpoint=list,observation=consumer_screen
- * @effects role_list_omits_permission_payload
- * @effects role_list_renders_permission_count
+ * 조합·효과는 각 시험 주석이 선언한다(역할 × 목록 × 소비 화면).
  */
 
 import React from 'react';
@@ -152,6 +150,11 @@ describe('역할 관리 목록 — 권한 배열 프루닝 (공개 #76)', () => 
     });
 
     describe('소비 — 목록에서 뺀 필드를 화면이 읽지 않는다', () => {
+        /**
+         * 행 바인딩이 목록에서 뺀 권한 필드 3종을 읽지 않는다.
+         * @scenario resource=role, endpoint=list, observation=consumer_screen
+         * @effects role_list_screen_does_not_read_pruned_permission_fields
+         */
         it('행 바인딩이 permissions / permission_ids / permission_values 를 참조하지 않는다', () => {
             const bindings = collectBindings(layout);
 
@@ -173,6 +176,11 @@ describe('역할 관리 목록 — 권한 배열 프루닝 (공개 #76)', () => 
             ).toEqual([]);
         });
 
+        /**
+         * 데이터그리드 컬럼 field 에도 뺀 권한 필드가 없다.
+         * @scenario resource=role, endpoint=list, observation=consumer_screen
+         * @effects role_list_screen_does_not_read_pruned_permission_fields
+         */
         it('제거된 필드를 컬럼 field 로 쓰지 않는다', () => {
             const columns = collectColumns(layout);
 
@@ -187,6 +195,11 @@ describe('역할 관리 목록 — 권한 배열 프루닝 (공개 #76)', () => 
     });
 
     describe('공급 — 대체 지표가 화면에 남아 있다', () => {
+        /**
+         * 대체 지표인 권한 수 열이 서버 집계 permissions_count 를 읽는다.
+         * @scenario resource=role, endpoint=list, observation=consumer_screen
+         * @effects role_list_permission_count_column_bound
+         */
         it('permissions_count 열이 존재하고 집계 필드에 바인딩된다', () => {
             const columns = collectColumns(layout);
             const column = columns.find((candidate) => candidate.field === 'permissions_count');
@@ -201,6 +214,11 @@ describe('역할 관리 목록 — 권한 배열 프루닝 (공개 #76)', () => 
             ).toBe(true);
         });
 
+        /**
+         * 권한 수 열 헤더가 다국어 키로 선언된다.
+         * @scenario resource=role, endpoint=list, observation=consumer_screen
+         * @effects role_list_permission_count_header_uses_i18n_key
+         */
         it('권한 수 헤더가 다국어 키로 선언된다 (하드코딩 금지)', () => {
             const columns = collectColumns(layout);
             const column = columns.find((candidate) => candidate.field === 'permissions_count');
@@ -253,6 +271,11 @@ describe('역할 관리 목록 — 권한 배열 프루닝 (공개 #76)', () => 
             };
         }
 
+        /**
+         * 권한 0건 역할의 셀이 빈칸이 아니라 0 으로 그려진다.
+         * @scenario resource=role, endpoint=list, observation=consumer_screen
+         * @effects role_list_permission_count_renders_number_or_zero
+         */
         it('권한 0건 역할은 0 으로 렌더된다 (집계 0 과 미집계를 화면이 구분한다)', async () => {
             testUtils = createLayoutTest(
                 createCellLayout({ id: 1, permissions_count: 0 }) as any,
@@ -264,6 +287,11 @@ describe('역할 관리 목록 — 권한 배열 프루닝 (공개 #76)', () => 
             expect(screen.getByTestId('permission-count-cell')).toHaveTextContent('0');
         });
 
+        /**
+         * 권한이 있는 역할의 셀에 그 수가 그려진다.
+         * @scenario resource=role, endpoint=list, observation=consumer_screen
+         * @effects role_list_permission_count_renders_number_or_zero
+         */
         it('권한이 있는 역할은 그 수가 렌더된다', async () => {
             testUtils = createLayoutTest(
                 createCellLayout({ id: 2, permissions_count: 51 }) as any,
@@ -275,6 +303,11 @@ describe('역할 관리 목록 — 권한 배열 프루닝 (공개 #76)', () => 
             expect(screen.getByTestId('permission-count-cell')).toHaveTextContent('51');
         });
 
+        /**
+         * 집계 키가 없으면 ?? 0 폴백으로 0 이 그려진다.
+         * @scenario resource=role, endpoint=list, observation=consumer_screen
+         * @effects role_list_permission_count_renders_number_or_zero
+         */
         it('집계 키가 없어도 빈칸 대신 0 으로 떨어진다 (?? 0 폴백)', async () => {
             testUtils = createLayoutTest(createCellLayout({ id: 3 }) as any, {
                 componentRegistry: registry,

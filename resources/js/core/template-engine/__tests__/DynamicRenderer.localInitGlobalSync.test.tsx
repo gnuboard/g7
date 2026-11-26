@@ -75,6 +75,11 @@ describe('_localInit 전역 동기화 — canonical base 병합', () => {
     };
   };
 
+  /**
+   * @scenario layer=renderer_unit
+   *
+   * @effects localinit_sync_keeps_init_actions_seed
+   */
   it('init_actions 시드가 렌더 뒤 _localInit 동기화로 되돌아가지 않아야 한다', () => {
     // canonical(저장소 B): init_actions 가 URL query 로 시드한 최신 값
     const store = createStore({
@@ -116,6 +121,11 @@ describe('_localInit 전역 동기화 — canonical base 병합', () => {
     expect(store.current._local.sortBy).toBe('name_asc');
   });
 
+  /**
+   * @scenario layer=renderer_unit
+   *
+   * @effects localinit_replace_merge_ignores_base
+   */
   it('_merge:"replace" 는 기존 계약대로 base 를 무시하고 payload 로 교체한다', () => {
     const store = createStore({
       _local: { filter: { issueStatus: 'issuing' }, stale: 'keep-out' },
@@ -143,6 +153,11 @@ describe('_localInit 전역 동기화 — canonical base 병합', () => {
     expect(store.current._local.filter).toBeUndefined();
   });
 
+  /**
+   * @scenario layer=renderer_unit
+   *
+   * @effects localinit_sync_keeps_other_global_keys
+   */
   it('_global 이외의 전역 키는 동기화로 소실되지 않아야 한다', () => {
     const store = createStore({
       _local: { filter: { issueStatus: 'issuing' } },

@@ -1,0 +1,19 @@
+feature: 관리자 로그인 화면 — 세션 만료 토스트 발화 위치
+
+description: |
+  세션 만료로 로그인 화면에 왔을 때 띄우는 토스트를 init_actions 가 아니라 login_page_wrapper 의 lifecycle.onMount 에서 발화한다.
+  init_actions 에서 띄우면 Toast 가 마운트되기 전이라 토스트가 사라진다. 기존 init_action 과 번역 키는 그대로 둔다.
+
+# axis 의미:
+#   component — 이 매니페스트가 다루는 레이아웃 하나.
+axes:
+  component: [admin_login]
+
+effects:
+  - admin_login_session_expired_toast_on_mount   # session_expired 토스트가 onMount 에 있고 init_actions 에는 없다
+  - admin_login_existing_init_actions_preserved   # 기존 init_action(initTheme, setState)이 보존된다
+  - admin_login_toast_mounted_top_level   # Toast 컴포넌트가 components 최상단에 마운트된다
+  - admin_login_session_expired_i18n_keys   # 토스트 번역 키가 ko·en 자원에 있다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-login-session-expired-toast.test.tsx

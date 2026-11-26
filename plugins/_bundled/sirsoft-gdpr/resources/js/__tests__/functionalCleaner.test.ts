@@ -10,8 +10,8 @@
  * 허용목록은 운영자 설정이므로 이 테스트는 목록을 주입해 검증한다. 목록을 코드 상수에서
  * 읽던 시절에는 "설정을 바꿔도 판정이 안 바뀌는" 회귀를 이 테스트가 잡지 못했다.
  *
- * @scenario scope=localStorage, notation=wildcard, locked=locked_item, settings_state=empty, request=valid_item
- * @effects cleaner_preserves_items_listed_in_settings, cleaner_purges_items_removed_from_settings, cleaner_cookie_wildcard_preserves_prefix_match, cleaner_scope_does_not_leak_across_storages, cleaner_locked_items_survive_missing_settings
+ * 조합 요약(마커 아님 — 평문): scope=localStorage, notation=wildcard, locked=locked_item, settings_state=empty, request=valid_item
+ * 효과 요약(마커 아님 — 평문): cleaner_preserves_items_listed_in_settings, cleaner_purges_items_removed_from_settings, cleaner_cookie_wildcard_preserves_prefix_match, cleaner_scope_does_not_leak_across_storages, cleaner_locked_items_survive_missing_settings
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -63,6 +63,12 @@ describe('functionalCleaner', () => {
         clearAllCookies();
     });
 
+    /**
+     * 허용목록에 없는 localStorage 키는 정리 때 지워진다.
+     *
+     * @scenario area=cleaner, consent=functional_denied, necessary=not_in_allowlist, storage_kind=localStorage
+     * @effects cleaner_clears_non_allowlist_localStorage_keys
+     */
     it('허용목록 외 localStorage 키 파기', () => {
         window.localStorage.setItem('app_pref', 'value');
 
@@ -71,6 +77,12 @@ describe('functionalCleaner', () => {
         expect(window.localStorage.getItem('app_pref')).toBeNull();
     });
 
+    /**
+     * 허용목록에 없는 sessionStorage 키는 정리 때 지워진다.
+     *
+     * @scenario area=cleaner, consent=functional_denied, necessary=not_in_allowlist, storage_kind=sessionStorage
+     * @effects cleaner_clears_non_allowlist_sessionStorage_keys
+     */
     it('허용목록 외 sessionStorage 키 파기', () => {
         window.sessionStorage.setItem('app_session_pref', 'value');
 
@@ -79,6 +91,12 @@ describe('functionalCleaner', () => {
         expect(window.sessionStorage.getItem('app_session_pref')).toBeNull();
     });
 
+    /**
+     * 설정에 적힌 키(g7_locale)는 남고 나머지는 지워진다.
+     *
+     * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=populated
+     * @effects cleaner_preserves_necessary_storage_keys, cleaner_preserves_items_listed_in_settings
+     */
     it('설정에 등재된 키 (g7_locale) 는 보존', () => {
         window.localStorage.setItem('g7_locale', 'ko');
         window.localStorage.setItem('app_pref', 'value');
@@ -90,6 +108,12 @@ describe('functionalCleaner', () => {
     });
 
     // 동의 철회 정리에서도 테마는 언어 설정과 같이 남아야 한다.
+    /**
+     * 설정에 적힌 키(g7_color_scheme)는 남고 나머지는 지워진다.
+     *
+     * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=populated
+     * @effects cleaner_preserves_necessary_storage_keys, cleaner_preserves_items_listed_in_settings
+     */
     it('설정에 등재된 키 (g7_color_scheme) 는 보존', () => {
         window.localStorage.setItem('g7_color_scheme', 'dark');
         window.localStorage.setItem('app_pref', 'value');
@@ -102,6 +126,12 @@ describe('functionalCleaner', () => {
         expect(window.localStorage.getItem('app_pref')).toBeNull();
     });
 
+    /**
+     * 와일드카드 항목(g7_devtools_*)에 맞는 키는 남는다.
+     *
+     * @scenario scope=localStorage, notation=wildcard, locked=operator_item, settings_state=populated
+     * @effects cleaner_preserves_prefix_match_keys
+     */
     it('와일드카드 항목 (g7_devtools_*) 은 보존', () => {
         window.localStorage.setItem('g7_devtools_filter', 'enabled');
         window.localStorage.setItem('app_pref', 'value');
@@ -112,6 +142,12 @@ describe('functionalCleaner', () => {
         expect(window.localStorage.getItem('app_pref')).toBeNull();
     });
 
+    /**
+     * localStorage 에만 적은 키는 sessionStorage 에서는 지워진다.
+     *
+     * @scenario scope=sessionStorage, notation=exact, locked=operator_item, settings_state=populated
+     * @effects cleaner_scope_does_not_leak_across_storages
+     */
     it('스코프는 서로 넘나들지 않는다 — localStorage 에만 등재한 키는 sessionStorage 에서 파기', () => {
         window.localStorage.setItem('scoped_key', 'kept');
         window.sessionStorage.setItem('scoped_key', 'purged');
@@ -122,6 +158,12 @@ describe('functionalCleaner', () => {
         expect(window.sessionStorage.getItem('scoped_key')).toBeNull();
     });
 
+    /**
+     * 허용목록에 없는 쿠키는 정리 때 지워진다.
+     *
+     * @scenario area=cleaner, consent=functional_denied, necessary=not_in_allowlist, cookie_state=normal
+     * @effects cleaner_clears_non_allowlist_cookies
+     */
     it('허용목록 외 cookie 파기', () => {
         document.cookie = 'app_pref_cookie=value; path=/';
         expect(getCookieValue('app_pref_cookie')).toBe('value');
@@ -131,6 +173,12 @@ describe('functionalCleaner', () => {
         expect(getCookieValue('app_pref_cookie')).toBeNull();
     });
 
+    /**
+     * 잠금 쿠키(XSRF-TOKEN)는 남고 다른 쿠키는 지워진다.
+     *
+     * @scenario scope=cookie, notation=exact, locked=locked_item
+     * @effects cleaner_preserves_necessary_cookies
+     */
     it('잠금 cookie (XSRF-TOKEN) 는 보존', () => {
         document.cookie = 'XSRF-TOKEN=safe; path=/';
         document.cookie = 'app_pref_cookie=value; path=/';
@@ -143,6 +191,12 @@ describe('functionalCleaner', () => {
 
     // 발견 ②: 쿠키 목록만 정확 일치 전용이던 시절에는 운영자가 쿠키 카드에 적은
     // `myplugin_*` 이 저장소 카드와 달리 동작하지 않았다.
+    /**
+     * 쿠키도 저장소와 같이 와일드카드 항목에 맞으면 남는다.
+     *
+     * @scenario scope=cookie, notation=wildcard, locked=operator_item, settings_state=populated
+     * @effects cleaner_cookie_wildcard_preserves_prefix_match
+     */
     it('cookie 도 와일드카드로 보존된다 (저장소와 동일 규칙)', () => {
         document.cookie = 'myplugin_state=value; path=/';
         document.cookie = 'other_cookie=value; path=/';
@@ -153,6 +207,12 @@ describe('functionalCleaner', () => {
         expect(getCookieValue('other_cookie')).toBeNull();
     });
 
+    /**
+     * 저장소와 쿠키를 한 번에 정리하고 허용목록 항목만 남긴다.
+     *
+     * @scenario area=cleaner, consent=functional_denied, necessary=not_in_allowlist
+     * @effects cleaner_combined_storage_plus_cookie_purge
+     */
     it('storage + cookie 동시 파기 (허용목록 외 전체)', () => {
         window.localStorage.setItem('app_pref', 'value');
         window.localStorage.setItem('g7_locale', 'ko');
@@ -167,6 +227,12 @@ describe('functionalCleaner', () => {
         expect(getCookieValue('XSRF-TOKEN')).toBe('safe');
     });
 
+    /**
+     * 지울 것이 없어도 예외 없이 끝난다.
+     *
+     * @scenario area=cleaner, consent=functional_denied
+     * @effects cleaner_empty_state_silent
+     */
     it('빈 storage 상태 — silent (예외 없음)', () => {
         expect(() => {
             cleanupFunctionalArtifacts({ allowlist: allowlist() });
@@ -175,6 +241,12 @@ describe('functionalCleaner', () => {
 
     // 함정 4: 인라인 페이로드가 도달하지 않으면 허용목록이 통째로 비는데, 그 상태에서
     // 로그인 토큰까지 파기되면 동의 없는 첫 방문자가 로그인을 유지하지 못한다.
+    /**
+     * 허용목록을 넘기지 않아도 잠금 항목(auth_token, XSRF-TOKEN, gdpr_session)은 남는다.
+     *
+     * @scenario scope=localStorage, locked=locked_item, settings_state=unreachable
+     * @effects cleaner_locked_items_survive_missing_settings
+     */
     it('허용목록을 주지 않아도 잠금 항목은 보존한다 (설정 미도달 폴백)', () => {
         window.localStorage.setItem('auth_token', 'token');
         window.localStorage.setItem('app_pref', 'value');
@@ -191,6 +263,12 @@ describe('functionalCleaner', () => {
         expect(getCookieValue('app_pref_cookie')).toBeNull();
     });
 
+    /**
+     * 설정이 비어 있어도 잠금 항목은 남고, 설정에서 뺀 키는 지워진다.
+     *
+     * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=empty
+     * @effects cleaner_purges_items_removed_from_settings
+     */
     it('설정이 비어 있어도 잠금 항목은 보존한다 (빈 목록 주입)', () => {
         window.localStorage.setItem('auth_token', 'token');
         window.localStorage.setItem('g7_locale', 'ko');

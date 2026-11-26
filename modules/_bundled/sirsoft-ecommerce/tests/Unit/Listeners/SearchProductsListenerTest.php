@@ -32,6 +32,11 @@ class SearchProductsListenerTest extends ModuleTestCase
      */
     private bool $permissionsAllowed = true;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,6 +52,8 @@ class SearchProductsListenerTest extends ModuleTestCase
      *
      * 비회원 판정은 Gate 가 아니라 guest 역할의 권한 행을 보므로, 거부 케이스를 만들려면
      * 권한 자체를 없애야 합니다. 요청 스코프 캐시도 함께 비웁니다.
+     *
+     * @return void 반환값 없음
      */
     private function revokeGuestProductReadPermission(): void
     {
@@ -64,6 +71,7 @@ class SearchProductsListenerTest extends ModuleTestCase
      * 검색 실패가 "결과 0건" 으로 위장되지 않고 failed 페이로드로 표면화되는지 확인 (#103)
      *
      * @effects failed_flag_in_response, exception_stack_logged
+     * @return void 반환값 없음
      */
     public function test_search_failure_surfaces_failed_payload_and_logs_exception(): void
     {
@@ -98,6 +106,10 @@ class SearchProductsListenerTest extends ModuleTestCase
 
     /**
      * getSubscribedHooks()가 올바른 훅 목록을 반환하는지 확인
+     *
+     * @scenario stage=hook_registration
+     * @effects product_search_listener_subscribes_expected_hooks
+     * @return void 반환값 없음
      */
     public function test_get_subscribed_hooks_returns_correct_hooks(): void
     {
@@ -120,6 +132,10 @@ class SearchProductsListenerTest extends ModuleTestCase
 
     /**
      * addValidationRules()가 sort에 가격순 옵션을 추가하는지 확인
+     *
+     * @scenario stage=hook_registration
+     * @effects product_search_validation_adds_price_sort_and_category_id
+     * @return void 반환값 없음
      */
     public function test_add_validation_rules_adds_price_sort_and_category_id(): void
     {
@@ -142,6 +158,10 @@ class SearchProductsListenerTest extends ModuleTestCase
 
     /**
      * searchProducts()가 type이 products가 아닐 때 count만 반환하는지 확인
+     *
+     * @scenario stage=search
+     * @effects product_search_returns_count_only_for_other_tabs
+     * @return void 반환값 없음
      */
     public function test_search_products_returns_count_only_when_type_is_not_products_or_all(): void
     {
@@ -164,6 +184,10 @@ class SearchProductsListenerTest extends ModuleTestCase
      *
      * 배지는 오류를 내지 않고 그냥 틀린 숫자로만 보이므로, 정확도가 함께 실리지 않으면
      * 상한에 걸린 10,000 이 "정확히 10,000 건" 으로 화면에 나간다.
+     *
+     * @scenario stage=search
+     * @effects badge_count_carries_accuracy_when_truncated
+     * @return void 반환값 없음
      */
     public function test_count_only_badge_carries_accuracy_when_truncated(): void
     {
@@ -185,6 +209,10 @@ class SearchProductsListenerTest extends ModuleTestCase
 
     /**
      * searchProducts()가 빈 검색어일 때 스킵하는지 확인
+     *
+     * @scenario stage=search
+     * @effects product_search_skips_empty_keyword
+     * @return void 반환값 없음
      */
     public function test_search_products_skips_when_keyword_is_empty(): void
     {
@@ -198,6 +226,10 @@ class SearchProductsListenerTest extends ModuleTestCase
 
     /**
      * searchProducts()가 권한 없을 때 빈 결과를 반환하는지 확인
+     *
+     * @scenario stage=search
+     * @effects product_search_returns_empty_without_permission
+     * @return void 반환값 없음
      */
     public function test_search_products_returns_empty_when_no_permission(): void
     {
@@ -215,6 +247,10 @@ class SearchProductsListenerTest extends ModuleTestCase
 
     /**
      * searchProducts()가 비회원(user=null)이고 guest 권한 없을 때 빈 결과를 반환하는지 확인
+     *
+     * @scenario stage=search
+     * @effects product_search_returns_empty_without_permission
+     * @return void 반환값 없음
      */
     public function test_search_products_returns_empty_for_guest_without_permission(): void
     {
@@ -233,6 +269,10 @@ class SearchProductsListenerTest extends ModuleTestCase
 
     /**
      * buildProductsResponse()가 products 결과가 없을 때 스킵하는지 확인
+     *
+     * @scenario stage=build_response
+     * @effects product_search_response_skips_without_product_results
+     * @return void 반환값 없음
      */
     public function test_build_products_response_skips_when_no_products_results(): void
     {
@@ -252,6 +292,10 @@ class SearchProductsListenerTest extends ModuleTestCase
      *
      * 미리보기 개수만큼만 조회해 오므로 여기서 다시 자르지 않는다. 종전에는 페이지 분량을
      * 받아 PHP 에서 잘랐고, 그만큼 쓰이지 않을 행까지 읽었다.
+     *
+     * @scenario stage=build_response
+     * @effects product_search_response_passes_items_through_for_all_tab
+     * @return void 반환값 없음
      */
     public function test_build_products_response_passes_through_items_for_all_tab(): void
     {
@@ -272,6 +316,10 @@ class SearchProductsListenerTest extends ModuleTestCase
 
     /**
      * buildProductsResponse()가 products 탭에서 페이지네이션 정보를 추가하는지 확인
+     *
+     * @scenario stage=build_response
+     * @effects product_search_response_adds_pagination_for_products_tab
+     * @return void 반환값 없음
      */
     public function test_build_products_response_adds_pagination_for_products_tab(): void
     {
@@ -303,6 +351,10 @@ class SearchProductsListenerTest extends ModuleTestCase
 
     /**
      * 총 건수가 상한에 걸리면 마지막 페이지가 null 로 전달되는지 확인
+     *
+     * @scenario stage=build_response
+     * @effects last_page_is_null_when_total_truncated
+     * @return void 반환값 없음
      */
     public function test_build_products_response_omits_last_page_when_total_is_bounded(): void
     {
@@ -328,6 +380,10 @@ class SearchProductsListenerTest extends ModuleTestCase
 
     /**
      * buildProductsResponse()가 products_count를 설정하는지 확인
+     *
+     * @scenario stage=build_response
+     * @effects product_search_response_sets_products_count
+     * @return void 반환값 없음
      */
     public function test_build_products_response_sets_products_count(): void
     {
@@ -342,6 +398,10 @@ class SearchProductsListenerTest extends ModuleTestCase
 
     /**
      * buildProductsResponse()가 rating_avg, review_count 필드를 유지하는지 확인
+     *
+     * @scenario stage=build_response
+     * @effects product_search_response_keeps_rating_fields
+     * @return void 반환값 없음
      */
     public function test_build_products_response_preserves_rating_fields(): void
     {
@@ -369,6 +429,7 @@ class SearchProductsListenerTest extends ModuleTestCase
      * @scenario case=search_highlight_escape
      *
      * @effects highlighted_fields_escaped
+     * @return void 반환값 없음
      */
     public function test_highlight_keyword_escapes_markup(): void
     {
@@ -388,6 +449,7 @@ class SearchProductsListenerTest extends ModuleTestCase
      * @scenario case=preview_entity_no_resurrect
      *
      * @effects preview_does_not_resurrect_entities
+     * @return void 반환값 없음
      */
     public function test_extract_content_preview_does_not_resurrect_entity_encoded_tags(): void
     {

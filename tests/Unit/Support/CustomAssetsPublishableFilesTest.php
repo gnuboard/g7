@@ -21,11 +21,21 @@ class CustomAssetsPublishableFilesTest extends TestCase
     /** 테스트용 가짜 플러그인 식별자 */
     private const FAKE_PLUGIN = 'g7test-publishable';
 
+    /**
+     * 테스트용 가짜 플러그인 디렉토리 경로.
+     *
+     * @return string 가짜 플러그인 디렉토리 절대 경로
+     */
     private function pluginDir(): string
     {
         return base_path('plugins/'.self::FAKE_PLUGIN);
     }
 
+    /**
+     * 열거 캐시를 비우고 가짜 플러그인의 custom 디렉토리를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -34,6 +44,11 @@ class CustomAssetsPublishableFilesTest extends TestCase
         File::ensureDirectoryExists($this->pluginDir().'/custom');
     }
 
+    /**
+     * 가짜 플러그인 디렉토리를 지우고 열거 캐시를 비운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->pluginDir());
@@ -42,6 +57,13 @@ class CustomAssetsPublishableFilesTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 가짜 플러그인의 custom 디렉토리 아래에 파일을 쓴다(중간 디렉토리 포함).
+     *
+     * @param  string  $relative  custom 기준 상대 경로
+     * @param  string  $contents  파일 내용
+     * @return void 반환값 없음
+     */
     private function writeCustom(string $relative, string $contents = '/* x */'): void
     {
         $path = $this->pluginDir().'/custom/'.$relative;
@@ -55,6 +77,8 @@ class CustomAssetsPublishableFilesTest extends TestCase
      * @scenario custom_source=convention_scan, custom_asset=static_file, custom_change_detection=nested_static_file
      *
      * @effects custom_signature_covers_publishable_tree
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 하위_디렉토리의_정적_파일까지_열거한다(): void
@@ -74,6 +98,8 @@ class CustomAssetsPublishableFilesTest extends TestCase
      * @scenario custom_source=convention_scan, custom_asset=static_file, custom_change_detection=nested_static_file
      *
      * @effects custom_signature_covers_publishable_tree
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 허용_확장자_밖과_소스맵은_열거하지_않는다(): void
@@ -94,6 +120,8 @@ class CustomAssetsPublishableFilesTest extends TestCase
      * @scenario custom_source=convention_scan, custom_asset=css, custom_change_detection=top_level_asset
      *
      * @effects custom_signature_covers_publishable_tree
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 항목은_절대경로_mtime_크기를_갖는다(): void
@@ -115,6 +143,8 @@ class CustomAssetsPublishableFilesTest extends TestCase
      * @scenario custom_source=convention_scan, custom_asset=css, custom_change_detection=no_change
      *
      * @effects custom_signature_covers_publishable_tree
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 결과는_요청_스코프로_메모이즈되고_flush_로_비워진다(): void
@@ -138,6 +168,8 @@ class CustomAssetsPublishableFilesTest extends TestCase
      * @scenario custom_source=none, custom_asset=css, custom_change_detection=no_change
      *
      * @effects custom_signature_covers_publishable_tree
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 디렉토리_부재와_무효_타입은_빈_목록이다(): void
@@ -155,6 +187,8 @@ class CustomAssetsPublishableFilesTest extends TestCase
      * @scenario custom_source=convention_scan, custom_asset=static_file, custom_change_detection=nested_static_file
      *
      * @effects custom_signature_covers_publishable_tree
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 로드_목록은_여전히_최상위_css_js_만_싣는다(): void

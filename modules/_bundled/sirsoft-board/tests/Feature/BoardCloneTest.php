@@ -33,6 +33,11 @@ class BoardCloneTest extends ModuleTestCase
 
     private BoardService $boardService;
 
+    /**
+     * 각 테스트 전에 필요한 상태를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -73,6 +78,11 @@ class BoardCloneTest extends ModuleTestCase
 
     /**
      * manager 사용자가 지정된 원본 게시판을 생성합니다.
+     *
+     * @param  string  $slug  만들 게시판 슬러그
+     * @param  User  $manager  관리자로 지정할 사용자
+     * @param  User|null  $step  스텝으로 지정할 사용자(없으면 비움)
+     * @return Board 만든 원본 게시판
      */
     private function createSourceBoardWithManager(string $slug, User $manager, ?User $step = null): Board
     {
@@ -91,6 +101,8 @@ class BoardCloneTest extends ModuleTestCase
      * @scenario original_permissions=default
      *
      * @effects clone_includes_manager_ids, clone_includes_manager_objects_with_labels, board_copy_still_resolves_roles
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_board_includes_manager_ids_and_objects(): void
     {
@@ -126,6 +138,8 @@ class BoardCloneTest extends ModuleTestCase
      * @scenario original_permissions=default
      *
      * @effects clone_role_data_matches_resource_output
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_board_role_data_matches_resource_output(): void
     {
@@ -152,6 +166,8 @@ class BoardCloneTest extends ModuleTestCase
      * @scenario original_permissions=custom
      *
      * @effects clone_strips_old_slug_scope_roles, clone_preserves_non_scope_roles
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_board_strips_old_slug_scope_roles_but_keeps_others(): void
     {
@@ -194,6 +210,8 @@ class BoardCloneTest extends ModuleTestCase
      * @scenario original_permissions=default
      *
      * @effects clone_saved_201, managers_copied
+     *
+     * @return void 반환값 없음
      */
     public function test_clone_form_data_saves_201_and_inherits_managers(): void
     {
@@ -232,6 +250,8 @@ class BoardCloneTest extends ModuleTestCase
      * @scenario original_permissions=custom
      *
      * @effects permissions_copied, no_cross_board_role_leak
+     *
+     * @return void 반환값 없음
      */
     public function test_clone_save_does_not_leak_source_scope_roles(): void
     {
@@ -268,6 +288,8 @@ class BoardCloneTest extends ModuleTestCase
      * @scenario original_permissions=custom
      *
      * @effects permissions_copied, custom_role_assignment_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_clone_save_copies_custom_role_assignment(): void
     {
@@ -307,6 +329,8 @@ class BoardCloneTest extends ModuleTestCase
      * @scenario original_permissions=default
      *
      * @effects clone_includes_add_to_menu_boolean
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_board_includes_add_to_menu_as_boolean(): void
     {
@@ -324,6 +348,8 @@ class BoardCloneTest extends ModuleTestCase
      * 한글 라벨로 치환되어 노출된다.
      *
      * @effects add_to_menu_validation_uses_translated_label
+     *
+     * @return void 반환값 없음
      */
     public function test_add_to_menu_validation_error_uses_translated_label(): void
     {

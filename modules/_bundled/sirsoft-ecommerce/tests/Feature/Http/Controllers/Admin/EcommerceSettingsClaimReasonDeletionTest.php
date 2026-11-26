@@ -30,6 +30,11 @@ class EcommerceSettingsClaimReasonDeletionTest extends ModuleTestCase
 
     protected User $adminUser;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,6 +47,10 @@ class EcommerceSettingsClaimReasonDeletionTest extends ModuleTestCase
 
     /**
      * 운영자가 만든 사유 행을 만듭니다.
+     *
+     * @param  string  $type  사유 유형
+     * @param  string  $code  사유 코드
+     * @return ClaimReason 만든 사유 행
      */
     private function operatorReason(string $type, string $code): ClaimReason
     {
@@ -59,6 +68,9 @@ class EcommerceSettingsClaimReasonDeletionTest extends ModuleTestCase
 
     /**
      * 기존 행을 설정 탭이 되보내는 모양으로 만듭니다.
+     *
+     * @param  ClaimReason  $reason  원본 사유 행
+     * @return array 설정 탭이 보내는 행 배열
      */
     private function rowOf(ClaimReason $reason): array
     {
@@ -79,6 +91,7 @@ class EcommerceSettingsClaimReasonDeletionTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_save_keeps_rows_missing_from_the_payload
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_save_whose_payload_lacks_a_row_keeps_that_reason(): void
@@ -104,6 +117,7 @@ class EcommerceSettingsClaimReasonDeletionTest extends ModuleTestCase
      * @scenario reason_type=refund
      *
      * @effects settings_claim_explicit_deletion_removes_only_listed_ids, settings_claim_reason_deletion_is_logged
+     * @return void 반환값 없음
      */
     #[Test]
     public function explicit_deletion_removes_only_the_listed_ids_and_logs_it(): void
@@ -141,6 +155,7 @@ class EcommerceSettingsClaimReasonDeletionTest extends ModuleTestCase
      * @scenario reason_type=return
      *
      * @effects settings_claim_explicit_deletion_of_a_used_reason_is_rejected
+     * @return void 반환값 없음
      */
     #[Test]
     public function explicit_deletion_of_a_used_reason_is_rejected(): void
@@ -173,6 +188,7 @@ class EcommerceSettingsClaimReasonDeletionTest extends ModuleTestCase
      * @scenario reason_type=exchange
      *
      * @effects settings_claim_reason_creation_is_logged
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_reason_created_from_the_settings_tab_is_logged(): void

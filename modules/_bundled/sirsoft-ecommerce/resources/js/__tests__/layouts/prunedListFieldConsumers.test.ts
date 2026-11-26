@@ -30,13 +30,14 @@ function readRaw(relativePath: string): string {
 }
 
 /**
- * @scenario endpoint=active_list,opt_in=default
- * @effects product_form_selector_still_draws_country_chips
+ * 배송정책 목록·상품 폼 선택기의 국가별 설정 공급 경로 (마킹은 각 시험 바로 앞 주석이 단다).
  */
 describe('배송정책 목록 — 국가별 설정 공급 경로', () => {
     const LIST = 'admin_ecommerce_shipping_policy_list.json';
     const DATAGRID = 'partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.json';
 
+    // @scenario endpoint=admin_list, opt_in=default
+    // @effects shipping_policy_list_renders_country_summary
     it('화면이 국가 칩·배송비 요약·국가별 설정을 그린다 (소비 사실)', () => {
         const raw = readRaw(DATAGRID);
 
@@ -46,6 +47,8 @@ describe('배송정책 목록 — 국가별 설정 공급 경로', () => {
         expect(raw).toContain('country_settings');
     });
 
+    // @scenario endpoint=admin_list, opt_in=default
+    // @effects list_keeps_fields_the_screen_draws
     it('목록 요청이 무거운 전체 컬럼을 켜지 않는다 (기본이 표시용 필드를 공급한다)', () => {
         // 서버 기본 응답이 목록 표시용 국가별 설정을 이미 싣는다. 여기서 opt-in 을 켜면
         // 화면이 쓰지도 않는 구간 설정·도서산간 설정·계산 API 설정까지 되받아, 프루닝
@@ -59,6 +62,8 @@ describe('배송정책 목록 — 국가별 설정 공급 경로', () => {
         expect(source.params ?? {}).not.toHaveProperty('with_country_settings');
     });
 
+    // @scenario endpoint=active_list, opt_in=default
+    // @effects product_form_selector_still_draws_country_chips
     it('상품 등록/수정의 배송정책 선택기도 전체 컬럼을 켜지 않는다', () => {
         const layout = readLayout('admin_ecommerce_product_form.json');
         const source = (layout.data_sources ?? []).find((ds: any) =>
@@ -73,6 +78,7 @@ describe('배송정책 목록 — 국가별 설정 공급 경로', () => {
 describe('마이페이지 주문내역 — 주문상품 공급 경로', () => {
     const USER_LAYOUT = path.join(REPO_ROOT, 'templates/_bundled/sirsoft-basic/layouts/mypage/orders.json');
 
+    // @effects my_page_orders_layout_requests_every_item
     it('전량 나열 화면은 with_items 를 명시적으로 켠다 (공급 경로)', () => {
         // 서버 기본은 대표 1건이다. 이 화면은 주문상품을 전부 나열하므로 켜야 한다 —
         // 빠지면 주문마다 상품 한 줄만 남는다.
@@ -86,6 +92,7 @@ describe('마이페이지 주문내역 — 주문상품 공급 경로', () => {
         expect(String(source.params.with_items)).toBe('1');
     });
 
+    // @effects my_page_orders_layout_params_have_no_comment_keys
     it('params 에 주석 키를 두지 않는다 (전부 쿼리스트링으로 전송된다)', () => {
         // `_comment_*` 를 params 안에 두면 그 문장이 그대로 URL 쿼리로 나간다 —
         // 브라우저 실측에서 한글 주석 한 문단이 요청 URL 에 실려 있는 것을 확인했다.
@@ -99,6 +106,7 @@ describe('마이페이지 주문내역 — 주문상품 공급 경로', () => {
         expect(commentKeys, `params 안의 주석 키: ${commentKeys.join(', ')}`).toEqual([]);
     });
 
+    // @effects my_page_orders_layout_enumerates_items
     it('화면이 주문상품 배열을 실제로 순회한다 (소비 사실)', () => {
         const partial = path.join(REPO_ROOT, 'templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_list.json');
 
@@ -110,6 +118,7 @@ describe('마이페이지 주문내역 — 주문상품 공급 경로', () => {
 describe('주문 목록 — 대표 상품/배송 표시', () => {
     const DATAGRID = 'partials/admin_ecommerce_order_list/_partial_order_datagrid.json';
 
+    // @effects admin_order_list_layout_reads_representative_only
     it('목록은 대표 1건과 "외 N건" 집계만 쓴다 (옵션 배열 순회 없음)', () => {
         const raw = readRaw(DATAGRID);
 

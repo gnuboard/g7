@@ -1,0 +1,26 @@
+feature: 기본 통화 플래그의 단일성 (PG 청구 1/100 회귀)
+
+description: |
+  저장본에 없는 통화를 기본값에서 보충할 때 보충 항목의 is_default 를 그대로 들여오면 기본
+  통화가 둘이 된다. 그러면 통화 스냅샷이 그 통화의 환율을 1.0 으로 박제하고, 표시 계층이 앞선
+  통화를 기본으로 오인해 화면 총액과 PG 청구액이 어긋난다. is_default 의 근거는 저장본의
+  default_currency 값 하나다.
+
+# axis 의미:
+#   saved_shape — 저장된 통화 설정의 모양.
+#     subset_with_default        기본 통화를 포함한 일부 통화만 저장
+#     default_missing_from_list  기본 통화가 저장 목록에 없음
+#     nothing_saved              저장본 없음 (신규 설치)
+axes:
+  saved_shape: [subset_with_default, default_missing_from_list, nothing_saved]
+
+effects:
+  - backfilled_currency_default_flag_is_rejected
+  - default_currency_flag_is_unique
+  - backfilled_default_currency_is_promoted
+  - defaults_base_currency_kept_when_nothing_saved
+  - display_and_conversion_layers_share_base_currency
+  - unconfigured_rate_currency_is_not_base
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsCurrencyDefaultFlagTest.php

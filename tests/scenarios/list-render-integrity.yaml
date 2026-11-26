@@ -1,0 +1,18 @@
+feature: 목록 렌더 정합 — 응답의 행이 화면에 다 나오고 per_page 범위 밖 값은 거부된다
+
+description: |
+  콘솔 오류 없이 조용히 나타나는 목록 결함을 응답과 화면을 같은 시점에 대조해 잡는다.
+
+    - iteration 배열 키를 `source` 가 아닌 이름으로 적으면 행이 하나도 그려지지 않는다
+      (엔진은 `iteration.source` 만 읽고, 배열이 아니면 조용히 null 을 돌려준다).
+    - 목록 `per_page` 에 상·하한이 없으면 0·음수·숫자 아님·과대값이 500 이나 전량 조회로 샌다.
+
+axes:
+  check: [render_count, per_page_bounds]
+
+effects:
+  - iteration_renders_all_rows
+  - per_page_out_of_range_rejected
+
+test_files:
+  - tests/Playwright/specs/list-render-integrity.spec.ts

@@ -1,0 +1,28 @@
+feature: _localInit 동기화가 앞서 적용된 상태를 지우지 않는다
+
+description: |
+  데이터소스 initLocal 은 `_localInit` 슬롯으로 들어와 렌더 커밋 뒤에 전역 `_local` 로 동기화된다.
+  이 동기화가 앞서 적용된 상태를 지우는 두 경로를 잰다.
+
+    - 병합 base: 동기화가 렌더 시점 스냅샷을 base 로 쓰면, 그 사이 init_actions 가 시드한 필터가
+      되돌아간다(목록 복귀 시 URL·목록은 필터 상태인데 필터 라디오만 「전체」). 쓰기 시점의
+      canonical 상태를 base 로 병합해야 하고, `_merge: "replace"` 는 종전대로 payload 로 교체하며,
+      `_local` 밖 전역 키는 남는다.
+    - 슬롯 누적: progressive 소스가 둘 이상이면 커밋 사이에 연달아 온 `_localInit` 중 먼저 온 것이
+      관측되지 않고 사라졌다. 아직 관측되지 않은 슬롯만 누적 병합하고, 관측된 슬롯은 교체해
+      편집 뒤 다른 소스를 다시 받아도 편집값이 되돌아가지 않는다(SPA 진입·CPU 지연으로 재현).
+
+axes:
+  # 어느 경로를 재는가 — 렌더러 단위(병합 base) / 브라우저 SPA 진입(슬롯 누적)
+  layer: [renderer_unit, browser_spa]
+
+effects:
+  - localinit_sync_keeps_init_actions_seed
+  - localinit_replace_merge_ignores_base
+  - localinit_sync_keeps_other_global_keys
+  - first_arrived_progressive_initlocal_not_lost
+  - form_edit_survives_other_source_refetch
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.localInitGlobalSync.test.tsx
+  - tests/Playwright/specs/smoke/localinit-multi-progressive-datasource.spec.ts

@@ -17,11 +17,25 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class PostRepositoryUserActivitiesKeyTest extends BoardTestCase
 {
+    /**
+     * 검사할 게시글 저장소를 컨테이너에서 꺼낸다.
+     *
+     * @return PostRepositoryInterface 게시글 저장소
+     */
     private function repository(): PostRepositoryInterface
     {
         return $this->app->make(PostRepositoryInterface::class);
     }
 
+    /**
+     * 내가 쓴 글 활동 응답은 단수형 comment_count 키로 댓글 수를 싣는다.
+     *
+     * @scenario layer=repository_raw
+     *
+     * @effects user_activity_response_uses_singular_comment_count
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function authored_activity_response_uses_singular_comment_count_key(): void
     {
@@ -50,6 +64,15 @@ class PostRepositoryUserActivitiesKeyTest extends BoardTestCase
         $this->assertSame(4, $first['comment_count']);
     }
 
+    /**
+     * 내가 댓글 단 글 활동 응답도 단수형 comment_count 키로 댓글 수를 싣는다.
+     *
+     * @scenario layer=repository_raw
+     *
+     * @effects user_activity_response_uses_singular_comment_count
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function commented_activity_response_uses_singular_comment_count_key(): void
     {

@@ -1,0 +1,20 @@
+feature: 주문 옵션 일괄 처리의 쿼리 수
+
+description: |
+  일괄 상태 변경은 항목마다 옵션을 다시 조회했고, 결제완료 전이 가드는 주문마다 다시 조회한
+  뒤 결제수단을 지연 로드했다. 둘 다 대상이 늘수록 조회가 함께 늘어난다. 전체 쿼리 수로는
+  재지 않는다 — 상태 UPDATE 와 옵션 단위 훅은 항목마다 나는 것이 정상이다. 고정하는 것은
+  쓰기 직전에 같은 행을 한 건씩 다시 읽던 조회다.
+
+# axis 의미:
+#   operation — 재는 처리 경로. 측정 규모(옵션 6건, 주문 1건 대 3건)는 각 테스트 독블록의
+#               평문에 적는다.
+axes:
+  operation: [bulk_change_with_quantity, enforce_payment_complete_idv]
+
+effects:
+  - bulk_change_resolves_targets_in_one_batched_query
+  - payment_complete_guard_query_count_does_not_grow_with_order_count
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Performance/OrderOptionBulkQueryCountRegressionTest.php

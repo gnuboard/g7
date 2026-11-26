@@ -19,6 +19,13 @@ use Tests\TestCase;
  */
 class ChallengeResourceMaxAttemptsTest extends TestCase
 {
+    /**
+     * DTO 에 준 최대 시도 횟수(12)가 리소스 배열의 max_attempts 로 그대로 나온다.
+     *
+     * @effects challenge_resource_exposes_max_attempts
+     *
+     * @return void 반환값 없음
+     */
     public function test_resource_exposes_max_attempts_from_dto(): void
     {
         $challenge = new VerificationChallenge(
@@ -39,6 +46,13 @@ class ChallengeResourceMaxAttemptsTest extends TestCase
         $this->assertSame(12, $array['max_attempts']);
     }
 
+    /**
+     * 최대 시도 횟수를 주지 않은(무제한) 챌린지는 max_attempts 가 0 으로 나온다.
+     *
+     * @effects challenge_resource_exposes_zero_for_unlimited_attempts
+     *
+     * @return void 반환값 없음
+     */
     public function test_resource_exposes_zero_for_unlimited_attempts(): void
     {
         // popup/SDK 형 provider (이니시스 등) — max_attempts=0 (무제한) 케이스

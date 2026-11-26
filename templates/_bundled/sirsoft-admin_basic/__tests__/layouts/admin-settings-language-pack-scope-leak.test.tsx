@@ -54,18 +54,33 @@ function selectedSourceIds(
 }
 
 describe('환경설정 — 정책/언어팩 데이터소스 탭 격리', () => {
+  /**
+   * 본인인증 탭은 policies 만 고르고 language_packs 는 뺀다.
+   * @scenario tab=identity
+   * @effects settings_tab_selects_only_its_datasource
+   */
   it('본인인증 탭에서는 policies 만 선택되고 language_packs 는 제외된다 (scope=hook 누출 차단)', () => {
     const ids = selectedSourceIds('identity', { scope: 'hook' });
     expect(ids.has('policies'), 'policies 는 본인인증 탭에서 fetch 되어야 함').toBe(true);
     expect(ids.has('language_packs'), 'language_packs 는 본인인증 탭에서 fetch 되면 안 됨 (scope=hook 누출)').toBe(false);
   });
 
+  /**
+   * 언어팩 탭은 language_packs 만 고르고 policies 는 뺀다.
+   * @scenario tab=language_packs
+   * @effects settings_tab_selects_only_its_datasource
+   */
   it('언어팩 탭에서는 language_packs 만 선택되고 policies 는 제외된다 (scope=module 누출 차단)', () => {
     const ids = selectedSourceIds('language_packs', { scope: 'module' });
     expect(ids.has('language_packs'), 'language_packs 는 언어팩 탭에서 fetch 되어야 함').toBe(true);
     expect(ids.has('policies'), 'policies 는 언어팩 탭에서 fetch 되면 안 됨 (scope=module 누출)').toBe(false);
   });
 
+  /**
+   * 어느 탭에서도 두 데이터소스가 함께 선택되지 않는다.
+   * @scenario tab=identity, tab=language_packs, tab=general
+   * @effects settings_tab_datasources_never_coselected
+   */
   it('어떤 탭에서도 policies 와 language_packs 가 동시에 선택되지 않는다 (양방향 누출 원천 차단)', () => {
     const tabs = ['general', 'mail', 'identity', 'language_packs', 'info', 'security'];
     for (const tab of tabs) {
@@ -78,24 +93,43 @@ describe('환경설정 — 정책/언어팩 데이터소스 탭 격리', () => {
   // 탭 클릭 전환: navigate 는 query.tab 을 갱신하지만, 그 시점의 _global.activeSettingsTab 은
   // 직전 탭 값으로 stale 할 수 있다. 데이터소스 if 는 query.tab 을 우선해야 올바른 탭으로 평가된다.
   // (회귀: _global 우선 시 본인인증→언어팩 클릭 전환에서 언어팩이 fetch 되지 않고 정책이 잘못 fetch 됨)
+  /**
+   * 본인인증→언어팩 전환에서 낡은 _global 이 있어도 language_packs 만 고른다.
+   * @scenario tab=language_packs
+   * @effects settings_tab_switch_ignores_stale_global
+   */
   it('본인인증→언어팩 탭 클릭 전환(query.tab=language_packs, _global=identity stale)에서 language_packs 만 선택', () => {
     const ids = selectedSourceIds('language_packs', { scope: 'module' }, 'identity');
     expect(ids.has('language_packs'), 'query.tab=language_packs 면 stale _global 과 무관하게 언어팩이 fetch 되어야 함').toBe(true);
     expect(ids.has('policies'), 'stale _global=identity 때문에 정책이 fetch 되면 안 됨').toBe(false);
   });
 
+  /**
+   * 언어팩→본인인증 전환에서 낡은 _global 이 있어도 policies 만 고른다.
+   * @scenario tab=identity
+   * @effects settings_tab_switch_ignores_stale_global
+   */
   it('언어팩→본인인증 탭 클릭 전환(query.tab=identity, _global=language_packs stale)에서 policies 만 선택', () => {
     const ids = selectedSourceIds('identity', { scope: 'hook' }, 'language_packs');
     expect(ids.has('policies'), 'query.tab=identity 면 stale _global 과 무관하게 정책이 fetch 되어야 함').toBe(true);
     expect(ids.has('language_packs'), 'stale _global=language_packs 때문에 언어팩이 fetch 되면 안 됨').toBe(false);
   });
 
+  /**
+   * 일반 탭은 두 데이터소스를 모두 뺀다.
+   * @scenario tab=general
+   * @effects settings_general_tab_skips_both_datasources
+   */
   it('일반 탭(general)에서는 policies/language_packs 둘 다 제외된다 (불필요 fetch 방지)', () => {
     const ids = selectedSourceIds('general');
     expect(ids.has('policies')).toBe(false);
     expect(ids.has('language_packs')).toBe(false);
   });
 
+  /**
+   * policies 데이터소스에 활성 탭 if(identity)가 있다.
+   * @effects settings_tab_datasource_declares_active_tab_if
+   */
   it('policies 데이터소스 정의에 활성 탭 if(identity) 가 존재한다', () => {
     const policies = (adminSettings.data_sources ?? []).find((s: any) => s.id === 'policies');
     expect(policies).toBeTruthy();
@@ -103,6 +137,10 @@ describe('환경설정 — 정책/언어팩 데이터소스 탭 격리', () => {
     expect(policies.if).toMatch(/identity/);
   });
 
+  /**
+   * language_packs 데이터소스에 활성 탭 if(language_packs)가 있다.
+   * @effects settings_tab_datasource_declares_active_tab_if
+   */
   it('language_packs 데이터소스 정의에 활성 탭 if(language_packs) 가 존재한다', () => {
     const lp = (adminSettings.data_sources ?? []).find((s: any) => s.id === 'language_packs');
     expect(lp).toBeTruthy();

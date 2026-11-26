@@ -39,6 +39,11 @@ class ClaimActivityLogTest extends ModuleTestCase
 
     protected OrderRefundRequestService $service;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -54,6 +59,11 @@ class ClaimActivityLogTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 각 테스트 뒤에 준비한 상태를 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -90,6 +100,7 @@ class ClaimActivityLogTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=none
      *
      * @effects every_claim_status_enum_exposes_a_label_key
+     * @return void 반환값 없음
      */
     public function test_every_claim_status_enum_exposes_a_label_key(): void
     {
@@ -124,6 +135,7 @@ class ClaimActivityLogTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=none
      *
      * @effects cancel_axis_activity_log_labels_exist
+     * @return void 반환값 없음
      */
     public function test_the_cancel_axis_activity_log_labels_exist(): void
     {
@@ -154,6 +166,7 @@ class ClaimActivityLogTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects auto_advance_logs_every_refund_transition
+     * @return void 반환값 없음
      */
     public function test_auto_advance_logs_every_refund_transition(): void
     {
@@ -182,6 +195,7 @@ class ClaimActivityLogTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects refund_option_status_transition_is_logged
+     * @return void 반환값 없음
      */
     public function test_the_refund_item_transition_is_logged(): void
     {
@@ -208,6 +222,7 @@ class ClaimActivityLogTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=auto
      *
      * @effects cancel_axis_fires_request_status_and_option_hooks
+     * @return void 반환값 없음
      */
     public function test_the_cancel_axis_fires_all_three_hooks(): void
     {
@@ -241,6 +256,7 @@ class ClaimActivityLogTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=none
      *
      * @effects order_status_sync_logs_the_item_transitions_it_drags
+     * @return void 반환값 없음
      */
     public function test_order_status_sync_logs_the_item_transitions_it_drags(): void
     {
@@ -279,6 +295,7 @@ class ClaimActivityLogTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=none
      *
      * @effects order_cancel_is_registered_in_the_claim_morph_map
+     * @return void 반환값 없음
      */
     public function test_order_cancel_is_registered_in_the_claim_morph_map(): void
     {

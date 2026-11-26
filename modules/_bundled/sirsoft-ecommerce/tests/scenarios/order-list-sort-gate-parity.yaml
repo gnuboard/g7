@@ -1,0 +1,26 @@
+feature: 화면 정렬 옵션과 정렬 게이트의 일치 (발송일 정렬 포함)
+
+description: |
+  화면이 제공하는 정렬 옵션이 서버 정렬 게이트에서 422 가 되지 않는지, 그리고 관계 테이블
+  컬럼인 발송일(`shipped_at`) 정렬이 바르게 해석되는지 잰다. 옵션을 고르면 422 가 나는데
+  목록은 직전 결과 그대로 남아 정렬이 적용된 것처럼 보였다(쿠폰 유효기간순·주문 발송일순).
+
+  발송일 정렬이 지키는 불변식은 셋이다 — 주문별 가장 늦은/이른 발송일 기준, 배송 행이 여러
+  건이어도 총 건수 불변(1:N 조인 금지), 발송 이력이 없는 주문도 목록에 남음(INNER JOIN 금지).
+
+# axis 의미:
+#   case — shipped_at_sort 는 주문 목록 발송일 정렬의 실제 조회, layout_sort_option_parity 는
+#          모듈 레이아웃 전체의 정렬 옵션 ↔ 게이트 허용 집합 대조다.
+axes:
+  case: [shipped_at_sort, layout_sort_option_parity]
+
+effects:
+  - shipped_at_sort_orders_by_aggregated_shipment_date
+  - shipped_at_sort_keeps_total_count
+  - shipped_at_sort_keeps_orders_without_shipments
+  - shipped_at_sort_passes_the_gate
+  - layout_sort_options_are_within_the_gate
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/OrderShippedAtSortTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Layouts/LayoutSortOptionGateParityTest.php

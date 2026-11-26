@@ -1,0 +1,20 @@
+feature: 회원 클레임 라우트의 인증·권한 미들웨어 전수 부착
+
+description: |
+  개별 Feature 단언은 권한 슬러그마다 대표 라우트 한 건씩만 403 을 본다. 그래서 나머지
+  라우트에서 `permission:` 이 사라져도 스위트가 초록이다. 라우트 테이블에서 회원 클레임
+  라우트 모집단을 뽑아 전부가 인증과 `user-claims.*` 권한을 다는지, 그 슬러그가 모듈이 선언한
+  권한인지 잰다. 새 클레임 라우트가 늘면 자동으로 검사 대상이 된다.
+
+# axis 의미:
+#   check — middleware_attached 는 미들웨어 부착, slug_declared 는 권한 슬러그의 선언 여부다.
+axes:
+  check: [middleware_attached, slug_declared]
+
+effects:
+  - member_claim_routes_require_authentication
+  - member_claim_routes_require_a_claim_permission
+  - member_claim_route_permission_slugs_are_declared
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Providers/UserClaimRoutePermissionTest.php

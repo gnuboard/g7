@@ -36,6 +36,11 @@ class HardcodedLocaleRegressionTest extends TestCase
 
     private string $token;
 
+    /**
+     * ja 코어 언어팩을 활성 상태로 만들어 지원·번역 로케일 설정에 ja 를 넣고 관리자 토큰을 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -80,6 +85,12 @@ class HardcodedLocaleRegressionTest extends TestCase
 
     /**
      * #1 회귀: 기본 언어 = ja 로 환경설정 저장 시 422 거부되지 않아야 한다.
+     *
+     * @scenario surface=settings_save
+     *
+     * @effects admin_settings_save_accepts_active_pack_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_save_settings_accepts_active_locale_ja(): void
     {
@@ -103,6 +114,12 @@ class HardcodedLocaleRegressionTest extends TestCase
 
     /**
      * #2 회귀: 프로필 언어 변경 API 가 활성 언어팩 ja 를 거부하지 않아야 한다.
+     *
+     * @scenario surface=profile_language
+     *
+     * @effects profile_language_update_accepts_active_pack_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_profile_update_language_accepts_active_locale_ja(): void
     {
@@ -119,6 +136,12 @@ class HardcodedLocaleRegressionTest extends TestCase
 
     /**
      * #3 회귀: DriverRegistryService 가 활성 translatable_locales 모든 키에 대해 라벨을 반환해야 한다.
+     *
+     * @scenario surface=driver_labels
+     *
+     * @effects driver_registry_labels_cover_all_active_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_driver_registry_returns_labels_for_all_active_locales(): void
     {
@@ -141,6 +164,12 @@ class HardcodedLocaleRegressionTest extends TestCase
 
     /**
      * #4 회귀: AuthService Accept-Language 국가 매핑이 config 기반으로 동작.
+     *
+     * @scenario surface=country_fallback
+     *
+     * @effects auth_country_fallback_reads_config_mapping
+     *
+     * @return void 반환값 없음
      */
     public function test_auth_service_country_fallback_is_config_driven(): void
     {
@@ -153,6 +182,12 @@ class HardcodedLocaleRegressionTest extends TestCase
      * 회귀: LanguagePackServiceProvider 가 활성 언어팩 boot 시 supported_locales 뿐 아니라
      *        translatable_locales 도 함께 갱신해야 한다 (모듈/플러그인의 TranslatableField /
      *        LocaleRequiredTranslatable Rule 이 ja 를 거부하던 회귀 차단).
+     *
+     * @scenario surface=translatable_rule
+     *
+     * @effects provider_refresh_syncs_translatable_locales_with_active_packs, translatable_field_rule_accepts_active_pack_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_translatable_field_rule_accepts_active_locale_ja(): void
     {
@@ -188,6 +223,12 @@ class HardcodedLocaleRegressionTest extends TestCase
     /**
      * #5 회귀: ModuleManager / PluginManager 의 string→JSON 승격이
      *           활성 translatable_locales 의 모든 키를 포함해야 한다.
+     *
+     * @scenario surface=translatable_promotion
+     *
+     * @effects translatable_promotion_covers_all_active_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_translatable_promotion_covers_all_active_locales(): void
     {
@@ -200,6 +241,11 @@ class HardcodedLocaleRegressionTest extends TestCase
         $this->assertSame($name, $promoted['ja']);
     }
 
+    /**
+     * 환경설정 읽기·수정 권한을 가진 관리자 사용자를 만든다.
+     *
+     * @return User 권한이 붙은 관리자 사용자
+     */
     private function createAdminUser(): User
     {
         $user = User::factory()->create([

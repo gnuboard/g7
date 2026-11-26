@@ -1,0 +1,19 @@
+feature: 마이페이지 알림 — 미읽음 건수 라벨 바인딩
+
+description: |
+  「읽지 않은 알림 N건」 라벨이 목록 데이터소스(userNotifications)를 참조해 늘 0 으로 보였다. 목록 응답에는
+  unread_count 가 없고, 그 값은 별도 데이터소스 notification_unread_count 가 가져온다. 같은 화면의 헤더 벨은
+  올바른 데이터소스를 써서 두 표시가 어긋났다(실측: 벨 7 · API 7 · 페이지 라벨 0).
+  브라우저로 재려면 미읽음 계정이 필요해, 레이아웃 선언으로 정적 고정한다.
+
+# axis 의미:
+#   aspect — label_binding 라벨이 참조하는 데이터소스, data_source 그 데이터소스의 실제 선언
+axes:
+  aspect: [label_binding, data_source]
+
+effects:
+  - unread_label_binds_dedicated_data_source      # 라벨이 목록이 아닌 전용 데이터소스를 참조한다
+  - unread_data_source_declared_in_base_layout    # 참조하는 데이터소스가 베이스 레이아웃에 선언되어 있다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-notifications-unread-binding.test.ts

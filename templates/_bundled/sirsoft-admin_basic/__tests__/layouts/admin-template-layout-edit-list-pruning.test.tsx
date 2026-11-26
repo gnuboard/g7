@@ -54,11 +54,13 @@ function readDataSources(): Array<Record<string, unknown>> {
     return parsed.data_sources ?? [];
 }
 
-/**
- * @scenario resource=layout,endpoint=list,observation=consumer_screen
- * @effects list_omits_layout_content, detail_still_returns_full_payload
- */
+/** 레이아웃 목록(파일트리) — 조합·효과는 각 시험 주석이 선언한다. */
 describe('레이아웃 파일트리 — 목록 프루닝 (공개 #76)', () => {
+    /**
+     * 파일트리가 프루닝된 레이아웃 목록 엔드포인트를 그대로 소비한다.
+     * @scenario resource=layout, endpoint=list, observation=consumer_screen
+     * @effects list_omits_layout_content
+     */
     it('목록 데이터소스가 확장자 없는 목록 엔드포인트를 그대로 쓴다', () => {
         const source = readDataSources().find((d) => d.id === LIST_SOURCES.layouts);
 
@@ -66,6 +68,11 @@ describe('레이아웃 파일트리 — 목록 프루닝 (공개 #76)', () => {
         expect(source!.endpoint).toBe('/api/admin/templates/{{route.identifier}}/layouts');
     });
 
+    /**
+     * 화면이 레이아웃 목록 응답에서 본문·파싱 블록을 읽지 않는다.
+     * @scenario resource=layout, endpoint=list, observation=consumer_screen
+     * @effects list_omits_layout_content
+     */
     it('목록 응답에서 본문·파싱 블록을 읽지 않는다', () => {
         const raw = readRaw();
 
@@ -82,6 +89,11 @@ describe('레이아웃 파일트리 — 목록 프루닝 (공개 #76)', () => {
         }
     });
 
+    /**
+     * 본문은 선택된 레이아웃 단건 데이터소스가 공급한다(대체 경로).
+     * @scenario resource=layout, endpoint=list, observation=consumer_screen
+     * @effects detail_still_returns_full_payload
+     */
     it('본문은 단건 데이터소스가 공급한다 (대체 경로 보존)', () => {
         const endpoints = readDataSources().map((d) => String(d.endpoint ?? ''));
 
@@ -94,11 +106,13 @@ describe('레이아웃 파일트리 — 목록 프루닝 (공개 #76)', () => {
     });
 });
 
-/**
- * @scenario resource=layout_extension,endpoint=list,observation=consumer_screen
- * @effects list_omits_extension_content, detail_still_returns_full_payload
- */
+/** 확장 목록(라우트트리) — 조합·효과는 각 시험 주석이 선언한다. */
 describe('확장 라우트트리 — 목록 프루닝 (공개 #76)', () => {
+    /**
+     * 라우트트리가 프루닝된 확장 목록 엔드포인트를 그대로 소비한다.
+     * @scenario resource=layout_extension, endpoint=list, observation=consumer_screen
+     * @effects list_omits_extension_content
+     */
     it('확장 목록 데이터소스가 목록 엔드포인트를 그대로 쓴다', () => {
         const source = readDataSources().find((d) => d.id === LIST_SOURCES.extensions);
 
@@ -106,6 +120,11 @@ describe('확장 라우트트리 — 목록 프루닝 (공개 #76)', () => {
         expect(source!.endpoint).toBe('/api/admin/templates/{{route.identifier}}/layout-extensions');
     });
 
+    /**
+     * 화면이 확장 목록 응답에서 본문을 읽지 않는다.
+     * @scenario resource=layout_extension, endpoint=list, observation=consumer_screen
+     * @effects list_omits_extension_content
+     */
     it('확장 목록 응답에서 본문을 읽지 않는다', () => {
         const raw = readRaw();
 
@@ -116,6 +135,11 @@ describe('확장 라우트트리 — 목록 프루닝 (공개 #76)', () => {
         expect(raw).not.toContain('layout_extensions.data.content');
     });
 
+    /**
+     * 확장 본문은 선택된 확장 단건 데이터소스가 공급한다(대체 경로).
+     * @scenario resource=layout_extension, endpoint=list, observation=consumer_screen
+     * @effects detail_still_returns_full_payload
+     */
     it('확장 본문은 단건 데이터소스가 공급한다 (대체 경로 보존)', () => {
         const endpoints = readDataSources().map((d) => String(d.endpoint ?? ''));
 

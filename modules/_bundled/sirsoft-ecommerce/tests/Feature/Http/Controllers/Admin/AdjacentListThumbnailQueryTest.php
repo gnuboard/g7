@@ -26,7 +26,11 @@ class AdjacentListThumbnailQueryTest extends ModuleTestCase
     /** 수집된 실행 쿼리 SQL 목록 */
     private array $queries = [];
 
-    /** 쿼리 로그 수집을 시작합니다. */
+    /**
+     * 쿼리 로그 수집을 시작합니다.
+     *
+     * @return void 반환값 없음
+     */
     private function startCapture(): void
     {
         $this->queries = [];
@@ -97,9 +101,12 @@ class AdjacentListThumbnailQueryTest extends ModuleTestCase
     }
 
     /**
+     * 찜 목록의 썸네일 조회 쿼리 수가 행 수에 따라 늘지 않고, 대표 이미지가 없으면 첫 이미지로 대신한다.
+     *
      * @scenario surface=wishlist,observation=query_shape
      *
      * @effects thumbnail_query_count_does_not_grow_with_rows, thumbnail_url_falls_back_to_first_image_when_undesignated
+     * @return void 반환값 없음
      */
     public function test_wishlist_thumbnail_query_count_does_not_grow_with_rows(): void
     {
@@ -128,9 +135,12 @@ class AdjacentListThumbnailQueryTest extends ModuleTestCase
     }
 
     /**
+     * 관리자 리뷰 목록이 상품 썸네일 컬럼을 줄인 채 내려도 리뷰 이미지는 건드리지 않는다.
+     *
      * @scenario surface=admin_product_review_list,observation=response_payload
      *
      * @effects product_thumbnail_columns_stay_pruned_without_touching_review_images
+     * @return void 반환값 없음
      */
     public function test_admin_review_list_thumbnail_query_count_does_not_grow_with_rows(): void
     {

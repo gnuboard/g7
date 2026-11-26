@@ -1,0 +1,19 @@
+feature: Textarea 기본 컴포넌트 계약
+
+description: |
+  Textarea 가 값·placeholder 를 그리고, 이벤트를 전달하며, 제어 컴포넌트로 동작하고, HTML 속성을 넘기며, 디폴트 시맨틱 클래스(textarea)를 머지하는지 잰다.
+
+# axis 의미:
+#   component — 이 매니페스트가 다루는 컴포넌트 하나(단위 시험이 직접 그린다).
+axes:
+  component: [textarea]
+
+effects:
+  - textarea_renders_value_and_placeholder   # textarea 요소와 value·defaultValue·placeholder·여러 줄 텍스트가 그려진다
+  - textarea_forwards_events   # change·focus·blur·keydown·keyup 핸들러가 불린다
+  - textarea_controlled_mode   # 제어 컴포넌트로 동작한다
+  - textarea_applies_html_attributes   # HTML·aria·data 속성, 사용자 클래스, resize 스타일이 그대로 적용된다
+  - textarea_default_semantic_class_merge   # 시맨틱 토큰이 없으면 textarea 를 앞에 붙이고 중복하지 않는다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Textarea.test.tsx

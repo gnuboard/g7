@@ -80,6 +80,7 @@ function findNumberInput(node: unknown, name: string): Record<string, unknown> |
 }
 
 describe('개별 게시판 수정 화면 — 숫자 입력 경계값 계약', () => {
+    // @effects per_board_form_number_inputs_have_min_max
     it.each(fields)('%s — min/max 가 지정되어 있다', (field, layout) => {
         const props = findNumberInput(layout, field);
 
@@ -88,6 +89,7 @@ describe('개별 게시판 수정 화면 — 숫자 입력 경계값 계약', ()
         expect(props?.max, `${field}: max 미지정 — 사용자가 상한을 알 수 없습니다`).toBeDefined();
     });
 
+    // @effects per_board_form_bounds_read_meta_limits_with_server_fallback
     it.each(fields)('%s — 경계값이 _meta.limits 표현식이다 (리터럴 금지)', (field, layout, limitsKey) => {
         const props = findNumberInput(layout, field);
 

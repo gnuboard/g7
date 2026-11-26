@@ -15,9 +15,10 @@ description: |
   돌며 잰다 — 결제수단별로 조합을 보장할 수 없으므로 결제수단은 축으로 두지 않는다.
 
 # axis 의미:
-#   case — settings_response_ssot 결제 설정 응답의 키 구성, rendered_due_notice 주문서에 렌더된 입금 기한 안내.
+#   case — settings_response_ssot 결제 설정 응답의 키 구성, rendered_due_notice 주문서에 렌더된 입금 기한 안내,
+#          layout_binding 레이아웃 안내 문구의 days 바인딩 키(Vitest), dirty_setting_fallback 오염된 설정값의 폴백(Vitest).
 axes:
-  case: [settings_response_ssot, rendered_due_notice]
+  case: [settings_response_ssot, rendered_due_notice, layout_binding, dirty_setting_fallback]
 
 effects:
   # 결제 설정 응답 order_settings 에 auto_cancel_days 가 있고 폐기된 dbank_due_days/vbank_due_days 가 없다
@@ -26,6 +27,13 @@ effects:
   - due_notice_matches_auto_cancel_days
   # 입금 기한 안내에 미치환 플레이스홀더({{days}})가 남지 않는다
   - due_notice_has_no_unsubstituted_placeholder
+  # 레이아웃의 가상계좌·무통장입금 안내 days 바인딩이 order_settings.auto_cancel_days 를 참조한다
+  - due_notice_binds_auto_cancel_days
+  # 레이아웃이 서버 응답에 없는 vbank_due_days / dbank_due_days 를 참조하지 않는다
+  - due_notice_references_no_orphan_due_days_keys
+  # 오염된 설정값(빈 문자열·null·0·음수·비숫자)은 서버 규칙과 같이 기본치 3 으로, 양수는 그 값으로 안내한다
+  - due_notice_fallback_matches_server_rule
 
 test_files:
   - templates/_bundled/sirsoft-basic/tests/Playwright/specs/checkout-deposit-due-days.spec.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/checkout-deposit-due-days.test.ts

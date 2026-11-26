@@ -10,9 +10,13 @@ description: |
   축 `case` 는 시험 하나하나다.
 
 axes:
-  case: [prefix_constant, mid_without_prefix, mid_with_prefix, blank_mid, live_mode_with_credentials, live_mode_without_api_key]
+  case: [prefix_constant, mid_without_prefix, mid_with_prefix, blank_mid, live_mode_with_credentials, live_mode_without_api_key, settings_mid_autocomplete, settings_api_key_autocomplete, settings_prefix_label]
 
 effects:
+  # 환경설정 화면(plugin_settings.json) — 라이브 MID 입력칸
+  - live_mid_input_blocks_browser_autofill      # live_mid 칸은 autoComplete="one-time-code" 로 계정 자동완성을 막는다
+  - live_api_key_input_uses_new_password        # live_api_key 칸은 autoComplete="new-password" 로 저장 비밀번호 자동완성을 막는다
+  - live_mid_prefix_label_shows_srb             # 화면의 고정 접두 표시가 SRB 이고 SRA 는 없다
   - live_mid_prefix_constant_is_srb
   - live_mid_prefix_prepended_when_absent
   - live_mid_prefix_not_prepended_twice
@@ -22,3 +26,4 @@ effects:
 
 test_files:
   - plugins/_bundled/sirsoft-verification_kginicis/tests/Unit/Identity/InicisLiveMidPrefixTest.php
+  - plugins/_bundled/sirsoft-verification_kginicis/resources/js/__tests__/layouts/pluginSettingsLiveMid.test.tsx

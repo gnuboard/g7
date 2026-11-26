@@ -26,6 +26,11 @@ class SettingsControllerS3ValidationTest extends TestCase
 
     private string $token;
 
+    /**
+     * 설정 조회·수정 권한을 가진 관리자와 인증 토큰을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -36,6 +41,8 @@ class SettingsControllerS3ValidationTest extends TestCase
 
     /**
      * 설정 권한을 가진 관리자 사용자를 생성합니다.
+     *
+     * @return User 생성된 관리자
      */
     private function createAdminUser(): User
     {
@@ -74,6 +81,8 @@ class SettingsControllerS3ValidationTest extends TestCase
 
     /**
      * 인증 헤더를 부착한 요청 헬퍼입니다.
+     *
+     * @return static Bearer 토큰과 JSON 수락 헤더가 붙은 테스트 인스턴스
      */
     private function authRequest(): static
     {
@@ -112,6 +121,9 @@ class SettingsControllerS3ValidationTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=local_default
      *
      * @effects s3_disk_resolves
+     *
+     * @param  string  $region  저장을 허용해야 하는 리전 값
+     * @return void 반환값 없음
      */
     #[DataProvider('validRegionProvider')]
     public function test_store_accepts_valid_region_shapes(string $region): void
@@ -130,7 +142,7 @@ class SettingsControllerS3ValidationTest extends TestCase
     /**
      * 유효한 리전 형식 목록 (구 하드코딩 5종 밖 값 포함 — A4 회귀 가드)
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 케이스 이름별 리전 값
      */
     public static function validRegionProvider(): array
     {
@@ -148,6 +160,9 @@ class SettingsControllerS3ValidationTest extends TestCase
      * @scenario region_shape=invalid_format,endpoint=absent,driver_usability=adapter_present,attachment_disk=local_default
      *
      * @effects invalid_region_rejected
+     *
+     * @param  string  $region  422 로 거부해야 하는 리전 값
+     * @return void 반환값 없음
      */
     #[DataProvider('invalidRegionProvider')]
     public function test_store_rejects_invalid_region_shapes(string $region): void
@@ -167,7 +182,7 @@ class SettingsControllerS3ValidationTest extends TestCase
     /**
      * 불량 리전 형식 목록
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 케이스 이름별 리전 값
      */
     public static function invalidRegionProvider(): array
     {
@@ -184,6 +199,8 @@ class SettingsControllerS3ValidationTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=custom_url,driver_usability=adapter_present,attachment_disk=local_default
      *
      * @effects endpoint_injected
+     *
+     * @return void 반환값 없음
      */
     public function test_store_validates_s3_endpoint_url_format(): void
     {
@@ -206,6 +223,8 @@ class SettingsControllerS3ValidationTest extends TestCase
      * @scenario region_shape=custom_minio,endpoint=path_style,driver_usability=adapter_present,attachment_disk=follow_s3
      *
      * @effects endpoint_injected, attachment_upload_follows_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_store_saves_s3_endpoint_and_path_style_roundtrip(): void
     {
@@ -235,6 +254,8 @@ class SettingsControllerS3ValidationTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=path_style,driver_usability=adapter_present,attachment_disk=local_default
      *
      * @effects endpoint_injected
+     *
+     * @return void 반환값 없음
      */
     public function test_store_validates_s3_use_path_style_boolean(): void
     {
@@ -261,6 +282,8 @@ class SettingsControllerS3ValidationTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_absent,attachment_disk=local_default
      *
      * @effects unusable_driver_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_store_rejects_unusable_driver(): void
     {
@@ -288,6 +311,8 @@ class SettingsControllerS3ValidationTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_absent,attachment_disk=local_default
      *
      * @effects unusable_driver_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_store_rejects_unusable_driver_via_registry_gate(): void
     {
@@ -318,6 +343,8 @@ class SettingsControllerS3ValidationTest extends TestCase
      * @scenario region_shape=auto,endpoint=custom_url,driver_usability=adapter_present,attachment_disk=local_default
      *
      * @effects endpoint_injected
+     *
+     * @return void 반환값 없음
      */
     public function test_test_driver_request_accepts_relaxed_region_and_new_keys(): void
     {
@@ -342,6 +369,8 @@ class SettingsControllerS3ValidationTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=local_default
      *
      * @effects test_covers_server_websocket
+     *
+     * @return void 반환값 없음
      */
     public function test_test_driver_request_accepts_websocket_server_fields(): void
     {
@@ -367,6 +396,8 @@ class SettingsControllerS3ValidationTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=local_default
      *
      * @effects unauthenticated_returns_401
+     *
+     * @return void 반환값 없음
      */
     public function test_store_and_test_driver_return_401_without_authentication(): void
     {

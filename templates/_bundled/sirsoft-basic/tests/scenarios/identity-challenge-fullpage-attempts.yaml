@@ -1,0 +1,24 @@
+feature: 본인인증 풀페이지 — 최대 시도 횟수(max_attempts)를 서버 값과 맞춘다
+
+description: |
+  사용자 풀페이지 본인인증 레이아웃은 최대 시도 횟수를 환경설정 응답에서 받아야 한다. 예전에는 `?? 5` 를
+  하드코딩해 운영자가 무제한(0)으로 두어도 화면이 5회로 막았다. 초기값과 폴백은 무제한 기본 0 이고,
+  challenge_id 가 있으면 서버에서 다시 받아 갱신한다. 공개 폴링 응답에는 시도 횟수가 없어 남은 횟수는 표시하지 않는다.
+
+# axis 의미:
+#   aspect — initial_state 초기값·폴백, server_fetch 서버 재조회와 응답 반영, display_guard 화면 표시와 버튼 가드
+axes:
+  aspect: [initial_state, server_fetch, display_guard]
+
+effects:
+  - fullpage_max_attempts_initial_zero              # state.maxAttempts 초기값이 0 (무제한 기본)
+  - fullpage_max_attempts_query_fallback_zero       # query.max_attempts 폴백이 ?? 0
+  - fullpage_fetches_challenge_on_init              # challenge_id 가 있으면 init_actions 가 챌린지를 GET 한다
+  - fullpage_max_attempts_updated_from_response     # onSuccess 가 응답 max_attempts 로 _local.maxAttempts 를 갱신한다
+  - fullpage_does_not_read_server_attempts          # 서버가 싣지 않는 attempts 를 읽지 않는다
+  - fullpage_no_hardcoded_max_attempts_five         # 카운트다운·확인 버튼이 maxAttempts ?? 5 를 쓰지 않는다
+  - fullpage_hides_remaining_attempts               # 남은 시도 횟수를 표시하지 않는다
+  - fullpage_verify_disabled_guards_unlimited       # 확인 버튼 disabled 식이 max > 0 가드를 둔다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/identity-challenge-fullpage.test.tsx

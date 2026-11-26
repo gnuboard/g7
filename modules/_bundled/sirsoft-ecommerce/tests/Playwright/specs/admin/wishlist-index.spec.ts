@@ -10,9 +10,8 @@
  *   ② 관리자 목록에는 숨김 상품의 찜도 **보인다** — 정리 대상을 찾아야 하기 때문이다.
  *      회원 화면에서 빠지는 것과는 반대 방향의 규칙이라 둘을 함께 확인한다.
  *
- * @scenario list=wishlist, permission=manage, member_scope=true, extra_filter=none
- * @effects ecommerce_admin_list_member_banner_shows_only_when_scoped,
- *          admin_wishlist_filters_by_user_uuid, wishlist_excludes_hidden_products
+ * 축 요약(마커 아님 — 평문): list=wishlist, permission=manage, member_scope=true, extra_filter=none.
+ * 효과는 각 시험 바로 앞 주석이 단다.
  */
 import type { Page } from '@playwright/test';
 import { test, expect, authenticatePage } from '../../fixtures/member-data-seed';

@@ -1,0 +1,35 @@
+feature: 상품 상세 — 상품 문의(QnA) 탭 렌더링
+
+description: |
+  상품 상세 QnA 탭은 문의 목록(질문 행 + 답변 행), 비밀글 가림(is_owner·can_update 기준), 문의 작성 버튼,
+  비밀글 제외 체크박스, 인라인 상세 펼침, 탭 표시 게이트(activeTab·board_slug), 작성 모달 검증 오류,
+  본인·관리자 수정/삭제 버튼, 수정됨 표시, 삭제 확인 모달 상태를 그린다. 각 묶음을 렌더 시험으로 잰다.
+
+# axis 의미:
+#   section — 시험 파일의 describe 묶음과 짝이다
+axes:
+  section: [list, secret, write_button, secret_filter, inline_detail, tab_gate, form_errors, owner_actions, manager_secret, edited_label, delete_modal]
+
+effects:
+  - qna_empty_list_message                              # 빈 목록이면 안내 문구
+  - qna_items_render_question_rows                      # 문의마다 Q행
+  - qna_title_falls_back_to_content                     # 제목이 없으면 본문으로 폴백
+  - qna_answer_row_rendered_when_answered               # 답변이 있으면 A행 + 답변완료
+  - qna_answer_row_absent_when_unanswered               # 답변이 없으면 A행 없음
+  - qna_secret_masked_for_non_owner                     # 비밀글 비소유자에게 내용·답변을 가린다
+  - qna_secret_shown_to_owner                           # 비밀글 소유자에게 내용·답변을 보인다
+  - qna_write_button_always_visible                     # 문의 작성 버튼은 로그인·비밀글 설정과 무관하게 보인다
+  - qna_exclude_secret_checkbox_renders                 # 비밀글 제외 체크박스
+  - qna_inline_detail_follows_open_id                   # qnaOpenId 로 그 행의 인라인 상세가 열리고, null 이면 닫힌다
+  - qna_inline_detail_shows_seller_answer               # 인라인 상세에 판매자 답변 박스
+  - qna_inline_detail_blocked_for_secret_non_owner      # 비밀글 비소유자는 상세가 열리지 않는다
+  - qna_tab_hidden_when_inactive_or_board_slug_missing  # 탭이 비활성이거나 board_slug 가 없으면 내용이 안 보인다
+  - qna_form_error_text_follows_errors_state            # 작성 모달 오류 Span 이 qnaErrors 상태를 따른다
+  - qna_owner_edit_delete_only_when_unanswered          # 본인 미답변 문의만 수정·삭제 버튼
+  - qna_answer_actions_follow_can_update                # 답변 작성·수정·삭제 버튼이 can_update 를 따른다
+  - qna_can_update_reveals_secret_inquiry               # can_update 권한자는 비밀글 제목·상세를 본다
+  - qna_edited_label_when_updated_differs               # updated_at 이 created_at 과 다를 때만 수정됨 표시
+  - qna_delete_button_sets_modal_state                  # 삭제 버튼이 qnaDeleteId·qnaDeleteSource 상태를 설정한다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/shop-product-qna.test.tsx

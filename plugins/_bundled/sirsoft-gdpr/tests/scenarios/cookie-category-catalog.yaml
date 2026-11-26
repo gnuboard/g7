@@ -1,0 +1,36 @@
+feature: GDPR 쿠키 카테고리 카탈로그 — 라벨·설명·기본 카테고리 조회
+
+description: |
+  CookieCategoryService 가 쿠키 카테고리 카탈로그에서 라벨·설명·카테고리 목록을 어떻게 꺼내는지 고정한다.
+  마이페이지 「내 동의 현황」은 consent_key 원문 대신 이 서비스가 돌려준 라벨을 보여 준다.
+
+  규칙:
+    - 라벨은 접속 언어 → 대체 언어(fallback_locale) → 카탈로그의 첫 라벨 순으로 고른다.
+    - cookie_ 접두사가 있든 없든 같은 카테고리로 찾는다.
+    - 카탈로그에 없거나 라벨이 비어 있으면 null 을 돌려주고, 부르는 쪽이 원래 키를 쓴다.
+    - 운영자 설정이 비어 있으면 기본 카테고리 4종(necessary/functional/analytics/marketing)을 쓴다.
+    - 설명은 운영자 설정이 아니라 언제나 코드 기본값에서 온다(관리자 화면에 설명 편집 칸이 없다).
+
+axes:
+  lookup: [label, description, categories]
+  settings: [operator_catalog, empty]
+
+exclusions:
+  - { lookup: description, settings: empty, reason: "설명은 설정과 무관하게 코드 기본값에서 온다 — 운영자 설정이 설명을 빠뜨리거나 바꾼 경우(operator_catalog)가 판정 경계다" }
+  - { lookup: categories, settings: operator_catalog, reason: "카테고리 목록 시험은 기본 카테고리 폴백(functional 포함·선택형 3종)을 재는 것이라 설정이 빈 경우만 해당한다" }
+
+effects:
+  - label_uses_current_locale_from_catalog
+  - label_lookup_accepts_key_without_cookie_prefix
+  - label_falls_back_to_fallback_locale
+  - label_falls_back_to_first_label
+  - label_null_when_key_not_in_catalog
+  - label_null_when_label_empty
+  - label_uses_default_categories_when_settings_empty
+  - default_categories_include_optional_functional
+  - optional_categories_exclude_necessary
+  - description_uses_code_default_when_setting_omits_it
+  - description_ignores_operator_custom_text
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Services/CookieCategoryServiceTest.php

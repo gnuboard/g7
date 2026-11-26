@@ -65,6 +65,8 @@ class AlimtalkTemplateService
      * @param  array<string, mixed>  $response  kapi 응답
      *
      * @throws BizppurioApiException 실패 코드 시
+     *
+     * @return void 반환값 없음
      */
     private function assertSuccess(array $response): void
     {

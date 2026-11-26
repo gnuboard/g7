@@ -25,7 +25,9 @@ trait AssertsExtensionDataSourcesAreDeclared
     /**
      * 확장 정의가 참조하는 데이터소스는 모두 그 파일이 선언한 것이어야 한다.
      *
-     * @param  array<int, string>  $roots
+     * @param  array<int, string>  $roots  확장 정의를 찾을 최상위 디렉토리 목록
+     *
+     * @return void 반환값 없음
      */
     protected function assertExtensionDataSourcesAreDeclared(array $roots): void
     {
@@ -88,8 +90,8 @@ trait AssertsExtensionDataSourcesAreDeclared
     /**
      * 확장 정의마다 선언한 데이터소스 id 와 표현식이 참조하는 id 를 모은다.
      *
-     * @param  array<int, string>  $roots
-     * @return array<int, array{file: string, declared: array<int, string>, referenced: array<int, string>}>
+     * @param  array<int, string>  $roots  확장 정의를 찾을 최상위 디렉토리 목록
+     * @return array<int, array{file: string, declared: array<int, string>, referenced: array<int, string>}> 파일마다 경로·선언 id·참조 id
      */
     private function collectExtensionDefinitions(array $roots): array
     {
@@ -129,7 +131,8 @@ trait AssertsExtensionDataSourcesAreDeclared
      * 데이터소스는 언제나 `.data` 를 거쳐 읽으므로 이 형태만 본다. 호스트가 넘겨 주는
      * 반복 변수(`row.data` 같은 것은 없다)나 전역과 섞이지 않는 가장 좁은 신호다.
      *
-     * @return array<int, string>
+     * @param  array<string, mixed>  $json  확장 정의 JSON 을 디코드한 배열
+     * @return array<int, string> 참조하는 데이터소스 id 목록(중복 제거)
      */
     private function referencedDataSourceIds(array $json): array
     {
@@ -153,7 +156,12 @@ trait AssertsExtensionDataSourcesAreDeclared
     }
 
     /**
-     * `plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/{name}.json` → `sirsoft-pay_kginicis`
+     * 확장 정의 경로에서 확장 이름을 뽑는다.
+     *
+     * 예: `plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/{name}.json` → `sirsoft-pay_kginicis`
+     *
+     * @param  string  $relativePath  저장소 기준 확장 정의 파일 경로
+     * @return string 확장 이름(경로가 짧으면 경로 그대로)
      */
     private function extensionIdOf(string $relativePath): string
     {
@@ -163,8 +171,10 @@ trait AssertsExtensionDataSourcesAreDeclared
     }
 
     /**
-     * @param  array<int, string>  $roots
-     * @return array<int, string>
+     * 주어진 디렉토리들 아래 `resources/extensions/*.json` 확장 정의 파일을 모은다.
+     *
+     * @param  array<int, string>  $roots  찾을 최상위 디렉토리 목록
+     * @return array<int, string> 확장 정의 파일 절대 경로 목록
      */
     private function extensionDefinitionFiles(array $roots): array
     {

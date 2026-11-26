@@ -18,7 +18,9 @@ class ListPaginationGuardTest extends ModuleTestCase
     /**
      * 찜 목록: per_page 경계값이 전부 422 로 거부되는지 검증합니다.
      *
-     * @return void
+     * @scenario case=wishlist_out_of_range
+     * @effects list_per_page_out_of_range_is_rejected
+     * @return void 반환값 없음
      */
     public function test_wishlist_rejects_out_of_range_per_page(): void
     {
@@ -34,7 +36,9 @@ class ListPaginationGuardTest extends ModuleTestCase
     /**
      * 찜 목록: 허용 범위 per_page 는 그대로 적용되는지 검증합니다.
      *
-     * @return void
+     * @scenario case=wishlist_in_range
+     * @effects list_per_page_in_range_is_applied
+     * @return void 반환값 없음
      */
     public function test_wishlist_accepts_in_range_per_page(): void
     {
@@ -59,7 +63,9 @@ class ListPaginationGuardTest extends ModuleTestCase
     /**
      * 상품 문의 목록(공개): per_page 경계값이 전부 422 로 거부되는지 검증합니다.
      *
-     * @return void
+     * @scenario case=product_inquiry_out_of_range
+     * @effects list_per_page_out_of_range_is_rejected
+     * @return void 반환값 없음
      */
     public function test_product_inquiry_list_rejects_out_of_range_per_page(): void
     {
@@ -75,7 +81,9 @@ class ListPaginationGuardTest extends ModuleTestCase
     /**
      * 마이페이지 내 문의 목록: per_page 경계값이 전부 422 로 거부되는지 검증합니다.
      *
-     * @return void
+     * @scenario case=user_inquiry_out_of_range
+     * @effects list_per_page_out_of_range_is_rejected
+     * @return void 반환값 없음
      */
     public function test_user_inquiry_list_rejects_out_of_range_per_page(): void
     {
@@ -94,7 +102,9 @@ class ListPaginationGuardTest extends ModuleTestCase
      * 쿼리는 언제나 문자열로 도착하므로 `boolean` 규칙만 두면 화면이 보내는
      * `exclude_secret=false` 에서 목록 전체가 422 가 되고 문의 탭이 비어 보인다.
      *
-     * @return void
+     * @scenario case=product_inquiry_boolean_spellings
+     * @effects inquiry_list_accepts_query_string_boolean_spellings
+     * @return void 반환값 없음
      */
     public function test_product_inquiry_list_accepts_boolean_query_spellings(): void
     {
@@ -113,7 +123,9 @@ class ListPaginationGuardTest extends ModuleTestCase
      *
      * 정규화가 게이트를 통째로 무력화하지 않아야 한다.
      *
-     * @return void
+     * @scenario case=product_inquiry_non_boolean
+     * @effects inquiry_list_rejects_non_boolean_value
+     * @return void 반환값 없음
      */
     public function test_product_inquiry_list_rejects_non_boolean_exclude_secret(): void
     {
@@ -128,7 +140,9 @@ class ListPaginationGuardTest extends ModuleTestCase
     /**
      * 마이페이지 내 문의 목록: 쿼리 스트링의 불리언 표기 4종을 모두 받아들이는지 검증합니다.
      *
-     * @return void
+     * @scenario case=user_inquiry_boolean_spellings
+     * @effects inquiry_list_accepts_query_string_boolean_spellings
+     * @return void 반환값 없음
      */
     public function test_user_inquiry_list_accepts_boolean_query_spellings(): void
     {

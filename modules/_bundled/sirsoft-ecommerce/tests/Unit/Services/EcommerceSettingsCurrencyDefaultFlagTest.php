@@ -27,6 +27,11 @@ class EcommerceSettingsCurrencyDefaultFlagTest extends ModuleTestCase
 
     private string $storagePath;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,6 +45,11 @@ class EcommerceSettingsCurrencyDefaultFlagTest extends ModuleTestCase
         $this->service = new EcommerceSettingsService;
     }
 
+    /**
+     * 각 테스트 뒤에 준비한 상태를 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::isDirectory($this->storagePath)) {
@@ -51,6 +61,9 @@ class EcommerceSettingsCurrencyDefaultFlagTest extends ModuleTestCase
 
     /**
      * language_currency.json 을 직접 생성하여 저장된 통화 설정을 시뮬레이션합니다.
+     *
+     * @param  array  $settings  저장할 통화 설정
+     * @return void 반환값 없음
      */
     private function saveLanguageCurrency(array $settings): void
     {
@@ -63,6 +76,8 @@ class EcommerceSettingsCurrencyDefaultFlagTest extends ModuleTestCase
 
     /**
      * 병합 결과에서 is_default 가 true 인 통화 코드 목록을 반환합니다.
+     *
+     * @return array 기본 통화로 표시된 통화 코드 목록
      */
     private function defaultCodes(): array
     {
@@ -82,6 +97,8 @@ class EcommerceSettingsCurrencyDefaultFlagTest extends ModuleTestCase
      * 실제 요청에서는 CoreServiceProvider 가 부팅 시 getAllSettings() 결과를
      * `g7_settings.modules.{id}` 에 넣고, 표시/환산 계층은 그 config 만 읽습니다.
      * 테스트는 파일을 직접 쓰므로 같은 발행 단계를 재현해야 합니다.
+     *
+     * @return void 반환값 없음
      */
     private function publishSettingsToConfig(): void
     {
@@ -96,6 +113,8 @@ class EcommerceSettingsCurrencyDefaultFlagTest extends ModuleTestCase
 
     /**
      * 운영 재현 저장본: 기본 통화를 JPY 로 바꾸고 JPY/USD 두 건만 저장한 상태.
+     *
+     * @return void 반환값 없음
      */
     private function saveJpyBaseSubset(): void
     {
@@ -112,6 +131,13 @@ class EcommerceSettingsCurrencyDefaultFlagTest extends ModuleTestCase
     // 보충 통화의 is_default 기각
     // ──────────────────────────────────────────────
 
+    /**
+     * 저장본에 없어 기본값에서 보충된 통화의 is_default 는 버려 기본 통화가 하나로 남는다.
+     *
+     * @scenario saved_shape=subset_with_default
+     * @effects backfilled_currency_default_flag_is_rejected
+     * @return void 반환값 없음
+     */
     public function test_backfilled_currency_default_flag_is_rejected(): void
     {
         // defaults 의 KRW 는 is_default: true 이며 저장본에 없어 보충 대상이 된다.
@@ -120,6 +146,13 @@ class EcommerceSettingsCurrencyDefaultFlagTest extends ModuleTestCase
         $this->assertSame(['JPY'], $this->defaultCodes(), '보충된 통화의 is_default 가 기각되지 않아 기본 통화가 복수입니다.');
     }
 
+    /**
+     * 병합 결과의 기본 통화 플래그는 정확히 하나이고 저장본의 기본 통화와 같다.
+     *
+     * @scenario saved_shape=subset_with_default
+     * @effects default_currency_flag_is_unique
+     * @return void 반환값 없음
+     */
     public function test_default_currency_is_unique_across_all_saved_shapes(): void
     {
         $this->saveJpyBaseSubset();
@@ -133,6 +166,13 @@ class EcommerceSettingsCurrencyDefaultFlagTest extends ModuleTestCase
         $this->assertSame('JPY', $lc['default_currency']);
     }
 
+    /**
+     * 기본 통화가 저장 목록에 없어 보충되면 그 통화를 기본으로 올린다 (기본 통화가 0개가 되지 않는다).
+     *
+     * @scenario saved_shape=default_missing_from_list
+     * @effects backfilled_default_currency_is_promoted
+     * @return void 반환값 없음
+     */
     public function test_default_currency_absent_from_saved_list_is_promoted_when_backfilled(): void
     {
         // 기본 통화(CNY)가 저장본 currencies 에는 없어 보충 대상이 되는 경우 —
@@ -147,6 +187,13 @@ class EcommerceSettingsCurrencyDefaultFlagTest extends ModuleTestCase
         $this->assertSame(['CNY'], $this->defaultCodes(), '보충된 기본 통화가 승격되지 않아 기본 통화가 사라졌습니다.');
     }
 
+    /**
+     * 저장본이 없으면 기본값의 기본 통화(KRW)를 그대로 쓴다.
+     *
+     * @scenario saved_shape=nothing_saved
+     * @effects defaults_base_currency_kept_when_nothing_saved
+     * @return void 반환값 없음
+     */
     public function test_nothing_saved_keeps_defaults_base_currency(): void
     {
         // 저장본 없음(신규 설치) → defaults 의 default_currency(KRW) 유지
@@ -157,6 +204,13 @@ class EcommerceSettingsCurrencyDefaultFlagTest extends ModuleTestCase
     // 기본 통화 해석 SSoT (표시 계층 ↔ 환산 계층 일치)
     // ──────────────────────────────────────────────
 
+    /**
+     * 표시 계층과 환산 계층이 같은 기본 통화와 환산 분모(base_unit)를 읽는다.
+     *
+     * @scenario saved_shape=subset_with_default
+     * @effects display_and_conversion_layers_share_base_currency
+     * @return void 반환값 없음
+     */
     public function test_display_layer_resolves_same_base_currency_as_conversion_layer(): void
     {
         $this->saveJpyBaseSubset();
@@ -179,6 +233,13 @@ class EcommerceSettingsCurrencyDefaultFlagTest extends ModuleTestCase
         $this->assertSame(100, $conversion->getDefaultBaseUnit());
     }
 
+    /**
+     * 환율을 넣지 않은 보충 통화는 기본 통화로 오인되지 않고 환율이 null 로 남는다.
+     *
+     * @scenario saved_shape=subset_with_default
+     * @effects unconfigured_rate_currency_is_not_base
+     * @return void 반환값 없음
+     */
     public function test_unconfigured_exchange_rate_currency_is_not_treated_as_base(): void
     {
         // KRW 는 환율 미입력(null) 상태로 보충된다. 기본 통화로 오인되면 환율이 1.0 으로

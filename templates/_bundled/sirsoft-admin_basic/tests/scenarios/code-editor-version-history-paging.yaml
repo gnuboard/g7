@@ -1,0 +1,19 @@
+feature: 코드 편집기 버전 이력 — 상한 조회와 더 보기
+
+description: |
+  레이아웃 JSON 이 구동하는 코드 편집기의 버전 이력이 상한(limit)을 달고 조회하고, 묶음이 가득 찼을 때만 더 보기로 상한을 넓히며, 서버 상한에 닿으면 그 사실을 알리는지 브라우저에서 잰다.
+  위지윅 편집기의 같은 기능은 코어 매니페스트 `tests/scenarios/list-child-collection-pruning.yaml` 이 잰다 — 두 화면은 코드를 공유하지 않는다.
+
+# axis 의미:
+#   surface — 이 매니페스트가 다루는 화면 하나(코드 편집기).
+axes:
+  surface: [code_editor]
+
+effects:
+  - version_list_request_carries_limit   # 첫 조회가 상한(limit)을 달고 나간다
+  - version_list_load_more_hidden_when_batch_not_full   # 묶음이 가득 차지 않으면 더 보기가 없다
+  - version_list_load_more_widens_limit   # 묶음이 가득 차면 더 보기로 상한을 넓혀 다시 조회한다
+  - version_list_limit_ceiling_disclosed   # 서버 상한까지 넓히면 더 보기 대신 도달 한계를 알린다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-version-history-paging.spec.ts

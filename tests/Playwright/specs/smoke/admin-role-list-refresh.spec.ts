@@ -9,6 +9,11 @@
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
+/**
+ * @scenario surface=admin_role_list
+ *
+ * @effects admin_list_refresh_button_mounted, admin_list_refresh_button_refetches_datasource
+ */
 test('@smoke /admin/roles 진입 시 refresh IconButton 이 마운트되고 클릭하면 roles 데이터소스가 재요청된다', async ({ page }) => {
   const token = issueToken('core.permissions.read');
   await authenticatePage(page, token);

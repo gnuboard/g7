@@ -38,22 +38,46 @@ class OrderListClaimFilterTest extends ModuleTestCase
 {
     protected User $admin;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read']);
     }
 
+    /**
+     * 관리자 주문 목록 API 주소를 만든다.
+     *
+     * @param  string  $query  붙일 쿼리스트링 (비면 붙이지 않음)
+     * @return string 주문 목록 API 경로
+     */
     protected function url(string $query = ''): string
     {
         return '/api/modules/sirsoft-ecommerce/admin/orders'.($query !== '' ? '?'.$query : '');
     }
 
+    /**
+     * 결제완료 상태의 주문을 하나 만든다.
+     *
+     * @return Order 만든 주문
+     */
     protected function makeOrder(): Order
     {
         return OrderFactory::new()->create(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE]);
     }
 
+    /**
+     * 주문에 반품 신청서를 하나 만든다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  ReturnStatusEnum  $status  반품 상태
+     * @param  array  $overrides  덮어쓸 속성
+     * @return OrderReturn 만든 반품 신청서
+     */
     protected function makeReturn(Order $order, ReturnStatusEnum $status = ReturnStatusEnum::REQUESTED, array $overrides = []): OrderReturn
     {
         return OrderReturnFactory::new()->create(array_merge([
@@ -62,6 +86,14 @@ class OrderListClaimFilterTest extends ModuleTestCase
         ], $overrides));
     }
 
+    /**
+     * 주문에 교환 신청서를 하나 만든다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  ExchangeStatusEnum  $status  교환 상태
+     * @param  array  $overrides  덮어쓸 속성
+     * @return OrderExchange 만든 교환 신청서
+     */
     protected function makeExchange(Order $order, ExchangeStatusEnum $status = ExchangeStatusEnum::REQUESTED, array $overrides = []): OrderExchange
     {
         return OrderExchangeFactory::new()->create(array_merge([
@@ -70,6 +102,12 @@ class OrderListClaimFilterTest extends ModuleTestCase
         ], $overrides));
     }
 
+    /**
+     * 목록 응답에서 주문번호만 뽑는다.
+     *
+     * @param  \Illuminate\Testing\TestResponse  $response  목록 응답
+     * @return array 주문번호 목록
+     */
     protected function orderNumbers($response): array
     {
         return collect($response->json('data.data'))->pluck('order_number')->all();
@@ -83,6 +121,7 @@ class OrderListClaimFilterTest extends ModuleTestCase
      * @scenario claim_axis=type_status
      *
      * @effects order_list_claim_filter_total_is_not_inflated
+     * @return void 반환값 없음
      */
     public function test_claim_filter_total_is_not_inflated_by_multiple_matching_claims(): void
     {
@@ -101,6 +140,13 @@ class OrderListClaimFilterTest extends ModuleTestCase
         $this->assertSame([$order->order_number], $this->orderNumbers($response));
     }
 
+    /**
+     * 클레임 유무 필터 3종(none·any·active)이 각각 맞는 주문만 돌려준다.
+     *
+     * @scenario claim_axis=presence
+     * @effects order_list_claim_filter_narrows_result
+     * @return void 반환값 없음
+     */
     public function test_claim_presence_filters_none_any_active(): void
     {
         $withActive = $this->makeOrder();
@@ -124,6 +170,13 @@ class OrderListClaimFilterTest extends ModuleTestCase
         $this->assertSame([$withActive->order_number], $this->orderNumbers($active));
     }
 
+    /**
+     * 유형별 상태 집합은 유형 사이에서 OR 로 묶인다.
+     *
+     * @scenario claim_axis=type_status
+     * @effects order_list_claim_filter_type_statuses_or_across_types
+     * @return void 반환값 없음
+     */
     public function test_type_status_sets_are_combined_with_or_across_types(): void
     {
         $returnOrder = $this->makeOrder();
@@ -146,6 +199,13 @@ class OrderListClaimFilterTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 취소 축은 취소 유형(부분·전체) 어휘만 받고, 전이 상태 어휘는 422 로 거절한다.
+     *
+     * @scenario claim_axis=type_status
+     * @effects order_list_claim_filter_vocabulary_matches_server_gate
+     * @return void 반환값 없음
+     */
     public function test_cancel_axis_uses_cancel_type_vocabulary(): void
     {
         $partialOrder = $this->makeOrder();
@@ -181,6 +241,13 @@ class OrderListClaimFilterTest extends ModuleTestCase
             ->assertJsonValidationErrors('claim_cancel_types.0');
     }
 
+    /**
+     * 귀책·신청일 축이 결과를 좁힌다 — 귀책 축이 없는 취소는 귀책 필터에 걸리지 않는다.
+     *
+     * @scenario claim_axis=fault_and_date
+     * @effects order_list_claim_filter_narrows_result
+     * @return void 반환값 없음
+     */
     public function test_fault_and_requested_date_constrain_the_same_claim_row(): void
     {
         $sellerFault = $this->makeOrder();
@@ -216,6 +283,13 @@ class OrderListClaimFilterTest extends ModuleTestCase
         $this->assertContains($sellerFault->order_number, $this->orderNumbers($range));
     }
 
+    /**
+     * 파라미터 없이도 클레임 요약이 실리고, 유형별 건수·최신 상태·배지 값을 담는다.
+     *
+     * @scenario claim_axis=type_status
+     * @effects order_list_claim_column_is_always_served
+     * @return void 반환값 없음
+     */
     public function test_claim_summary_is_serialized_without_any_opt_in_parameter(): void
     {
         $order = $this->makeOrder();
@@ -280,9 +354,12 @@ class OrderListClaimFilterTest extends ModuleTestCase
     }
 
     /**
+     * 요약의 환불 건수는 직접 환불과 취소 발 환불을 함께 센다.
+     *
      * @scenario claim_axis=type_status
      *
      * @effects order_list_claim_summary_survives_deferred_join
+     * @return void 반환값 없음
      */
     public function test_summary_refund_count_includes_every_origin(): void
     {
@@ -334,6 +411,13 @@ class OrderListClaimFilterTest extends ModuleTestCase
         $this->assertNotNull($summary['refund']['latest_claim_number']);
     }
 
+    /**
+     * 귀책과 신청일은 같은 클레임 하나가 함께 만족해야 걸린다 (축을 따로 만족하는 주문은 빠진다).
+     *
+     * @scenario claim_axis=fault_and_date
+     * @effects order_list_claim_filter_fault_and_date_match_the_same_claim
+     * @return void 반환값 없음
+     */
     public function test_fault_and_date_must_be_satisfied_by_the_same_claim(): void
     {
         // 귀책은 클레임 A, 신청일은 클레임 B — 두 축을 각각 만족하는 클레임이 따로 있을 뿐
@@ -364,6 +448,13 @@ class OrderListClaimFilterTest extends ModuleTestCase
         $this->assertSame([$matched->order_number], $this->orderNumbers($response));
     }
 
+    /**
+     * 어휘 밖 상태값과 유무 값은 422 로 거절한다.
+     *
+     * @scenario claim_axis=type_status
+     * @effects order_list_claim_filter_vocabulary_matches_server_gate
+     * @return void 반환값 없음
+     */
     public function test_claim_status_vocabulary_is_gated_per_type(): void
     {
         $this->actingAs($this->admin)
@@ -377,6 +468,13 @@ class OrderListClaimFilterTest extends ModuleTestCase
             ->assertJsonValidationErrors('claim_presence');
     }
 
+    /**
+     * 출처가 비어 있는 옛 환불신청서도 직접 환불로 보아 필터·유무·요약에 잡힌다.
+     *
+     * @scenario claim_axis=presence
+     * @effects order_list_claim_filter_legacy_refund_counts_as_direct
+     * @return void 반환값 없음
+     */
     public function test_legacy_refunds_without_source_type_are_treated_as_direct(): void
     {
         // 1.2.0 백필 스텝은 `order_cancel_id` 가 없는 구형 환불신청서를 "출처 미상" 으로
@@ -418,9 +516,12 @@ class OrderListClaimFilterTest extends ModuleTestCase
     }
 
     /**
+     * 환불 상태 필터는 직접 환불과 취소 발 환불을 모두 찾는다.
+     *
      * @scenario claim_axis=type_status
      *
      * @effects order_list_claim_filter_narrows_result
+     * @return void 반환값 없음
      */
     public function test_refund_status_filter_includes_every_origin(): void
     {
@@ -478,6 +579,9 @@ class OrderListClaimFilterTest extends ModuleTestCase
      * 켰고, 그 파라미터의 문자열 불리언 정규화("true"/"false")와 해석 불가 값의 422 를
      * 이 케이스가 고정했다. 표시와 값 수신이 근거를 달리해 어긋나는 결함의 원인이라
      * 파라미터를 없앴다. 이제 확인할 것은 "요청이 무엇이든 실린다" 하나다.
+     *
+     * @effects order_list_claim_column_is_always_served
+     * @return void 반환값 없음
      */
     public function test_claim_summary_is_served_regardless_of_query(): void
     {
@@ -500,6 +604,13 @@ class OrderListClaimFilterTest extends ModuleTestCase
             ->assertOk();
     }
 
+    /**
+     * 신청일 끝(claim_requested_to)이 범위의 위쪽을 막는다.
+     *
+     * @scenario claim_axis=fault_and_date
+     * @effects order_list_claim_filter_requested_to_bounds_the_range
+     * @return void 반환값 없음
+     */
     public function test_claim_requested_to_bounds_the_range(): void
     {
         $inRange = $this->makeOrder();
@@ -515,6 +626,13 @@ class OrderListClaimFilterTest extends ModuleTestCase
         $this->assertSame([$inRange->order_number], $this->orderNumbers($response));
     }
 
+    /**
+     * 귀책 필터에 취소 유형만 지정하면 매칭할 유형이 없어 빈 결과를 돌려준다.
+     *
+     * @scenario claim_axis=fault_and_date
+     * @effects order_list_claim_filter_fault_with_cancel_only_returns_empty
+     * @return void 반환값 없음
+     */
     public function test_fault_filter_with_cancel_only_type_returns_empty(): void
     {
         // 귀책 필터 + 취소 유형만 지정 — 취소 테이블에는 귀책 컬럼이 없어 매칭 가능한
@@ -544,6 +662,10 @@ class OrderListClaimFilterTest extends ModuleTestCase
     /**
      * `claim_presence=none` + 귀책 + 취소 유형만 지정하면 매칭 가능한 유형이 없다 — "그런 클레임이
      * 없는 주문" 은 전건이므로 결과가 비어서는 안 된다 (S6c 1차 이월 a — S10 소유).
+     *
+     * @scenario claim_axis=presence
+     * @effects order_list_claim_filter_presence_none_with_unmatchable_axes_returns_all
+     * @return void 반환값 없음
      */
     public function test_presence_none_with_fault_and_cancel_only_returns_every_order(): void
     {
@@ -584,6 +706,7 @@ class OrderListClaimFilterTest extends ModuleTestCase
      * @scenario claim_axis=type_status
      *
      * @effects order_list_claim_filter_narrows_result
+     * @return void 반환값 없음
      */
     public function test_export_applies_the_same_claim_criteria_as_the_list(): void
     {

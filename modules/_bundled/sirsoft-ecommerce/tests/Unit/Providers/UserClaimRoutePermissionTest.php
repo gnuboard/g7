@@ -71,6 +71,15 @@ class UserClaimRoutePermissionTest extends ModuleTestCase
         return $collected;
     }
 
+    /**
+     * 회원 클레임 라우트 전부가 인증 미들웨어와 `user-claims.*` 권한 미들웨어를 단다.
+     *
+     * 라우트 수(14)도 함께 본다 — 이름 규칙이 바뀌어 모집단이 비면 아무것도 검사하지 않는 채 통과하기 때문이다.
+     *
+     * @scenario check=middleware_attached
+     * @effects member_claim_routes_require_authentication, member_claim_routes_require_a_claim_permission
+     * @return void 반환값 없음
+     */
     public function test_every_member_claim_route_requires_authentication_and_a_claim_permission(): void
     {
         $routes = $this->claimRoutes();
@@ -109,6 +118,13 @@ class UserClaimRoutePermissionTest extends ModuleTestCase
         $this->assertSame([], $unpermissioned, '`user-claims.*` 권한 없이 열린 회원 클레임 라우트: '.implode(', ', $unpermissioned));
     }
 
+    /**
+     * 회원 클레임 라우트가 요구하는 권한 슬러그는 모두 모듈이 선언한 권한이다 (오타 슬러그는 어떤 역할로도 열 수 없다).
+     *
+     * @scenario check=slug_declared
+     * @effects member_claim_route_permission_slugs_are_declared
+     * @return void 반환값 없음
+     */
     public function test_each_claim_route_uses_a_permission_slug_that_the_module_declares(): void
     {
         // 슬러그 오타는 미들웨어가 붙어 있어도 통과를 막을 뿐 아니라, 권한 화면에 존재하지 않는

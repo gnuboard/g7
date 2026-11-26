@@ -1,0 +1,41 @@
+feature: 마이페이지 상품 문의 API (목록·수정·삭제·답변)
+
+description: |
+  회원이 마이페이지에서 자기 상품 문의를 보고 고치고 지우는 API, 그리고 답변 권한을 가진
+  사용자가 같은 경로로 답변을 등록·수정·삭제하는 API 의 접근 판정과 결과를 잰다. 단일 답변
+  정책(이미 답변된 문의의 재등록 거절)은 `inquiry-single-reply-lifecycle.yaml` 이 맡는다.
+
+  조용히 깨지는 지점은 셋이다.
+  ① 남의 문의를 고치거나 지울 수 있으면 다른 회원의 글이 바뀐다 — 403 이어야 한다.
+  ② 문의 삭제가 행을 하드 삭제하면 게시판에서 질문 글을 복원할 때 연결을 되살릴 수 없다.
+  ③ 목록의 상품 링크가 상품 id 로 나가면 상품 상세 경로(product_code)와 어긋나 404 가 된다.
+
+# axis 의미:
+#   action — 호출하는 API.
+#   actor  — 호출하는 사람. guest(비로그인)·owner(작성자 본인)·other(다른 회원)·
+#            no_permission(답변 권한 없음)·permitted(답변 권한 있음).
+axes:
+  action: [list, update, delete, reply_create, reply_update, reply_delete]
+  actor: [guest, owner, other, no_permission, permitted]
+
+exclusions:
+  - { action: list, actor: [guest, other, no_permission, permitted], reason: "목록은 로그인 회원 자기 문의만 보여 주는 경로라 작성자 한 경우로 잰다" }
+  - { action: [update, delete], actor: [no_permission, permitted], reason: "문의 수정·삭제는 답변 권한이 아니라 작성자 여부로 판정한다" }
+  - { action: [reply_create, reply_update, reply_delete], actor: [guest, owner, other], reason: "답변은 작성자 여부가 아니라 답변 권한으로 판정한다" }
+
+effects:
+  - user_inquiry_list_links_product_by_code
+  - user_inquiry_write_requires_authentication
+  - user_inquiry_owner_can_update
+  - user_inquiry_other_member_cannot_update
+  - user_inquiry_update_unknown_returns_404
+  - user_inquiry_owner_can_delete
+  - user_inquiry_delete_soft_deletes_pivot
+  - user_inquiry_other_member_cannot_delete
+  - user_inquiry_reply_requires_permission
+  - user_inquiry_permitted_user_can_create_reply
+  - user_inquiry_permitted_user_can_update_reply
+  - user_inquiry_permitted_user_can_delete_reply
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserProductInquiryControllerTest.php

@@ -1,0 +1,17 @@
+feature: 게시판 생성·삭제가 파티션 DDL 없이 동작한다 (파티션 스키마 폐지 회귀)
+
+description: |
+  파티션 스키마를 폐지한 뒤에도 남은 파티션 DDL(ALTER TABLE ... PARTITION) 호출이 게시판 생성을
+  실패시키고 롤백하던 회귀를 막는다. 생성·삭제 경로에서 파티션 쿼리가 한 번도 나가지 않고,
+  저장소 인터페이스에서도 파티션 메서드가 빠졌는지 잰다.
+
+axes:
+  operation: [create, delete, repository_contract]
+
+effects:
+  - board_create_runs_no_partition_ddl
+  - board_delete_runs_no_partition_ddl
+  - repository_interface_has_no_partition_methods
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardCreationRegressionTest.php

@@ -16,6 +16,10 @@ class PublicTemplateControllerTest extends TestCase
 
     /**
      * 활성화된 템플릿의 라우트 정보 조회 성공 테스트
+     *
+     * @effects fallback_api_serves_active_template_routes
+     *
+     * @return void 반환값 없음
      */
     public function test_can_get_routes_for_active_template(): void
     {
@@ -50,6 +54,10 @@ class PublicTemplateControllerTest extends TestCase
 
     /**
      * 비활성화된 템플릿의 라우트 정보 조회 실패 테스트
+     *
+     * @effects fallback_api_rejects_inactive_or_missing_template
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_get_routes_for_inactive_template(): void
     {
@@ -80,6 +88,10 @@ class PublicTemplateControllerTest extends TestCase
 
     /**
      * 존재하지 않는 템플릿의 라우트 정보 조회 실패 테스트
+     *
+     * @effects fallback_api_rejects_inactive_or_missing_template
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_get_routes_for_nonexistent_template(): void
     {
@@ -99,6 +111,10 @@ class PublicTemplateControllerTest extends TestCase
 
     /**
      * routes.json 파일이 없는 템플릿의 라우트 정보 조회 실패 테스트
+     *
+     * @effects fallback_api_routes_missing_file_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_get_routes_when_routes_file_not_exists(): void
     {
@@ -129,6 +145,10 @@ class PublicTemplateControllerTest extends TestCase
 
     /**
      * 캐싱 동작 테스트
+     *
+     * @effects fallback_api_caches_payload_under_cache_version
+     *
+     * @return void 반환값 없음
      */
     public function test_routes_are_cached(): void
     {
@@ -170,6 +190,10 @@ class PublicTemplateControllerTest extends TestCase
      * `?v` 명시 요청은 조건부 캐시 헤더를 받는다 (#122 작업 D)
      *
      * 버전 키드 URL 은 bump 시 URL 자체가 바뀌므로 1h 공개 캐시가 안전하다.
+     *
+     * @effects fallback_api_sets_public_cache_headers_in_production
+     *
+     * @return void 반환값 없음
      */
     public function test_versioned_routes_request_has_conditional_cache_headers(): void
     {
@@ -197,6 +221,10 @@ class PublicTemplateControllerTest extends TestCase
 
     /**
      * `?v` 명시 요청의 If-None-Match 일치 시 304 (#122 작업 D)
+     *
+     * @effects fallback_api_serves_etag_304
+     *
+     * @return void 반환값 없음
      */
     public function test_versioned_routes_request_returns_304_with_matching_etag(): void
     {
@@ -227,6 +255,10 @@ class PublicTemplateControllerTest extends TestCase
 
     /**
      * 무버전 요청은 종전대로 공개 캐시 헤더가 없다 (#122 작업 D — 핸드셰이크 신선도 보존)
+     *
+     * @effects fallback_api_unversioned_routes_skip_public_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_unversioned_routes_request_has_no_public_cache_headers(): void
     {
@@ -251,6 +283,10 @@ class PublicTemplateControllerTest extends TestCase
 
     /**
      * 개발 환경에서 `?v` 요청도 no-cache (dev 파일 수정 즉시 반영 — #122 작업 D 환경 분기)
+     *
+     * @effects fallback_api_no_cache_in_dev
+     *
+     * @return void 반환값 없음
      */
     public function test_versioned_routes_request_no_cache_in_development(): void
     {
@@ -282,6 +318,8 @@ class PublicTemplateControllerTest extends TestCase
      * 스스로 회복되지 않는다. 정적 게시 경로(publishTemplate)의 열화 제외와 동일 규율.
      *
      * @effects degraded_snapshot_gets_no_public_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_degraded_routes_snapshot_has_no_public_cache_headers(): void
     {
@@ -317,6 +355,8 @@ class PublicTemplateControllerTest extends TestCase
      * @scenario cache_state=cold,template_type=admin
      *
      * @effects serve_config_caches_manifest_and_embeds_cache_version
+     *
+     * @return void 반환값 없음
      */
     public function test_serve_config_caches_manifest_and_returns_version(): void
     {
@@ -364,6 +404,8 @@ class PublicTemplateControllerTest extends TestCase
      * @scenario cache_state=warm_stale,template_type=admin
      *
      * @effects serve_config_returns_installed_manifest_after_invalidation
+     *
+     * @return void 반환값 없음
      */
     public function test_serve_config_returns_fresh_manifest_after_cache_cleared(): void
     {

@@ -1,0 +1,29 @@
+feature: 7.0.0-beta.3 업그레이드 스텝 — 그룹 쓰기 권한 승격 (경로 C)
+
+description: |
+  Upgrade_7_0_0_beta_3 는 beta.2 부모(CoreUpdateCommand)의 in-process 실행으로만 돌도록 만든
+  동결 스텝이다. spawn 자식에서 돌면 일부러 예외를 던져 부모의 in-process 재실행을 유도하고,
+  in-process 에서는 umask(0002) 를 주입하고 기존 g-w 디렉토리를 g+w 로 올린다.
+
+  잰다:
+    - TARGETS 상수가 인스톨러 필수 디렉토리 목록과 1:1 이고, 이후 진화한 config 기본값과는
+      일부러 갈라져 있다(동결 규정).
+    - spawn 자식 실행은 예외로 끝나고, in-process 실행은 예외 없이 끝난다.
+    - 경로 C 규율: beta.3 이 새로 만든 헬퍼 메서드를 부르지 않는다.
+    - storage 가 g+w 인 POSIX 환경에서 in-process 실행 뒤 umask 가 0002 다
+      (Windows·g-w 환경은 실행 중 건너뛴다).
+
+axes:
+  # 스텝이 어디서 도는가 — 정적 계약(상수·소스), spawn 자식, 부모 in-process
+  run_context: [static_contract, spawned_child, in_process]
+
+effects:
+  - beta3_targets_match_installer_required_directories
+  - beta3_frozen_targets_diverge_from_live_config
+  - beta3_throws_inside_spawned_child
+  - beta3_completes_in_process
+  - beta3_does_not_call_new_helper_method
+  - beta3_sets_umask_0002_when_storage_group_writable
+
+test_files:
+  - tests/Unit/Upgrades/Upgrade_7_0_0_beta_3Test.php

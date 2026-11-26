@@ -28,12 +28,19 @@ effects:
   - clone_saved_201
   - managers_copied
   - permissions_copied
+  - custom_role_assignment_preserved
   - no_cross_board_role_leak
   - clone_includes_add_to_menu_boolean
   - add_to_menu_validation_uses_translated_label
+  # 복사 확인 창 안내 박스(Vitest board-copy-modal-info — 레이아웃 JSON 구조, 효과로만 매핑)
+  - copy_modal_info_box_has_border_and_dark_pair
+  - copy_modal_info_lists_three_items
+  - copy_modal_info_items_use_split_translation_keys
+  - copy_modal_drops_legacy_single_info_key
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/BoardCloneTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/board-copy-modal-info.test.tsx
 
 validation:
   note: |

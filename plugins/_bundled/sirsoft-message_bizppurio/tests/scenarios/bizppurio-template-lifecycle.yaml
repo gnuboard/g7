@@ -47,6 +47,16 @@ effects:
   - is_approved_true_only_for_approved_status
   - notification_type_unique_one_row_per_definition
   - model_casts_content_snapshot_inspection_json
+  - model_casts_status_to_enum                      # status 칼럼은 BizppurioTemplateStatus 로 읽힌다
+  - model_casts_boolean_flags                       # alimtalk_enabled·fallback_sms_enabled·sms_only·is_active 는 bool
+  - model_casts_datetime_columns                    # requested_at·approved_at·last_synced_at 은 Carbon
+  # 알림톡 발송 게이트 (isAlimtalkSendable)
+  - alimtalk_gate_passes_when_all_conditions_met    # 승인 + 활성 + 알림톡 사용 + 승인 스냅샷 → 발송
+  - alimtalk_gate_blocks_draft_status               # draft 면 스냅샷이 남아도 막는다
+  - alimtalk_gate_blocks_when_alimtalk_disabled     # 알림톡 사용을 끄면 막는다
+  - alimtalk_gate_blocks_inactive_row               # 행이 비활성이면 막는다
+  - alimtalk_gate_blocks_missing_approved_snapshot  # 승인 스냅샷이 null 이거나 빈 배열이면 막는다
+  - alimtalk_gate_blocks_sms_only_row               # SMS 단독이면 승인된 알림톡도 보내지 않는다
   # 검수 신청 (S2)
   - request_generates_code_with_codecheck_retry_up_to_three_generations
   - first_request_calls_add_then_request_with_full_content_payload

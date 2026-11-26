@@ -53,6 +53,15 @@ effects:
   - invalid_region_rejected
   - test_covers_server_websocket
   - unauthenticated_returns_401
+  # 설정 주입·연결 테스트 세부 계약 (단위 테스트가 마킹)
+  - empty_endpoint_keeps_aws_default_path
+  - s3_url_maps_to_public_url_only
+  - redis_falls_back_to_predis_without_extension
+  - dead_setting_injection_removed
+  - s3_test_reports_missing_config
+  - s3_test_prechecks_adapter
+  - websocket_server_falls_back_to_client
+  - websocket_client_failure_message_kept
   # E2E/렌더 표면 효과 (Playwright·Vitest 가 마킹)
   - region_free_input_mounted
   - endpoint_field_mounted

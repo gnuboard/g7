@@ -29,8 +29,8 @@
  *   CDP `Emulation.setCPUThrottlingRate` 로 commit 을 지연시켜 경합 창을 결정적으로 연다.
  *   (수정 전 번들은 이 조건에서 8/8 실패, 수정 후 8/8 통과 — 브라우저 A/B 실측 확인됨)
  *
- * @scenario source=localinit-multi-progressive, axis=entry:spa-navigation, cpu=throttled
- * @effects no-lost-initlocal, table-rendered, no-empty-state
+ * 효과 요약(마커 아님 — 평문): SPA 진입·CPU 지연 조건에서 먼저 도착한 initLocal 유실 없음, 표 렌더,
+ * 빈 상태 문구 없음. 효과 마킹은 각 test 위에 있다.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -91,6 +91,11 @@ async function navigateToSettingsTab(
   }, tab);
 }
 
+/**
+ * @scenario layer=browser_spa
+ *
+ * @effects first_arrived_progressive_initlocal_not_lost
+ */
 test('@smoke initLocal progressive 소스가 둘 이상이어도 먼저 도착한 초기값이 유실되지 않는다', async ({ page }) => {
   await authenticatePage(page, settingsToken());
   await page.goto('/admin/dashboard');
@@ -144,6 +149,11 @@ test('@smoke initLocal progressive 소스가 둘 이상이어도 먼저 도착�
 //   둘 이상 등록된 탭에서만 성립한다. `settings`(initLocal:"form") 는 게이트가 없어 전 탭에 등록되고,
 //   짝이 되는 `ecommerceNotificationDefinitions`(initLocal 맵) 는 알림정의 탭에만 있으므로 그 탭에서 측정한다.
 //   `form.shipping.*` 값은 `settings` 응답에 담겨 탭과 무관하게 존재한다(실측: available_countries 10건).
+/**
+ * @scenario layer=browser_spa
+ *
+ * @effects form_edit_survives_other_source_refetch
+ */
 test('@smoke 폼 편집 후 다른 데이터소스를 refetch 해도 편집값이 되돌아가지 않는다', async ({ page }) => {
   await authenticatePage(page, settingsToken());
   await page.goto('/admin/dashboard');

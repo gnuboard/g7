@@ -12,8 +12,8 @@
  *   코어 ApiClient(G7Core.api.get)를 거쳐 토큰을 동반한 요청을 보낸다.
  *   권한 없을 때 카드(download_no_permission 토스트)는 그대로 유지한다.
  *
- * @scenario card=user_post
- * @effects download_card_uses_handler_not_anchor,no_permission_toast_preserved
+ * 조합 요약(마커 아님 — 평문): card=user_post
+ * 효과 요약(마커 아님 — 평문): download_card_uses_handler_not_anchor,no_permission_toast_preserved — 시험별 마킹은 각 it 주석에 있다.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -49,6 +49,12 @@ function findByComment(root: unknown, commentText: string): Node[] {
 }
 
 describe('58b — 사용자 게시판 첨부 다운로드 핸들러 전환 (_post_attachments.json)', () => {
+    /**
+     * 권한 있는 카드가 토큰이 실리지 않는 A href 직접 링크가 아닌지 잰다.
+     *
+     * @scenario card=user_post
+     * @effects download_card_uses_handler_not_anchor
+     */
     it('권한 있을 때 카드는 <A href> 직접 링크가 아니다 (토큰 미동반 회귀 차단)', () => {
         const cards = findByComment(postAttachments, '권한 있을 때');
         expect(cards.length).toBeGreaterThan(0);
@@ -61,6 +67,12 @@ describe('58b — 사용자 게시판 첨부 다운로드 핸들러 전환 (_pos
         }
     });
 
+    /**
+     * 권한 있는 카드의 click 액션이 downloadAttachment 핸들러를 주소·파일명과 함께 부르는지 잰다.
+     *
+     * @scenario card=user_post
+     * @effects download_card_uses_handler_not_anchor
+     */
     it('권한 있을 때 카드는 click 액션으로 downloadAttachment 핸들러를 호출한다', () => {
         const cards = findByComment(postAttachments, '권한 있을 때');
         expect(cards.length).toBeGreaterThan(0);
@@ -79,6 +91,12 @@ describe('58b — 사용자 게시판 첨부 다운로드 핸들러 전환 (_pos
         expect(params.filename).toContain('original_filename');
     });
 
+    /**
+     * 권한 없는 카드의 download_no_permission 토스트 분기가 남아 있는지 잰다.
+     *
+     * @scenario card=user_post
+     * @effects no_permission_toast_preserved
+     */
     it('권한 없을 때 카드의 download_no_permission 토스트 분기는 유지된다', () => {
         const cards = findByComment(postAttachments, '권한 없을 때');
         expect(cards.length).toBeGreaterThan(0);

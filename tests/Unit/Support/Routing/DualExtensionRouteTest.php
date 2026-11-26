@@ -27,7 +27,7 @@ class DualExtensionRouteTest extends TestCase
      * 프로바이더로 케이스를 분리하면 케이스마다 애플리케이션이 부팅되어
      * DB 커넥션이 케이스 수만큼 열리고, 스위트 동시 실행 시 커넥션이 고갈된다.
      *
-     * @return array<int, string>
+     * @return array<int, string> 두 형태로 등록돼야 하는 라우트 이름 목록
      */
     private static function dualRouteNames(): array
     {
@@ -67,6 +67,12 @@ class DualExtensionRouteTest extends TestCase
 
     /**
      * 모든 대상 엔드포인트가 두 형태로 등록되어 있어야 한다.
+     *
+     * @scenario check=registration
+     *
+     * @effects dual_routes_registered_in_both_forms
+     *
+     * @return void 반환값 없음
      */
     public function test_엔드포인트가_확장자_형태와_확장자_없는_형태로_모두_등록된다(): void
     {
@@ -86,6 +92,12 @@ class DualExtensionRouteTest extends TestCase
      * 두 형태는 동일한 컨트롤러 액션과 미들웨어로 들어가야 한다.
      *
      * 한쪽에만 permission 미들웨어가 붙으면 확장자 없는 형태가 권한 우회 통로가 된다.
+     *
+     * @scenario check=registration
+     *
+     * @effects dual_routes_share_action_and_middleware
+     *
+     * @return void 반환값 없음
      */
     public function test_두_형태의_액션과_미들웨어가_동일하다(): void
     {
@@ -109,6 +121,12 @@ class DualExtensionRouteTest extends TestCase
 
     /**
      * 확장자 형태 URI 는 실제로 해당 확장자로 끝나야 한다.
+     *
+     * @scenario check=uri_shape
+     *
+     * @effects extension_form_uri_ends_with_static_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_확장자_형태_주소가_정적_확장자로_끝난다(): void
     {
@@ -131,6 +149,12 @@ class DualExtensionRouteTest extends TestCase
      * 확장자 없는 형태 URI 의 마지막 세그먼트에는 정적 확장자가 남아있지 않아야 한다.
      *
      * 이것이 이번 이슈의 본질이다 — 확장자가 남아있으면 nginx 정적 블록이 그대로 가로챈다.
+     *
+     * @scenario check=uri_shape
+     *
+     * @effects extensionless_form_uri_has_no_static_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_확장자_없는_형태_주소에_정적_확장자가_없다(): void
     {
@@ -155,6 +179,12 @@ class DualExtensionRouteTest extends TestCase
      * `layouts/{templateIdentifier}/{layoutName}` 의 layoutName 정규식은 `.` 를 포함해
      * greedy 하므로, 확장자 없는 형태가 먼저 등록되면 `.json` 요청까지 삼킨다.
      * 매크로가 확장자 형태를 먼저 등록한다는 불변식을 실제 매칭으로 검증한다.
+     *
+     * @scenario check=match_order
+     *
+     * @effects json_request_not_swallowed_by_extensionless_route
+     *
+     * @return void 반환값 없음
      */
     public function test_json_요청이_확장자_없는_라우트에_삼켜지지_않는다(): void
     {
@@ -178,6 +208,12 @@ class DualExtensionRouteTest extends TestCase
 
     /**
      * 확장자 없는 요청은 확장자 없는 라우트로 매칭되어야 한다.
+     *
+     * @scenario check=match_order
+     *
+     * @effects extensionless_request_matches_extensionless_route
+     *
+     * @return void 반환값 없음
      */
     public function test_확장자_없는_요청이_확장자_없는_라우트로_매칭된다(): void
     {

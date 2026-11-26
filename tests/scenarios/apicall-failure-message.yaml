@@ -14,9 +14,15 @@ effects:
   - api_call_failure_message_localized  # 서버 메시지가 없으면 오류 문맥 문구가 현재 언어이고 영어 원문·`$t:` 키가 보이지 않는다
   - server_message_kept                 # 서버가 message 를 주면 그 문구를 그대로 쓴다
   - error_status_preserved              # 오류 객체에 상태 코드와 statusText 가 남는다
+  # 응답이 없는 실패(네트워크·취소·시간 초과)와 액션 실패 문구 우선순위 (resolveActionFailureMessage)
+  - network_failure_message_localized   # 네트워크 계열 실패는 `$t:core.errors.network_request_failed` 키
+  - action_failure_keeps_identifier_message  # 서버 메시지도 네트워크 실패도 아니면 기존 식별 문구 유지
+  - action_error_own_message_kept       # ActionError 가 들고 온 고유 메시지는 덮지 않는다
+  - network_failure_overrides_own_message  # 네트워크 실패는 고유 메시지보다 우선한다
 
 test_files:
   - resources/js/core/template-engine/__tests__/ActionDispatcher.apiCallFailureMessage.test.ts
+  - resources/js/core/template-engine/__tests__/actionDispatcherNetworkFailureMessage.test.ts
 
 validation:
   browser_check: 관리자 저장 요청을 목 422(errors 만)·500(빈 본문)·502(HTML)로 응답시켜 토스트 문구가 ko·en 현재 언어인지, 수정 전 번들로 치환하면 영어 문구가 뜨는지(fail-first), 서버 message 대조군. 사용자 템플릿 apiCall 1종

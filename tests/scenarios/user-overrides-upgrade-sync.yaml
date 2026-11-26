@@ -31,3 +31,5 @@ effects:
 
 test_files:
   - tests/Unit/Models/Concerns/HasUserOverridesTest.php
+  # 알림 정의 시더(syncOrCreateFromUpgrade)가 실제 모델에서 같은 보존 규칙을 지키는지 잰다
+  - tests/Feature/UserOverrides/NotificationDefinitionUserOverridesTest.php

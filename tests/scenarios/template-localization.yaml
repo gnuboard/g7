@@ -21,6 +21,10 @@ effects:
   - template_lang_params_replaced_with_localized_type
   - template_manager_used_keys_exist
   - template_status_and_type_labels
+  # 템플릿 오류 문구의 :error 치환과 로케일 전환 — TemplateServiceLocalizationTest
+  - template_error_message_error_param_replaced
+  - template_error_messages_switch_with_locale
 
 test_files:
   - tests/Unit/TemplateLocalizationTest.php
+  - tests/Feature/Services/TemplateServiceLocalizationTest.php

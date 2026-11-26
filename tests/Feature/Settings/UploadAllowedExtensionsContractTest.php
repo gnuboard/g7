@@ -52,6 +52,8 @@ class UploadAllowedExtensionsContractTest extends TestCase
      * applyUploadConfig 를 리플렉션으로 호출합니다.
      *
      * @param  array  $uploadSettings  upload 카테고리 설정 데이터
+     *
+     * @return void 반환값 없음
      */
     private function applyUploadConfig(array $uploadSettings): void
     {
@@ -67,6 +69,12 @@ class UploadAllowedExtensionsContractTest extends TestCase
 
     /**
      * 화면이 보내는 콤마 문자열이 저장 단계에서 배열로 정규화되는지 확인합니다.
+     *
+     * @scenario saved_shape=comma_string
+     *
+     * @effects comma_string_input_normalized_to_array_before_saving, allowed_extensions_normalized_to_lowercase
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function comma_string_is_normalized_to_an_array_before_saving(): void
@@ -82,6 +90,12 @@ class UploadAllowedExtensionsContractTest extends TestCase
 
     /**
      * 배열로 보내는 경로(API 직접 호출 등)도 같은 형태로 정규화되는지 확인합니다.
+     *
+     * @scenario saved_shape=array
+     *
+     * @effects allowed_extensions_normalized_to_lowercase
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function array_input_is_normalized_the_same_way(): void
@@ -93,6 +107,12 @@ class UploadAllowedExtensionsContractTest extends TestCase
 
     /**
      * 저장한 확장자 목록이 실제 업로드 제한으로 이어지는지 확인합니다 (저장 → 적용 전 구간).
+     *
+     * @scenario saved_shape=comma_string
+     *
+     * @effects saved_extensions_reach_the_upload_restriction
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function saved_extensions_reach_the_upload_restriction(): void
@@ -113,6 +133,12 @@ class UploadAllowedExtensionsContractTest extends TestCase
 
     /**
      * 이미 문자열로 저장된 기존 설치도 업로드 제한에 반영되는지 확인합니다.
+     *
+     * @scenario saved_shape=legacy_string_on_disk
+     *
+     * @effects legacy_string_value_on_disk_is_still_applied
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function legacy_string_value_already_on_disk_is_still_applied(): void

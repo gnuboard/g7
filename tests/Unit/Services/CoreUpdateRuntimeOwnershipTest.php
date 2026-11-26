@@ -17,6 +17,10 @@ class CoreUpdateRuntimeOwnershipTest extends TestCase
 {
     /**
      * 비-root 프로세스에서는 no-op 이다 (chown 자체가 불가능하고 불필요).
+     *
+     * @effects runtime_ownership_normalization_is_noop_for_non_root
+     *
+     * @return void 반환값 없음
      */
     public function test_non_root_process_is_noop(): void
     {
@@ -36,6 +40,8 @@ class CoreUpdateRuntimeOwnershipTest extends TestCase
      * 뒤에 만들어지는 daily 롤오버·신규 로그 파일이 root 로 남는다.
      *
      * @effects runtime_ownership_targets_cover_temp_and_logs
+     *
+     * @return void 반환값 없음
      */
     public function test_runtime_ownership_targets_include_temp_and_logs(): void
     {
@@ -58,6 +64,10 @@ class CoreUpdateRuntimeOwnershipTest extends TestCase
      * 부모(CoreUpdateCommand)·자식(ExecuteUpgradeStepsCommand) 흐름 종료부가
      * 정상화를 호출한다 — 로그 소유권 정상화(restoreUpgradeLogOwnership)와
      * 항상 짝으로 (소스 훑기 선례).
+     *
+     * @effects update_flows_pair_runtime_ownership_normalization_with_log_restore
+     *
+     * @return void 반환값 없음
      */
     public function test_update_flows_invoke_runtime_ownership_normalization(): void
     {

@@ -19,9 +19,13 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 class GdprUserConsentRejectionMigrationSmokeTest extends PluginTestCase
 {
     /**
+     * 거부 마이그레이션 뒤 gdpr_user_consents 에 is_rejected 와 rejected_at 칼럼이 있다.
+     *
      * @scenario entry=reject, subject=member, category=optional
      *
      * @effects rejection_columns_exist
+     *
+     * @return void 반환값 없음
      */
     public function test_rejection_columns_exist(): void
     {
@@ -34,9 +38,13 @@ class GdprUserConsentRejectionMigrationSmokeTest extends PluginTestCase
     }
 
     /**
+     * 새 동의 행의 is_rejected 기본값은 false, rejected_at 은 null 이다.
+     *
      * @scenario entry=reject, subject=member, category=optional
      *
      * @effects is_rejected_defaults_to_false
+     *
+     * @return void 반환값 없음
      */
     public function test_is_rejected_defaults_to_false(): void
     {
@@ -54,9 +62,13 @@ class GdprUserConsentRejectionMigrationSmokeTest extends PluginTestCase
     }
 
     /**
+     * 거부 마이그레이션은 내렸다가 다시 올려도 칼럼이 제대로 사라지고 돌아온다.
+     *
      * @scenario entry=reject, subject=member, category=optional
      *
      * @effects rejection_migration_is_reversible
+     *
+     * @return void 반환값 없음
      */
     public function test_rejection_migration_is_reversible(): void
     {

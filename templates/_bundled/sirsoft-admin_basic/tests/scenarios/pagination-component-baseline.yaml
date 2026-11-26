@@ -1,0 +1,21 @@
+feature: Pagination 컴포넌트 계약과 DataGrid 의 hasMorePages 전달
+
+description: |
+  Pagination 이 현재 페이지를 표시하고 이동 버튼을 다루며, last_page 를 모를 때(totalPages=null) hasMorePages 로 다음 이동을 정하는지 잰다.
+  DataGrid 의 모든 Pagination 렌더 경로가 hasMorePages 를 넘기고 totalPages 의 null 을 보존해야 상한 목록에서 다음 이동이 살아 있다.
+
+# axis 의미:
+#   component — 다루는 컴포넌트(pagination · datagrid).
+axes:
+  component: [pagination, datagrid]
+
+effects:
+  - pagination_renders_and_marks_current   # 페이저가 그려지고 현재 페이지에 active 스타일이 붙는다
+  - pagination_navigation_buttons   # 번호·이전·다음·처음·끝 버튼과 생략 부호가 동작하고 경계에서 비활성화된다
+  - pagination_next_follows_last_page_or_has_more   # last_page 를 알면 그것이, 모르면 hasMorePages 가 다음 이동을 정한다
+  - datagrid_passes_has_more_pages_to_pagination   # DataGrid 의 모든 Pagination 렌더 경로가 hasMorePages 를 넘긴다
+  - datagrid_preserves_null_total_pages   # DataGrid 가 totalPages 의 null 을 보존한다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Pagination.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DataGridPaginationPropParity.test.ts

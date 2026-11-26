@@ -1,0 +1,18 @@
+feature: 환경설정 본인인증 정책 목록 — PC 테이블·모바일 카드·사용 토글·삭제 모달
+
+description: |
+  정책 목록이 responsive 속성으로 PC 테이블과 모바일 카드를 나누고, 사용 여부를 Toggle 로 즉시 저장하며, 삭제는 confirm 대신 모달 패턴을 쓰는지 잰다.
+
+# axis 의미:
+#   component — 이 매니페스트가 다루는 레이아웃 조각 하나.
+axes:
+  component: [identity_policy_list]
+
+effects:
+  - identity_policy_list_responsive_split   # tailwind 분기 없이 responsive 속성으로 PC 테이블과 모바일 카드를 나눈다
+  - identity_policy_enabled_toggle_saves   # Toggle 이 policy.enabled 에 바인딩되고 변경 시 PUT 후 목록을 다시 읽는다
+  - identity_policy_delete_uses_modal   # 삭제가 confirm 핸들러 대신 setState + openModal 시퀀스를 쓴다
+  - identity_policy_mobile_card_content   # 모바일 카드에 정책 키와 Toggle 이 있다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-identity-policy-list.test.tsx

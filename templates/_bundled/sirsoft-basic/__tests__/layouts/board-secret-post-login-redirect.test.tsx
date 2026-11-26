@@ -13,8 +13,8 @@
  * query 유무 cross product 는 짝 핸들러 테스트가 담당하고, 이 파일은 매니페스트의
  * secret_post_login_button 진입점 축을 커버한다 (버튼 액션이 그 핸들러를 쓰고
  * 깨진 패턴이 잔존하지 않는지 고정).
- * @scenario entry_point=secret_post_login_button
- * @effects secret_button_redirect_not_empty,login_returns_to_original_path
+ * 조합 요약(마커 아님 — 평문): entry_point=secret_post_login_button
+ * 효과 요약(마커 아님 — 평문): secret_button_redirect_not_empty,login_returns_to_original_path — 시험별 마킹은 각 it 주석에 있다.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -57,6 +57,12 @@ function collectLoginButtonActions(): Node[] {
 }
 
 describe('28 — 비밀글 로그인 버튼 redirect 보존 (basic/show.json)', () => {
+    /**
+     * 비밀글 안내 박스에 로그인 버튼이 있는지 잰다 (아래 시험들의 전제).
+     *
+     * @scenario entry_point=secret_post_login_button
+     * @effects secret_button_redirect_not_empty
+     */
     it('비밀글 로그인 버튼이 존재해야 한다', () => {
         const loginButtons = collectNodes(
             basicShow,
@@ -65,6 +71,12 @@ describe('28 — 비밀글 로그인 버튼 redirect 보존 (basic/show.json)', 
         expect(loginButtons.length).toBeGreaterThan(0);
     });
 
+    /**
+     * 로그인 버튼이 현재 경로를 보존하는 redirectToLoginWithReturn 핸들러를 쓰는지 잰다.
+     *
+     * @scenario entry_point=secret_post_login_button
+     * @effects secret_button_redirect_not_empty, login_returns_to_original_path
+     */
     it('로그인 버튼 액션이 redirectToLoginWithReturn 핸들러여야 한다', () => {
         const actions = collectLoginButtonActions();
         const redirectAction = actions.find(
@@ -73,12 +85,24 @@ describe('28 — 비밀글 로그인 버튼 redirect 보존 (basic/show.json)', 
         expect(redirectAction).toBeDefined();
     });
 
+    /**
+     * 빈 redirect 를 만들던 navigate + _global.currentPath 패턴이 남아 있지 않은지 잰다.
+     *
+     * @scenario entry_point=secret_post_login_button
+     * @effects secret_button_redirect_not_empty
+     */
     it('깨진 navigate + {{_global.currentPath}} redirect 패턴이 잔존하지 않아야 한다', () => {
         // 직렬화 후 미설정 변수 redirect 잔재를 전수 차단 (빈 redirect 회귀 방지).
         const serialized = JSON.stringify(basicShow);
         expect(serialized).not.toContain('_global.currentPath');
     });
 
+    /**
+     * 로그인 버튼 액션이 custom+name 형식이 아니라 등록 키를 handler 에 바로 쓰는지 잰다.
+     *
+     * @scenario entry_point=secret_post_login_button
+     * @effects login_redirect_dispatched_by_registered_key
+     */
     it('로그인 버튼 액션에 custom+name 형식이 없어야 한다 (디스패치 throw 방지)', () => {
         const actions = collectLoginButtonActions();
         for (const action of actions) {

@@ -1,0 +1,37 @@
+feature: 자산 URL 이중 모드 라우트 등록 (확장자 형태 + 확장자 없는 형태)
+
+description: |
+  정적 최적화 블록(`location ~* \.(js|css|json)$`)이 있는 서버에서 동적 응답이 웹서버에 가로채이지
+  않도록, 확장자가 붙은 동적 엔드포인트는 모두 확장자 없는 형태를 함께 등록한다. 한쪽이 조용히
+  빠지면 그 화면만 죽으므로 전수 등록을 잠근다.
+
+  잰다:
+    - 대상 라우트 전부가 두 형태로 등록되고, 두 형태의 컨트롤러 액션·미들웨어가 같다
+      (한쪽에만 권한 미들웨어가 붙으면 다른 쪽이 우회 통로가 된다).
+    - 확장자 형태 URI 는 그 확장자로 끝나고, 확장자 없는 형태 URI 에는 정적 확장자가 없다.
+    - 등록 순서: `.json` 요청이 확장자 없는 라우트에 삼켜지지 않고, 확장자 없는 요청은
+      확장자 없는 라우트로 매칭된다.
+
+axes:
+  # 무엇을 보는가 — 등록(두 형태·같은 액션), 주소 모양, 요청 매칭 순서
+  check: [registration, uri_shape, match_order, serving_parity, guard_parity]
+
+effects:
+  - dual_routes_registered_in_both_forms
+  - dual_routes_share_action_and_middleware
+  - extension_form_uri_ends_with_static_extension
+  - extensionless_form_uri_has_no_static_extension
+  - json_request_not_swallowed_by_extensionless_route
+  - extensionless_request_matches_extensionless_route
+  # 실제 HTTP 요청으로 잰 두 형태의 등가성 (DualExtensionServingTest)
+  - asset_probe_returns_token_in_both_forms
+  - asset_probe_response_is_not_cached
+  - template_asset_same_content_via_segment_and_query
+  - query_form_keeps_path_traversal_guard
+  - query_form_keeps_extension_whitelist
+  - editor_endpoint_rejects_unauthenticated_in_both_forms
+  - editor_endpoint_same_response_in_both_forms
+
+test_files:
+  - tests/Unit/Support/Routing/DualExtensionRouteTest.php
+  - tests/Feature/Api/Public/DualExtensionServingTest.php

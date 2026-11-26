@@ -18,6 +18,11 @@ use Tests\TestCase;
  */
 class StaticPublishAlertTest extends TestCase
 {
+    /**
+     * 테스트마다 게시 실패 마커를 지워 깨끗한 상태에서 시작합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +30,11 @@ class StaticPublishAlertTest extends TestCase
         Cache::forget('g7:core:ext.static.publish_failure');
     }
 
+    /**
+     * 테스트가 심은 게시 실패 마커를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Cache::forget('g7:core:ext.static.publish_failure');
@@ -32,6 +42,11 @@ class StaticPublishAlertTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 검사할 대시보드 알림 리스너를 새로 만듭니다.
+     *
+     * @return StaticPublishFailureAlertListener 정적 게시 실패 알림 리스너
+     */
     private function listener(): StaticPublishFailureAlertListener
     {
         return new StaticPublishFailureAlertListener;
@@ -42,6 +57,8 @@ class StaticPublishAlertTest extends TestCase
      *
      * @param  int  $count  연속 실패 횟수
      * @param  string  $reason  사유 코드
+     *
+     * @return void 반환값 없음
      */
     private function seedMarker(int $count, string $reason = 'parent_not_writable'): void
     {
@@ -58,6 +75,8 @@ class StaticPublishAlertTest extends TestCase
      * 마커가 없으면 알림도 없다.
      *
      * @effects dashboard_has_no_alert_when_publishing_is_healthy
+     *
+     * @return void 반환값 없음
      */
     public function test_no_alert_when_no_failure_marker(): void
     {
@@ -68,6 +87,8 @@ class StaticPublishAlertTest extends TestCase
      * 1회 실패는 알리지 않는다 — 배포 중 일시적 경합일 수 있고 자가 치유가 해소한다.
      *
      * @effects dashboard_alert_suppressed_below_threshold
+     *
+     * @return void 반환값 없음
      */
     public function test_single_failure_does_not_alert(): void
     {
@@ -80,6 +101,8 @@ class StaticPublishAlertTest extends TestCase
      * 2회 연속 실패부터 대시보드 알림이 노출된다.
      *
      * @effects publish_failure_reaches_dashboard
+     *
+     * @return void 반환값 없음
      */
     public function test_repeated_failure_surfaces_alert(): void
     {
@@ -105,6 +128,8 @@ class StaticPublishAlertTest extends TestCase
      * POST 한다. 운영자가 결함을 처음 만나는 곳이 알림이므로 그 자리에서 복구가 끝나야 한다.
      *
      * @effects dashboard_alert_points_to_admin_republish
+     *
+     * @return void 반환값 없음
      */
     public function test_alert_carries_admin_republish_recover_wiring(): void
     {
@@ -125,6 +150,8 @@ class StaticPublishAlertTest extends TestCase
      * 사유별로 subtype 과 문구가 갈린다 — 조치할 곳이 다르기 때문이다.
      *
      * @effects publish_failure_alert_distinguishes_reason
+     *
+     * @return void 반환값 없음
      */
     public function test_alert_distinguishes_failure_reason(): void
     {
@@ -148,6 +175,8 @@ class StaticPublishAlertTest extends TestCase
      * 알 수 없는 사유도 일반 문구로 떨어진다 — 키 문자열이 화면에 노출되지 않는다.
      *
      * @effects publish_failure_alert_falls_back_for_unknown_reason
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_reason_falls_back_to_generic_message(): void
     {
@@ -163,6 +192,8 @@ class StaticPublishAlertTest extends TestCase
      * 기존 알림을 지우지 않고 덧붙인다 (필터 훅 계약).
      *
      * @effects publish_failure_alert_appends_to_existing
+     *
+     * @return void 반환값 없음
      */
     public function test_alert_appends_without_dropping_existing(): void
     {
@@ -181,6 +212,8 @@ class StaticPublishAlertTest extends TestCase
      * 테스트만으로는 배선 누락이 드러나지 않는다.
      *
      * @effects publish_failure_listener_is_registered_on_hook
+     *
+     * @return void 반환값 없음
      */
     public function test_listener_is_wired_into_dashboard_alerts_hook(): void
     {
@@ -205,6 +238,8 @@ class StaticPublishAlertTest extends TestCase
      * 예외도 로그도 없이 화면에 중복으로만 나타난다 (7.0.10 신규 설치 대시보드에서 실제 발생).
      *
      * @effects publish_failure_listener_is_registered_on_hook
+     *
+     * @return void 반환값 없음
      */
     public function test_listener_is_registered_exactly_once(): void
     {
@@ -221,6 +256,8 @@ class StaticPublishAlertTest extends TestCase
      * 마커 접근자가 서비스의 기록과 같은 키를 본다 (키 오타 회귀 가드).
      *
      * @effects failure_marker_key_is_shared_between_writer_and_reader
+     *
+     * @return void 반환값 없음
      */
     public function test_marker_accessor_reads_what_service_writes(): void
     {

@@ -30,11 +30,23 @@ function stringifyDeep(node: unknown): string {
 
 describe('사용자 페이지 카운트 컬럼 정합성', () => {
     describe('users/show.json — 최근 게시글 댓글 수 단수형', () => {
+        /**
+         * 사용자 상세의 최근 게시글 댓글 수가 단수형 comment_count 를 쓰는지 잰다.
+         *
+         * @scenario surface=user_show
+         * @effects comment_count_uses_singular_server_key
+         */
         it('post.comment_count 단수형 키를 사용한다', () => {
             const dump = stringifyDeep(usersShow);
             expect(dump).toContain('post.comment_count');
         });
 
+        /**
+         * 사용자 상세가 복수형 comments_count 를 쓰지 않는지 잰다.
+         *
+         * @scenario surface=user_show
+         * @effects comment_count_uses_singular_server_key
+         */
         it('post.comments_count 복수형 키를 사용하지 않는다', () => {
             const dump = stringifyDeep(usersShow);
             // postStats.data.posts_count 같은 통계 키는 별도 표준이므로 post. 접두사로만 한정
@@ -43,11 +55,23 @@ describe('사용자 페이지 카운트 컬럼 정합성', () => {
     });
 
     describe('users/posts.json — 사용자 게시글 목록 댓글 수 단수형', () => {
+        /**
+         * 사용자 게시글 목록의 댓글 수가 단수형 comment_count 를 쓰는지 잰다.
+         *
+         * @scenario surface=user_posts
+         * @effects comment_count_uses_singular_server_key
+         */
         it('post.comment_count 단수형 키를 사용한다', () => {
             const dump = stringifyDeep(usersPosts);
             expect(dump).toContain('post.comment_count');
         });
 
+        /**
+         * 사용자 게시글 목록이 복수형 comments_count 를 쓰지 않는지 잰다.
+         *
+         * @scenario surface=user_posts
+         * @effects comment_count_uses_singular_server_key
+         */
         it('post.comments_count 복수형 키를 사용하지 않는다', () => {
             const dump = stringifyDeep(usersPosts);
             expect(dump).not.toMatch(/post\.comments_count/);
@@ -55,11 +79,23 @@ describe('사용자 페이지 카운트 컬럼 정합성', () => {
     });
 
     describe('partials/mypage/board/_my_posts.json — 마이페이지 댓글 수 단수형', () => {
+        /**
+         * 마이페이지 내 글 목록의 댓글 수가 단수형 comment_count 를 쓰는지 잰다.
+         *
+         * @scenario surface=mypage_posts
+         * @effects comment_count_uses_singular_server_key
+         */
         it('post.comment_count 단수형 키를 사용한다', () => {
             const dump = stringifyDeep(myPostsPartial);
             expect(dump).toContain('post.comment_count');
         });
 
+        /**
+         * 마이페이지 내 글 목록이 복수형 comments_count 를 쓰지 않는지 잰다.
+         *
+         * @scenario surface=mypage_posts
+         * @effects comment_count_uses_singular_server_key
+         */
         it('post.comments_count 복수형 키를 사용하지 않는다', () => {
             const dump = stringifyDeep(myPostsPartial);
             expect(dump).not.toMatch(/post\.comments_count/);
@@ -67,17 +103,35 @@ describe('사용자 페이지 카운트 컬럼 정합성', () => {
     });
 
     describe('_comment_section.json — 댓글 헤더 카운트 / 빈 상태 분기', () => {
+        /**
+         * 댓글 헤더 카운트가 서버 컬럼 comment_count 를 쓰는지 잰다.
+         *
+         * @scenario surface=comment_section
+         * @effects comment_header_uses_comment_count_column
+         */
         it('헤더 카운트는 post.data.comment_count 서버 컬럼을 사용한다', () => {
             const dump = stringifyDeep(commentSection);
             expect(dump).toContain('post?.data?.comment_count');
         });
 
+        /**
+         * 댓글 헤더 카운트가 comments 배열 length 를 쓰지 않는지 잰다.
+         *
+         * @scenario surface=comment_section
+         * @effects comment_header_uses_comment_count_column
+         */
         it('헤더 카운트가 (post.data.comments ?? []).length 를 사용하지 않는다', () => {
             const dump = stringifyDeep(commentSection);
             // 댓글 배열의 length 로 카운트 표시하던 패턴 제거 (헤더는 항상 활성 댓글만)
             expect(dump).not.toMatch(/\(post\?\.data\?\.comments\s*\?\?\s*\[\]\)\.length/);
         });
 
+        /**
+         * 댓글 반복 소스는 여전히 comments 배열인지 잰다.
+         *
+         * @scenario surface=comment_section
+         * @effects comment_iteration_still_uses_comments_array
+         */
         it('iteration source 는 여전히 comments 배열을 사용한다 (표시는 배열 그대로)', () => {
             // del_cmt=1 토글 시 헤더(comment_count) ≠ 표시(comments[]) 가 의도된 정책
             const dump = stringifyDeep(commentSection);
@@ -86,17 +140,35 @@ describe('사용자 페이지 카운트 컬럼 정합성', () => {
     });
 
     describe('_reply_section.json — 답글 헤더 카운트', () => {
+        /**
+         * 답글 헤더 카운트가 서버 컬럼 reply_count 를 쓰는지 잰다.
+         *
+         * @scenario surface=reply_section
+         * @effects reply_header_uses_reply_count_column
+         */
         it('헤더 카운트는 post.data.reply_count 서버 컬럼을 사용한다', () => {
             const dump = stringifyDeep(replySection);
             expect(dump).toContain('post?.data?.reply_count');
         });
 
+        /**
+         * 답글 헤더 카운트가 replies 배열 length 를 쓰지 않는지 잰다.
+         *
+         * @scenario surface=reply_section
+         * @effects reply_header_uses_reply_count_column
+         */
         it('헤더 카운트가 (post.data.replies ?? []).length 를 사용하지 않는다', () => {
             const dump = stringifyDeep(replySection);
             // count={{(post.data.replies ?? []).length}} 패턴 제거
             expect(dump).not.toMatch(/count=\{\{\(post\?\.data\?\.replies\s*\?\?\s*\[\]\)\.length\}\}/);
         });
 
+        /**
+         * 답글 반복 소스는 여전히 replies 배열인지 잰다.
+         *
+         * @scenario surface=reply_section
+         * @effects reply_iteration_still_uses_replies_array
+         */
         it('iteration source 는 여전히 replies 배열을 사용한다', () => {
             const dump = stringifyDeep(replySection);
             expect(dump).toContain('post?.data?.replies ?? []');
@@ -104,11 +176,23 @@ describe('사용자 페이지 카운트 컬럼 정합성', () => {
     });
 
     describe('partials/board/types/basic/show.json — 답글 섹션 표시 분기', () => {
+        /**
+         * 게시글 상세의 답글 섹션 표시 조건이 reply_count 를 쓰는지 잰다.
+         *
+         * @scenario surface=post_show
+         * @effects reply_section_if_uses_reply_count_column
+         */
         it('답글 섹션 표시 조건은 reply_count 서버 컬럼을 사용한다', () => {
             const dump = stringifyDeep(basicShow);
             expect(dump).toContain('post?.data?.reply_count');
         });
 
+        /**
+         * 게시글 상세의 답글 섹션 표시 조건이 replies 배열 length 를 쓰지 않는지 잰다.
+         *
+         * @scenario surface=post_show
+         * @effects reply_section_if_uses_reply_count_column
+         */
         it('답글 섹션 표시 조건이 (post.data.replies ?? []).length 를 사용하지 않는다', () => {
             const dump = stringifyDeep(basicShow);
             expect(dump).not.toMatch(/\(post\?\.data\?\.replies\s*\?\?\s*\[\]\)\.length\s*>\s*0/);
@@ -116,27 +200,57 @@ describe('사용자 페이지 카운트 컬럼 정합성', () => {
     });
 
     describe('_post_attachments.json — 첨부파일 표시 / 카운트', () => {
+        /**
+         * 첨부 섹션 표시 if 가 has_attachment 불리언을 쓰는지 잰다.
+         *
+         * @scenario surface=post_attachments
+         * @effects attachment_section_if_uses_has_attachment
+         */
         it('첨부 섹션 표시 if 는 has_attachment boolean 을 사용한다', () => {
             // 루트 if 가 has_attachment 를 사용
             expect(typeof postAttachments.if).toBe('string');
             expect(postAttachments.if).toContain('post?.data?.has_attachment');
         });
 
+        /**
+         * 첨부 섹션 표시 if 가 attachments length 를 쓰지 않는지 잰다.
+         *
+         * @scenario surface=post_attachments
+         * @effects attachment_section_if_uses_has_attachment
+         */
         it('첨부 섹션 표시 if 가 attachments?.length 를 사용하지 않는다', () => {
             expect(postAttachments.if).not.toMatch(/attachments\?\.length/);
         });
 
+        /**
+         * 첨부 카운트 배지가 서버 컬럼 attachment_count 를 쓰는지 잰다.
+         *
+         * @scenario surface=post_attachments
+         * @effects attachment_badge_uses_attachment_count_column
+         */
         it('첨부 카운트 배지는 attachment_count 서버 컬럼을 사용한다', () => {
             const dump = stringifyDeep(postAttachments);
             expect(dump).toContain('post?.data?.attachment_count');
         });
 
+        /**
+         * 첨부 카운트 배지가 attachments length 를 쓰지 않는지 잰다.
+         *
+         * @scenario surface=post_attachments
+         * @effects attachment_badge_uses_attachment_count_column
+         */
         it('첨부 카운트 배지가 attachments?.length 를 사용하지 않는다', () => {
             const dump = stringifyDeep(postAttachments);
             // text 영역의 attachments?.length 사용 패턴 제거
             expect(dump).not.toMatch(/post\?\.data\?\.attachments\?\.length\s*\?\?\s*0/);
         });
 
+        /**
+         * 첨부 반복 소스는 여전히 attachments 배열인지 잰다.
+         *
+         * @scenario surface=post_attachments
+         * @effects attachment_iteration_still_uses_attachments_array
+         */
         it('iteration source 는 여전히 attachments 배열을 사용한다', () => {
             const dump = stringifyDeep(postAttachments);
             expect(dump).toContain('post?.data?.attachments ?? []');

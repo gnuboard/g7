@@ -1,0 +1,22 @@
+feature: 게시판 스킨 — 블라인드 아이콘 색 대비와 스킨 간 패리티
+
+description: |
+  블라인드 아이콘은 흰 배경 위에서 구분되어야 한다. `orange-300` 은 라이트 배경 대비가 1.63 이라
+  사실상 보이지 않는다(WCAG 비텍스트 최소 3.0). `orange-500` 으로 올리는 수정이 일반·카드 스킨에만 들어가고
+  갤러리 스킨은 빠져, 같은 아이콘이 스킨에 따라 보이기도 하고 안 보이기도 했다.
+  스킨을 열거하지 않고 스킨 디렉토리를 훑어 전수로 잰다.
+
+# axis 의미:
+#   check — population 스킨 모집단과 아이콘 존재, contrast 대비가 모자란 색 금지와 라이트·다크 지정, parity 스킨 간 같은 색.
+axes:
+  check: [population, contrast, parity]
+
+effects:
+  - blinded_icon_skin_population_derived          # 스킨 모집단을 디렉토리에서 도출한다 (비면 스캔 단언이 헛돈다)
+  - blinded_icon_present_in_every_skin            # 모든 스킨에 블라인드 아이콘이 있다
+  - blinded_icon_avoids_low_contrast_orange_300   # 어느 스킨도 orange-300 을 쓰지 않는다
+  - blinded_icon_sets_light_and_dark_colors       # 모든 스킨이 라이트·다크 색을 함께 지정한다
+  - blinded_icon_color_matches_across_skins       # 스킨끼리 같은 색을 쓴다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-blinded-icon-contrast-parity.test.ts

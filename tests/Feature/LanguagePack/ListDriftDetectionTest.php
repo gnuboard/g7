@@ -21,6 +21,11 @@ class ListDriftDetectionTest extends TestCase
 
     private LanguagePackService $service;
 
+    /**
+     * 언어팩 서비스를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,8 +33,12 @@ class ListDriftDetectionTest extends TestCase
     }
 
     /**
+     * 설치본 폴더가 없는 active 행은 files_missing 으로 표시되고, 번들 소스가 없으면 재설치 가능으로 표시되지 않는다.
+     *
      * @effects active_row_with_missing_install_dir_flagged_files_missing,
      *          third_party_pack_without_bundle_source_not_offered_for_reinstall
+     *
+     * @return void 반환값 없음
      */
     public function test_active_row_with_missing_install_dir_is_flagged(): void
     {
@@ -69,7 +78,11 @@ class ListDriftDetectionTest extends TestCase
     }
 
     /**
+     * 코어 ko 가상 보호 행은 files_missing 으로 표시되지 않는다.
+     *
      * @effects virtual_builtin_rows_not_flagged
+     *
+     * @return void 반환값 없음
      */
     public function test_virtual_builtin_rows_are_not_flagged(): void
     {

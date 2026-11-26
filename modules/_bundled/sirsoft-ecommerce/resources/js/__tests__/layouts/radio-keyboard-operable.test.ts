@@ -80,6 +80,8 @@ const layouts: Array<[string, unknown]> = [
 ];
 
 describe('라디오 키보드 조작 계약', () => {
+    // @scenario surface=admin_layout
+    // @effects radio_accepts_pointer_clicks
     it.each(layouts)('%s — 라디오가 클릭을 받을 수 있다', (_label, layout) => {
         const radios = collectRadios(layout);
 
@@ -93,6 +95,8 @@ describe('라디오 키보드 조작 계약', () => {
         });
     });
 
+    // @scenario surface=admin_layout
+    // @effects radio_change_action_matches_label_click
     it.each(layouts)('%s — 라디오가 change 액션을 가지고, 값이 Label 클릭과 같다', (_label, layout) => {
         const radios = collectRadios(layout);
 

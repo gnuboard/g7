@@ -1,0 +1,39 @@
+feature: 공개 레이아웃 서빙 API (/api/layouts/{템플릿}/{레이아웃}.json)
+
+description: |
+  템플릿 레이아웃을 JSON 으로 내주는 공개 서빙 경로를 잰다. 활성 템플릿의 레이아웃은 표준 응답 형태로 내고,
+  없는 템플릿·비활성 템플릿·없는 레이아웃·잘못된 이름은 404 로 막는다. 상속 레이아웃은 병합해 내고,
+  응답은 코어 캐시에 서버 현재 버전 키로 굽는다. 레이아웃에 permissions 를 달면 세션·Bearer 토큰 사용자,
+  비회원(guest 역할 권한 포함)별로 401·403·200 을 가른다.
+
+axes:
+  case:
+    - serve_success        # 활성 템플릿의 레이아웃 서빙
+    - not_found            # 없는 템플릿·비활성 템플릿·없는 레이아웃
+    - name_validation      # layoutName 경로 파라미터 형식 검증
+    - inheritance          # extends 상속 병합과 권한 병합
+    - cache                # 서빙 캐시 키
+    - permission_session   # 세션 로그인·비회원 접근 권한
+    - permission_bearer    # Bearer 토큰 접근 권한
+
+effects:
+  - public_layout_served_with_envelope                     # success·message·data(meta·data_sources·components) 형태로 200
+  - public_layout_request_succeeds                         # 로깅·제한 미들웨어 경로를 거친 요청이 200 으로 끝난다
+  - public_layout_missing_template_returns_404
+  - public_layout_inactive_template_returns_404
+  - public_layout_missing_layout_returns_404
+  - public_layout_invalid_name_returns_404                 # 형식이 틀린 layoutName 은 404
+  - public_layout_valid_name_accepted                      # 허용 형식의 layoutName 은 200
+  - public_layout_inherited_merge_strips_extends_and_slots # 상속 병합 결과에 extends·slots 가 남지 않는다
+  - public_layout_response_cached_in_core_cache            # 첫 요청이 g7:core 캐시에 키를 만들고 두 번째 응답이 같다
+  - public_layout_cache_key_uses_server_version            # 편집기 ?v={버전}.{nonce} 요청도 서버 현재 버전 키로만 굽는다
+  - public_layout_without_permissions_open_to_guest
+  - protected_layout_guest_gets_401
+  - protected_layout_invalid_bearer_gets_401
+  - protected_layout_user_without_permission_gets_403
+  - protected_layout_user_with_permission_gets_200
+  - inherited_layout_permissions_merged                    # 부모 권한만 가진 회원은 자식 레이아웃에서 403
+  - guest_role_permission_grants_protected_layout          # guest 역할에 권한이 있으면 비회원도 200
+
+test_files:
+  - tests/Feature/Template/PublicLayoutControllerTest.php

@@ -38,6 +38,12 @@ function classNameOf(node: Record<string, unknown> | undefined): string {
 }
 
 describe('plugin_settings 하단 버튼 sticky 고정', () => {
+  /**
+   * 하단 버튼 영역(footer_buttons)에 sticky-footer-buttons 의미 클래스가 있다.
+   *
+   * @scenario case=semantic_class_present
+   * @effects footer_buttons_use_sticky_semantic_class
+   */
   it('footer_buttons 에 sticky-footer-buttons 시맨틱 클래스가 존재해야 한다', () => {
     const footer = findById(pluginSettingsLayout, 'footer_buttons');
     expect(footer).toBeDefined();
@@ -46,6 +52,12 @@ describe('plugin_settings 하단 버튼 sticky 고정', () => {
     expect(className).toContain('sticky-footer-buttons');
   });
 
+  /**
+   * 하단 버튼 영역은 고정 스타일을 bottom-0·z-10 같은 유틸리티로 직접 적지 않는다.
+   *
+   * @scenario case=no_utility_listing
+   * @effects footer_buttons_do_not_list_sticky_utilities
+   */
   it('footer_buttons 는 고정 스타일을 유틸리티 클래스로 직접 나열하지 않는다', () => {
     const className = classNameOf(findById(pluginSettingsLayout, 'footer_buttons'));
     const utilities = className.split(/\s+/).filter(Boolean);

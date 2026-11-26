@@ -21,6 +21,8 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
      * applyS3Config를 리플렉션으로 호출합니다.
      *
      * @param  array  $driverSettings  drivers 카테고리 설정 데이터
+     *
+     * @return void 반환값 없음
      */
     private function callApplyS3Config(array $driverSettings): void
     {
@@ -33,6 +35,8 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
      * applyDriverConfig를 리플렉션으로 호출합니다 (drivers 카테고리 mock 주입).
      *
      * @param  array  $driverSettings  drivers 카테고리 설정 데이터
+     *
+     * @return void 반환값 없음
      */
     private function callApplyDriverConfig(array $driverSettings): void
     {
@@ -50,6 +54,8 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=custom_url,driver_usability=adapter_present,attachment_disk=local_default
      *
      * @effects endpoint_injected
+     *
+     * @return void 반환값 없음
      */
     public function test_s3_endpoint_injected_into_disk_config(): void
     {
@@ -72,6 +78,8 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=path_style,driver_usability=adapter_present,attachment_disk=local_default
      *
      * @effects endpoint_injected
+     *
+     * @return void 반환값 없음
      */
     public function test_s3_use_path_style_injected_into_disk_config(): void
     {
@@ -84,6 +92,10 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
 
     /**
      * 빈 endpoint/path-style 은 주입되지 않는지 테스트합니다 (AWS 기본 경로 보존).
+     *
+     * @effects empty_endpoint_keeps_aws_default_path
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_s3_endpoint_and_path_style_not_injected(): void
     {
@@ -102,6 +114,10 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
 
     /**
      * s3_url 은 public URL(url)에만 매핑되고 endpoint 에는 매핑되지 않는지 테스트합니다.
+     *
+     * @effects s3_url_maps_to_public_url_only
+     *
+     * @return void 반환값 없음
      */
     public function test_s3_url_maps_to_public_url_not_endpoint(): void
     {
@@ -123,6 +139,8 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=follow_s3
      *
      * @effects attachment_upload_follows_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_attachment_disk_follows_s3_when_env_not_explicit(): void
     {
@@ -140,6 +158,8 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=env_override
      *
      * @effects attachment_upload_follows_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_attachment_disk_env_override_wins_over_s3(): void
     {
@@ -161,6 +181,8 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=follow_s3
      *
      * @effects attachment_upload_follows_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_attachment_disk_follows_s3_when_env_is_blank_string(): void
     {
@@ -178,6 +200,10 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
 
     /**
      * storage_driver=local 이면 첨부 디스크가 기본값을 유지하는지 테스트합니다.
+     *
+     * @effects attachment_upload_follows_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_attachment_disk_unchanged_when_storage_driver_local(): void
     {
@@ -197,6 +223,10 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
      * 영구 미발동 — A2 가 막으려던 `Class "Redis" not found` 전면 다운이 그대로 남는다.
      * 확장 설치 머신에서는 부재 상태를 재현할 수 없으므로(A5 선례: mock 불가 시 구성
      * 검증으로 대체), 판정 술어를 확장 로드 여부 인자로 분리해 검증한다.
+     *
+     * @effects redis_falls_back_to_predis_without_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_predis_fallback_fires_for_phpredis_client_without_extension(): void
     {
@@ -223,6 +253,10 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
      *
      * env() 직접 호출은 config:cache 환경에서 null 로 고정된다 (A8 disk_explicit 와 동형).
      * 이 머신은 확장 설치 여부에 따라 결과가 갈리므로 분기 단언한다.
+     *
+     * @effects redis_falls_back_to_predis_without_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_apply_redis_config_fallback_uses_config_not_env(): void
     {
@@ -242,6 +276,10 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
     /**
      * upload.disk 죽은 주입 제거 회귀 — upload 카테고리의 disk 값이
      * filesystems.default 를 더 이상 덮어쓰지 않아야 합니다 (a2).
+     *
+     * @effects dead_setting_injection_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_upload_disk_no_longer_overrides_filesystems_default(): void
     {
@@ -266,6 +304,10 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
 
     /**
      * cache.driver/prefix 죽은 주입 제거 회귀 — applyCacheConfig 메서드 자체가 제거되어야 합니다 (a3).
+     *
+     * @effects dead_setting_injection_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_apply_cache_config_dead_injection_removed(): void
     {

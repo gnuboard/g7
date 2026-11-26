@@ -1,0 +1,25 @@
+feature: 사용자 화면 → 관리자 화면 크로스링크 노출 게이트
+
+description: |
+  게시판 화면은 can_access_admin 이 참일 때만 관리자 게시물 조회·게시판 관리 링크를 보이고,
+  상품 상세는 can_update 가 참일 때만 관리자 상품 수정 링크를 보인다. 링크는 새 탭으로 연다.
+  렌더 시험이 권한 참/거짓 양쪽을 재고, 파티셜 JSON 시험이 게이트 식과 링크 속성을 고정한다.
+
+# axis 의미:
+#   target — board 게시판 관리자 진입 링크, product 상품 관리자 수정 링크
+#   ability — granted 권한 있음, denied 권한 없음
+axes:
+  target: [board, product]
+  ability: [granted, denied]
+
+effects:
+  - board_admin_links_render_when_can_access_admin     # can_access_admin=true → 게시물 조회 + 게시판 관리 링크 2개
+  - board_admin_links_hidden_without_can_access_admin  # can_access_admin=false → 관리자 링크 미렌더
+  - product_admin_edit_link_renders_when_can_update    # can_update=true → 관리자 상품 수정 링크
+  - product_admin_edit_link_hidden_without_can_update  # can_update=false → 수정 링크 미렌더
+  - admin_links_partial_uses_can_access_admin_gate     # _admin_links.json 이 can_access_admin 게이트를 쓴다
+  - admin_edit_link_partial_uses_can_update_gate       # _admin_edit_link.json 이 can_update 게이트와 상품 수정 경로를 쓴다
+  - admin_links_open_in_new_tab                        # 관리자 링크가 새 탭으로 열린다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/admin-cross-navigation.test.tsx

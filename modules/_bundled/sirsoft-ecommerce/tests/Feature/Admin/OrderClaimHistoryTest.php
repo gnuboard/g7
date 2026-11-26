@@ -39,12 +39,23 @@ class OrderClaimHistoryTest extends ModuleTestCase
 {
     protected User $admin;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->admin = $this->createAdminUser(['sirsoft-ecommerce.claims.read']);
     }
 
+    /**
+     * 주문의 클레임 내역 API 주소를 만든다.
+     *
+     * @param  Order  $order  대상 주문
+     * @return string 클레임 내역 API 경로
+     */
     protected function url(Order $order): string
     {
         return "/api/modules/sirsoft-ecommerce/admin/orders/{$order->id}/claims";
@@ -52,6 +63,11 @@ class OrderClaimHistoryTest extends ModuleTestCase
 
     /**
      * 반품 신청서 + 상품 행 N개를 직접 생성합니다.
+     *
+     * @param  Order  $order  신청서를 달 주문
+     * @param  int  $itemCount  만들 상품 행 수
+     * @param  ReturnStatusEnum  $status  신청서와 상품 행의 상태
+     * @return OrderReturn 만든 반품 신청서
      */
     protected function makeReturnWithItems(Order $order, int $itemCount = 1, ReturnStatusEnum $status = ReturnStatusEnum::REQUESTED): OrderReturn
     {
@@ -78,7 +94,10 @@ class OrderClaimHistoryTest extends ModuleTestCase
     }
 
     /**
+     * 클레임 내역 응답이 유형별 건수와 신청서별 상품 배열(그룹 구조)을 싣는지 확인한다.
+     *
      * @effects order_claims_response_groups_items_under_each_request
+     * @return void 반환값 없음
      */
     public function test_order_claims_returns_grouped_structure_with_counts(): void
     {
@@ -162,6 +181,12 @@ class OrderClaimHistoryTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 상품 행 금액이 유형별로 정규화된다 — 교환은 차액의 크기, 반품은 대상 금액을 싣고 방향은 amount_type 이 나른다.
+     *
+     * @effects order_claims_response_amount_carries_magnitude_only
+     * @return void 반환값 없음
+     */
     public function test_order_claims_normalizes_item_amounts_by_type(): void
     {
         $order = OrderFactory::new()->create();
@@ -216,6 +241,7 @@ class OrderClaimHistoryTest extends ModuleTestCase
      * 주문상세에서는 링크가 빠지고, 클레임 목록 취소 탭의 번호는 404 로 이어졌다.
      *
      * @effects order_claims_response_detail_url_for_every_type
+     * @return void 반환값 없음
      */
     public function test_order_claims_detail_url_is_the_claim_path_for_every_type(): void
     {
@@ -241,6 +267,12 @@ class OrderClaimHistoryTest extends ModuleTestCase
         $this->assertSame('/admin/ecommerce/claims/'.$cancelRow['claim_number'], $cancelRow['detail_url']);
     }
 
+    /**
+     * 유형이 섞인 신청서가 접수 시각 역순 평면 배열로 내려온다.
+     *
+     * @effects order_claims_response_ordered_by_request_time_desc
+     * @return void 반환값 없음
+     */
     public function test_order_claims_are_ordered_by_request_time_descending(): void
     {
         $order = OrderFactory::new()->create();
@@ -265,6 +297,12 @@ class OrderClaimHistoryTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 주문 조회 권한만 있고 클레임 조회 권한이 없으면 403 을 받는다.
+     *
+     * @effects order_claims_response_requires_claims_read_permission
+     * @return void 반환값 없음
+     */
     public function test_order_claims_requires_claims_read_permission(): void
     {
         $order = OrderFactory::new()->create();
@@ -274,7 +312,10 @@ class OrderClaimHistoryTest extends ModuleTestCase
     }
 
     /**
+     * 저가 교환은 방향을 환불로 싣고 금액에는 음수 부호를 남기지 않는다.
+     *
      * @effects order_claims_response_amount_carries_magnitude_only
+     * @return void 반환값 없음
      */
     public function test_low_price_exchange_reports_refund_direction_without_negative_amount(): void
     {
@@ -307,6 +348,12 @@ class OrderClaimHistoryTest extends ModuleTestCase
         $this->assertSame(-2000, $row['price_difference']);
     }
 
+    /**
+     * 클레임 상품 행이 공용 어휘(새 옵션 라벨·새 단가·원 수량 등)를 그대로 싣는다.
+     *
+     * @effects order_claims_response_keeps_claim_item_field_vocabulary
+     * @return void 반환값 없음
+     */
     public function test_order_claims_preserve_claim_item_field_vocabulary(): void
     {
         // 판정 ② — 유저·관리자 상품 행이 같은 ClaimItemResource 어휘를 공유한다(N벌 금지).
@@ -340,6 +387,12 @@ class OrderClaimHistoryTest extends ModuleTestCase
         $this->assertSame(32000, $row['new_unit_price']);
     }
 
+    /**
+     * 취소 신청서의 상품 행이 취소 옵션에서 정규화된 금액(환불 방향)을 싣는다.
+     *
+     * @effects order_claims_response_cancel_rows_carry_normalized_amounts
+     * @return void 반환값 없음
+     */
     public function test_cancel_rows_carry_normalized_amounts_from_cancel_options(): void
     {
         // 취소 유형의 items 축은 augmentItem 의 default 분기가 담당하는데, 기존 테스트는
@@ -383,6 +436,12 @@ class OrderClaimHistoryTest extends ModuleTestCase
         $this->assertStringContainsString('12,000', $row['amount_formatted']);
     }
 
+    /**
+     * 신청자 이름은 주문 배송지에서, 사유 라벨은 사유 카탈로그에서 해석해 싣는다.
+     *
+     * @effects order_claims_response_resolves_requester_and_reason_label
+     * @return void 반환값 없음
+     */
     public function test_order_claims_resolve_requester_name_and_reason_label(): void
     {
         // withAdminFields()/reasonLabels 묶음 주입은 키 존재만 단언돼 있었다 — 값이 비어도
@@ -416,6 +475,12 @@ class OrderClaimHistoryTest extends ModuleTestCase
         $this->assertContains($row['reason_label'], ['단순 변심', 'Changed mind'], '사유 라벨이 카탈로그에서 해석되지 않았습니다');
     }
 
+    /**
+     * 없는 주문의 클레임 내역을 요청하면 404 를 받는다.
+     *
+     * @effects order_claims_response_404_for_unknown_order
+     * @return void 반환값 없음
+     */
     public function test_order_claims_returns_404_for_unknown_order(): void
     {
         $this->actingAs($this->admin)

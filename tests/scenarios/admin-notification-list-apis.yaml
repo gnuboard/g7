@@ -1,0 +1,32 @@
+feature: 관리자 알림 목록 API — 발송 이력 목록·삭제와 관리자 알림함 목록
+
+description: |
+  관리자 화면의 두 알림 목록이 정상 응답하고 고른 조건을 적용하는지 잰다.
+  - 알림 발송 이력(/api/admin/notification-logs): 목록·권한 abilities·채널 필터·커서 페이지·단건/다건 삭제.
+  - 관리자 알림함(/api/admin/notifications): `$user->notifications()` 관계를 페이지네이션한다. 상한 페이지네이션
+    계약이 빌더만 받던 시절 화면 진입만으로 500 이 났다.
+  두 목록 모두 상한 페이지네이션 계약의 정확도 메타(total_relation·total_is_exact·result_cap)를 싣는다.
+  상한 계약 자체의 판정 규칙은 bounded-total-pagination.yaml 이 소유한다.
+
+  축은 시험이 재는 목록 동작의 종류 하나다.
+
+axes:
+  case: [log_index, log_filter, log_cursor, log_delete, inbox_relation, inbox_filter, bounded_meta]
+
+effects:
+  # 알림 발송 이력
+  - notification_log_index_returns_rows_with_delete_ability
+  - notification_log_channel_filter_applied
+  - notification_log_cursor_request_returns_keyset_page
+  - notification_log_single_delete_removes_row
+  - notification_log_bulk_delete_reports_count
+  # 관리자 알림함
+  - admin_notification_list_paginates_relation_without_error
+  - admin_notification_unread_filter_applied
+  - admin_notification_list_excludes_other_users
+  # 공통 — 상한 계약 정확도 메타
+  - admin_notification_lists_carry_total_accuracy_meta
+
+test_files:
+  - tests/Feature/Api/Admin/NotificationLogControllerTest.php
+  - tests/Feature/Notifications/AdminNotificationListTest.php

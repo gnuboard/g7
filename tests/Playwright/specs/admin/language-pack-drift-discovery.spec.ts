@@ -11,10 +11,8 @@
  *   - 배지/버튼 조건식 평가 → Vitest (admin-language-pack-drift.test.tsx, createLayoutTest)
  *   - 본 spec → 실제 브라우저에서 목록 화면이 뜨고 조건이 라이브 데이터에 걸리는지 최종 확증
  *
- * @scenario target_locale_source=supported_locales_default, locale_membership=non_base_declared,
- *           pack_state=drifted_missing_files, scope=core
- * @effects admin_list_shows_drift_badge_and_reinstall,
- *          active_row_with_missing_install_dir_flagged_files_missing
+ * 효과 요약(마커 아님 — 평문): 목록의 드리프트 배지·재설치 버튼이 API 의 드리프트 상태와 일치한다.
+ * 마킹은 각 test 위에 있다.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -27,6 +25,11 @@ const DRIFT_BADGE = 'lp-drift-badge';
 const REINSTALL_BUTTON = 'lp-reinstall-button';
 
 test.describe('관리자 언어팩 목록 — 드리프트 발견', () => {
+  /**
+   * @scenario target_locale_source=supported_locales_default, locale_membership=non_base_declared, pack_state=installed_active, scope=core
+   *
+   * @effects admin_list_shows_drift_badge_and_reinstall
+   */
   test('배지·재설치 버튼 노출이 API 가 내려준 드리프트 상태와 일치한다', async ({ page }) => {
     const token = issueToken('core.language_packs.read', 'core.language_packs.install');
     await authenticatePage(page, token);
@@ -78,12 +81,14 @@ test.describe('관리자 언어팩 목록 — 드리프트 발견', () => {
    *   3. `test.describe.skip` → `test.describe` 로 전환
    *
    * 복구 확인 후에는 `php artisan language-pack:provision --locale=ja` 로 원상 복구된다.
-   *
-   * @scenario target_locale_source=explicit_locale_option, locale_membership=non_base_declared,
-   *           pack_state=drifted_missing_files, scope=core
-   * @effects admin_list_shows_drift_badge_and_reinstall, drifted_pack_repaired_by_provision
+   * 시나리오 마킹은 안쪽 test 위에 있다(건너뛰는 동안은 커버로 세지 않는다).
    */
   test.describe.skip('드리프트 주입 환경 (수동 활성화)', () => {
+    /**
+     * @scenario target_locale_source=explicit_locale_option, locale_membership=non_base_declared, pack_state=drifted_missing_files, scope=core
+     *
+     * @effects admin_list_shows_drift_badge_and_reinstall, drifted_pack_repaired_by_provision
+     */
     test('드리프트 행에 배지와 재설치 버튼이 뜨고, 재설치로 복구된다', async ({ page }) => {
       const token = issueToken('core.language_packs.read', 'core.language_packs.install');
       await authenticatePage(page, token);

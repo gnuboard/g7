@@ -30,6 +30,11 @@ class UserControllerDeleteTest extends TestCase
 
     private string $token;
 
+    /**
+     * 사용자 조회·삭제 권한을 가진 슈퍼 관리자와 인증 토큰을 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,6 +45,8 @@ class UserControllerDeleteTest extends TestCase
 
     /**
      * 관리자 역할 및 삭제 권한을 가진 사용자 생성
+     *
+     * @return User 생성된 슈퍼 관리자
      */
     private function createAdminUser(): User
     {
@@ -84,6 +91,8 @@ class UserControllerDeleteTest extends TestCase
 
     /**
      * 인증된 요청 헬퍼 메서드
+     *
+     * @return static Bearer 토큰과 JSON 수락 헤더가 붙은 테스트 인스턴스
      */
     private function authRequest(): static
     {
@@ -99,6 +108,12 @@ class UserControllerDeleteTest extends TestCase
 
     /**
      * 슈퍼 관리자 삭제 시 422 상태 코드와 구체적 에러 메시지 반환
+     *
+     * @scenario case=super_admin_target
+     *
+     * @effects admin_user_delete_refuses_super_admin_with_specific_message
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_super_admin_returns_specific_error_message(): void
     {
@@ -124,6 +139,12 @@ class UserControllerDeleteTest extends TestCase
      * 시작하지 못함 → 사용자가 인증을 마쳐도 삭제가 진행되지 않고 본인확인 토스트만 반복.
      *
      * 미들웨어(scope=route) 는 return_request 를 채우지만 Listener(scope=hook) 는 누락하던 결함.
+     *
+     * @scenario case=identity_policy_challenge
+     *
+     * @effects admin_user_delete_428_carries_return_request
+     *
+     * @return void 반환값 없음
      */
     public function test_hook_policy_428_response_includes_return_request_for_retry(): void
     {
@@ -153,6 +174,12 @@ class UserControllerDeleteTest extends TestCase
      *
      * 검증: verification_token 우회가 라우트 미들웨어 + 훅 리스너 양쪽 모두에서 일관 동작해야
      * end-to-end DELETE 가 통과하고 사용자가 실제로 삭제되는지 확인.
+     *
+     * @scenario case=identity_policy_token
+     *
+     * @effects admin_user_delete_with_verification_token_deletes_user
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_with_verification_token_passes_through_hook_policy(): void
     {
@@ -194,6 +221,12 @@ class UserControllerDeleteTest extends TestCase
      * 회귀: 과거 UserService::deleteUser 가 target.isAdmin() 만 보고 무조건 차단해
      * 슈퍼관리자도 다른 관리자를 지울 수 없던 결함. 권한/스코프 검증은 PermissionMiddleware
      * 가 담당하며, Service 는 시스템 불변식인 슈퍼관리자 보호만 유지한다.
+     *
+     * @scenario case=admin_target
+     *
+     * @effects super_admin_can_delete_admin_user
+     *
+     * @return void 반환값 없음
      */
     public function test_super_admin_can_delete_admin_user(): void
     {
@@ -228,6 +261,12 @@ class UserControllerDeleteTest extends TestCase
 
     /**
      * 일반 사용자 삭제 시 성공 메시지 반환
+     *
+     * @scenario case=regular_target
+     *
+     * @effects admin_user_delete_regular_user_returns_success_message
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_regular_user_returns_success(): void
     {
@@ -256,6 +295,12 @@ class UserControllerDeleteTest extends TestCase
      *
      * 검증: message 에 `:error` 가 없고, 훅이 던진 예외 원문도 응답 어디에도 없다.
      * 그리고 사용자가 읽을 수 있는 일반 안내 문구가 온다.
+     *
+     * @scenario case=failure_message
+     *
+     * @effects admin_user_delete_failure_message_hides_placeholder_and_raw_exception
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_failure_message_has_no_placeholder_and_no_raw_exception_detail(): void
     {

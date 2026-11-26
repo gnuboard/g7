@@ -27,12 +27,19 @@ class BoardCreationRegressionTest extends ModuleTestCase
 {
     /**
      * DatabaseTransactions 비활성화 (수동 정리 경로 보존).
+     *
+     * @return void 반환값 없음
      */
     public function beginDatabaseTransaction(): void
     {
         // 수동 정리 모드
     }
 
+    /**
+     * 각 테스트 전에 필요한 상태를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -50,6 +57,11 @@ class BoardCreationRegressionTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 각 테스트 뒤에 바꾼 상태를 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $slugs = ['regress-create', 'regress-create-delete'];
@@ -78,6 +90,12 @@ class BoardCreationRegressionTest extends ModuleTestCase
      *
      * beta.2 회귀 시나리오: ALTER TABLE ADD PARTITION 쿼리가 실행되어 실패 → 보드 롤백 → 생성 불가.
      * beta.3 기대 동작: 파티션 DDL 미실행, 보드 레코드/역할/권한 정상 생성.
+     *
+     * @scenario operation=create
+     *
+     * @effects board_create_runs_no_partition_ddl
+     *
+     * @return void 반환값 없음
      */
     public function test_create_board_succeeds_without_partition_ddl(): void
     {
@@ -111,6 +129,12 @@ class BoardCreationRegressionTest extends ModuleTestCase
 
     /**
      * 보드 삭제도 파티션 DDL 없이 성공해야 합니다.
+     *
+     * @scenario operation=delete
+     *
+     * @effects board_delete_runs_no_partition_ddl
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_board_succeeds_without_partition_ddl(): void
     {
@@ -143,6 +167,12 @@ class BoardCreationRegressionTest extends ModuleTestCase
 
     /**
      * BoardRepositoryInterface에서 파티션 메서드가 완전히 제거되었는지 확인합니다.
+     *
+     * @scenario operation=repository_contract
+     *
+     * @effects repository_interface_has_no_partition_methods
+     *
+     * @return void 반환값 없음
      */
     public function test_partition_methods_removed_from_repository_interface(): void
     {

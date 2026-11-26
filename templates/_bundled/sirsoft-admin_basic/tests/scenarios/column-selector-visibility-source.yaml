@@ -1,0 +1,18 @@
+feature: ColumnSelector — 열 표시 변경 콜백의 발화 출처
+
+description: |
+  ColumnSelector 가 onColumnVisibilityChange 를 부르는 모든 지점에서 출처를 함께 싣고, components.json 선언이 같은 어휘를 쓰는지 잰다.
+  DataGrid 의 같은 이름 이벤트는 출처를 싣지 않아 둘을 혼동하지 않게 한다.
+
+# axis 의미:
+#   component — 이 매니페스트가 다루는 컴포넌트 하나.
+axes:
+  component: [column_selector]
+
+effects:
+  - column_selector_callback_carries_source   # 콜백을 부르는 지점 전부가 출처를 싣고 세 출처가 모두 실제로 발화한다
+  - column_selector_source_vocabulary_matches_declaration   # components.json 선언이 구현과 같은 출처 어휘를 쓴다
+  - datagrid_visibility_event_has_no_source   # DataGrid 의 같은 이름 이벤트는 출처를 싣지 않는다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ColumnSelectorCallbackSource.test.ts

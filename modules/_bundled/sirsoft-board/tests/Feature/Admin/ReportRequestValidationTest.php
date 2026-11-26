@@ -28,6 +28,11 @@ class ReportRequestValidationTest extends ModuleTestCase
 
     private Board $board;
 
+    /**
+     * 각 테스트 전에 필요한 상태를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -82,6 +87,12 @@ class ReportRequestValidationTest extends ModuleTestCase
     /**
      * status-counts 요청에 ids 가 비어 있으면 422 로 거부됨을 검증합니다.
      * (기존 컨트롤러 인라인 empty($ids) 검사 → StatusCountsRequest 이관)
+     *
+     * @scenario endpoint=status_counts, input=invalid
+     *
+     * @effects status_counts_rejects_missing_or_empty_ids
+     *
+     * @return void 반환값 없음
      */
     public function test_status_counts_with_empty_ids_is_rejected_with_422(): void
     {
@@ -95,6 +106,12 @@ class ReportRequestValidationTest extends ModuleTestCase
 
     /**
      * status-counts 요청에 ids 키 자체가 없어도 422 로 거부됨을 검증합니다.
+     *
+     * @scenario endpoint=status_counts, input=invalid
+     *
+     * @effects status_counts_rejects_missing_or_empty_ids
+     *
+     * @return void 반환값 없음
      */
     public function test_status_counts_without_ids_is_rejected_with_422(): void
     {
@@ -106,6 +123,12 @@ class ReportRequestValidationTest extends ModuleTestCase
 
     /**
      * status-counts 요청의 target_status 가 허용되지 않은 값이면 422 로 거부됨을 검증합니다.
+     *
+     * @scenario endpoint=status_counts, input=invalid
+     *
+     * @effects status_counts_rejects_unknown_target_status
+     *
+     * @return void 반환값 없음
      */
     public function test_status_counts_with_invalid_target_status_is_rejected_with_422(): void
     {
@@ -126,6 +149,12 @@ class ReportRequestValidationTest extends ModuleTestCase
     /**
      * 유효한 ids 로 status-counts 를 요청하면 200 으로 상태별 집계가 반환됨을 검증합니다.
      * (전용 FormRequest 전환이 정상 경로를 깨지 않음)
+     *
+     * @scenario endpoint=status_counts, input=valid
+     *
+     * @effects status_counts_valid_request_succeeds
+     *
+     * @return void 반환값 없음
      */
     public function test_status_counts_with_valid_ids_succeeds(): void
     {
@@ -146,6 +175,12 @@ class ReportRequestValidationTest extends ModuleTestCase
 
     /**
      * 전용 FormRequest 전환 후에도 신고 목록 조회(index)가 정상 200 임을 검증합니다.
+     *
+     * @scenario endpoint=index, input=valid
+     *
+     * @effects report_index_succeeds_with_form_request
+     *
+     * @return void 반환값 없음
      */
     public function test_index_still_succeeds_after_request_refactor(): void
     {
@@ -163,6 +198,12 @@ class ReportRequestValidationTest extends ModuleTestCase
 
     /**
      * 전용 FormRequest 전환 후에도 신고자 목록 조회(reporters)가 정상 200 임을 검증합니다.
+     *
+     * @scenario endpoint=reporters, input=valid
+     *
+     * @effects reporters_succeeds_with_form_request
+     *
+     * @return void 반환값 없음
      */
     public function test_reporters_still_succeeds_after_request_refactor(): void
     {
@@ -182,6 +223,12 @@ class ReportRequestValidationTest extends ModuleTestCase
      * 신고자 목록의 per_page 가 상·하한 밖 값을 거부하는지 검증합니다.
      *
      * 상한이 없으면 한 요청으로 신고자 전량을 끌어올 수 있어 페이지네이션이 무의미해진다.
+     *
+     * @scenario endpoint=reporters, input=invalid
+     *
+     * @effects reporters_per_page_bounded
+     *
+     * @return void 반환값 없음
      */
     public function test_reporters_per_page_is_bounded(): void
     {

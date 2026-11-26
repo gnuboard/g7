@@ -91,6 +91,7 @@ function getProduct() {
 }
 
 describe('updateOptionFieldHandler - 기본 옵션 판매가 역동기화', () => {
+    // @effects reverse_sync_product_selling_price
     it('기본 옵션 판매가 변경 시 상품 판매가가 동기화된다', () => {
         updateOptionFieldHandler(
             { handler: 'updateOptionField', params: { productId: 313, optionId: 1, field: 'selling_price', value: 4500 } },
@@ -105,6 +106,7 @@ describe('updateOptionFieldHandler - 기본 옵션 판매가 역동기화', () =
         expect(defaultOpt.price_adjustment).toBe(0);
     });
 
+    // @effects non_default_recalc_keeps_adjustment
     it('기본 옵션 판매가 변경 시 비기본 옵션도 product.selling_price + price_adjustment 로 재계산된다', () => {
         updateOptionFieldHandler(
             { handler: 'updateOptionField', params: { productId: 313, optionId: 1, field: 'selling_price', value: 4500 } },
@@ -119,6 +121,7 @@ describe('updateOptionFieldHandler - 기본 옵션 판매가 역동기화', () =
         expect(otherOpt.price_adjustment).toBe(1000);
     });
 
+    // @effects inline_option_reverse_sync_tracks_product_as_modified
     it('역동기화 시 상품이 modified 로 추적되어 일괄 저장 대상에 포함된다', () => {
         updateOptionFieldHandler(
             { handler: 'updateOptionField', params: { productId: 313, optionId: 1, field: 'selling_price', value: 4500 } },
@@ -132,6 +135,7 @@ describe('updateOptionFieldHandler - 기본 옵션 판매가 역동기화', () =
         expect(getProduct()._modified).toBe(true);
     });
 
+    // @effects inline_option_reverse_sync_recalculates_multi_currency
     it('역동기화 시 상품 다중통화 판매가도 재계산된다', () => {
         updateOptionFieldHandler(
             { handler: 'updateOptionField', params: { productId: 313, optionId: 1, field: 'selling_price', value: 4500 } },
@@ -147,6 +151,7 @@ describe('updateOptionFieldHandler - 기본 옵션 판매가 역동기화', () =
 });
 
 describe('updateOptionFieldHandler - 비기본 옵션 판매가 변경 (상품 판매가 불변)', () => {
+    // @effects non_default_change_keeps_product_price
     it('비기본 옵션 판매가 변경 시 상품 판매가는 변하지 않는다', () => {
         updateOptionFieldHandler(
             { handler: 'updateOptionField', params: { productId: 313, optionId: 2, field: 'selling_price', value: 5500 } },
@@ -161,6 +166,7 @@ describe('updateOptionFieldHandler - 비기본 옵션 판매가 변경 (상품 �
         expect(otherOpt.price_adjustment).toBe(1500);
     });
 
+    // @effects non_default_change_keeps_product_price
     it('비기본 옵션 변경 시 상품은 modifiedProductFields 에 selling_price 가 기록되지 않는다', () => {
         updateOptionFieldHandler(
             { handler: 'updateOptionField', params: { productId: 313, optionId: 2, field: 'selling_price', value: 5500 } },
@@ -191,6 +197,7 @@ describe('updateOptionFieldHandler - 옵션 미로드 행 (지연 로딩)', () =
         });
     }
 
+    // @effects inline_option_edit_leaves_unloaded_rows_untouched
     it('options 가 undefined 인 행에 편집이 들어와도 undefined 로 남는다', () => {
         seedUnloadedRow();
 
@@ -207,6 +214,7 @@ describe('updateOptionFieldHandler - 옵션 미로드 행 (지연 로딩)', () =
         ).toBe(false);
     });
 
+    // @effects inline_option_edit_leaves_unloaded_rows_untouched
     it('options 가 undefined 인 행의 다른 값도 바뀌지 않는다', () => {
         seedUnloadedRow();
 
@@ -219,6 +227,7 @@ describe('updateOptionFieldHandler - 옵션 미로드 행 (지연 로딩)', () =
         expect(unloaded.selling_price).toBe(7000);
     });
 
+    // @effects inline_option_edit_leaves_unloaded_rows_untouched
     it('미로드 행이 섞여 있어도 로드된 행의 편집은 정상 동작한다', () => {
         seedUnloadedRow();
 
@@ -233,6 +242,7 @@ describe('updateOptionFieldHandler - 옵션 미로드 행 (지연 로딩)', () =
         expect(unloaded.options).toBeUndefined();
     });
 
+    // @effects inline_option_edit_leaves_unloaded_rows_untouched
     it('미로드 행은 modified 추적에도 들어가지 않는다', () => {
         seedUnloadedRow();
 
@@ -250,6 +260,7 @@ describe('updateOptionFieldHandler - 옵션 미로드 행 (지연 로딩)', () =
         expect(mockLocalState.modifiedOptionFields ?? {}).not.toHaveProperty('999-1');
     });
 
+    // @effects inline_option_edit_leaves_unloaded_rows_untouched
     it('찾지 못한 옵션에는 데이터소스 쓰기 자체가 일어나지 않는다', () => {
         seedUnloadedRow();
 

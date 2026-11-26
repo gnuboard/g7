@@ -1,8 +1,8 @@
 /**
  * E2E: 미인증 관리자 화면(로그인·비밀번호 찾기·비밀번호 재설정)의 테마 버튼
  *
- * 조합: 세 화면(admin_login · admin_forgot_password · admin_reset_password) × 세 버튼(light · dark · auto) — 아래 라인 마커가 9조합을 선언한다.
- * @effects theme_attribute_and_class_applied, theme_persisted_in_local_storage, theme_survives_reload
+ * 조합: 세 화면(admin_login · admin_forgot_password · admin_reset_password) × 세 버튼(light · dark · auto) — 9조합은 각 시험 주석이 선언한다.
+ * 효과 요약(마커 아님 — 평문): 속성·클래스 반영, 저장, 새로고침 뒤 유지.
  *
  * 배경: 세 화면의 테마 버튼이 `setTheme` 을 `params.theme` 로 호출했으나 템플릿 핸들러는
  * `action.target` 만 읽는다. 엔진에 상호 폴백이 없어 클릭이 콘솔 경고 한 줄만 남기고
@@ -26,15 +26,6 @@
  * 규율: `check()` 를 쓰지 않고 `click()` + 단언을 분리한다. `_global.theme` 은 `page.goto`
  * 로 초기화되므로 E2E 단언에 넣지 않는다.
  */
-// @scenario screen=admin_login, theme=light
-// @scenario screen=admin_login, theme=dark
-// @scenario screen=admin_login, theme=auto
-// @scenario screen=admin_forgot_password, theme=light
-// @scenario screen=admin_forgot_password, theme=dark
-// @scenario screen=admin_forgot_password, theme=auto
-// @scenario screen=admin_reset_password, theme=light
-// @scenario screen=admin_reset_password, theme=dark
-// @scenario screen=admin_reset_password, theme=auto
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
@@ -78,6 +69,11 @@ async function clickTheme(page: Page, mode: ThemeMode): Promise<void> {
 
 test.describe('미인증 관리자 화면 테마 버튼', () => {
   for (const [label, path] of SCREENS) {
+    /**
+     * 다크·라이트 클릭이 data-theme 속성·dark 클래스·저장값을 함께 바꾼다.
+     * @scenario screen=admin_login, screen=admin_forgot_password, screen=admin_reset_password, theme=dark, theme=light
+     * @effects theme_attribute_and_class_applied, theme_persisted_in_local_storage
+     */
     test(`${label} 화면 — 다크/라이트 전환이 화면과 저장값에 즉시 반영된다`, async ({ page }) => {
       await gotoScreen(page, path);
 
@@ -98,6 +94,11 @@ test.describe('미인증 관리자 화면 테마 버튼', () => {
       expect(afterLight.stored).toBe('light');
     });
 
+    /**
+     * 자동 버튼이 auto 로 저장되고 화면은 시스템 모드(light)로 해석된다.
+     * @scenario screen=admin_login, screen=admin_forgot_password, screen=admin_reset_password, theme=auto
+     * @effects theme_attribute_and_class_applied, theme_persisted_in_local_storage
+     */
     test(`${label} 화면 — 자동(시스템 설정) 버튼이 시스템 모드로 해석된다`, async ({ page }) => {
       await gotoScreen(page, path);
 
@@ -120,6 +121,10 @@ test.describe('미인증 관리자 화면 테마 버튼', () => {
 
   // 두 결함(핸들러 계약 · GDPR 허용목록)이 모두 고쳐져야만 통과한다.
   // 계약이 되돌아가면 클릭이 no-op 이 되고, 허용목록이 되돌아가면 저장이 버려진다.
+  /**
+   * 동의 없는 첫 방문에서 고른 다크 테마가 새로고침 뒤에도 남는다.
+   * @effects theme_survives_reload
+   */
   test('로그인 화면 — 다크 설정이 새로고침 뒤에도 유지된다 (동의 없는 첫 방문)', async ({ page }) => {
     test.setTimeout(90_000);
     await gotoScreen(page, '/admin/login');
@@ -142,6 +147,10 @@ test.describe('미인증 관리자 화면 테마 버튼', () => {
 
   // 대조군 — 허용목록이 통째로 열린 것이 아님을 확인한다.
   // 이 단언이 없으면 "테마가 저장된다" 가 게이트 무력화로도 성립해 버린다.
+  /**
+   * 대조군 — 허용목록 밖 키는 동의 전에 여전히 저장되지 않는다.
+   * @effects non_allowlisted_key_blocked_before_consent
+   */
   test('로그인 화면 — 허용목록 밖 키는 여전히 동의 전 차단된다', async ({ page }) => {
     await gotoScreen(page, '/admin/login');
 
@@ -153,6 +162,10 @@ test.describe('미인증 관리자 화면 테마 버튼', () => {
     expect(accepted).toBe(false);
   });
 
+  /**
+   * 세 버튼을 눌러도 Invalid theme 경고가 없다 — setTheme 이 top-level target 으로 불린다는 브라우저 증거다.
+   * @effects settheme_action_uses_top_level_target
+   */
   test('로그인 화면 — 테마 클릭이 Invalid theme 경고를 남기지 않는다', async ({ page }) => {
     const noisy: string[] = [];
     page.on('console', (msg) => {

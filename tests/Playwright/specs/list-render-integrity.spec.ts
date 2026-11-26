@@ -13,9 +13,7 @@
  * templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-notifications-unread-binding.test.ts
  * 에서 정적으로 고정한다.
  *
- * @scenario case=list_render_matches_response
- *
- * @effects iteration_renders_all_rows, per_page_out_of_range_rejected
+ * 효과 요약(마커 아님 — 평문): 반복 렌더 행 수가 응답과 같고, 범위 밖 per_page 는 거부된다. 마킹은 각 test 위에 있다.
  */
 import type { Page } from '@playwright/test';
 import { test, expect, authenticatePage, issueToken } from '../fixtures/auth';
@@ -36,6 +34,11 @@ async function gotoAndSettle(page: Page, path: string): Promise<void> {
 }
 
 test.describe('목록 렌더 정합', () => {
+  /**
+   * @scenario check=render_count
+   *
+   * @effects iteration_renders_all_rows
+   */
   test('반복 렌더 목록이 응답 건수만큼 화면에 나온다', async ({ page }) => {
     await authenticatePage(page, issueToken('gnuboard7-hello_module.memos.read'));
 
@@ -74,6 +77,11 @@ test.describe('목록 렌더 정합', () => {
     expect(new Set(ids).size, '반복 렌더 요소의 id 가 중복됩니다').toBe(ids.length);
   });
 
+  /**
+   * @scenario check=per_page_bounds
+   *
+   * @effects per_page_out_of_range_rejected
+   */
   test('목록 per_page 는 허용 범위를 벗어나면 거부된다', async ({ page }) => {
     const token = issueToken();
     await authenticatePage(page, token);

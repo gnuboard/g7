@@ -40,6 +40,7 @@ effects:
   - virtual_builtin_rows_not_flagged
   - bundled_source_availability_flagged_independently_of_source_type
   - cli_list_surfaces_uninstalled_and_drift
+  - cli_list_scope_filter_limits_output
   - admin_list_shows_drift_badge_and_reinstall
   - third_party_pack_without_bundle_source_not_offered_for_reinstall
   - admin_menu_translation_filter_is_subscribed_by_scope
@@ -56,6 +57,7 @@ test_files:
   - tests/Feature/LanguagePack/ListLanguagePackCommandTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-language-pack-drift.test.tsx
   - tests/Unit/LanguagePack/ExtensionMenuTranslationWiringTest.php
+  - tests/Playwright/specs/admin/language-pack-drift-discovery.spec.ts
 
 e2e_files:
   - tests/Playwright/specs/admin/language-pack-drift-discovery.spec.ts

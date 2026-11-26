@@ -32,6 +32,12 @@ class SettingsServiceProviderDebugConfigTest extends TestCase
      * 2. settings JSON 에서 debug.mode=false 를 반환하는 가짜 repository 주입
      * 3. applyDebugConfig 호출
      * 4. config('app.debug') 가 true 그대로 유지되어야 함 (testing 가드가 settings 덮어쓰기 차단)
+     *
+     * @scenario environment=testing
+     *
+     * @effects debug_setting_does_not_override_app_debug_in_testing
+     *
+     * @return void 반환값 없음
      */
     public function test_applyDebugConfig_does_not_override_in_testing_environment(): void
     {
@@ -42,6 +48,12 @@ class SettingsServiceProviderDebugConfigTest extends TestCase
 
         $fakeRepository = new class extends JsonConfigRepository
         {
+            /**
+             * debug 카테고리에만 mode=false 를 돌려주는 가짜 저장소 응답.
+             *
+             * @param  string  $category  카테고리명
+             * @return array<string, mixed> debug 면 mode·log_level, 그 밖은 빈 배열
+             */
             public function getCategory(string $category): array
             {
                 if ($category === 'debug') {
@@ -73,6 +85,12 @@ class SettingsServiceProviderDebugConfigTest extends TestCase
      *   `Config::set('app.debug', true)` 로 inline override 를 적용한다. 이 시점에 settings JSON
      *   덮어쓰기가 발생하면 inline override 가 무력화되어 토큰 발급 후 layout JSON 보호 인증 등이
      *   디버그 정보 누락으로 실패한다. 따라서 bypass flag 가 있으면 settings JSON 분기를 건너뛴다.
+     *
+     * @scenario environment=playwright_bypass
+     *
+     * @effects debug_setting_does_not_override_app_debug_with_playwright_bypass
+     *
+     * @return void 반환값 없음
      */
     public function test_applyDebugConfig_does_not_override_when_playwright_bypass_flag_is_set(): void
     {
@@ -80,6 +98,12 @@ class SettingsServiceProviderDebugConfigTest extends TestCase
 
         $fakeRepository = new class extends JsonConfigRepository
         {
+            /**
+             * debug 카테고리에만 mode=false 를 돌려주는 가짜 저장소 응답.
+             *
+             * @param  string  $category  카테고리명
+             * @return array<string, mixed> debug 면 mode·log_level, 그 밖은 빈 배열
+             */
             public function getCategory(string $category): array
             {
                 if ($category === 'debug') {
@@ -124,6 +148,10 @@ class SettingsServiceProviderDebugConfigTest extends TestCase
      * production 환경 시뮬레이션 에서는 settings JSON 의 debug.mode 가 여전히 SSoT 로 적용되어야 한다.
      *
      * (운영 환경 회귀 차단 — testing 가드가 production 동작을 망가뜨리지 않는지 확인)
+     *
+     * @scenario environment=production
+     *
+     * @return void 반환값 없음
      */
     public function test_applyDebugConfig_still_overrides_outside_testing_environment(): void
     {

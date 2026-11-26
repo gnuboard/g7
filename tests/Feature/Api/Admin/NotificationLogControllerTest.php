@@ -20,6 +20,11 @@ class NotificationLogControllerTest extends TestCase
 
     private string $token;
 
+    /**
+     * 알림 이력 조회·삭제 권한을 가진 관리자와 인증 토큰을 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -29,6 +34,12 @@ class NotificationLogControllerTest extends TestCase
 
     /**
      * 목록 조회 성공 — abilities 포함
+     *
+     * @scenario case=log_index
+     *
+     * @effects notification_log_index_returns_rows_with_delete_ability
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_notification_logs_with_abilities(): void
     {
@@ -55,6 +66,12 @@ class NotificationLogControllerTest extends TestCase
 
     /**
      * 채널 필터 적용
+     *
+     * @scenario case=log_filter
+     *
+     * @effects notification_log_channel_filter_applied
+     *
+     * @return void 반환값 없음
      */
     public function test_index_filters_by_channel(): void
     {
@@ -73,6 +90,12 @@ class NotificationLogControllerTest extends TestCase
      * 이 목록은 커서를 주면 키셋 페이지로 응답한다. 커서 결과에는 총 건수와 마지막 페이지가
      * 없는데, 컬렉션이 페이지네이션 블록을 손으로 조립하면 없는 값을 불러 그 요청만 500 이
      * 된다. 응답 형태를 스스로 판정하는 표준 메타를 쓰는지 여기서 고정한다.
+     *
+     * @scenario case=log_cursor
+     *
+     * @effects notification_log_cursor_request_returns_keyset_page
+     *
+     * @return void 반환값 없음
      */
     public function test_index_accepts_cursor_request(): void
     {
@@ -110,6 +133,12 @@ class NotificationLogControllerTest extends TestCase
 
     /**
      * 상한형 목록이 정확도 메타를 함께 싣는지 확인 (성능 개선 유지)
+     *
+     * @scenario case=bounded_meta
+     *
+     * @effects admin_notification_lists_carry_total_accuracy_meta
+     *
+     * @return void 반환값 없음
      */
     public function test_index_carries_total_accuracy_meta(): void
     {
@@ -128,6 +157,12 @@ class NotificationLogControllerTest extends TestCase
 
     /**
      * 단건 삭제
+     *
+     * @scenario case=log_delete
+     *
+     * @effects notification_log_single_delete_removes_row
+     *
+     * @return void 반환값 없음
      */
     public function test_destroy_deletes_log(): void
     {
@@ -148,6 +183,12 @@ class NotificationLogControllerTest extends TestCase
 
     /**
      * 다건 삭제
+     *
+     * @scenario case=log_delete
+     *
+     * @effects notification_log_bulk_delete_reports_count
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_destroy(): void
     {
@@ -165,7 +206,7 @@ class NotificationLogControllerTest extends TestCase
     /**
      * 인증된 요청 헬퍼.
      *
-     * @return static
+     * @return static Bearer 토큰과 JSON 수락 헤더가 붙은 테스트 인스턴스
      */
     private function authRequest(): static
     {
@@ -178,7 +219,7 @@ class NotificationLogControllerTest extends TestCase
     /**
      * 관리자 생성 헬퍼.
      *
-     * @return User
+     * @return User 알림 이력 조회·삭제 권한을 가진 관리자
      */
     private function createAdminWithPermissions(): User
     {

@@ -31,6 +31,11 @@ class CancelledOrderDueAmountTest extends ModuleTestCase
 {
     private OrderCancellationService $service;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,6 +48,7 @@ class CancelledOrderDueAmountTest extends ModuleTestCase
      * @scenario payment_state=unpaid
      *
      * @effects cancelled_order_has_no_outstanding_due
+     * @return void 반환값 없음
      */
     public function test_full_cancel_of_unpaid_order_clears_due_amount(): void
     {
@@ -68,6 +74,7 @@ class CancelledOrderDueAmountTest extends ModuleTestCase
      * @scenario payment_state=paid
      *
      * @effects cancelled_order_has_no_outstanding_due
+     * @return void 반환값 없음
      */
     public function test_full_cancel_of_paid_order_keeps_due_at_zero(): void
     {
@@ -93,6 +100,7 @@ class CancelledOrderDueAmountTest extends ModuleTestCase
      * @scenario payment_state=unpaid_partial_accumulated
      *
      * @effects cancelled_order_has_no_outstanding_due
+     * @return void 반환값 없음
      */
     public function test_due_is_cleared_when_partial_cancels_accumulate_to_full(): void
     {
@@ -139,6 +147,7 @@ class CancelledOrderDueAmountTest extends ModuleTestCase
      * 주문을 전체취소합니다.
      *
      * @param  Order  $order  주문
+     * @return void 반환값 없음
      */
     private function cancelFully(Order $order): void
     {

@@ -1,0 +1,34 @@
+feature: 주문 결제 행 모델과 결제 정보 리소스
+
+description: |
+  주문 결제 행(OrderPayment)의 저장·관계·상태 캐스팅·결제수단별 정보, 취소 가능 금액 계산,
+  그리고 결제 정보 리소스가 화면에 내보내는 요약 필드를 잰다.
+
+  조용히 깨지는 지점은 셋이다.
+  ① 통화가 다른 결제에서 누적 취소를 기준 통화 값으로 빼면 취소 가능 금액이 틀린다 — 결제
+     통화의 누적 취소로 비교해야 하고, 그 값이 없는 옛 결제만 기준 통화 누적으로 대신한다.
+  ② 리소스가 무통장 수단을 엉뚱한 값으로 분기하면 계좌 요약이 늘 null 이다.
+  ③ 리소스가 에스크로 여부를 내보내지 않으면 주문 상세의 에스크로 표시가 그려지지 않는다.
+
+# axis 의미:
+#   subject — model 은 OrderPayment 모델, resource 는 OrderPaymentResource 의 직렬화다.
+axes:
+  subject: [model, resource]
+
+effects:
+  - order_payment_row_is_persisted
+  - order_payment_belongs_to_order
+  - order_payment_status_is_cast_to_enum
+  - card_payment_keeps_card_info
+  - virtual_account_payment_keeps_vbank_info
+  - payment_paid_at_follows_status
+  - cancelled_payment_keeps_cancel_info
+  - cancellable_amount_uses_payment_currency_cumulative
+  - cancellable_amount_falls_back_to_base_for_legacy_payment
+  - payment_resource_summarizes_dbank_account
+  - payment_resource_summarizes_card
+  - payment_resource_exposes_is_escrow
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/OrderPaymentTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Resources/OrderPaymentResourceTest.php

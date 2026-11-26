@@ -20,13 +20,23 @@ class GdprUserConsentResourceTest extends PluginTestCase
      * 주어진 동의 레코드를 Resource 배열로 변환합니다.
      *
      * @param  GdprUserConsent  $consent  대상 동의 레코드
-     * @return array<string, mixed>
+     *
+     * @return array<string, mixed> Resource 가 만든 응답 배열
      */
     private function toArray(GdprUserConsent $consent): array
     {
         return (new GdprUserConsentResource($consent))->toArray(Request::create('/'));
     }
 
+    /**
+     * 필수 항목은 required 상태, 「동의」 라벨, 동의 날짜, 필수 배지를 받는다.
+     *
+     * @scenario status=required
+     *
+     * @effects required_row_shows_granted_label_and_date
+     *
+     * @return void 반환값 없음
+     */
     public function test_required_category_maps_to_required_status_with_consented_date(): void
     {
         $consent = new GdprUserConsent([
@@ -46,6 +56,15 @@ class GdprUserConsentResourceTest extends PluginTestCase
         $this->assertSame(__('sirsoft-gdpr::messages.mypage.privacy.badge.required'), $result['status_badge_label']);
     }
 
+    /**
+     * 동의한 선택 항목은 consented 상태, 동의 라벨과 날짜, 동의 배지를 받는다.
+     *
+     * @scenario status=consented
+     *
+     * @effects consented_row_shows_consented_label_and_date
+     *
+     * @return void 반환값 없음
+     */
     public function test_consented_optional_maps_to_consented_status_with_consented_date(): void
     {
         $consent = new GdprUserConsent([
@@ -64,6 +83,15 @@ class GdprUserConsentResourceTest extends PluginTestCase
         $this->assertSame(__('sirsoft-gdpr::messages.mypage.privacy.badge.consented'), $result['status_badge_label']);
     }
 
+    /**
+     * 거부한 선택 항목은 rejected 상태이고 라벨과 날짜는 비어 있으며 거부 배지를 받는다.
+     *
+     * @scenario status=rejected
+     *
+     * @effects rejected_row_hides_label_and_date
+     *
+     * @return void 반환값 없음
+     */
     public function test_rejected_optional_maps_to_rejected_status_with_no_date_label(): void
     {
         // 프로젝트 결정(2026-07-20) — 날짜/라벨은 "동의한 항목만" 노출. 거부는 상태만 rejected 로 내려주고
@@ -84,6 +112,15 @@ class GdprUserConsentResourceTest extends PluginTestCase
         $this->assertSame(__('sirsoft-gdpr::messages.mypage.privacy.badge.rejected'), $result['status_badge_label']);
     }
 
+    /**
+     * 철회한 선택 항목은 revoked 상태, 「철회」 라벨과 철회 날짜, 미설정 배지를 받는다.
+     *
+     * @scenario status=revoked
+     *
+     * @effects revoked_row_shows_revoked_label_and_date
+     *
+     * @return void 반환값 없음
+     */
     public function test_revoked_optional_maps_to_revoked_status_with_revoked_date_label(): void
     {
         // 철회 이력이 있는 항목은 철회일 + '철회' 라벨을 노출한다
@@ -104,6 +141,15 @@ class GdprUserConsentResourceTest extends PluginTestCase
         $this->assertSame(__('sirsoft-gdpr::messages.mypage.privacy.badge.unset'), $result['status_badge_label']);
     }
 
+    /**
+     * 한 번도 고르지 않은 선택 항목은 none 상태이고 라벨과 날짜는 비어 있으며 미설정 배지를 받는다.
+     *
+     * @scenario status=none
+     *
+     * @effects untouched_row_hides_label_and_date
+     *
+     * @return void 반환값 없음
+     */
     public function test_new_untouched_optional_maps_to_none_with_null_label_and_date(): void
     {
         $consent = new GdprUserConsent([

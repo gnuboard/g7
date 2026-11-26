@@ -55,6 +55,8 @@ effects:
   - list_omits_layout_content
   - list_omits_extension_content
   - list_omits_role_permissions
+  # 역할 목록 행에 화면이 쓰는 표시 필드(id·name·description·is_active·users_count)는 남는다
+  - role_list_keeps_display_fields
   - list_omits_menu_child_roles
   # 알림 정의(G): 템플릿 본문을 목록에서 좁혔는가 + 좁힌 값의 대체 지표가 정확한가.
   # "제거" 가 아니라 "스코프 축소" 라, 무엇이 남았는지까지 고정해야 한다.
@@ -78,6 +80,9 @@ effects:
   - menu_detail_provides_child_roles
   - menu_selection_hydrates_roles_from_detail
   - menu_edit_form_seeds_roles_from_detail
+  # 주소(?menu=...&mode=edit)로 바로 들어와도 선택·편집 패널이 복원되고 역할 칩이 그려진다 (브라우저)
+  - menu_url_entry_restores_selection
+  - menu_edit_panel_renders_role_chips
   # 버전 단건은 목록이 버린 두 가지(본문·상한 밖 행)를 모두 되돌려주는가.
   # 목록용 조회를 단건이 재사용하면 둘 다 조용히 깨진다 — 버전 번호만 단언하는 테스트는 통과한다.
   - version_detail_still_returns_content
@@ -132,6 +137,7 @@ test_files:
   - tests/Feature/Api/Admin/CoreListPayloadPruningTest.php
   - tests/Feature/Api/Admin/RoleControllerTest.php
   - tests/Feature/Api/Admin/MenuControllerTest.php
+  - tests/Playwright/specs/admin/menu-url-entry-restore.spec.ts
   # G — 알림 정의 목록 (본인인증 문구 포함)
   - tests/Feature/Api/Admin/NotificationDefinitionListPayloadTest.php
   # F/G — 관리자 화면의 소비 경로 (권한 개수 열 / 채널 스코프 데이터소스)

@@ -1,0 +1,33 @@
+feature: 활성 언어팩 로케일이 백엔드 검증·라벨·다국어 병합에 반영됨
+
+description: |
+  ko·en 밖의 로케일(ja 등)을 활성 언어팩으로 켰을 때, 백엔드가 그 로케일을 거부하거나 빠뜨리지 않는지 잰다.
+  예전에는 환경설정 저장·프로필 언어 변경이 ko·en 고정 목록으로 ja 를 422 로 막았고, 드라이버 라벨·번역 필드
+  검증도 고정 목록을 써서 ja 가 빠졌다. 모듈 언어팩은 프론트엔드에서 모듈 식별자 키 아래로 들어가지 않아
+  `$t:모듈.키` 가 ja 를 못 찾았고, 백엔드에서는 모듈 자체 번역 경로를 덮어써 ko 가 키 그대로 나왔다.
+
+axes:
+  surface:
+    - settings_save
+    - profile_language
+    - driver_labels
+    - country_fallback
+    - translatable_rule
+    - translatable_promotion
+    - frontend_merge
+    - backend_namespace
+
+effects:
+  - admin_settings_save_accepts_active_pack_locale
+  - profile_language_update_accepts_active_pack_locale
+  - driver_registry_labels_cover_all_active_locales
+  - auth_country_fallback_reads_config_mapping
+  - provider_refresh_syncs_translatable_locales_with_active_packs
+  - translatable_field_rule_accepts_active_pack_locale
+  - translatable_promotion_covers_all_active_locales
+  - frontend_merge_wraps_extension_pack_under_target_identifier
+  - backend_pack_fallback_keeps_extension_namespace_for_existing_locales
+
+test_files:
+  - tests/Feature/LanguagePack/HardcodedLocaleRegressionTest.php
+  - tests/Feature/LanguagePack/NamespaceMergeRegressionTest.php

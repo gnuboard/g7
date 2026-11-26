@@ -1,0 +1,21 @@
+feature: 관리자 언어팩 목록 화면(admin_language_pack_list) 렌더링
+
+description: |
+  언어팩 목록의 행·카드 렌더, scope 필터 바인딩, 설치 모달 탭, 빈 상태, 업데이트 배지, 부모 배너, 상태별 행 액션을 실제 레이아웃 렌더로 잰다.
+
+# axis 의미:
+#   component — 이 매니페스트가 다루는 레이아웃 하나.
+axes:
+  component: [admin_language_pack_list]
+
+effects:
+  - language_pack_list_renders_rows   # 목록 행(Vendor 열 포함)과 카드형 UI 가 그려진다
+  - language_pack_scope_filter_bound   # scope 필터 Select 가 _local.filterScope 에 바인딩된다
+  - language_pack_install_modal_tabs   # 설치 모달이 installTab 에 따라 ZIP·GitHub·URL 패널을 보인다
+  - language_pack_empty_state   # 빈 상태에서 안내 문구와 설치 버튼이 보인다
+  - language_pack_update_badge   # has_update 행에 업데이트 배지가 보인다
+  - language_pack_scope_locked_banner   # scopeLocked + route.identifier 면 부모 배너가 보인다
+  - language_pack_row_actions_follow_status   # 미설치·protected 상태에 맞춰 행 액션이 바뀐다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-language-pack-list.test.tsx

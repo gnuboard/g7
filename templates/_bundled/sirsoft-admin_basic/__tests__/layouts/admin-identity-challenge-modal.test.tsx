@@ -97,10 +97,18 @@ describe('Admin 본인인증 모달 cancel 흐름 (sirsoft-admin_basic)', () => 
     });
   }
 
+  /**
+   * 결과 cancelled 로 resolve 하는 취소 시퀀스가 모달에 있다.
+   * @effects admin_basic_modal_cancel_flow_matches_basic_template
+   */
   it('cancel sequence 가 존재한다', () => {
     expect(findCancelSequence()).toBeDefined();
   });
 
+  /**
+   * 취소 시퀀스가 서버 cancel API 를 POST 로 부르고 대상 주소가 _global.identityChallenge.challenge_id 를 쓴다.
+   * @effects modal_cancel_button_calls_server_cancel_api_first, modal_cancel_apiCall_uses_global_identityChallenge_challenge_id
+   */
   it('cancel sequence 의 첫 액션이 서버 cancel API 호출 — audit trail 정합', () => {
     const seq = findCancelSequence();
     const inner = callbacksOf(seq, 'actions') as Action[];
@@ -114,6 +122,10 @@ describe('Admin 본인인증 모달 cancel 흐름 (sirsoft-admin_basic)', () => 
     expect(apiCall!.target!).toContain('_global.identityChallenge.challenge_id');
   });
 
+  /**
+   * challenge_id 가 없으면 cancel 호출을 건너뛰는 if 가드가 있다.
+   * @effects modal_cancel_apiCall_skipped_when_challenge_id_absent
+   */
   it('cancel apiCall 이 challenge 발급된 경우에만 호출 (if 가드)', () => {
     const seq = findCancelSequence();
     const inner = callbacksOf(seq, 'actions') as Action[];
@@ -121,6 +133,10 @@ describe('Admin 본인인증 모달 cancel 흐름 (sirsoft-admin_basic)', () => 
     expect(apiCall!.if).toContain('_global.identityChallenge?.challenge_id');
   });
 
+  /**
+   * cancel 호출이 실패해도 onError suppress 로 모달 닫기가 이어진다.
+   * @effects modal_cancel_apiCall_failure_does_not_block_modal_close
+   */
   it('cancel apiCall 실패해도 모달 닫기는 진행 (onError suppress)', () => {
     const seq = findCancelSequence();
     const inner = callbacksOf(seq, 'actions') as Action[];
@@ -130,7 +146,10 @@ describe('Admin 본인인증 모달 cancel 흐름 (sirsoft-admin_basic)', () => 
     expect(onError[0].handler).toBe('suppress');
   });
 
-  /** @effects admin_basic_modal_cancel_flow_matches_basic_template */
+  /**
+   * 취소 시퀀스가 [apiCall, resolveIdentityChallenge, closeModal] 순서다 — sirsoft-basic 모달과 같은 흐름.
+   * @effects modal_cancel_sequence_order_is_apiCall_resolve_close, admin_basic_modal_cancel_flow_matches_basic_template
+   */
   it('cancel sequence 가 [apiCall, resolveIdentityChallenge, closeModal] 순서', () => {
     const seq = findCancelSequence();
     const inner = callbacksOf(seq, 'actions') as Action[];
@@ -145,6 +164,11 @@ describe('Admin 본인인증 모달 Extension Point 구조 (sirsoft-admin_basic)
     if (n.type === 'extension_point') slots.push(n);
   });
 
+  /**
+   * 외부 IDV 진입점은 provider 슬롯 하나뿐이고 text_code·link 슬롯은 없다.
+   * @scenario component=admin_identity_challenge_modal
+   * @effects admin_idv_modal_single_provider_slot
+   */
   it('외부 IDV 플러그인 진입점 (identity_provider_ui:provider) 단일 슬롯만 존재 — text_code/link 는 plain Div 로 이동', () => {
     // 외부 플러그인이 mode:replace 로 default 코어 UI 를 비워버리던 회귀(빈 모달) 차단.
     const providerSlots = slots.filter((s) => s.name === 'identity_provider_ui:provider');
@@ -153,6 +177,11 @@ describe('Admin 본인인증 모달 Extension Point 구조 (sirsoft-admin_basic)
     expect(slots.find((s) => s.name === 'identity_provider_ui:link')).toBeUndefined();
   });
 
+  /**
+   * 외부 provider 슬롯은 코어 mail·미지정 provider 일 때 마운트되지 않는다.
+   * @scenario component=admin_identity_challenge_modal
+   * @effects admin_idv_modal_provider_slot_hidden_for_core_mail
+   */
   it('외부 provider 슬롯은 코어 mail/미지정 케이스에서 마운트되지 않는다 (if 가드)', () => {
     const slot = slots.find((s) => s.name === 'identity_provider_ui:provider');
     expect(slot).toBeDefined();
@@ -161,6 +190,11 @@ describe('Admin 본인인증 모달 Extension Point 구조 (sirsoft-admin_basic)
     expect((slot as any).if).toContain("'g7:core.mail'");
   });
 
+  /**
+   * 코어 OTP 입력 영역은 코어 mail·미지정 + text_code 일 때 보인다.
+   * @scenario component=admin_identity_challenge_modal
+   * @effects admin_idv_modal_core_otp_shown_for_core_mail
+   */
   it('코어 OTP 입력 Div 는 코어 mail/미지정 + text_code 케이스에 if 가드로 노출된다', () => {
     const cores: Node[] = [];
     walk(identityModal as unknown as Node, (n) => {
@@ -176,6 +210,11 @@ describe('Admin 본인인증 모달 Extension Point 구조 (sirsoft-admin_basic)
     expect(cores.length).toBeGreaterThan(0);
   });
 
+  /**
+   * 재전송·확인 버튼 가드가 mail provider 도 허용한다.
+   * @scenario component=admin_identity_challenge_modal
+   * @effects admin_idv_modal_buttons_shown_for_core_mail
+   */
   it('재전송/확인 버튼 if 가드는 mail provider 인 경우에도 노출된다', () => {
     // sirsoft-basic 과 동일한 회귀: 정책 provider_id NULL 인 경우 enforce 시 default_provider
     // (g7:core.mail) 가 launcher payload 로 전달되는데, 모달 버튼이 !provider_id 만 가드하면
@@ -196,6 +235,11 @@ describe('Admin 본인인증 모달 Extension Point 구조 (sirsoft-admin_basic)
     }
   });
 
+  /**
+   * 확인 버튼 disabled 식이 maxAttempts > 0 가드를 둬 무제한(0)에서 막히지 않는다.
+   * @scenario component=admin_identity_challenge_modal
+   * @effects admin_idv_modal_unlimited_attempts_not_disabled
+   */
   it('maxAttempts=0(무제한) 케이스를 정합 처리한다 — disabled 식이 max > 0 가드를 둔다', () => {
     // backend 응답에 max_attempts=0 (무제한) 일 때 모달 확인 버튼이 disabled 되던 회귀 차단.
     // attempts >= max_attempts 비교 전에 max_attempts > 0 가드가 있어야 함.

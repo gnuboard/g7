@@ -37,10 +37,20 @@ function rel(file: string): string {
 }
 
 describe('상한 목록의 last_page=null 계약', () => {
+  /**
+   * 스캔할 레이아웃 모집단이 비어 있지 않은지 잰다 (아래 시험들의 전제).
+   *
+   * @effects datagrid_preserves_null_last_page
+   */
   it('레이아웃 파일을 실제로 수집해야 함 (스캔 대상이 0이면 이 테스트는 아무것도 증명하지 못한다)', () => {
     expect(layoutFiles.length).toBeGreaterThan(0);
   });
 
+  /**
+   * last_page 를 1 로 채워 null 을 지우는 표현식이 없는지 잰다.
+   *
+   * @effects datagrid_preserves_null_last_page
+   */
   it('last_page 를 1 로 채우는 표현식이 없어야 함', () => {
     // `last_page ?? 1` / `last_page || 1` — 계산 불가한 값을 사실처럼 채우는 형태
     const pattern = /last_page\s*(\?\?|\|\|)\s*1(?![0-9])/;
@@ -56,6 +66,11 @@ describe('상한 목록의 last_page=null 계약', () => {
     expect(offenders).toEqual([]);
   });
 
+  /**
+   * 페이저 표시 조건이 last_page 하나에만 기대지 않고 has_more_pages·current_page 를 함께 보는지 잰다.
+   *
+   * @effects datagrid_shows_pager_when_only_has_more_pages_is_known
+   */
   it('페이저 표시 조건이 last_page 하나에만 의존하지 않아야 함', () => {
     // `"if": "{{... last_page > 1}}"` 만으로 판정하면 null 일 때 페이저가 사라진다.
     // has_more_pages 또는 current_page 를 함께 보아야 한다.
@@ -73,6 +88,11 @@ describe('상한 목록의 last_page=null 계약', () => {
     expect(offenders).toEqual([]);
   });
 
+  /**
+   * totalPages 를 null 로 넘기는 Pagination 이 hasMorePages 를 함께 넘기는지 잰다.
+   *
+   * @effects datagrid_shows_pager_when_only_has_more_pages_is_known
+   */
   it('totalPages 를 null 로 넘기는 Pagination 은 hasMorePages 를 함께 넘겨야 함', () => {
     // totalPages 가 null 이면 컴포넌트는 총 페이지 수를 모르므로,
     // hasMorePages 없이는 "다음" 버튼을 열 근거가 없어 비활성화된다.

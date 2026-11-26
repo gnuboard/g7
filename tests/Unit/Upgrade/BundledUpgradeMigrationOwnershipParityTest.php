@@ -63,6 +63,8 @@ class BundledUpgradeMigrationOwnershipParityTest extends TestCase
      * 모든 `File::put(` 은 5줄 안에 `inheritOwnershipFromParent` 를 동반한다.
      *
      * @effects bundled_upgrade_migrations_inherit_ownership
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 번들_업그레이드_마이그레이션의_파일_쓰기는_전부_소유권을_상속한다(): void

@@ -1,0 +1,69 @@
+feature: GDPR 쿠키 동의 저장·조회 기본 경로
+
+description: |
+  쿠키 배너가 부르는 동의 저장 API(POST /api/plugins/sirsoft-gdpr/consent/cookie)와
+  상태 조회 API(GET .../consent/cookie/status), 그리고 그 뒤의 GdprConsentService 가
+  동의를 어떻게 남기고 읽는지 고정한다.
+
+  저장 규칙:
+    - 회원은 현재 상태(gdpr_user_consents)와 이력(gdpr_user_consent_histories)을 함께 남긴다.
+    - 비회원은 상태를 쓰지 않고 이력만 남기며, 서명된 gdpr_session 쿠키의 session_id 로 묶는다.
+    - 같은 정책 버전에서 같은 값을 다시 보내면 아무것도 바꾸지 않는다.
+    - 정책 버전이 오르면 같은 값을 다시 보내도 새 버전으로 다시 남긴다.
+
+  요청 검증:
+    - 필수 항목을 끄는 요청, 모르는 항목 키, 모르는 출처는 422 로 막는다.
+    - 위조된 Bearer 토큰은 401, 토큰이 없으면 비회원으로 처리한다.
+
+  거부(intent:'reject') 저장은 cookie-rejection.yaml, 정책 버전 발행은 policy-version.yaml 이 따로 잰다.
+
+axes:
+  layer: [controller, service]
+  subject: [member, guest]
+
+effects:
+  # 저장 API (컨트롤러)
+  - guest_consent_records_granted_and_revoked_history      # 비회원 저장 → 이력에 granted/revoked
+  - member_consent_creates_status_row                      # 회원 저장 → 상태 행 생성
+  - required_category_revoke_rejected_422                  # 필수 항목 끄기 요청은 422
+  - unknown_consent_key_rejected_422                       # 모르는 항목 키는 422
+  - unknown_source_rejected_422                            # 모르는 출처는 422
+  - guest_store_issues_signed_gdpr_session_cookie          # 신규 비회원 저장 → UUID session_id + 서명된 gdpr_session 쿠키
+  - tampered_gdpr_session_cookie_not_trusted               # 서명 없는 gdpr_session 값은 믿지 않는다
+  - guest_consent_found_by_session_id                      # 비회원 저장 뒤 session_id 로 현재 동의가 조회된다
+  - real_bearer_token_consent_persists_user_id             # 실제 Bearer 토큰 저장 → user_id 로 상태·이력
+  - forged_bearer_token_rejected_401                       # 위조 토큰은 401
+  - missing_token_falls_back_to_guest                      # 토큰 없으면 비회원으로 저장
+
+  # 상태 조회 API (컨트롤러)
+  - status_false_for_new_visitor                           # 처음 온 방문자는 has_consented=false
+  - status_exposes_is_member_flag                          # is_member 가 비회원 false, 회원 true
+  - status_true_after_member_consent                       # 회원 동의 뒤 has_consented=true
+  - status_false_after_policy_version_bump                 # 정책 버전이 오르면 has_consented=false
+  - real_bearer_token_status_reflects_member_consent       # 실제 토큰으로 조회해도 회원 동의가 보인다
+  - status_needs_renewal_false_for_new_guest               # 신규 비회원은 needs_renewal=false + 현재 버전
+  - status_needs_renewal_true_for_outdated_member_consent  # 옛 버전 동의 회원은 needs_renewal=true
+  - status_needs_renewal_false_after_re_accept             # 새 버전에서 같은 값 재동의 → needs_renewal=false
+
+  # 서비스
+  - service_update_creates_status_and_history_for_member
+  - service_update_records_history_only_for_guest
+  - service_update_noop_when_state_unchanged
+  - service_revoke_appends_history_and_flips_status
+  - service_re_grant_increments_consent_count
+  - service_withdraw_revokes_only_active_consents
+  - service_user_delete_purges_status_and_anonymizes_history
+  - service_active_consents_exclude_revoked
+  - service_current_cookie_consents_map_for_member
+  - service_current_cookie_consents_from_latest_guest_history
+  - service_current_cookie_consents_exclude_outdated_policy
+  - service_current_cookie_consents_empty_without_identifier
+  - service_update_renews_policy_version_when_value_unchanged
+  - service_update_noop_within_same_policy_version
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/Public/GdprCookieConsentControllerTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Services/GdprConsentServiceTest.php
+
+limitations:
+  - "비회원 상태 조회(status)는 EncryptCookies 미들웨어 때문에 PHPUnit 에서 raw 쿠키를 넘기기 어렵다. 그래서 비회원 경로는 서비스의 session_id 조회로 잰다."

@@ -33,12 +33,19 @@ class BoardMenuToggleTest extends ModuleTestCase
 
     /**
      * DatabaseTransactions 비활성화 (수동 정리 경로 보존).
+     *
+     * @return void 반환값 없음
      */
     public function beginDatabaseTransaction(): void
     {
         // 수동 정리 모드
     }
 
+    /**
+     * 각 테스트 전에 필요한 상태를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -63,6 +70,11 @@ class BoardMenuToggleTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 각 테스트 뒤에 바꾼 상태를 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $slugs = ['menu-on', 'menu-off', 'menu-update', 'menu-dup-a', 'menu-dup-b', 'menu-api', 'menu-form'];
@@ -103,6 +115,8 @@ class BoardMenuToggleTest extends ModuleTestCase
      *
      * @scenario mode=create, toggle=on
      * @effects create_with_toggle_on_registers_menu
+     *
+     * @return void 반환값 없음
      */
     public function test_create_with_toggle_on_registers_admin_menu(): void
     {
@@ -126,6 +140,8 @@ class BoardMenuToggleTest extends ModuleTestCase
      *
      * @scenario mode=create, toggle=off
      * @effects create_without_toggle_keeps_menu_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_create_without_toggle_does_not_register_menu(): void
     {
@@ -145,6 +161,8 @@ class BoardMenuToggleTest extends ModuleTestCase
      *
      * @scenario mode=update, toggle=on
      * @effects update_off_to_on_adds_menu, update_no_change_does_not_duplicate
+     *
+     * @return void 반환값 없음
      */
     public function test_update_toggle_on_adds_menu_without_duplicate(): void
     {
@@ -171,6 +189,8 @@ class BoardMenuToggleTest extends ModuleTestCase
      *
      * @scenario mode=update, toggle=off
      * @effects update_on_to_off_removes_menu
+     *
+     * @return void 반환값 없음
      */
     public function test_update_toggle_off_removes_menu(): void
     {
@@ -196,6 +216,8 @@ class BoardMenuToggleTest extends ModuleTestCase
      *
      * @scenario mode=create, toggle=on
      * @effects same_name_boards_both_register_without_block
+     *
+     * @return void 반환값 없음
      */
     public function test_same_name_boards_both_register_menu_without_block(): void
     {
@@ -223,6 +245,8 @@ class BoardMenuToggleTest extends ModuleTestCase
      *
      * @scenario mode=create, toggle=on
      * @effects menu_registered_under_board_management_parent, menu_name_has_board_suffix
+     *
+     * @return void 반환값 없음
      */
     public function test_registered_menu_is_child_of_board_management(): void
     {
@@ -259,6 +283,8 @@ class BoardMenuToggleTest extends ModuleTestCase
      *
      * @scenario mode=create, toggle=on
      * @effects create_with_toggle_on_registers_menu
+     *
+     * @return void 반환값 없음
      */
     public function test_create_api_with_add_to_menu_registers_menu(): void
     {
@@ -282,6 +308,8 @@ class BoardMenuToggleTest extends ModuleTestCase
      *
      * @scenario mode=create, toggle=off
      * @effects add_to_menu_non_boolean_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_create_api_rejects_non_boolean_add_to_menu(): void
     {
@@ -305,6 +333,8 @@ class BoardMenuToggleTest extends ModuleTestCase
      *
      * @scenario mode=update, toggle=on
      * @effects form_data_returns_current_menu_state_as_toggle_initial
+     *
+     * @return void 반환값 없음
      */
     public function test_form_data_returns_add_to_menu_true_when_registered(): void
     {

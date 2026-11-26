@@ -27,6 +27,11 @@ class SettingsLimitsMetaTest extends TestCase
 
     private string $token;
 
+    /**
+     * 설정 조회 권한을 가진 관리자와 인증 토큰을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -82,6 +87,10 @@ class SettingsLimitsMetaTest extends TestCase
 
     /**
      * 설정 조회 응답이 화면이 바인딩할 한계값을 함께 내려주는지 검증합니다.
+     *
+     * @effects settings_index_exposes_shared_limits_meta
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function index_response_includes_settings_limits_meta(): void
@@ -101,6 +110,10 @@ class SettingsLimitsMetaTest extends TestCase
 
     /**
      * 저장 규칙이 리터럴이 아니라 설정 한계값을 읽는지 검증합니다.
+     *
+     * @effects settings_save_rules_follow_shared_limits
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function save_rules_read_password_length_bounds_from_config(): void

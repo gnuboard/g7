@@ -1,0 +1,26 @@
+feature: GDPR 마이페이지 「내 동의 현황」 행의 상태 표시 필드
+
+description: |
+  GdprUserConsentResource 가 동의 행마다 status / status_label / status_at_formatted /
+  status_badge_label 을 계산한다. 화면은 status 로 색만 고르고 글자와 날짜는 서버 값을
+  그대로 그리므로, 상태마다 이 값이 맞아야 화면이 맞다.
+
+  규칙:
+    - 필수 항목은 required, 라벨은 「동의」(granted 키 공유), 동의 날짜를 보여 준다.
+    - 선택 항목 동의는 consented, 동의 날짜를 보여 준다.
+    - 거부는 rejected 이고 라벨·날짜는 null 이다(날짜는 동의한 항목만 보여 준다).
+    - 철회는 revoked 이고 철회 날짜와 「철회」 라벨을 보여 주며, 배지는 「미설정」이다.
+    - 한 번도 고르지 않은 선택 항목은 none 이고 라벨·날짜는 null, 배지는 「미설정」이다.
+
+axes:
+  status: [required, consented, rejected, revoked, none]
+
+effects:
+  - required_row_shows_granted_label_and_date
+  - consented_row_shows_consented_label_and_date
+  - rejected_row_hides_label_and_date
+  - revoked_row_shows_revoked_label_and_date
+  - untouched_row_hides_label_and_date
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Http/Resources/GdprUserConsentResourceTest.php

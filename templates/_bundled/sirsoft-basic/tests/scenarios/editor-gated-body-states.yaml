@@ -1,0 +1,21 @@
+feature: 레이아웃 편집기 — 게이트 뒤 본체를 그리는 페이지 상태
+
+description: |
+  편집기 캔버스는 정적 시뮬레이션이라 사용자가 토글·탭을 눌러 if/_local/_global 분기를 켤 수 없다.
+  그래서 토글·탭·route 게이트 뒤 본체는 페이지 상태(initialState 패치)로 켠 상태를 흉내 내야 캔버스에 그려진다.
+  각 게이트 상태가 ① 게이트가 읽는 바로 그 상태 경로를 패치하고 ② 본체가 소비하는 샘플 데이터가 빈 껍데기가
+  아닌지 잰다.
+
+# axis 의미:
+#   gate — product_tabs 상품 상세 리뷰/문의 탭, mypage_board_subtab 마이게시판 내 댓글 서브탭,
+#          search_subtab 통합검색 서브탭, summary_toggle 주문서·장바구니 금액 상세 토글
+axes:
+  gate: [product_tabs, mypage_board_subtab, search_subtab, summary_toggle]
+
+effects:
+  - gate_state_registered          # 게이트용 페이지 상태(그룹)가 등록되어 있다
+  - gate_state_patches_gate_path   # 상태가 게이트가 읽는 정확한 경로를 패치한다
+  - gate_body_sample_not_stub      # 게이트 뒤 본체가 소비하는 샘플이 stub 이 아니라 실제 shape 를 채운다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/stageEGateStates.test.ts

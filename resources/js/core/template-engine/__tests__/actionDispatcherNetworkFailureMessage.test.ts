@@ -14,6 +14,9 @@ import { resolveActionFailureMessage } from '../ActionDispatcher';
  * @since engine-v1.54.6
  */
 describe('resolveActionFailureMessage', () => {
+    /**
+     * @effects network_failure_message_localized
+     */
     it('네트워크 실패에는 다국어 키를 돌려준다', () => {
         const message = resolveActionFailureMessage(
             new TypeError('Failed to fetch'),
@@ -24,6 +27,9 @@ describe('resolveActionFailureMessage', () => {
         expect(message).toBe('$t:core.errors.network_request_failed');
     });
 
+    /**
+     * @effects network_failure_message_localized
+     */
     it('요청 취소도 네트워크 계열로 안내한다', () => {
         const abort = new Error('The user aborted a request.');
         abort.name = 'AbortError';
@@ -33,6 +39,9 @@ describe('resolveActionFailureMessage', () => {
         );
     });
 
+    /**
+     * @effects network_failure_message_localized
+     */
     it('axios 네트워크 오류도 네트워크 계열로 안내한다', () => {
         // axios 는 TypeError 가 아니라 AxiosError 로 reject 하며 종류는 code 에만 남는다.
         // TypeError 만 보면 로그인 화면에 영문 원문(Network Error)이 그대로 노출된다.
@@ -44,6 +53,9 @@ describe('resolveActionFailureMessage', () => {
         );
     });
 
+    /**
+     * @effects network_failure_message_localized
+     */
     it('요청 시간 초과도 네트워크 계열로 안내한다', () => {
         const timeout: any = new Error('timeout of 30000ms exceeded');
         timeout.code = 'ECONNABORTED';
@@ -53,18 +65,27 @@ describe('resolveActionFailureMessage', () => {
         );
     });
 
+    /**
+     * @effects server_message_kept
+     */
     it('서버가 메시지를 주면 그대로 쓴다', () => {
         expect(
             resolveActionFailureMessage(new Error('boom'), 'apiCall', '유효하지 않은 레이아웃 전략입니다.')
         ).toBe('유효하지 않은 레이아웃 전략입니다.');
     });
 
+    /**
+     * @effects action_failure_keeps_identifier_message
+     */
     it('서버 메시지도 네트워크 실패도 아니면 기존 식별 문구를 유지한다', () => {
         expect(resolveActionFailureMessage(new Error('boom'), 'setState', undefined)).toBe(
             'Failed to execute action: setState'
         );
     });
 
+    /**
+     * @effects action_error_own_message_kept
+     */
     it('ActionError 가 이미 들고 있던 고유 메시지는 덮어쓰지 않는다', () => {
         expect(
             resolveActionFailureMessage(
@@ -76,6 +97,9 @@ describe('resolveActionFailureMessage', () => {
         ).toBe('Unknown action handler: ecommerce.initPreferredCurrency');
     });
 
+    /**
+     * @effects network_failure_overrides_own_message
+     */
     it('네트워크 실패는 고유 메시지보다 우선한다 (내부 문구가 사용자에게 보이지 않도록)', () => {
         expect(
             resolveActionFailureMessage(

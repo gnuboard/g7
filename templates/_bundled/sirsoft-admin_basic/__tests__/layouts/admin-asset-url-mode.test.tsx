@@ -231,6 +231,11 @@ describe('자산 URL 이중 모드 — 레이아웃 렌더링 (§검증)', () =>
     });
 
     describe('환경설정 > 일반 — 자산 URL 방식 필드', () => {
+        /**
+         * 두 모드 모두에서 선택 컨트롤과 감지 버튼이 그려진다.
+         * @scenario surface=settings_general
+         * @effects asset_url_mode_field_renders_in_both_modes
+         */
         it.each(BOTH_MODES)('%s 모드에서 선택 컨트롤과 감지 버튼이 렌더된다', async (mode) => {
             setServerMode(mode);
 
@@ -248,6 +253,11 @@ describe('자산 URL 이중 모드 — 레이아웃 렌더링 (§검증)', () =>
             t.cleanup();
         });
 
+        /**
+         * 두 모드의 렌더 결과가 같다 — 모드는 URL 생성에만 관여한다.
+         * @scenario surface=settings_general
+         * @effects asset_url_mode_field_renders_in_both_modes
+         */
         it('두 모드의 렌더 결과가 완전히 동일하다 (모드는 URL 생성에만 관여)', async () => {
             const html: string[] = [];
 
@@ -268,6 +278,11 @@ describe('자산 URL 이중 모드 — 레이아웃 렌더링 (§검증)', () =>
             ).toBe(html[1]);
         });
 
+        /**
+         * 감지 상태가 없으면 결과 안내가 그려지지 않는다.
+         * @scenario surface=settings_general
+         * @effects asset_url_mode_detect_result_shown_inline
+         */
         it('감지 상태가 없으면 결과 안내가 렌더되지 않는다 (초기 상태는 조용하다)', async () => {
             setServerMode('extension');
 
@@ -284,6 +299,11 @@ describe('자산 URL 이중 모드 — 레이아웃 렌더링 (§검증)', () =>
             t.cleanup();
         });
 
+        /**
+         * 자산 URL 방식 항목이 지역화 카드가 아니라 전용 카드에 있다.
+         * @scenario surface=settings_general
+         * @effects asset_url_mode_field_in_dedicated_card
+         */
         it('에셋 서빙 방식 항목이 지역화가 아니라 전용 카드에 있다 (배치)', () => {
             const fs = require('fs');
             const path = require('path');
@@ -326,6 +346,11 @@ describe('자산 URL 이중 모드 — 레이아웃 렌더링 (§검증)', () =>
         // 로컬상태 provider 로 평가된다 — createLayoutTest 는 이를 시드하지 못하므로
         // (dataContext._local 은 value 바인딩만 커버) 렌더 단언 대신 실제 레이아웃 JSON 의
         // 배선을 구조로 검증한다. 상태 기록은 핸들러 단위테스트가, 실제 렌더는 E2E 가 커버.
+        /**
+         * 감지 결과가 상태별 인라인 안내로 배선되고 감지 버튼에 btn 베이스 클래스가 있다.
+         * @scenario surface=settings_general
+         * @effects asset_url_mode_detect_result_shown_inline
+         */
         it('감지 결과가 상태별 인라인 안내로 배선돼 있다 (토스트 아님) + 감지 버튼에 btn 베이스 클래스', () => {
             const fs = require('fs');
             const path = require('path');
@@ -401,6 +426,11 @@ describe('자산 URL 이중 모드 — 레이아웃 렌더링 (§검증)', () =>
     });
 
     describe('대시보드 — 자산 URL 방식 드리프트 안내', () => {
+        /**
+         * 드리프트가 없으면 대시보드 안내가 그려지지 않는다.
+         * @scenario surface=dashboard
+         * @effects asset_url_mode_dashboard_drift_notice
+         */
         it.each(BOTH_MODES)('%s 모드에서 드리프트가 없으면 안내가 렌더되지 않는다', async (mode) => {
             setServerMode(mode);
 
@@ -415,6 +445,11 @@ describe('자산 URL 이중 모드 — 레이아웃 렌더링 (§검증)', () =>
             t.cleanup();
         });
 
+        /**
+         * 드리프트가 감지되면 안내와 이동 버튼이 그려진다.
+         * @scenario surface=dashboard
+         * @effects asset_url_mode_dashboard_drift_notice
+         */
         it.each(BOTH_MODES)('%s 모드에서 드리프트가 감지되면 안내와 이동 버튼이 렌더된다', async (mode) => {
             setServerMode(mode);
 

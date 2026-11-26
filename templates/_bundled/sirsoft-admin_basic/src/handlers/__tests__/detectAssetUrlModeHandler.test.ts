@@ -66,24 +66,44 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
     };
 
     describe('정상 판정', () => {
+        /**
+         * 두 형태가 모두 성공하면 extension 이다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_probe_classifies_modes
+         */
         it('둘 다 성공하면 extension', async () => {
             respond(mockResponse({}), mockResponse({}));
 
             await expect(detectAssetUrlMode()).resolves.toBe('extension');
         });
 
+        /**
+         * 확장자 형태만 실패하면 extensionless 다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_probe_classifies_modes
+         */
         it('확장자 형태만 실패하면 extensionless (정적 블록 가로채기 확정)', async () => {
             respond(mockResponse({ ok: false }), mockResponse({}));
 
             await expect(detectAssetUrlMode()).resolves.toBe('extensionless');
         });
 
+        /**
+         * 둘 다 실패하면 unavailable 이다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_probe_classifies_modes
+         */
         it('둘 다 실패하면 unavailable (모드 문제 아님 — PHP/라우팅 장애)', async () => {
             respond(mockResponse({ ok: false }), mockResponse({ ok: false }));
 
             await expect(detectAssetUrlMode()).resolves.toBe('unavailable');
         });
 
+        /**
+         * 확장자 없는 형태만 실패해도 unavailable 이다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_probe_classifies_modes
+         */
         it('확장자 없는 형태만 실패해도 unavailable (전환해도 소용없는 상태)', async () => {
             respond(mockResponse({}), mockResponse({ ok: false }));
 
@@ -94,6 +114,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
     describe('L6 — 상태코드만으로 판정하지 않는다', () => {
         // 계획서 §12 L6 이 명시한 시나리오: "200-but-wrong-body 환경에서
         // 재감지가 영원히 같은 오답" 을 내면 안 된다.
+        /**
+         * 200 + 에러 HTML 을 성공으로 오판하지 않는다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_probe_checks_body_not_only_status
+         */
         it('200 + 에러 HTML 을 성공으로 오판하지 않는다', async () => {
             const errorPage = mockResponse({
                 ok: true,
@@ -118,6 +143,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
         // `!res.ok` 에서 조기 반환되지만, 200+본문오류는 Content-Type·토큰 검사를
         // 통과해야 걸러진다. 두 검사가 사라지면 이 케이스만 조용히 extension 으로
         // 오판되고, 관리자는 재감지를 몇 번 눌러도 같은 오답을 받는다.
+        /**
+         * 둘 다 200 + 에러 HTML 이면 판정 불가로 분기한다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_probe_checks_body_not_only_status
+         */
         it('둘 다 200 + 에러 HTML 이면 판정 불가로 분기한다 (catch-all 서버)', async () => {
             const catchAllPage = () =>
                 mockResponse({
@@ -134,6 +164,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             ).resolves.toBe('unavailable');
         });
 
+        /**
+         * Content-Type 이 스크립트가 아니면 실패로 본다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_probe_checks_body_not_only_status
+         */
         it('Content-Type 이 스크립트가 아니면 토큰이 있어도 실패로 본다', async () => {
             // 토큰을 그대로 담았지만 text/html 로 응답하는 catch-all 페이지
             const htmlWithToken = mockResponse({
@@ -150,6 +185,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             ).resolves.toBe('extensionless');
         });
 
+        /**
+         * 매직 토큰이 없으면 실패로 본다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_probe_checks_body_not_only_status
+         */
         it('매직 토큰이 없으면 Content-Type 이 맞아도 실패로 본다', async () => {
             // JS 로 응답하지만 우리 프로브가 아닌 다른 스크립트 (CDN 폴백 등)
             const otherScript = mockResponse({
@@ -166,6 +206,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             ).resolves.toBe('extensionless');
         });
 
+        /**
+         * application/javascript 외 스크립트 MIME 도 허용한다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_probe_checks_body_not_only_status
+         */
         it('application/javascript 외 스크립트 MIME 도 허용한다', async () => {
             // 일부 서버는 text/javascript / application/ecmascript 로 응답한다
             for (const contentType of ['text/javascript', 'application/ecmascript']) {
@@ -180,6 +225,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
     });
 
     describe('네트워크 예외', () => {
+        /**
+         * fetch 가 throw 해도 판정이 죽지 않는다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_probe_survives_network_errors
+         */
         it('fetch 가 throw 해도 판정이 죽지 않는다', async () => {
             fetchSpy.mockRejectedValue(new TypeError('Failed to fetch'));
 
@@ -213,6 +263,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             delete (window as any).G7Config;
         });
 
+        /**
+         * 감지 결과가 저장값과 같으면 알리지 않는다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_drift_compares_against_saved_mode
+         */
         it('감지 결과가 저장값과 같으면 알리지 않는다', async () => {
             setConfig('extension');
             respond(mockResponse({}), mockResponse({}));
@@ -222,6 +277,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             expect(setGlobal, '드리프트가 없는데 대시보드에 경고를 띄웠다').not.toHaveBeenCalled();
         });
 
+        /**
+         * 감지 결과가 저장값과 다르면 양쪽 값을 함께 알린다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_drift_compares_against_saved_mode
+         */
         it('감지 결과가 저장값과 다르면 양쪽 값을 함께 알린다', async () => {
             setConfig('extension');
             respond(mockResponse({ ok: false }), mockResponse({}));
@@ -233,6 +293,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             });
         });
 
+        /**
+         * 판정 불가면 알리지 않는다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_drift_compares_against_saved_mode
+         */
         it('판정 불가면 알리지 않는다 (일시 장애를 경고로 만들지 않는다)', async () => {
             setConfig('extension');
             respond(mockResponse({ ok: false }), mockResponse({ ok: false }));
@@ -242,6 +307,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             expect(setGlobal, '네트워크 장애를 설정 불일치로 오인해 경고했다').not.toHaveBeenCalled();
         });
 
+        /**
+         * 저장값이 없으면 기본값 extension 을 기준으로 대조한다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_drift_compares_against_saved_mode
+         */
         it('저장값이 없으면 기본값 extension 을 기준으로 대조한다', async () => {
             setConfig(undefined);
             respond(mockResponse({ ok: false }), mockResponse({}));
@@ -256,6 +326,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
         // 이 케이스가 이 기능의 존재 이유다. 자가 복구가 이미 런타임 모드를 바꿔 놓으면
         // 화면은 멀쩡해 보이지만 저장값은 여전히 틀려 있다. 봇은 JavaScript 를 실행하지
         // 않아 자가 복구가 닿지 않으므로, 저장값을 고치지 않으면 SEO 는 계속 깨진다.
+        /**
+         * 런타임 모드가 바뀌었어도 저장값 기준으로 드리프트를 잡는다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_drift_compares_against_saved_mode
+         */
         it('자가 복구로 런타임 모드가 이미 바뀌었어도 저장값 기준으로 드리프트를 잡는다', async () => {
             setConfig('extension', 'extensionless');
             respond(mockResponse({ ok: false }), mockResponse({}));
@@ -270,6 +345,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             });
         });
 
+        /**
+         * 프로브가 throw 해도 대시보드 대조가 죽지 않는다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_probe_survives_network_errors
+         */
         it('프로브가 throw 해도 대시보드를 죽이지 않는다', async () => {
             setConfig('extension');
             fetchSpy.mockRejectedValue(new TypeError('Failed to fetch'));
@@ -280,6 +360,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
     });
 
     describe('프로브 요청 형태', () => {
+        /**
+         * 두 경로를 쌍으로 던지고 캐시를 쓰지 않는다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_probe_sends_uncached_pair
+         */
         it('두 경로를 쌍으로 던지고 캐시를 쓰지 않는다', async () => {
             respond(mockResponse({}), mockResponse({}));
 
@@ -309,6 +394,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             delete (window as any).G7Core;
         });
 
+        /**
+         * 감지 시작 시 detecting 상태를 먼저 기록한다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_detect_handler_writes_form_state
+         */
         it('감지 시작 시 detecting 상태를 먼저 기록한다', async () => {
             respond(mockResponse({}), mockResponse({}));
 
@@ -317,6 +407,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             expect(setState).toHaveBeenCalledWith({ asset_url_mode_detect_status: 'detecting' });
         });
 
+        /**
+         * extension 판정 시 폼 값과 상태를 함께 기록한다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_detect_handler_writes_form_state
+         */
         it('extension 판정 시 폼 값과 상태를 함께 기록한다', async () => {
             respond(mockResponse({}), mockResponse({}));
 
@@ -332,6 +427,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             });
         });
 
+        /**
+         * extensionless 판정도 폼 값과 상태를 함께 기록한다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_detect_handler_writes_form_state
+         */
         it('extensionless 판정도 폼 값과 상태를 함께 기록한다', async () => {
             respond(mockResponse({ ok: false }), mockResponse({}));
 
@@ -343,6 +443,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             });
         });
 
+        /**
+         * 판정 불가면 상태만 unavailable 로 두고 폼 값은 건드리지 않는다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_detect_handler_writes_form_state
+         */
         it('판정 불가면 상태만 unavailable 로 두고 폼 값은 건드리지 않는다', async () => {
             respond(mockResponse({ ok: false }), mockResponse({ ok: false }));
 
@@ -355,6 +460,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             expect(valueWrites, '판정 불가인데 폼 값을 덮어썼다').toHaveLength(0);
         });
 
+        /**
+         * 결과를 토스트로 띄우지 않는다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_mode_detect_result_shown_inline
+         */
         it('결과를 토스트로 띄우지 않는다 (인라인 안내로 대체)', async () => {
             respond(mockResponse({}), mockResponse({}));
 
@@ -364,6 +474,11 @@ describe('detectAssetUrlMode — 프로브 판정 (§12 L6)', () => {
             expect(toastCalls, '감지 결과가 여전히 토스트로 발화된다').toHaveLength(0);
         });
 
+        /**
+         * 프로브가 throw 해도 unavailable 상태로 수렴한다.
+         * @scenario surface=probe_handler
+         * @effects asset_url_detect_handler_writes_form_state
+         */
         it('프로브가 throw 해도 unavailable 상태로 수렴한다', async () => {
             fetchSpy.mockRejectedValue(new Error('network down'));
 

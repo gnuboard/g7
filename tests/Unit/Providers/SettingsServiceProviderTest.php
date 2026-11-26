@@ -17,6 +17,10 @@ class SettingsServiceProviderTest extends TestCase
 {
     /**
      * app.timezone이 항상 UTC인지 테스트합니다.
+     *
+     * @effects app_timezone_stays_utc
+     *
+     * @return void 반환값 없음
      */
     public function test_app_timezone_remains_utc_after_settings_loaded(): void
     {
@@ -25,6 +29,10 @@ class SettingsServiceProviderTest extends TestCase
 
     /**
      * PHP 기본 타임존이 UTC인지 테스트합니다.
+     *
+     * @effects php_default_timezone_stays_utc
+     *
+     * @return void 반환값 없음
      */
     public function test_php_default_timezone_remains_utc(): void
     {
@@ -33,6 +41,10 @@ class SettingsServiceProviderTest extends TestCase
 
     /**
      * 환경설정 timezone이 default_user_timezone에 반영되는지 테스트합니다.
+     *
+     * @effects settings_timezone_applies_to_default_user_timezone
+     *
+     * @return void 반환값 없음
      */
     public function test_settings_timezone_applied_to_default_user_timezone(): void
     {
@@ -46,6 +58,10 @@ class SettingsServiceProviderTest extends TestCase
 
     /**
      * Carbon::now()가 UTC를 반환하는지 테스트합니다.
+     *
+     * @effects carbon_now_stays_utc
+     *
+     * @return void 반환값 없음
      */
     public function test_carbon_now_returns_utc(): void
     {
@@ -59,6 +75,10 @@ class SettingsServiceProviderTest extends TestCase
      *
      * 목록의 소유자는 ExtensionSettingsMirror 다 — Provider 에 사본을 두고 그 사본을
      * 단언하면, 미러의 목록에서 카테고리가 빠져도 이 테스트가 초록으로 남는다.
+     *
+     * @effects seo_category_is_core_category
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_category_included_in_core_categories(): void
     {
@@ -74,6 +94,10 @@ class SettingsServiceProviderTest extends TestCase
      *
      * 이 단언이 없으면 위/아래의 상수 포함 검사는 "상수에 문자열이 있다" 만 증명한다.
      * 상수와 채움 동작이 실제로 이어져 있어야 그 검사에 회귀 차단 효력이 생긴다.
+     *
+     * @effects core_categories_constant_matches_mirror_fill
+     *
+     * @return void 반환값 없음
      */
     public function test_core_categories_constant_is_what_the_mirror_fills(): void
     {
@@ -102,6 +126,10 @@ class SettingsServiceProviderTest extends TestCase
 
     /**
      * SEO 설정이 g7_core_settings() 헬퍼로 접근 가능한지 테스트합니다.
+     *
+     * @effects seo_settings_readable_via_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_settings_accessible_via_helper(): void
     {
@@ -117,6 +145,10 @@ class SettingsServiceProviderTest extends TestCase
      *
      * 회귀 차단: identity 가 CORE_CATEGORIES 에서 누락되면 admin UI 의
      * 본인인증 환경설정(기본 프로바이더 / 목적별 / TTL / 최대 시도 횟수) 4개 항목이 모두 무시됨.
+     *
+     * @effects identity_category_is_core_category
+     *
+     * @return void 반환값 없음
      */
     public function test_identity_category_included_in_core_categories(): void
     {
@@ -133,6 +165,10 @@ class SettingsServiceProviderTest extends TestCase
      * 회귀 차단: IdentityVerificationManager / MailIdentityProvider /
      * InicisIdentityProvider 등이 `config('settings.identity.*')` 경로로 직접 read 한다.
      * 이 경로 hydration 이 누락되면 admin UI 저장값이 모두 무시되고 코드 fallback 만 사용된다.
+     *
+     * @effects identity_settings_hydrate_dot_path
+     *
+     * @return void 반환값 없음
      */
     public function test_settings_identity_dot_path_hydrated(): void
     {

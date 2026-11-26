@@ -61,6 +61,8 @@ class AdminNotificationListTest extends TestCase
      * @param  User  $user  수신자
      * @param  int  $count  건수
      * @param  bool  $read  읽음 여부
+     *
+     * @return void 반환값 없음
      */
     private function seedNotifications(User $user, int $count, bool $read = false): void
     {
@@ -76,6 +78,12 @@ class AdminNotificationListTest extends TestCase
 
     /**
      * 목록이 200 으로 응답하는지 확인 (관계 입력 회귀 차단)
+     *
+     * @scenario case=inbox_relation
+     *
+     * @effects admin_notification_list_paginates_relation_without_error
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_notification_list_returns_ok(): void
     {
@@ -91,6 +99,12 @@ class AdminNotificationListTest extends TestCase
 
     /**
      * 읽음 필터가 적용되는지 확인
+     *
+     * @scenario case=inbox_filter
+     *
+     * @effects admin_notification_unread_filter_applied
+     *
+     * @return void 반환값 없음
      */
     public function test_unread_filter_is_applied(): void
     {
@@ -107,6 +121,12 @@ class AdminNotificationListTest extends TestCase
 
     /**
      * 다른 사람의 알림이 섞이지 않는지 확인 (관계의 소속 조건 보존)
+     *
+     * @scenario case=inbox_relation
+     *
+     * @effects admin_notification_list_excludes_other_users
+     *
+     * @return void 반환값 없음
      */
     public function test_other_users_notifications_are_not_listed(): void
     {
@@ -128,6 +148,12 @@ class AdminNotificationListTest extends TestCase
      *
      * 회귀를 고치면서 표준 집계로 되돌리면 이 필드가 사라진다. 오류가 없어졌다는 것만으로는
      * 개선이 유지됐다고 말할 수 없다.
+     *
+     * @scenario case=bounded_meta
+     *
+     * @effects admin_notification_lists_carry_total_accuracy_meta
+     *
+     * @return void 반환값 없음
      */
     public function test_response_carries_total_accuracy_meta(): void
     {

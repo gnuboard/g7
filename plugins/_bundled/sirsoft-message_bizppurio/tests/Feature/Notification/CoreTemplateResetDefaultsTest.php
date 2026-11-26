@@ -26,13 +26,21 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  */
 class CoreTemplateResetDefaultsTest extends PluginTestCase
 {
-    /** 리스너를 실제 훅 파이프라인에 등록합니다 (getSubscribedHooks 기반). */
+    /**
+     * 리스너를 실제 훅 파이프라인에 등록합니다 (getSubscribedHooks 기반).
+     *
+     * @return void 반환값 없음
+     */
     private function registerListener(): void
     {
         HookListenerRegistrar::register(SeedChannelTemplatesListener::class, 'plugin:sirsoft-message_bizppurio');
     }
 
-    /** config/core.php welcome 정의의 database 채널 본문(ko) — 시딩·복원이 공유하는 출처. */
+    /**
+     * config/core.php welcome 정의의 database 채널 본문(ko) — 시딩·복원이 공유하는 출처.
+     *
+     * @return string welcome 정의의 database 채널 한국어 본문
+     */
     private function welcomeDatabaseBodyKo(): string
     {
         foreach (config('core.notification_definitions.welcome.templates', []) as $template) {
@@ -44,7 +52,11 @@ class CoreTemplateResetDefaultsTest extends PluginTestCase
         $this->fail('config/core.php welcome 정의에 database 채널 template 이 없다.');
     }
 
-    /** welcome 정의 + 운영자가 손본(is_default=false) alimtalk 채널 행. */
+    /**
+     * welcome 정의 + 운영자가 손본(is_default=false) alimtalk 채널 행.
+     *
+     * @return NotificationTemplate 운영자가 손본 alimtalk 채널 행
+     */
     private function modifiedAlimtalkTemplate(): NotificationTemplate
     {
         $definition = NotificationDefinition::create([
@@ -70,7 +82,11 @@ class CoreTemplateResetDefaultsTest extends PluginTestCase
         ]);
     }
 
-    /** core.settings.update 권한을 가진 관리자의 인증 헤더. */
+    /**
+     * core.settings.update 권한을 가진 관리자의 인증 헤더.
+     *
+     * @return array<string, string> 관리자 토큰을 실은 요청 헤더
+     */
     private function adminHeaders(): array
     {
         $user = User::factory()->create();
@@ -92,7 +108,11 @@ class CoreTemplateResetDefaultsTest extends PluginTestCase
     }
 
     /**
+     * 리스너를 실제 경로로 등록하면 코어 기본값 조회가 시드와 같은 alimtalk 수신자·본문을 돌려준다.
+     *
      * @effects core_reset_restores_seeded_channel_template_defaults
+     *
+     * @return void 반환값 없음
      */
     public function test_리스너_등록_후_코어_기본값_조회가_시드와_같은_alimtalk_기본값을_돌려준다(): void
     {
@@ -106,7 +126,11 @@ class CoreTemplateResetDefaultsTest extends PluginTestCase
     }
 
     /**
+     * 코어 [기본값 복원] 엔드포인트가 운영자가 손본 alimtalk 행을 시드 기본값으로 되돌린다.
+     *
      * @effects core_reset_restores_seeded_channel_template_defaults
+     *
+     * @return void 반환값 없음
      */
     public function test_기본값_복원_엔드포인트가_시드된_alimtalk_행을_복원한다(): void
     {

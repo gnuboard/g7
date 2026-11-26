@@ -1,0 +1,23 @@
+feature: 환경설정 탭별 데이터소스 격리 — 정책·언어팩 scope 필터가 서로 새지 않는다
+
+description: |
+  환경설정 화면에 정책(policies)·언어팩(language_packs) 데이터소스가 함께 있고 둘 다 query.scope 를
+  읽었다. scope 값 도메인이 달라(정책=route/hook/custom, 언어팩=core/module/plugin/template) 한 탭의
+  필터가 반대쪽 데이터소스로 새어 양방향으로 422 토스트가 떴다. 각 데이터소스에 활성 탭 `if` 를 달아
+  그 탭의 데이터소스만 요청한다.
+
+  잰다: 주소로 각 탭에 들어가면 반대쪽 API 요청·422·오류 토스트가 없고 자기 필터가 요청에 실린다.
+  탭을 클릭으로 바꿔도 새 탭의 데이터소스가 요청된다.
+
+axes:
+  tab: [identity, language_packs]
+  entry: [url_direct, tab_click]
+
+effects:
+  - other_tab_datasource_not_requested
+  - no_scope_422_or_error_toast
+  - active_tab_scope_filter_applied
+  - tab_click_switch_fetches_new_tab_datasource
+
+test_files:
+  - tests/Playwright/specs/smoke/identity-policy-scope-no-language-pack-leak.spec.ts

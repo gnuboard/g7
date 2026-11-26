@@ -16,8 +16,8 @@
  * 컬럼(`hash`/`is_thumbnail`/`sort_order`)으로 조립하므로, 그 컬럼 집합을 더 줄이면 대표
  * 미지정 상품의 폴백이 깨진다.
  *
- * 마킹은 아래 describe 블록마다 따로 붙인다 — 한 docblock 에서는 @scenario 가 첫 줄만 읽혀,
- * 여기에 두 화면을 나열하면 뒤엣것이 조용히 누락된다.
+ * 마킹은 각 시험 바로 앞 주석에 따로 붙인다 — describe·파일 머리말의 마킹은 어느 시험이
+ * 그 조합을 재는지 가리키지 않아 커버로 세지 않는다.
  */
 
 import fs from 'fs';
@@ -50,10 +50,11 @@ function readRaw(filePath: string): string {
 }
 
 /**
- * @scenario surface=cart,observation=consumer_screen
- * @effects cart_and_wishlist_consume_thumbnail_only
+ * 카트 화면의 이미지 소비 경로 (마킹은 각 시험 바로 앞 주석이 단다).
  */
 describe('카트 — 상품 이미지 소비 (공개 #76)', () => {
+    // @scenario surface=cart, observation=consumer_screen
+    // @effects cart_and_wishlist_consume_thumbnail_only
     it('썸네일 1장만 그린다 (이미지 배열을 순회하지 않는다)', () => {
         const raw = readRaw(CART_ITEM);
 
@@ -67,10 +68,11 @@ describe('카트 — 상품 이미지 소비 (공개 #76)', () => {
 });
 
 /**
- * @scenario surface=wishlist,observation=consumer_screen
- * @effects cart_and_wishlist_consume_thumbnail_only
+ * 찜목록 화면의 이미지 소비 경로 (마킹은 각 시험 바로 앞 주석이 단다).
  */
 describe('찜목록 — 상품 이미지 소비 (공개 #76)', () => {
+    // @scenario surface=wishlist, observation=consumer_screen
+    // @effects cart_and_wishlist_consume_thumbnail_only
     it('상품 카드에 상품 객체를 넘기고, 배열을 직접 읽지 않는다', () => {
         const raw = readRaw(WISHLIST_LIST);
 
@@ -78,6 +80,8 @@ describe('찜목록 — 상품 이미지 소비 (공개 #76)', () => {
         expect(raw).not.toContain('item.product.images');
     });
 
+    // @scenario surface=wishlist, observation=consumer_screen
+    // @effects cart_and_wishlist_consume_thumbnail_only
     it('상품 카드가 썸네일 필드로 이미지를 그린다', () => {
         const raw = readRaw(PRODUCT_CARD);
 
@@ -85,6 +89,8 @@ describe('찜목록 — 상품 이미지 소비 (공개 #76)', () => {
         expect(raw).toContain('product.thumbnail_url');
     });
 
+    // @scenario surface=wishlist, observation=consumer_screen
+    // @effects cart_and_wishlist_consume_thumbnail_only
     it('상품 카드가 이미지 배열을 쓰지 않는다', () => {
         const raw = readRaw(PRODUCT_CARD);
 

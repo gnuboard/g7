@@ -32,6 +32,11 @@ class AdminOrderClaimAvailabilityTest extends ModuleTestCase
 {
     private User $adminUser;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +50,7 @@ class AdminOrderClaimAvailabilityTest extends ModuleTestCase
      * @scenario claim_state=pending_refund
      *
      * @effects admin_order_options_expose_claim_availability
+     * @return void 반환값 없음
      */
     public function test_admin_order_detail_exposes_available_quantity(): void
     {
@@ -105,6 +111,7 @@ class AdminOrderClaimAvailabilityTest extends ModuleTestCase
      * @scenario claim_state=none
      *
      * @effects admin_order_options_expose_claim_availability
+     * @return void 반환값 없음
      */
     public function test_available_quantity_equals_quantity_without_claims(): void
     {

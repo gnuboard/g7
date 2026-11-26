@@ -51,6 +51,7 @@ function findAllByText(node: any, pattern: string): any[] {
 }
 
 describe('게시판 복사 모달 - 안내 박스 (JSON 구조 검증)', () => {
+    // @effects copy_modal_info_box_has_border_and_dark_pair
     it('안내 박스 컨테이너가 테두리+배경+다크모드 쌍을 갖는다', () => {
         const box = findById(indexLayout, 'copy_info_box');
         expect(box).not.toBeNull();
@@ -64,6 +65,7 @@ describe('게시판 복사 모달 - 안내 박스 (JSON 구조 검증)', () => {
         expect(cls).toContain('dark:border-gray-700');
     });
 
+    // @effects copy_modal_info_lists_three_items
     it('안내 박스 안에 불릿 3항목(복사됨/제외/슬러그)이 모두 존재한다', () => {
         const box = findById(indexLayout, 'copy_info_box');
         expect(box).not.toBeNull();
@@ -80,6 +82,7 @@ describe('게시판 복사 모달 - 안내 박스 (JSON 구조 검증)', () => {
         expect(box.children?.length).toBe(3);
     });
 
+    // @effects copy_modal_info_items_use_split_translation_keys
     it('각 불릿이 올바른 i18n 키 텍스트를 참조한다', () => {
         const box = findById(indexLayout, 'copy_info_box');
 
@@ -88,6 +91,7 @@ describe('게시판 복사 모달 - 안내 박스 (JSON 구조 검증)', () => {
         expect(findAllByText(box, 'modals.copy.info_slug').length).toBe(1);
     });
 
+    // @effects copy_modal_drops_legacy_single_info_key
     it('이전 단일 안내 키(info)는 더 이상 사용되지 않는다 (회귀 가드)', () => {
         const modal = findById(indexLayout, 'copy_confirm_modal');
         expect(modal).not.toBeNull();

@@ -19,7 +19,10 @@ description: |
 axes:
   case: [manager_reply_to_published_parent]
 
-effects: []
+effects:
+  # Vitest admin-reply-parent-author — 레이아웃 JSON 바인딩 계약(조합 축이 아니라 효과로만 매핑)
+  - reply_form_layout_binds_parent_author_name   # 원본 게시글 카드가 parent_post.author.name 을 읽는다
+  - reply_form_layout_avoids_missing_user_key    # 백엔드에 없는 parent_post.user.name 을 읽지 않는다
 
 # 아래 효과는 아직 실행되는 시험이 재지 않는다 — test_files 의 spec 이 test.describe.skip 상태라 건너뛴 시험의 @effects 는
 # 커버가 아니다. spec 의 skip 을 풀면 effects 로 되돌린다.
@@ -29,3 +32,4 @@ pending_effects:
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-reply-parent-author.spec.ts
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-reply-parent-author.test.tsx

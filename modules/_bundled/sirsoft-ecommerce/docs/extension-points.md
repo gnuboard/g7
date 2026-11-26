@@ -381,7 +381,7 @@
 | `sirsoft-ecommerce.order.filter_create_data` | filter | — | `src/Services/OrderProcessingService.php:749` |
 | `sirsoft-ecommerce.order.filter_export_params` | filter | — | `src/Services/OrderService.php:1137` |
 | `sirsoft-ecommerce.order.filter_list_params` | filter | — | `src/Services/OrderService.php:166` |
-| `sirsoft-ecommerce.order.filter_payment_method_display_label` | filter | 주문 결제수단 표시 라벨 (관리자 주문 목록·주문 상세·마이페이지 주문 상세) | `src/Models/OrderPayment.php:260` |
+| `sirsoft-ecommerce.order.filter_payment_method_display_label` | filter | 주문 결제수단 표시 라벨 (관리자 주문 목록·주문 상세·마이페이지 주문 상세) | `src/Models/OrderPayment.php:259` |
 | `sirsoft-ecommerce.order.filter_update_data` | filter | — | `src/Services/OrderService.php:293` |
 | `sirsoft-ecommerce.order.list_validation_messages` | filter | — | `src/Http/Requests/Admin/OrderListRequest.php:227` |
 | `sirsoft-ecommerce.order.list_validation_rules` | filter | — | `src/Http/Requests/Admin/OrderListRequest.php:135` |
@@ -403,7 +403,7 @@
 | `sirsoft-ecommerce.payment.get_client_config` | filter | — | `src/Http/Controllers/Shop/PaymentConfigController.php:26` |
 | `sirsoft-ecommerce.payment.refund` | filter | — | `src/Services/RefundExecutionService.php:678` |
 | `sirsoft-ecommerce.payment.registered_pg_providers` | filter | — | `src/Services/Bridge/EcommercePaymentGatewayBridge.php:1224` 외 2곳 |
-| `sirsoft-ecommerce.payment.supports_partial_cancel` | filter | — | `src/Services/PaymentMethodResolver.php:73` |
+| `sirsoft-ecommerce.payment.supports_partial_cancel` | filter | — | `src/Services/PaymentMethodResolver.php:72` |
 | `sirsoft-ecommerce.preset.after_create` | action | — | `src/Services/SearchPresetService.php:60` |
 | `sirsoft-ecommerce.preset.after_delete` | action | — | `src/Services/SearchPresetService.php:118` |
 | `sirsoft-ecommerce.preset.after_update` | action | — | `src/Services/SearchPresetService.php:93` |

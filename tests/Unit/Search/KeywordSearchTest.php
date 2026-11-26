@@ -29,13 +29,16 @@ use Tests\TestCase;
  *
  * @scenario case=keyword_predicate_contract
  *
- * @effects keyword_predicate_delegates_to_active_engine,
- *          keyword_predicate_falls_back_when_engine_lacks_contract,
- *          like_operator_is_declarative_not_hardcoded,
- *          like_fallback_escapes_wildcards
+ * 효과 요약(마커 아님 — 평문): 활성 엔진 위임, 계약 미구현 엔진의 부분일치 폴백, 선언형 부분일치
+ * 연산자, 와일드카드 escape. 효과 마킹은 각 테스트 메서드에 있다.
  */
 class KeywordSearchTest extends TestCase
 {
+    /**
+     * 테스트마다 부분일치 폴백 경고 기록을 비운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,6 +46,11 @@ class KeywordSearchTest extends TestCase
         KeywordSearch::forgetFallbackWarnings();
     }
 
+    /**
+     * 테스트가 등록한 부분일치 연산자 훅을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         HookManager::clearFilter(KeywordSearch::LIKE_OPERATORS_FILTER);
@@ -52,6 +60,8 @@ class KeywordSearchTest extends TestCase
 
     /**
      * 검색 대상 모델을 만듭니다.
+     *
+     * @return Builder 탐침 테이블을 가리키는 새 쿼리 빌더
      */
     private function makeQuery(): Builder
     {
@@ -67,6 +77,8 @@ class KeywordSearchTest extends TestCase
      * 활성 엔진을 지정한 인스턴스로 교체합니다.
      *
      * @param  Engine  $engine  활성으로 만들 엔진
+     *
+     * @return void 반환값 없음
      */
     private function useEngine(Engine $engine): void
     {
@@ -79,6 +91,8 @@ class KeywordSearchTest extends TestCase
      * 계약을 구현한 엔진이 실제로 호출되는지 확인
      *
      * @effects keyword_predicate_delegates_to_active_engine
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function delegates_to_active_engine_that_implements_the_contract(): void
@@ -100,6 +114,8 @@ class KeywordSearchTest extends TestCase
 
     /**
      * 호출 내역을 기록하는 계약 구현 엔진을 만듭니다.
+     *
+     * @return Engine 받은 인자와 조건 생성 문맥을 기록하는 엔진
      */
     private function makeRecordingEngine(): Engine
     {
@@ -109,6 +125,16 @@ class KeywordSearchTest extends TestCase
 
             public ?KeywordSearchContext $lastContext = null;
 
+            /**
+             * 받은 인자와 문맥을 기록하고 식별 가능한 조건(id 7)을 붙인다.
+             *
+             * @param  Builder  $query  조건을 붙일 쿼리
+             * @param  array<int, string>  $columns  검색 대상 컬럼
+             * @param  string  $keyword  검색어
+             * @param  string  $boolean  조건 결합 방식(and·or)
+             * @param  KeywordSearchContext  $context  술어 생성 문맥(키 집합 상한 포함)
+             * @return void 반환값 없음
+             */
             public function applyKeywordPredicate(Builder $query, array $columns, string $keyword, string $boolean, KeywordSearchContext $context): void
             {
                 $this->calls[] = [$columns, $keyword, $boolean];
@@ -116,26 +142,99 @@ class KeywordSearchTest extends TestCase
                 $query->whereIn($query->getModel()->getQualifiedKeyName(), [7]);
             }
 
+            /**
+             * 색인 갱신 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  mixed  $models  대상 모델들
+             * @return void 반환값 없음
+             */
             public function update($models) {}
 
+            /**
+             * 색인 삭제 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  mixed  $models  대상 모델들
+             * @return void 반환값 없음
+             */
             public function delete($models) {}
 
+            /**
+             * 검색 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  \Laravel\Scout\Builder  $builder  Scout 검색 빌더
+             * @return mixed 쓰지 않음(null)
+             */
             public function search(\Laravel\Scout\Builder $builder) {}
 
+            /**
+             * 페이지 검색 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  \Laravel\Scout\Builder  $builder  Scout 검색 빌더
+             * @param  int  $perPage  페이지당 건수
+             * @param  int  $page  페이지 번호
+             * @return mixed 쓰지 않음(null)
+             */
             public function paginate(\Laravel\Scout\Builder $builder, $perPage, $page) {}
 
+            /**
+             * 결과 id 추출 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  mixed  $results  엔진 결과
+             * @return mixed 쓰지 않음(null)
+             */
             public function mapIds($results) {}
 
+            /**
+             * 결과 모델 변환 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  \Laravel\Scout\Builder  $builder  Scout 검색 빌더
+             * @param  mixed  $results  엔진 결과
+             * @param  Model  $model  대상 모델
+             * @return mixed 쓰지 않음(null)
+             */
             public function map(\Laravel\Scout\Builder $builder, $results, $model) {}
 
+            /**
+             * 지연 결과 모델 변환 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  \Laravel\Scout\Builder  $builder  Scout 검색 빌더
+             * @param  mixed  $results  엔진 결과
+             * @param  Model  $model  대상 모델
+             * @return mixed 쓰지 않음(null)
+             */
             public function lazyMap(\Laravel\Scout\Builder $builder, $results, $model) {}
 
+            /**
+             * 총 건수 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  mixed  $results  엔진 결과
+             * @return mixed 쓰지 않음(null)
+             */
             public function getTotalCount($results) {}
 
+            /**
+             * 색인 비우기 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  Model  $model  대상 모델
+             * @return void 반환값 없음
+             */
             public function flush($model) {}
 
+            /**
+             * 색인 생성 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  string  $name  색인 이름
+             * @param  array<string, mixed>  $options  색인 옵션
+             * @return mixed 쓰지 않음(null)
+             */
             public function createIndex($name, array $options = []) {}
 
+            /**
+             * 색인 삭제 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  string  $name  색인 이름
+             * @return mixed 쓰지 않음(null)
+             */
             public function deleteIndex($name) {}
         };
     }
@@ -149,6 +248,8 @@ class KeywordSearchTest extends TestCase
      * 도달하는지**를 고정한다.
      *
      * @effects keyword_predicate_passes_key_cap_to_engine
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function passes_the_key_cap_to_the_engine(): void
@@ -171,32 +272,107 @@ class KeywordSearchTest extends TestCase
      * 계약 미구현 엔진에서는 부분일치로 내려가는지 확인
      *
      * @effects keyword_predicate_falls_back_when_engine_lacks_contract
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function falls_back_to_partial_match_when_engine_lacks_the_contract(): void
     {
         $engine = new class extends Engine
         {
+            /**
+             * 색인 갱신 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  mixed  $models  대상 모델들
+             * @return void 반환값 없음
+             */
             public function update($models) {}
 
+            /**
+             * 색인 삭제 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  mixed  $models  대상 모델들
+             * @return void 반환값 없음
+             */
             public function delete($models) {}
 
+            /**
+             * 검색 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  \Laravel\Scout\Builder  $builder  Scout 검색 빌더
+             * @return mixed 쓰지 않음(null)
+             */
             public function search(\Laravel\Scout\Builder $builder) {}
 
+            /**
+             * 페이지 검색 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  \Laravel\Scout\Builder  $builder  Scout 검색 빌더
+             * @param  int  $perPage  페이지당 건수
+             * @param  int  $page  페이지 번호
+             * @return mixed 쓰지 않음(null)
+             */
             public function paginate(\Laravel\Scout\Builder $builder, $perPage, $page) {}
 
+            /**
+             * 결과 id 추출 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  mixed  $results  엔진 결과
+             * @return mixed 쓰지 않음(null)
+             */
             public function mapIds($results) {}
 
+            /**
+             * 결과 모델 변환 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  \Laravel\Scout\Builder  $builder  Scout 검색 빌더
+             * @param  mixed  $results  엔진 결과
+             * @param  Model  $model  대상 모델
+             * @return mixed 쓰지 않음(null)
+             */
             public function map(\Laravel\Scout\Builder $builder, $results, $model) {}
 
+            /**
+             * 지연 결과 모델 변환 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  \Laravel\Scout\Builder  $builder  Scout 검색 빌더
+             * @param  mixed  $results  엔진 결과
+             * @param  Model  $model  대상 모델
+             * @return mixed 쓰지 않음(null)
+             */
             public function lazyMap(\Laravel\Scout\Builder $builder, $results, $model) {}
 
+            /**
+             * 총 건수 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  mixed  $results  엔진 결과
+             * @return mixed 쓰지 않음(null)
+             */
             public function getTotalCount($results) {}
 
+            /**
+             * 색인 비우기 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  Model  $model  대상 모델
+             * @return void 반환값 없음
+             */
             public function flush($model) {}
 
+            /**
+             * 색인 생성 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  string  $name  색인 이름
+             * @param  array<string, mixed>  $options  색인 옵션
+             * @return mixed 쓰지 않음(null)
+             */
             public function createIndex($name, array $options = []) {}
 
+            /**
+             * 색인 삭제 — 이 테스트에서는 쓰지 않는 빈 구현.
+             *
+             * @param  string  $name  색인 이름
+             * @return mixed 쓰지 않음(null)
+             */
             public function deleteIndex($name) {}
         };
 
@@ -215,6 +391,8 @@ class KeywordSearchTest extends TestCase
      * 구현하지 않으면 MySQL 설치본조차 폴백으로 내려간다.
      *
      * @effects keyword_predicate_delegates_to_active_engine
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function bundled_engine_implements_the_contract(): void
@@ -233,6 +411,8 @@ class KeywordSearchTest extends TestCase
      * 여기서는 표에 없던 드라이버를 훅으로 선언했을 때 그 연산자가 실제로 쓰이는지 본다.
      *
      * @effects like_operator_is_declarative_not_hardcoded
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function like_operator_comes_from_the_declarative_table(): void
@@ -257,6 +437,8 @@ class KeywordSearchTest extends TestCase
      * 표에 없는 드라이버는 기본 연산자를 쓰는지 확인
      *
      * @effects like_operator_is_declarative_not_hardcoded
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function unknown_driver_uses_the_configured_default(): void
@@ -277,6 +459,8 @@ class KeywordSearchTest extends TestCase
      * escape 하지 않으면 `50%` 검색이 `50` 으로 시작하는 모든 행을 반환한다.
      *
      * @effects like_fallback_escapes_wildcards
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function partial_match_escapes_wildcards_in_the_keyword(): void

@@ -26,6 +26,11 @@ class CancelPendingPaymentOrdersTest extends ModuleTestCase
 {
     use BuildsClaimFlowOrders;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -39,6 +44,11 @@ class CancelPendingPaymentOrdersTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 각 테스트 뒤에 준비한 상태를 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -77,6 +87,7 @@ class CancelPendingPaymentOrdersTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=none
      *
      * @effects auto_cancel_expired_stores_a_reason_code_not_a_sentence
+     * @return void 반환값 없음
      */
     public function test_expired_orders_are_cancelled_with_a_reason_code_in_the_english_locale(): void
     {
@@ -104,6 +115,7 @@ class CancelPendingPaymentOrdersTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=none
      *
      * @effects auto_cancel_expired_reason_code_is_locale_independent
+     * @return void 반환값 없음
      */
     public function test_the_stored_reason_code_does_not_depend_on_the_locale(): void
     {
@@ -127,6 +139,7 @@ class CancelPendingPaymentOrdersTest extends ModuleTestCase
      * @scenario claim_type=refund, charge_method=none, refund_branch=none
      *
      * @effects auto_cancel_expired_prints_the_real_payment_method
+     * @return void 반환값 없음
      */
     public function test_the_dry_run_prints_the_real_payment_method(): void
     {

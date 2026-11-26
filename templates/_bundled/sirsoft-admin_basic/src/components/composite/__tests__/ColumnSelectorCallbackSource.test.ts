@@ -31,6 +31,11 @@ describe('ColumnSelector — onColumnVisibilityChange 발화 출처', () => {
   /** 이 컴포넌트가 약속하는 출처 어휘 — 구현·선언 양쪽이 공유해야 하는 단일 목록 */
   const SOURCES = ['user', 'init', 'dynamic'] as const;
 
+  /**
+   * 콜백을 부르는 지점 전부가 출처를 함께 싣는다.
+   * @scenario component=column_selector
+   * @effects column_selector_callback_carries_source
+   */
   it('콜백을 부르는 지점 전부가 출처를 함께 싣는다', () => {
     // 호출 지점을 손으로 열거하지 않는다 — 새 발화 경로가 생겨도 이 검사가 먼저 붉어진다.
     // 호출은 `onColumnVisibilityChange(` 와 `onColumnVisibilityChange?.(` 두 형태다.
@@ -51,6 +56,11 @@ describe('ColumnSelector — onColumnVisibilityChange 발화 출처', () => {
     }
   });
 
+  /**
+   * 세 출처가 모두 실제로 발화한다.
+   * @scenario component=column_selector
+   * @effects column_selector_callback_carries_source
+   */
   it('세 출처가 모두 실제로 발화한다', () => {
     for (const kind of SOURCES) {
       expect(
@@ -60,6 +70,11 @@ describe('ColumnSelector — onColumnVisibilityChange 발화 출처', () => {
     }
   });
 
+  /**
+   * components.json 선언이 구현과 같은 출처 어휘를 쓴다.
+   * @scenario component=column_selector
+   * @effects column_selector_source_vocabulary_matches_declaration
+   */
   it('components.json 선언이 구현과 같은 어휘를 쓴다', () => {
     // `composite` 는 배열이다 — 이름으로 찾는다.
     const entry = (manifest?.components?.composite ?? []).find(
@@ -77,6 +92,11 @@ describe('ColumnSelector — onColumnVisibilityChange 발화 출처', () => {
     }
   });
 
+  /**
+   * DataGrid 의 같은 이름 이벤트는 출처를 싣지 않는다.
+   * @scenario component=column_selector
+   * @effects datagrid_visibility_event_has_no_source
+   */
   it('DataGrid 의 같은 이름 이벤트는 출처를 싣지 않는다 (혼동 방지)', () => {
     // 두 컴포넌트가 같은 이벤트 이름을 방출하는데 한쪽만 두 번째 인자를 싣는다. 그 사실이
     // 코드에서 사라지면 ColumnSelector 용으로 쓴 `$args[1].source` 가드를 DataGrid 이벤트에

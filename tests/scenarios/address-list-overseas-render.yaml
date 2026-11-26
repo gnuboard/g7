@@ -1,0 +1,21 @@
+feature: 배송지 목록의 국내·해외 주소 표시 분기
+
+description: |
+  배송지 행을 그리는 레이아웃(마이페이지 배송지 목록, 체크아웃 배송지 관리 모달)은 국내와 해외를
+  다른 형식으로 그린다. 국내는 우편번호 + 도로명, 해외는 서버가 조립한 `full_address` 다.
+  한쪽 레이아웃만 국가 분기를 가지면 해외 주소 행이 우편번호 괄호만 남고 본문이 빈다
+  (체크아웃 모달에서 미국 주소가 `이름|전화 ()` 로 보인 실측).
+
+  결제 흐름 데이터 준비 대신 레이아웃 선언을 검사한다 — 두 레이아웃 모두 국내 분기(country_code KR)와
+  해외 분기(KR 아님 → full_address)를 가져야 한다.
+
+effects:
+  - overseas_address_uses_full_address
+  - domestic_address_uses_zipcode_format
+
+axes:
+  # 무엇을 보는가 — 두 레이아웃 각각의 선언(한 시험이 레이아웃 목록을 돌며 같은 단언을 한다)
+  check: [layout_declaration]
+
+test_files:
+  - tests/Playwright/specs/checkout-address-overseas-render.spec.ts

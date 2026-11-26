@@ -11,6 +11,10 @@ effects:
   - max_attempts_field_holds_given_value
   - max_attempts_defaults_to_zero
   - max_attempts_exposed_in_payload
+  # 응답 리소스(ChallengeResource) 단계 노출
+  - challenge_resource_exposes_max_attempts
+  - challenge_resource_exposes_zero_for_unlimited_attempts
 
 test_files:
   - tests/Unit/Extension/IdentityVerification/DTO/VerificationChallengeMaxAttemptsTest.php
+  - tests/Unit/Http/Resources/Identity/ChallengeResourceMaxAttemptsTest.php

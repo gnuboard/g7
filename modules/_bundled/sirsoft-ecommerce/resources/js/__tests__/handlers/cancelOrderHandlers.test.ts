@@ -70,6 +70,7 @@ describe('executeCancelOrderHandler — 항상 items 전송 (백엔드 FULL 승�
         (window as any).G7Core = mockG7Core;
     });
 
+    // @effects frontend_always_sends_items_admin
     it('단일 항목 주문 — 수량 축소 시 type:partial + items 전송 (결함 #2 회귀)', async () => {
         mockOrderDataSource = {
             data: { options: [{ id: 100, quantity: 9, option_status: 'payment_complete' }] },
@@ -82,6 +83,7 @@ describe('executeCancelOrderHandler — 항상 items 전송 (백엔드 FULL 승�
         expect(body.items).toEqual([{ order_option_id: 100, cancel_quantity: 3 }]);
     });
 
+    // @effects frontend_always_sends_items_admin
     it('단일 항목 주문 — 전량 취소도 type:partial + items 전송 (백엔드가 FULL 승격)', async () => {
         mockOrderDataSource = {
             data: { options: [{ id: 100, quantity: 9, option_status: 'payment_complete' }] },
@@ -94,6 +96,7 @@ describe('executeCancelOrderHandler — 항상 items 전송 (백엔드 FULL 승�
         expect(body.items).toEqual([{ order_option_id: 100, cancel_quantity: 9 }]);
     });
 
+    // @effects frontend_always_sends_items_admin
     it('다중 항목 — 모든 항목 전량 취소도 items 전량 전송 (프론트 full 판정 없음)', async () => {
         mockOrderDataSource = {
             data: {
@@ -117,6 +120,7 @@ describe('executeCancelOrderHandler — 항상 items 전송 (백엔드 FULL 승�
         ]);
     });
 
+    // @effects frontend_always_sends_items_admin
     it('다중 항목 중 일부 라인만 선택 — 선택 항목만 items 로 전송', async () => {
         mockOrderDataSource = {
             data: {
@@ -211,12 +215,14 @@ describe('executeCancelOrderHandler — 항상 items 전송 (백엔드 FULL 승�
             mockLocalState.cancelItems = [{ id: 100, quantity: 2, cancel_quantity: 1 }];
         });
 
+        // @effects cancel_refund_bank_omitted_when_untouched
         it('미입력이면 refund_bank 키 자체를 보내지 않는다 (주문 시 입력된 계좌 보존)', async () => {
             const body = await runCancel();
 
             expect(body.refund_bank).toBeUndefined();
         });
 
+        // @effects cancel_handler_sends_refund_bank_as_entered
         it('3필드를 모두 입력하면 refund_bank 로 전송된다', async () => {
             mockLocalState.refundBankCode = '004';
             mockLocalState.refundBankAccount = '110-123-456789';
@@ -231,6 +237,7 @@ describe('executeCancelOrderHandler — 항상 items 전송 (백엔드 FULL 승�
             });
         });
 
+        // @effects cancel_handler_sends_refund_bank_as_entered
         it('부분 입력도 그대로 전송한다 — 거부 판정은 서버(CancelOrderRequest)의 책임이다', async () => {
             mockLocalState.refundBankAccount = '110-123-456789';
 

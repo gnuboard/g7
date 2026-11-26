@@ -211,6 +211,8 @@ function getByTestIdInContainer(testId: string): any {
 
 describe('게시판 목록 - 카테고리 필터 (JSON 구조 검증)', () => {
     describe('카테고리 필터 표시/미표시 조건', () => {
+        // @scenario aspect=visibility
+        // @effects category_select_shown_only_when_categories_exist
         it('카테고리 Select 의 if 조건이 categories 배열의 비어있지 않음을 확인한다', () => {
             const select = getCategorySelect();
             expect(select).toBeDefined();
@@ -218,11 +220,15 @@ describe('게시판 목록 - 카테고리 필터 (JSON 구조 검증)', () => {
             expect(select.if).toContain('length > 0');
         });
 
+        // @scenario aspect=visibility
+        // @effects category_select_shown_only_when_categories_exist
         it('카테고리 Select 의 if 표현식은 categories 가 빈 배열이면 false 로 평가된다', () => {
             const select = getCategorySelect();
             expect(select.if).toMatch(/categories.*length\s*>\s*0/);
         });
 
+        // @scenario aspect=visibility
+        // @effects category_select_value_follows_query
         it('카테고리 Select 의 props.value 가 query.category 를 사용한다', () => {
             const select = getCategorySelect();
             expect(select.props.value).toContain('query.category');
@@ -230,12 +236,16 @@ describe('게시판 목록 - 카테고리 필터 (JSON 구조 검증)', () => {
     });
 
     describe('API params 에 category 포함', () => {
+        // @scenario aspect=data_source
+        // @effects posts_request_carries_category_param
         it('data_sources params 에 category 파라미터가 포함된다', () => {
             const dataSource = categoryFilterLayoutJson.data_sources[0];
             expect(dataSource.params).toHaveProperty('category');
             expect(dataSource.params.category).toBe("{{query.category ?? ''}}");
         });
 
+        // @scenario aspect=data_source
+        // @effects posts_request_uses_board_slug_endpoint
         it('data_sources endpoint 가 게시판 슬러그 기반이다', () => {
             const dataSource = categoryFilterLayoutJson.data_sources[0];
             expect(dataSource.endpoint).toContain('/api/modules/sirsoft-board/boards/');
@@ -244,18 +254,24 @@ describe('게시판 목록 - 카테고리 필터 (JSON 구조 검증)', () => {
     });
 
     describe('카테고리 필터 변경 시 네비게이션', () => {
+        // @scenario aspect=navigation
+        // @effects category_change_navigates_with_merged_query
         it('카테고리 Select change 액션이 navigate 핸들러를 사용한다', () => {
             const action = getCategorySelect().actions?.[0];
             expect(action.type).toBe('change');
             expect(action.handler).toBe('navigate');
         });
 
+        // @scenario aspect=navigation
+        // @effects category_change_navigates_with_merged_query
         it('navigate path 가 게시판 슬러그를 동적으로 사용하고 mergeQuery=true 를 설정한다', () => {
             const action = getCategorySelect().actions?.[0];
             expect(action.params.path).toBe('/board/{{route.slug}}');
             expect(action.params.mergeQuery).toBe(true);
         });
 
+        // @scenario aspect=navigation
+        // @effects all_category_option_clears_category
         it('"전체 카테고리"(value=all) 선택 시 category 가 빈 문자열로 변환되는 표현식을 가진다', () => {
             const action = getCategorySelect().actions?.[0];
             expect(action.params.query.category).toContain("'all'");
@@ -265,6 +281,8 @@ describe('게시판 목록 - 카테고리 필터 (JSON 구조 검증)', () => {
     });
 
     describe('페이지네이션에 category query 유지', () => {
+        // @scenario aspect=pagination
+        // @effects pagination_keeps_category_query
         it('Pagination onPageChange 액션 query 에 category 가 보존된다', () => {
             const pagination = getPagination();
             expect(pagination).toBeDefined();
@@ -273,6 +291,8 @@ describe('게시판 목록 - 카테고리 필터 (JSON 구조 검증)', () => {
             expect(action.params.query.category).toBe('{{query.category}}');
         });
 
+        // @scenario aspect=pagination
+        // @effects pagination_sets_page_from_argument
         it('Pagination action 이 page 를 $args[0] 로 업데이트한다', () => {
             const action = getPagination().actions?.[0];
             expect(action.handler).toBe('navigate');
@@ -282,6 +302,8 @@ describe('게시판 목록 - 카테고리 필터 (JSON 구조 검증)', () => {
     });
 
     describe('빈 결과 조건 분기', () => {
+        // @scenario aspect=empty_state
+        // @effects empty_states_split_by_filter_presence
         it('"게시글 없음" 분기(empty-no-filter)가 검색/카테고리/페이지 모두 없을 때만 표시된다', () => {
             const node = getByTestIdInContainer('empty-no-filter');
             expect(node).toBeDefined();
@@ -291,6 +313,8 @@ describe('게시판 목록 - 카테고리 필터 (JSON 구조 검증)', () => {
             expect(node.if).toContain('pagination?.total === 0');
         });
 
+        // @scenario aspect=empty_state
+        // @effects empty_states_split_by_filter_presence
         it('"검색 결과 없음" 분기(empty-with-filter)가 검색/카테고리 중 하나라도 있을 때 표시된다', () => {
             const node = getByTestIdInContainer('empty-with-filter');
             expect(node).toBeDefined();
@@ -298,6 +322,8 @@ describe('게시판 목록 - 카테고리 필터 (JSON 구조 검증)', () => {
             expect(node.if).toContain('pagination?.total === 0');
         });
 
+        // @scenario aspect=empty_state
+        // @effects filtered_empty_state_offers_filter_reset
         it('"검색 결과 없음" 분기에 검색 초기화 버튼이 포함된다 (path 만 지정 → 쿼리 해제)', () => {
             const node = getByTestIdInContainer('empty-with-filter');
             const clearBtn = node.children?.find(
@@ -310,6 +336,8 @@ describe('게시판 목록 - 카테고리 필터 (JSON 구조 검증)', () => {
             expect(clearBtn.actions[0].params.query).toBeUndefined();
         });
 
+        // @scenario aspect=empty_state
+        // @effects empty_states_split_by_filter_presence
         it('두 빈 상태 분기는 서로 배타적이다 (filter 유무로 구분)', () => {
             const noFilter = getByTestIdInContainer('empty-no-filter');
             const withFilter = getByTestIdInContainer('empty-with-filter');
@@ -319,11 +347,15 @@ describe('게시판 목록 - 카테고리 필터 (JSON 구조 검증)', () => {
     });
 
     describe('레이아웃 JSON 구조 정적 검증 (중복 안전망)', () => {
+        // @scenario aspect=structure
+        // @effects category_select_is_basic_type
         it('Select 컴포넌트 타입이 basic 이다', () => {
             const select = getCategorySelect();
             expect(select.type).toBe('basic');
         });
 
+        // @scenario aspect=structure
+        // @effects category_change_resets_page_to_first
         it('Select change 액션 의 params.query.page 가 1 로 리셋된다', () => {
             const action = getCategorySelect().actions?.[0];
             expect(action.params.query.page).toBe(1);

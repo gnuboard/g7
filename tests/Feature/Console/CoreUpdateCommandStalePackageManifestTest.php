@@ -48,6 +48,11 @@ class CoreUpdateCommandStalePackageManifestTest extends TestCase
 
     private string $servicesPath;
 
+    /**
+     * 매니페스트 캐시 경로를 테스트 전용 폴더로 돌리고 업데이트 플래그를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -67,6 +72,11 @@ class CoreUpdateCommandStalePackageManifestTest extends TestCase
         $this->setEnv('G7_UPDATE_IN_PROGRESS', null);
     }
 
+    /**
+     * 덮어쓴 환경변수를 원값으로 되돌리고 테스트 전용 폴더를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         foreach ($this->originalEnv as $key => $value) {
@@ -96,6 +106,8 @@ class CoreUpdateCommandStalePackageManifestTest extends TestCase
      * `proc_open` 앞에서 일어나므로 자식의 성패와 무관하게 관측된다.
      *
      * @effects spawnUpgradeStepsProcess_clears_package_manifests_before_proc_open
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function spawn_직전에_패키지_매니페스트를_비운다_자식이_부팅하지_못해도(): void
@@ -130,6 +142,8 @@ class CoreUpdateCommandStalePackageManifestTest extends TestCase
      * 계층 ①②가 모두 없으면 자식이 `Class ... not found` 로 죽어 abort 예외가 난다.
      *
      * @effects spawn_child_boots_with_regenerated_package_manifest_when_parent_left_stale_dev_manifest
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function stale_dev_매니페스트가_있어도_spawn_자식은_정상_부팅해_스텝_0건을_통과한다(): void
@@ -160,6 +174,8 @@ class CoreUpdateCommandStalePackageManifestTest extends TestCase
      * 직접 재현한다 — 정리 없이 stale 매니페스트를 남긴 채 자식을 띄운다.
      *
      * @effects bootstrap_app_unlinks_stale_package_manifest_when_update_flag_present
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 업데이트_플래그가_있는_자식은_stale_매니페스트를_스스로_지우고_부팅한다(): void
@@ -183,6 +199,8 @@ class CoreUpdateCommandStalePackageManifestTest extends TestCase
      * 이 테스트는 계층 ② 도입 전후로 항상 green 이어야 한다.
      *
      * @effects bootstrap_app_leaves_package_manifest_untouched_without_update_flag
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 업데이트_플래그가_없는_프로세스는_매니페스트를_건드리지_않는다(): void
@@ -212,6 +230,8 @@ class CoreUpdateCommandStalePackageManifestTest extends TestCase
      * 관측한다.
      *
      * @effects spawnUpgradeStepsProcess_logs_manifest_files_it_could_not_remove
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function spawn_직전_매니페스트를_지우지_못하면_업그레이드_로그에_남은_파일을_경고한다(): void
@@ -286,6 +306,8 @@ class CoreUpdateCommandStalePackageManifestTest extends TestCase
 
     /**
      * 존재하지 않는 provider 를 등재한 stale 매니페스트 두 개를 만든다.
+     *
+     * @return void 반환값 없음
      */
     private function writeStaleManifests(): void
     {
@@ -371,6 +393,8 @@ class CoreUpdateCommandStalePackageManifestTest extends TestCase
      *
      * @param  string  $key  환경변수 이름
      * @param  string|null  $value  세울 값. null 이면 제거
+     *
+     * @return void 반환값 없음
      */
     private function setEnv(string $key, ?string $value): void
     {

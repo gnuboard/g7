@@ -12,8 +12,8 @@
  *
  * "운영자 등록 표" 는 제거됨 (Phase 2 단순화).
  *
- * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=populated, request=valid_item
- * @effects storage_allows_item_listed_in_settings, storage_blocks_item_removed_from_settings, storage_wildcard_matches_prefix_only, storage_scope_does_not_leak_across_storages, storage_locked_item_survives_empty_settings, storage_config_update_applies_new_allowlist
+ * 조합 요약(마커 아님 — 평문): scope=localStorage, notation=exact, locked=operator_item, settings_state=populated, request=valid_item
+ * 효과 요약(마커 아님 — 평문): storage_allows_item_listed_in_settings, storage_blocks_item_removed_from_settings, storage_wildcard_matches_prefix_only, storage_scope_does_not_leak_across_storages, storage_locked_item_survives_empty_settings, storage_config_update_applies_new_allowlist
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -53,6 +53,12 @@ describe('storageInterceptor', () => {
         uninstallUserInitiatedTracker();
     });
 
+    /**
+     * 설정에 적힌 키(g7_locale)는 동의 전에도 저장된다.
+     *
+     * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=populated
+     * @effects storage_necessary_always_passes, storage_allows_item_listed_in_settings
+     */
     it('설정에 등재된 키 (g7_locale) → 항상 통과 (미동의여도)', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -65,6 +71,12 @@ describe('storageInterceptor', () => {
 
     // 화면 테마가 목록에서 빠져 있어, 동의 전에는 테마를 바꿔도 저장이
     // 조용히 버려졌다 (새로고침하면 원래대로). 미인증 화면뿐 아니라 관리자 화면 전체가 같았다.
+    /**
+     * 설정에 적힌 키(g7_color_scheme)는 동의 전에도 저장된다.
+     *
+     * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=populated
+     * @effects storage_necessary_always_passes, storage_allows_item_listed_in_settings
+     */
     it('설정에 등재된 키 (g7_color_scheme) → 항상 통과 (미동의여도)', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -76,6 +88,12 @@ describe('storageInterceptor', () => {
     });
 
     // 설정이 실제로 판정에 쓰이는지의 대조군 — 목록에서 빼면 같은 키가 차단되어야 한다.
+    /**
+     * 설정에서 뺀 키는 같은 키라도 저장이 막힌다.
+     *
+     * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=empty
+     * @effects storage_blocks_item_removed_from_settings
+     */
     it('설정에서 뺀 키는 차단된다 (목록이 판정에 쓰인다는 증거)', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -86,6 +104,12 @@ describe('storageInterceptor', () => {
         expect(window.localStorage.getItem('g7_color_scheme')).toBeNull();
     });
 
+    /**
+     * 와일드카드 항목(g7_devtools_*)에 맞는 키는 저장된다.
+     *
+     * @scenario scope=localStorage, notation=wildcard, locked=operator_item, settings_state=populated
+     * @effects storage_prefix_match_passes
+     */
     it('와일드카드 매칭 (g7_devtools_*) → 통과', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -96,6 +120,12 @@ describe('storageInterceptor', () => {
         expect(window.localStorage.getItem('g7_devtools_filter')).toBe('enabled');
     });
 
+    /**
+     * 와일드카드는 앞부분만 맞춰 보고, 접두사가 다르면 막는다.
+     *
+     * @scenario scope=localStorage, notation=wildcard, locked=operator_item, settings_state=populated
+     * @effects storage_wildcard_matches_prefix_only
+     */
     it('와일드카드는 앞부분만 매칭한다 — 접두사가 다르면 차단', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -108,6 +138,12 @@ describe('storageInterceptor', () => {
         expect(window.localStorage.getItem('other_g7_filters_x')).toBeNull();
     });
 
+    /**
+     * localStorage 에 적은 키는 sessionStorage 에서는 막힌다.
+     *
+     * @scenario scope=sessionStorage, notation=exact, locked=operator_item, settings_state=populated
+     * @effects storage_scope_does_not_leak_across_storages
+     */
     it('스코프가 다르면 통과하지 않는다 (localStorage 등재 ≠ sessionStorage 허용)', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -120,6 +156,12 @@ describe('storageInterceptor', () => {
         expect(window.sessionStorage.getItem('scoped_key')).toBeNull();
     });
 
+    /**
+     * sessionStorage 에 적은 항목은 그 저장소에서 저장된다.
+     *
+     * @scenario scope=sessionStorage, notation=exact, locked=operator_item, settings_state=populated
+     * @effects storage_allows_item_listed_in_settings
+     */
     it('sessionStorage 전용 항목도 그 스코프에서 통과한다', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -132,6 +174,12 @@ describe('storageInterceptor', () => {
         expect(window.sessionStorage.getItem('g7:sirsoft-pay_kginicis:pendingClose')).toBe('1');
     });
 
+    /**
+     * 기능 쿠키에 동의하면 허용목록 밖 키도 저장된다.
+     *
+     * @scenario area=storage_interceptor, consent=functional_granted, necessary=not_in_allowlist
+     * @effects storage_consented_passes_all_keys
+     */
     it('functional 동의 시 모든 키 통과 (허용목록 외 키도 통과)', () => {
         installStorageInterceptor({
             functionalConsented: true,
@@ -142,6 +190,12 @@ describe('storageInterceptor', () => {
         expect(window.localStorage.getItem('app_pref')).toBe('value');
     });
 
+    /**
+     * 동의 전이라도 사용자가 방금 조작했으면 저장된다.
+     *
+     * @scenario area=storage_interceptor, consent=functional_denied, user_initiated=recent_interaction, necessary=not_in_allowlist
+     * @effects storage_denied_user_initiated_passes
+     */
     it('미동의 + user-initiated (WP29 §3.6) → 통과', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -153,6 +207,12 @@ describe('storageInterceptor', () => {
         expect(window.localStorage.getItem('app_pref')).toBe('value');
     });
 
+    /**
+     * 동의 전이고 사용자 조작이 없으면 저장이 막힌다.
+     *
+     * @scenario area=storage_interceptor, consent=functional_denied, user_initiated=no_interaction, necessary=not_in_allowlist
+     * @effects storage_denied_no_interaction_blocks
+     */
     it('미동의 + 비-사용자 (background) → 차단', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -164,6 +224,12 @@ describe('storageInterceptor', () => {
         expect(window.localStorage.getItem('app_pref')).toBeNull();
     });
 
+    /**
+     * 동의 전, 사용자 조작 없이 임의 키를 쓰면 막힌다.
+     *
+     * @scenario area=storage_interceptor, consent=functional_denied, user_initiated=no_interaction, necessary=not_in_allowlist
+     * @effects storage_denied_no_interaction_blocks
+     */
     it('미동의 + 임의 키 + 비-사용자 → 차단 (보수적)', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -174,6 +240,12 @@ describe('storageInterceptor', () => {
         expect(window.localStorage.getItem('random_key')).toBeNull();
     });
 
+    /**
+     * 허용목록이 비어도 잠금 항목(auth_token)은 저장되고 설정 항목은 막힌다.
+     *
+     * @scenario scope=localStorage, notation=exact, locked=locked_item
+     * @effects storage_locked_item_survives_empty_settings
+     */
     it('허용목록이 통째로 비어도 잠금 항목(auth_token)은 통과한다', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -186,6 +258,12 @@ describe('storageInterceptor', () => {
         expect(window.localStorage.getItem('g7_locale')).toBeNull();
     });
 
+    /**
+     * 설정 갱신으로 동의 상태를 바꾸면 바로 판정에 반영된다.
+     *
+     * @scenario area=storage_interceptor, consent=functional_granted
+     * @effects storage_update_config_applies_consent_change
+     */
     it('updateStorageInterceptorConfig 으로 동의 상태 갱신 가능', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -205,6 +283,12 @@ describe('storageInterceptor', () => {
         expect(window.localStorage.getItem('app_pref')).toBe('value2');
     });
 
+    /**
+     * 설정 갱신으로 허용목록을 바꾸면 바로 판정에 반영된다.
+     *
+     * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=populated
+     * @effects storage_config_update_applies_new_allowlist
+     */
     it('updateStorageInterceptorConfig 으로 허용목록 갱신이 판정에 즉시 반영된다', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -222,6 +306,12 @@ describe('storageInterceptor', () => {
         expect(window.localStorage.getItem('operator_added')).toBe('v2');
     });
 
+    /**
+     * 가로채기를 풀면 원래 setItem 이 돌아와 모든 쓰기가 된다.
+     *
+     * @scenario area=storage_interceptor, consent=functional_denied
+     * @effects storage_uninstall_restores_original_setItem
+     */
     it('uninstall 후 원본 setItem 복원 — 모든 쓰기 통과', () => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -238,6 +328,12 @@ describe('storageInterceptor', () => {
         expect(window.localStorage.getItem('random_key')).toBe('v2');
     });
 
+    /**
+     * isStorageAllowed 는 판정만 하고 저장소를 바꾸지 않는다.
+     *
+     * @scenario area=storage_interceptor, consent=functional_denied, necessary=in_allowlist
+     * @effects storage_is_storage_allowed_pure_evaluation
+     */
     it('isStorageAllowed — 정책 평가 함수는 사이드 이펙트 없음', () => {
         installStorageInterceptor({
             functionalConsented: false,

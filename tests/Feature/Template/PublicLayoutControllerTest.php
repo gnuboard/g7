@@ -30,6 +30,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 유효한 레이아웃 서빙 성공 테스트
+     *
+     * @scenario case=serve_success
+     *
+     * @effects public_layout_served_with_envelope
+     *
+     * @return void 반환값 없음
      */
     public function test_can_serve_valid_layout(): void
     {
@@ -87,6 +93,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 존재하지 않는 템플릿의 레이아웃 서빙 실패 테스트
+     *
+     * @scenario case=not_found
+     *
+     * @effects public_layout_missing_template_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_serve_layout_for_nonexistent_template(): void
     {
@@ -106,6 +118,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 비활성화된 템플릿의 레이아웃 서빙 실패 테스트
+     *
+     * @scenario case=not_found
+     *
+     * @effects public_layout_inactive_template_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_serve_layout_for_inactive_template(): void
     {
@@ -146,6 +164,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 존재하지 않는 레이아웃 서빙 실패 테스트
+     *
+     * @scenario case=not_found
+     *
+     * @effects public_layout_missing_layout_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_serve_nonexistent_layout(): void
     {
@@ -176,6 +200,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 캐싱 동작 테스트
+     *
+     * @scenario case=cache
+     *
+     * @effects public_layout_response_cached_in_core_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_layouts_are_cached(): void
     {
@@ -244,6 +274,12 @@ class PublicLayoutControllerTest extends TestCase
      * 「최신 불러오기」가 옛 content 를 받았다. 본 테스트는 클라이언트 `?v` 가 서버 버전과 달라도 서버
      * 캐시 키가 **서버 현재 버전**(`v{server}.meta`)으로만 만들어져, 무효화 키와 굽기 키가 항상 같은
      * 키임을 잠근다.
+     *
+     * @scenario case=cache
+     *
+     * @effects public_layout_cache_key_uses_server_version
+     *
+     * @return void 반환값 없음
      */
     public function test_editor_nonce_versioned_request_uses_server_cache_version_key(): void
     {
@@ -313,6 +349,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 상속 병합 테스트
+     *
+     * @scenario case=inheritance
+     *
+     * @effects public_layout_inherited_merge_strips_extends_and_slots
+     *
+     * @return void 반환값 없음
      */
     public function test_can_serve_inherited_layout(): void
     {
@@ -395,6 +437,14 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * API 사용량 로깅 테스트
+     *
+     * 로그 기록 자체는 재지 않는다 — 로깅 경로를 거친 요청이 200 으로 끝나는지만 확인한다.
+     *
+     * @scenario case=serve_success
+     *
+     * @effects public_layout_request_succeeds
+     *
+     * @return void 반환값 없음
      */
     public function test_api_usage_is_logged(): void
     {
@@ -430,6 +480,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 잘못된 layoutName 파라미터 거부 테스트
+     *
+     * @scenario case=name_validation
+     *
+     * @effects public_layout_invalid_name_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_rejects_invalid_layout_name_parameter(): void
     {
@@ -464,6 +520,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 유효한 layoutName 파라미터 허용 테스트
+     *
+     * @scenario case=name_validation
+     *
+     * @effects public_layout_valid_name_accepted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_accepts_valid_layout_name_parameter(): void
@@ -512,6 +574,14 @@ class PublicLayoutControllerTest extends TestCase
      * Rate Limiting 헤더 존재 테스트
      *
      * 실제 Rate Limit 동작 테스트는 테스트 격리 문제로 인해 헤더 존재 여부만 확인합니다.
+     *
+     * 지금 이 경로에는 throttle 미들웨어가 없어 제한 헤더는 재지 않는다 — 요청이 200 으로 끝나는지만 확인한다.
+     *
+     * @scenario case=serve_success
+     *
+     * @effects public_layout_request_succeeds
+     *
+     * @return void 반환값 없음
      */
     public function test_rate_limiting_is_applied(): void
     {
@@ -546,6 +616,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 공개 레이아웃 (permissions 없음) - 비회원 접근 가능
+     *
+     * @scenario case=permission_session
+     *
+     * @effects public_layout_without_permissions_open_to_guest
+     *
+     * @return void 반환값 없음
      */
     public function test_public_layout_accessible_by_guest(): void
     {
@@ -581,6 +657,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 보호된 레이아웃 + 비회원 → 401 Unauthorized
+     *
+     * @scenario case=permission_session
+     *
+     * @effects protected_layout_guest_gets_401
+     *
+     * @return void 반환값 없음
      */
     public function test_protected_layout_returns_401_for_guest(): void
     {
@@ -618,6 +700,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 보호된 레이아웃 + 권한 없는 회원 → 403 Forbidden
+     *
+     * @scenario case=permission_session
+     *
+     * @effects protected_layout_user_without_permission_gets_403
+     *
+     * @return void 반환값 없음
      */
     public function test_protected_layout_returns_403_for_user_without_permission(): void
     {
@@ -662,6 +750,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 보호된 레이아웃 + 권한 있는 회원 → 200 OK
+     *
+     * @scenario case=permission_session
+     *
+     * @effects protected_layout_user_with_permission_gets_200
+     *
+     * @return void 반환값 없음
      */
     public function test_protected_layout_accessible_by_user_with_permission(): void
     {
@@ -713,6 +807,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 관리자는 모든 보호된 레이아웃에 접근 가능
+     *
+     * @scenario case=permission_session
+     *
+     * @effects protected_layout_user_with_permission_gets_200
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_access_all_protected_layouts(): void
     {
@@ -769,6 +869,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 상속된 레이아웃의 권한이 병합되어 체크됨
+     *
+     * @scenario case=inheritance
+     *
+     * @effects inherited_layout_permissions_merged
+     *
+     * @return void 반환값 없음
      */
     public function test_inherited_layout_permissions_are_merged_and_checked(): void
     {
@@ -837,6 +943,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 비회원이 guest role 권한이 있는 보호된 레이아웃 접근 가능
+     *
+     * @scenario case=permission_session
+     *
+     * @effects guest_role_permission_grants_protected_layout
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_with_role_permission_can_access_protected_layout(): void
     {
@@ -895,6 +1007,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * Bearer 토큰으로 인증된 사용자가 보호된 레이아웃에 접근 가능
+     *
+     * @scenario case=permission_bearer
+     *
+     * @effects protected_layout_user_with_permission_gets_200
+     *
+     * @return void 반환값 없음
      */
     public function test_protected_layout_accessible_with_bearer_token(): void
     {
@@ -951,6 +1069,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 무효한 Bearer 토큰으로 보호된 레이아웃 접근 시 401 반환
+     *
+     * @scenario case=permission_bearer
+     *
+     * @effects protected_layout_invalid_bearer_gets_401
+     *
+     * @return void 반환값 없음
      */
     public function test_protected_layout_returns_401_for_invalid_bearer_token(): void
     {
@@ -988,6 +1112,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * Bearer 토큰이 있지만 권한 없는 사용자는 403 반환
+     *
+     * @scenario case=permission_bearer
+     *
+     * @effects protected_layout_user_without_permission_gets_403
+     *
+     * @return void 반환값 없음
      */
     public function test_protected_layout_returns_403_for_bearer_token_without_permission(): void
     {
@@ -1037,6 +1167,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 공개 레이아웃은 Bearer 토큰 없이도 접근 가능
+     *
+     * @scenario case=permission_bearer
+     *
+     * @effects public_layout_without_permissions_open_to_guest
+     *
+     * @return void 반환값 없음
      */
     public function test_public_layout_accessible_without_bearer_token(): void
     {
@@ -1072,6 +1208,12 @@ class PublicLayoutControllerTest extends TestCase
 
     /**
      * 관리자는 Bearer 토큰으로 모든 보호된 레이아웃 접근 가능
+     *
+     * @scenario case=permission_bearer
+     *
+     * @effects protected_layout_user_with_permission_gets_200
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_access_protected_layout_with_bearer_token(): void
     {

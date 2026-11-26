@@ -12,9 +12,7 @@
  * 이 spec 은 데이터 준비 비용이 큰 결제 플로우 대신 **레이아웃 선언**을 검사한다.
  * 배송지 행을 렌더하는 레이아웃이라면 국가 분기(국내/해외)를 모두 갖고 있어야 한다.
  *
- * @scenario case=address_list_renders_overseas
- *
- * @effects overseas_address_uses_full_address, domestic_address_uses_zipcode_format
+ * 효과 요약(마커 아님 — 평문): 해외 주소는 full_address, 국내 주소는 우편번호 형식. 마킹은 test 위에 있다.
  */
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -28,6 +26,11 @@ const ADDRESS_LIST_LAYOUTS = [
 
 test.describe('배송지 목록 레이아웃의 국내/해외 분기', () => {
   for (const relative of ADDRESS_LIST_LAYOUTS) {
+    /**
+     * @scenario check=layout_declaration
+     *
+     * @effects overseas_address_uses_full_address, domestic_address_uses_zipcode_format
+     */
     test(`${relative.split('/').pop()}: 해외 주소를 full_address 로 렌더한다`, () => {
       const path = resolve(process.cwd(), relative);
       expect(existsSync(path), `${relative} 가 존재해야 한다`).toBe(true);

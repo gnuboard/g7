@@ -11,7 +11,7 @@
  * 그 사실은 `test-scenario-coverage` 룰의 `appliesTo` 에 `templates/_bundled/**` 가 빠져 있어
  * 드러나지 않았다. 아래 「진입 지점 × query 유무 cross product」 블록이 6조합을 실제로 실행한다.
  *
- * @effects redirect_preserves_pathname,redirect_preserves_query_string
+ * 효과 요약(마커 아님 — 평문): redirect_preserves_pathname,redirect_preserves_query_string — 시험별 마킹은 각 it 주석에 있다.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -50,6 +50,12 @@ describe('redirectToLoginWithReturnHandler — /login?redirect=현재경로 (ite
     vi.restoreAllMocks();
   });
 
+  /**
+   * query 없는 경로에서 redirect 가 pathname 그대로 실리는지 잰다.
+   *
+   * @scenario has_query=without_query
+   * @effects redirect_preserves_pathname
+   */
   it('query 없는 경로에서 redirect 가 pathname 으로 보존되어야 한다', async () => {
     mockLocation('/board/members');
 
@@ -65,6 +71,12 @@ describe('redirectToLoginWithReturnHandler — /login?redirect=현재경로 (ite
     });
   });
 
+  /**
+   * query 있는 경로에서 redirect 에 search 까지 실리는지 잰다.
+   *
+   * @scenario has_query=with_query
+   * @effects redirect_preserves_query_string
+   */
   it('query 포함 경로에서 redirect 가 search 까지 보존되어야 한다', async () => {
     mockLocation('/board/members', '?page=2');
 
@@ -76,6 +88,11 @@ describe('redirectToLoginWithReturnHandler — /login?redirect=현재경로 (ite
     expect(call.params.query.redirect).toBe('/board/members?page=2');
   });
 
+  /**
+   * 핸들러가 G7Core.dispatch 로 navigate 를 발화하고 redirect 에 현재 경로를 싣는지 잰다.
+   *
+   * @effects redirect_preserves_pathname, login_returns_to_original_path
+   */
   it('navigate 핸들러로만 발화한다 (redirect 표현식 미사용)', async () => {
     mockLocation('/board/members/123');
 
@@ -86,6 +103,11 @@ describe('redirectToLoginWithReturnHandler — /login?redirect=현재경로 (ite
     expect(call.params.query.redirect).toBe('/board/members/123');
   });
 
+  /**
+   * G7Core.dispatch 가 없을 때 예외 없이 조용히 돌아오는지 잰다.
+   *
+   * @effects redirect_handler_silent_without_dispatch
+   */
   it('G7Core.dispatch 가 없으면 throw 하지 않고 조용히 반환한다', async () => {
     mockLocation('/board/members');
     delete (window as any).G7Core;

@@ -98,6 +98,10 @@ effects:
   - datagrid_preserves_null_last_page
   - datagrid_shows_pager_when_only_has_more_pages_is_known
   - product_grid_pager_uses_has_more_pages
+  # 모든 레이아웃 소유 디렉토리(코어·템플릿·모듈·플러그인)를 훑는 last_page 접힘 전수 가드
+  - layout_scan_population_is_not_empty
+  - no_layout_collapses_null_last_page_to_one
+  - collapse_detector_catches_synthetic_violation
   # ── 절단 노출 (P1) ──
   - comment_list_discloses_truncation
   - comment_count_reports_at_least_over_cap
@@ -176,6 +180,7 @@ test_files:
   # 화면 — 상한 목록의 last_page=null 을 레이아웃이 1 로 붕괴시키지 않는지 (전수 스캔)
   - templates/_bundled/sirsoft-basic/__tests__/layouts/pagination-null-last-page-contract.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/pagination-null-last-page-contract.test.tsx
+  - tests/Unit/Layouts/PaginationLastPageCollapseTest.php
   # 코어 — 행 수를 늘려도 쿼리 수가 늘지 않는지 (N+1 회귀)
   - tests/Feature/Performance/ListQueryCountRegressionTest.php
   # 게시판 — 댓글 절단 사실이 응답까지 도달하는지

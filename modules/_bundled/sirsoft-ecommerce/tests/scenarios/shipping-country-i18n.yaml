@@ -1,0 +1,24 @@
+feature: 배송설정 배송국가의 다국어 표시·입력
+
+description: |
+  배송설정의 배송국가 이름이 화면 언어와 무관하게 늘 한국어로 그려지던 회귀와, 국가 추가 폼의
+  이름 입력칸이 ko/en 두 칸으로 고정돼 다른 언어 이름을 넣을 수 없던 문제를 브라우저에서 잰다.
+  국가명·언어 목록을 하드코딩하지 않고 API 응답과 설치된 언어에서 기대값을 런타임에 도출한다.
+  서버의 언어별 국가명 보충은 `country-name-localization.yaml` 이 맡는다.
+
+# axis 의미:
+#   shipping_country_i18n — 재는 화면 경로.
+#     settings_list      배송설정 탭의 국가 목록
+#     header_derivation  헤더가 파생한 국가 목록(ActionDispatcher 경로의 $localized)
+#     add_form           국가 추가 폼의 이름 입력칸
+axes:
+  shipping_country_i18n: [settings_list, header_derivation, add_form]
+
+effects:
+  - country_names_localized_by_active_locale
+  - country_names_not_pinned_to_ko
+  - add_form_inputs_follow_installed_locales
+  - add_button_enabled_by_any_locale_name
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/shipping-country-i18n.spec.ts

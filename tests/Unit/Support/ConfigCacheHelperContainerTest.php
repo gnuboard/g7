@@ -22,6 +22,8 @@ class ConfigCacheHelperContainerTest extends TestCase
      * 콜백이 전역 인스턴스를 바꿔 놓아도 실행 후 원래 앱으로 돌아온다.
      *
      * @effects config_cache_rebuild_preserves_container_instance
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 콜백이_전역_인스턴스를_바꿔도_원래_앱으로_되돌린다(): void
@@ -41,6 +43,8 @@ class ConfigCacheHelperContainerTest extends TestCase
      * 콜백이 예외를 던져도 인스턴스는 되돌린다.
      *
      * @effects config_cache_rebuild_preserves_container_instance
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 콜백이_실패해도_원래_앱으로_되돌린다(): void
@@ -75,6 +79,8 @@ class ConfigCacheHelperContainerTest extends TestCase
      * `Target class [command.tinker] does not exist.` 로 업데이트가 실패·롤백했다 (2026-09-07 실측).
      *
      * @effects config_cache_rebuild_preserves_facade_application
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 콜백이_파사드_애플리케이션을_바꿔도_원래_앱으로_되돌린다(): void
@@ -99,6 +105,8 @@ class ConfigCacheHelperContainerTest extends TestCase
      * 콜백이 예외를 던져도 파사드 애플리케이션은 되돌린다.
      *
      * @effects config_cache_rebuild_preserves_facade_application
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 콜백이_실패해도_파사드_애플리케이션을_되돌린다(): void
@@ -123,6 +131,8 @@ class ConfigCacheHelperContainerTest extends TestCase
      * 되돌린 뒤 파사드가 원래 앱의 인스턴스를 해석한다 (해석 캐시 오염 없음).
      *
      * @effects config_cache_rebuild_preserves_facade_application
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 되돌린_뒤_파사드가_원래_앱의_인스턴스를_해석한다(): void
@@ -143,6 +153,8 @@ class ConfigCacheHelperContainerTest extends TestCase
      * `rebuild()` 가 `config:cache` 호출을 보존 래퍼로 감싼다 (소스 구조).
      *
      * @effects config_cache_rebuild_preserves_container_instance
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function rebuild_는_config_cache_를_보존_래퍼로_감싼다(): void

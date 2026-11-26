@@ -44,10 +44,14 @@ describe('관리자 게시판 → 유저 게시판 크로스링크', () => {
     describe('admin_board_posts_index.json (게시물 리스트)', () => {
         const link = findById(postsIndex as LayoutNode, 'view_user_page_link');
 
+        // @scenario screen=posts_index
+        // @effects admin_screen_has_user_page_link
         it('유저 화면 보기 링크 노드가 존재한다', () => {
             expect(link).not.toBeNull();
         });
 
+        // @scenario screen=posts_index
+        // @effects user_page_link_opens_matching_user_route_in_new_tab
         it('A 태그로 유저 게시판 리스트 경로를 새 탭으로 연다', () => {
             expect(link?.name).toBe('A');
             expect(link?.props?.href).toBe('/board/{{route.slug}}');
@@ -55,6 +59,8 @@ describe('관리자 게시판 → 유저 게시판 크로스링크', () => {
             expect(link?.props?.rel).toBe('noopener noreferrer');
         });
 
+        // @scenario screen=posts_index
+        // @effects user_page_link_always_visible
         it('노출 조건(if)이 없어 관리자 화면에서 항상 표시된다', () => {
             expect(link?.if).toBeUndefined();
         });
@@ -63,16 +69,22 @@ describe('관리자 게시판 → 유저 게시판 크로스링크', () => {
     describe('admin_board_post_detail.json (게시물 상세)', () => {
         const link = findById(postDetail as LayoutNode, 'view_user_page_link');
 
+        // @scenario screen=post_detail
+        // @effects admin_screen_has_user_page_link
         it('유저 화면 보기 링크 노드가 존재한다', () => {
             expect(link).not.toBeNull();
         });
 
+        // @scenario screen=post_detail
+        // @effects user_page_link_opens_matching_user_route_in_new_tab
         it('A 태그로 유저 게시판 상세 경로를 새 탭으로 연다', () => {
             expect(link?.name).toBe('A');
             expect(link?.props?.href).toBe('/board/{{route.slug}}/{{route?.id}}');
             expect(link?.props?.target).toBe('_blank');
         });
 
+        // @scenario screen=post_detail
+        // @effects user_page_link_always_visible
         it('노출 조건(if)이 없어 관리자 화면에서 항상 표시된다', () => {
             expect(link?.if).toBeUndefined();
         });

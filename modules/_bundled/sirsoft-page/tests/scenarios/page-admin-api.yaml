@@ -1,0 +1,72 @@
+feature: 관리자 페이지 API — 목록·검색·상세·생성·수정·삭제·발행·슬러그 확인·버전·권한
+
+description: |
+  관리자 페이지 컨트롤러(HTTP)가 요청마다 어떻게 답하는지 잰다. 서비스 단위 동작은 page-service.yaml,
+  목록 본문 컬럼 프루닝은 page-admin-list-column-pruning.yaml, 첨부 URL 과 복원 뒤 SEO 캐시는
+  page-attachment-order-and-seo-cache.yaml·page-attachment-serving.yaml 이 같은 시험 파일에서 맡는다.
+    - 목록: 발행 상태 필터, 기본 쪽 크기 20, per_page
+    - 검색: 제목·슬러그 대상(본문 제외), 「전체」는 제목보다 넓고 total 이 행 수와 같다, 너무 긴 검색어는 422
+    - 상세: 관리자·공개 상세 모두 첨부 URL 을 공개 hash 주소로 싣는다, 없는 페이지는 404
+    - 생성·수정: 버전 스냅샷, 발행 생성 시 published_at, 필수 항목·중복 슬러그 422
+    - 슬러그 수정: 형식(대문자·공백·특수문자·길이) 위반 422, 같은 값은 통과, 안 보내면 유지
+    - 삭제: 물리 삭제 뒤 같은 슬러그 재사용, 슬러그 확인과 생성 판정 일치, 첨부가 있어도 삭제 완료
+    - 발행·일괄 발행, 슬러그 확인(사용 가능·사용 중·자기 자신 제외·다국어 형식 오류)
+    - 버전: 이력·특정 버전 조회·복원
+    - 권한: 비로그인·일반 회원 차단, 생성 권한 없는 사용자 차단, abilities 응답, scope=self 제한
+
+# axis 의미:
+#   api_case — 시험이 부르는 관리자 API 갈래(같은 시험 파일의 다른 매니페스트 축과 이름이 겹치지 않게 따로 둔다).
+axes:
+  api_case: [list, search, show, create, update, slug_update, delete, publish, bulk_publish, check_slug, versions, access_gate, abilities, scope_self]
+
+effects:
+  - admin_page_list_returns_pages
+  - page_list_filters_by_published
+  - page_list_default_per_page_20
+  - page_list_honors_per_page
+  - page_search_matches_slug
+  - page_search_all_includes_slug
+  - page_search_all_total_matches_rows
+  - page_search_excludes_content
+  - page_search_all_wider_than_title
+  - page_search_too_long_keyword_rejected_422
+  - page_search_accepts_filters_array
+  - admin_page_show_returns_page
+  - missing_page_returns_404
+  - admin_page_created
+  - published_create_sets_published_at
+  - page_create_writes_version_1_snapshot
+  - page_create_missing_required_rejected_422
+  - duplicate_slug_rejected_422
+  - admin_page_updated
+  - page_update_increments_version_with_snapshot
+  - slug_change_saved
+  - same_slug_update_allowed
+  - omitted_slug_keeps_existing
+  - invalid_slug_rejected_422
+  - page_hard_deleted
+  - deleted_slug_reusable
+  - check_slug_and_create_agree_after_delete
+  - delete_with_attachment_completes
+  - publish_state_toggled
+  - bulk_publish_state_toggled
+  - bulk_publish_empty_ids_rejected_422
+  - check_slug_reports_available
+  - check_slug_reports_taken
+  - check_slug_excludes_own_page
+  - check_slug_regex_error_localized
+  - page_versions_listed
+  - page_version_detail_shown
+  - page_version_restored
+  - unauthenticated_admin_api_rejected
+  - create_without_permission_rejected
+  - normal_user_admin_api_rejected
+  - list_response_carries_collection_abilities
+  - collection_abilities_reflect_read_only_user
+  - show_response_carries_item_abilities
+  - list_items_carry_item_abilities
+  - scope_self_denied_on_others_page
+  - scope_self_allowed_on_own_page
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/Admin/PageControllerTest.php

@@ -34,6 +34,10 @@ effects:
   - unauthenticated_request_returns_401
   - missing_permission_returns_403
   - index_lists_filters_and_sorts
+  # 필터 없이 sort_by·sort_order 만 보내도 정렬이 적용된다 (MenuListSortAndSearchTest)
+  - index_sort_applies_without_filters
+  # 이름(다국어 JSON) 검색이 로케일 경로로 풀려 한글·다른 로케일 값도 매칭된다
+  - index_name_search_matches_multilingual_json
   - index_abilities_reflect_permissions
   - role_assignment_limits_visible_menus
   - hierarchy_returns_nested_tree
@@ -49,6 +53,7 @@ effects:
 
 test_files:
   - tests/Feature/Api/Admin/MenuControllerTest.php
+  - tests/Feature/Menu/MenuListSortAndSearchTest.php
 
 notes:
   - 목록 응답의 하위 컬렉션 프루닝(하위 메뉴 역할 목록 제거)은 list-child-collection-pruning.yaml 이 소유한다.

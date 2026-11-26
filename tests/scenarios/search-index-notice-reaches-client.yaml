@@ -14,6 +14,11 @@ effects:
   - response_shape_unchanged_without_additional
   - update_success_placeholders_replaced
   - update_controllers_pass_message_params
+  # 업데이트 모달의 「검색 인덱스 재생성」 선택은 그 창에서만 유효하다 (브라우저)
+  - rebuild_checkbox_defaults_unchecked
+  - rebuild_checkbox_resets_on_reopen
+  - unchecked_update_does_not_rebuild_search_index
 
 test_files:
   - tests/Feature/Search/SearchIndexNoticeReachesClientTest.php
+  - tests/Playwright/specs/admin/extension-update-search-index-optin.spec.ts

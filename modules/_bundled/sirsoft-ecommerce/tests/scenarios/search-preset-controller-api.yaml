@@ -1,0 +1,33 @@
+feature: 관리자 검색 프리셋 API (목록·저장·수정·삭제)
+
+description: |
+  관리자 목록 화면이 검색 조건을 이름 붙여 저장하는 프리셋 API 의 HTTP 계약을 잰다.
+  서비스 단의 훅·소유자 판정은 `search-preset-service.yaml` 이, 주문 화면 권한은
+  `search-preset-order-permission.yaml` 이 맡고, 여기서는 엔드포인트가 돌려주는 상태 코드와
+  응답·저장 결과를 본다.
+
+  조용히 깨지는 지점은 셋이다.
+  ① 목록이 남의 프리셋이나 다른 화면의 프리셋을 섞어 내면 운영자가 남의 조건을 불러온다.
+  ② 이름 중복 검사가 자기 자신까지 막으면, 이름을 그대로 두고 조건만 고치는 저장이 422 가 된다.
+  ③ 남의 프리셋 삭제가 통과하면 다른 운영자의 저장 조건이 사라진다.
+
+# axis 의미:
+#   endpoint — 프리셋 API 의 호출 종류. unauthenticated 는 로그인 없이 부르는 경우다.
+axes:
+  endpoint: [index, store, update, destroy, unauthenticated]
+
+effects:
+  - search_preset_api_index_lists_only_own_presets
+  - search_preset_api_index_filters_by_target_screen
+  - search_preset_api_store_creates_preset
+  - search_preset_api_store_requires_name
+  - search_preset_api_store_rejects_duplicate_name
+  - search_preset_api_update_changes_preset
+  - search_preset_api_update_rejects_name_of_another_preset
+  - search_preset_api_update_allows_keeping_own_name
+  - search_preset_api_destroy_deletes_own_preset
+  - search_preset_api_destroy_rejects_other_user_preset
+  - search_preset_api_requires_authentication
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/SearchPresetControllerTest.php

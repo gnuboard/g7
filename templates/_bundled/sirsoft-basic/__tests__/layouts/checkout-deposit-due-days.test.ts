@@ -74,10 +74,22 @@ const NOTICES: Array<[string, string]> = [
 ];
 
 describe('주문서 입금 기한 안내 — 서버 SSoT 바인딩', () => {
+    /**
+     * 가상계좌·무통장입금 안내의 days 바인딩이 auto_cancel_days 를 참조하는지 잰다.
+     *
+     * @scenario case=layout_binding
+     * @effects due_notice_binds_auto_cancel_days
+     */
     it.each(NOTICES)('%s 안내가 auto_cancel_days 를 참조한다', (_label, translationKey) => {
         expect(extractDaysExpression(translationKey)).toContain(SSOT_KEY);
     });
 
+    /**
+     * 서버 응답에 없는 vbank_due_days·dbank_due_days 키를 참조하지 않는지 잰다.
+     *
+     * @scenario case=layout_binding
+     * @effects due_notice_references_no_orphan_due_days_keys
+     */
     it.each([
         ['vbank_due_days'],
         ['dbank_due_days'],
@@ -103,6 +115,12 @@ describe('주문서 입금 기한 안내 — 오염된 설정값 폴백 (서버 
     ];
 
     describe.each(NOTICES)('%s 안내', (_label, translationKey) => {
+        /**
+         * 오염된 설정값(빈 문자열·0·음수·비숫자)이 서버와 같은 규칙으로 기본치 3 으로 떨어지는지 잰다.
+         *
+         * @scenario case=dirty_setting_fallback
+         * @effects due_notice_fallback_matches_server_rule
+         */
         it.each(CASES)('%s → %s 일로 안내한다', (_caseLabel, stored, expected) => {
             expect(evaluateDays(extractDaysExpression(translationKey), stored)).toBe(expected);
         });

@@ -19,6 +19,15 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class PostResourceAttachmentCountTest extends BoardTestCase
 {
+    /**
+     * PostResource 응답에 attachment_count 가 정수로 실린다.
+     *
+     * @scenario layer=resource
+     *
+     * @effects post_resource_exposes_attachment_count_integer
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function attachment_count_is_exposed_as_integer(): void
     {
@@ -30,6 +39,15 @@ class PostResourceAttachmentCountTest extends BoardTestCase
         $this->assertSame(4, $response['attachment_count']);
     }
 
+    /**
+     * 첨부가 없으면 attachment_count 는 0 이고 has_attachment 는 false 다.
+     *
+     * @scenario layer=resource
+     *
+     * @effects post_resource_exposes_attachment_count_integer, has_attachment_matches_attachment_count
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function attachment_count_is_zero_when_no_attachments(): void
     {
@@ -41,6 +59,15 @@ class PostResourceAttachmentCountTest extends BoardTestCase
         $this->assertFalse($response['has_attachment']);
     }
 
+    /**
+     * attachment_count 가 0 보다 크면 has_attachment 는 true 로 남는다.
+     *
+     * @scenario layer=resource
+     *
+     * @effects has_attachment_matches_attachment_count
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function has_attachment_remains_true_when_attachment_count_is_positive(): void
     {
@@ -52,6 +79,15 @@ class PostResourceAttachmentCountTest extends BoardTestCase
         $this->assertGreaterThan(0, $response['attachment_count']);
     }
 
+    /**
+     * 첨부 0건과 5건 모두 has_attachment 와 attachment_count > 0 의 뜻이 같다.
+     *
+     * @scenario layer=resource
+     *
+     * @effects has_attachment_matches_attachment_count
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function has_attachment_and_attachment_count_are_consistent(): void
     {
@@ -66,6 +102,15 @@ class PostResourceAttachmentCountTest extends BoardTestCase
         $this->assertSame($manyResp['has_attachment'], $manyResp['attachment_count'] > 0);
     }
 
+    /**
+     * 댓글·답글·첨부 수가 단수형 키(comment_count·reply_count·attachment_count)로 실린다.
+     *
+     * @scenario layer=resource
+     *
+     * @effects post_resource_count_keys_singular
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function comment_count_and_reply_count_remain_singular(): void
     {
@@ -87,6 +132,9 @@ class PostResourceAttachmentCountTest extends BoardTestCase
 
     /**
      * board_posts 행을 직접 생성하고 카운트 컬럼을 지정합니다.
+     *
+     * @param  array<string, mixed>  $counts  기본값 위에 덮어쓸 카운트 컬럼 값
+     * @return int 만든 게시글 ID
      */
     private function createTestPostWithCounts(array $counts): int
     {
@@ -113,6 +161,9 @@ class PostResourceAttachmentCountTest extends BoardTestCase
 
     /**
      * Post 모델 인스턴스 → PostResource toArray 결과를 반환합니다.
+     *
+     * @param  int  $postId  읽을 게시글 ID
+     * @return array<string, mixed> PostResource 가 만든 응답 배열
      */
     private function resourceArray(int $postId): array
     {

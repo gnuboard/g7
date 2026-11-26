@@ -1,0 +1,35 @@
+feature: 관리자 본인인증 화면(모달·풀페이지) — provider 진입점·코어 메일 인증 UI 가드와 시도 횟수 정합
+
+description: |
+  관리자 본인인증 모달(`partials/_identity_challenge_modal.json`)과 풀페이지 화면이 외부 IDV 플러그인과
+  코어 메일 인증을 어떻게 나눠 그리는지, 시도 횟수 상한(max_attempts)을 어떻게 다루는지를 잰다.
+  모달 취소 흐름(cancel API → resolve → 닫기)은 코어 매니페스트 `tests/scenarios/idv-permission-guard.yaml`
+  의 modal_cancel_sequence 가 잰다.
+
+  잡는 회귀:
+    · 외부 플러그인이 mode:replace 로 코어 UI 를 비워 빈 모달이 되던 것 — 진입점은 provider 슬롯 하나뿐이다.
+    · 정책 provider_id 가 비어 default_provider(g7:core.mail)가 넘어올 때 OTP 입력·버튼이 사라지던 것.
+    · max_attempts=0(무제한)인데 확인 버튼이 disabled 되던 것, 풀페이지가 5회를 하드코딩하던 것.
+
+# axis 의미:
+#   component — 이 매니페스트가 다루는 레이아웃 하나(정적 JSON 계약을 직접 읽는다).
+axes:
+  component: [admin_identity_challenge_modal, admin_identity_challenge_fullpage]
+
+effects:
+  # 모달
+  - admin_idv_modal_single_provider_slot                # 외부 진입점은 identity_provider_ui:provider 하나, text_code·link 슬롯은 없다
+  - admin_idv_modal_provider_slot_hidden_for_core_mail  # provider 슬롯은 코어 mail·미지정일 때 마운트되지 않는다
+  - admin_idv_modal_core_otp_shown_for_core_mail        # 코어 OTP 입력은 코어 mail·미지정 + text_code 일 때 보인다
+  - admin_idv_modal_buttons_shown_for_core_mail         # 재전송·확인 버튼 가드가 mail provider 도 허용한다
+  - admin_idv_modal_unlimited_attempts_not_disabled     # disabled 식이 maxAttempts > 0 가드를 둔다
+  # 풀페이지
+  - admin_idv_fullpage_max_attempts_defaults_unlimited     # maxAttempts 초기값·query 폴백이 0(무제한)이다
+  - admin_idv_fullpage_fetches_challenge_for_max_attempts  # challenge 단건을 조회해 응답의 max_attempts 로 갱신한다
+  - admin_idv_fullpage_no_hardcoded_attempt_limit          # 카운트다운·disabled 식이 maxAttempts ?? 5 를 쓰지 않는다
+  - admin_idv_fullpage_does_not_show_remaining_attempts    # 서버가 싣지 않는 attempts 를 읽지 않고 남은 횟수를 표시하지 않는다
+  - admin_idv_fullpage_unlimited_attempts_not_disabled     # 확인 버튼 disabled 식이 무제한(0) 가드를 둔다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-identity-challenge-modal.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-identity-challenge-fullpage.test.tsx
