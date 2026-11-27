@@ -29,6 +29,11 @@ class LayoutFragmentSourceHelperTest extends TestCase
 {
     private string $tmp;
 
+    /**
+     * 테스트마다 임시 디렉토리를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,6 +42,11 @@ class LayoutFragmentSourceHelperTest extends TestCase
         File::ensureDirectoryExists($this->tmp);
     }
 
+    /**
+     * 테스트가 만든 임시 디렉토리를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->tmp);
@@ -45,9 +55,13 @@ class LayoutFragmentSourceHelperTest extends TestCase
     }
 
     /**
+     * 마크업 소스와 .json 이 함께 있으면 마크업 소스를 읽는다.
+     *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fragment_helper_prefers_markup_sibling
+     *
+     * @return void 반환값 없음
      */
     public function test_read_prefers_markup_sibling(): void
     {
@@ -59,9 +73,13 @@ class LayoutFragmentSourceHelperTest extends TestCase
     }
 
     /**
+     * 짝 .json 없이 마크업 소스만 있어도 확장점 정의를 읽는다.
+     *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fragment_helper_reads_markup_only_definition
+     *
+     * @return void 반환값 없음
      */
     public function test_read_resolves_markup_only_definition(): void
     {
@@ -72,9 +90,13 @@ class LayoutFragmentSourceHelperTest extends TestCase
     }
 
     /**
+     * 마크업 소스가 없으면 .json 을 읽는다.
+     *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fragment_helper_reads_json_only_definition
+     *
+     * @return void 반환값 없음
      */
     public function test_read_resolves_json_only_definition(): void
     {
@@ -85,9 +107,13 @@ class LayoutFragmentSourceHelperTest extends TestCase
     }
 
     /**
+     * 설치 소스를 json 으로 강제하면 마크업이 있어도 .json 을 읽는다.
+     *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fragment_helper_honors_json_forced_source
+     *
+     * @return void 반환값 없음
      */
     public function test_read_honors_json_forced_source(): void
     {
@@ -106,6 +132,8 @@ class LayoutFragmentSourceHelperTest extends TestCase
      * @scenario compile_unit=install,source_health=invalid
      *
      * @effects fragment_helper_returns_empty_when_absent
+     *
+     * @return void 반환값 없음
      */
     public function test_read_returns_empty_when_no_source_exists(): void
     {
@@ -121,6 +149,8 @@ class LayoutFragmentSourceHelperTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fragment_helper_directory_read_includes_markup_only
+     *
+     * @return void 반환값 없음
      */
     public function test_read_directory_includes_markup_only_definitions(): void
     {
@@ -142,6 +172,8 @@ class LayoutFragmentSourceHelperTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fragment_helper_directory_read_dedupes_pairs
+     *
+     * @return void 반환값 없음
      */
     public function test_read_directory_does_not_double_count_pairs(): void
     {
@@ -163,6 +195,8 @@ class LayoutFragmentSourceHelperTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fragment_helper_directory_read_carries_fragment_key
+     *
+     * @return void 반환값 없음
      */
     public function test_read_directory_keyed_carries_fragment_key(): void
     {
@@ -202,6 +236,8 @@ class LayoutFragmentSourceHelperTest extends TestCase
      * @scenario compile_unit=install,source_health=invalid
      *
      * @effects fragment_helper_directory_read_returns_empty_when_absent
+     *
+     * @return void 반환값 없음
      */
     public function test_read_directory_returns_empty_when_directory_absent(): void
     {
@@ -223,6 +259,8 @@ class LayoutFragmentSourceHelperTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fragment_helper_read_cache_is_keyed_by_path_mtime_size
+     *
+     * @return void 반환값 없음
      */
     public function test_read_cache_is_keyed_by_path_mtime_and_size(): void
     {
@@ -260,6 +298,8 @@ class LayoutFragmentSourceHelperTest extends TestCase
      *
      * @param  string  $name  파일 베이스 이름
      * @param  string  $point  확장점 이름
+     *
+     * @return void 반환값 없음
      */
     private function writeMarkup(string $name, string $point): void
     {
@@ -272,6 +312,8 @@ class LayoutFragmentSourceHelperTest extends TestCase
      *
      * @param  string  $name  파일 베이스 이름
      * @param  string  $point  확장점 이름
+     *
+     * @return void 반환값 없음
      */
     private function writeJson(string $name, string $point): void
     {

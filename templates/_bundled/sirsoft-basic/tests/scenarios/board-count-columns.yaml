@@ -1,0 +1,26 @@
+feature: 게시판 사용자 화면 — 카운트 표시가 서버 집계 컬럼을 쓴다
+
+description: |
+  게시판 사용자 화면의 댓글·답글·첨부 수는 응답의 단수형 서버 컬럼(comment_count / reply_count / attachment_count)을
+  쓴다. 복수형 키(comments_count)는 응답에 없어 늘 빈 값이 되고, 배열 `.length` 는 배열이 잘려 오거나
+  늦게 오면 실제 수와 어긋난다. 첨부 섹션 표시 조건은 has_attachment 불리언을 쓴다.
+  목록을 그리는 반복 소스는 여전히 배열이다 — 표시 수만 서버 컬럼으로 바꾼다.
+
+# axis 의미:
+#   surface — 카운트를 표시하는 레이아웃 조각
+axes:
+  surface: [user_show, user_posts, mypage_posts, comment_section, reply_section, post_show, post_attachments]
+
+effects:
+  - comment_count_uses_singular_server_key             # 게시글 목록형 화면의 댓글 수가 comment_count 를 쓰고 comments_count 를 쓰지 않는다
+  - comment_header_uses_comment_count_column           # 댓글 헤더 카운트가 comment_count 를 쓰고 배열 length 를 쓰지 않는다
+  - comment_iteration_still_uses_comments_array        # 댓글 반복 소스는 comments 배열 그대로다
+  - reply_header_uses_reply_count_column               # 답글 헤더 카운트가 reply_count 를 쓰고 배열 length 를 쓰지 않는다
+  - reply_iteration_still_uses_replies_array           # 답글 반복 소스는 replies 배열 그대로다
+  - reply_section_if_uses_reply_count_column           # 답글 섹션 표시 조건이 reply_count 를 쓴다
+  - attachment_section_if_uses_has_attachment          # 첨부 섹션 표시 if 가 has_attachment 를 쓴다
+  - attachment_badge_uses_attachment_count_column      # 첨부 카운트 배지가 attachment_count 를 쓴다
+  - attachment_iteration_still_uses_attachments_array  # 첨부 반복 소스는 attachments 배열 그대로다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-show-count-consistency.test.tsx

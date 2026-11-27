@@ -26,6 +26,12 @@ effects:
   - serve_config_returns_installed_manifest_after_invalidation
   - clear_template_cache_forgets_components_manifest_variants
   - with_source_meta_layout_cache_variants_forgotten
+  # 템플릿 라이프사이클의 버전 캐시 워밍·버전 증가·내부 레이아웃 캐시 삭제 — TemplateCacheManagementTest
+  - activate_template_warms_versioned_caches
+  - deactivate_uninstall_bump_extension_cache_version
+  - reactivation_rewarms_routes_cache_under_new_version
+  - install_bumps_version_without_warming_cache
+  - deactivate_forgets_unversioned_internal_layout_caches
 
 test_files:
   - tests/Feature/Template/TemplateCacheManagementTest.php

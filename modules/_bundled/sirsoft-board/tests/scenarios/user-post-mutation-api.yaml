@@ -1,0 +1,45 @@
+feature: 사용자 게시글 작성·수정·삭제 API — 게시판 설정과 권한별 동작
+
+description: |
+  사용자 화면의 게시글 작성·수정·삭제 API 가 게시판 설정과 요청자에 따라 어떻게 답하는지 잰다.
+    - 작성: 비회원 글쓰기 권한, 파일 업로드 허용(use_file_upload)·비회원 업로드 권한, 비밀글 모드
+      (disabled·enabled·always), 금지 키워드, 필수 항목, 비활성 게시판
+    - 수정·삭제: 작성자 본인, 다른 회원, 게시판 관리자(manager), 비회원 비밀번호, 없는 게시글
+    - 삭제: 게시글을 소프트 삭제하면 살아 있던 댓글·첨부도 trigger_type=cascade 로 함께 소프트 삭제된다
+
+# axis 의미:
+#   operation — 작성·수정·삭제
+#   actor     — 요청자. member 는 게시판 권한이 있는 회원(수정·삭제에서는 글 작성자), other_member 는
+#               글 작성자가 아닌 회원, manager 는 그 게시판의 관리자 역할, guest 는 비로그인 요청이다.
+axes:
+  operation: [create, update, delete]
+  actor: [member, other_member, manager, guest]
+
+exclusions:
+  - { operation: create, actor: other_member, reason: "작성 요청에는 남의 글이 없다 — 요청자가 곧 작성자다" }
+  - { operation: create, actor: manager, reason: "작성 권한은 관리자 역할로 갈리지 않는다 — 관리자 분기는 남의 글 수정·삭제에만 있다" }
+
+effects:
+  - member_post_created_201
+  - guest_post_created_when_permitted
+  - guest_post_create_rejected_401_without_permission
+  - file_upload_rejected_403_when_board_disallows
+  - guest_file_upload_rejected_403_without_permission
+  - guest_file_upload_allowed_with_permission
+  - secret_mode_always_forces_secret
+  - secret_mode_enabled_keeps_user_choice
+  - secret_mode_disabled_rejects_secret_request
+  - blocked_keyword_rejected_422
+  - missing_required_fields_rejected_422
+  - inactive_board_post_create_404
+  - author_can_update_or_delete_own_post
+  - other_member_update_or_delete_rejected_403
+  - board_manager_can_update_or_delete_others_post
+  - guest_password_match_allows_update_or_delete
+  - guest_wrong_or_missing_password_rejected_403
+  - missing_post_update_or_delete_404
+  - post_soft_delete_cascades_to_comments
+  - post_soft_delete_cascades_to_attachments
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/PostMutationApiTest.php

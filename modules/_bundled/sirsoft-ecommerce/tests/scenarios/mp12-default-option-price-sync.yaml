@@ -39,7 +39,10 @@ effects:
   - backend_safety_net_syncs_price        # syncOptions 후 상품가 보정
   - backend_no_default_keeps_price        # 기본옵션 없으면 미변경
   - backend_no_options_keeps_price        # 옵션 미보유 미변경
+  - inline_option_reverse_sync_tracks_product_as_modified  # 상품 목록 인라인 편집의 역동기화가 상품을 일괄 저장 대상에 넣는다
+  - inline_option_reverse_sync_recalculates_multi_currency # 역동기화 시 상품 다중통화 판매가도 재계산
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/productOptionHandlers.test.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductServiceOptionsTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/updateOptionField.test.ts

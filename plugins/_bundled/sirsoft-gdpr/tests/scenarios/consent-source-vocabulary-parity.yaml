@@ -1,0 +1,24 @@
+feature: GDPR 동의 출처 어휘 정합 — 기록 값·화면 필터·라벨
+
+description: |
+  동의 출처(ConsentSource)는 세 곳에 같은 어휘로 있어야 한다.
+  기록 경로가 남기는 값 = 관리자 동의 이력 화면의 출처 필터 옵션 = 출처 라벨 키.
+
+  어긋나면 화면 필터에 없는 출처로 남은 행은 어떤 필터로도 찾을 수 없고,
+  라벨 키가 없는 출처는 목록 칸에 원래 키가 그대로 보인다.
+
+  이 매니페스트는 파일만 읽는 정적 검사 축을 담는다. 브라우저에서 필터가 보이고 동작하는지는
+  consent-source-vocabulary.yaml 이 따로 잰다.
+
+axes:
+  surface: [record_path, filter_options, source_labels, pager_labels, request_selectable]
+
+effects:
+  - recorded_source_literals_declared_in_enum
+  - filter_options_cover_all_enum_cases
+  - source_labels_exist_in_backend_and_frontend
+  - policy_history_pager_labels_exist_with_surface_syntax
+  - server_only_sources_not_request_selectable
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/ConsentSourceVocabularyParityTest.php

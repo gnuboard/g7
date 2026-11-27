@@ -29,6 +29,8 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -45,6 +47,8 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 테스트 정리
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -65,6 +69,8 @@ class PageControllerTest extends FeatureTestCase
      * @scenario endpoint=list,observation=executed_sql
      *
      * @effects list_query_omits_content_column, list_query_names_columns_explicitly, list_payload_shape_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_page_list_does_not_select_content_column(): void
     {
@@ -105,6 +111,8 @@ class PageControllerTest extends FeatureTestCase
      * @scenario endpoint=detail,observation=response_payload
      *
      * @effects detail_still_provides_content
+     *
+     * @return void 반환값 없음
      */
     public function test_page_detail_still_provides_content(): void
     {
@@ -129,6 +137,8 @@ class PageControllerTest extends FeatureTestCase
      * @scenario endpoint=list,observation=response_payload
      *
      * @effects list_payload_shape_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_page_list_payload_shape_is_unchanged(): void
     {
@@ -159,6 +169,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 페이지 목록을 조회할 수 있는지 확인
+     *
+     * @scenario api_case=list
+     *
+     * @effects admin_page_list_returns_pages
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_list_pages(): void
     {
@@ -184,6 +200,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 발행 상태로 필터링하여 목록을 조회할 수 있는지 확인
+     *
+     * @scenario api_case=list
+     *
+     * @effects page_list_filters_by_published
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_filter_pages_by_published(): void
     {
@@ -214,6 +236,12 @@ class PageControllerTest extends FeatureTestCase
      * 검색 동작은 슬러그(LIKE) 매칭으로 검증한다 — 슬러그 검색은 InnoDB FULLTEXT 가
      * 트랜잭션 내 미커밋 데이터를 보장하지 않는 가시성 문제와 무관하게 안정적이다.
      * (제목/본문 FULLTEXT 컬럼 범위 분리는 test_admin_search_title_excludes_content 가 담당)
+     *
+     * @scenario api_case=search
+     *
+     * @effects page_search_matches_slug
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_search_pages(): void
     {
@@ -241,6 +269,12 @@ class PageControllerTest extends FeatureTestCase
      *
      * 슬러그 매칭은 LIKE 기반이라 테스트 트랜잭션의 미커밋 데이터도 검증 가능하다.
      * (제목·본문 FULLTEXT 매칭은 별도 title 단독 검색 테스트가 담당)
+     *
+     * @scenario api_case=search
+     *
+     * @effects page_search_all_includes_slug
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_search_all_includes_slug(): void
     {
@@ -268,6 +302,12 @@ class PageControllerTest extends FeatureTestCase
      * 과거 Scout 콜백 내 orWhere('slug') 가 total 카운트를 부풀렸던 회귀를
      * all 검색 통합 후에도 재발하지 않는지 검증한다.
      * 고유 슬러그 토큰으로 결과를 1건으로 한정해 total ↔ 행 수 정합을 본다.
+     *
+     * @scenario api_case=search
+     *
+     * @effects page_search_all_total_matches_rows
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_search_all_total_matches_rows(): void
     {
@@ -294,6 +334,12 @@ class PageControllerTest extends FeatureTestCase
      *
      * 회귀: 백엔드 기본값이 15 였으나 프론트 셀렉트는 20 을 표시해
      * '표시 20 / 실제 조회 15' 불일치 발생. 양쪽을 20 으로 통일한다.
+     *
+     * @scenario api_case=list
+     *
+     * @effects page_list_default_per_page_20
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_list_default_per_page_is_20(): void
     {
@@ -311,6 +357,12 @@ class PageControllerTest extends FeatureTestCase
      * 검색 필드 옵션 전체/제목/슬러그와 일치). '제목'뿐 아니라 '전체' 검색도 본문을 제외한다.
      *
      * 검증 범위: '본문 단어가 검색에 누출되지 않음'(항상 0건이라 트랜잭션 FULLTEXT 가시성과 무관하게 안정적).
+     *
+     * @scenario api_case=search
+     *
+     * @effects page_search_excludes_content
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_search_excludes_content(): void
     {
@@ -339,6 +391,12 @@ class PageControllerTest extends FeatureTestCase
      * 검색조건 '전체'(all)는 제목 외에 슬러그도 검색해 title 보다 넓은 범위인지 확인 (E4 대조)
      *
      * '전체' 검색 = 제목 + 슬러그. title 검색이 제목만 보더라도, all 검색은 슬러그까지 포함해야 한다.
+     *
+     * @scenario api_case=search
+     *
+     * @effects page_search_all_wider_than_title
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_search_all_wider_than_title(): void
     {
@@ -369,6 +427,12 @@ class PageControllerTest extends FeatureTestCase
      * 회귀: 공백 없는 긴 한글(140자+)이 FULLTEXT phrase 토큰 한도를 초과해
      * 'Too many words in a FTS phrase'(191) → 500 을 유발했다.
      * search max 를 100 으로 제한해 긴 입력을 422 로 사전 차단한다.
+     *
+     * @scenario api_case=search
+     *
+     * @effects page_search_too_long_keyword_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_search_too_long_returns_422(): void
     {
@@ -382,6 +446,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 페이지 상세 정보를 조회할 수 있는지 확인
+     *
+     * @scenario api_case=show
+     *
+     * @effects admin_page_show_returns_page
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_show_page(): void
     {
@@ -407,6 +477,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 존재하지 않는 페이지 조회 시 404를 반환하는지 확인
+     *
+     * @scenario api_case=show
+     *
+     * @effects missing_page_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_show_nonexistent_page_returns_404(): void
     {
@@ -424,6 +500,12 @@ class PageControllerTest extends FeatureTestCase
      * 차단은 공개 라우트 내부의 발행상태 게이트가 담당한다(KVE-2026-1914).
      * 미발행 페이지의 preview URL 은 게이트를 통과할 수 있도록 한시 서명이 실린다
      * — 무인증 <img> 요청으로도 렌더 가능해야 하기 때문이다.
+     *
+     * @scenario api_case=show
+     *
+     * @effects admin_detail_and_public_both_return_public_hash_url, attachment_urls_are_public_hash_route_even_for_admin_detail
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_show_returns_public_attachment_urls(): void
     {
@@ -462,6 +544,12 @@ class PageControllerTest extends FeatureTestCase
      *
      * 공개 응답에 admin URL(발행 가드 없음)이 섞이면 미발행 첨부가
      * 노출되는 보안 회귀가 된다. 공개 응답은 공개 라우트만 반환해야 한다.
+     *
+     * @scenario api_case=show
+     *
+     * @effects admin_detail_and_public_both_return_public_hash_url
+     *
+     * @return void 반환값 없음
      */
     public function test_public_show_returns_public_attachment_urls(): void
     {
@@ -496,6 +584,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 페이지를 생성할 수 있는지 확인
+     *
+     * @scenario api_case=create
+     *
+     * @effects admin_page_created
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_create_page(): void
     {
@@ -519,6 +613,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 발행 상태로 페이지를 생성하면 published_at이 설정되는지 확인
+     *
+     * @scenario api_case=create
+     *
+     * @effects published_create_sets_published_at
+     *
+     * @return void 반환값 없음
      */
     public function test_creating_published_page_sets_published_at(): void
     {
@@ -540,6 +640,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 페이지 생성 시 버전 1 스냅샷이 생성되는지 확인
+     *
+     * @scenario api_case=create
+     *
+     * @effects page_create_writes_version_1_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_creating_page_creates_version_snapshot(): void
     {
@@ -563,6 +669,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 필수 필드가 누락되면 422를 반환하는지 확인
+     *
+     * @scenario api_case=create
+     *
+     * @effects page_create_missing_required_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_creating_page_without_required_fields_returns_422(): void
     {
@@ -575,6 +687,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 중복 슬러그로 생성 시 422를 반환하는지 확인
+     *
+     * @scenario api_case=create
+     *
+     * @effects duplicate_slug_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_creating_page_with_duplicate_slug_returns_422(): void
     {
@@ -600,6 +718,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 페이지를 수정할 수 있는지 확인
+     *
+     * @scenario api_case=update
+     *
+     * @effects admin_page_updated
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_update_page(): void
     {
@@ -626,6 +750,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 수정 시 버전 번호가 증가하고 스냅샷이 생성되는지 확인
+     *
+     * @scenario api_case=update
+     *
+     * @effects page_update_increments_version_with_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_updating_page_increments_version(): void
     {
@@ -663,6 +793,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 존재하지 않는 페이지 수정 시 404를 반환하는지 확인
+     *
+     * @scenario api_case=update
+     *
+     * @effects missing_page_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_updating_nonexistent_page_returns_404(): void
     {
@@ -678,6 +814,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 슬러그를 새 값으로 변경하면 DB에 반영됨
+     *
+     * @scenario api_case=slug_update
+     *
+     * @effects slug_change_saved
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_update_page_slug(): void
     {
@@ -700,6 +842,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 슬러그를 동일한 값으로 수정해도 통과 (자기 자신 ignore)
+     *
+     * @scenario api_case=slug_update
+     *
+     * @effects same_slug_update_allowed
+     *
+     * @return void 반환값 없음
      */
     public function test_updating_page_slug_to_same_value_succeeds(): void
     {
@@ -720,6 +868,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * slug 키를 전송하지 않으면 기존 슬러그가 유지됨
+     *
+     * @scenario api_case=slug_update
+     *
+     * @effects omitted_slug_keeps_existing
+     *
+     * @return void 반환값 없음
      */
     public function test_updating_page_without_slug_keeps_existing_slug(): void
     {
@@ -740,6 +894,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * slug를 전송하지 않으면 기존 슬러그가 유지됨 (sometimes 동작)
+     *
+     * @scenario api_case=slug_update
+     *
+     * @effects omitted_slug_keeps_existing
+     *
+     * @return void 반환값 없음
      */
     public function test_updating_page_without_slug_field_keeps_existing_slug(): void
     {
@@ -760,6 +920,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * slug 형식 위반(공백+특수문자) 시 422 반환
+     *
+     * @scenario api_case=slug_update
+     *
+     * @effects invalid_slug_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_updating_page_with_space_and_special_chars_in_slug_returns_422(): void
     {
@@ -781,6 +947,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 다른 페이지의 슬러그로 변경 시 422 반환
+     *
+     * @scenario api_case=slug_update
+     *
+     * @effects duplicate_slug_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_updating_page_with_duplicate_slug_returns_422(): void
     {
@@ -808,6 +980,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 슬러그 형식 위반(대문자 포함) 시 422 반환
+     *
+     * @scenario api_case=slug_update
+     *
+     * @effects invalid_slug_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_updating_page_with_invalid_slug_format_returns_422(): void
     {
@@ -829,6 +1007,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 슬러그 형식 위반(특수문자) 시 422 반환
+     *
+     * @scenario api_case=slug_update
+     *
+     * @effects invalid_slug_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_updating_page_with_special_chars_in_slug_returns_422(): void
     {
@@ -850,6 +1034,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 슬러그 최대 길이(256자) 초과 시 422 반환
+     *
+     * @scenario api_case=slug_update
+     *
+     * @effects invalid_slug_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_updating_page_with_slug_exceeding_max_length_returns_422(): void
     {
@@ -871,6 +1061,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 슬러그 변경 시에도 버전 번호가 증가함
+     *
+     * @scenario api_case=slug_update
+     *
+     * @effects page_update_increments_version_with_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_updating_slug_increments_version(): void
     {
@@ -906,6 +1102,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 페이지를 삭제(물리 삭제)할 수 있는지 확인
+     *
+     * @scenario api_case=delete
+     *
+     * @effects page_hard_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_delete_page(): void
     {
@@ -927,6 +1129,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 존재하지 않는 페이지 삭제 시 404를 반환하는지 확인
+     *
+     * @scenario api_case=delete
+     *
+     * @effects missing_page_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_deleting_nonexistent_page_returns_404(): void
     {
@@ -941,6 +1149,12 @@ class PageControllerTest extends FeatureTestCase
      *
      * soft delete 시절에는 삭제된 페이지의 slug 가 잔존하여 동일 slug 재생성 시
      * Rule::unique 가 422 를 반환했다. hard delete 전환으로 재생성이 성공해야 한다.
+     *
+     * @scenario api_case=delete
+     *
+     * @effects deleted_slug_reusable
+     *
+     * @return void 반환값 없음
      */
     public function test_can_recreate_page_with_same_slug_after_delete(): void
     {
@@ -981,6 +1195,12 @@ class PageControllerTest extends FeatureTestCase
      * 페이지 삭제 후 슬러그 중복 체크와 생성 검증 결과가 일치하는지 확인 (회귀)
      *
      * 삭제 후 check-slug 는 "사용 가능", 생성도 성공해야 한다 (두 경로 정합).
+     *
+     * @scenario api_case=delete
+     *
+     * @effects check_slug_and_create_agree_after_delete
+     *
+     * @return void 반환값 없음
      */
     public function test_check_slug_and_create_are_consistent_after_delete(): void
     {
@@ -1022,6 +1242,12 @@ class PageControllerTest extends FeatureTestCase
      *
      * 활동로그 리스너는 삭제되는 페이지를 loggable 로 참조한다. hard delete 후 loggable 행이
      * 사라지더라도 삭제 응답이 200 이고 페이지/첨부 행이 모두 물리 삭제되어야 한다.
+     *
+     * @scenario api_case=delete
+     *
+     * @effects delete_with_attachment_completes
+     *
+     * @return void 반환값 없음
      */
     public function test_deleting_page_with_attachment_completes_without_error(): void
     {
@@ -1051,6 +1277,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 페이지 발행 상태를 변경할 수 있는지 확인
+     *
+     * @scenario api_case=publish
+     *
+     * @effects publish_state_toggled
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_publish_page(): void
     {
@@ -1076,6 +1308,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 페이지를 미발행으로 변경할 수 있는지 확인
+     *
+     * @scenario api_case=publish
+     *
+     * @effects publish_state_toggled
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_unpublish_page(): void
     {
@@ -1101,6 +1339,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 여러 페이지를 일괄 발행할 수 있는지 확인
+     *
+     * @scenario api_case=bulk_publish
+     *
+     * @effects bulk_publish_state_toggled
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_bulk_publish_pages(): void
     {
@@ -1135,6 +1379,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 여러 페이지를 일괄 미발행할 수 있는지 확인
+     *
+     * @scenario api_case=bulk_publish
+     *
+     * @effects bulk_publish_state_toggled
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_bulk_unpublish_pages(): void
     {
@@ -1157,6 +1407,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 빈 ID 배열로 일괄 발행 시 422를 반환하는지 확인
+     *
+     * @scenario api_case=bulk_publish
+     *
+     * @effects bulk_publish_empty_ids_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_publish_with_empty_ids_returns_422(): void
     {
@@ -1174,6 +1430,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 사용 가능한 슬러그를 확인할 수 있는지 검증
+     *
+     * @scenario api_case=check_slug
+     *
+     * @effects check_slug_reports_available
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_check_available_slug(): void
     {
@@ -1188,6 +1450,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 이미 사용 중인 슬러그를 확인할 수 있는지 검증
+     *
+     * @scenario api_case=check_slug
+     *
+     * @effects check_slug_reports_taken
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_check_existing_slug(): void
     {
@@ -1208,6 +1476,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 수정 시 자기 자신의 슬러그는 중복으로 판단하지 않는지 확인
+     *
+     * @scenario api_case=check_slug
+     *
+     * @effects check_slug_excludes_own_page
+     *
+     * @return void 반환값 없음
      */
     public function test_check_slug_excludes_own_id(): void
     {
@@ -1229,6 +1503,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 슬러그에 언더스코어 사용 시 regex 검증 실패 메시지가 다국어로 반환되는지 확인
+     *
+     * @scenario api_case=check_slug
+     *
+     * @effects check_slug_regex_error_localized
+     *
+     * @return void 반환값 없음
      */
     public function test_check_slug_regex_returns_localized_message(): void
     {
@@ -1248,6 +1528,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * filters 배열 형식으로 검색이 동작하는지 확인
+     *
+     * @scenario api_case=search
+     *
+     * @effects page_search_accepts_filters_array
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_search_pages_with_filters_array(): void
     {
@@ -1271,6 +1557,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 페이지네이션이 올바르게 동작하는지 확인 (per_page 설정)
+     *
+     * @scenario api_case=list
+     *
+     * @effects page_list_honors_per_page
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_paginate_pages(): void
     {
@@ -1293,6 +1585,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 페이지 버전 이력을 조회할 수 있는지 확인
+     *
+     * @scenario api_case=versions
+     *
+     * @effects page_versions_listed
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_list_page_versions(): void
     {
@@ -1335,6 +1633,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 특정 버전 상세 정보를 조회할 수 있는지 확인
+     *
+     * @scenario api_case=versions
+     *
+     * @effects page_version_detail_shown
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_show_specific_version(): void
     {
@@ -1364,6 +1668,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 특정 버전으로 페이지를 복원할 수 있는지 확인
+     *
+     * @scenario api_case=versions
+     *
+     * @effects page_version_restored
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_restore_version(): void
     {
@@ -1412,6 +1722,12 @@ class PageControllerTest extends FeatureTestCase
      * 검색봇용 SEO 캐시를 갱신해야 한다. 복원 전 상세 URL 캐시를 적재한 뒤 복원하면
      * after_restore 훅 → SeoPageCacheListener 가 해당 캐시를 무효화해야 한다.
      * (회귀 배경: after_restore 미구독으로 복원 후에도 봇에 복원 전 버전이 잔존)
+     *
+     * @scenario api_case=versions
+     *
+     * @effects page_restore_invalidates_page_detail_seo_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_version_invalidates_page_detail_seo_cache(): void
     {
@@ -1460,6 +1776,12 @@ class PageControllerTest extends FeatureTestCase
      *
      * 복원은 다음 버전 번호로 새 스냅샷을 만들며, 복원 대상을 포함한 기존 버전 이력을
      * 삭제하지 않고 그대로 보존해야 한다.
+     *
+     * @scenario api_case=versions
+     *
+     * @effects page_restore_creates_new_version_and_preserves_history
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_version_creates_new_version_and_preserves_history(): void
     {
@@ -1505,6 +1827,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 미인증 사용자가 페이지 목록에 접근할 수 없는지 확인
+     *
+     * @scenario api_case=access_gate
+     *
+     * @effects unauthenticated_admin_api_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_access_admin_pages(): void
     {
@@ -1515,6 +1843,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 권한 없는 사용자가 페이지를 생성할 수 없는지 확인
+     *
+     * @scenario api_case=access_gate
+     *
+     * @effects create_without_permission_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_user_without_permission_cannot_create_page(): void
     {
@@ -1535,6 +1869,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 일반 사용자가 관리자 API에 접근할 수 없는지 확인
+     *
+     * @scenario api_case=access_gate
+     *
+     * @effects normal_user_admin_api_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_normal_user_cannot_access_admin_pages(): void
     {
@@ -1550,6 +1890,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 페이지 목록 응답에 collection-level abilities가 포함되는지 확인
+     *
+     * @scenario api_case=abilities
+     *
+     * @effects list_response_carries_collection_abilities
+     *
+     * @return void 반환값 없음
      */
     public function test_list_response_includes_collection_abilities(): void
     {
@@ -1571,6 +1917,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * read 권한만 가진 사용자의 collection abilities가 올바른지 확인
+     *
+     * @scenario api_case=abilities
+     *
+     * @effects collection_abilities_reflect_read_only_user
+     *
+     * @return void 반환값 없음
      */
     public function test_list_response_abilities_reflect_read_only_user(): void
     {
@@ -1612,6 +1964,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 페이지 상세 응답에 per-item abilities가 포함되는지 확인
+     *
+     * @scenario api_case=abilities
+     *
+     * @effects show_response_carries_item_abilities
+     *
+     * @return void 반환값 없음
      */
     public function test_show_response_includes_per_item_abilities(): void
     {
@@ -1637,6 +1995,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * 목록의 각 항목에도 per-item abilities가 포함되는지 확인
+     *
+     * @scenario api_case=abilities
+     *
+     * @effects list_items_carry_item_abilities
+     *
+     * @return void 반환값 없음
      */
     public function test_list_items_include_per_item_abilities(): void
     {
@@ -1666,6 +2030,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * scope=self인 사용자가 타인의 페이지를 조회할 수 없는지 확인
+     *
+     * @scenario api_case=scope_self
+     *
+     * @effects scope_self_denied_on_others_page
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_self_user_cannot_show_others_page(): void
     {
@@ -1687,6 +2057,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * scope=self인 사용자가 자기 페이지를 조회할 수 있는지 확인
+     *
+     * @scenario api_case=scope_self
+     *
+     * @effects scope_self_allowed_on_own_page
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_self_user_can_show_own_page(): void
     {
@@ -1706,6 +2082,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * scope=self인 사용자가 타인의 페이지를 수정할 수 없는지 확인
+     *
+     * @scenario api_case=scope_self
+     *
+     * @effects scope_self_denied_on_others_page
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_self_user_cannot_update_others_page(): void
     {
@@ -1727,6 +2109,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * scope=self인 사용자가 타인의 페이지를 삭제할 수 없는지 확인
+     *
+     * @scenario api_case=scope_self
+     *
+     * @effects scope_self_denied_on_others_page
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_self_user_cannot_delete_others_page(): void
     {
@@ -1746,6 +2134,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * scope=self인 사용자가 타인 페이지의 발행 상태를 변경할 수 없는지 확인
+     *
+     * @scenario api_case=scope_self
+     *
+     * @effects scope_self_denied_on_others_page
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_self_user_cannot_publish_others_page(): void
     {
@@ -1768,6 +2162,12 @@ class PageControllerTest extends FeatureTestCase
 
     /**
      * scope=self인 사용자가 타인 페이지의 버전을 복원할 수 없는지 확인
+     *
+     * @scenario api_case=scope_self
+     *
+     * @effects scope_self_denied_on_others_page
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_self_user_cannot_restore_others_page_version(): void
     {

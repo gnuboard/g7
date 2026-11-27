@@ -50,6 +50,7 @@ function collectTexts(node: any): string[] {
 describe('관리자 답변하기 - 원글 작성자 키 경로 (70-1)', () => {
     const texts = collectTexts(parentPost);
 
+    // @effects reply_form_layout_binds_parent_author_name
     it('원글 작성자 이름을 parent_post.author.name 경로로 참조한다', () => {
         const authorText = texts.find((t) => t.includes('parent_post') && t.includes('.name'));
 
@@ -57,6 +58,7 @@ describe('관리자 답변하기 - 원글 작성자 키 경로 (70-1)', () => {
         expect(authorText).toContain('parent_post?.author?.name');
     });
 
+    // @effects reply_form_layout_avoids_missing_user_key
     it('존재하지 않는 parent_post.user.name 경로를 참조하지 않는다 (알 수 없음 회귀 방지)', () => {
         const usesWrongPath = texts.some((t) => t.includes('parent_post?.user?.name'));
 

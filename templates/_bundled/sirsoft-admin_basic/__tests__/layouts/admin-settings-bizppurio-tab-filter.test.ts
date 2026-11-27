@@ -17,8 +17,7 @@
  * 이 규칙은 코어/게시판/이커머스 3면 partial 이 문자열 수준으로 동일해야 한다 —
  * 한 면만 고치면 나머지 면에서 통합 탭이 조용히 사라지거나 라벨이 키로 노출된다.
  *
- * @scenario resource=notification_definitions_tab,endpoint=admin_settings,observation=tab_filter
- * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, tab_visible_when_any_of_tab_channels_active
+ * 조합·효과는 각 시험 주석이 선언한다(admin_basic · board · ecommerce 세 면).
  */
 
 import fs from 'fs';
@@ -110,27 +109,52 @@ describe('알림 정의 탭 필터 — 확장 채널 통합 탭 규칙', () => {
     const tabNode = findChannelTabIteration(readLayout(ADMIN_BASIC_TAB));
     const source: string = tabNode?.iteration?.source ?? '';
 
+    /**
+     * 채널 탭 반복 노드가 있다(모집단 확인).
+     * @scenario face=admin_basic
+     * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs
+     */
     it('채널 탭 반복 노드가 존재한다 (0건이면 아래 단언은 공회전한다)', () => {
         expect(tabNode).toBeTruthy();
         expect(source.length).toBeGreaterThan(0);
     });
 
+    /**
+     * hidden_tab:true 채널이 목록에서 빠진다.
+     * @scenario face=admin_basic
+     * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs
+     */
     it('hidden_tab:true 채널을 목록에서 제외한다 (sms·alimtalk 개별 탭 숨김)', () => {
         expect(source).toContain('c.hidden_tab !== true');
     });
 
+    /**
+     * 코어 채널은 저장값이 명시적 false 가 아니면 보인다.
+     * @scenario face=admin_basic
+     * @effects core_channel_tab_visible_unless_explicitly_false
+     */
     it('코어 채널은 저장값이 명시적 false 가 아니면 노출된다 (기본 노출)', () => {
         expect(source).toContain(
             "c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false",
         );
     });
 
+    /**
+     * 확장 채널은 tab_channels 중 하나라도 활성이면 보인다.
+     * @scenario face=admin_basic
+     * @effects tab_visible_when_any_of_tab_channels_active
+     */
     it('확장 채널은 tab_channels 중 하나라도 활성 저장이면 노출된다 (전부 꺼지면 탭 소멸)', () => {
         expect(source).toContain(
             "(c.tab_channels ?? [c.id]).filter(tc => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === tc)?.is_active === true).length > 0",
         );
     });
 
+    /**
+     * 탭 라벨이 tab_label_key 를 $t 로 풀고 name → id 로 폴백한다.
+     * @scenario face=admin_basic
+     * @effects tab_label_uses_tab_label_key
+     */
     it('탭 라벨은 tab_label_key 를 $t 로 해석하고 name → id 로 폴백한다', () => {
         const raw = JSON.stringify(tabNode);
         expect(raw).toContain('{{ch.tab_label_key ? $t(ch.tab_label_key) : (ch.name ?? ch.id)}}');
@@ -184,6 +208,11 @@ describe.each([
         return result.map((c) => c.id);
     }
 
+    /**
+     * 둘 다 활성이면 통합 탭 하나만 보이고 sms 개별 탭은 숨는다.
+     * @scenario face=admin_basic, face=board, face=ecommerce
+     * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs
+     */
     it('sms·alimtalk 모두 활성 → 통합 탭 1개만 노출, sms 개별 탭은 숨김', () => {
         expect(visibleTabs([
             { id: 'sms', is_active: true },
@@ -191,6 +220,11 @@ describe.each([
         ])).toEqual(['mail', 'database', 'alimtalk']);
     });
 
+    /**
+     * sms 만 활성이어도 통합 탭이 보인다.
+     * @scenario face=admin_basic, face=board, face=ecommerce
+     * @effects tab_visible_when_any_of_tab_channels_active
+     */
     it('sms 만 활성(alimtalk 비활성) → tab_channels 규칙으로 통합 탭 노출 (§6.3 1d)', () => {
         expect(visibleTabs([
             { id: 'sms', is_active: true },
@@ -198,10 +232,20 @@ describe.each([
         ])).toEqual(['mail', 'database', 'alimtalk']);
     });
 
+    /**
+     * alimtalk 만 활성이면 통합 탭이 보인다.
+     * @scenario face=admin_basic, face=board, face=ecommerce
+     * @effects tab_visible_when_any_of_tab_channels_active
+     */
     it('alimtalk 만 활성 → 통합 탭 노출', () => {
         expect(visibleTabs([{ id: 'alimtalk', is_active: true }])).toEqual(['mail', 'database', 'alimtalk']);
     });
 
+    /**
+     * 둘 다 비활성이면 통합 탭이 사라진다.
+     * @scenario face=admin_basic, face=board, face=ecommerce
+     * @effects tab_visible_when_any_of_tab_channels_active
+     */
     it('sms·alimtalk 모두 비활성 → 통합 탭 미노출 (§6.3 1e)', () => {
         expect(visibleTabs([
             { id: 'sms', is_active: false },
@@ -209,14 +253,29 @@ describe.each([
         ])).toEqual(['mail', 'database']);
     });
 
+    /**
+     * 확장 채널 저장값이 없으면 통합 탭이 보이지 않는다.
+     * @scenario face=admin_basic, face=board, face=ecommerce
+     * @effects tab_visible_when_any_of_tab_channels_active
+     */
     it('확장 채널 저장값 자체가 없으면(미저장=opt-in 전) 통합 탭 미노출', () => {
         expect(visibleTabs([])).toEqual(['mail', 'database']);
     });
 
+    /**
+     * 코어 채널은 명시적 false 일 때만 숨는다.
+     * @scenario face=admin_basic, face=board, face=ecommerce
+     * @effects core_channel_tab_visible_unless_explicitly_false
+     */
     it('코어 채널은 저장값이 명시적 false 일 때만 숨는다 (기본 노출)', () => {
         expect(visibleTabs([{ id: 'mail', is_active: false }])).toEqual(['database']);
     });
 
+    /**
+     * tab_channels 미선언 확장 채널은 자기 활성 저장으로 판정된다.
+     * @scenario face=admin_basic, face=board, face=ecommerce
+     * @effects tab_visible_when_any_of_tab_channels_active
+     */
     it('tab_channels 미선언 확장 채널은 자기 자신의 활성 저장 기준으로 판정된다', () => {
         const withPlain = [...CHANNELS, { id: 'push', source: 'some-plugin', name: '푸시' }];
         expect(visibleTabs([{ id: 'push', is_active: true }], withPlain)).toEqual(['mail', 'database', 'push']);
@@ -242,6 +301,11 @@ describe('알림 정의 탭 필터 — 3면 패리티', () => {
 
     const core = extractExpressions(ADMIN_BASIC_TAB);
 
+    /**
+     * 게시판·이커머스 partial 의 탭 필터 표현식이 admin_basic 과 같다.
+     * @scenario face=board, face=ecommerce
+     * @effects tab_filter_parity_across_faces
+     */
     it.each([
         ['게시판', BOARD_TAB],
         ['이커머스', ECOMMERCE_TAB],
@@ -250,6 +314,11 @@ describe('알림 정의 탭 필터 — 3면 패리티', () => {
         expect(other.source, `${label} 탭 필터 표현식 불일치 — 한 면만 고치면 통합 탭이 그 면에서 사라진다`).toBe(core.source);
     });
 
+    /**
+     * 게시판·이커머스 partial 의 탭 라벨 표현식이 admin_basic 과 같다.
+     * @scenario face=board, face=ecommerce
+     * @effects tab_filter_parity_across_faces
+     */
     it.each([
         ['게시판', BOARD_TAB],
         ['이커머스', ECOMMERCE_TAB],

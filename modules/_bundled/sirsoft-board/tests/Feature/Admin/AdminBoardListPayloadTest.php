@@ -23,6 +23,8 @@ class AdminBoardListPayloadTest extends ModuleTestCase
 
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -44,7 +46,7 @@ class AdminBoardListPayloadTest extends ModuleTestCase
      * 관리자 게시판 목록 화면(admin_board_index.json)은 「등록일」 컬럼에 `row.created_at` 을
      * 그린다. 목록 표현이 이 키를 빼면 화면은 조용히 공란이 된다.
      *
-     * @return void
+     * @return void 반환값 없음
      *
      * @scenario endpoint=admin_list,role_assignment=unassigned
      *
@@ -86,7 +88,7 @@ class AdminBoardListPayloadTest extends ModuleTestCase
      * 등록일 누락을 고치면서 전체 표현으로 되돌리면 게시판마다 매니저/스텝 역할의
      * 소속 사용자 전원(uuid·이름·이메일)이 다시 실린다 — 행당 추가 쿼리이자 개인정보 노출이다.
      *
-     * @return void
+     * @return void 반환값 없음
      *
      * @scenario endpoint=admin_list,role_assignment=unassigned
      *

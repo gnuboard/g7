@@ -107,6 +107,8 @@ effects:
   - versioned_boot_urls
   - handshake_reload_preserved_on_version_mismatch
   - manifest_cache_keys_are_version_scoped
+  # 버전 없이 부르는 편집기 경로는 components.json 을 무버전 URL 로 요청한다 (하위 호환)
+  - unversioned_editor_manifest_url_kept
   - fallback_api_serves_etag_304
   - fallback_api_no_cache_in_dev
   - degraded_snapshot_gets_no_public_cache
@@ -186,6 +188,15 @@ effects:
   - lock_provider_failure_recorded_in_marker
   - published_tree_is_group_writable
   - publish_failure_backoff_is_scoped_to_version
+  # 폴백 API(routes.json·lang/{locale}.json) 서빙 계약 — PublicTemplateControllerTest·TemplateLanguageServingTest
+  - fallback_api_serves_active_template_routes
+  - fallback_api_serves_template_language_file
+  - fallback_api_rejects_inactive_or_missing_template
+  - fallback_api_routes_missing_file_returns_404
+  - fallback_api_rejects_unsupported_locale
+  - fallback_api_caches_payload_under_cache_version
+  - fallback_api_sets_public_cache_headers_in_production
+  - fallback_api_unversioned_routes_skip_public_cache
 
 test_files:
   - tests/Feature/Services/ExtensionStaticCacheServiceTest.php

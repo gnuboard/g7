@@ -30,6 +30,11 @@ class NamespaceMergeRegressionTest extends TestCase
 
     private string $packDir;
 
+    /**
+     * sirsoft-ecommerce 를 대상으로 하는 ja 모듈 언어팩 파일과 활성 행을 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -77,6 +82,11 @@ class NamespaceMergeRegressionTest extends TestCase
         app()->forgetInstance(LanguagePackRegistry::class);
     }
 
+    /**
+     * 테스트용 언어팩 폴더를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::isDirectory($this->packDir)) {
@@ -92,6 +102,12 @@ class NamespaceMergeRegressionTest extends TestCase
      * wrap 누락 시 활성 ja 팩의 admin 키가 root 에 평탄 병합되어 sirsoft-ecommerce.admin
      * 경로 하위가 ko 데이터만 보유하게 됨. wrap 적용 시 sirsoft-ecommerce 키 하위에
      * 정확히 병합되어야 한다.
+     *
+     * @scenario surface=frontend_merge
+     *
+     * @effects frontend_merge_wraps_extension_pack_under_target_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_merge_frontend_language_wraps_module_pack_with_target_identifier(): void
     {
@@ -108,6 +124,12 @@ class NamespaceMergeRegressionTest extends TestCase
      *
      * loadTranslationsFrom() 직접 호출 시 FileLoader hint 가 덮어써져 ko 가 raw key 로
      * 떨어지지만, addNamespaceFallbackPath 사용 시 ko/en 정상 + ja 보완 모두 동작해야 한다.
+     *
+     * @scenario surface=backend_namespace
+     *
+     * @effects backend_pack_fallback_keeps_extension_namespace_for_existing_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_active_module_pack_does_not_overwrite_namespace_hint_for_existing_locales(): void
     {

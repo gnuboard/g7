@@ -21,7 +21,15 @@ description: |
 axes:
   case: [hint_text_ranges, no_raw_placeholders, input_min_max_attributes]
 
-effects: []
+effects:
+  # Vitest board-settings-range-hints — 레이아웃 JSON·서버 규칙 원문 계약(조합 축이 아니라 효과로만 매핑)
+  - settings_hint_text_reads_local_form_meta_limits   # description 범위 파라미터가 _local.form._meta.limits 를 읽는다
+  - settings_input_bounds_read_local_form_meta_limits # Input min/max 가 같은 동적 표현식이다(하드코딩 금지)
+  - settings_hints_avoid_global_settings_path         # 코어 전역과 부딪는 settings.data._meta 경로를 쓰지 않는다
+  - policy_tab_bounds_read_limits                     # 신고 정책·스팸 보안 탭 min/max 가 한계값 설정을 읽는다
+  - policy_tab_bound_fallbacks_match_config           # 그 폴백이 설정 파일 한계값과 같다
+  - auto_hide_threshold_accepts_zero                  # 자동 숨김 기준은 0(비활성)을 받는다
+  - settings_request_rules_match_screen_limits        # 서버 저장 규칙이 화면과 같은 한계값 키·폴백을 읽는다
 
 # 아래 효과는 아직 실행되는 시험이 재지 않는다 — test_files 의 spec 이 test.describe.skip 상태라 건너뛴 시험의 @effects 는
 # 커버가 아니다. spec 의 skip 을 풀면 effects 로 되돌린다.
@@ -41,3 +49,4 @@ pending_effects:
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-settings-range-hints.spec.ts
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/board-settings-range-hints.test.ts

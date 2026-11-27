@@ -13,8 +13,8 @@
  * 를 확인한다. 3·4 는 개발 사이트의 실제 버전 수에 좌우되지 않도록 응답만 고정한다(요청은 실제로
  * 브라우저가 만든 것을 검사한다).
  *
- * @scenario resource=layout_version,endpoint=list,observation=consumer_screen
- * @effects version_list_request_carries_limit, version_list_load_more_widens_limit, version_list_load_more_hidden_when_batch_not_full
+ * 효과 요약(마커 아님 — 평문): 첫 요청의 상한, 가득 찬 묶음에서만 더 보기, 더 보기의 상한 확장.
+ * 마킹은 각 test 위에 있다.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page, Route } from '@playwright/test';
@@ -81,6 +81,11 @@ async function stubVersions(page: Page, count: number, seen: string[]): Promise<
 }
 
 test.describe('레이아웃 편집기 버전 이력 — 상한 조회', () => {
+  /**
+   * @scenario resource=layout_version,endpoint=list,observation=consumer_screen
+   *
+   * @effects version_list_request_carries_limit
+   */
   test('첫 조회가 상한(limit)을 달고 나간다 @layout-editor', async ({ page }) => {
     const seen: string[] = [];
     await stubVersions(page, 3, seen);
@@ -93,6 +98,11 @@ test.describe('레이아웃 편집기 버전 이력 — 상한 조회', () => {
     expect(seen[0]).toContain(`limit=${VERSION_PAGE_SIZE}`);
   });
 
+  /**
+   * @scenario resource=layout_version,endpoint=list,observation=consumer_screen
+   *
+   * @effects version_list_load_more_hidden_when_batch_not_full
+   */
   test('한 묶음이 가득 차지 않으면 더 보기가 없다 @layout-editor', async ({ page }) => {
     const seen: string[] = [];
     await stubVersions(page, 3, seen);
@@ -105,6 +115,11 @@ test.describe('레이아웃 편집기 버전 이력 — 상한 조회', () => {
     await expect(page.getByTestId('g7le-version-history-load-more')).toHaveCount(0);
   });
 
+  /**
+   * @scenario resource=layout_version,endpoint=list,observation=consumer_screen
+   *
+   * @effects version_list_load_more_widens_limit
+   */
   test('묶음이 가득 차면 더 보기로 상한을 넓혀 재조회한다 @layout-editor', async ({ page }) => {
     const seen: string[] = [];
     await stubVersions(page, VERSION_PAGE_SIZE, seen);

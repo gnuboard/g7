@@ -29,6 +29,11 @@ class SettingsMigratorOwnershipTest extends TestCase
      */
     private array $tempDirs = [];
 
+    /**
+     * 테스트가 만든 임시 디렉토리를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         foreach ($this->tempDirs as $dir) {
@@ -40,6 +45,11 @@ class SettingsMigratorOwnershipTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * storage 아래에 임시 디렉토리를 만들고 정리 목록에 올린다.
+     *
+     * @return string 만든 임시 디렉토리 절대 경로
+     */
     private function createTempDir(): string
     {
         $dir = storage_path('test_settings_owner_'.uniqid());
@@ -55,7 +65,9 @@ class SettingsMigratorOwnershipTest extends TestCase
      * 변경 7-(a): `SettingsMigrator::writeJsonFile` 같은 외부 호출처가 본 helper 를
      * 사용해 부모 owner/group 을 상속하도록 노출.
      *
-     * @return void
+     * @effects inherit_ownership_helper_is_public_static
+     *
+     * @return void 반환값 없음
      */
     public function test_inherit_ownership_from_parent_is_public(): void
     {
@@ -74,7 +86,9 @@ class SettingsMigratorOwnershipTest extends TestCase
      * POSIX 환경 전용. 일반 user 권한에서는 다른 user 로 chown 시도가 실패할 수 있으나,
      * 자기 자신 owner 인 경우 chown 자체가 발생하지 않으므로 멱등.
      *
-     * @return void
+     * @effects inherit_ownership_is_idempotent_for_self_owner
+     *
+     * @return void 반환값 없음
      */
     public function test_inherit_ownership_from_parent_idempotent_for_self_owner(): void
     {
@@ -105,6 +119,8 @@ class SettingsMigratorOwnershipTest extends TestCase
      * 의도적 제외 경로라 되돌려지지 않고, 이후 웹 프로세스의 그 모듈 설정 저장이 영구 실패한다.
      *
      * @effects settings_directory_seed_inherits_ownership
+     *
+     * @return void 반환값 없음
      */
     public function test_settings_migrator_make_directory_invokes_inherit_ownership(): void
     {
@@ -129,7 +145,9 @@ class SettingsMigratorOwnershipTest extends TestCase
      * 핵심 통합 보장 = "writeJsonFile 메서드 안에서 inheritOwnershipFromParent 호출" 을
      * reflection 으로 검증.
      *
-     * @return void
+     * @effects settings_migrator_writes_json_with_parent_ownership_inherited
+     *
+     * @return void 반환값 없음
      */
     public function test_settings_migrator_write_json_file_invokes_inherit_ownership(): void
     {

@@ -20,6 +20,8 @@ class SearchPresetControllerTest extends ModuleTestCase
 
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -37,6 +39,13 @@ class SearchPresetControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 목록은 로그인한 운영자 자신의 프리셋만 돌려준다 (남의 프리셋은 빠진다).
+     *
+     * @scenario endpoint=index
+     * @effects search_preset_api_index_lists_only_own_presets
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_index_returns_user_presets(): void
     {
@@ -74,6 +83,13 @@ class SearchPresetControllerTest extends ModuleTestCase
         $this->assertEquals('My Preset 2', $response->json('data.1.name'));
     }
 
+    /**
+     * 목록은 요청한 대상 화면의 프리셋만 돌려준다.
+     *
+     * @scenario endpoint=index
+     * @effects search_preset_api_index_filters_by_target_screen
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_index_filters_by_target_screen(): void
     {
@@ -102,6 +118,13 @@ class SearchPresetControllerTest extends ModuleTestCase
         $this->assertEquals('Products Preset', $response->json('data.0.name'));
     }
 
+    /**
+     * 저장 요청이 프리셋을 만들고 201 과 저장된 이름을 돌려준다.
+     *
+     * @scenario endpoint=store
+     * @effects search_preset_api_store_creates_preset
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_store_creates_preset(): void
     {
@@ -131,6 +154,13 @@ class SearchPresetControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 이름이 빠진 저장 요청은 422 로 거절한다.
+     *
+     * @scenario endpoint=store
+     * @effects search_preset_api_store_requires_name
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_store_validates_required_fields(): void
     {
@@ -150,6 +180,13 @@ class SearchPresetControllerTest extends ModuleTestCase
         $response->assertJsonValidationErrors(['name']);
     }
 
+    /**
+     * 같은 이름의 프리셋을 또 저장하면 422 로 거절한다.
+     *
+     * @scenario endpoint=store
+     * @effects search_preset_api_store_rejects_duplicate_name
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_store_validates_unique_name(): void
     {
@@ -176,6 +213,13 @@ class SearchPresetControllerTest extends ModuleTestCase
         $response->assertJsonValidationErrors(['name']);
     }
 
+    /**
+     * 수정 요청이 프리셋 이름을 바꾸고 저장소에 반영한다.
+     *
+     * @scenario endpoint=update
+     * @effects search_preset_api_update_changes_preset
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_update_updates_preset(): void
     {
@@ -204,6 +248,13 @@ class SearchPresetControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 다른 프리셋이 쓰는 이름으로 바꾸면 422 로 거절한다.
+     *
+     * @scenario endpoint=update
+     * @effects search_preset_api_update_rejects_name_of_another_preset
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_update_validates_unique_name_except_self(): void
     {
@@ -233,6 +284,13 @@ class SearchPresetControllerTest extends ModuleTestCase
         $response->assertJsonValidationErrors(['name']);
     }
 
+    /**
+     * 자기 이름을 그대로 둔 수정은 통과한다.
+     *
+     * @scenario endpoint=update
+     * @effects search_preset_api_update_allows_keeping_own_name
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_update_allows_same_name_for_self(): void
     {
@@ -254,6 +312,13 @@ class SearchPresetControllerTest extends ModuleTestCase
         $response->assertStatus(200);
     }
 
+    /**
+     * 자기 프리셋 삭제 요청이 행을 지운다.
+     *
+     * @scenario endpoint=destroy
+     * @effects search_preset_api_destroy_deletes_own_preset
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_destroy_deletes_preset(): void
     {
@@ -278,6 +343,13 @@ class SearchPresetControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 남의 프리셋 삭제는 403 으로 거절하고 행을 남긴다.
+     *
+     * @scenario endpoint=destroy
+     * @effects search_preset_api_destroy_rejects_other_user_preset
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_destroy_returns_error_for_other_user_preset(): void
     {
@@ -302,6 +374,13 @@ class SearchPresetControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 로그인하지 않으면 프리셋 목록이 401 이다.
+     *
+     * @scenario endpoint=unauthenticated
+     * @effects search_preset_api_requires_authentication
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_unauthenticated_user_cannot_access(): void
     {

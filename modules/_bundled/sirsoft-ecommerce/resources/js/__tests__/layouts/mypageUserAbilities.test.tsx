@@ -123,6 +123,7 @@ describe('마이페이지 배송지 - 삭제 버튼 abilities 기반 권한 제�
     registry = setupTestRegistry();
   });
 
+  // @effects mypage_address_delete_button_follows_can_delete
   it('can_delete=true → 삭제 버튼 표시', async () => {
     const testUtils = createLayoutTest(createAddressDeleteButtonLayout(true), { componentRegistry: registry });
     await testUtils.render();
@@ -132,6 +133,7 @@ describe('마이페이지 배송지 - 삭제 버튼 abilities 기반 권한 제�
     testUtils.cleanup();
   });
 
+  // @effects mypage_address_delete_button_follows_can_delete
   it('can_delete=false (기본 배송지) → 삭제 버튼 숨김', async () => {
     const testUtils = createLayoutTest(createAddressDeleteButtonLayout(false), { componentRegistry: registry });
     await testUtils.render();
@@ -194,6 +196,7 @@ describe('마이페이지 주문 상세 - 취소 버튼 abilities 기반 권한 
     registry = setupTestRegistry();
   });
 
+  // @effects mypage_order_cancel_button_follows_can_cancel
   it('can_cancel=true → 취소 버튼 표시', async () => {
     const testUtils = createLayoutTest(createOrderDetailLayout(true), { componentRegistry: registry });
     await testUtils.render();
@@ -203,6 +206,7 @@ describe('마이페이지 주문 상세 - 취소 버튼 abilities 기반 권한 
     testUtils.cleanup();
   });
 
+  // @effects mypage_order_cancel_button_follows_can_cancel
   it('can_cancel=false → 취소 버튼 숨김', async () => {
     const testUtils = createLayoutTest(createOrderDetailLayout(false), { componentRegistry: registry });
     await testUtils.render();
@@ -259,6 +263,7 @@ function findNodeByIfPattern(node: any, pattern: string): any {
 }
 
 describe('실제 레이아웃 JSON - abilities 패턴 사용 검증', () => {
+  // @effects mypage_address_list_layout_reads_can_delete
   it('_list.json 배송지 삭제 버튼이 abilities?.can_delete 조건을 사용한다', () => {
     // iteration 노드는 partial 트리 깊은 곳에 있을 수 있음 → 전체 트리 검색으로 전환
     const deleteButton = findNodeByIfPattern(
@@ -270,6 +275,7 @@ describe('실제 레이아웃 JSON - abilities 패턴 사용 검증', () => {
     expect(deleteButton.if).not.toContain('is_default');
   });
 
+  // @effects mypage_order_item_checkbox_shows_only_when_claimable
   it('상품 체크박스는 신청 가능한 유형이 있을 때만 선다', () => {
     // 회귀: 체크박스 조건이 `abilities?.can_cancel` 을 함께 보던 시절, 미결제 주문에서는
     // 체크박스만 서고 **누를 버튼이 없었다** — 취소 버튼은 이미 취소·환불 신청 입구로

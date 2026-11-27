@@ -15,6 +15,12 @@ import { Pagination } from '../Pagination';
 describe('Pagination — hasMorePages 와 last_page 의 우선순위', () => {
   const next = () => screen.getByLabelText('다음 페이지');
 
+  /**
+   * last_page 를 알면 hasMorePages=false 여도 다음 버튼이 열리는지 잰다.
+   *
+   * @scenario last_page=known
+   * @effects known_last_page_opens_next_despite_has_more_false
+   */
   it('last_page 를 알면 hasMorePages=false 여도 다음이 열려 있다', () => {
     render(
       <Pagination currentPage={1} totalPages={2} hasMorePages={false} onPageChange={vi.fn()} />
@@ -23,6 +29,12 @@ describe('Pagination — hasMorePages 와 last_page 의 우선순위', () => {
     expect(next()).not.toBeDisabled();
   });
 
+  /**
+   * last_page 를 알고 마지막 페이지면 다음 버튼이 막히는지 잰다.
+   *
+   * @scenario last_page=known
+   * @effects known_last_page_closes_next_on_last_page
+   */
   it('last_page 를 알고 마지막 페이지면 다음이 막힌다', () => {
     render(
       <Pagination currentPage={2} totalPages={2} hasMorePages={false} onPageChange={vi.fn()} />
@@ -31,6 +43,12 @@ describe('Pagination — hasMorePages 와 last_page 의 우선순위', () => {
     expect(next()).toBeDisabled();
   });
 
+  /**
+   * last_page 가 null 이면 hasMorePages 가 다음 이동을 정하는지 잰다.
+   *
+   * @scenario last_page=unknown
+   * @effects unknown_last_page_follows_has_more_pages
+   */
   it('last_page 가 null 이면 hasMorePages 가 다음 이동을 정한다', () => {
     const { rerender } = render(
       <Pagination currentPage={5} totalPages={null} hasMorePages={true} onPageChange={vi.fn()} />
@@ -43,6 +61,12 @@ describe('Pagination — hasMorePages 와 last_page 의 우선순위', () => {
     expect(next()).toBeDisabled();
   });
 
+  /**
+   * last_page 가 null 이고 hasMorePages 도 없으면 다음 버튼이 막히는지 잰다.
+   *
+   * @scenario last_page=unknown
+   * @effects unknown_last_page_without_has_more_closes_next
+   */
   it('last_page 가 null 이고 hasMorePages 도 없으면 다음이 막힌다', () => {
     render(<Pagination currentPage={1} totalPages={null} onPageChange={vi.fn()} />);
 

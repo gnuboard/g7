@@ -1,0 +1,31 @@
+feature: 관리자 신고 관리 요청 검증 — 상태 전환 차단과 전용 FormRequest
+
+description: |
+  관리자 신고 관리 API 의 입력 검증을 잰다.
+    - 상태 변경: 영구삭제(deleted)는 최종 상태라 다른 상태로 바꾸려 하면 422 로 막고 DB 는 그대로 둔다.
+      같은 상태로 바꾸는 요청도 전환 규칙 위반으로 막고, 정상 전환(pending → review)은 저장한다.
+    - 목록·신고자 목록·상태별 집계: 전용 FormRequest 로 옮긴 뒤에도 빈 ids·없는 ids·허용 밖
+      target_status 는 422, 정상 요청은 200 이다. 신고자 목록 per_page 는 1~100 으로 묶는다.
+
+axes:
+  endpoint: [update_status, status_counts, index, reporters]
+  input: [valid, invalid]
+
+exclusions:
+  - { endpoint: index, input: invalid, reason: "목록 조회는 이 변경에서 새로 막는 입력이 없다 — 정상 조회 유지만 잰다" }
+
+effects:
+  - deleted_report_status_change_rejected_422
+  - deleted_report_status_unchanged
+  - same_status_transition_rejected_422
+  - valid_status_transition_saved
+  - status_counts_rejects_missing_or_empty_ids
+  - status_counts_rejects_unknown_target_status
+  - status_counts_valid_request_succeeds
+  - report_index_succeeds_with_form_request
+  - reporters_succeeds_with_form_request
+  - reporters_per_page_bounded
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/ReportDeletedStatusGuardTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/ReportRequestValidationTest.php

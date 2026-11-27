@@ -1,0 +1,18 @@
+feature: 수치 범위 필터의 0 경계
+
+description: |
+  `! empty($filters['max_shipping_amount'])` 처럼 판정하면 0 이 미입력으로 취급돼 필터가
+  통째로 무시된다. "배송비 0원(무료배송) 주문만 보기" 가 전체를 돌려준 실측이 있었다.
+  저장소 소스의 판정식을 직접 검사하므로 데이터와 무관하게 성립한다.
+
+# axis 의미:
+#   repository — 범위 필터를 가진 저장소 (주문 금액·배송비, 상품 가격·재고, 쿠폰 혜택·주문금액).
+axes:
+  repository: [order, product, coupon]
+
+effects:
+  - numeric_range_filter_keeps_zero_boundary
+  - numeric_range_filter_keys_are_used
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/NumericRangeFilterZeroBoundaryTest.php

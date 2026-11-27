@@ -65,6 +65,12 @@ describe('사용자 게시판 목록 — 정렬 쿼리 파라미터', () => {
 
   const sources = collectPostListSources();
 
+  /**
+   * 게시글 목록 데이터소스를 레이아웃에서 찾는지 잰다 (아래 시험들의 전제).
+   *
+   * @scenario layer=layout
+   * @effects sort_datasource_derived_from_layout
+   */
   it('게시글 목록 데이터소스가 레이아웃에서 도출된다', () => {
     // 스캔이 빗나가면 sources 가 비고 아래 단언들이 루프를 돌지 않아 전부 통과한다.
     // 모집단을 먼저 고정해 그 조용한 통과를 막는다.
@@ -72,6 +78,12 @@ describe('사용자 게시판 목록 — 정렬 쿼리 파라미터', () => {
     expect(sources.map((s) => s.file)).toContain('board/index.json');
   });
 
+  /**
+   * 목록 데이터소스가 sort_by/sort_order 를 서버로 싣는지 잰다.
+   *
+   * @scenario layer=layout,url_sort=present
+   * @effects sort_params_forwarded_to_server
+   */
   it('정렬 파라미터(sort_by/sort_order)를 서버로 전달한다', () => {
     for (const { file, source } of sources) {
       const params = (source.params ?? {}) as Record<string, string>;
@@ -81,6 +93,12 @@ describe('사용자 게시판 목록 — 정렬 쿼리 파라미터', () => {
     }
   });
 
+  /**
+   * 정렬 파라미터 값을 URL 쿼리에서 읽는지 잰다.
+   *
+   * @scenario layer=layout,url_sort=present
+   * @effects sort_params_read_from_url_query
+   */
   it('정렬 파라미터를 URL 쿼리에서 읽는다', () => {
     for (const { file, source } of sources) {
       const params = (source.params ?? {}) as Record<string, string>;
@@ -90,6 +108,12 @@ describe('사용자 게시판 목록 — 정렬 쿼리 파라미터', () => {
     }
   });
 
+  /**
+   * 정렬 파라미터에 기본 컬럼을 박아 게시판 설정을 덮지 않는지 잰다.
+   *
+   * @scenario layer=layout,url_sort=absent
+   * @effects sort_params_have_no_default_column
+   */
   it('정렬 파라미터에 기본 컬럼을 박지 않는다 (게시판 설정이 이겨야 한다)', () => {
     for (const { file, source } of sources) {
       const params = (source.params ?? {}) as Record<string, string>;
@@ -103,6 +127,12 @@ describe('사용자 게시판 목록 — 정렬 쿼리 파라미터', () => {
     }
   });
 
+  /**
+   * URL 에 정렬이 없을 때 정렬 파라미터가 빈 값으로 떨어지는지 잰다.
+   *
+   * @scenario layer=layout,url_sort=absent
+   * @effects sort_params_empty_when_url_has_none
+   */
   it('정렬이 없을 때 빈 값으로 떨어진다', () => {
     for (const { file, source } of sources) {
       const params = (source.params ?? {}) as Record<string, string>;

@@ -21,6 +21,8 @@ class Upgrade_7_0_0_beta_3Test extends TestCase
 {
     /**
      * upgrades/ 디렉토리 파일은 composer autoload 에 없으므로 테스트 진입 전 수동 로드.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -31,6 +33,11 @@ class Upgrade_7_0_0_beta_3Test extends TestCase
         }
     }
 
+    /**
+     * POSIX 환경이 아니면 테스트를 건너뛴다(chmod·fileperms·umask 의미가 제한됨).
+     *
+     * @return void 반환값 없음
+     */
     private function assertPosixOrSkip(): void
     {
         if (DIRECTORY_SEPARATOR !== '/' || ! function_exists('posix_getuid')) {
@@ -41,6 +48,12 @@ class Upgrade_7_0_0_beta_3Test extends TestCase
     /**
      * TARGETS 상수는 인스톨러 REQUIRED_DIRECTORIES (public/install/includes/config.php)
      * 및 config/app.php 의 restore_ownership_group_writable 기본값과 1:1 정렬되어야 한다.
+     *
+     * @scenario run_context=static_contract
+     *
+     * @effects beta3_targets_match_installer_required_directories
+     *
+     * @return void 반환값 없음
      */
     public function test_targets_constant_matches_config_default(): void
     {
@@ -73,6 +86,12 @@ class Upgrade_7_0_0_beta_3Test extends TestCase
      *
      * 따라서 둘은 같을 수 없고 같아서도 안 된다. 이 테스트는 누군가 동결 스텝의 TARGETS 를
      * 현재 config 에 맞추려 편집하는 동결 위반(또는 config 원복)을 차단한다.
+     *
+     * @scenario run_context=static_contract
+     *
+     * @effects beta3_frozen_targets_diverge_from_live_config
+     *
+     * @return void 반환값 없음
      */
     public function test_frozen_targets_intentionally_diverges_from_evolving_config(): void
     {
@@ -95,6 +114,12 @@ class Upgrade_7_0_0_beta_3Test extends TestCase
     /**
      * spawn 자식 탐지 — argv 에 `core:execute-upgrade-steps` 가 있으면 의도적으로 throw.
      * beta.2 의 spawnUpgradeStepsProcess 가 exit != 0 감지 → in-process fallback 유도.
+     *
+     * @scenario run_context=spawned_child
+     *
+     * @effects beta3_throws_inside_spawned_child
+     *
+     * @return void 반환값 없음
      */
     public function test_throws_when_running_inside_spawned_child(): void
     {
@@ -126,6 +151,12 @@ class Upgrade_7_0_0_beta_3Test extends TestCase
      * in-process 경로 (argv 에 core:update 등) 에서는 예외 없이 완료.
      * 현재 코드베이스의 storage 가 g+w 이든 g-w 이든 예외는 발생하지 않아야 한다
      * (운영자 의도 존중 분기 또는 정상 실행 어느 쪽이든 정상 종료).
+     *
+     * @scenario run_context=in_process
+     *
+     * @effects beta3_completes_in_process
+     *
+     * @return void 반환값 없음
      */
     public function test_run_completes_without_exception_in_process(): void
     {
@@ -155,6 +186,12 @@ class Upgrade_7_0_0_beta_3Test extends TestCase
     /**
      * 경로 C 규율 준수 검증: 파일에서 `FilePermissionHelper::syncGroupWritability` 호출이
      * 제거되었는지 확인. 경로 C 는 신설 메서드 호출 금지.
+     *
+     * @scenario run_context=static_contract
+     *
+     * @effects beta3_does_not_call_new_helper_method
+     *
+     * @return void 반환값 없음
      */
     public function test_does_not_call_new_file_permission_helper_method(): void
     {
@@ -183,6 +220,12 @@ class Upgrade_7_0_0_beta_3Test extends TestCase
 
     /**
      * in-process 실행 시 storage g+w 환경에서는 umask 가 0002 로 전환되어야 한다.
+     *
+     * @scenario run_context=in_process
+     *
+     * @effects beta3_sets_umask_0002_when_storage_group_writable
+     *
+     * @return void 반환값 없음
      */
     public function test_sets_umask_to_0002_when_storage_has_group_write(): void
     {

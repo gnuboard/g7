@@ -63,6 +63,11 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
   });
 
   describe('getLoginRedirectUrl', () => {
+    /**
+     * @scenario auth_type=admin
+     *
+     * @effects login_redirect_encodes_full_query_string
+     */
     it('queryString이 포함된 URL을 올바르게 인코딩하여 redirect 파라미터에 포함해야 한다', () => {
       const returnUrl = '/admin/ecommerce/products?page=1&end_date=2026-02-13&date_type=created_at';
       const result = authManager.getLoginRedirectUrl('admin', returnUrl);
@@ -76,6 +81,11 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
       expect(result).toContain(encodeURIComponent('&end_date=2026-02-13'));
     });
 
+    /**
+     * @scenario auth_type=admin
+     *
+     * @effects login_redirect_encodes_full_query_string
+     */
     it('queryString이 없는 URL도 정상 처리해야 한다', () => {
       const returnUrl = '/admin/ecommerce/products';
       const result = authManager.getLoginRedirectUrl('admin', returnUrl);
@@ -85,6 +95,11 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
       );
     });
 
+    /**
+     * @scenario auth_type=user
+     *
+     * @effects login_redirect_uses_type_login_path
+     */
     it('user 타입에 대해 올바른 loginPath를 사용해야 한다', () => {
       const returnUrl = '/mypage?tab=orders&sort=desc';
       const result = authManager.getLoginRedirectUrl('user', returnUrl);
@@ -94,6 +109,11 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
       );
     });
 
+    /**
+     * @scenario auth_type=unconfigured
+     *
+     * @effects login_redirect_defaults_to_login_for_unconfigured_type
+     */
     it('설정이 없는 타입은 /login 을 반환해야 한다', () => {
       const result = authManager.getLoginRedirectUrl('unknown' as AuthType, '/some/path?q=1');
 
@@ -102,6 +122,11 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
   });
 
   describe('getLoginRedirectUrl - reason 파라미터', () => {
+    /**
+     * @scenario auth_type=admin
+     *
+     * @effects login_redirect_appends_reason
+     */
     it('reason 인자가 있으면 쿼리에 reason 파라미터가 결합되어야 한다', () => {
       const returnUrl = '/admin/dashboard';
       const result = authManager.getLoginRedirectUrl('admin', returnUrl, 'session_expired');
@@ -111,6 +136,11 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
       );
     });
 
+    /**
+     * @scenario auth_type=admin
+     *
+     * @effects login_redirect_omits_reason_when_absent
+     */
     it('reason 미지정 시 쿼리에 reason 이 포함되지 않아야 한다 (회귀)', () => {
       const returnUrl = '/admin/dashboard';
       const result = authManager.getLoginRedirectUrl('admin', returnUrl);
@@ -119,6 +149,11 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
       expect(result).not.toContain('reason=');
     });
 
+    /**
+     * @scenario auth_type=user
+     *
+     * @effects login_redirect_appends_reason
+     */
     it('user 타입 + reason 조합도 정상 처리되어야 한다', () => {
       const returnUrl = '/mypage';
       const result = authManager.getLoginRedirectUrl('user', returnUrl, 'session_expired');
@@ -130,6 +165,9 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
   });
 
   describe('updateConfig - 인증 설정 부분 갱신', () => {
+    /**
+     * @effects auth_config_update_changes_paths
+     */
     it('updateConfig 로 loginPath 변경 후 getLoginRedirectUrl 이 새 경로를 반환해야 한다', () => {
       authManager.updateConfig('user', { loginPath: '/account/signin' });
       const result = authManager.getLoginRedirectUrl('user', '/me', 'session_expired');
@@ -139,6 +177,11 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
       );
     });
 
+    /**
+     * @scenario auth_type=admin
+     *
+     * @effects auth_config_update_changes_paths
+     */
     it('admin 타입도 동일하게 커스터마이즈 가능해야 한다', () => {
       authManager.updateConfig('admin', { loginPath: '/admin/auth/signin' });
       const result = authManager.getLoginRedirectUrl('admin', '/admin/dashboard');
@@ -148,30 +191,47 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
       );
     });
 
+    /**
+     * @effects auth_config_update_rejects_non_root_relative_path
+     */
     it('외부 origin URL 은 throw 해야 한다 (open redirect 차단)', () => {
       expect(() =>
         authManager.updateConfig('user', { loginPath: 'https://evil.com/login' })
       ).toThrow(/loginPath/);
     });
 
+    /**
+     * @effects auth_config_update_rejects_non_root_relative_path
+     */
     it('protocol-relative URL 은 throw 해야 한다 (open redirect 차단)', () => {
       expect(() =>
         authManager.updateConfig('user', { loginPath: '//evil.com/login' })
       ).toThrow(/loginPath/);
     });
 
+    /**
+     * @effects auth_config_update_rejects_non_root_relative_path
+     */
     it('상대 경로(./, ../)도 throw 해야 한다 — / 시작만 허용', () => {
       expect(() =>
         authManager.updateConfig('user', { loginPath: './login' })
       ).toThrow(/loginPath/);
     });
 
+    /**
+     * @scenario auth_type=unconfigured
+     *
+     * @effects auth_config_update_unknown_type_is_noop
+     */
     it('미등록 type 호출은 no-op (throw 하지 않음)', () => {
       expect(() =>
         authManager.updateConfig('unknown' as AuthType, { loginPath: '/foo' })
       ).not.toThrow();
     });
 
+    /**
+     * @effects auth_config_update_changes_paths
+     */
     it('loginPath 외 다른 필드(defaultPath 등)도 갱신 가능해야 한다', () => {
       authManager.updateConfig('user', { defaultPath: '/welcome' });
       const config = authManager.getConfig('user');
@@ -183,6 +243,11 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
   });
 
   describe('logout() - redirect에 queryString 포함', () => {
+    /**
+     * @scenario auth_type=admin
+     *
+     * @effects logout_redirect_keeps_current_query_string
+     */
     it('로그아웃 시 현재 URL의 pathname + search가 redirect에 포함되어야 한다', async () => {
       // 인증 상태 설정 (admin)
       (authManager as any).state = {
@@ -199,6 +264,11 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
       expect(window.location.href).toBe(expectedHref);
     });
 
+    /**
+     * @scenario auth_type=admin
+     *
+     * @effects logout_redirect_keeps_current_query_string
+     */
     it('queryString이 없는 경우에도 정상 동작해야 한다', async () => {
       Object.defineProperty(window, 'location', {
         value: {
@@ -222,6 +292,11 @@ describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
       expect(window.location.href).toBe(expectedHref);
     });
 
+    /**
+     * @scenario auth_type=user
+     *
+     * @effects logout_redirect_keeps_current_query_string, login_redirect_uses_type_login_path
+     */
     it('user 타입 로그아웃 시 올바른 loginPath로 리다이렉트해야 한다', async () => {
       Object.defineProperty(window, 'location', {
         value: {

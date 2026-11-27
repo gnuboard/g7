@@ -13,8 +13,8 @@
  *     운영자의 다음 진입에서 컬럼은 보이는데 전 행이 "-" 가 됐다. 지금은 서버가 항상 싣고
  *     표시 여부는 컬럼 선택 하나가 정한다.
  *
- * @scenario claim_axis=presence
- * @effects order_list_claim_filter_block_renders, order_list_claim_filter_narrows_result, order_list_claim_filter_total_is_not_inflated, order_list_claim_column_is_always_served
+ * 효과 요약(마커 아님 — 평문): 필터 블록 표시, 결과 좁힘, 총 건수 불변, 클레임 요약 상시 직렬화.
+ * 마킹은 각 시험 바로 앞 주석이 단다.
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 
@@ -32,6 +32,7 @@ async function waitForOrderList(page: import('@playwright/test').Page): Promise<
 }
 
 test.describe('주문 목록 클레임 기준 필터 (D22)', () => {
+  // @effects order_list_claim_filter_block_renders
   test('클레임 기준 블록이 기본으로 보인다', async ({ page, ordersReadToken }) => {
     test.setTimeout(120_000);
 
@@ -57,6 +58,7 @@ test.describe('주문 목록 클레임 기준 필터 (D22)', () => {
     await expect(page.locator('#f_263_claim_requested_to')).toBeVisible();
   });
 
+  // @effects order_list_claim_filter_narrows_result, order_list_claim_filter_total_is_not_inflated
   test('클레임 필터가 걸린 목록은 422 가 아니라 정상 응답이고 총 건수가 부풀지 않는다', async ({ request, ordersReadToken }) => {
     const headers = { Authorization: `Bearer ${ordersReadToken}`, Accept: 'application/json' };
 
@@ -160,6 +162,7 @@ test.describe('주문 목록 클레임 기준 필터 (D22)', () => {
     expect(new Set(numbers).size).toBe(numbers.length);
   });
 
+  // @effects order_list_claim_column_is_always_served
   test('클레임 요약은 파라미터 없이도 항상 실린다', async ({ request, ordersReadToken }) => {
     // 종전 계약은 `with_claim_summary=1` 요청에만 싣는 opt-in 이었다. 그 결과 컬럼 표시
     // (브라우저 저장값)와 값 수신(주소)이 서로 다른 근거를 갖게 되어, 컬럼을 한 번 켠
@@ -192,6 +195,7 @@ test.describe('주문 목록 클레임 기준 필터 (D22)', () => {
     }
   });
 
+  // @effects order_list_claim_column_is_always_served
   test('목록 조회는 요약 opt-in 파라미터를 더 이상 보내지 않는다', async ({ page, ordersReadToken }) => {
     // 이 파라미터가 되살아나면 표시와 값 수신이 다시 두 근거를 갖는다. 화면이 그것을
     // 만들지 않는다는 사실을 브라우저에서 고정한다.

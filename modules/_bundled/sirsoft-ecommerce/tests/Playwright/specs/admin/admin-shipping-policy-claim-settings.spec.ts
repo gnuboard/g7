@@ -9,8 +9,8 @@
  *  ② **산정 방식이 '원 정책 재계산' 인데 고정액 입력이 남아 있으면** 운영자는 그 값이
  *     쓰인다고 읽는다. 실제로는 정책 규칙이 다시 계산하므로 표시와 동작이 갈린다.
  *
- * @scenario claim_scope=pickup_address
- * @effects shipping_policy_claim_address_persists, shipping_policy_claim_fee_mode_toggles_fixed_inputs
+ * 효과 요약(마커 아님 — 평문): 회수지 저장 유지, 산정 방식에 따른 고정액 입력 전환.
+ * 마킹은 각 시험 바로 앞 주석이 단다.
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 
@@ -46,6 +46,8 @@ async function discoverPolicyId(
 test.describe.configure({ mode: 'serial' });
 
 test.describe('배송정책 클레임 확장', () => {
+  // @scenario claim_scope=pickup_address
+  // @effects shipping_policy_claim_address_persists
   test('회수지를 입력하고 저장하면 재진입에서 그대로 남는다', async ({ page, request, shippingPolicyToken }) => {
     // 이 케이스 하나가 API 4왕복(회수지 GET · 정책 GET · 원복 PUT · 재조회) + 페이지 로드 +
     // 저장 + 20초 poll 을 한다. 기본 30초 타임아웃과 실측 소요(단독 19s · 다른 spec 과 같은
@@ -182,6 +184,8 @@ test.describe('배송정책 클레임 확장', () => {
     }
   });
 
+  // @scenario claim_scope=country_fee
+  // @effects shipping_policy_claim_fee_mode_toggles_fixed_inputs
   test('산정 방식이 원 정책 재계산이면 고정액 입력이 사라지고 안내가 대신 선다', async ({ page, request, shippingPolicyToken }) => {
     // 형제 케이스와 같은 상한. 기본 30초는 API 왕복 + 페이지 로드 + 30초 가시성 대기를
     // 담기에 좁아, 배치 실행에서 비결정적 timeout 이 난다(앞서 고친 것과 같은 결).

@@ -1,0 +1,20 @@
+feature: 관리자 목록 필터 슬롯 아웃렛의 행 간격
+
+description: |
+  필터 행은 작성 위치(숨김 등록 영역)가 아니라 `basic_filters`·`detail_filters` 슬롯 아웃렛으로
+  옮겨져 그려진다. 행 자체의 하단 여백을 걷고 간격을 부모(`filter-grid` = flex flex-col gap-4)로
+  넘긴 뒤로는, 아웃렛이 gap 없는 `flex flex-col` 이면 행들이 0 간격으로 붙는다. 오류는 나지
+  않고 화면만 좁아진다. 슬롯 기반 필터의 모든 아웃렛이 간격 자산을 갖는지 잰다.
+
+# axis 의미:
+#   check — has_spacing_asset 은 모든 아웃렛이 filter-grid 를 가지는지, no_plain_flex_outlet 은
+#           회귀 모양(className 없음 또는 plain flex flex-col)이 하나도 없는지다.
+axes:
+  check: [has_spacing_asset, no_plain_flex_outlet]
+
+effects:
+  - filter_slot_outlets_carry_spacing_asset
+  - filter_slot_outlets_are_not_plain_flex_column
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/filterSlotSpacing.test.tsx

@@ -27,6 +27,11 @@ class OrderOptionBulkQueryCountRegressionTest extends ModuleTestCase
 
     private OrderOptionService $service;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -98,9 +103,12 @@ class OrderOptionBulkQueryCountRegressionTest extends ModuleTestCase
      * 구조를 직접 고정한다. 루프 안에 단건 조회가 되살아나면 첫 항목의 조회가 첫 UPDATE 를
      * 앞서므로 이 단언이 깨진다.
      *
-     * @scenario operation=bulk_change_with_quantity, item_count=6, target_status=shipping
+     * 측정 조건(마커 아님 — 평문): 옵션 6건을 배송중으로 일괄 변경한다.
+     *
+     * @scenario operation=bulk_change_with_quantity
      *
      * @effects bulk_change_resolves_targets_in_one_batched_query
+     * @return void 반환값 없음
      */
     public function test_bulk_change_resolves_targets_in_one_batched_query(): void
     {
@@ -162,9 +170,12 @@ class OrderOptionBulkQueryCountRegressionTest extends ModuleTestCase
      * 옵션 일괄변경은 단일 주문 범위지만, 가드는 옵션에서 주문을 역산하므로
      * 여러 주문에 걸친 내부/훅 호출에서 주문마다 조회 + 결제수단 지연 로드가 발생했다.
      *
-     * @scenario operation=enforce_payment_complete_idv, order_count=1_vs_3, target_status=payment_complete
+     * 측정 조건(마커 아님 — 평문): 주문 1건과 3건의 가드 쿼리 수를 비교하고, 목표 상태는 결제완료다.
+     *
+     * @scenario operation=enforce_payment_complete_idv
      *
      * @effects payment_complete_guard_query_count_does_not_grow_with_order_count
+     * @return void 반환값 없음
      */
     public function test_payment_complete_guard_query_count_does_not_grow_with_order_count(): void
     {
@@ -210,6 +221,7 @@ class OrderOptionBulkQueryCountRegressionTest extends ModuleTestCase
      * private 가드 메서드를 직접 호출한다.
      *
      * @param  array<int, int>  $optionIds  대상 옵션 ID 배열
+     * @return void 반환값 없음
      */
     private function invokeGuard(array $optionIds): void
     {

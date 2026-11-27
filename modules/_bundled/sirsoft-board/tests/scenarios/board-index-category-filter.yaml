@@ -1,0 +1,29 @@
+feature: 게시판 목록 — 카테고리 필터 레이아웃 구조
+
+description: |
+  게시판 목록의 카테고리 Select 와 그 주변 구조를 잰다. 카테고리가 있을 때만 Select 를 보이고,
+  고른 값은 query.category 로 목록 요청과 주소에 실리며, 바꾸면 1페이지로 돌아간다. 페이지 이동은
+  category 를 유지하고, 결과가 없을 때는 필터 유무로 「게시글 없음」과 「검색 결과 없음」을 가른다.
+  시험은 실제 목록 레이아웃의 카테고리 영역을 옮긴 인라인 fixture 를 읽는다.
+
+# axis 의미:
+#   aspect — 같은 화면에서 시험마다 재는 관점(표시 조건·목록 요청·이동·페이지 이동·빈 상태·구조).
+axes:
+  aspect: [visibility, data_source, navigation, pagination, empty_state, structure]
+
+effects:
+  - category_select_shown_only_when_categories_exist
+  - category_select_value_follows_query
+  - posts_request_carries_category_param
+  - posts_request_uses_board_slug_endpoint
+  - category_change_navigates_with_merged_query
+  - all_category_option_clears_category
+  - pagination_keeps_category_query
+  - pagination_sets_page_from_argument
+  - empty_states_split_by_filter_presence
+  - filtered_empty_state_offers_filter_reset
+  - category_select_is_basic_type
+  - category_change_resets_page_to_first
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/board-index-category-filter.test.tsx

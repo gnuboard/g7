@@ -10,9 +10,9 @@
  * 검증 대상: 확장이 선언한 통합 탭 메타(hidden_tab / tab_channels)를 필터가 실제로
  * 해석하는가. 문자열 동일성 단언은 `!==` 를 `===` 로 바꾸는 오타를 잡지 못한다.
  *
- * @scenario resource=notification_definitions_tab,endpoint=admin_ecommerce_settings,observation=tab_filter
+ * 축 요약(마커 아님 — 평문): resource=notification_definitions_tab, endpoint=admin_ecommerce_settings, observation=tab_filter.
  *
- * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, tab_visible_when_any_of_tab_channels_active
+ * 효과 요약(마커 아님 — 평문): bizppurio_tab_replaces_sms_and_alimtalk_tabs, tab_visible_when_any_of_tab_channels_active. 마킹은 각 시험 바로 앞 주석이 단다.
  */
 
 import fs from 'fs';
@@ -116,11 +116,15 @@ describe('이커머스 알림 설정 — 채널 서브탭 필터 실평가', () 
         return result.map((c) => c.id);
     }
 
+    // @scenario channel_state=layout_expression
+    // @effects tab_filter_expression_extractable
     it('서브탭 필터 표현식을 레이아웃에서 추출할 수 있다', () => {
         expect(container, '*channel_sub_tabs 컨테이너를 찾지 못했다').toBeTruthy();
         expect(expr, '탭 iteration source 가 비어 있다').not.toBe('');
     });
 
+    // @scenario channel_state=all_active
+    // @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs
     it('sms·alimtalk 모두 활성 → 통합 탭 1개만 노출, sms 개별 탭은 숨김', () => {
         expect(visibleTabs([
             { id: 'sms', is_active: true },
@@ -128,6 +132,8 @@ describe('이커머스 알림 설정 — 채널 서브탭 필터 실평가', () 
         ])).toEqual(['mail', 'database', 'alimtalk']);
     });
 
+    // @scenario channel_state=sms_only_active
+    // @effects tab_visible_when_any_of_tab_channels_active
     it('sms 만 활성(alimtalk 비활성) → tab_channels 규칙으로 통합 탭 노출', () => {
         expect(visibleTabs([
             { id: 'sms', is_active: true },
@@ -135,6 +141,8 @@ describe('이커머스 알림 설정 — 채널 서브탭 필터 실평가', () 
         ])).toEqual(['mail', 'database', 'alimtalk']);
     });
 
+    // @scenario channel_state=all_inactive
+    // @effects bizppurio_tab_hidden_when_no_tab_channel_active
     it('sms·alimtalk 모두 비활성 → 통합 탭 미노출', () => {
         expect(visibleTabs([
             { id: 'sms', is_active: false },
@@ -142,14 +150,20 @@ describe('이커머스 알림 설정 — 채널 서브탭 필터 실평가', () 
         ])).toEqual(['mail', 'database']);
     });
 
+    // @scenario channel_state=unsaved
+    // @effects bizppurio_tab_hidden_when_no_tab_channel_active
     it('확장 채널 저장값 자체가 없으면(미저장=opt-in 전) 통합 탭 미노출', () => {
         expect(visibleTabs([])).toEqual(['mail', 'database']);
     });
 
+    // @scenario channel_state=core_disabled
+    // @effects core_channel_hidden_only_when_explicitly_inactive
     it('코어 채널은 저장값이 명시적 false 일 때만 숨는다 (기본 노출)', () => {
         expect(visibleTabs([{ id: 'mail', is_active: false }])).toEqual(['database']);
     });
 
+    // @scenario channel_state=plain_extension_channel
+    // @effects plain_extension_channel_follows_own_active_state
     it('tab_channels 미선언 확장 채널은 자기 자신의 활성 저장 기준으로 판정된다', () => {
         const withPlain = [...CHANNELS, { id: 'push', source: 'some-plugin', name: '푸시' }];
         expect(visibleTabs([{ id: 'push', is_active: true }], withPlain)).toEqual(['mail', 'database', 'push']);

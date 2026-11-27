@@ -1,0 +1,29 @@
+feature: 로그인 이동 주소(redirect) 만들기와 인증 경로 설정 갱신
+
+description: |
+  AuthManager 가 로그인 화면으로 보낼 때 만드는 주소를 잰다. 돌아올 주소(redirect)에는 현재 경로와
+  쿼리 문자열이 통째로 인코딩돼 실려야 한다 — 쿼리가 빠지면 로그인 뒤 목록 필터·페이지가 사라진다.
+  로그아웃 뒤 이동도 같은 규칙을 따른다.
+
+  잰다:
+    - 인증 유형(admin·user)별 로그인 경로를 쓰고, 설정 없는 유형은 /login 이다.
+    - reason 인자가 있으면 쿼리에 붙고, 없으면 붙지 않는다.
+    - updateConfig 로 로그인 경로 등을 바꿀 수 있고, `/` 로 시작하지 않는 경로(외부 주소·
+      프로토콜 상대·./ ../)는 거부하며, 등록되지 않은 유형은 아무 일도 하지 않는다.
+
+axes:
+  auth_type: [admin, user, unconfigured]
+
+effects:
+  - login_redirect_encodes_full_query_string
+  - login_redirect_uses_type_login_path
+  - login_redirect_defaults_to_login_for_unconfigured_type
+  - login_redirect_appends_reason
+  - login_redirect_omits_reason_when_absent
+  - auth_config_update_changes_paths
+  - auth_config_update_rejects_non_root_relative_path
+  - auth_config_update_unknown_type_is_noop
+  - logout_redirect_keeps_current_query_string
+
+test_files:
+  - resources/js/core/__tests__/AuthManager.loginRedirect.test.ts

@@ -13,12 +13,22 @@ import adminLoginJson from '../../layouts/admin_login.json';
 import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 describe('sirsoft-admin_basic 로그인 레이아웃 - 세션 만료 토스트 init_action', () => {
+  /**
+   * 최상위 init_actions 가 남아 있다.
+   * @scenario component=admin_login
+   * @effects admin_login_existing_init_actions_preserved
+   */
   it('최상위 init_actions 가 하나 이상 있어야 한다', () => {
     // 컨테이너 모양(배열이냐 단일 객체냐)은 단언하지 않는다 — 컴파일러가 단일 원소를 객체로
     // 접으므로 그 모양을 외우면 다음 굽기에서 깨진다(D67 ⓐ · U-SHAPEASSERT).
     expect(asArray((adminLoginJson as any).init_actions).length).toBeGreaterThan(0);
   });
 
+  /**
+   * session_expired 토스트가 login_page_wrapper 의 lifecycle.onMount 에 등록된다.
+   * @scenario component=admin_login
+   * @effects admin_login_session_expired_toast_on_mount
+   */
   it('session_expired 토스트 액션이 login_page_wrapper 의 lifecycle.onMount 에 등록되어야 한다', () => {
     // engine-v1.47.x 명문화: init_actions 는 첫 렌더 전에 실행되어 globalState 갱신이
     // React 리렌더로 반영되지 않을 수 있음. 대신 wrapper Div 의 lifecycle.onMount 사용 →
@@ -54,6 +64,11 @@ describe('sirsoft-admin_basic 로그인 레이아웃 - 세션 만료 토스트 i
     });
   });
 
+  /**
+   * init_actions 에서는 토스트 발화가 빠졌다.
+   * @scenario component=admin_login
+   * @effects admin_login_session_expired_toast_on_mount
+   */
   it('init_actions 의 toast 발화는 제거되었어야 한다 (lifecycle.onMount 로 이전됨, 회귀 차단)', () => {
     const initActions = (adminLoginJson as any).init_actions as any[];
     const toastInInit = initActions.find(
@@ -62,6 +77,11 @@ describe('sirsoft-admin_basic 로그인 레이아웃 - 세션 만료 토스트 i
     expect(toastInInit).toBeUndefined();
   });
 
+  /**
+   * 기존 init_action(initTheme, setState)이 보존된다.
+   * @scenario component=admin_login
+   * @effects admin_login_existing_init_actions_preserved
+   */
   it('기존 init_action(initTheme, setState)는 그대로 보존되어야 한다 (회귀 방지)', () => {
     const initActions = (adminLoginJson as any).init_actions as any[];
 
@@ -74,6 +94,11 @@ describe('sirsoft-admin_basic 로그인 레이아웃 - 세션 만료 토스트 i
     expect(setStateAction.params?.loginForm).toBeDefined();
   });
 
+  /**
+   * Toast 컴포넌트가 components 최상단에 마운트된다.
+   * @scenario component=admin_login
+   * @effects admin_login_toast_mounted_top_level
+   */
   it('Toast 컴포넌트가 components 최상단에 마운트되어야 한다 (independent layout, _admin_base 미상속)', () => {
     // admin_login 은 _admin_base 를 extends 하지 않는 독립 레이아웃이므로,
     // toast 핸들러가 _global.toasts 에 push 한 메시지를 렌더할 Toast 컴포넌트가
@@ -87,6 +112,11 @@ describe('sirsoft-admin_basic 로그인 레이아웃 - 세션 만료 토스트 i
     expect(toastComponent.props?.toasts).toBe('{{_global.toasts}}');
   });
 
+  /**
+   * 번역 키가 ko·en 자원에 있다.
+   * @scenario component=admin_login
+   * @effects admin_login_session_expired_i18n_keys
+   */
   it('번역 키가 i18n 자원에 등록되어 있어야 한다 (ko/en partial)', async () => {
     const koAuth = await import('../../lang/partial/ko/auth.json');
     const enAuth = await import('../../lang/partial/en/auth.json');

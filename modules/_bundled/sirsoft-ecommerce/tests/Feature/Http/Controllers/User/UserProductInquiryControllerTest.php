@@ -27,6 +27,11 @@ class UserProductInquiryControllerTest extends ModuleTestCase
 
     private ProductInquiry $inquiry;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -93,6 +98,10 @@ class UserProductInquiryControllerTest extends ModuleTestCase
      *
      * 회귀: getUserInquiries 의 product.url 이 id 로 하드코딩되어 있어 클릭 시
      * /shop/products/{id} 로 이동하던 버그. product_code 기준으로 수정.
+     *
+     * @scenario action=list, actor=owner
+     * @effects user_inquiry_list_links_product_by_code
+     * @return void 반환값 없음
      */
     #[Test]
     public function 문의_목록의_상품_링크는_product_code_로_나간다(): void
@@ -128,6 +137,13 @@ class UserProductInquiryControllerTest extends ModuleTestCase
     // update() — 문의 수정
     // ========================================
 
+    /**
+     * 로그인하지 않으면 문의를 수정할 수 없다 (401).
+     *
+     * @scenario action=update, actor=guest
+     * @effects user_inquiry_write_requires_authentication
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 비인증_사용자는_문의를_수정할_수_없다(): void
     {
@@ -139,6 +155,13 @@ class UserProductInquiryControllerTest extends ModuleTestCase
         $response->assertUnauthorized();
     }
 
+    /**
+     * 작성자 본인은 자기 문의를 수정할 수 있다.
+     *
+     * @scenario action=update, actor=owner
+     * @effects user_inquiry_owner_can_update
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 본인_문의를_수정할_수_있다(): void
     {
@@ -151,6 +174,13 @@ class UserProductInquiryControllerTest extends ModuleTestCase
         $response->assertOk();
     }
 
+    /**
+     * 다른 회원의 문의는 수정할 수 없다 (403).
+     *
+     * @scenario action=update, actor=other
+     * @effects user_inquiry_other_member_cannot_update
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 타인의_문의는_수정할_수_없다(): void
     {
@@ -165,6 +195,13 @@ class UserProductInquiryControllerTest extends ModuleTestCase
         $response->assertStatus(403);
     }
 
+    /**
+     * 없는 문의를 수정하려 하면 404 를 받는다.
+     *
+     * @scenario action=update, actor=owner
+     * @effects user_inquiry_update_unknown_returns_404
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 존재하지_않는_문의_수정_시_404를_반환한다(): void
     {
@@ -181,6 +218,13 @@ class UserProductInquiryControllerTest extends ModuleTestCase
     // destroy() — 문의 삭제
     // ========================================
 
+    /**
+     * 로그인하지 않으면 문의를 삭제할 수 없다 (401).
+     *
+     * @scenario action=delete, actor=guest
+     * @effects user_inquiry_write_requires_authentication
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 비인증_사용자는_문의를_삭제할_수_없다(): void
     {
@@ -191,6 +235,13 @@ class UserProductInquiryControllerTest extends ModuleTestCase
         $response->assertUnauthorized();
     }
 
+    /**
+     * 작성자 본인은 자기 문의를 삭제할 수 있고, 행은 소프트 삭제된다.
+     *
+     * @scenario action=delete, actor=owner
+     * @effects user_inquiry_owner_can_delete
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 본인_문의를_삭제할_수_있다(): void
     {
@@ -208,6 +259,10 @@ class UserProductInquiryControllerTest extends ModuleTestCase
      * SoftDeletes 계약 명시 — 삭제된 피벗 행은 DB 에 남되(deleted_at 세팅)
      * 기본 스코프 조회에서는 제외되어야 한다. 게시판에서 질문 글을 복원하는
      * 경로가 피벗을 되살릴 수 있어야 하므로 하드 삭제가 아니다.
+     *
+     * @scenario action=delete, actor=owner
+     * @effects user_inquiry_delete_soft_deletes_pivot
+     * @return void 반환값 없음
      */
     #[Test]
     public function 문의_삭제_시_피벗이_소프트_삭제된다(): void
@@ -230,6 +285,13 @@ class UserProductInquiryControllerTest extends ModuleTestCase
         $this->assertNotNull($trashed->deleted_at);
     }
 
+    /**
+     * 다른 회원의 문의는 삭제할 수 없고 행이 남는다 (403).
+     *
+     * @scenario action=delete, actor=other
+     * @effects user_inquiry_other_member_cannot_delete
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 타인의_문의는_삭제할_수_없다(): void
     {
@@ -248,6 +310,13 @@ class UserProductInquiryControllerTest extends ModuleTestCase
     // reply() — 답변 등록 (관리자 권한 필요)
     // ========================================
 
+    /**
+     * 답변 권한이 없으면 답변을 등록할 수 없다 (403).
+     *
+     * @scenario action=reply_create, actor=no_permission
+     * @effects user_inquiry_reply_requires_permission
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 권한_없는_사용자는_답변을_등록할_수_없다(): void
     {
@@ -260,6 +329,13 @@ class UserProductInquiryControllerTest extends ModuleTestCase
         $response->assertStatus(403);
     }
 
+    /**
+     * 답변 권한이 있으면 답변을 등록할 수 있다 (201).
+     *
+     * @scenario action=reply_create, actor=permitted
+     * @effects user_inquiry_permitted_user_can_create_reply
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 권한_있는_사용자는_답변을_등록할_수_있다(): void
     {
@@ -282,6 +358,10 @@ class UserProductInquiryControllerTest extends ModuleTestCase
      * 단일 답변 정책 (user 경로) — 이미 답변완료인 문의에는 재등록이 422 로
      * 거부되고, 거부 시 게시판 create 훅은 호출 자체가 없어야 한다.
      * admin 경로와 동일 가드가 user 경로에도 대칭 적용되는지 고정한다.
+     *
+     * @scenario action=create_reply, state=answered, path=user_api
+     * @effects duplicate_reply_rejected_422
+     * @return void 반환값 없음
      */
     #[Test]
     public function 이미_답변된_문의에_답변_재등록_시_422를_반환한다(): void
@@ -332,6 +412,10 @@ class UserProductInquiryControllerTest extends ModuleTestCase
      * null 을 돌려줘 서비스가 훅 무응답과 구분하지 못했고, "답변 등록에 실패했습니다"
      * (reply_failed, 500) 로 위장됐다. 리스너는 중복 마커(['duplicate' => true])를
      * 돌려주고 서비스는 이를 reply_already_exists(422) 로 변환해야 한다.
+     *
+     * @scenario action=create_reply, state=unanswered, path=user_api
+     * @effects listener_blocks_duplicate_child
+     * @return void 반환값 없음
      */
     #[Test]
     public function 경합_중복_감지_시에도_이미_답변됨_사유가_노출된다(): void
@@ -370,6 +454,7 @@ class UserProductInquiryControllerTest extends ModuleTestCase
      * 조용히 0.0.0.0 으로 기록된다.
      *
      * @effects service_injects_client_ip_into_reply_hook_payload
+     * @return void 반환값 없음
      */
     #[Test]
     public function 서비스가_답변_훅_payload_에_클라이언트_ip_를_주입한다(): void
@@ -411,6 +496,13 @@ class UserProductInquiryControllerTest extends ModuleTestCase
     // updateReply() — 답변 수정 (관리자 권한 필요)
     // ========================================
 
+    /**
+     * 답변 권한이 없으면 답변을 수정할 수 없다 (403).
+     *
+     * @scenario action=reply_update, actor=no_permission
+     * @effects user_inquiry_reply_requires_permission
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 권한_없는_사용자는_답변을_수정할_수_없다(): void
     {
@@ -429,6 +521,13 @@ class UserProductInquiryControllerTest extends ModuleTestCase
         $response->assertStatus(403);
     }
 
+    /**
+     * 답변 권한이 있으면 답변을 수정할 수 있다.
+     *
+     * @scenario action=reply_update, actor=permitted
+     * @effects user_inquiry_permitted_user_can_update_reply
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 권한_있는_사용자는_답변을_수정할_수_있다(): void
     {
@@ -452,6 +551,13 @@ class UserProductInquiryControllerTest extends ModuleTestCase
     // destroyReply() — 답변 삭제 (관리자 권한 필요)
     // ========================================
 
+    /**
+     * 답변 권한이 없으면 답변을 삭제할 수 없다 (403).
+     *
+     * @scenario action=reply_delete, actor=no_permission
+     * @effects user_inquiry_reply_requires_permission
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 권한_없는_사용자는_답변을_삭제할_수_없다(): void
     {
@@ -469,6 +575,13 @@ class UserProductInquiryControllerTest extends ModuleTestCase
         $response->assertStatus(403);
     }
 
+    /**
+     * 답변 권한이 있으면 답변을 삭제할 수 있다.
+     *
+     * @scenario action=reply_delete, actor=permitted
+     * @effects user_inquiry_permitted_user_can_delete_reply
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 권한_있는_사용자는_답변을_삭제할_수_있다(): void
     {

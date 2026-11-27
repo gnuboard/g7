@@ -25,6 +25,8 @@ const layouts: Array<[string, unknown]> = [
 ];
 
 describe('게시판 모듈 — locale fallback 하드코딩 회귀 가드', () => {
+    // @scenario layout=board_type_label
+    // @effects board_layouts_prefer_locale_over_static_ko_fallback
     it.each(layouts)("%s — _global.locale fallback 이 정적 'ko' 가 아닌 $locale 을 우선 사용함", (_name, layout) => {
         const layoutStr = JSON.stringify(layout);
         // 단순 `_global.locale ?? 'ko'` 형태 금지 — 활성 언어팩 환경에서 ja 가 아닌 ko 라벨로 표시되는 회귀 발생

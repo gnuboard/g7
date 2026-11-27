@@ -25,17 +25,38 @@ class ValidateTossSettingsListenerTest extends PluginTestCase
 {
     private ValidateTossSettingsListener $listener;
 
+    /**
+     * 테스트마다 설정 검증 리스너를 새로 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->listener = new ValidateTossSettingsListener;
     }
 
+    /**
+     * 플러그인의 훅 리스너 목록에 설정 검증 리스너가 들어 있다.
+     *
+     * @effects settings_validation_listener_registered
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_registers_settings_validation_listener(): void
     {
         $this->assertContains(ValidateTossSettingsListener::class, (new Plugin)->getHookListeners());
     }
 
+    /**
+     * 다른 플러그인의 설정이면 범위 밖 값이라도 검사하지 않고 넘어간다.
+     *
+     * @scenario settings_range=out_of_range
+     *
+     * @effects other_plugin_settings_not_validated
+     *
+     * @return void 반환값 없음
+     */
     public function test_other_plugin_settings_are_not_validated(): void
     {
         // 타 플러그인 식별자면 early-return (예외 없음)
@@ -53,6 +74,12 @@ class ValidateTossSettingsListenerTest extends PluginTestCase
      *
      * phpunit.xml 은 QUEUE_CONNECTION=sync 라 큐 경로도 즉시 실행되어 결함이 가려진다.
      * Queue::fake() 로 운영(database 드라이버)과 같은 비동기 상황을 만들어야 가드가 성립한다.
+     *
+     * @scenario settings_range=out_of_range
+     *
+     * @effects settings_validation_error_propagates_through_hook, out_of_range_vbank_hours_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_validation_exception_propagates_through_the_hook_chain(): void
     {
@@ -72,7 +99,9 @@ class ValidateTossSettingsListenerTest extends PluginTestCase
     }
 
     /**
-     * @return array<string, array{int}>
+     * 통과해야 하는 가상계좌 유효시간 경계값을 준다.
+     *
+     * @return array<string, array{int}> 이름별 유효시간 값
      */
     public static function validHoursProvider(): array
     {
@@ -83,6 +112,17 @@ class ValidateTossSettingsListenerTest extends PluginTestCase
         ];
     }
 
+    /**
+     * 1~2160 시간 범위의 가상계좌 유효시간은 통과한다.
+     *
+     * @param  int  $hours  가상계좌 유효시간(시간)
+     *
+     * @scenario settings_range=valid
+     *
+     * @effects in_range_vbank_hours_pass
+     *
+     * @return void 반환값 없음
+     */
     #[DataProvider('validHoursProvider')]
     public function test_valid_vbank_valid_hours_pass(int $hours): void
     {
@@ -92,7 +132,9 @@ class ValidateTossSettingsListenerTest extends PluginTestCase
     }
 
     /**
-     * @return array<string, array{mixed}>
+     * 막혀야 하는 가상계좌 유효시간 값을 준다.
+     *
+     * @return array<string, array{mixed}> 이름별 범위 밖 값
      */
     public static function invalidHoursProvider(): array
     {
@@ -104,6 +146,17 @@ class ValidateTossSettingsListenerTest extends PluginTestCase
         ];
     }
 
+    /**
+     * 범위 밖 가상계좌 유효시간은 검증 예외로 막힌다.
+     *
+     * @param  mixed  $hours  범위 밖 유효시간 값
+     *
+     * @scenario settings_range=out_of_range
+     *
+     * @effects out_of_range_vbank_hours_rejected
+     *
+     * @return void 반환값 없음
+     */
     #[DataProvider('invalidHoursProvider')]
     public function test_out_of_range_vbank_valid_hours_are_rejected(mixed $hours): void
     {
@@ -112,6 +165,15 @@ class ValidateTossSettingsListenerTest extends PluginTestCase
         $this->listener->validateBeforeSave('sirsoft-tosspayments', ['vbank_valid_hours' => $hours]);
     }
 
+    /**
+     * 범위 밖 값의 오류는 vbank_valid_hours 필드에 걸린다.
+     *
+     * @scenario settings_range=out_of_range
+     *
+     * @effects out_of_range_error_targets_vbank_hours_field
+     *
+     * @return void 반환값 없음
+     */
     public function test_rejected_message_targets_the_field(): void
     {
         try {
@@ -123,7 +185,9 @@ class ValidateTossSettingsListenerTest extends PluginTestCase
     }
 
     /**
-     * @return array<string, array{string}>
+     * 막혀야 하는 에스크로 설정 값을 준다.
+     *
+     * @return array<string, array{string}> 이름별 허용되지 않는 값
      */
     public static function invalidEscrowProvider(): array
     {
@@ -133,6 +197,17 @@ class ValidateTossSettingsListenerTest extends PluginTestCase
         ];
     }
 
+    /**
+     * 허용 목록 밖 에스크로 값은 검증 예외로 막힌다.
+     *
+     * @param  string  $value  허용되지 않는 에스크로 값
+     *
+     * @scenario settings_range=out_of_range
+     *
+     * @effects invalid_use_escrow_rejected
+     *
+     * @return void 반환값 없음
+     */
     #[DataProvider('invalidEscrowProvider')]
     public function test_invalid_use_escrow_is_rejected(string $value): void
     {
@@ -142,7 +217,9 @@ class ValidateTossSettingsListenerTest extends PluginTestCase
     }
 
     /**
-     * @return array<string, array{string}>
+     * 통과해야 하는 에스크로 설정 값(off·on·buyer_choice)을 준다.
+     *
+     * @return array<string, array{string}> 이름별 허용 값
      */
     public static function validEscrowProvider(): array
     {
@@ -153,6 +230,17 @@ class ValidateTossSettingsListenerTest extends PluginTestCase
         ];
     }
 
+    /**
+     * 허용된 에스크로 값은 통과한다.
+     *
+     * @param  string  $value  허용된 에스크로 값
+     *
+     * @scenario settings_range=valid
+     *
+     * @effects valid_use_escrow_passes
+     *
+     * @return void 반환값 없음
+     */
     #[DataProvider('validEscrowProvider')]
     public function test_valid_use_escrow_passes(string $value): void
     {
@@ -161,6 +249,15 @@ class ValidateTossSettingsListenerTest extends PluginTestCase
         $this->addToAssertionCount(1);
     }
 
+    /**
+     * 검증 대상 키가 없는 부분 저장은 통과한다.
+     *
+     * @scenario settings_range=valid
+     *
+     * @effects settings_without_validated_keys_pass
+     *
+     * @return void 반환값 없음
+     */
     public function test_settings_without_the_validated_keys_pass(): void
     {
         // 부분 저장(다른 키만 전송)에서 미포함 키를 강제하지 않는다.

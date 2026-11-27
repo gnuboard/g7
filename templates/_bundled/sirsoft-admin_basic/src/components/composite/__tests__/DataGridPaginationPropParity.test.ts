@@ -42,11 +42,21 @@ describe('DataGrid — Pagination 렌더 경로의 hasMorePages 전달', () => {
     return blocks;
   };
 
+  /**
+   * Pagination 렌더 경로가 하나 이상 있다(모집단 확인).
+   * @scenario component=datagrid
+   * @effects datagrid_passes_has_more_pages_to_pagination
+   */
   it('Pagination 렌더 경로가 하나 이상 존재한다', () => {
     // 스캔 대상이 0 개면 아래 단언이 조용히 통과한다 — 모집단부터 고정한다.
     expect(paginationBlocks().length).toBeGreaterThan(0);
   });
 
+  /**
+   * 모든 Pagination 렌더 경로가 hasMorePages 를 넘긴다.
+   * @scenario component=datagrid
+   * @effects datagrid_passes_has_more_pages_to_pagination
+   */
   it('모든 Pagination 렌더 경로가 hasMorePages 를 넘긴다', () => {
     const missing = paginationBlocks()
       .map((block, index) => ({ index, block }))
@@ -60,6 +70,11 @@ describe('DataGrid — Pagination 렌더 경로의 hasMorePages 전달', () => {
     ).toEqual([]);
   });
 
+  /**
+   * 모든 Pagination 렌더 경로가 totalPages 로 null 을 보존한다.
+   * @scenario component=datagrid
+   * @effects datagrid_preserves_null_total_pages
+   */
   it('모든 Pagination 렌더 경로가 totalPages 로 null 을 보존한다', () => {
     // last_page 를 1 로 채우면 페이저가 접혀 1 페이지 밖 행에 도달할 수 없다.
     const blocks = paginationBlocks();

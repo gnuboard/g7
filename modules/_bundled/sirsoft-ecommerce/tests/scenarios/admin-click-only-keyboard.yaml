@@ -21,6 +21,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/headerCurrencySelectorEscape.test.tsx
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/buttonTypeExplicit.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/headerCurrencySelectorSlotOpenFocus.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/radio-keyboard-operable.test.ts
 
 coverage_strategy: pairwise
 
@@ -38,6 +39,8 @@ effects:
   - button_type_explicit   # 레이아웃·확장 조각의 모든 단추가 type 을 적는다 — 폼 안에 주입돼도 제출 단추가 되지 않는다(관찰)
   - currency_dropdown_keeps_focus_on_open   # 슬롯 실물 구조(첫 그림 앵커 사본 포함)에서 통화 단추를 Enter 로 연 뒤에도 초점이 살아 있는 통화 단추에 있고 Tab 으로 항목에 닿는다(E2E)
   - currency_dropdown_closes_on_escape   # 헤더 통화 선택 목록이 Esc 로 닫히고(항목·트리거 어디서든) 초점이 트리거 단추로 돌아온다. 닫혀 있을 때 Esc 는 아무것도 바꾸지 않는다. 열려 있을 때의 트리거 Esc 는 바깥(서랍 닫기)으로 올라가지 않고, 닫혀 있을 때는 올라가 서랍이 닫힌다(2026-10-19)
+  - radio_accepts_pointer_clicks   # 커스텀 라디오가 pointer-events-none 으로 클릭을 버리지 않는다
+  - radio_change_action_matches_label_click   # 라디오 자신이 change 액션을 가지고, 그 값이 감싼 Label 의 click 값과 같다 — 키보드(방향키)는 change 만 낸다
 
 validation:
   audit_rule: frontend-change-requires-e2e

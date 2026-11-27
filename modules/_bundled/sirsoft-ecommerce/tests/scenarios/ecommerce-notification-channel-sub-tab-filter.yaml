@@ -1,0 +1,30 @@
+feature: 이커머스 알림 설정 — 채널 서브탭 필터 실평가
+
+description: |
+  이커머스 알림 설정의 채널 서브탭은 확장이 선언한 통합 탭 정보(hidden_tab·tab_channels)를 보고
+  탭을 고른다. 같은 식을 admin_basic·게시판도 쓰지만, 그쪽 패리티 테스트는 admin_basic 러너에서만
+  돈다. 그래서 이커머스 레이아웃의 필터 식을 꺼내 실제로 실행해, 채널 저장 상태마다 어떤 탭이
+  보이는지 잰다. 형식은 게시판의 `board-notification-channel-sub-tab-filter.yaml` 과 같다.
+
+# axis 의미:
+#   channel_state — 필터에 넣는 채널 저장 상태.
+#     layout_expression        레이아웃에서 필터 식을 꺼낼 수 있는지(실행 전 전제)
+#     all_active               sms·alimtalk 모두 켬
+#     sms_only_active          sms 만 켬
+#     all_inactive             sms·alimtalk 모두 끔
+#     unsaved                  확장 채널 저장값 없음
+#     core_disabled            코어 채널(mail)을 명시적으로 끔
+#     plain_extension_channel  tab_channels 를 선언하지 않은 확장 채널
+axes:
+  channel_state: [layout_expression, all_active, sms_only_active, all_inactive, unsaved, core_disabled, plain_extension_channel]
+
+effects:
+  - tab_filter_expression_extractable
+  - bizppurio_tab_replaces_sms_and_alimtalk_tabs
+  - tab_visible_when_any_of_tab_channels_active
+  - bizppurio_tab_hidden_when_no_tab_channel_active
+  - core_channel_hidden_only_when_explicitly_inactive
+  - plain_extension_channel_follows_own_active_state
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-bizppurio-tab-filter.test.ts

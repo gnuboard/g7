@@ -1,0 +1,39 @@
+feature: 관리자 본인인증 이력 목록 API — 검색·필터·정렬·기간·페이지 정보
+
+description: |
+  관리자 본인인증 이력 목록(GET /api/admin/identity/logs)이 고른 조건을 서버에서 그대로 적용하는지 잰다.
+  응답 구조는 알림 발송 이력과 같은 `{data: {data, pagination, abilities}}` 다.
+  검색은 user_id 외에 target 해시·IP·정책 키로도 되고, 자동 검색은 값 모양(16진 해시·숫자)으로 대상을 고른다.
+  기간 필터는 입력을 사이트 타임존 기준으로 읽고, 시각이 없는 종료일은 그날 끝까지 포함한다.
+
+  축은 시험이 보내는 조회 조건의 종류 하나다.
+
+axes:
+  query: [envelope, target_hash, search_auto, user_id, sort, status_filter, purpose_filter, date_range, search_type, validation, pagination]
+
+effects:
+  # 응답 구조
+  - identity_log_index_envelope_matches_notification_log
+  - identity_log_pagination_meta_under_pagination_key
+  # 검색
+  - identity_log_target_hash_filter_matches_only_that_hash
+  - identity_log_auto_search_routes_hex_to_target_hash
+  - identity_log_auto_search_routes_digits_to_user_id
+  - identity_log_user_id_filter_accepts_missing_user
+  - identity_log_ip_address_search_matches_exact_ip
+  - identity_log_policy_key_search_matches_prefix
+  # 필터·정렬
+  - identity_log_sorts_by_requested_column
+  - identity_log_status_array_filter_matches_any_selected
+  - identity_log_legacy_single_status_still_filters
+  - identity_log_purpose_array_filter_matches_any_selected
+  - identity_log_invalid_status_value_returns_422
+  # 기간
+  - identity_log_date_range_excludes_outside_rows
+  - identity_log_date_range_reads_site_timezone
+  - identity_log_date_only_end_includes_whole_day
+  - identity_log_end_with_time_is_not_widened
+
+test_files:
+  - tests/Feature/Api/Admin/Identity/AdminIdentityLogIndexTest.php
+  - tests/Feature/Identity/IdentityLogDateRangeFilterTest.php

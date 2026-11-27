@@ -1,0 +1,46 @@
+feature: 확장 개발자 문서 계약 (번들 확장 문서 체계 잠금)
+
+description: |
+  번들 확장(_bundled 스캔) 전부가 유형별 필수 문서·필수 절·자동 생성 블록을 갖추고, 자동 생성 블록이
+  소스 실측과 맞는지 잰다. 생성기(ExtensionDocScaffolder·수집기·렌더러)가 사람 서술을 지키고, 판정식
+  (드리프트·고아 블록·절 판정)이 공허 통과하지 않는지도 합성 입력으로 함께 잠근다.
+
+axes:
+  check:
+    - inventory            # _bundled 스캔
+    - document_set         # 유형별 필수 문서 묶음
+    - sections             # 필수 절·미채움 마커·앵커·고아 블록 판정
+    - generated_blocks     # 자동 생성 블록과 소스 실측 대조
+    - generator            # 골격 생성·블록 교체·렌더
+    - entry_documents      # README·AGENTS.md·docs/README.md 진입 문서
+    - activity_log_hooks   # 활동 로그 훅 표와 리스너 구독 대조
+    - playwright           # 문서의 Playwright 명령
+
+effects:
+  - inventory_discovers_every_bundled_extension
+  - documented_extensions_have_required_documents
+  - documents_have_required_sections_and_blocks
+  - generated_hook_blocks_match_source
+  - drift_detection_catches_stale_hook_table
+  - declared_hooks_reach_published_table
+  - block_replacement_preserves_human_text
+  - todo_marker_list_fixed_and_distinct
+  - empty_intent_blocks_counted
+  - every_extension_renders_without_error
+  - section_detection_requires_heading
+  - skeleton_places_blocks_under_own_section
+  - surface_failure_notice_reaches_measured_blocks
+  - unmeasured_stats_not_collapsed_to_zero
+  - summary_anchors_point_at_real_sections
+  - document_set_differs_by_extension_type
+  - orphan_block_detection_alive
+  - skeleton_matches_extension_layout
+  - schedule_period_reads_contract_key
+  - namespaced_handler_keys_survive_collection_and_render
+  - readme_leads_with_heading_not_hero_badge
+  - entry_document_titles_carry_product_and_type
+  - activity_log_hook_tables_match_listener_subscriptions
+  - playwright_command_resolves_extension_config
+
+test_files:
+  - tests/Feature/Documentation/ExtensionDocContractTest.php

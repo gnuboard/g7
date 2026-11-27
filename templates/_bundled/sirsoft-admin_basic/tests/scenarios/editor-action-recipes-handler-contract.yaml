@@ -1,0 +1,17 @@
+feature: 편집기 액션 레시피(actionRecipes.json) — 핸들러 계약 일치
+
+description: |
+  편집기가 삽입하는 액션 레시피가 실제 핸들러가 읽는 자리(top-level target · params 키)와 값 범위를 따르는지 잰다.
+  레시피가 어긋나면 삽입한 액션이 콘솔 경고 한 줄만 남기고 아무 일도 하지 않는다.
+
+# axis 의미:
+#   component — 이 매니페스트가 다루는 정적 계약 하나(actionRecipes.json).
+axes:
+  component: [action_recipes]
+
+effects:
+  - recipe_target_actions_use_top_level_target   # setLocale·setTheme·initTheme 레시피가 params 가 아니라 top-level target 으로 구워진다
+  - recipe_params_match_handler_contract   # 그 밖의 레시피가 핸들러가 읽는 params 키와 유효값을 그대로 쓴다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/editor-spec/action-recipes-contract.test.ts

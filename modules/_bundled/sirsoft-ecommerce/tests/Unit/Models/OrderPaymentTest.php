@@ -21,6 +21,13 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class OrderPaymentTest extends ModuleTestCase
 {
+    /**
+     * 결제 행이 주문에 묶여 저장된다.
+     *
+     * @scenario subject=model
+     * @effects order_payment_row_is_persisted
+     * @return void 반환값 없음
+     */
     public function test_order_payment_can_be_created(): void
     {
         // paid_amount 컬럼은 paid_amount_local / paid_amount_base 로 분리됨 (다중 통화 지원)
@@ -36,6 +43,13 @@ class OrderPaymentTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 결제 행에서 주문 관계로 원 주문을 읽는다.
+     *
+     * @scenario subject=model
+     * @effects order_payment_belongs_to_order
+     * @return void 반환값 없음
+     */
     public function test_order_payment_belongs_to_order(): void
     {
         $order = OrderFactory::new()->create();
@@ -46,7 +60,10 @@ class OrderPaymentTest extends ModuleTestCase
     }
 
     /**
+     * 결제수단은 enum 캐스트 없이 문자열로 저장되고, 카드 판정은 능력 메서드가 답한다.
+     *
      * @effects builtin_capability_unchanged
+     * @return void 반환값 없음
      */
     public function test_order_payment_method_is_stored_as_plain_string(): void
     {
@@ -61,7 +78,10 @@ class OrderPaymentTest extends ModuleTestCase
     }
 
     /**
+     * PG 플러그인이 등록한 확장 결제수단 ID 도 그대로 저장된다.
+     *
      * @effects extension_id_persisted_as_is
+     * @return void 반환값 없음
      */
     public function test_order_payment_accepts_extension_payment_method_id(): void
     {
@@ -75,6 +95,13 @@ class OrderPaymentTest extends ModuleTestCase
         $this->assertSame('nhnkcp_naverpay', $payment->fresh()->payment_method);
     }
 
+    /**
+     * 결제 상태는 PaymentStatusEnum 으로 캐스팅된다.
+     *
+     * @scenario subject=model
+     * @effects order_payment_status_is_cast_to_enum
+     * @return void 반환값 없음
+     */
     public function test_order_payment_casts_status_to_enum(): void
     {
         $order = OrderFactory::new()->create();
@@ -84,6 +111,13 @@ class OrderPaymentTest extends ModuleTestCase
         $this->assertEquals(PaymentStatusEnum::PAID, $payment->payment_status);
     }
 
+    /**
+     * 카드 결제는 카드 결제로 판정되고 카드사명을 담는다.
+     *
+     * @scenario subject=model
+     * @effects card_payment_keeps_card_info
+     * @return void 반환값 없음
+     */
     public function test_card_payment_has_card_info(): void
     {
         $order = OrderFactory::new()->create();
@@ -95,6 +129,13 @@ class OrderPaymentTest extends ModuleTestCase
         $this->assertEquals('신한카드', $payment->card_name);
     }
 
+    /**
+     * 가상계좌 결제는 가상계좌로 판정되고 은행명·계좌번호를 담는다.
+     *
+     * @scenario subject=model
+     * @effects virtual_account_payment_keeps_vbank_info
+     * @return void 반환값 없음
+     */
     public function test_virtual_account_payment_has_vbank_info(): void
     {
         $order = OrderFactory::new()->create();
@@ -105,6 +146,13 @@ class OrderPaymentTest extends ModuleTestCase
         $this->assertNotNull($payment->vbank_number);
     }
 
+    /**
+     * 결제 대기 상태에는 결제 시각이 없다.
+     *
+     * @scenario subject=model
+     * @effects payment_paid_at_follows_status
+     * @return void 반환값 없음
+     */
     public function test_pending_payment_has_no_paid_at(): void
     {
         $order = OrderFactory::new()->create();
@@ -114,6 +162,13 @@ class OrderPaymentTest extends ModuleTestCase
         $this->assertNull($payment->paid_at);
     }
 
+    /**
+     * 결제 완료 상태에는 결제 시각이 있다.
+     *
+     * @scenario subject=model
+     * @effects payment_paid_at_follows_status
+     * @return void 반환값 없음
+     */
     public function test_completed_payment_has_paid_at(): void
     {
         $order = OrderFactory::new()->create();
@@ -123,6 +178,13 @@ class OrderPaymentTest extends ModuleTestCase
         $this->assertNotNull($payment->paid_at);
     }
 
+    /**
+     * 취소된 결제는 취소 시각과 취소 사유를 담는다.
+     *
+     * @scenario subject=model
+     * @effects cancelled_payment_keeps_cancel_info
+     * @return void 반환값 없음
+     */
     public function test_cancelled_payment_has_cancel_info(): void
     {
         $order = OrderFactory::new()->create();
@@ -133,6 +195,13 @@ class OrderPaymentTest extends ModuleTestCase
         $this->assertNotNull($payment->cancel_reason);
     }
 
+    /**
+     * 실패한 결제는 실패 상태이고 결제 시각이 없다.
+     *
+     * @scenario subject=model
+     * @effects payment_paid_at_follows_status
+     * @return void 반환값 없음
+     */
     public function test_failed_payment_has_correct_status(): void
     {
         $order = OrderFactory::new()->create();
@@ -142,6 +211,13 @@ class OrderPaymentTest extends ModuleTestCase
         $this->assertNull($payment->paid_at);
     }
 
+    /**
+     * 결제 통화가 기준 통화와 다르면 취소 가능 금액을 결제 통화의 누적 취소로 계산한다.
+     *
+     * @scenario subject=model
+     * @effects cancellable_amount_uses_payment_currency_cumulative
+     * @return void 반환값 없음
+     */
     public function test_cancellable_amount_uses_payment_currency_cumulative_when_cross_currency(): void
     {
         // base JPY 주문을 KRW 로 결제: paid_amount_local 은 결제 통화(KRW 4750), 누적 취소도
@@ -161,6 +237,13 @@ class OrderPaymentTest extends ModuleTestCase
         $this->assertSame(3750.0, $payment->getCancellableAmount());
     }
 
+    /**
+     * 통화별 누적 취소가 없는 옛 결제는 기준 통화 누적 취소로 대신 계산한다.
+     *
+     * @scenario subject=model
+     * @effects cancellable_amount_falls_back_to_base_for_legacy_payment
+     * @return void 반환값 없음
+     */
     public function test_cancellable_amount_falls_back_to_base_cancelled_for_legacy_payment(): void
     {
         // mc_cancelled_amount 가 없는(레거시) 결제는 base 누적 cancelled_amount 로 폴백한다.

@@ -32,6 +32,7 @@ class ExtensionPointCallbackPlacementTest extends ModuleTestCase
      * @scenario scope=ecommerce_module_layouts
      *
      * @effects extension_point_props_carry_no_action_objects
+     * @return void 반환값 없음
      */
     public function test_확장점_콜백_액션은_props_가_아니라_callbacks_에_있다(): void
     {

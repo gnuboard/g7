@@ -35,6 +35,11 @@ class MenuListSortAndSearchTest extends TestCase
 
     private int $roleId;
 
+    /**
+     * 메뉴 읽기 권한 하나만 가진 역할과 그 역할의 관리자 사용자를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -70,6 +75,8 @@ class MenuListSortAndSearchTest extends TestCase
      *
      * `order` 순서와 이름 순서를 **일부러 어긋나게** 둔다 — 두 순서가 같으면 정렬이
      * 무시돼도 기본 정렬(order)과 결과가 같아 결함을 통과시킨다.
+     *
+     * @return void 반환값 없음
      */
     private function seedMenus(): void
     {
@@ -137,6 +144,12 @@ class MenuListSortAndSearchTest extends TestCase
 
     /**
      * 필터 없이도 정렬이 적용되고, 한글 검색이 다국어 JSON 컬럼에서 매칭되어야 한다.
+     *
+     * @scenario endpoint=index,actor=non_admin_role
+     *
+     * @effects index_sort_applies_without_filters, index_name_search_matches_multilingual_json
+     *
+     * @return void 반환값 없음
      */
     public function test_필터_없이도_정렬이_적용되고_한글검색이_매칭된다(): void
     {

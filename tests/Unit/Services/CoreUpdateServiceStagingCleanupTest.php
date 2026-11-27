@@ -27,6 +27,11 @@ class CoreUpdateServiceStagingCleanupTest extends TestCase
 
     private CoreUpdateService $service;
 
+    /**
+     * 임시 pending 기준 디렉토리와 그 밖 디렉토리를 만들고 pending 경로 설정을 그쪽으로 돌린다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,6 +45,11 @@ class CoreUpdateServiceStagingCleanupTest extends TestCase
         $this->service = app(CoreUpdateService::class);
     }
 
+    /**
+     * 테스트가 만든 임시 디렉토리를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->base);
@@ -50,6 +60,13 @@ class CoreUpdateServiceStagingCleanupTest extends TestCase
 
     // ── 1. 격리 디렉토리 루트 해석 + 정리 ─────────────────────────────────
 
+    /**
+     * 추출 소스(안쪽 경로)나 격리 디렉토리 자체를 넘기면 격리 디렉토리 루트를 돌려준다.
+     *
+     * @effects resolveStagingRoot_returns_staging_root_from_inner_source_path
+     *
+     * @return void 반환값 없음
+     */
     public function test_resolve_staging_root_은_안쪽_소스_경로에서_격리_디렉토리_루트를_돌려준다(): void
     {
         $inner = $this->base.DIRECTORY_SEPARATOR.'core_20260906_095309'
@@ -66,6 +83,13 @@ class CoreUpdateServiceStagingCleanupTest extends TestCase
         );
     }
 
+    /**
+     * pending 기준 밖 경로와 기준 디렉토리 자체는 위로 올라가지 않고 그대로 돌려준다.
+     *
+     * @effects resolveStagingRoot_leaves_paths_outside_pending_base_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_resolve_staging_root_은_pending_기준_밖_경로와_기준_자체는_건드리지_않는다(): void
     {
         $external = $this->outside.DIRECTORY_SEPARATOR.'src';
@@ -76,7 +100,11 @@ class CoreUpdateServiceStagingCleanupTest extends TestCase
     }
 
     /**
+     * 소스 경로(안쪽)를 받아도 격리 디렉토리를 통째로 지우고 pending 기준 디렉토리는 남긴다.
+     *
      * @effects cleanupPending_removes_whole_staging_root_when_given_inner_source_path
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_pending_은_소스_경로를_받아도_격리_디렉토리를_통째로_지운다(): void
     {
@@ -92,6 +120,13 @@ class CoreUpdateServiceStagingCleanupTest extends TestCase
         $this->assertDirectoryExists($this->base, 'pending 기준 디렉토리는 남는다');
     }
 
+    /**
+     * pending 기준 밖 경로(--source 외부)를 넘기면 그 경로만 지우고 형제 항목은 남긴다.
+     *
+     * @effects cleanupPending_removes_only_given_path_outside_pending_base
+     *
+     * @return void 반환값 없음
+     */
     public function test_cleanup_pending_은_pending_기준_밖_경로를_넘기면_그_경로만_지운다(): void
     {
         $external = $this->outside.DIRECTORY_SEPARATOR.'src';
@@ -108,7 +143,11 @@ class CoreUpdateServiceStagingCleanupTest extends TestCase
     // ── 2. 자식 청소 ────────────────────────────────────────────────────────
 
     /**
+     * 빈 core_ 격리 디렉토리만 치우고, 파일이 있는 격리 디렉토리와 core_ 가 아닌 항목은 남긴다.
+     *
      * @effects sweepEmptyStagingDirectories_removes_empty_core_dirs_and_keeps_dirs_with_files
+     *
+     * @return void 반환값 없음
      */
     public function test_sweep_은_빈_격리_디렉토리만_치우고_파일이_있는_것과_core_외_디렉토리는_남긴다(): void
     {
@@ -136,6 +175,13 @@ class CoreUpdateServiceStagingCleanupTest extends TestCase
         $this->assertFileExists($this->base.DIRECTORY_SEPARATOR.'bundled-updates-manifest_x.json');
     }
 
+    /**
+     * pending 기준 디렉토리가 없으면 청소할 것이 없어 0 을 돌려준다.
+     *
+     * @effects sweepEmptyStagingDirectories_returns_zero_without_pending_base
+     *
+     * @return void 반환값 없음
+     */
     public function test_sweep_은_pending_기준_디렉토리가_없으면_0_을_돌려준다(): void
     {
         config(['app.update.pending_path' => $this->base.DIRECTORY_SEPARATOR.'missing']);
@@ -146,7 +192,11 @@ class CoreUpdateServiceStagingCleanupTest extends TestCase
     // ── 3. 스냅샷 제외 ──────────────────────────────────────────────────────
 
     /**
+     * 소유권 스냅샷이 제외 경로와 그 하위를 기록하지 않는다(제외를 빼면 기록된다).
+     *
      * @effects snapshotOwnershipDetailed_excludes_current_run_staging_root
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_detailed_은_제외_경로와_그_하위를_기록하지_않는다(): void
     {
@@ -176,6 +226,13 @@ class CoreUpdateServiceStagingCleanupTest extends TestCase
         $this->assertGreaterThan(count($snapshot), count($without), '제외 인자를 빼면 격리 디렉토리가 기록된다 (되돌리면 red)');
     }
 
+    /**
+     * 부모 커맨드의 소유권 스냅샷 호출이 이번 실행의 격리 디렉토리 루트를 excludes 로 넘긴다.
+     *
+     * @effects core_update_command_excludes_current_staging_root_from_snapshot
+     *
+     * @return void 반환값 없음
+     */
     public function test_부모_커맨드는_이번_실행의_격리_디렉토리를_스냅샷에서_제외한다(): void
     {
         $src = File::get(base_path('app/Console/Commands/Core/CoreUpdateCommand.php'));
@@ -187,6 +244,13 @@ class CoreUpdateServiceStagingCleanupTest extends TestCase
         );
     }
 
+    /**
+     * 업그레이드 스텝·번들 업데이트 자식 커맨드가 모두 빈 격리 디렉토리 청소를 부른다.
+     *
+     * @effects upgrade_children_both_sweep_empty_staging_directories
+     *
+     * @return void 반환값 없음
+     */
     public function test_자식_두_커맨드가_모두_빈_격리_디렉토리_청소를_부른다(): void
     {
         foreach ([
@@ -204,7 +268,11 @@ class CoreUpdateServiceStagingCleanupTest extends TestCase
     // ── 완료 안내문 ─────────────────────────────────────────────────────────
 
     /**
+     * 완료 안내문이 성공 뒤 동작하지 않는 롤백 명령을 가리키지 않는다(--prune 안내는 남긴다).
+     *
      * @effects apply_mode_incremental_prune_hint_does_not_reference_rollback_command
+     *
+     * @return void 반환값 없음
      */
     public function test_완료_안내문은_성공_후_동작하지_않는_명령을_가리키지_않는다(): void
     {

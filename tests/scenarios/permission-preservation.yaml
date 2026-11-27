@@ -69,6 +69,11 @@ effects:
   - update_temp_directory_inherits_ownership
   - runtime_ownership_targets_cover_temp_and_logs
   - bundled_upgrade_migrations_inherit_ownership
+  # 부모 소유권 상속 헬퍼의 외부 노출·멱등, 업데이트 종료부의 런타임 소유권 정상화 호출
+  - inherit_ownership_helper_is_public_static
+  - inherit_ownership_is_idempotent_for_self_owner
+  - runtime_ownership_normalization_is_noop_for_non_root
+  - update_flows_pair_runtime_ownership_normalization_with_log_restore
   # 쓰기 보장 디렉토리 권한 강제가 웹서버 직접 서빙 경로(public/build/ext)의 other 읽기·진입을 지우지 않음 (7.1.6 재릴리즈)
   - web_served_writable_directory_keeps_other_read_execute
   - non_web_served_writable_directory_keeps_reference_perms

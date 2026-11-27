@@ -10,8 +10,8 @@
  * 회귀 배경: 답변 버튼은 폼 진입(write?parent_id=)의 입구. 백엔드(44)가 폼 진입을
  *   차단하더라도, 버튼이 노출되면 사용자가 삭제글에 답글을 시도하는 경험상 결함이 남는다.
  *
- * @scenario viewer=regular
- * @effects reply_button_if_blocks_deleted_at, reply_button_keeps_blinded_guard
+ * 조합 요약(마커 아님 — 평문): viewer=regular
+ * 효과 요약(마커 아님 — 평문): reply_button_if_blocks_deleted_at, reply_button_keeps_blinded_guard — 시험별 마킹은 각 it 주석에 있다.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -44,6 +44,12 @@ function findByComment(root: unknown, commentText: string): Node[] {
 }
 
 describe('50-3 — 삭제 게시글 답변 버튼 차단 (basic/show.json)', () => {
+    /**
+     * 답변 버튼의 if 가 삭제된 글(deleted_at)에서 버튼을 숨기는지 잰다.
+     *
+     * @scenario viewer=regular
+     * @effects reply_button_if_blocks_deleted_at
+     */
     it('답변 버튼의 if 가 삭제 상태(deleted_at)를 차단한다', () => {
         const buttons = findByComment(basicShow, '답변 버튼');
         expect(buttons.length).toBeGreaterThan(0);
@@ -55,6 +61,12 @@ describe('50-3 — 삭제 게시글 답변 버튼 차단 (basic/show.json)', () 
         }
     });
 
+    /**
+     * 답변 버튼의 if 가 블라인드 글 차단 조건을 그대로 갖는지 잰다.
+     *
+     * @scenario viewer=regular
+     * @effects reply_button_keeps_blinded_guard
+     */
     it('답변 버튼은 블라인드 차단 조건을 유지한다 (회귀 방지)', () => {
         const buttons = findByComment(basicShow, '답변 버튼');
         expect(buttons.length).toBeGreaterThan(0);

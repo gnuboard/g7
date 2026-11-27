@@ -1,0 +1,49 @@
+feature: 공개 상품 API (목록·인기·신상품·최근 본 상품·상세)
+
+description: |
+  쇼핑몰 화면이 읽는 공개 상품 API 의 노출 규칙과 응답 필드를 잰다. 카테고리 하위 포함은
+  `mp09-category-descendant.yaml`, 상품 수정 링크 게이트는 코어
+  `tests/scenarios/admin-user-cross-navigation.yaml` 이 맡는다.
+
+  조용히 깨지는 지점은 셋이다.
+  ① 숨김 상품이 목록·최근 본 상품·상세 어디로든 새면 운영자가 내린 상품이 다시 보인다.
+  ② 상세가 배송정책·상품정보제공고시·공통정보·브랜드·라벨·추가옵션 중 하나를 떨어뜨리거나
+     없을 때 null 대신 다른 모양을 내면 상세 화면의 그 칸이 오류 없이 비거나 깨진다.
+  ③ 라벨은 활성이고 기간 안인 할당만 실려야 한다 — 만료·비활성 라벨이 남으면 끝난 행사가 보인다.
+
+# axis 의미:
+#   endpoint — 호출하는 공개 API.
+axes:
+  endpoint: [index, popular, new, recent, show]
+
+effects:
+  - public_product_list_shows_only_visible_products
+  - public_product_list_filters_by_category
+  - public_product_list_default_sort_is_latest
+  - public_product_list_sorts_by_price_asc
+  - public_product_list_searches_by_keyword
+  - public_product_list_paginates
+  - public_product_list_carries_active_labels_only
+  - public_product_list_carries_sales_status_fields
+  - public_product_list_carries_rating_fields
+  - public_popular_products_are_returned
+  - public_popular_products_respect_limit
+  - public_new_products_are_latest_first
+  - public_recent_products_follow_requested_ids
+  - public_recent_products_exclude_hidden
+  - public_product_detail_returns_visible_product
+  - public_product_detail_resolves_product_code
+  - public_product_detail_carries_resource_fields
+  - public_product_detail_carries_related_blocks
+  - public_product_detail_related_blocks_null_when_missing
+  - public_product_detail_hidden_returns_404
+  - public_product_detail_carries_brand_name
+  - public_product_detail_carries_purchase_limits
+  - public_product_detail_carries_labels
+  - public_product_detail_carries_additional_options
+  - public_product_detail_notice_values_are_arrays
+  - public_product_detail_carries_description_mode
+  - public_product_api_open_without_authentication
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/PublicProductControllerTest.php

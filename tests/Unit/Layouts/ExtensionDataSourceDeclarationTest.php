@@ -29,6 +29,8 @@ class ExtensionDataSourceDeclarationTest extends TestCase
      * @scenario scope=bundled_extension_definitions
      *
      * @effects extension_definitions_reference_only_their_own_data_sources
+     *
+     * @return void 반환값 없음
      */
     public function test_확장_정의는_자기가_선언한_데이터소스만_참조한다(): void
     {

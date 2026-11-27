@@ -1,0 +1,21 @@
+feature: 게시글 상세 — 댓글 수정·삭제 버튼 표시 조건
+
+description: |
+  댓글의 수정·삭제 버튼은 본인 댓글이면서 댓글 작성 권한이 있을 때, 비회원 댓글일 때,
+  관리 권한(can_manage)이 있을 때 보인다. 본인 댓글이어도 작성 권한이 없거나, 타인 댓글이고 권한이 없으면 숨는다.
+
+# axis 의미:
+#   case — own_with_write 본인+작성 권한, own_without_write 본인+작성 권한 없음, other_no_permission 타인+권한 없음,
+#          guest_comment 비회원 댓글, manager_other 관리 권한자가 보는 타인 댓글
+axes:
+  case: [own_with_write, own_without_write, other_no_permission, guest_comment, manager_other]
+
+effects:
+  - comment_buttons_shown_for_author_with_write_permission
+  - comment_buttons_hidden_for_author_without_write_permission
+  - comment_buttons_hidden_for_others_without_permission
+  - comment_buttons_shown_for_guest_comment
+  - comment_buttons_shown_for_manager_on_others
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-comment-author-buttons.test.tsx

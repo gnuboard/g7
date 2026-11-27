@@ -1,0 +1,18 @@
+feature: 관리자 사이드바 「사이트 보기」 링크와 모바일 드로어 위치
+
+description: |
+  사이드바 바닥의 「사이트 보기」 링크가 스크롤 메뉴 밖에 늘 보이며 유저 홈을 새 탭으로 열고, 모바일 드로어가 헤더를 덮지 않고 그 아래에서 시작하는지 잰다.
+
+# axis 의미:
+#   component — 이 매니페스트가 다루는 레이아웃 영역 하나.
+axes:
+  component: [admin_sidebar]
+
+effects:
+  - sidebar_view_site_link_opens_user_home   # 사이트 보기 링크가 조건 없이 보이고 A 태그로 / 를 새 탭으로 연다
+  - sidebar_footer_outside_scroll_menu   # sidebar_footer 가 스크롤 메뉴 밖, left_sidebar_area 의 직접 자식이다
+  - mobile_drawer_starts_below_header   # 모바일 드로어가 헤더 높이만큼 내려 시작한다
+  - sidebar_view_site_link_style_defined   # 링크 스타일이 정의돼 있다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/sidebar-view-site-link.test.tsx

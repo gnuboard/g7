@@ -16,7 +16,9 @@ class BizppurioTemplateTest extends PluginTestCase
     /**
      * 기본 필드가 채워진 템플릿 행을 생성한다.
      *
-     * @param  array<string, mixed>  $overrides
+     * @param  array<string, mixed>  $overrides  기본값 대신 넣을 필드
+     *
+     * @return BizppurioTemplate 저장된 템플릿 행
      */
     private function makeTemplate(array $overrides = []): BizppurioTemplate
     {
@@ -34,9 +36,10 @@ class BizppurioTemplateTest extends PluginTestCase
 
     /**
      * JSON 컬럼 3종(content/approved_content/inspection_detail)이 배열로 저장·조회된다.
-     */
-    /**
+     *
      * @effects model_casts_content_snapshot_inspection_json
+     *
+     * @return void 반환값 없음
      */
     public function test_json_컬럼은_배열로_저장되고_조회된다(): void
     {
@@ -56,6 +59,10 @@ class BizppurioTemplateTest extends PluginTestCase
 
     /**
      * status 컬럼은 BizppurioTemplateStatus enum 으로 캐스트된다.
+     *
+     * @effects model_casts_status_to_enum
+     *
+     * @return void 반환값 없음
      */
     public function test_status는_enum으로_캐스트된다(): void
     {
@@ -68,6 +75,10 @@ class BizppurioTemplateTest extends PluginTestCase
 
     /**
      * boolean 4종(alimtalk_enabled/fallback_sms_enabled/sms_only/is_active)이 캐스트된다.
+     *
+     * @effects model_casts_boolean_flags
+     *
+     * @return void 반환값 없음
      */
     public function test_boolean_4종_캐스트(): void
     {
@@ -88,6 +99,10 @@ class BizppurioTemplateTest extends PluginTestCase
 
     /**
      * datetime 3종(requested_at/approved_at/last_synced_at)이 Carbon 으로 캐스트된다.
+     *
+     * @effects model_casts_datetime_columns
+     *
+     * @return void 반환값 없음
      */
     public function test_datetime_3종_캐스트(): void
     {
@@ -109,6 +124,10 @@ class BizppurioTemplateTest extends PluginTestCase
 
     /**
      * 발송 게이트: 승인 + 활성 + 알림톡 사용 + 승인 스냅샷 존재 → 발송 가능.
+     *
+     * @effects alimtalk_gate_passes_when_all_conditions_met
+     *
+     * @return void 반환값 없음
      */
     public function test_알림톡_발송_게이트_모든_조건_충족시_true(): void
     {
@@ -117,6 +136,10 @@ class BizppurioTemplateTest extends PluginTestCase
 
     /**
      * 발송 게이트: status 가 draft(승인 취소 복귀 포함)면 승인 스냅샷이 남아 있어도 차단.
+     *
+     * @effects alimtalk_gate_blocks_draft_status
+     *
+     * @return void 반환값 없음
      */
     public function test_알림톡_발송_게이트_draft_상태면_false(): void
     {
@@ -127,6 +150,10 @@ class BizppurioTemplateTest extends PluginTestCase
 
     /**
      * 발송 게이트: alimtalk_enabled 가 꺼져 있으면 차단.
+     *
+     * @effects alimtalk_gate_blocks_when_alimtalk_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_알림톡_발송_게이트_alimtalk_enabled_false면_false(): void
     {
@@ -137,6 +164,10 @@ class BizppurioTemplateTest extends PluginTestCase
 
     /**
      * 발송 게이트: is_active 가 꺼져 있으면 차단.
+     *
+     * @effects alimtalk_gate_blocks_inactive_row
+     *
+     * @return void 반환값 없음
      */
     public function test_알림톡_발송_게이트_is_active_false면_false(): void
     {
@@ -147,6 +178,10 @@ class BizppurioTemplateTest extends PluginTestCase
 
     /**
      * 발송 게이트: 승인 스냅샷(approved_content)이 null 이면 차단.
+     *
+     * @effects alimtalk_gate_blocks_missing_approved_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_알림톡_발송_게이트_approved_content_null이면_false(): void
     {
@@ -157,6 +192,10 @@ class BizppurioTemplateTest extends PluginTestCase
 
     /**
      * 발송 게이트: 승인 스냅샷이 빈 배열이어도 차단 (내용 없는 스냅샷으로는 발송 불가).
+     *
+     * @effects alimtalk_gate_blocks_missing_approved_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_알림톡_발송_게이트_approved_content_빈배열이면_false(): void
     {
@@ -167,6 +206,10 @@ class BizppurioTemplateTest extends PluginTestCase
 
     /**
      * notification_type 은 unique — 알림 1건당 1행 원칙을 DB 가 강제한다.
+     *
+     * @effects notification_type_unique_one_row_per_definition
+     *
+     * @return void 반환값 없음
      */
     public function test_notification_type_중복_생성시_query_exception(): void
     {
@@ -177,6 +220,13 @@ class BizppurioTemplateTest extends PluginTestCase
         $this->makeTemplate(['notification_type' => 'order.completed.dup']);
     }
 
+    /**
+     * SMS 단독으로 정한 행은 승인된 알림톡이 있어도 보내지 않는다.
+     *
+     * @effects alimtalk_gate_blocks_sms_only_row
+     *
+     * @return void 반환값 없음
+     */
     public function test_sms_단독이면_승인된_알림톡도_발송하지_않는다(): void
     {
         // "SMS 단독" 은 운영자가 이 알림에서 알림톡을 쓰지 않겠다고 명시한 것이다.
@@ -192,6 +242,13 @@ class BizppurioTemplateTest extends PluginTestCase
         $this->assertFalse($template->isAlimtalkSendable());
     }
 
+    /**
+     * SMS 단독이 아닌 행은 승인된 알림톡을 보낸다.
+     *
+     * @effects alimtalk_gate_passes_when_all_conditions_met
+     *
+     * @return void 반환값 없음
+     */
     public function test_sms_단독이_아니면_승인된_알림톡은_발송한다(): void
     {
         $template = BizppurioTemplate::create([

@@ -30,6 +30,8 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 테스트 게시판 slug
+     *
+     * @return string 이 테스트가 쓰는 게시판 슬러그
      */
     protected function getTestBoardSlug(): string
     {
@@ -38,6 +40,9 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 기본 게시판 속성
+     *
+     * @param  string  $slug  만들 게시판 슬러그
+     * @return array<string, mixed> 게시판 생성 속성(파일 업로드 허용·비밀글 선택 가능)
      */
     protected function getDefaultBoardAttributes(string $slug): array
     {
@@ -51,6 +56,11 @@ class PostMutationApiTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 각 테스트 전에 필요한 상태를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -68,6 +78,11 @@ class PostMutationApiTest extends BoardTestCase
         $this->otherUser->roles()->attach($userRole->id);
     }
 
+    /**
+     * 각 테스트 뒤에 바꾼 상태를 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         parent::tearDown();
@@ -75,6 +90,9 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 테스트 게시글을 생성합니다.
+     *
+     * @param  array<string, mixed>  $attributes  기본값 위에 덮어쓸 게시글 컬럼 값
+     * @return int 만든 게시글 ID
      */
     protected function createTestPost(array $attributes = []): int
     {
@@ -104,6 +122,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 회원이 게시글을 생성할 수 있다
+     *
+     * @scenario operation=create, actor=member
+     *
+     * @effects member_post_created_201
+     *
+     * @return void 반환값 없음
      */
     public function test_member_can_create_post(): void
     {
@@ -130,6 +154,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 비회원이 글쓰기 허용된 게시판에서 게시글을 생성할 수 있다
+     *
+     * @scenario operation=create, actor=guest
+     *
+     * @effects guest_post_created_when_permitted
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_can_create_post_when_allowed(): void
     {
@@ -155,6 +185,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 비회원이 글쓰기 불허 게시판에서 게시글 생성 시 401 반환
+     *
+     * @scenario operation=create, actor=guest
+     *
+     * @effects guest_post_create_rejected_401_without_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_cannot_create_post_when_not_allowed(): void
     {
@@ -176,6 +212,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 파일 업로드가 불허된 게시판에서 파일 첨부 시 403 반환
+     *
+     * @scenario operation=create, actor=member
+     *
+     * @effects file_upload_rejected_403_when_board_disallows
+     *
+     * @return void 반환값 없음
      */
     public function test_file_upload_blocked_when_not_allowed(): void
     {
@@ -201,6 +243,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 비회원이 파일 업로드 권한 없이 파일 첨부 시 403 반환
+     *
+     * @scenario operation=create, actor=guest
+     *
+     * @effects guest_file_upload_rejected_403_without_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_file_upload_blocked_when_no_permission(): void
     {
@@ -227,6 +275,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 비회원이 파일 업로드 권한 있을 때 파일 첨부 가능
+     *
+     * @scenario operation=create, actor=guest
+     *
+     * @effects guest_file_upload_allowed_with_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_can_upload_file_with_permission(): void
     {
@@ -252,6 +306,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * secret_mode가 always일 때 is_secret이 자동으로 true 설정
+     *
+     * @scenario operation=create, actor=member
+     *
+     * @effects secret_mode_always_forces_secret
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_mode_always_auto_sets_is_secret(): void
     {
@@ -275,6 +335,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * secret_mode가 always일 때 is_secret=false로 요청해도 true로 강제 설정
+     *
+     * @scenario operation=create, actor=member
+     *
+     * @effects secret_mode_always_forces_secret
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_mode_always_forces_is_secret_even_when_false(): void
     {
@@ -298,6 +364,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * secret_mode가 enabled일 때 사용자가 is_secret 선택 가능
+     *
+     * @scenario operation=create, actor=member
+     *
+     * @effects secret_mode_enabled_keeps_user_choice
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_mode_enabled_allows_user_choice(): void
     {
@@ -319,6 +391,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * secret_mode가 disabled일 때 is_secret=true 요청 거부
+     *
+     * @scenario operation=create, actor=member
+     *
+     * @effects secret_mode_disabled_rejects_secret_request
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_mode_disabled_rejects_is_secret(): void
     {
@@ -341,6 +419,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 금지 키워드가 제목에 포함된 경우 422 반환
+     *
+     * @scenario operation=create, actor=member
+     *
+     * @effects blocked_keyword_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_blocked_keyword_in_title_returns_422(): void
     {
@@ -362,6 +446,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 금지 키워드가 내용에 포함된 경우 422 반환
+     *
+     * @scenario operation=create, actor=member
+     *
+     * @effects blocked_keyword_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_blocked_keyword_in_content_returns_422(): void
     {
@@ -383,6 +473,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 필수 필드 누락 시 422 반환
+     *
+     * @scenario operation=create, actor=member
+     *
+     * @effects missing_required_fields_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_required_fields_returns_422(): void
     {
@@ -399,6 +495,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 비활성화된 게시판에 게시글 생성 시 404 반환
+     *
+     * @scenario operation=create, actor=member
+     *
+     * @effects inactive_board_post_create_404
+     *
+     * @return void 반환값 없음
      */
     public function test_create_post_on_inactive_board_returns_404(): void
     {
@@ -422,6 +524,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 작성자 본인이 회원 게시글을 수정할 수 있다
+     *
+     * @scenario operation=update, actor=member
+     *
+     * @effects author_can_update_or_delete_own_post
+     *
+     * @return void 반환값 없음
      */
     public function test_author_can_update_own_member_post(): void
     {
@@ -448,6 +556,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 다른 사용자가 회원 게시글 수정 시 403 반환
+     *
+     * @scenario operation=update, actor=other_member
+     *
+     * @effects other_member_update_or_delete_rejected_403
+     *
+     * @return void 반환값 없음
      */
     public function test_other_user_cannot_update_member_post(): void
     {
@@ -472,6 +586,12 @@ class PostMutationApiTest extends BoardTestCase
      * 게시판 관리(manager) 권한자는 타인 회원 게시글을 수정할 수 있다
      *
      * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 수정 200 (20)
+     *
+     * @scenario operation=update, actor=manager
+     *
+     * @effects board_manager_can_update_or_delete_others_post
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_can_update_other_member_post(): void
     {
@@ -502,6 +622,12 @@ class PostMutationApiTest extends BoardTestCase
      * 게시판 관리(manager) 권한자는 타인 회원 게시글을 삭제할 수 있다
      *
      * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 삭제 200 (20)
+     *
+     * @scenario operation=delete, actor=manager
+     *
+     * @effects board_manager_can_update_or_delete_others_post
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_can_delete_other_member_post(): void
     {
@@ -526,6 +652,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 권한 없는 일반 사용자는 여전히 타인 게시글을 수정할 수 없다 (회귀 가드)
+     *
+     * @scenario operation=update, actor=other_member
+     *
+     * @effects other_member_update_or_delete_rejected_403
+     *
+     * @return void 반환값 없음
      */
     public function test_non_manager_still_cannot_update_other_member_post(): void
     {
@@ -548,6 +680,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 비회원이 올바른 비밀번호로 비회원 게시글을 수정할 수 있다
+     *
+     * @scenario operation=update, actor=guest
+     *
+     * @effects guest_password_match_allows_update_or_delete
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_can_update_own_post_with_correct_password(): void
     {
@@ -574,6 +712,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 비회원이 잘못된 비밀번호로 수정 시 403 반환
+     *
+     * @scenario operation=update, actor=guest
+     *
+     * @effects guest_wrong_or_missing_password_rejected_403
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_cannot_update_post_with_wrong_password(): void
     {
@@ -596,6 +740,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 존재하지 않는 게시글 수정 시 404 반환
+     *
+     * @scenario operation=update, actor=member
+     *
+     * @effects missing_post_update_or_delete_404
+     *
+     * @return void 반환값 없음
      */
     public function test_update_non_existent_post_returns_404(): void
     {
@@ -611,6 +761,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 수정 시 금지 키워드가 포함되면 422 반환
+     *
+     * @scenario operation=update, actor=member
+     *
+     * @effects blocked_keyword_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_update_with_blocked_keyword_returns_422(): void
     {
@@ -638,6 +794,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 작성자 본인이 회원 게시글을 삭제할 수 있다
+     *
+     * @scenario operation=delete, actor=member
+     *
+     * @effects author_can_update_or_delete_own_post
+     *
+     * @return void 반환값 없음
      */
     public function test_author_can_delete_own_member_post(): void
     {
@@ -662,6 +824,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 다른 사용자가 회원 게시글 삭제 시 403 반환
+     *
+     * @scenario operation=delete, actor=other_member
+     *
+     * @effects other_member_update_or_delete_rejected_403
+     *
+     * @return void 반환값 없음
      */
     public function test_other_user_cannot_delete_member_post(): void
     {
@@ -682,6 +850,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 비회원이 올바른 비밀번호로 비회원 게시글을 삭제할 수 있다
+     *
+     * @scenario operation=delete, actor=guest
+     *
+     * @effects guest_password_match_allows_update_or_delete
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_can_delete_own_post_with_correct_password(): void
     {
@@ -705,6 +879,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 비회원이 잘못된 비밀번호로 삭제 시 403 반환
+     *
+     * @scenario operation=delete, actor=guest
+     *
+     * @effects guest_wrong_or_missing_password_rejected_403
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_cannot_delete_post_with_wrong_password(): void
     {
@@ -726,6 +906,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 존재하지 않는 게시글 삭제 시 404 반환
+     *
+     * @scenario operation=delete, actor=member
+     *
+     * @effects missing_post_update_or_delete_404
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_non_existent_post_returns_404(): void
     {
@@ -739,6 +925,12 @@ class PostMutationApiTest extends BoardTestCase
 
     /**
      * 비로그인 사용자가 비밀번호 없이 삭제 시 403 반환
+     *
+     * @scenario operation=delete, actor=guest
+     *
+     * @effects guest_wrong_or_missing_password_rejected_403
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_without_password_cannot_delete_post(): void
     {
@@ -761,6 +953,12 @@ class PostMutationApiTest extends BoardTestCase
      *
      * 그룹2 에서 동작이 변경됨: 게시글 삭제 시 하위 댓글을 보존하지 않고
      * trigger_type='cascade' 로 연쇄 soft delete 한다 (복원 시 cascade 분만 선별 부활).
+     *
+     * @scenario operation=delete, actor=member
+     *
+     * @effects post_soft_delete_cascades_to_comments
+     *
+     * @return void 반환값 없음
      */
     public function test_soft_delete_post_cascades_to_comments(): void
     {
@@ -785,6 +983,12 @@ class PostMutationApiTest extends BoardTestCase
      *
      * 그룹2 에서 동작이 변경됨: 게시글 삭제 시 첨부 레코드를 보존하지 않고
      * trigger_type='cascade' 로 연쇄 soft delete 한다 (복원 시 cascade 분만 선별 부활).
+     *
+     * @scenario operation=delete, actor=member
+     *
+     * @effects post_soft_delete_cascades_to_attachments
+     *
+     * @return void 반환값 없음
      */
     public function test_soft_delete_post_cascades_to_attachments(): void
     {

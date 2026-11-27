@@ -1,0 +1,17 @@
+feature: 관리자 목록의 새로고침 아이콘 버튼
+
+description: |
+  관리자 목록 화면(메뉴·모듈·플러그인·역할·스케줄·템플릿·회원)의 정사각 외곽선 아이콘 버튼은 인라인
+  Tailwind 에서 IconButton(variant="outline", size="md") 으로 바뀌었다. 역할 목록을 대표로, 권한 있는
+  토큰으로 들어가 로그인으로 튕기지 않고, 새로고침 버튼이 보이며, 누르면 역할 목록 데이터소스를 다시
+  요청하는지 실브라우저로 본다(나머지 여섯 화면은 같은 구조).
+
+axes:
+  surface: [admin_role_list]
+
+effects:
+  - admin_list_refresh_button_mounted
+  - admin_list_refresh_button_refetches_datasource
+
+test_files:
+  - tests/Playwright/specs/smoke/admin-role-list-refresh.spec.ts

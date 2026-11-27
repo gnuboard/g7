@@ -9,14 +9,18 @@
  * 하위 메뉴는 목록 응답이 역할을 싣지 않으므로(#76 프루닝), 이 경로가 죽어 있으면 URL 로 들어와
  * 저장할 때 역할이 통째로 해제될 수 있다 — 그래서 브라우저에서 고정한다.
  *
- * @scenario surface=admin_menu_list,entry=url_direct
- * @effects menu_url_entry_restores_selection, menu_url_entry_seeds_roles
+ * 효과 요약(마커 아님 — 평문): 주소 직접 진입 시 선택 복원, 역할의 폼 시드, 역할 칩 렌더. 마킹은 각 test 위에 있다.
  */
 import { test, expect, authenticatePage, issueToken } from '../../fixtures/auth';
 
 const MENU_API = '/api/admin/menus';
 
 test.describe('메뉴 관리 URL 직접 진입 복원 (#76)', () => {
+  /**
+   * @scenario resource=menu,endpoint=detail,observation=consumer_screen
+   *
+   * @effects menu_url_entry_restores_selection, menu_edit_form_seeds_roles_from_detail
+   */
   test('하위 메뉴 slug 로 들어오면 편집 패널이 열리고 역할이 폼에 시드된다', async ({ page }) => {
     const token = issueToken('core.menus.read', 'core.menus.update');
     await authenticatePage(page, token);
@@ -80,6 +84,11 @@ test.describe('메뉴 관리 URL 직접 진입 복원 (#76)', () => {
     expect(state.formRoles).toEqual(target!.roleIds);
   });
 
+  /**
+   * @scenario resource=menu,endpoint=detail,observation=consumer_screen
+   *
+   * @effects menu_edit_panel_renders_role_chips
+   */
   test('편집 패널의 접근 역할 칩이 화면에 렌더된다', async ({ page }) => {
     const token = issueToken('core.menus.read', 'core.menus.update');
     await authenticatePage(page, token);

@@ -17,6 +17,11 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
 {
     private GuestOrderAuthService $service;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +30,10 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
 
     /**
      * 비회원 주문 + 주문자 전화번호 행 생성 헬퍼
+     *
+     * @param  string  $phone  주문자 전화번호
+     * @param  string  $password  비회원 조회 비밀번호
+     * @return Order 만든 비회원 주문
      */
     private function createGuestOrder(string $phone, string $password): Order
     {
@@ -59,6 +68,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=phone_normalization
      *
      * @effects phone_numbers_compare_equal_regardless_of_formatting
+     * @return void 반환값 없음
      */
     public function test_normalize_phone_strips_non_digits(): void
     {
@@ -72,6 +82,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=phone_normalization
      *
      * @effects phone_numbers_compare_equal_regardless_of_formatting
+     * @return void 반환값 없음
      */
     public function test_normalize_phone_converts_country_code_82(): void
     {
@@ -85,6 +96,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=phone_normalization
      *
      * @effects phone_numbers_compare_equal_regardless_of_formatting
+     * @return void 반환값 없음
      */
     public function test_normalize_phone_empty_returns_empty(): void
     {
@@ -102,6 +114,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_authenticate_success_issues_token(): void
     {
@@ -121,6 +134,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_authenticate_normalizes_phone_before_compare(): void
     {
@@ -138,6 +152,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_authenticate_fails_with_wrong_password(): void
     {
@@ -152,6 +167,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_authenticate_fails_with_wrong_phone(): void
     {
@@ -166,6 +182,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_authenticate_fails_with_nonexistent_order(): void
     {
@@ -178,6 +195,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_authenticate_fails_for_member_order(): void
     {
@@ -209,6 +227,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_verify_token_success(): void
     {
@@ -227,6 +246,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_verify_token_fails_for_other_order(): void
     {
@@ -243,6 +263,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_verify_token_fails_when_reused_for_another_real_guest_order(): void
     {
@@ -261,6 +282,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_verify_token_fails_when_forged(): void
     {
@@ -280,6 +302,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_issued_token_does_not_leak_order_identifiers(): void
     {
@@ -307,6 +330,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_verify_token_fails_after_guest_lookup_password_changed(): void
     {
@@ -326,6 +350,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_verify_token_succeeds_when_password_unchanged_within_ttl(): void
     {
@@ -346,6 +371,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_verify_token_fails_when_expired(): void
     {
@@ -382,6 +408,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=expiry_tamper
      *
      * @effects extending_the_plaintext_expiry_does_not_extend_the_token
+     * @return void 반환값 없음
      */
     public function test_verify_token_fails_when_expiry_part_is_extended_with_a_real_signature(): void
     {
@@ -418,6 +445,7 @@ class GuestOrderAuthServiceTest extends ModuleTestCase
      * @scenario guest_auth_gate=issue_and_verify
      *
      * @effects token_is_valid_only_for_its_own_order_password_and_lifetime
+     * @return void 반환값 없음
      */
     public function test_verify_token_fails_with_malformed_token(): void
     {

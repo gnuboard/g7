@@ -55,6 +55,8 @@ class IdentityLogDateRangeFilterTest extends TestCase
      *
      * `created_at` 은 fillable 이 아니라 모델 create() 로 지정되지 않는다. 모델을 거치면
      * 저장 후 덮어쓰기(UPDATE)와 재조회(SELECT)가 행마다 붙으므로 쿼리 빌더로 직접 넣는다.
+     *
+     * @return void 반환값 없음
      */
     private function seedBoundaryLogs(): void
     {
@@ -93,6 +95,12 @@ class IdentityLogDateRangeFilterTest extends TestCase
 
     /**
      * 기간 필터의 네 경계가 사이트 타임존 기준으로 해석되어야 한다.
+     *
+     * @scenario query=date_range
+     *
+     * @effects identity_log_date_range_reads_site_timezone, identity_log_date_only_end_includes_whole_day, identity_log_end_with_time_is_not_widened
+     *
+     * @return void 반환값 없음
      */
     public function test_기간필터_경계가_사이트_타임존_기준으로_해석된다(): void
     {

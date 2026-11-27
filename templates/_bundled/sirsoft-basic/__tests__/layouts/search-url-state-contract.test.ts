@@ -63,6 +63,12 @@ describe('통합검색 — 화면 상태의 SSoT 는 URL 쿼리', () => {
     return out;
   };
 
+  /**
+   * 검색 레이아웃 모집단이 디렉토리에서 도출되는지 잰다 (아래 스캔 시험들의 전제).
+   *
+   * @scenario rule=population
+   * @effects search_layout_population_derived_from_directory
+   */
   it('검색 레이아웃 모집단이 디렉토리에서 도출된다', () => {
     // 스캔이 빗나가면 모집단이 비고, 아래 단언들은 루프를 돌지 않아 전부 통과한다.
     expect(searchFiles.length, '발견된 검색 레이아웃 파일').toBeGreaterThanOrEqual(8);
@@ -71,6 +77,12 @@ describe('통합검색 — 화면 상태의 SSoT 는 URL 쿼리', () => {
     expect(searchFiles.map(rel)).toContain('partials/search/_search_filters.json');
   });
 
+  /**
+   * 검색 데이터소스가 탭·필터·정렬·페이지·커서를 URL 쿼리에서 읽는지 잰다.
+   *
+   * @scenario rule=datasource
+   * @effects search_datasource_reads_state_from_url_query, search_state_persists_in_url
+   */
   it('검색 데이터소스가 탭·필터·정렬·페이지·커서를 URL 쿼리에서 읽는다', () => {
     const layout = JSON.parse(read(indexPath));
     const source = layout.data_sources?.find((ds: any) => ds.id === 'searchResults');
@@ -84,6 +96,12 @@ describe('통합검색 — 화면 상태의 SSoT 는 URL 쿼리', () => {
     expect(source.endpoint, '엔드포인트에 남은 전역 상태').not.toMatch(/_global\.search/);
   });
 
+  /**
+   * 검색 데이터소스가 auth_mode=optional 로 로그인 회원 토큰을 싣는지 잰다.
+   *
+   * @scenario rule=datasource
+   * @effects search_datasource_sends_member_token
+   */
   it('검색 데이터소스는 로그인 회원의 토큰을 실어 보낸다 (auth_mode=optional)', () => {
     // 검색 라우트는 optional.sanctum 으로 로그인 회원의 열람 범위(회원 전용 게시판 포함)를
     // 해석한다. 데이터소스 auth_mode 기본값은 'none' 이라 미선언이면 토큰이 실리지 않아,
@@ -96,6 +114,12 @@ describe('통합검색 — 화면 상태의 SSoT 는 URL 쿼리', () => {
     expect(source?.auth_mode, 'searchResults auth_mode').toBe('optional');
   });
 
+  /**
+   * 검색 화면 어디에도 전역 검색 상태가 남지 않았는지 잰다.
+   *
+   * @scenario rule=population
+   * @effects search_layout_has_no_global_search_state
+   */
   it('검색 화면 어디에도 전역 검색 상태가 남아 있지 않다', () => {
     const leftovers = searchFiles.filter((path) =>
       /_global\??\.search(ActiveTab|SortBy|BoardFilter|Page|Cursor)|"search(ActiveTab|SortBy|BoardFilter|Page|Cursor)"/.test(read(path))
@@ -104,6 +128,12 @@ describe('통합검색 — 화면 상태의 SSoT 는 URL 쿼리', () => {
     expect(leftovers.map(rel), '전역 검색 상태 잔재').toEqual([]);
   });
 
+  /**
+   * 검색 상태를 바꾸는 이동이 mergeQuery 로 나머지 상태를 이어받는지 잰다.
+   *
+   * @scenario rule=navigation
+   * @effects search_navigation_merges_remaining_query
+   */
   it('상태를 바꾸는 이동은 mergeQuery 로 나머지 상태를 승계한다', () => {
     const offenders: string[] = [];
 
@@ -125,6 +155,12 @@ describe('통합검색 — 화면 상태의 SSoT 는 URL 쿼리', () => {
     expect(offenders, 'mergeQuery 없이 검색 상태를 덮어쓰는 이동').toEqual([]);
   });
 
+  /**
+   * 탭·필터·정렬을 바꾸는 이동이 페이지와 커서를 함께 비우는지 잰다.
+   *
+   * @scenario rule=navigation
+   * @effects search_facet_change_clears_page_and_cursor
+   */
   it('탭·필터·정렬을 바꾸는 이동은 페이지와 커서를 함께 비운다', () => {
     const facetKeys = ['type', 'board_slug', 'sort'];
     const checked: string[] = [];
@@ -154,6 +190,12 @@ describe('통합검색 — 화면 상태의 SSoT 는 URL 쿼리', () => {
     expect(offenders, '페이지·커서를 비우지 않는 이동').toEqual([]);
   });
 
+  /**
+   * 페이지 이동이 이동 방향에 맞는 커서(next/prev)를 싣는지 잰다.
+   *
+   * @scenario rule=navigation
+   * @effects search_page_change_carries_direction_cursor
+   */
   it('페이지 이동은 이동 방향에 맞는 커서를 싣는다', () => {
     const layout = JSON.parse(read(indexPath));
     const pageChange = collectActions(layout).find((action: any) => action.event === 'onPageChange');

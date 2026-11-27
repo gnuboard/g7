@@ -13,12 +13,24 @@ import loginJson from '../../layouts/auth/login.json';
 import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 describe('sirsoft-basic 로그인 레이아웃 - 세션 만료 토스트 init_action', () => {
+  /**
+   * 로그인 레이아웃에 최상위 init_actions 가 하나 이상 있는지 잰다.
+   *
+   * @scenario aspect=init_actions
+   * @effects login_layout_has_init_actions
+   */
   it('최상위 init_actions 가 하나 이상 있어야 한다', () => {
     // 컨테이너 모양(배열이냐 단일 객체냐)은 단언하지 않는다 — 컴파일러가 단일 원소를 객체로
     // 접으므로 그 모양을 외우면 다음 굽기에서 깨진다(D67 ⓐ · U-SHAPEASSERT).
     expect(asArray((loginJson as any).init_actions).length).toBeGreaterThan(0);
   });
 
+  /**
+   * session_expired 토스트가 식 전체를 감싼 query.reason if 조건과 warning 토스트로 등록되는지 잰다.
+   *
+   * @scenario aspect=init_actions
+   * @effects session_expired_toast_registered_with_reason_guard
+   */
   it('session_expired 토스트 액션이 정확한 if 조건과 핸들러로 등록되어야 한다', () => {
     const initActions = (loginJson as any).init_actions as any[];
     const toastAction = initActions.find(
@@ -48,6 +60,12 @@ describe('sirsoft-basic 로그인 레이아웃 - 세션 만료 토스트 init_ac
     });
   });
 
+  /**
+   * 토스트 번역 키가 ko/en 다국어 자원에 있는지 잰다.
+   *
+   * @scenario aspect=i18n
+   * @effects session_expired_toast_key_translated
+   */
   it('번역 키가 i18n 자원에 등록되어 있어야 한다 (ko/en partial)', async () => {
     const koAuth = await import('../../lang/partial/ko/auth.json');
     const enAuth = await import('../../lang/partial/en/auth.json');

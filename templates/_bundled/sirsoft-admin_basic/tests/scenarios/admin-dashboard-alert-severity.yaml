@@ -25,7 +25,11 @@ effects:
   - recover_success_toasts_and_refetches_alerts     # 복구 성공 시 알림이 준 문구(없으면 기본 문구)로 성공 토스트를 띄우고 dashboard_alerts 를 다시 읽는다
   - recover_failure_toasts_error_message            # 복구 실패 시 오류 메시지로 오류 토스트를 띄운다
   - recovery_alert_keeps_dismiss_button             # 재호환 알림에도 닫기 버튼이 복구 버튼과 함께 있다
+  # 닫기·카드 노출 배선 (admin_dashboard.alerts.test.tsx)
+  - alert_dismiss_posts_to_extension_dismiss_endpoint   # 닫기 버튼이 POST /api/admin/extensions/{type}/{id}/dismiss 로 정의돼 있다
+  - system_alerts_card_visibility_follows_alert_count   # 시스템 알림 카드 if 가 고정 false 가 아니라 dashboard_alerts 건수를 본다
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-dashboard-alert-severity.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_dashboard.recovery.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_dashboard.alerts.test.tsx

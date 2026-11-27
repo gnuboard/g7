@@ -25,6 +25,10 @@ class LayoutSortOptionGateParityTest extends ModuleTestCase
 
     /**
      * 이커머스 레이아웃의 정렬 옵션은 게이트 허용 집합의 부분집합이어야 한다.
+     *
+     * @scenario case=layout_sort_option_parity
+     * @effects layout_sort_options_are_within_the_gate
+     * @return void 반환값 없음
      */
     public function test_이커머스_화면_정렬옵션은_게이트_허용집합의_부분집합이다(): void
     {

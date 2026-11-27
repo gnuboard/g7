@@ -151,6 +151,12 @@ describe('유저→관리자 크로스링크 게이트', () => {
   });
 
   describe('게시판 관리자 진입 링크 (can_access_admin)', () => {
+    /**
+     * can_access_admin=true 면 게시물 조회·게시판 관리 링크 2개가 렌더되는지 잰다.
+     *
+     * @scenario target=board,ability=granted
+     * @effects board_admin_links_render_when_can_access_admin
+     */
     it('can_access_admin = true → 게시물 조회 + 게시판 관리 링크 2개 렌더', async () => {
       const testUtils = createLayoutTest(boardAdminLinksLayout, { routeParams: { slug: 'free' } });
       testUtils.mockApi('posts', {
@@ -166,6 +172,12 @@ describe('유저→관리자 크로스링크 게이트', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * can_access_admin=false 면 관리자 진입 링크가 렌더되지 않는지 잰다.
+     *
+     * @scenario target=board,ability=denied
+     * @effects board_admin_links_hidden_without_can_access_admin
+     */
     it('can_access_admin = false → 관리자 진입 링크 미렌더', async () => {
       const testUtils = createLayoutTest(boardAdminLinksLayout);
       testUtils.mockApi('posts', {
@@ -181,6 +193,12 @@ describe('유저→관리자 크로스링크 게이트', () => {
   });
 
   describe('상품 관리자 수정 링크 (can_update)', () => {
+    /**
+     * can_update=true 면 관리자 상품 수정 링크가 렌더되는지 잰다.
+     *
+     * @scenario target=product,ability=granted
+     * @effects product_admin_edit_link_renders_when_can_update
+     */
     it('can_update = true → 관리자 상품 수정 링크 렌더', async () => {
       const testUtils = createLayoutTest(productAdminEditLayout);
       testUtils.mockApi('product', {
@@ -197,6 +215,12 @@ describe('유저→관리자 크로스링크 게이트', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * can_update=false 면 관리자 상품 수정 링크가 렌더되지 않는지 잰다.
+     *
+     * @scenario target=product,ability=denied
+     * @effects product_admin_edit_link_hidden_without_can_update
+     */
     it('can_update = false → 관리자 상품 수정 링크 미렌더', async () => {
       const testUtils = createLayoutTest(productAdminEditLayout);
       testUtils.mockApi('product', {
@@ -214,10 +238,22 @@ describe('유저→관리자 크로스링크 게이트', () => {
   // 실제 파티셜 JSON 게이트/속성 회귀 고정 (구조 분석)
   // ============================================================
   describe('파티셜 JSON 회귀 고정', () => {
+    /**
+     * _admin_links.json 이 can_access_admin 게이트를 쓰는지 잰다.
+     *
+     * @scenario target=board
+     * @effects admin_links_partial_uses_can_access_admin_gate
+     */
     it('_admin_links.json 은 can_access_admin 게이트를 사용한다', () => {
       expect((adminLinks as { if?: string }).if).toBe('{{posts?.data?.abilities?.can_access_admin}}');
     });
 
+    /**
+     * _admin_links.json 의 두 관리자 링크가 새 탭으로 열리는지 잰다.
+     *
+     * @scenario target=board
+     * @effects admin_links_open_in_new_tab
+     */
     it('_admin_links.json 은 관리자 게시물 조회 + 게시판 관리 링크를 새 탭으로 연다', () => {
       const dump = JSON.stringify(adminLinks);
       expect(dump).toContain('/admin/board/{{route.slug}}');
@@ -226,6 +262,12 @@ describe('유저→관리자 크로스링크 게이트', () => {
       expect(dump).toContain('"target":"_blank"');
     });
 
+    /**
+     * _admin_edit_link.json 이 can_update 게이트·새 탭·상품 수정 경로를 쓰는지 잰다.
+     *
+     * @scenario target=product
+     * @effects admin_edit_link_partial_uses_can_update_gate, admin_links_open_in_new_tab
+     */
     it('_admin_edit_link.json 은 can_update 게이트 + 새 탭 + 상품 수정 경로를 사용한다', () => {
       expect((adminEditLink as { if?: string }).if).toBe('{{product.data?.abilities?.can_update}}');
       const dump = JSON.stringify(adminEditLink);

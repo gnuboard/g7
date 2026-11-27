@@ -1,0 +1,28 @@
+feature: 키워드 검색 술어 해석기 계약
+
+description: |
+  목록·검색 저장소는 키워드 조건을 `KeywordSearch::apply` 로 만든다. 해석기는 활성 검색 엔진이
+  키워드 술어 계약(`KeywordPredicateProvider`)을 구현하면 그 엔진에 맡기고, 구현하지 않으면
+  부분일치(LIKE)로 내려간다. 저장소가 구체 엔진을 직접 부르면 플러그인이 등록한 엔진은 호출될
+  기회가 없어지고, 오류 없이 그 사이트의 검색만 다르게 동작한다.
+
+  잰다:
+    - 계약을 구현한 활성 엔진이 실제로 호출되고, 번들 엔진도 그 계약을 구현한다.
+    - 엔진이 키 집합 상한(목록 총 건수 상한과 같은 값)을 받는다.
+    - 계약 미구현 엔진이면 부분일치로 내려간다.
+    - 부분일치 연산자는 선언형 표(설정·훅)에서 오고, 표에 없는 드라이버는 기본 연산자를 쓴다.
+    - 부분일치는 검색어의 와일드카드(`%`·`_`)를 escape 한다.
+  조건이 어떤 SQL 로 렌더되는지는 엔진의 자유라 단언하지 않는다.
+
+axes:
+  case: [keyword_predicate_contract]
+
+effects:
+  - keyword_predicate_delegates_to_active_engine
+  - keyword_predicate_passes_key_cap_to_engine
+  - keyword_predicate_falls_back_when_engine_lacks_contract
+  - like_operator_is_declarative_not_hardcoded
+  - like_fallback_escapes_wildcards
+
+test_files:
+  - tests/Unit/Search/KeywordSearchTest.php

@@ -32,6 +32,8 @@ function findValuesByKey(node: any, targetKey: string, results: string[] = []): 
 }
 
 describe('이커머스 본인인증 정책 — source_identifier 형식 회귀', () => {
+    // @scenario surface=settings_layout
+    // @effects identity_policy_datasource_uses_module_identifier_only
     it('데이터소스 source_identifier 는 모듈 식별자만 사용 (module: 접두사 금지)', () => {
         const ds = (settingsLayout.data_sources ?? []).find(
             (d: any) => d.id === 'ecommerceIdentityPolicies'
@@ -41,6 +43,8 @@ describe('이커머스 본인인증 정책 — source_identifier 형식 회귀',
         expect(ds.params?.source_identifier).not.toBe(FORBIDDEN_PREFIX_VALUE);
     });
 
+    // @scenario surface=tab_partial
+    // @effects identity_policy_partial_uses_module_identifier_only
     it('partial 내 모든 source_identifier 등장은 모듈 식별자 형식만 허용', () => {
         const all = [
             ...findValuesByKey(settingsLayout, 'source_identifier'),

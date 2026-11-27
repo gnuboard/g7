@@ -38,13 +38,18 @@ class PageRepositorySearchTest extends TestCase
      * MATCH 조회에서 보이지 않는다. 빈 배열을 반환해 transaction wrapping 을 끄고,
      * tearDown 에서 수동으로 insert 된 레코드를 정리한다.
      *
-     * @return array<string>
+     * @return array<string> 트랜잭션으로 감쌀 연결 이름 목록(빈 배열 — 감싸지 않음)
      */
     protected function connectionsToTransact(): array
     {
         return [];
     }
 
+    /**
+     * 각 테스트 전에 필요한 상태를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -68,6 +73,8 @@ class PageRepositorySearchTest extends TestCase
     /**
      * 수동 정리: connectionsToTransact=[] 로 인해 transaction rollback 이 없으므로
      * 테스트에서 insert 한 Page + User 를 직접 제거해 격리를 유지한다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -82,6 +89,8 @@ class PageRepositorySearchTest extends TestCase
 
     /**
      * 모듈 오토로드를 등록합니다 (ModuleTestCase 와 동일 로직 사본).
+     *
+     * @return void 반환값 없음
      */
     private function registerModuleAutoload(): void
     {
@@ -119,6 +128,12 @@ class PageRepositorySearchTest extends TestCase
 
     /**
      * 제목에 키워드가 포함된 페이지가 검색되는지 확인
+     *
+     * @scenario case=title
+     *
+     * @effects keyword_search_matches_title
+     *
+     * @return void 반환값 없음
      */
     public function test_search_by_keyword_finds_pages_matching_title(): void
     {
@@ -143,6 +158,12 @@ class PageRepositorySearchTest extends TestCase
      * 주의: 이 테스트는 fresh 테스트 DB 에서는 수정 전에도 통과한다(그 DB 의 FT 인덱스는
      * 정상 동작한다). 운영 DB 의 FT 인덱스 상태 차이를 재현하지는 못하며, 여기서 잠그는 것은
      * **제목 검색이 본문 매칭에 얹혀 통과하지 않는다**는 계약이다.
+     *
+     * @scenario case=title_only
+     *
+     * @effects keyword_search_matches_title_without_content_help
+     *
+     * @return void 반환값 없음
      */
     public function test_search_by_keyword_matches_title_only(): void
     {
@@ -158,6 +179,12 @@ class PageRepositorySearchTest extends TestCase
 
     /**
      * 다른 로케일(en) 제목으로도 검색되는지 확인.
+     *
+     * @scenario case=other_locale_title
+     *
+     * @effects keyword_search_matches_other_locale_title
+     *
+     * @return void 반환값 없음
      */
     public function test_search_by_keyword_matches_other_locale_title(): void
     {
@@ -173,6 +200,12 @@ class PageRepositorySearchTest extends TestCase
 
     /**
      * 본문에 키워드가 포함된 페이지가 검색되는지 확인
+     *
+     * @scenario case=content
+     *
+     * @effects keyword_search_matches_content
+     *
+     * @return void 반환값 없음
      */
     public function test_search_by_keyword_finds_pages_matching_content(): void
     {
@@ -187,6 +220,12 @@ class PageRepositorySearchTest extends TestCase
 
     /**
      * countByKeyword()가 본문 키워드도 카운트하는지 확인
+     *
+     * @scenario case=count_content
+     *
+     * @effects keyword_count_includes_content_matches_with_exact_relation
+     *
+     * @return void 반환값 없음
      */
     public function test_count_by_keyword_counts_pages_matching_content(): void
     {
@@ -203,6 +242,12 @@ class PageRepositorySearchTest extends TestCase
 
     /**
      * 미발행 페이지는 본문 검색에서 제외되는지 확인
+     *
+     * @scenario case=unpublished
+     *
+     * @effects keyword_search_excludes_unpublished_pages
+     *
+     * @return void 반환값 없음
      */
     public function test_search_by_keyword_excludes_unpublished_pages(): void
     {
@@ -218,6 +263,11 @@ class PageRepositorySearchTest extends TestCase
 
     /**
      * 발행된 테스트 페이지를 생성합니다.
+     *
+     * @param  string  $titleKo  한국어 제목
+     * @param  string  $slug  페이지 슬러그
+     * @param  string  $contentKo  한국어 본문
+     * @return Page 만든 발행 페이지
      */
     private function createPublishedPage(string $titleKo, string $slug, string $contentKo): Page
     {
@@ -234,6 +284,11 @@ class PageRepositorySearchTest extends TestCase
 
     /**
      * 미발행(초안) 테스트 페이지를 생성합니다.
+     *
+     * @param  string  $titleKo  한국어 제목
+     * @param  string  $slug  페이지 슬러그
+     * @param  string  $contentKo  한국어 본문
+     * @return Page 만든 미발행 페이지
      */
     private function createDraftPage(string $titleKo, string $slug, string $contentKo): Page
     {

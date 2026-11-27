@@ -125,6 +125,10 @@ class PaginationLastPageCollapseTest extends TestCase
 
     /**
      * 스캔 모집단이 비어 있지 않아야 한다 — 0 건을 훑고 통과하면 이 가드는 아무것도 지키지 않는다.
+     *
+     * @effects layout_scan_population_is_not_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_레이아웃_스캔_모집단이_비어있지_않다(): void
     {
@@ -139,6 +143,10 @@ class PaginationLastPageCollapseTest extends TestCase
 
     /**
      * 어떤 레이아웃도 `last_page` 를 1 로 접지 않는다.
+     *
+     * @effects no_layout_collapses_null_last_page_to_one
+     *
+     * @return void 반환값 없음
      */
     public function test_어떤_레이아웃도_last_page를_1로_접지_않는다(): void
     {
@@ -157,6 +165,10 @@ class PaginationLastPageCollapseTest extends TestCase
 
     /**
      * 합성 표본이 실제로 red 가 되는지 — 판정기가 살아 있음을 확인한다.
+     *
+     * @effects collapse_detector_catches_synthetic_violation
+     *
+     * @return void 반환값 없음
      */
     public function test_판정기가_합성_위반을_실제로_잡는다(): void
     {

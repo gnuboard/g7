@@ -55,6 +55,9 @@ describe('ModuleAssetLoader', () => {
             appendSpy.mockRestore();
         });
 
+        /**
+         * @effects bundle_stylesheet_static_miss_falls_back_to_api
+         */
         it('정적 번들 CSS 실패 시 레거시 API URL 로 전환한다', async () => {
             const hrefs: string[] = [];
 
@@ -88,6 +91,9 @@ describe('ModuleAssetLoader', () => {
             }
         });
 
+        /**
+         * @effects non_static_bundle_url_keeps_retry_contract
+         */
         it('정적 경로가 아닌 번들 URL 은 종전 재시도 계약 그대로다', async () => {
             const requested: string[] = [];
 
@@ -167,6 +173,9 @@ describe('ModuleAssetLoader', () => {
     });
 
     describe('loadActiveExtensionAssets', () => {
+        /**
+         * @effects individual_assets_appended_in_priority_order
+         */
         it('JS 에셋을 priority 오름차순으로 DOM에 append한다 (실행 순서 보장)', async () => {
             const appendOrder: string[] = [];
 
@@ -214,6 +223,9 @@ describe('ModuleAssetLoader', () => {
             appendSpy.mockRestore();
         });
 
+        /**
+         * @effects individual_scripts_load_with_async_false
+         */
         it('모든 스크립트에 async=false가 설정되어야 한다 (실행 순서 보장 계약)', async () => {
             const createdScripts: HTMLScriptElement[] = [];
 
@@ -238,6 +250,9 @@ describe('ModuleAssetLoader', () => {
             appendSpy.mockRestore();
         });
 
+        /**
+         * @effects individual_js_fetch_starts_in_parallel
+         */
         it('JS 에셋 fetch를 병렬로 착수한다 (Phase 1 병렬화 회귀 방지)', async () => {
             // 첫 번째 append 시점에 아직 두 번째 append도 큐잉되어야 함
             // (순차 await 방식이면 첫 onload 이후에만 두 번째 append가 발생)
@@ -277,6 +292,9 @@ describe('ModuleAssetLoader', () => {
             appendSpy.mockRestore();
         });
 
+        /**
+         * @effects individual_css_and_js_both_loaded
+         */
         it('CSS와 JS를 모두 병렬로 로드한다', async () => {
             const linkAppends: string[] = [];
             const scriptAppends: string[] = [];
@@ -305,6 +323,9 @@ describe('ModuleAssetLoader', () => {
             appendSpy.mockRestore();
         });
 
+        /**
+         * @effects individual_assets_empty_list_noop
+         */
         it('빈 배열은 no-op', async () => {
             await expect(loader.loadActiveExtensionAssets([])).resolves.toBeUndefined();
         });
@@ -337,6 +358,9 @@ describe('ModuleAssetLoader', () => {
             appendSpy.mockRestore();
         });
 
+        /**
+         * @effects bundle_script_loads_with_async_false
+         */
         it('번들 script 는 async=false 여야 한다 (내부 순서 실행 보장)', async () => {
             const created: HTMLScriptElement[] = [];
             const appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
@@ -416,6 +440,9 @@ describe('ModuleAssetLoader', () => {
             delete (globalThis as any).__G7TestRegistry;
         });
 
+        /**
+         * @effects concat_without_separator_breaks_asi_boundary
+         */
         it('구분자 없이 이어붙이면 ASI 경계가 깨진다 (구분자 필요성 회귀 가드)', () => {
             // 세미콜론 없이 끝나는 IIFE 뒤에 즉시 다음 IIFE 를 붙이면 파싱 에러
             const iifeA = `(function(){return 1})()`;
@@ -466,6 +493,9 @@ describe('ModuleAssetLoader', () => {
             return created;
         }
 
+        /**
+         * @effects bundle_js_failure_rejects_after_retries
+         */
         it('번들 JS 가 3회 모두 실패하면 reject 한다 (실패를 resolve 로 은폐하지 않는다)', async () => {
             stubAssetLoading(['error', 'error', 'error']);
 
@@ -474,6 +504,9 @@ describe('ModuleAssetLoader', () => {
             ).rejects.toThrow();
         });
 
+        /**
+         * @effects bundle_js_retry_recovers
+         */
         it('번들 JS 가 1회 실패 후 성공하면 최종 resolve 한다 (재시도 복구)', async () => {
             const created = stubAssetLoading(['error', 'load']);
 
@@ -484,6 +517,9 @@ describe('ModuleAssetLoader', () => {
             expect(created).toHaveLength(2);
         });
 
+        /**
+         * @effects bundle_css_failure_resolves
+         */
         it('번들 CSS 실패는 resolve 를 유지한다 (스타일 부재는 앱을 죽이지 않음 — 과잉 적용 경계)', async () => {
             stubAssetLoading(['error']);
 
@@ -537,27 +573,34 @@ describe('ModuleAssetLoader', () => {
      *
      * 폴백 판정은 파싱 결과가 null 인지로 이뤄진다(TemplateApp.loadExtensionAssets).
      * null 이 아닌데 폴백하거나 그 반대면 확장 에셋이 통째로 로드되지 않는데, 오류도
-     * 경고도 남지 않는다.
-     *
-     * @effects missing_bundle_urls_falls_back_to_individual_loading
+     * 경고도 남지 않는다. 효과 마킹은 각 it 위에 있다.
      */
     describe('bundleUrls 부재 폴백 판정', () => {
         afterEach(() => {
             delete (window as any).G7Config;
         });
 
+        /**
+         * @effects missing_bundle_urls_falls_back_to_individual_loading
+         */
         it('G7Config 자체가 없으면 null 이다 (개별 로딩 폴백)', () => {
             delete (window as any).G7Config;
 
             expect(parseBundleUrlsFromConfig()).toBeNull();
         });
 
+        /**
+         * @effects missing_bundle_urls_falls_back_to_individual_loading
+         */
         it('G7Config 는 있으나 bundleUrls 가 없으면 null 이다 (개별 로딩 폴백)', () => {
             (window as any).G7Config = { moduleAssets: [] };
 
             expect(parseBundleUrlsFromConfig()).toBeNull();
         });
 
+        /**
+         * @effects missing_bundle_urls_falls_back_to_individual_loading
+         */
         it('bundleUrls 가 있으면 폴백하지 않는다 (번들 경로)', () => {
             (window as any).G7Config = {
                 bundleUrls: { moduleJs: '/api/modules/bundle.js', moduleCss: null, pluginJs: null, pluginCss: null },
@@ -591,6 +634,9 @@ describe('ModuleAssetLoader', () => {
             return created;
         }
 
+        /**
+         * @effects css_concurrent_load_shares_inflight_promise
+         */
         it('같은 확장 CSS 동시 2회 → link 1개만 생성된다', async () => {
             const created = stubStylesheetLoading();
 
@@ -603,6 +649,9 @@ describe('ModuleAssetLoader', () => {
             expect(document.getElementById('module-css-vendor-ext')).not.toBeNull();
         });
 
+        /**
+         * @effects css_load_failure_does_not_throw
+         */
         it('CSS 로드 실패는 여전히 throw 하지 않는다 (no-throw 계약 유지)', async () => {
             vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
                 if (node.tagName === 'LINK') {
@@ -617,6 +666,9 @@ describe('ModuleAssetLoader', () => {
             ).resolves.toBeUndefined();
         });
 
+        /**
+         * @effects css_inflight_key_separate_from_js_keyspace
+         */
         it('CSS in-flight 키는 JS 키공간과 겹치지 않는다', async () => {
             stubStylesheetLoading();
 

@@ -27,6 +27,11 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class PublicProductControllerTest extends ModuleTestCase
 {
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,6 +47,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 공개 상품 목록 조회 테스트 - display_status=visible 상품만 반환 (sales_status 무관)
+     *
+     * @scenario endpoint=index
+     * @effects public_product_list_shows_only_visible_products
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_index_returns_only_visible_products(): void
@@ -76,6 +85,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 카테고리 필터 테스트
+     *
+     * @scenario endpoint=index
+     * @effects public_product_list_filters_by_category
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_index_filters_by_category(): void
@@ -111,6 +124,9 @@ class PublicProductControllerTest extends ModuleTestCase
      *
      * 가구 > 책상 > 의자 3단계 트리에서 상품을 의자(잎)에만 attach 후
      * 가구(루트) 필터로 조회 → 하위 의자 상품 포함. (수정 전 직접 할당만 → fail)
+     *
+     * @effects root_filter_includes_descendant_products
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_category_id_filter_includes_descendant_products(): void
@@ -132,6 +148,9 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * U6①: category_slug 필터 시 하위 카테고리 상품도 포함되는지 테스트.
+     *
+     * @effects slug_filter_includes_descendant_products
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_category_slug_filter_includes_descendant_products(): void
@@ -152,6 +171,9 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * U6①: 형제 가지 상품은 포함되지 않는지 테스트 (과포함 가드).
+     *
+     * @effects sibling_branch_excluded
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_category_filter_excludes_sibling_branch(): void
@@ -183,6 +205,9 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * U6①: 존재하지 않는 category_slug 는 빈 결과(500 아님)를 반환하는지 테스트.
+     *
+     * @effects unknown_slug_returns_empty
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_unknown_category_slug_returns_empty(): void
@@ -239,6 +264,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 최신순 기본 정렬 테스트
+     *
+     * @scenario endpoint=index
+     * @effects public_product_list_default_sort_is_latest
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_index_default_sort_is_latest(): void
@@ -263,6 +292,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 가격 오름차순 정렬 테스트
+     *
+     * @scenario endpoint=index
+     * @effects public_product_list_sorts_by_price_asc
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_index_sort_by_price_asc(): void
@@ -284,6 +317,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 키워드 검색 테스트
+     *
+     * @scenario endpoint=index
+     * @effects public_product_list_searches_by_keyword
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_index_search_by_keyword(): void
@@ -311,6 +348,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 페이지네이션 테스트
+     *
+     * @scenario endpoint=index
+     * @effects public_product_list_paginates
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_index_pagination(): void
@@ -334,6 +375,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 인기 상품 조회 테스트
+     *
+     * @scenario endpoint=popular
+     * @effects public_popular_products_are_returned
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_popular_returns_products(): void
@@ -351,6 +396,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 인기 상품 limit 파라미터 테스트
+     *
+     * @scenario endpoint=popular
+     * @effects public_popular_products_respect_limit
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_popular_respects_limit(): void
@@ -372,6 +421,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 신상품 조회 테스트
+     *
+     * @scenario endpoint=new
+     * @effects public_new_products_are_latest_first
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_new_returns_latest_products(): void
@@ -398,6 +451,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 최근 본 상품 조회 테스트
+     *
+     * @scenario endpoint=recent
+     * @effects public_recent_products_follow_requested_ids
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_recent_returns_products_by_ids(): void
@@ -420,6 +477,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 빈 ids 파라미터 시 빈 배열 반환 테스트
+     *
+     * @scenario endpoint=recent
+     * @effects public_recent_products_follow_requested_ids
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_recent_returns_empty_when_no_ids(): void
@@ -434,6 +495,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 숨겨진 상품은 recent에서도 제외 테스트
+     *
+     * @scenario endpoint=recent
+     * @effects public_recent_products_exclude_hidden
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_recent_excludes_hidden_products(): void
@@ -458,6 +523,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 상세 조회 테스트
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_returns_visible_product
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_visible_product(): void
@@ -475,6 +544,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 상세를 product_code(상품코드)로 조회할 수 있다 (라우팅 code 전환)
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_resolves_product_code
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_product_by_product_code(): void
@@ -494,6 +567,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 상세 조회 시 PublicProductResource 필드 구조 검증 테스트
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_carries_resource_fields
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_public_product_resource_fields(): void
@@ -552,6 +629,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 상세 조회 시 배송정책 정보 반환 테스트
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_carries_related_blocks
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_shipping_policy(): void
@@ -587,6 +668,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 상세 조회 시 상품정보제공고시 반환 테스트
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_carries_related_blocks
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_product_notice(): void
@@ -618,6 +703,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 상세 조회 시 공통정보 반환 테스트
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_carries_related_blocks
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_common_info(): void
@@ -649,6 +738,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 상세 조회 시 배송/고시/공통정보 없으면 null 반환 테스트
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_related_blocks_null_when_missing
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_null_for_missing_relations(): void
@@ -671,6 +764,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 숨겨진 상품 상세 조회 시 404 테스트
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_hidden_returns_404
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_404_for_hidden_product(): void
@@ -687,6 +784,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 상세 조회 시 브랜드명 반환 테스트
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_carries_brand_name
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_brand_name(): void
@@ -713,6 +814,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 상세 조회 시 브랜드 없으면 brand_name이 null인지 테스트
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_carries_brand_name
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_null_brand_name_when_no_brand(): void
@@ -730,6 +835,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 상세 조회 시 수량 제한 필드 반환 테스트
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_carries_purchase_limits
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_purchase_quantity_limits(): void
@@ -751,6 +860,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 상세 조회 시 라벨 반환 테스트
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_carries_labels
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_labels(): void
@@ -783,6 +896,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 상세 조회 시 추가옵션 반환 테스트
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_carries_additional_options
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_additional_options(): void
@@ -817,6 +934,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 상세 조회 시 notice values가 배열 형태로 변환되는지 테스트 (객체→배열)
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_notice_values_are_arrays
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_notice_values_as_array_when_stored_as_object(): void
@@ -847,6 +968,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 상세 조회 시 description_mode 반환 테스트
+     *
+     * @scenario endpoint=show
+     * @effects public_product_detail_carries_description_mode
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_description_mode(): void
@@ -880,6 +1005,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 인증 없이 접근 가능한지 테스트
+     *
+     * @scenario endpoint=index
+     * @effects public_product_api_open_without_authentication
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_public_api_accessible_without_authentication(): void
@@ -897,6 +1026,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 목록에 활성 라벨이 포함되는지 테스트
+     *
+     * @scenario endpoint=index
+     * @effects public_product_list_carries_active_labels_only
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_index_returns_active_labels(): void
@@ -932,6 +1065,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 비활성 라벨은 제외되는지 테스트
+     *
+     * @scenario endpoint=index
+     * @effects public_product_list_carries_active_labels_only
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_index_excludes_inactive_labels(): void
@@ -963,6 +1100,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 기간 만료된 라벨 할당은 제외되는지 테스트
+     *
+     * @scenario endpoint=index
+     * @effects public_product_list_carries_active_labels_only
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_index_excludes_expired_label_assignments(): void
@@ -994,6 +1135,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 판매 상태 정보가 목록에 포함되는지 테스트
+     *
+     * @scenario endpoint=index
+     * @effects public_product_list_carries_sales_status_fields
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_index_returns_sales_status_fields(): void
@@ -1014,6 +1159,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 상품 목록에 rating_avg, review_count 필드가 포함되는지 테스트
+     *
+     * @scenario endpoint=index
+     * @effects public_product_list_carries_rating_fields
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_index_returns_rating_avg_and_review_count_fields(): void
@@ -1041,6 +1190,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 리뷰 없는 상품의 rating_avg=0.0, review_count=0 반환 테스트
+     *
+     * @scenario endpoint=index
+     * @effects public_product_list_carries_rating_fields
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_index_returns_zero_rating_when_no_reviews(): void
@@ -1070,6 +1223,7 @@ class PublicProductControllerTest extends ModuleTestCase
      * @scenario link=user_product_to_admin_edit, permitted=true
      *
      * @effects product_edit_gate_true_shows_link
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_can_update_true_for_product_update_permission_holder(): void
@@ -1099,6 +1253,7 @@ class PublicProductControllerTest extends ModuleTestCase
      * @scenario link=user_product_to_admin_edit, permitted=false
      *
      * @effects product_edit_gate_false_hides_link
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_can_update_false_for_regular_user(): void
@@ -1118,6 +1273,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
     /**
      * 비로그인(게스트)은 abilities.can_update = false
+     *
+     * @scenario link=user_product_to_admin_edit, permitted=false
+     * @effects product_edit_gate_false_hides_link
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_show_returns_can_update_false_for_guest(): void

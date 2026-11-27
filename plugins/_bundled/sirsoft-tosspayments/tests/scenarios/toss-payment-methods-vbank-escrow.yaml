@@ -156,6 +156,12 @@ effects:
   - out_of_range_vbank_hours_rejected
   - invalid_use_escrow_rejected
   - other_plugin_settings_not_validated
+  - settings_validation_listener_registered            # 플러그인이 설정 검증 리스너를 훅 리스너로 등록한다
+  - settings_validation_error_propagates_through_hook  # 큐 비동기 상황에서도 검증 예외가 훅을 거쳐 저장 호출자에게 전해진다
+  - in_range_vbank_hours_pass                          # 1~2160 시간은 통과한다
+  - out_of_range_error_targets_vbank_hours_field       # 범위 밖 오류는 vbank_valid_hours 필드에 걸린다
+  - valid_use_escrow_passes                            # off·on·buyer_choice 는 통과한다
+  - settings_without_validated_keys_pass               # 검증 대상 키가 없는 부분 저장은 통과한다
   # SDK 페이로드 경계 (감사 후속 — 서버 조립과 SDK 전달은 별개 계약)
   - escrow_products_attached_to_virtual_account_sdk_payload
   - escrow_products_absent_when_escrow_off

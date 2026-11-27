@@ -1,0 +1,33 @@
+feature: 환경설정 서비스 프로바이더의 설정 적용 계약
+
+description: |
+  SettingsServiceProvider 가 저장된 환경설정(storage/app/settings/*.json)을 앱 설정에 적용할 때
+  지켜야 하는 경계를 잰다.
+
+    - 타임존: 환경설정의 timezone 은 app.default_user_timezone 에만 들어가고, app.timezone·PHP 기본
+      타임존·Carbon::now() 는 UTC 로 남는다.
+    - 코어 카테고리: seo·identity 가 코어 카테고리 목록에 있고, 그 목록이 실제로 미러에 채워지는
+      목록이며, seo·identity 값이 헬퍼·dot-path 로 읽힌다.
+    - 디버그 설정: testing 환경과 Playwright 우회 플래그가 있는 호출에서는 settings JSON 의 debug.mode 가
+      config('app.debug') 를 덮어쓰지 않는다. 운영 환경에서 settings JSON 이 여전히 우선하는지는
+      PHPUnit 부팅 환경을 바꿀 수 없어 단위 테스트가 건너뛴다(environment=production).
+
+axes:
+  environment: [testing, playwright_bypass, production]
+
+effects:
+  - app_timezone_stays_utc
+  - php_default_timezone_stays_utc
+  - settings_timezone_applies_to_default_user_timezone
+  - carbon_now_stays_utc
+  - seo_category_is_core_category
+  - identity_category_is_core_category
+  - core_categories_constant_matches_mirror_fill
+  - seo_settings_readable_via_helper
+  - identity_settings_hydrate_dot_path
+  - debug_setting_does_not_override_app_debug_in_testing
+  - debug_setting_does_not_override_app_debug_with_playwright_bypass
+
+test_files:
+  - tests/Unit/Providers/SettingsServiceProviderTest.php
+  - tests/Unit/Providers/SettingsServiceProviderDebugConfigTest.php

@@ -38,6 +38,11 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
 
     protected User $user;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -50,17 +55,33 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 각 테스트 뒤에 준비한 상태를 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
         parent::tearDown();
     }
 
+    /**
+     * 회원 API 공통 경로를 돌려준다.
+     *
+     * @return string 회원 API 기본 경로
+     */
     protected function base(): string
     {
         return '/api/modules/sirsoft-ecommerce/user';
     }
 
+    /**
+     * 로그인 회원 소유의 배송완료 주문을 만든다.
+     *
+     * @param  int  $quantity  주문 수량
+     * @return Order 만든 주문
+     */
     protected function myDeliveredOrder(int $quantity = 2): Order
     {
         $order = $this->deliveredClaimOrder(quantity: $quantity);
@@ -69,6 +90,11 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
         return $order->fresh(['options', 'shippingAddress']);
     }
 
+    /**
+     * 로그인 회원 소유의 결제완료 주문(수량 2)을 만든다.
+     *
+     * @return Order 만든 주문
+     */
     protected function myPaidOrder(): Order
     {
         $order = $this->paidClaimOrder(quantity: 2);
@@ -79,6 +105,9 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
 
     /**
      * 반품 1건(2개 중 1개 · 환불금 차감)을 서비스 경로로 접수합니다.
+     *
+     * @param  Order|null  $order  대상 주문 (없으면 배송완료 주문을 새로 만든다)
+     * @return OrderReturn 접수된 반품 신청서
      */
     protected function myReturn(?Order $order = null): OrderReturn
     {
@@ -93,9 +122,12 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
     }
 
     /**
+     * 반품 상세가 접수 때 얼린 계산 비교 블록을 다중 통화 행과 함께 싣는다.
+     *
      * @scenario claim_type=return, screen=detail, entry=none
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
+     * @return void 반환값 없음
      */
     public function test_return_detail_carries_the_frozen_comparison_with_multi_currency_rows(): void
     {
@@ -120,9 +152,12 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
     }
 
     /**
+     * 교환 상세가 바뀐 상품 행을 싣고 내부 키는 감춘다.
+     *
      * @scenario exchange_mode=change, preview_result=ok
      *
      * @effects claim_apply_exchange_substituted_rows_render
+     * @return void 반환값 없음
      */
     public function test_exchange_detail_carries_substituted_items_and_hides_the_internal_key(): void
     {
@@ -150,9 +185,12 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
     }
 
     /**
+     * 환불 신청·취소 상세도 같은 계산 비교 블록을 싣는다.
+     *
      * @scenario claim_type=refund, screen=detail, entry=none
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
+     * @return void 반환값 없음
      */
     public function test_refund_request_and_cancel_details_carry_the_comparison(): void
     {
@@ -201,9 +239,12 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
     }
 
     /**
+     * 스냅샷이 없는 옛 클레임은 비교 블록이 null 이고 목록에서도 빠진다.
+     *
      * @scenario claim_type=return, screen=detail, entry=none
      *
      * @effects claim_detail_comparison_absent_notice_for_legacy_claims
+     * @return void 반환값 없음
      */
     public function test_legacy_claim_without_snapshots_returns_null_and_the_list_omits_the_block(): void
     {
@@ -223,9 +264,12 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
     }
 
     /**
+     * 비회원 상세도 같은 계산 비교 블록을 싣는다.
+     *
      * @scenario claim_type=return, screen=detail, entry=none
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
+     * @return void 반환값 없음
      */
     public function test_guest_detail_carries_the_same_block(): void
     {
@@ -250,9 +294,12 @@ class UserClaimDetailCalculationComparisonTest extends ModuleTestCase
     }
 
     /**
+     * 관리자 응답도 같은 계산 비교 블록을 싣는다.
+     *
      * @scenario claim_type=return, cancellable=absent
      *
      * @effects admin_claim_detail_comparison_in_settlement_card
+     * @return void 반환값 없음
      */
     public function test_admin_envelope_carries_the_same_block(): void
     {

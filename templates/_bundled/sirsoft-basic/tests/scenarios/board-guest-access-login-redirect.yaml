@@ -33,6 +33,7 @@ effects:
   - guest_entry_not_blocked_by_layout_auth   # 데이터소스가 auth_mode optional 이라(auth_required 아님) 비로그인 진입이 화면 차단 없이 401 처리로 흐른다
   - unauthorized_toasts_before_login_redirect   # 데이터소스 401 처리가 sequence 로 안내 토스트를 먼저 띄우고 로그인 이동을 잇는다
   - login_redirect_dispatched_by_registered_key   # 로그인 이동 액션이 등록 키를 handler 에 직접 쓴다(custom + name 형식이면 디스패치가 던진다)
+  - redirect_handler_silent_without_dispatch   # G7Core.dispatch 가 없으면 핸들러가 예외 없이 조용히 돌아온다
 
 test_files:
   - templates/_bundled/sirsoft-basic/src/handlers/__tests__/redirectToLoginWithReturn.test.ts

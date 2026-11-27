@@ -48,6 +48,12 @@ function findByText(node: unknown, text: string): Record<string, unknown> | unde
 }
 
 describe('plugin_settings 라이브 MID 입력칸', () => {
+  /**
+   * 라이브 MID 칸은 autoComplete="one-time-code" 로 브라우저 자동완성을 막는다.
+   *
+   * @scenario case=settings_mid_autocomplete
+   * @effects live_mid_input_blocks_browser_autofill
+   */
   it('live_mid input 에 autoComplete="one-time-code" 가 적용되어 있어야 한다 (크롬 autofill/제안 차단)', () => {
     // 크롬은 autoComplete="off" 를 무시하고 저장된 계정(이메일)을 채운다. live_mid 는 비밀번호가
     // 아닌 일반 텍스트 MID 칸이므로, autofill/제안을 차단하되 "비밀번호 생성" 제안이 뜨지 않는
@@ -59,6 +65,12 @@ describe('plugin_settings 라이브 MID 입력칸', () => {
     expect(props.autoComplete).toBe('one-time-code');
   });
 
+  /**
+   * 라이브 API 키 칸은 autoComplete="new-password" 로 저장된 비밀번호 자동완성을 막는다.
+   *
+   * @scenario case=settings_api_key_autocomplete
+   * @effects live_api_key_input_uses_new_password
+   */
   it('live_api_key input 에 autoComplete="new-password" 가 적용되어 있어야 한다 (저장 비번 autofill 차단)', () => {
     // live_api_key 는 실제 새 API 키(비밀번호 성격) 입력칸이므로 의미상으로도 정확한 new-password 사용.
     const liveApiKey = findByPropName(pluginSettingsLayout, 'live_api_key');
@@ -68,6 +80,12 @@ describe('plugin_settings 라이브 MID 입력칸', () => {
     expect(props.autoComplete).toBe('new-password');
   });
 
+  /**
+   * 라이브 MID 고정 접두 표시는 SRB 이고 SRA 는 남아 있지 않다.
+   *
+   * @scenario case=settings_prefix_label
+   * @effects live_mid_prefix_label_shows_srb
+   */
   it('라이브 MID 고정 프리픽스 Span 이 SRB 로 표시되어야 한다', () => {
     // 정책 전환 후 SRA 는 존재하지 않아야 한다.
     expect(findByText(pluginSettingsLayout, 'SRA')).toBeUndefined();

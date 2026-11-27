@@ -61,15 +61,33 @@ describe('단계 E — 상품상세 리뷰/문의 탭 게이트 상태', () => {
   // (engine-v1.58.0 `/*?`, 파라미터는 `:product_code`).
   const g = ecomGroup('/*?/products/:product_code');
 
+  /**
+   * 상품 상세 reviews_tab / qna_tab 페이지 상태가 등록되어 있는지 잰다.
+   *
+   * @scenario gate=product_tabs
+   * @effects gate_state_registered
+   */
   it('reviews_tab / qna_tab 상태가 등록되어 있다', () => {
     expect(item(g, 'reviews_tab')).toBeTruthy();
     expect(item(g, 'qna_tab')).toBeTruthy();
   });
 
+  /**
+   * reviews_tab 이 게이트가 읽는 _local.activeTab 경로를 패치하는지 잰다.
+   *
+   * @scenario gate=product_tabs
+   * @effects gate_state_patches_gate_path
+   */
   it('reviews_tab 은 _local.activeTab="reviews" 를 패치한다 (게이트 경로 일치)', () => {
     expect(item(g, 'reviews_tab').initialState?.local?.activeTab).toBe('reviews');
   });
 
+  /**
+   * reviews_tab 샘플이 유저 리뷰 탭 본체가 소비하는 shape 를 채우는지 잰다.
+   *
+   * @scenario gate=product_tabs
+   * @effects gate_body_sample_not_stub
+   */
   it('reviews_tab override 는 유저 탭 shape(reviews.data.reviews.data + rating_stats + option_filters)를 채운다', () => {
     const rv = item(g, 'reviews_tab').sampleDataOverrides?.byDataSourceId?.reviews?.data;
     expect(rv).toBeTruthy();
@@ -94,6 +112,12 @@ describe('단계 E — 상품상세 리뷰/문의 탭 게이트 상태', () => {
     expect(rv.total_count).toBeGreaterThan(0);
   });
 
+  /**
+   * qna_tab 이 activeTab 과 inquiry board_slug 게이트 경로를 패치하는지 잰다.
+   *
+   * @scenario gate=product_tabs
+   * @effects gate_state_patches_gate_path
+   */
   it('qna_tab 은 activeTab="qna" + _global.modules.inquiry.board_slug 를 패치한다 (탭 표시 + 게이트 경로)', () => {
     const init = item(g, 'qna_tab').initialState;
     expect(init?.local?.activeTab).toBe('qna');
@@ -101,6 +125,12 @@ describe('단계 E — 상품상세 리뷰/문의 탭 게이트 상태', () => {
     expect(init?.global?.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug).toBeTruthy();
   });
 
+  /**
+   * qna 샘플이 stub 없이 유저 shape(items + meta) 분기를 채우는지 잰다.
+   *
+   * @scenario gate=product_tabs
+   * @effects gate_body_sample_not_stub
+   */
   it('qna SSoT(basic 템플릿) 샘플이 stub 없이 유저 shape(items[] + meta) 분기를 채운다', () => {
     // qna 데이터소스는 /shop/products/:id(basic 템플릿 shop/show.g7.html) 만 소비 → SSoT 는 basic 템플릿
     // sampleData(메커니즘 #1 — 선언 레이아웃 __source). qna_tab 상태는 activeTab + board_slug 만 패치하면
@@ -126,16 +156,34 @@ describe('단계 E — 상품상세 리뷰/문의 탭 게이트 상태', () => {
 describe('단계 E — 마이게시판 내댓글 서브탭 게이트 상태', () => {
   const g = basicGroup('/mypage/board');
 
+  /**
+   * /mypage/board 페이지 상태 그룹이 있는지 잰다.
+   *
+   * @scenario gate=mypage_board_subtab
+   * @effects gate_state_registered
+   */
   it('/mypage/board 상태 그룹이 신설되어 있다', () => {
     expect(g).toBeTruthy();
     expect(item(g, 'my_posts')).toBeTruthy();
     expect(item(g, 'my_comments')).toBeTruthy();
   });
 
+  /**
+   * my_comments 가 _global.boardActivitySubTab 게이트 경로를 패치하는지 잰다.
+   *
+   * @scenario gate=mypage_board_subtab
+   * @effects gate_state_patches_gate_path
+   */
   it('my_comments 는 _global.boardActivitySubTab="my-comments" 를 패치한다 (게이트 경로 일치)', () => {
     expect(item(g, 'my_comments').initialState?.global?.boardActivitySubTab).toBe('my-comments');
   });
 
+  /**
+   * 내 댓글 본체가 소비하는 myComments 샘플이 3행 이상 정확한 shape 인지 잰다.
+   *
+   * @scenario gate=mypage_board_subtab
+   * @effects gate_body_sample_not_stub
+   */
   it('내댓글 본체가 소비하는 myComments 샘플이 thin 이 아니다 (≥3 행, 정확한 shape)', () => {
     const rows = byId.myComments?.data?.data;
     expect(Array.isArray(rows)).toBe(true);
@@ -153,6 +201,12 @@ describe('단계 E — 마이게시판 내댓글 서브탭 게이트 상태', ()
 describe('단계 E — 통합검색 서브탭 게이트 상태 + posts/pages 본체', () => {
   const g = basicGroup('/search');
 
+  /**
+   * 통합검색 posts/products/pages 서브탭 상태가 있는지 잰다.
+   *
+   * @scenario gate=search_subtab
+   * @effects gate_state_registered
+   */
   it('posts/products/pages 서브탭 상태가 신설되어 있다', () => {
     for (const id of ['tab_posts', 'tab_products', 'tab_pages']) {
       expect(item(g, id)).toBeTruthy();
@@ -162,6 +216,12 @@ describe('단계 E — 통합검색 서브탭 게이트 상태 + posts/pages 본
   // 탭의 SSoT 가 전역 상태(`_global.searchActiveTab`)에서 URL 쿼리(`query.type`)로 바뀌었다.
   // 편집기 상태 패치도 같은 경로로 줘야 캔버스에서 서브탭이 실제로 갈린다 — 옛 경로로 두면
   // 세 변종이 모두 'all' 탭으로 렌더되고, 그 사실이 화면상 오류 없이 조용히 지나간다.
+  /**
+   * 각 서브탭 상태가 query.q 와 query.type 게이트 경로를 패치하는지 잰다.
+   *
+   * @scenario gate=search_subtab
+   * @effects gate_state_patches_gate_path
+   */
   it('각 서브탭 상태는 query.q + query.type 을 패치한다 (게이트 경로)', () => {
     const map: Record<string, string> = { tab_posts: 'posts', tab_products: 'products', tab_pages: 'pages' };
     for (const [id, tab] of Object.entries(map)) {
@@ -173,6 +233,12 @@ describe('단계 E — 통합검색 서브탭 게이트 상태 + posts/pages 본
     }
   });
 
+  /**
+   * all 탭 posts/pages 섹션 본체가 소비하는 searchResults 항목이 채워져 있는지 잰다.
+   *
+   * @scenario gate=search_subtab
+   * @effects gate_body_sample_not_stub
+   */
   it('all 탭 posts/pages 섹션 본체가 소비하는 searchResults.data.{posts,pages}.items 가 채워져 있다', () => {
     const d = byId.searchResults?.data;
     // Stage A 사각: posts_count/pages_count 만 있고 items 배열이 없어 all 탭 섹션이 비었음 → 보강
@@ -197,6 +263,12 @@ describe('단계 E — 통합검색 서브탭 게이트 상태 + posts/pages 본
 });
 
 describe('단계 E — 주문서/장바구니 금액 상세 토글 게이트 상태', () => {
+  /**
+   * /shop/checkout summary_details_expanded 가 두 토글을 켜는지 잰다.
+   *
+   * @scenario gate=summary_toggle
+   * @effects gate_state_patches_gate_path
+   */
   it('/shop/checkout summary_details_expanded 가 두 토글을 ON 한다 (게이트 경로)', () => {
     const it0 = item(ecomGroup('/*?/checkout'), 'summary_details_expanded');
     expect(it0).toBeTruthy();
@@ -204,6 +276,12 @@ describe('단계 E — 주문서/장바구니 금액 상세 토글 게이트 상
     expect(it0.initialState?.local?.showDiscountDetails).toBe(true);
   });
 
+  /**
+   * /shop/cart summary_tax_expanded 가 세금 토글과 선택 상품을 함께 켜는지 잰다.
+   *
+   * @scenario gate=summary_toggle
+   * @effects gate_state_patches_gate_path
+   */
   it('/shop/cart summary_tax_expanded 가 세금 토글 + 선택상품을 ON 한다 (이중 중첩 게이트)', () => {
     const it0 = item(ecomGroup('/*?/cart'), 'summary_tax_expanded');
     expect(it0).toBeTruthy();
@@ -213,6 +291,12 @@ describe('단계 E — 주문서/장바구니 금액 상세 토글 게이트 상
     expect(it0.initialState.local.selectedItems.length).toBeGreaterThan(0);
   });
 
+  /**
+   * 주문서 세금·할인 상세 본체가 소비하는 multi_currency.KRW 가 stub 이 아닌지 잰다.
+   *
+   * @scenario gate=summary_toggle
+   * @effects gate_body_sample_not_stub
+   */
   it('checkoutData 세금/할인 상세 본체가 소비하는 multi_currency.KRW 가 stub 이 아니다 (계산 전 경로)', () => {
     const sum = byId.checkoutData?.data?.calculation?.summary;
     const krw = sum?.multi_currency?.KRW;
@@ -223,6 +307,12 @@ describe('단계 E — 주문서/장바구니 금액 상세 토글 게이트 상
     expect(krw?.product_coupon_discount_formatted).toBeTruthy();
   });
 
+  /**
+   * 장바구니 세금 상세 본체가 소비하는 multi_currency.KRW 가 stub 이 아닌지 잰다.
+   *
+   * @scenario gate=summary_toggle
+   * @effects gate_body_sample_not_stub
+   */
   it('cartItems 세금 상세 본체가 소비하는 multi_currency.KRW 가 stub 이 아니다', () => {
     const sum = byId.cartItems?.data?.calculation?.summary;
     const krw = sum?.multi_currency?.KRW;

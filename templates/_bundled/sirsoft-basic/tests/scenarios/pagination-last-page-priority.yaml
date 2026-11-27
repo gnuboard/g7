@@ -1,0 +1,23 @@
+feature: 페이지네이션 — last_page 와 hasMorePages 의 우선순위
+
+description: |
+  총 건수가 정확해 `last_page` 를 아는 목록은 페이지 산술이 언제나 옳다. 응답에 `has_more_pages` 가 없어
+  레이아웃이 `?? false` 로 채워도 그 false 가 「다음」 을 막으면 안 된다. `has_more_pages` 는 `last_page` 를
+  모르는(null) 목록에서만 다음 이동을 정한다.
+
+  실측 회귀(2026-08-03): 마이페이지 주문 목록 응답에 `has_more_pages` 가 없어 1/2 페이지인데 다음 버튼이
+  비활성이었다. 주문·문의·내글 3 화면이 같은 증상이었다.
+
+# axis 의미:
+#   last_page — known 총 페이지 수를 안다, unknown last_page 가 null (상한 목록)
+axes:
+  last_page: [known, unknown]
+
+effects:
+  - known_last_page_opens_next_despite_has_more_false   # last_page 를 알면 hasMorePages=false 여도 다음이 열린다
+  - known_last_page_closes_next_on_last_page            # last_page 를 알고 마지막 페이지면 다음이 막힌다
+  - unknown_last_page_follows_has_more_pages            # last_page 가 null 이면 hasMorePages 가 다음 이동을 정한다
+  - unknown_last_page_without_has_more_closes_next      # last_page 가 null 이고 hasMorePages 도 없으면 다음이 막힌다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/PaginationHasMorePages.test.tsx

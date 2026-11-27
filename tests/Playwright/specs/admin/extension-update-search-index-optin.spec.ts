@@ -8,10 +8,8 @@
  * 응답의 `search_index` 페이로드도 함께 본다 — 색인이 비면 검색은 오류 없이 0건을
  * 돌려주므로, 이 페이로드가 사라지면 운영자가 알 방법이 없다.
  *
- * @scenario case=extension_update_rebuild_optin
- *
- * @effects rebuild_checkbox_defaults_unchecked, rebuild_checkbox_resets_on_reopen,
- *          update_response_carries_search_index
+ * 효과 요약(마커 아님 — 평문): 재생성 체크 기본 해제, 모달 재진입 시 초기화, 응답의 색인 점검 결과.
+ * 마킹은 각 test 위에 있다.
  */
 import type { Page } from '@playwright/test';
 import { test, expect, authenticatePage, issueToken } from '../../fixtures/auth';
@@ -74,6 +72,9 @@ for (const kind of ['module', 'plugin'] as const) {
   const label = kind === 'module' ? '모듈' : '플러그인';
 
   test.describe(`${label} 업데이트 — 검색 인덱스 재생성 옵트인`, () => {
+    /**
+     * @effects rebuild_checkbox_defaults_unchecked, rebuild_checkbox_resets_on_reopen
+     */
     test(`체크는 기본 해제이고 모달을 다시 열면 초기화된다`, async ({ page }) => {
       await authenticatePage(page, issueToken('core.modules.read', 'core.modules.install', 'core.plugins.read', 'core.plugins.install'));
       await gotoAndSettle(page, listPath);
@@ -116,6 +117,9 @@ for (const kind of ['module', 'plugin'] as const) {
       ).toBe(false);
     });
 
+    /**
+     * @effects unchecked_update_does_not_rebuild_search_index, search_index_notice_kept_in_response, update_success_placeholders_replaced
+     */
     test(`미체크 제출 응답이 색인 점검 결과를 싣는다`, async ({ page }) => {
       await authenticatePage(page, issueToken('core.modules.read', 'core.modules.install', 'core.plugins.read', 'core.plugins.install'));
       await gotoAndSettle(page, listPath);

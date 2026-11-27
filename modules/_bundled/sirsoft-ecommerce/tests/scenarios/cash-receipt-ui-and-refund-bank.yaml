@@ -219,6 +219,7 @@ effects:
                                                  # 환불을 실행하는 시점에 갱신된다.
                                                  # 접수만으로 결제행을 덮으면 계좌가 다른 두
                                                  # 신청서 중 나중 접수가 앞선 송금 대상을 바꾼다
+  - cancel_handler_sends_refund_bank_as_entered  # 취소 핸들러는 입력한 계좌 3필드를 그대로 싣는다 — 부분 입력 거절은 서버가 판정
   - cancel_refund_bank_omitted_when_untouched     # 미입력 시 키 미전송 → 주문 시 계좌 보존
   - cancel_refund_bank_prefilled_from_order       # 주문 시 입력값 프리필
   - cancel_refund_bank_fields_stored_in_handler_keys  # 3필드가 cancelOrderHandlers 가 읽는 _local.refundBank* 키에 기록

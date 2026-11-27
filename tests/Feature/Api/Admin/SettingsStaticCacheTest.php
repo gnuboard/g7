@@ -28,6 +28,11 @@ class SettingsStaticCacheTest extends TestCase
 
     private string $isolatedPublicPath;
 
+    /**
+     * 공개 경로를 격리 폴더로 바꾸고 캐시 버전·실패 마커·게시 락을 초기화합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,6 +51,11 @@ class SettingsStaticCacheTest extends TestCase
         File::deleteDirectory(public_path('build/ext'));
     }
 
+    /**
+     * 테스트가 만든 게시 트리와 격리 폴더를 지우고 게시 예약을 되돌립니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory(public_path('build/ext'));
@@ -110,6 +120,8 @@ class SettingsStaticCacheTest extends TestCase
      * @scenario permission=granted, publishable=non_production, outcome=success
      *
      * @effects status_endpoint_returns_report_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_status_returns_report_fields(): void
     {
@@ -136,6 +148,8 @@ class SettingsStaticCacheTest extends TestCase
      * @scenario permission=granted, publishable=production_enabled, outcome=success
      *
      * @effects republish_bumps_version_and_publishes
+     *
+     * @return void 반환값 없음
      */
     public function test_republish_bumps_version_and_publishes_in_production(): void
     {
@@ -164,6 +178,8 @@ class SettingsStaticCacheTest extends TestCase
      * @scenario permission=granted, publishable=non_production, outcome=publish_failed_marker
      *
      * @effects republish_disabled_when_not_publishable
+     *
+     * @return void 반환값 없음
      */
     public function test_republish_outside_production_is_a_diagnostic_result_not_an_error(): void
     {
@@ -185,6 +201,8 @@ class SettingsStaticCacheTest extends TestCase
      * @scenario permission=granted, publishable=kill_switch_off, outcome=publish_failed_marker
      *
      * @effects republish_disabled_when_not_publishable
+     *
+     * @return void 반환값 없음
      */
     public function test_kill_switch_off_reports_disabled(): void
     {
@@ -210,6 +228,8 @@ class SettingsStaticCacheTest extends TestCase
      * @scenario permission=denied, publishable=production_enabled, outcome=success
      *
      * @effects republish_denied_without_settings_update_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_republish_requires_settings_update_permission(): void
     {
@@ -224,6 +244,8 @@ class SettingsStaticCacheTest extends TestCase
      * @scenario permission=denied, publishable=non_production, outcome=success
      *
      * @effects republish_denied_without_settings_update_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthenticated_requests_are_rejected(): void
     {

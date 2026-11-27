@@ -226,7 +226,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 | PHPUnit | 302개 | `modules/_bundled/sirsoft-board/tests` |
 | Vitest | 114개 | `vitest.config.ts` |
 | Playwright | 41개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 233개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 242개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

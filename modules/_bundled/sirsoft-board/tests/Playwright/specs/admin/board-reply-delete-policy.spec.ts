@@ -12,8 +12,9 @@
  * 전용 게시판(e2e-reply-policy)을 spec 안에서 생성/삭제하므로 시드 의존이 없다.
  *
  * @scenario post-reply-delete-policy
- * @axes policy=block, policy=cascade
- * @effects settings_and_form_expose_policy, block_returns_422_with_message
+ *
+ * 효과 요약(마커 아님 — 평문): 설정·폼의 정책 노출과 저장 왕복, block 게시판의 422 차단.
+ * 테스트별 매핑은 각 test 바로 위 주석에 있다.
  */
 import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 
@@ -86,6 +87,8 @@ async function createBoard(
 test.describe.configure({ mode: 'serial' });
 
 test.describe('게시판 답글 삭제 정책', () => {
+    // @scenario policy=cascade
+    // @effects settings_and_form_expose_policy
     test('환경설정 답변글 탭에 정책 Select 가 렌더되고 기본값이 cascade 다', async ({ page, replyPolicyToken }) => {
         await authenticatePage(page, replyPolicyToken);
 
@@ -104,6 +107,8 @@ test.describe('게시판 답글 삭제 정책', () => {
         expect(basicDefaults.reply_delete_policy ?? 'cascade').toBe('cascade');
     });
 
+    // @scenario policy=block
+    // @effects settings_and_form_expose_policy
     test('게시판 편집 폼 저장 왕복 — block 저장 후 재조회에 반영된다', async ({ page, replyPolicyToken }) => {
         await authenticatePage(page, replyPolicyToken);
         await page.goto('/admin/boards');
@@ -136,6 +141,8 @@ test.describe('게시판 답글 삭제 정책', () => {
         await deleteBoardIfExists(page, replyPolicyToken);
     });
 
+    // @scenario policy=block, delete_trigger=admin, tree_state=single_reply
+    // @effects block_returns_422_with_message
     test('block 게시판에서 답글 달린 글 삭제는 422 로 거부되고 DB 가 변하지 않는다', async ({ page, replyPolicyToken }) => {
         await authenticatePage(page, replyPolicyToken);
         await page.goto('/admin/boards');

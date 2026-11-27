@@ -1,0 +1,20 @@
+feature: 알림 정의 탭 — 확장 채널 통합 탭 필터·라벨 규칙과 3면 패리티
+
+description: |
+  비즈뿌리오처럼 개별 채널(sms·alimtalk)을 숨기고 통합 탭 하나로 보이는 확장 채널의 탭 필터·라벨 규칙을 잰다.
+  코어(admin_basic)·게시판·이커머스 세 partial 의 표현식은 문자열 수준으로 같아야 하고, 각 면에서 실제로 평가해 저장값 조합별 노출 결과를 확인한다.
+
+# axis 의미:
+#   face — 탭 필터 partial 을 가진 세 면(admin_basic · board · ecommerce).
+axes:
+  face: [admin_basic, board, ecommerce]
+
+effects:
+  - bizppurio_tab_replaces_sms_and_alimtalk_tabs   # hidden_tab 채널은 빠지고 통합 탭 하나만 보인다
+  - tab_visible_when_any_of_tab_channels_active   # 통합 탭은 tab_channels 중 하나라도 활성 저장이면 보이고 전부 꺼지거나 미저장이면 사라진다
+  - core_channel_tab_visible_unless_explicitly_false   # 코어 채널 탭은 저장값이 명시적 false 일 때만 숨는다
+  - tab_label_uses_tab_label_key   # 탭 라벨이 tab_label_key 를 $t 로 풀고 name → id 로 폴백한다
+  - tab_filter_parity_across_faces   # 게시판·이커머스 partial 의 필터·라벨 표현식이 admin_basic 과 같다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-bizppurio-tab-filter.test.ts

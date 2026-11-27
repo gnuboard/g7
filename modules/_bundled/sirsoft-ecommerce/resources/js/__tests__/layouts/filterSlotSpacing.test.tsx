@@ -57,6 +57,8 @@ const FILTERS: Array<[string, any]> = [
 ];
 
 describe('필터 슬롯 아웃렛 간격 자산 검증 (회귀 방지)', () => {
+    // @scenario check=has_spacing_asset
+    // @effects filter_slot_outlets_carry_spacing_asset
     it.each(FILTERS)(
         '%s — 모든 필터 슬롯 아웃렛이 간격 자산(filter-grid)을 보유해야 함',
         (_label, layout) => {
@@ -75,6 +77,8 @@ describe('필터 슬롯 아웃렛 간격 자산 검증 (회귀 방지)', () => {
         }
     );
 
+    // @scenario check=no_plain_flex_outlet
+    // @effects filter_slot_outlets_are_not_plain_flex_column
     it.each(FILTERS)(
         '%s — 회귀 패턴(아웃렛이 plain flex flex-col)이 존재하지 않아야 함',
         (_label, layout) => {

@@ -26,6 +26,15 @@ class CountColumnsCastTest extends BoardTestCase
     // Board 모델
     // =========================================================================
 
+    /**
+     * 게시판 posts_count 를 문자열로 넣어도 저장되고 정수로 읽힌다.
+     *
+     * @scenario layer=model_cast
+     *
+     * @effects board_count_columns_cast_to_integer
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function board_posts_count_is_fillable_and_cast_to_integer(): void
     {
@@ -39,6 +48,15 @@ class CountColumnsCastTest extends BoardTestCase
         $this->assertSame(5, $board->refresh()->posts_count, 'posts_count 는 정수로 캐스트되어야 합니다');
     }
 
+    /**
+     * 게시판 comments_count 를 문자열로 넣어도 저장되고 정수로 읽힌다.
+     *
+     * @scenario layer=model_cast
+     *
+     * @effects board_count_columns_cast_to_integer
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function board_comments_count_is_fillable_and_cast_to_integer(): void
     {
@@ -56,6 +74,15 @@ class CountColumnsCastTest extends BoardTestCase
     // Post 모델
     // =========================================================================
 
+    /**
+     * 게시글 replies_count 를 문자열로 넣어도 저장되고 정수로 읽힌다.
+     *
+     * @scenario layer=model_cast
+     *
+     * @effects post_count_columns_cast_to_integer
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function post_replies_count_is_fillable_and_cast_to_integer(): void
     {
@@ -72,6 +99,15 @@ class CountColumnsCastTest extends BoardTestCase
         $this->assertSame(2, $post->refresh()->replies_count, 'replies_count 는 정수로 캐스트되어야 합니다');
     }
 
+    /**
+     * 게시글 comments_count 를 문자열로 넣어도 저장되고 정수로 읽힌다.
+     *
+     * @scenario layer=model_cast
+     *
+     * @effects post_count_columns_cast_to_integer
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function post_comments_count_is_fillable_and_cast_to_integer(): void
     {
@@ -88,6 +124,15 @@ class CountColumnsCastTest extends BoardTestCase
         $this->assertSame(7, $post->refresh()->comments_count, 'comments_count 는 정수로 캐스트되어야 합니다');
     }
 
+    /**
+     * 게시글 attachments_count 를 문자열로 넣어도 저장되고 정수로 읽힌다.
+     *
+     * @scenario layer=model_cast
+     *
+     * @effects post_count_columns_cast_to_integer
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function post_attachments_count_is_fillable_and_cast_to_integer(): void
     {
@@ -108,6 +153,15 @@ class CountColumnsCastTest extends BoardTestCase
     // Comment 모델
     // =========================================================================
 
+    /**
+     * 댓글 replies_count 를 문자열로 넣어도 저장되고 정수로 읽힌다.
+     *
+     * @scenario layer=model_cast
+     *
+     * @effects comment_replies_count_cast_to_integer
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function comment_replies_count_is_fillable_and_cast_to_integer(): void
     {
@@ -130,6 +184,15 @@ class CountColumnsCastTest extends BoardTestCase
     // 정수 캐스트 — DB 에서 문자열로 읽혀도 정수로 반환
     // =========================================================================
 
+    /**
+     * DB 에 직접 넣은 게시글 카운트 컬럼을 모델로 읽으면 정수로 나온다.
+     *
+     * @scenario layer=model_cast
+     *
+     * @effects count_columns_integer_when_loaded_from_db
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function post_count_columns_are_cast_to_integer_when_loaded_from_db(): void
     {

@@ -1,0 +1,32 @@
+feature: 사용자 게시판 목록 — URL 정렬 파라미터를 서버로 전달
+
+description: |
+  서버의 정렬 우선순위는 쿼리 파라미터(sort_by/sort_order) > 게시판 설정(order_by/order_direction) > 기본값이다.
+  사용자 목록 레이아웃의 데이터소스가 두 파라미터를 싣지 않아 `/board/{slug}?sort_by=view_count` 로 들어가도
+  요청은 `posts?page=1` 로 나갔다. 예외도 경고도 없이 정렬이 무시됐다.
+
+  반대 방향도 결함이다. 폴백에 기본 컬럼을 박으면 URL 에 정렬이 없을 때 `sort_by=created_at` 이 늘 실려
+  게시판 설정(order_by)을 덮는다. 그래서 폴백은 빈 값이어야 한다.
+
+# axis 의미:
+#   layer — layout 레이아웃 데이터소스 선언(Vitest), browser 실제 목록 요청(Playwright)
+#   url_sort — present URL 에 정렬이 있다, absent URL 에 정렬이 없다
+axes:
+  layer: [layout, browser]
+  url_sort: [present, absent]
+
+effects:
+  - sort_datasource_derived_from_layout                 # 게시글 목록 데이터소스를 레이아웃에서 찾는다 (아래 단언의 전제)
+  - sort_params_forwarded_to_server                     # 데이터소스가 sort_by/sort_order 를 서버로 싣는다
+  - sort_params_read_from_url_query                     # 정렬 값을 URL 쿼리에서 읽는다
+  - sort_params_have_no_default_column                  # 정렬 파라미터에 기본 컬럼을 박지 않는다 (게시판 설정이 이긴다)
+  - sort_params_empty_when_url_has_none                 # URL 에 정렬이 없으면 빈 값으로 떨어진다
+  - url_sort_reaches_list_request                       # 브라우저: URL 의 정렬이 실제 목록 요청에 실린다
+  - absent_url_sort_not_sent_preserving_board_setting   # 브라우저: URL 에 정렬이 없으면 정렬 파라미터를 보내지 않는다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-list-sort-params.test.ts
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/board-list-sort-query.spec.ts
+
+limitations:
+  - "Playwright 시험은 공개 게시판이 없는 환경에서 건너뛴다 — 그때는 레이아웃 축(Vitest)만 잰다."

@@ -18,6 +18,10 @@ class OrderPaymentResourceTest extends ModuleTestCase
      *
      * 회귀 배경: getAccountInfo() 가 존재하지 않는 'bank_transfer' 케이스로 분기해
      * dbank 주문의 account_info 가 항상 null 이던 결함(실제 무통장 수단 값은 'dbank').
+     *
+     * @scenario subject=resource
+     * @effects payment_resource_summarizes_dbank_account
+     * @return void 반환값 없음
      */
     public function test_account_info_for_dbank_payment_summarizes_bank_account(): void
     {
@@ -35,6 +39,10 @@ class OrderPaymentResourceTest extends ModuleTestCase
 
     /**
      * 카드 결제의 계좌 요약은 카드사명 + 마스킹 카드번호 (+ 일시불/할부)로 구성된다.
+     *
+     * @scenario subject=resource
+     * @effects payment_resource_summarizes_card
+     * @return void 반환값 없음
      */
     public function test_account_info_for_card_payment_summarizes_card(): void
     {
@@ -57,6 +65,10 @@ class OrderPaymentResourceTest extends ModuleTestCase
      * 회귀 배경: is_escrow 는 DB·모델·부분취소 차단 로직(PaymentRefundListener)에는
      * 있었지만 Resource 가 내보내지 않아, 이 값을 참조하는 주문 상세 화면(관리자/회원)의
      * 에스크로 표시가 항상 false 로 평가되어 렌더되지 않았다.
+     *
+     * @scenario subject=resource
+     * @effects payment_resource_exposes_is_escrow
+     * @return void 반환값 없음
      */
     public function test_is_escrow_is_exposed(): void
     {

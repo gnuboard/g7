@@ -21,6 +21,11 @@ class DriverConnectionTesterTest extends TestCase
 {
     private DriverConnectionTester $tester;
 
+    /**
+     * 테스트마다 새 연결 테스터를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -30,6 +35,10 @@ class DriverConnectionTesterTest extends TestCase
 
     /**
      * 필수 설정 누락 시 s3_missing_config 메시지를 반환하는지 테스트합니다.
+     *
+     * @effects s3_test_reports_missing_config
+     *
+     * @return void 반환값 없음
      */
     public function test_s3_missing_config_returns_failure(): void
     {
@@ -49,6 +58,8 @@ class DriverConnectionTesterTest extends TestCase
      * @scenario region_shape=custom_minio,endpoint=path_style,driver_usability=adapter_present,attachment_disk=local_default
      *
      * @effects endpoint_injected
+     *
+     * @return void 반환값 없음
      */
     public function test_s3_custom_endpoint_reaches_outbound_target(): void
     {
@@ -82,6 +93,8 @@ class DriverConnectionTesterTest extends TestCase
      * @scenario region_shape=custom_minio,endpoint=path_style,driver_usability=adapter_present,attachment_disk=local_default
      *
      * @effects endpoint_injected
+     *
+     * @return void 반환값 없음
      */
     public function test_s3_path_style_toggle_changes_outbound_address_shape(): void
     {
@@ -121,6 +134,10 @@ class DriverConnectionTesterTest extends TestCase
      *
      * 어댑터는 composer 필수 의존성이라 부재 상태를 만들 수 없으므로 구성 검증으로 대체한다
      * (계획서 A5 — "mock 불가 시 구성 검증으로 대체").
+     *
+     * @effects s3_test_prechecks_adapter
+     *
+     * @return void 반환값 없음
      */
     public function test_s3_adapter_precheck_present_in_code(): void
     {
@@ -144,6 +161,8 @@ class DriverConnectionTesterTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=local_default
      *
      * @effects test_covers_server_websocket
+     *
+     * @return void 반환값 없음
      */
     public function test_websocket_probes_both_client_and_server_endpoints(): void
     {
@@ -168,6 +187,10 @@ class DriverConnectionTesterTest extends TestCase
 
     /**
      * server endpoint 실패 시 어느 쪽 실패인지 구분된 메시지를 반환하는지 테스트합니다.
+     *
+     * @effects test_covers_server_websocket
+     *
+     * @return void 반환값 없음
      */
     public function test_websocket_server_endpoint_failure_is_distinguished(): void
     {
@@ -195,6 +218,10 @@ class DriverConnectionTesterTest extends TestCase
 
     /**
      * server 필드가 비어 있으면 client 값으로 폴백하며 중복 probe 를 생략하는지 테스트합니다.
+     *
+     * @effects websocket_server_falls_back_to_client
+     *
+     * @return void 반환값 없음
      */
     public function test_websocket_server_fields_fallback_to_client(): void
     {
@@ -214,6 +241,10 @@ class DriverConnectionTesterTest extends TestCase
 
     /**
      * client endpoint 실패 시 기존 메시지 계약이 유지되는지 테스트합니다 (하위호환).
+     *
+     * @effects websocket_client_failure_message_kept
+     *
+     * @return void 반환값 없음
      */
     public function test_websocket_client_failure_keeps_existing_contract(): void
     {

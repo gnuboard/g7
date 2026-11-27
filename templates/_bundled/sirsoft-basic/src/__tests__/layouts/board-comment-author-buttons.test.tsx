@@ -135,6 +135,12 @@ describe('댓글 수정/삭제 버튼 표시 조건', () => {
     registry = setupTestRegistry();
   });
 
+  /**
+   * 본인 댓글이고 댓글 작성 권한이 있으면 수정·삭제 버튼이 보이는지 잰다.
+   *
+   * @scenario case=own_with_write
+   * @effects comment_buttons_shown_for_author_with_write_permission
+   */
   it('본인 댓글 + can_write_comments=true → 수정/삭제 버튼 표시', async () => {
     const initialData = makeInitialData(
       { is_author: true, is_guest_comment: false },
@@ -150,6 +156,12 @@ describe('댓글 수정/삭제 버튼 표시 조건', () => {
     testUtils.cleanup();
   });
 
+  /**
+   * 본인 댓글이어도 댓글 작성 권한이 없으면 수정·삭제 버튼이 숨는지 잰다.
+   *
+   * @scenario case=own_without_write
+   * @effects comment_buttons_hidden_for_author_without_write_permission
+   */
   it('본인 댓글 + can_write_comments=false → 수정/삭제 버튼 미표시', async () => {
     const initialData = makeInitialData(
       { is_author: true, is_guest_comment: false },
@@ -165,6 +177,12 @@ describe('댓글 수정/삭제 버튼 표시 조건', () => {
     testUtils.cleanup();
   });
 
+  /**
+   * 타인 댓글이고 권한이 없으면 수정·삭제 버튼이 숨는지 잰다.
+   *
+   * @scenario case=other_no_permission
+   * @effects comment_buttons_hidden_for_others_without_permission
+   */
   it('타인 댓글 + 권한 없음 → 수정/삭제 버튼 미표시', async () => {
     const initialData = makeInitialData(
       { is_author: false, is_guest_comment: false },
@@ -180,6 +198,12 @@ describe('댓글 수정/삭제 버튼 표시 조건', () => {
     testUtils.cleanup();
   });
 
+  /**
+   * 비회원 댓글이면 수정·삭제 버튼이 보이는지 잰다.
+   *
+   * @scenario case=guest_comment
+   * @effects comment_buttons_shown_for_guest_comment
+   */
   it('비회원 댓글 (is_guest_comment=true) → 수정/삭제 버튼 표시', async () => {
     const initialData = makeInitialData(
       { is_author: false, is_guest_comment: true },
@@ -195,6 +219,12 @@ describe('댓글 수정/삭제 버튼 표시 조건', () => {
     testUtils.cleanup();
   });
 
+  /**
+   * 관리 권한(can_manage)이 있으면 타인 댓글에도 수정·삭제 버튼이 보이는지 잰다.
+   *
+   * @scenario case=manager_other
+   * @effects comment_buttons_shown_for_manager_on_others
+   */
   it('manager 권한 (can_manage=true) → 타인 댓글도 수정/삭제 버튼 표시', async () => {
     const initialData = makeInitialData(
       { is_author: false, is_guest_comment: false },

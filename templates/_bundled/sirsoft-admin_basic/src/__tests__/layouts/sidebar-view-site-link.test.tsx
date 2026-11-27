@@ -42,12 +42,22 @@ function findById(node: LayoutNode | LayoutNode[] | undefined, id: string): Layo
 }
 
 describe('관리자 사이드바 "사이트 보기" 링크', () => {
+  /**
+   * sidebar_footer 노드가 있다.
+   * @scenario component=admin_sidebar
+   * @effects sidebar_view_site_link_opens_user_home
+   */
   it('sidebar_footer 노드가 존재한다', () => {
     const footer = findById(adminBase as LayoutNode, 'sidebar_footer');
     expect(footer).not.toBeNull();
     expect(footer?.name).toBe('Div');
   });
 
+  /**
+   * 사이트 보기 링크가 A 태그로 유저 홈(/)을 새 탭으로 연다.
+   * @scenario component=admin_sidebar
+   * @effects sidebar_view_site_link_opens_user_home
+   */
   it('사이트 보기 링크는 A 태그로 유저 홈(/)을 새 탭으로 연다', () => {
     const link = findById(adminBase as LayoutNode, 'sidebar_view_site_link');
     expect(link).not.toBeNull();
@@ -57,11 +67,21 @@ describe('관리자 사이드바 "사이트 보기" 링크', () => {
     expect(link?.props?.rel).toBe('noopener noreferrer');
   });
 
+  /**
+   * 링크에 노출 조건이 없어 늘 보인다.
+   * @scenario component=admin_sidebar
+   * @effects sidebar_view_site_link_opens_user_home
+   */
   it('노출 조건(if)이 없어 관리자 화면에서 항상 표시된다', () => {
     const link = findById(adminBase as LayoutNode, 'sidebar_view_site_link');
     expect(link?.if).toBeUndefined();
   });
 
+  /**
+   * sidebar_footer 가 스크롤 메뉴 밖, left_sidebar_area 의 직접 자식이다.
+   * @scenario component=admin_sidebar
+   * @effects sidebar_footer_outside_scroll_menu
+   */
   it('sidebar_footer 는 스크롤 메뉴(admin_sidebar_menu) 내부가 아닌 left_sidebar_area 의 직접 자식이다', () => {
     const sidebarArea = findById(adminBase as LayoutNode, 'left_sidebar_area');
     const childIds = (sidebarArea?.children ?? []).map((c) => c.id);
@@ -79,17 +99,32 @@ describe('모바일 드로어 상단 잘림 수정 (CSS)', () => {
     'utf8',
   );
 
+  /**
+   * 모바일 드로어가 inset-y-0 로 헤더를 덮지 않는다.
+   * @scenario component=admin_sidebar
+   * @effects mobile_drawer_starts_below_header
+   */
   it('.left_sidebar_area_portable 는 inset-y-0(top:0)로 헤더를 덮지 않는다', () => {
     const block = css.match(/\.left_sidebar_area_portable\s*\{[^}]*\}/s)?.[0] ?? '';
     expect(block).not.toContain('inset-y-0');
   });
 
+  /**
+   * 모바일 드로어가 헤더 높이만큼 내려 시작한다.
+   * @scenario component=admin_sidebar
+   * @effects mobile_drawer_starts_below_header
+   */
   it('.left_sidebar_area_portable 는 헤더 높이(4rem)만큼 내려 시작한다', () => {
     const block = css.match(/\.left_sidebar_area_portable\s*\{[^}]*\}/s)?.[0] ?? '';
     expect(block).toMatch(/top:\s*4rem/);
     expect(block).toMatch(/bottom:\s*0/);
   });
 
+  /**
+   * .sidebar_view_site_link 스타일이 정의돼 있다.
+   * @scenario component=admin_sidebar
+   * @effects sidebar_view_site_link_style_defined
+   */
   it('.sidebar_view_site_link 스타일이 정의되어 있다', () => {
     expect(css).toContain('.sidebar_view_site_link');
     expect(css).toContain('.sidebar_footer');

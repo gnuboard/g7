@@ -53,6 +53,7 @@ const fields: Array<[string, unknown, string]> = [
 ];
 
 describe('게시판 환경설정 — 범위 힌트 동적 바인딩 가드', () => {
+    // @effects settings_hint_text_reads_local_form_meta_limits
     it.each(fields)(
         '%s — description text 가 _local.form._meta.limits 파라미터를 포함함',
         (field, layout, limitsKey) => {
@@ -69,6 +70,7 @@ describe('게시판 환경설정 — 범위 힌트 동적 바인딩 가드', () 
         },
     );
 
+    // @effects settings_input_bounds_read_local_form_meta_limits
     it.each(fields)(
         '%s — Input min/max 가 하드코딩 정수가 아닌 _local.form._meta.limits 동적 표현식임',
         (_field, layout, limitsKey) => {
@@ -83,6 +85,7 @@ describe('게시판 환경설정 — 범위 힌트 동적 바인딩 가드', () 
         },
     );
 
+    // @effects settings_hints_avoid_global_settings_path
     it.each(fields)(
         '%s — 코어 전역과 충돌하는 settings.data._meta 경로를 사용하지 않음',
         (_field, layout, limitsKey) => {
@@ -166,6 +169,7 @@ const policyFields: Array<[string, unknown, string]> = [
 describe('게시판 환경설정 — 신고 정책 · 스팸 보안 탭 경계값', () => {
     const limits = configuredLimits();
 
+    // @effects policy_tab_bounds_read_limits
     it.each(policyFields)('%s — min/max 가 한계값 설정을 읽는다', (field, layout, limitsKey) => {
         const bounds = boundExpressions(layout, field);
 
@@ -175,6 +179,7 @@ describe('게시판 환경설정 — 신고 정책 · 스팸 보안 탭 경계�
         }
     });
 
+    // @effects policy_tab_bound_fallbacks_match_config
     it.each(policyFields)('%s — 폴백이 설정 파일의 한계값과 같다', (field, layout, limitsKey) => {
         const bounds = boundExpressions(layout, field);
 
@@ -188,6 +193,7 @@ describe('게시판 환경설정 — 신고 정책 · 스팸 보안 탭 경계�
         }
     });
 
+    // @effects auto_hide_threshold_accepts_zero
     it('자동 숨김 기준은 0(비활성)을 입력할 수 있다', () => {
         // 화면이 min=1 이면 "0=비활성" 안내와 어긋나 비활성으로 되돌릴 방법이 없어진다.
         expect(limits.auto_hide_threshold_min).toBe(0);
@@ -219,6 +225,7 @@ describe('게시판 환경설정 — 서버 저장 규칙 정합', () => {
      *
      * 세 지점(설정 파일 · 서버 규칙 · 화면 바인딩)이 같은 키·같은 폴백을 가리키는지 대조한다.
      */
+    // @effects settings_request_rules_match_screen_limits
     it.each(policyFields)('%s — 서버 규칙이 화면과 같은 한계값 키를 읽는다', (field, layout, limitsKey) => {
         const rule = new RegExp(`'${field.replace('.', '\\.')}'\\s*=>\\s*\\[([^\\]]*)\\]`).exec(requestSource);
 

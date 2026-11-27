@@ -65,6 +65,13 @@ effects:
   - order_list_claim_filter_hint_states_fault_excludes_cancellations
   # 같은 개념(귀책)을 상세 라벨·목록 필터·목록 컬럼의 형제 문구가 로케일마다 한 낱말로 부른다(ko 기준).
   - claim_fault_wording_is_one_word_per_locale_across_siblings
+  # 서버 필터 계약 (Feature — OrderListClaimFilterTest)
+  - order_list_claim_filter_type_statuses_or_across_types
+  - order_list_claim_filter_fault_and_date_match_the_same_claim
+  - order_list_claim_filter_legacy_refund_counts_as_direct
+  - order_list_claim_filter_requested_to_bounds_the_range
+  - order_list_claim_filter_fault_with_cancel_only_returns_empty
+  - order_list_claim_filter_presence_none_with_unmatchable_axes_returns_all
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/OrderListClaimFilterTest.php

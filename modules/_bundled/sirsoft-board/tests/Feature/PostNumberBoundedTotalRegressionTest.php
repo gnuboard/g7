@@ -21,12 +21,8 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 내보내는 것과 같은 원칙으로, 잘린 총 건수에서는 순번을 null 로 둔다. 오름차순은 offset
  * 기반이라 총 건수와 무관하게 정확하므로 그대로 둔다.
  *
- * @scenario case=post_number_bounded_total
- *
- * @effects post_number_null_when_total_truncated,
- *          post_number_never_non_positive,
- *          post_number_exact_when_total_exact,
- *          post_number_ascending_unaffected_by_truncation
+ * 효과 요약(마커 아님 — 평문): 잘린 총 건수에서는 순번을 null 로 두고, 0·음수 순번을 내지 않으며,
+ * 정확한 총 건수와 오름차순 순번은 그대로 유지한다. 테스트별 매핑은 각 메서드 주석에 있다.
  */
 class PostNumberBoundedTotalRegressionTest extends BoardTestCase
 {
@@ -77,6 +73,12 @@ class PostNumberBoundedTotalRegressionTest extends BoardTestCase
 
     /**
      * 총 건수가 잘리지 않았으면 순번은 지금까지처럼 정확해야 합니다.
+     *
+     * @scenario case=exact_desc
+     *
+     * @effects post_number_exact_when_total_exact
+     *
+     * @return void 반환값 없음
      */
     public function test_총건수가_정확하면_순번은_총건수부터_내림차순이다(): void
     {
@@ -91,6 +93,12 @@ class PostNumberBoundedTotalRegressionTest extends BoardTestCase
 
     /**
      * 총 건수가 잘렸으면 순번을 지어내지 않아야 합니다.
+     *
+     * @scenario case=truncated_desc
+     *
+     * @effects post_number_null_when_total_truncated
+     *
+     * @return void 반환값 없음
      */
     public function test_총건수가_잘리면_순번은_null_이다(): void
     {
@@ -105,6 +113,12 @@ class PostNumberBoundedTotalRegressionTest extends BoardTestCase
 
     /**
      * 상한을 넘어선 깊은 페이지에서도 0·음수가 나오지 않아야 합니다.
+     *
+     * @scenario case=truncated_deep_page_desc
+     *
+     * @effects post_number_never_non_positive
+     *
+     * @return void 반환값 없음
      */
     public function test_상한을_넘은_페이지에서_0이나_음수_순번이_없다(): void
     {
@@ -126,6 +140,12 @@ class PostNumberBoundedTotalRegressionTest extends BoardTestCase
 
     /**
      * 오름차순은 offset 기반이라 총 건수가 잘려도 그대로 정확해야 합니다.
+     *
+     * @scenario case=truncated_asc
+     *
+     * @effects post_number_ascending_unaffected_by_truncation
+     *
+     * @return void 반환값 없음
      */
     public function test_오름차순_순번은_총건수가_잘려도_유지된다(): void
     {
@@ -144,6 +164,8 @@ class PostNumberBoundedTotalRegressionTest extends BoardTestCase
      *
      * @param  mixed  $value  검사 대상
      * @param  string  $message  실패 메시지
+     *
+     * @return void 반환값 없음
      */
     private function assertNotIsInt(mixed $value, string $message = ''): void
     {

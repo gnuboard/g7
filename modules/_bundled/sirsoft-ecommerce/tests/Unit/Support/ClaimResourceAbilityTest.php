@@ -23,6 +23,11 @@ class ClaimResourceAbilityTest extends ModuleTestCase
 {
     use BuildsClaimFlowOrders;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -30,6 +35,11 @@ class ClaimResourceAbilityTest extends ModuleTestCase
         $this->seedClaimReasons();
     }
 
+    /**
+     * 각 테스트 뒤에 준비한 상태를 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -66,6 +76,7 @@ class ClaimResourceAbilityTest extends ModuleTestCase
      * @scenario refund_source=direct
      *
      * @effects direct_refund_stays_buyer_editable
+     * @return void 반환값 없음
      */
     public function test_a_direct_refund_request_stays_buyer_editable(): void
     {
@@ -83,6 +94,7 @@ class ClaimResourceAbilityTest extends ModuleTestCase
      * @scenario refund_source=admin
      *
      * @effects admin_filed_refund_is_not_buyer_editable
+     * @return void 반환값 없음
      */
     public function test_an_admin_filed_refund_is_not_buyer_editable(): void
     {
@@ -96,6 +108,7 @@ class ClaimResourceAbilityTest extends ModuleTestCase
      * 이어진 출처의 환불신청서가 구매자에게 잠겨 있는지 단언합니다.
      *
      * @param  RefundSourceTypeEnum  $source  환불 출처
+     * @return void 반환값 없음
      */
     protected function assertNotBuyerEditable(RefundSourceTypeEnum $source): void
     {
@@ -114,6 +127,7 @@ class ClaimResourceAbilityTest extends ModuleTestCase
      * @scenario refund_source=return
      *
      * @effects return_and_exchange_originated_refunds_are_not_buyer_editable
+     * @return void 반환값 없음
      */
     public function test_a_return_originated_refund_is_not_buyer_editable(): void
     {
@@ -126,6 +140,7 @@ class ClaimResourceAbilityTest extends ModuleTestCase
      * @scenario refund_source=exchange
      *
      * @effects return_and_exchange_originated_refunds_are_not_buyer_editable
+     * @return void 반환값 없음
      */
     public function test_an_exchange_originated_refund_is_not_buyer_editable(): void
     {
@@ -138,6 +153,7 @@ class ClaimResourceAbilityTest extends ModuleTestCase
      * @scenario refund_source=cancel
      *
      * @effects return_and_exchange_originated_refunds_are_not_buyer_editable
+     * @return void 반환값 없음
      */
     public function test_a_cancel_originated_refund_is_not_buyer_editable(): void
     {
@@ -153,6 +169,7 @@ class ClaimResourceAbilityTest extends ModuleTestCase
      * @scenario refund_source=direct
      *
      * @effects refund_source_type_axes_are_explicit
+     * @return void 반환값 없음
      */
     public function test_the_refund_source_axes_are_explicit(): void
     {
@@ -188,6 +205,7 @@ class ClaimResourceAbilityTest extends ModuleTestCase
      * @scenario refund_source=admin
      *
      * @effects guest_flag_reads_the_order_owner_not_the_requester_column
+     * @return void 반환값 없음
      */
     public function test_the_guest_flag_reads_the_order_owner(): void
     {

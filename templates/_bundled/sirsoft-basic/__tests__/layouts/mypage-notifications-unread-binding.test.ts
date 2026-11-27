@@ -58,6 +58,12 @@ describe('마이페이지 알림 — 미읽음 건수 바인딩', () => {
   const listPartial = readLayout('layouts/partials/mypage/notifications/_list.json');
   const baseLayout = readLayout('layouts/_user_base.json');
 
+  /**
+   * 미읽음 건수 라벨이 목록이 아닌 전용 데이터소스를 참조하는지 잰다.
+   *
+   * @scenario aspect=label_binding
+   * @effects unread_label_binds_dedicated_data_source
+   */
   it('미읽음 건수 라벨은 전용 데이터소스를 참조한다', () => {
     const bindings = collectStrings(listPartial, /unread_count/);
 
@@ -72,6 +78,12 @@ describe('마이페이지 알림 — 미읽음 건수 바인딩', () => {
     }
   });
 
+  /**
+   * 라벨이 참조하는 데이터소스가 베이스 레이아웃에 실제로 선언되어 있는지 잰다.
+   *
+   * @scenario aspect=data_source
+   * @effects unread_data_source_declared_in_base_layout
+   */
   it('참조하는 데이터소스가 베이스 레이아웃에 실제로 선언되어 있다', () => {
     const sources = (baseLayout as { data_sources?: Array<{ id?: string; endpoint?: string }> })
       .data_sources ?? [];

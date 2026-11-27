@@ -49,12 +49,22 @@ function collectNodes(node: any, predicate: (n: any) => boolean): any[] {
 
 describe('S1d 정책 목록 — PC 테이블 + 모바일 카드 (G7 responsive)', () => {
   describe('responsive 속성 분기 (tailwind hidden md:block 금지)', () => {
+    /**
+     * tailwind hidden md:block 분기를 쓰지 않는다.
+     * @scenario component=identity_policy_list
+     * @effects identity_policy_list_responsive_split
+     */
     it('tailwind hidden md:block / md:hidden 디바이스 분기 패턴은 사용하지 않는다', () => {
       const partialStr = JSON.stringify(policiesPartial);
       expect(partialStr).not.toMatch(/hidden md:block/);
       expect(partialStr).not.toMatch(/md:hidden/);
     });
 
+    /**
+     * 데스크탑 Table 은 responsive.mobile.if=false 로 모바일에서 숨는다.
+     * @scenario component=identity_policy_list
+     * @effects identity_policy_list_responsive_split
+     */
     it('데스크탑 Table 컨테이너는 responsive.mobile.if = false 로 모바일에서 비표시', () => {
       const tables = collectNodes(policiesPartial, (n) => n.name === 'Table');
       expect(tables.length).toBeGreaterThan(0);
@@ -72,6 +82,11 @@ describe('S1d 정책 목록 — PC 테이블 + 모바일 카드 (G7 responsive)'
       expect(allDivs.length).toBeGreaterThan(0);
     });
 
+    /**
+     * 모바일 카드는 기본 숨김 + responsive.mobile.if=true 다.
+     * @scenario component=identity_policy_list
+     * @effects identity_policy_list_responsive_split
+     */
     it('모바일 카드 컨테이너는 기본 if = false + responsive.mobile.if = true', () => {
       const mobileCardContainers = collectNodes(policiesPartial, (n) => {
         if (n.name !== 'Div') return false;
@@ -91,11 +106,21 @@ describe('S1d 정책 목록 — PC 테이블 + 모바일 카드 (G7 responsive)'
   });
 
   describe('Enabled 토글 컴포넌트', () => {
+    /**
+     * 사용 여부에 Toggle 컴포넌트를 쓴다.
+     * @scenario component=identity_policy_list
+     * @effects identity_policy_enabled_toggle_saves
+     */
     it('Toggle composite 컴포넌트가 사용되어야 함 (Span 배지 단독 사용 금지)', () => {
       const toggles = collectNodes(policiesPartial, (n) => n.name === 'Toggle');
       expect(toggles.length).toBeGreaterThan(0);
     });
 
+    /**
+     * Toggle checked 가 policy.enabled 에 바인딩된다.
+     * @scenario component=identity_policy_list
+     * @effects identity_policy_enabled_toggle_saves
+     */
     it('Toggle 의 checked prop 은 policy.enabled 에 바인딩', () => {
       const toggles = collectNodes(policiesPartial, (n) => n.name === 'Toggle');
       const checkedProps = toggles.map((t) => t.props?.checked);
@@ -105,6 +130,11 @@ describe('S1d 정책 목록 — PC 테이블 + 모바일 카드 (G7 responsive)'
       expect(hasPolicyEnabled).toBe(true);
     });
 
+    /**
+     * Toggle 변경이 정책 PUT 을 부른다.
+     * @scenario component=identity_policy_list
+     * @effects identity_policy_enabled_toggle_saves
+     */
     it('Toggle change 액션이 PUT /api/admin/identity/policies/{policy.id} 호출', () => {
       const toggles = collectNodes(policiesPartial, (n) => n.name === 'Toggle');
       const apiCalls = toggles.flatMap((t) =>
@@ -123,6 +153,11 @@ describe('S1d 정책 목록 — PC 테이블 + 모바일 카드 (G7 responsive)'
       expect(matchingCalls.length).toBeGreaterThan(0);
     });
 
+    /**
+     * Toggle 요청 본문에 enabled 가 실린다.
+     * @scenario component=identity_policy_list
+     * @effects identity_policy_enabled_toggle_saves
+     */
     it('Toggle apiCall body 에 enabled 키 전송', () => {
       const toggles = collectNodes(policiesPartial, (n) => n.name === 'Toggle');
       const apiCalls = toggles.flatMap((t) =>
@@ -137,6 +172,11 @@ describe('S1d 정책 목록 — PC 테이블 + 모바일 카드 (G7 responsive)'
       expect(hasEnabledBody).toBe(true);
     });
 
+    /**
+     * 저장 성공 후 policies 데이터소스를 다시 읽는다.
+     * @scenario component=identity_policy_list
+     * @effects identity_policy_enabled_toggle_saves
+     */
     it('Toggle 변경 후 onSuccess 에서 policies 데이터소스 refetch', () => {
       const toggles = collectNodes(policiesPartial, (n) => n.name === 'Toggle');
       const refetches = toggles.flatMap((t) =>
@@ -151,11 +191,21 @@ describe('S1d 정책 목록 — PC 테이블 + 모바일 카드 (G7 responsive)'
      * 회귀 사례: confirm 핸들러는 등록되어 있지 않아 "Unknown action handler: confirm" 에러로 삭제 자체 실행 불가.
      * 기존 admin_role_list/_modal_delete.g7.html 과 동일한 setState + openModal 패턴으로 교체 + 모달 측에서 스피너/disabled 처리.
      */
+    /**
+     * 삭제 버튼이 confirm 핸들러를 쓰지 않는다.
+     * @scenario component=identity_policy_list
+     * @effects identity_policy_delete_uses_modal
+     */
     it('삭제 버튼 actions 에 confirm 핸들러 미사용', () => {
       const partialStr = JSON.stringify(policiesPartial);
       expect(partialStr).not.toMatch(/"handler"\s*:\s*"confirm"/);
     });
 
+    /**
+     * 삭제 버튼이 setState + openModal 시퀀스를 쓴다.
+     * @scenario component=identity_policy_list
+     * @effects identity_policy_delete_uses_modal
+     */
     it('삭제 버튼은 sequence(setState identityPolicyDeleteId + openModal identity_policy_delete_modal) 패턴 사용', () => {
       const sequences = collectNodes(policiesPartial, (n) => n.handler === 'sequence');
       const deleteSequences = sequences.filter((seq) => {
@@ -176,6 +226,11 @@ describe('S1d 정책 목록 — PC 테이블 + 모바일 카드 (G7 responsive)'
   });
 
   describe('모바일 카드 내용 — 키/타깃/토글 노출', () => {
+    /**
+     * 모바일 카드에 policy.key 가 보인다.
+     * @scenario component=identity_policy_list
+     * @effects identity_policy_mobile_card_content
+     */
     it('모바일 카드 컨테이너 안에 policy.key 바인딩 텍스트 존재', () => {
       const mobileContainers = collectNodes(policiesPartial, (n) => {
         if (n.name !== 'Div') return false;
@@ -192,6 +247,11 @@ describe('S1d 정책 목록 — PC 테이블 + 모바일 카드 (G7 responsive)'
       expect(keyTexts.length).toBeGreaterThan(0);
     });
 
+    /**
+     * 모바일 카드에 Toggle 이 있다.
+     * @scenario component=identity_policy_list
+     * @effects identity_policy_mobile_card_content
+     */
     it('모바일 카드 컨테이너 안에 Toggle 컴포넌트 포함', () => {
       const mobileContainers = collectNodes(policiesPartial, (n) => {
         if (n.name !== 'Div') return false;

@@ -1,0 +1,28 @@
+feature: 이커머스 목록 페이지네이션·불리언 쿼리 게이트
+
+description: |
+  찜·상품 문의·내 문의 목록의 `per_page` 게이트와 문의 목록의 불리언 쿼리 정규화를 잰다.
+  상한만 있고 하한이 없던 때는 0·음수·비숫자가 500 이 되거나 기본값으로 조용히 바뀌었고,
+  과대값은 테이블 전량을 돌려줬다. 쿼리는 언제나 문자열로 도착하므로 `boolean` 규칙만 두면
+  화면이 보내는 `exclude_secret=false` 에서 목록 전체가 422 가 되어 문의 탭이 비어 보인다.
+
+# axis 의미:
+#   case — 목록 × 입력 형태. 목록마다 잴 입력이 달라 교차곱 대신 실제로 재는 경우만 세운다.
+axes:
+  case:
+    - wishlist_out_of_range
+    - wishlist_in_range
+    - product_inquiry_out_of_range
+    - user_inquiry_out_of_range
+    - product_inquiry_boolean_spellings
+    - product_inquiry_non_boolean
+    - user_inquiry_boolean_spellings
+
+effects:
+  - list_per_page_out_of_range_is_rejected
+  - list_per_page_in_range_is_applied
+  - inquiry_list_accepts_query_string_boolean_spellings
+  - inquiry_list_rejects_non_boolean_value
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/ListPaginationGuardTest.php

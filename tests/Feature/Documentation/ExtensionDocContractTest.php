@@ -47,6 +47,12 @@ class ExtensionDocContractTest extends TestCase
 
     /**
      * `_bundled` 스캔이 번들 확장 전수를 발견하는지 확인합니다.
+     *
+     * @scenario check=inventory
+     *
+     * @effects inventory_discovers_every_bundled_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_inventory_discovers_every_bundled_extension(): void
     {
@@ -79,6 +85,12 @@ class ExtensionDocContractTest extends TestCase
      *
      * 백로그 자신도 검사 대상입니다 — 실재하지 않는 확장이 남아 있으면 목록이 낡은 것이고,
      * 문서를 갖춘 확장이 남아 있으면 지워야 할 줄을 지우지 않은 것입니다.
+     *
+     * @scenario check=document_set
+     *
+     * @effects documented_extensions_have_required_documents
+     *
+     * @return void 반환값 없음
      */
     public function test_documented_extensions_have_every_required_document(): void
     {
@@ -154,6 +166,12 @@ class ExtensionDocContractTest extends TestCase
      *
      * 백로그 확장은 제외합니다 — 표준 골격 이전에 손으로 쓰인 README 5개가 그 상태이며,
      * 재정비는 집필 단계의 작업입니다. 백로그에서 빠지는 순간 이 검사가 전면 적용됩니다.
+     *
+     * @scenario check=sections
+     *
+     * @effects documents_have_required_sections_and_blocks
+     *
+     * @return void 반환값 없음
      */
     public function test_existing_documents_have_required_sections_and_blocks(): void
     {
@@ -199,6 +217,12 @@ class ExtensionDocContractTest extends TestCase
      *
      * 훅은 다른 확장이 잡는 계약이므로, 문서와 코드가 어긋나면 그 확장이 잡을 수 없는
      * 훅 이름을 문서가 광고하게 됩니다.
+     *
+     * @scenario check=generated_blocks
+     *
+     * @effects generated_hook_blocks_match_source
+     *
+     * @return void 반환값 없음
      */
     public function test_generated_blocks_match_measured_source(): void
     {
@@ -251,6 +275,12 @@ class ExtensionDocContractTest extends TestCase
      * 없어 실질 대상이 0건입니다. 그래서 판정식이 깨져도 계속 초록입니다 — "드리프트 없음"
      * 과 "드리프트를 보지 않음" 이 구분되지 않습니다. 낡은 훅 표를 심은 합성 문서로 판정식이
      * 실제로 드리프트를 잡는지 고정합니다.
+     *
+     * @scenario check=generated_blocks
+     *
+     * @effects drift_detection_catches_stale_hook_table
+     *
+     * @return void 반환값 없음
      */
     public function test_drift_detection_actually_detects_drift(): void
     {
@@ -281,6 +311,12 @@ class ExtensionDocContractTest extends TestCase
      * 발행하는 확장이 "훅을 발행하지 않습니다" 로 문서화됩니다. 그래서 확장이 `getHooks()` 로
      * 선언한 목록이 1차 출처입니다 — 이 계약이 깨지면 그 확장의 확장점이 통째로 비공개가 되고,
      * 문서는 사실이 아닌 문장을 광고합니다.
+     *
+     * @scenario check=generated_blocks
+     *
+     * @effects declared_hooks_reach_published_table
+     *
+     * @return void 반환값 없음
      */
     public function test_declared_hooks_reach_the_published_table(): void
     {
@@ -329,6 +365,12 @@ class ExtensionDocContractTest extends TestCase
      *
      * 이 계약이 깨지면 사람이 쓴 서술이 재생성 때마다 소실됩니다 — `api:docgen` 이 과거
      * 34,000줄을 날린 사고가 그 형태였고, 그래서 이 생성기에는 파괴적 재생성 플래그가 없습니다.
+     *
+     * @scenario check=generator
+     *
+     * @effects block_replacement_preserves_human_text
+     *
+     * @return void 반환값 없음
      */
     public function test_block_replacement_preserves_human_text(): void
     {
@@ -385,6 +427,12 @@ class ExtensionDocContractTest extends TestCase
      *
      * 내부 검사 도구(`check-extension-docs.cjs` · 미채움 audit 룰)가 같은 목록을
      * 쓰는지는 그 도구들과 함께 있는 하네스 테스트가 대조합니다.
+     *
+     * @scenario check=sections
+     *
+     * @effects todo_marker_list_fixed_and_distinct
+     *
+     * @return void 반환값 없음
      */
     public function test_todo_marker_list_is_fixed_and_distinct(): void
     {
@@ -414,6 +462,12 @@ class ExtensionDocContractTest extends TestCase
      * 검사를 전부 통과해, 비어 있는 문서가 완비로 집계됩니다.
      *
      * 내부 검사 도구가 같은 수를 세는지는 그 도구와 함께 있는 하네스 테스트가 대조합니다.
+     *
+     * @scenario check=sections
+     *
+     * @effects empty_intent_blocks_counted
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_intent_blocks_are_counted(): void
     {
@@ -436,6 +490,12 @@ class ExtensionDocContractTest extends TestCase
      * 모든 번들 확장에서 수집기와 렌더러가 예외 없이 동작해야 합니다.
      *
      * 확장 하나의 특이 구조(다국어 배열 라벨 등)가 생성 전체를 중단시키는 것을 막습니다.
+     *
+     * @scenario check=generator
+     *
+     * @effects every_extension_renders_without_error
+     *
+     * @return void 반환값 없음
      */
     public function test_every_extension_renders_without_error(): void
     {
@@ -502,6 +562,12 @@ class ExtensionDocContractTest extends TestCase
      * `| 모델 | 테이블 |` 을 싣습니다 — 헤딩을 통째로 지워도 통과합니다. 실측 선례:
      * `sirsoft-gdpr/README.md` 는 `## 변경 이력` 헤딩이 없는데 본문에 그 낱말이 3회
      * 등장한다는 이유로 "섹션 있음" 으로 판정됐습니다.
+     *
+     * @scenario check=sections
+     *
+     * @effects section_detection_requires_heading
+     *
+     * @return void 반환값 없음
      */
     public function test_section_detection_requires_a_heading_not_a_word(): void
     {
@@ -540,6 +606,12 @@ class ExtensionDocContractTest extends TestCase
      * 헤딩 존재와 블록 마커 존재를 각각만 보면 짝이 어긋나도 전부 초록입니다 — 절을
      * 하나 끼우는 순간 그 뒤 블록이 통째로 밀려 엉뚱한 헤딩 밑에 박히는데, 그 상태가
      * 어떤 게이트에도 걸리지 않습니다.
+     *
+     * @scenario check=generator
+     *
+     * @effects skeleton_places_blocks_under_own_section
+     *
+     * @return void 반환값 없음
      */
     public function test_skeleton_places_each_block_under_its_own_section(): void
     {
@@ -594,6 +666,12 @@ class ExtensionDocContractTest extends TestCase
      *
      * 그 어구와 집계 블록 마커를 내부 인덱스 스캐너가 그대로 알고 있는지는 그 스캐너와
      * 함께 있는 하네스 테스트가 대조합니다.
+     *
+     * @scenario check=generated_blocks
+     *
+     * @effects surface_failure_notice_reaches_measured_blocks
+     *
+     * @return void 반환값 없음
      */
     public function test_surface_notice_reaches_every_measured_block(): void
     {
@@ -651,6 +729,12 @@ class ExtensionDocContractTest extends TestCase
      * 주장이 된다"). 그 계약은 소비처가 지키지 않으면 그 자리에서 끝납니다 — 배지가
      * `?? 0` 으로 받으면 수집기가 구분해 올린 값이 다시 0 이 되고, 템플릿은 표면 실패
      * 통지 대상이 아니라 단서도 남지 않아 인덱스가 그 0 을 실측으로 옮깁니다.
+     *
+     * @scenario check=generated_blocks
+     *
+     * @effects unmeasured_stats_not_collapsed_to_zero
+     *
+     * @return void 반환값 없음
      */
     public function test_unmeasured_stats_do_not_collapse_to_zero(): void
     {
@@ -701,6 +785,12 @@ class ExtensionDocContractTest extends TestCase
      * 요약 표는 절 이름을 문자열로 다시 적어 앵커를 만듭니다. 절 이름을 바꾸면 헤딩
      * 검사는 통과하는데 요약의 링크만 조용히 끊깁니다 — 앵커 유효성을 보는 장치가
      * 없었습니다.
+     *
+     * @scenario check=sections
+     *
+     * @effects summary_anchors_point_at_real_sections
+     *
+     * @return void 반환값 없음
      */
     public function test_summary_anchors_point_at_real_sections(): void
     {
@@ -735,6 +825,12 @@ class ExtensionDocContractTest extends TestCase
      * 템플릿 유형은 API·모델·훅 문서를 요구하지 않아야 합니다.
      *
      * 유형별 골격 분기가 사라지면 템플릿에 채울 수 없는 문서가 요구됩니다.
+     *
+     * @scenario check=document_set
+     *
+     * @effects document_set_differs_by_extension_type
+     *
+     * @return void 반환값 없음
      */
     public function test_document_set_differs_by_extension_type(): void
     {
@@ -764,6 +860,12 @@ class ExtensionDocContractTest extends TestCase
      *
      * 이 축은 저장소에 문서가 0세트인 동안 실측이 항상 0건이라, 검출부가 깨져도
      * `--check` 이슈 수만 줄고 아무 게이트도 붉어지지 않습니다. 검출식을 직접 겨눕니다.
+     *
+     * @scenario check=sections
+     *
+     * @effects orphan_block_detection_alive
+     *
+     * @return void 반환값 없음
      */
     public function test_orphan_block_detection_is_alive(): void
     {
@@ -800,6 +902,12 @@ class ExtensionDocContractTest extends TestCase
      * 이 축의 결함은 예외도 경고도 남기지 않습니다 — 없는 파일을 요구하거나, 있는
      * 디렉토리를 통째로 빠뜨린 문서가 조용히 커밋됩니다. 그 문서는 골격에 한 번만
      * 쓰이고 자동 생성 블록이 아니라 재생성으로 고쳐지지도 않으므로, 틀린 채로 굳습니다.
+     *
+     * @scenario check=generator
+     *
+     * @effects skeleton_matches_extension_layout
+     *
+     * @return void 반환값 없음
      */
     public function test_skeleton_matches_actual_extension_layout(): void
     {
@@ -944,6 +1052,12 @@ class ExtensionDocContractTest extends TestCase
      *
      * 확장 문서를 대조하지 않고 합성 입력으로 판정하는 이유는, 스케줄을 선언한 확장이
      * 저장소에서 사라지면 실측 대조가 **공허 통과**하기 때문이다.
+     *
+     * @scenario check=generated_blocks
+     *
+     * @effects schedule_period_reads_contract_key
+     *
+     * @return void 반환값 없음
      */
     public function test_schedule_period_reads_the_contract_key(): void
     {
@@ -987,6 +1101,12 @@ class ExtensionDocContractTest extends TestCase
      *
      * 렌더 축도 함께 잠근다. 템플릿은 namespace 가 null 이지만 네임스페이스를 붙여 등록하는
      * 핸들러를 함께 가질 수 있어, 그 경우 "네임스페이스 없음" 으로 적으면 사실과 반대가 된다.
+     *
+     * @scenario check=generated_blocks
+     *
+     * @effects namespaced_handler_keys_survive_collection_and_render
+     *
+     * @return void 반환값 없음
      */
     public function test_namespaced_handler_keys_survive_collection_and_render(): void
     {
@@ -1054,6 +1174,12 @@ class ExtensionDocContractTest extends TestCase
      *
      * `@generated:badges` 블록 안의 version/type/G7/license 배지는 대상이 아니다 — 그것은
      * manifest 에서 오는 flat-square 정보 배지이고 계획서 §1.3 이 유지하기로 한 것이다.
+     *
+     * @scenario check=entry_documents
+     *
+     * @effects readme_leads_with_heading_not_hero_badge
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_readme_leads_with_a_heading_not_a_hero_badge(): void
     {
@@ -1153,6 +1279,12 @@ class ExtensionDocContractTest extends TestCase
      * 기대값은 손으로 적지 않고 생성기와 같은 헬퍼(`ExtensionInventory::docTitle`)에서
      * 만든다 — 규칙을 두 곳에 적으면 한쪽만 고쳐 어긋난다. 골격 생성기 출력도 같은 판정을
      * 받아, 다음 확장이 확장명만 든 제목으로 태어나는 경로를 막는다.
+     *
+     * @scenario check=entry_documents
+     *
+     * @effects entry_document_titles_carry_product_and_type
+     *
+     * @return void 반환값 없음
      */
     public function test_entry_documents_carry_product_and_type_in_their_title(): void
     {
@@ -1231,6 +1363,12 @@ class ExtensionDocContractTest extends TestCase
      * 대상 판정을 파일명 관례(`*ActivityLog*`)가 아니라 실제 `logActivity` 호출로 하는 이유도
      * 같다. 관례를 벗어난 이름도 잡히고, 설명 변수 해석기(`ActivityLogDescriptionResolver` —
      * 기록하지 않고 해석만 한다)는 클래스명을 손으로 열거하지 않아도 빠진다.
+     *
+     * @scenario check=activity_log_hooks
+     *
+     * @effects activity_log_hook_tables_match_listener_subscriptions
+     *
+     * @return void 반환값 없음
      */
     public function test_activity_log_hook_tables_match_listener_subscriptions(): void
     {
@@ -1366,6 +1504,12 @@ class ExtensionDocContractTest extends TestCase
      *
      * 모집단은 열거하지 않고 실측에서 파생합니다 — Playwright 테스트를 새로 갖추는 확장이
      * 생기면 자동으로 편입됩니다.
+     *
+     * @scenario check=playwright
+     *
+     * @effects playwright_command_resolves_extension_config
+     *
+     * @return void 반환값 없음
      */
     public function test_playwright_command_resolves_the_extension_config(): void
     {

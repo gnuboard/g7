@@ -40,6 +40,12 @@ describe('게시판 스킨 — 블라인드 아이콘 색 패리티', () => {
     return found;
   };
 
+  /**
+   * 게시판 스킨 모집단이 디렉토리에서 도출되는지 잰다 (아래 스캔 시험들의 전제).
+   *
+   * @scenario check=population
+   * @effects blinded_icon_skin_population_derived
+   */
   it('스킨 디렉토리에서 모집단이 도출된다', () => {
     // 디렉토리 스캔이 빗나가면 skins 가 비고, 아래 단언들은 루프를 돌지 않아 전부 통과한다.
     // 모집단 자체를 먼저 고정해 그 조용한 통과를 막는다.
@@ -47,6 +53,12 @@ describe('게시판 스킨 — 블라인드 아이콘 색 패리티', () => {
     expect(skins).toContain('gallery');
   });
 
+  /**
+   * 모든 스킨에 블라인드 아이콘이 있는지 잰다.
+   *
+   * @scenario check=population
+   * @effects blinded_icon_present_in_every_skin
+   */
   it('모든 스킨에 블라인드 아이콘이 존재한다', () => {
     // 모집단이 비면 아래 단언이 조용히 통과한다.
     for (const skin of skins) {
@@ -54,6 +66,12 @@ describe('게시판 스킨 — 블라인드 아이콘 색 패리티', () => {
     }
   });
 
+  /**
+   * 어느 스킨도 라이트 배경 대비가 모자란 orange-300 을 쓰지 않는지 잰다.
+   *
+   * @scenario check=contrast
+   * @effects blinded_icon_avoids_low_contrast_orange_300
+   */
   it('어느 스킨도 대비가 모자란 orange-300 을 쓰지 않는다', () => {
     for (const skin of skins) {
       for (const className of blindedIconClasses(skin)) {
@@ -62,6 +80,12 @@ describe('게시판 스킨 — 블라인드 아이콘 색 패리티', () => {
     }
   });
 
+  /**
+   * 모든 스킨이 블라인드 아이콘의 라이트·다크 색을 함께 지정하는지 잰다.
+   *
+   * @scenario check=contrast
+   * @effects blinded_icon_sets_light_and_dark_colors
+   */
   it('모든 스킨이 라이트/다크 양쪽 색을 함께 지정한다', () => {
     for (const skin of skins) {
       for (const className of blindedIconClasses(skin)) {
@@ -71,6 +95,12 @@ describe('게시판 스킨 — 블라인드 아이콘 색 패리티', () => {
     }
   });
 
+  /**
+   * 스킨끼리 블라인드 아이콘 색이 같은지 잰다.
+   *
+   * @scenario check=parity
+   * @effects blinded_icon_color_matches_across_skins
+   */
   it('스킨끼리 같은 색을 쓴다', () => {
     const palettes = skins.map((skin) => {
       const classes = blindedIconClasses(skin);

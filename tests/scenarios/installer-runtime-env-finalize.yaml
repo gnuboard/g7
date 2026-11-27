@@ -114,7 +114,7 @@ effects:
   - upgrade_step_warns_when_env_marked_completed_but_runtime_php_still_exists_no_auto_delete
   - upgrade_step_falls_back_to_env_example_when_env_file_is_absent
   - upgrade_step_preserves_runtime_php_when_env_write_fails_safe_fallback
-  - upgrade_step_logs_skip_when_runtime_php_returns_non_array_format_mismatch
+  - upgrade_step_keeps_runtime_php_and_env_when_runtime_returns_non_array
   - upgrade_step_deletes_state_json_after_merge_when_DELETE_INSTALLER_AFTER_COMPLETE_set
   - upgrade_step_preserves_state_json_when_DELETE_INSTALLER_AFTER_COMPLETE_unset
   # 웹 서버 권한 자동 조정

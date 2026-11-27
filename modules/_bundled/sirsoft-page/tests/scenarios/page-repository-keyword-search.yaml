@@ -1,0 +1,23 @@
+feature: 페이지 저장소 키워드 검색 — 제목·다른 언어 제목·본문 매칭과 미발행 제외
+
+description: |
+  PageRepository 의 searchByKeyword()·countByKeyword() 가 FULLTEXT 로 제목(모든 언어)과 본문을 찾고,
+  미발행 페이지를 빼는지 잰다. 운영 DB 에서 제목 검색이 0건이던 회귀는 기존 제목 시험이 본문 매칭에 얹혀
+  통과해 드러나지 않았다 — 그래서 본문·슬러그에 검색어가 없는 「제목만」 사례를 따로 둔다.
+  건수만 세는 countByKeyword() 는 정확도(정확한 값인지)도 함께 돌려준다.
+
+# axis 의미:
+#   case — 검색어가 어디에 있는가(제목·제목만·다른 언어 제목·본문·본문 건수·미발행).
+axes:
+  case: [title, title_only, other_locale_title, content, count_content, unpublished]
+
+effects:
+  - keyword_search_matches_title
+  - keyword_search_matches_title_without_content_help
+  - keyword_search_matches_other_locale_title
+  - keyword_search_matches_content
+  - keyword_count_includes_content_matches_with_exact_relation
+  - keyword_search_excludes_unpublished_pages
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/Repositories/PageRepositorySearchTest.php

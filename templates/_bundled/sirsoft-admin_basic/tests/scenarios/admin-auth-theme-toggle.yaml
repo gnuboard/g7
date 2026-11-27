@@ -19,6 +19,7 @@ effects:
   - theme_attribute_and_class_applied       # 클릭 한 번에 data-theme 속성과 dark 클래스가 함께 바뀐다
   - theme_persisted_in_local_storage        # g7_color_scheme 이 저장된다 (functional 동의 전에도 — 필수 항목)
   - theme_survives_reload                   # 새로고침 뒤에도 선택이 유지된다
+  - non_allowlisted_key_blocked_before_consent   # 대조군 — 허용목록 밖 키는 동의 전에 여전히 저장되지 않는다(허용목록이 통째로 열린 것이 아님)
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-auth-theme-toggle.spec.ts

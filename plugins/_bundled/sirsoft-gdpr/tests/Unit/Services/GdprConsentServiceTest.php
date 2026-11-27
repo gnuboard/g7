@@ -22,6 +22,11 @@ class GdprConsentServiceTest extends PluginTestCase
     /** @var PluginSettingsService&MockObject */
     private PluginSettingsService $pluginSettings;
 
+    /**
+     * 설정 서비스를 목으로 두고 실제 저장소로 동의 서비스를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,6 +46,15 @@ class GdprConsentServiceTest extends PluginTestCase
         );
     }
 
+    /**
+     * 회원 동의를 저장하면 상태 행과 이력이 함께 생긴다.
+     *
+     * @scenario layer=service, subject=member
+     *
+     * @effects service_update_creates_status_and_history_for_member
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_consent_creates_status_and_history_for_member(): void
     {
         $user = User::factory()->create();
@@ -65,6 +79,15 @@ class GdprConsentServiceTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * 비회원 동의는 상태 행 없이 이력만 남는다.
+     *
+     * @scenario layer=service, subject=guest
+     *
+     * @effects service_update_records_history_only_for_guest
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_consent_records_history_only_for_guest(): void
     {
         $sessionId = 'guest-session-abc';
@@ -80,6 +103,15 @@ class GdprConsentServiceTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * 같은 값을 다시 저장하면 상태·이력·횟수가 늘지 않는다.
+     *
+     * @scenario layer=service, subject=member
+     *
+     * @effects service_update_noop_when_state_unchanged
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_consent_is_noop_when_state_unchanged(): void
     {
         $user = User::factory()->create();
@@ -94,6 +126,15 @@ class GdprConsentServiceTest extends PluginTestCase
         $this->assertSame(1, $consent->consent_count);
     }
 
+    /**
+     * 철회하면 상태가 false 로 바뀌고 철회 시각·출처가 남으며 이력이 하나 더 붙는다.
+     *
+     * @scenario layer=service, subject=member
+     *
+     * @effects service_revoke_appends_history_and_flips_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_revoke_appends_history_and_flips_status(): void
     {
         $user = User::factory()->create();
@@ -114,6 +155,15 @@ class GdprConsentServiceTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * 철회 뒤 다시 동의하면 동의 횟수가 2 가 된다.
+     *
+     * @scenario layer=service, subject=member
+     *
+     * @effects service_re_grant_increments_consent_count
+     *
+     * @return void 반환값 없음
+     */
     public function test_consent_count_increments_on_re_grant(): void
     {
         $user = User::factory()->create();
@@ -127,6 +177,15 @@ class GdprConsentServiceTest extends PluginTestCase
         $this->assertSame(2, $consent->consent_count);
     }
 
+    /**
+     * 회원 탈퇴 일괄 철회는 켜져 있던 동의만 withdraw 출처로 철회한다.
+     *
+     * @scenario layer=service, subject=member
+     *
+     * @effects service_withdraw_revokes_only_active_consents
+     *
+     * @return void 반환값 없음
+     */
     public function test_revoke_all_on_withdraw_revokes_only_active_consents(): void
     {
         $user = User::factory()->create();
@@ -147,6 +206,15 @@ class GdprConsentServiceTest extends PluginTestCase
         $this->assertFalse($marketing->is_consented);
     }
 
+    /**
+     * 회원을 지우면 상태 행은 지우고 이력은 user_id 를 비워 남긴다.
+     *
+     * @scenario layer=service, subject=member
+     *
+     * @effects service_user_delete_purges_status_and_anonymizes_history
+     *
+     * @return void 반환값 없음
+     */
     public function test_purge_on_user_delete_removes_status_and_anonymizes_history(): void
     {
         $user = User::factory()->create();
@@ -164,6 +232,15 @@ class GdprConsentServiceTest extends PluginTestCase
         $this->assertSame(2, GdprUserConsentHistory::whereNull('user_id')->count());
     }
 
+    /**
+     * 정책 버전이 오르면 옛 버전 동의 회원은 재동의가 필요하다고 본다.
+     *
+     * @scenario layer=service, subject=member
+     *
+     * @effects needs_renewal_true_when_db_policy_version_advanced
+     *
+     * @return void 반환값 없음
+     */
     public function test_needs_renewal_detects_outdated_policy_version(): void
     {
         $user = User::factory()->create();
@@ -180,6 +257,15 @@ class GdprConsentServiceTest extends PluginTestCase
         $this->assertTrue($this->service->needsRenewal($user->id));
     }
 
+    /**
+     * 동의 버전이 현재 정책 버전과 같으면 재동의가 필요 없다.
+     *
+     * @scenario layer=service, subject=member
+     *
+     * @effects needs_renewal_false_when_versions_match_current
+     *
+     * @return void 반환값 없음
+     */
     public function test_needs_renewal_false_when_versions_match(): void
     {
         $user = User::factory()->create();
@@ -189,6 +275,15 @@ class GdprConsentServiceTest extends PluginTestCase
         $this->assertFalse($this->service->needsRenewal($user->id));
     }
 
+    /**
+     * 켜져 있는 동의 목록에는 철회한 항목이 빠진다.
+     *
+     * @scenario layer=service, subject=member
+     *
+     * @effects service_active_consents_exclude_revoked
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_active_consents_excludes_revoked(): void
     {
         $user = User::factory()->create();
@@ -210,6 +305,12 @@ class GdprConsentServiceTest extends PluginTestCase
      * 필수 카테고리는 동의 축에서 제외되어 status 에 저장되지 않으므로
      * 이 맵에도 등장하지 않는다. 자동 차단 엔진(blocker.ts)은 necessary 를 맵 유무와
      * 무관하게 항상 허용하므로(category==='necessary' → true) 필수 부재가 안전하다.
+     *
+     * @scenario layer=service, subject=member
+     *
+     * @effects service_current_cookie_consents_map_for_member
+     *
+     * @return void 반환값 없음
      */
     public function test_get_current_cookie_consents_returns_category_map_for_member(): void
     {
@@ -233,6 +334,12 @@ class GdprConsentServiceTest extends PluginTestCase
 
     /**
      * 게스트는 history append-only 이므로 가장 최근 action 으로 카테고리별 동의 결정.
+     *
+     * @scenario layer=service, subject=guest
+     *
+     * @effects service_current_cookie_consents_from_latest_guest_history
+     *
+     * @return void 반환값 없음
      */
     public function test_get_current_cookie_consents_uses_latest_history_for_guest(): void
     {
@@ -253,6 +360,12 @@ class GdprConsentServiceTest extends PluginTestCase
 
     /**
      * 정책 버전이 다른 동의는 결과에서 제외 (재동의 트리거).
+     *
+     * @scenario layer=service, subject=member
+     *
+     * @effects service_current_cookie_consents_exclude_outdated_policy
+     *
+     * @return void 반환값 없음
      */
     public function test_get_current_cookie_consents_excludes_outdated_policy_version(): void
     {
@@ -276,6 +389,12 @@ class GdprConsentServiceTest extends PluginTestCase
 
     /**
      * 식별자 미제공 또는 동의 없음 → 빈 배열 반환.
+     *
+     * @scenario layer=service, subject=guest
+     *
+     * @effects service_current_cookie_consents_empty_without_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_get_current_cookie_consents_returns_empty_when_no_identifier(): void
     {
@@ -290,6 +409,12 @@ class GdprConsentServiceTest extends PluginTestCase
      * 즉시 return 되어 status.policy_version 이 v1 에 머무르고 history 도 미생성.
      * 결과: hasCurrentCookieConsent(v2) → false → needs_renewal 영구 true (Art.7(1) 입증 책임 위반).
      * 가드는 (is_consented 동일) AND (policy_version 동일) 일 때만 noop 이어야 함.
+     *
+     * @scenario layer=service, subject=member
+     *
+     * @effects service_update_renews_policy_version_when_value_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_update_consent_renews_policy_version_when_value_unchanged_after_policy_bump(): void
     {
@@ -328,6 +453,12 @@ class GdprConsentServiceTest extends PluginTestCase
 
     /**
      * 같은 정책 버전 안에서 같은 값 재요청은 여전히 noop (중복 이력 방지 의도 유지).
+     *
+     * @scenario layer=service, subject=member
+     *
+     * @effects service_update_noop_within_same_policy_version
+     *
+     * @return void 반환값 없음
      */
     public function test_update_consent_noop_still_holds_within_same_policy_version(): void
     {
@@ -353,6 +484,8 @@ class GdprConsentServiceTest extends PluginTestCase
      * @scenario entry=reject, subject=member, category=optional
      *
      * @effects rejection_marks_optional_consent_as_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_rejection_marks_optional_consent_as_rejected(): void
     {
@@ -383,6 +516,8 @@ class GdprConsentServiceTest extends PluginTestCase
      * @scenario entry=reject, subject=member, category=optional
      *
      * @effects rejection_persists_even_when_status_already_false
+     *
+     * @return void 반환값 없음
      */
     public function test_rejection_persists_even_when_status_already_false(): void
     {
@@ -415,6 +550,8 @@ class GdprConsentServiceTest extends PluginTestCase
      * @scenario entry=reject, subject=member, category=required
      *
      * @effects required_category_excluded_from_status
+     *
+     * @return void 반환값 없음
      */
     public function test_required_category_is_excluded_from_status_and_history(): void
     {
@@ -445,6 +582,8 @@ class GdprConsentServiceTest extends PluginTestCase
      * @scenario entry=reject_then_reaccept, subject=member, category=optional
      *
      * @effects re_consent_clears_rejection_flag_but_keeps_history
+     *
+     * @return void 반환값 없음
      */
     public function test_re_consent_clears_rejection_flag_but_keeps_history(): void
     {
@@ -481,6 +620,8 @@ class GdprConsentServiceTest extends PluginTestCase
      * @scenario entry=reject, subject=guest, category=optional
      *
      * @effects guest_rejection_records_history_only
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_rejection_records_history_only(): void
     {
@@ -504,6 +645,8 @@ class GdprConsentServiceTest extends PluginTestCase
      * @scenario entry=save_selection, subject=member, category=optional
      *
      * @effects without_rejection_intent_false_is_revoked_not_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_without_rejection_intent_false_is_revoked_not_rejected(): void
     {
@@ -529,6 +672,8 @@ class GdprConsentServiceTest extends PluginTestCase
      * @scenario entry=reject, subject=member, category=optional
      *
      * @effects update_consents_batch_applies_rejection_to_optional_only, required_category_excluded_from_status
+     *
+     * @return void 반환값 없음
      */
     public function test_update_consents_batch_applies_rejection_to_optional_only(): void
     {

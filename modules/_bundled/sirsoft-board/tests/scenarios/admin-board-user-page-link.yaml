@@ -1,0 +1,17 @@
+feature: 관리자 게시판 화면의 「유저 화면 보기」 링크
+
+description: |
+  관리자 게시글 목록·상세 화면에서 같은 게시판의 사용자 화면으로 바로 가는 링크를 둔다. 링크는
+  사용자 화면의 같은 경로(목록은 /board/{slug}, 상세는 /board/{slug}/{id})를 새 탭으로 열고,
+  노출 조건 없이 늘 보인다. 레이아웃 JSON 을 직접 읽어 잰다.
+
+axes:
+  screen: [posts_index, post_detail]
+
+effects:
+  - admin_screen_has_user_page_link
+  - user_page_link_opens_matching_user_route_in_new_tab
+  - user_page_link_always_visible
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-cross-navigation.test.tsx

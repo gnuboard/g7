@@ -30,6 +30,11 @@ class CoreListPayloadPruningTest extends TestCase
 
     private string $token;
 
+    /**
+     * 역할·메뉴 조회 권한을 가진 관리자와 인증 토큰을 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -94,7 +99,11 @@ class CoreListPayloadPruningTest extends TestCase
         return $user->fresh();
     }
 
-    /** 인증 헤더가 붙은 요청 헬퍼 */
+    /**
+     * 인증 헤더가 붙은 요청 헬퍼
+     *
+     * @return static Bearer 토큰과 JSON 수락 헤더가 붙은 테스트 인스턴스
+     */
     private function authRequest(): static
     {
         return $this->withHeaders([
@@ -115,6 +124,8 @@ class CoreListPayloadPruningTest extends TestCase
      * @scenario resource=role,endpoint=list,observation=response_payload
      *
      * @effects list_omits_role_permissions
+     *
+     * @return void 반환값 없음
      */
     public function test_role_list_omits_permission_payload(): void
     {
@@ -163,6 +174,8 @@ class CoreListPayloadPruningTest extends TestCase
      * @scenario resource=role,endpoint=list,observation=response_payload
      *
      * @effects list_omits_role_permissions
+     *
+     * @return void 반환값 없음
      */
     public function test_role_list_permission_count_is_zero_not_missing_when_role_has_none(): void
     {
@@ -187,6 +200,12 @@ class CoreListPayloadPruningTest extends TestCase
 
     /**
      * 역할 목록이 쓰는 표시 필드는 그대로 남는다 (기능 축소 아님).
+     *
+     * @scenario resource=role,endpoint=list,observation=response_payload
+     *
+     * @effects role_list_keeps_display_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_role_list_keeps_display_fields(): void
     {
@@ -207,6 +226,8 @@ class CoreListPayloadPruningTest extends TestCase
      * @scenario resource=role,endpoint=detail,observation=response_payload
      *
      * @effects detail_still_returns_full_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_role_detail_still_provides_permissions(): void
     {
@@ -231,6 +252,8 @@ class CoreListPayloadPruningTest extends TestCase
      * 종전에는 행마다 계층 트리를 만들며 상위/카테고리 권한을 다시 조회했다.
      *
      * @effects query_count_does_not_scale_with_row_count
+     *
+     * @return void 반환값 없음
      */
     public function test_role_list_query_count_does_not_grow_with_rows(): void
     {
@@ -287,6 +310,8 @@ class CoreListPayloadPruningTest extends TestCase
      * @scenario resource=menu,endpoint=list,observation=response_payload
      *
      * @effects list_omits_menu_child_roles, menu_detail_provides_child_roles
+     *
+     * @return void 반환값 없음
      */
     public function test_menu_list_child_omits_roles_while_parent_keeps_them(): void
     {

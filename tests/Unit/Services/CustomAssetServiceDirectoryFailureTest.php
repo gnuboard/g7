@@ -20,6 +20,11 @@ class CustomAssetServiceDirectoryFailureTest extends TestCase
     /** 테스트용 가짜 플러그인 식별자 */
     private const FAKE_PLUGIN = 'g7test-dirfail';
 
+    /**
+     * 테스트용 가짜 플러그인 디렉토리를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory(base_path('plugins/'.self::FAKE_PLUGIN));
@@ -36,6 +41,8 @@ class CustomAssetServiceDirectoryFailureTest extends TestCase
      * @scenario custom_source=convention_scan, custom_asset=css
      *
      * @effects custom_directory_failure_explains_reason_and_action
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 디렉토리_생성_실패는_사유와_조치를_함께_알린다(): void
@@ -70,6 +77,8 @@ class CustomAssetServiceDirectoryFailureTest extends TestCase
      * 사유 코드 4종은 ko/en 양쪽에 번역이 있다 — 없는 코드는 키 문자열이 화면에 나간다.
      *
      * @effects custom_directory_failure_explains_reason_and_action
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 사유_코드_4종은_양_로케일에_번역이_있다(): void

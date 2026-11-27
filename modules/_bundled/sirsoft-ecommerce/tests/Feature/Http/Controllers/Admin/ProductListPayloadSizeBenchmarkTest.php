@@ -29,6 +29,11 @@ class ProductListPayloadSizeBenchmarkTest extends ModuleTestCase
 
     protected User $adminUser;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,6 +46,8 @@ class ProductListPayloadSizeBenchmarkTest extends ModuleTestCase
      *
      * 옵션은 상품당 20건씩 총 2,000행이라 개별 insert 로는 계측보다 시딩이 오래 걸린다.
      * 벌크 insert 로 넣되 모델 캐스팅(JSON 컬럼)은 직접 인코딩한다.
+     *
+     * @return void 반환값 없음
      */
     private function seedDataset(): void
     {
@@ -103,6 +110,7 @@ class ProductListPayloadSizeBenchmarkTest extends ModuleTestCase
      * 목록 응답 크기가 옵션 전량 포함 대비 크게 줄고, 쿼리 수는 늘지 않는다.
      *
      * @effects list_payload_bytes_reduced, query_count_not_increased
+     * @return void 반환값 없음
      */
     public function test_reports_payload_size_and_query_count(): void
     {

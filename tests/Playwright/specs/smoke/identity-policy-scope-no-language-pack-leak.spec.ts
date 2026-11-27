@@ -19,8 +19,7 @@
  * waitForResponse 로 기다린 뒤 판정한다 (고정 sleep 은 토큰 주입 환경의 느린 부트스트랩에서
  * 데이터 미완료 시점에 단언될 수 있어 불안정 — 응답 대기로 대체).
  *
- * @scenario source=settings-tab-scope-filter, axis=tab:identity, tab=language_packs
- * @effects no-cross-tab-422, no-error-toast, per-tab-datasource-isolation
+ * 효과 요약(마커 아님 — 평문): 탭 사이 422 없음, 오류 토스트 없음, 탭별 데이터소스 격리. 마킹은 각 test 위에 있다.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -59,6 +58,11 @@ function captureRequests(page: import('@playwright/test').Page) {
   return { policyReqs, langPackReqs, any422 };
 }
 
+/**
+ * @scenario tab=identity, entry=url_direct
+ *
+ * @effects other_tab_datasource_not_requested, no_scope_422_or_error_toast, active_tab_scope_filter_applied
+ */
 test('@smoke 본인인증 탭 scope=hook → 언어팩 누출/422/토스트 없음 + 정책 필터(scope=hook) 동작 + 언어팩 미fetch', async ({ page }) => {
   const token = settingsToken();
   await authenticatePage(page, token);
@@ -88,6 +92,11 @@ test('@smoke 본인인증 탭 scope=hook → 언어팩 누출/422/토스트 없�
   ).toBe(true);
 });
 
+/**
+ * @scenario tab=language_packs, entry=url_direct
+ *
+ * @effects other_tab_datasource_not_requested, no_scope_422_or_error_toast, active_tab_scope_filter_applied
+ */
 test('@smoke 언어팩 탭 scope=module → 정책 누출/422/토스트 없음 + 언어팩 필터(scope=module) 동작 + 정책 미fetch', async ({ page }) => {
   const token = settingsToken();
   await authenticatePage(page, token);
@@ -143,6 +152,11 @@ const policyListMatcher = (r: import('@playwright/test').Response) =>
 const langPackMatcher = (r: import('@playwright/test').Response) =>
   r.url().includes('/api/admin/language-packs') && /[?&]exclude_protected/.test(r.url());
 
+/**
+ * @scenario tab=language_packs, entry=tab_click
+ *
+ * @effects tab_click_switch_fetches_new_tab_datasource, no_scope_422_or_error_toast
+ */
 test('@smoke 본인인증 탭 → 언어팩 탭 "클릭 전환" 시 언어팩 데이터소스가 fetch 된다 (탭 전환 동적 반영)', async ({ page }) => {
   const token = settingsToken();
   await authenticatePage(page, token);
@@ -165,6 +179,11 @@ test('@smoke 본인인증 탭 → 언어팩 탭 "클릭 전환" 시 언어팩 �
   await expect(page.getByText('선택한 scope이(가) 올바르지 않습니다', { exact: false })).toHaveCount(0);
 });
 
+/**
+ * @scenario tab=identity, entry=tab_click
+ *
+ * @effects tab_click_switch_fetches_new_tab_datasource, no_scope_422_or_error_toast
+ */
 test('@smoke 언어팩 탭 → 본인인증 탭 "클릭 전환" 시 정책 데이터소스가 fetch 된다 (탭 전환 동적 반영)', async ({ page }) => {
   const token = settingsToken();
   await authenticatePage(page, token);

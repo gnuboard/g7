@@ -23,6 +23,15 @@ use Tests\TestCase;
  */
 class ExtensionRouteCacheInvalidationTest extends TestCase
 {
+    /**
+     * 라우트 캐시 재생성 헬퍼는 재생성 여부와 관계없이 낡은 캐시를 먼저 비운다.
+     *
+     * @scenario case=helper_rebuild
+     *
+     * @effects route_cache_helper_clears_stale_cache_first
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 헬퍼는_언제나_stale_캐시를_먼저_제거한다(): void
     {
@@ -35,6 +44,15 @@ class ExtensionRouteCacheInvalidationTest extends TestCase
         Artisan::shouldHaveReceived('call')->with('route:clear')->once();
     }
 
+    /**
+     * 테스트 환경에서는 헬퍼가 route:cache 를 부르지 않는다.
+     *
+     * @scenario case=helper_testing_env
+     *
+     * @effects route_cache_helper_skips_cache_build_in_testing
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 테스트_환경에서는_캐시를_생성하지_않는다(): void
     {
@@ -46,6 +64,15 @@ class ExtensionRouteCacheInvalidationTest extends TestCase
         Artisan::shouldNotHaveReceived('call', ['route:cache']);
     }
 
+    /**
+     * clear 는 캐시를 비우기만 하고 다시 굽지 않는다.
+     *
+     * @scenario case=helper_clear
+     *
+     * @effects route_cache_helper_clear_does_not_rebuild
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function clear_는_재생성_없이_비우기만_한다(): void
     {
@@ -57,6 +84,15 @@ class ExtensionRouteCacheInvalidationTest extends TestCase
         Artisan::shouldNotHaveReceived('call', ['route:cache']);
     }
 
+    /**
+     * 모듈·플러그인의 설치·활성화·비활성화·삭제·업데이트 메서드가 모두 라우트 캐시 재생성을 부른다.
+     *
+     * @scenario case=lifecycle_sites
+     *
+     * @effects every_extension_lifecycle_route_change_rebuilds_route_cache
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 라우트가_바뀌는_모든_지점이_갱신을_호출한다(): void
     {
@@ -81,6 +117,15 @@ class ExtensionRouteCacheInvalidationTest extends TestCase
         }
     }
 
+    /**
+     * 코어 업데이트 명령과 업그레이드 스텝 명령이 config 캐시와 함께 라우트 캐시를 다시 굽는다.
+     *
+     * @scenario case=core_update_flow
+     *
+     * @effects core_update_flow_rebuilds_route_cache_with_config_cache
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 코어_업데이트_흐름이_라우트_캐시를_되살린다(): void
     {
@@ -107,6 +152,15 @@ class ExtensionRouteCacheInvalidationTest extends TestCase
         }
     }
 
+    /**
+     * 라우트 캐시를 굽는 모든 매니저 메서드에서 상태 캐시 무효화가 재생성보다 앞선다.
+     *
+     * @scenario case=rebuild_order
+     *
+     * @effects route_cache_rebuild_follows_status_cache_invalidation
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 라우트_캐시_재생성은_상태_캐시_무효화_뒤에_온다(): void
     {
@@ -161,6 +215,15 @@ class ExtensionRouteCacheInvalidationTest extends TestCase
         }
     }
 
+    /**
+     * 모듈·플러그인 업데이트 메서드가 상태 복원 뒤 훅 캐시를 다시 만든다.
+     *
+     * @scenario case=update_hook_cache
+     *
+     * @effects extension_update_regenerates_hook_cache_after_status_restore
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 업데이트는_상태_복원_뒤에_훅_캐시를_다시_굽는다(): void
     {

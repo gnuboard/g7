@@ -1,0 +1,19 @@
+feature: 로그인 화면 — 세션 만료 안내 토스트
+
+description: |
+  코어가 401 로 로그인 화면에 `?reason=session_expired` 를 붙여 보내면 로그인 레이아웃 init_actions 의
+  토스트가 「세션이 만료되었다」 고 알린다. if 는 식 전체를 `{{ }}` 로 감싸고 root 의 query 를 읽어야 한다 —
+  부분 보간이면 늘 참이 되고, route.query 경로면 늘 거짓이 되어 토스트가 조용히 사라진다.
+
+# axis 의미:
+#   aspect — init_actions 토스트 액션 구조, i18n 토스트 번역 키
+axes:
+  aspect: [init_actions, i18n]
+
+effects:
+  - login_layout_has_init_actions                       # 로그인 레이아웃에 최상위 init_actions 가 있다
+  - session_expired_toast_registered_with_reason_guard  # 토스트가 {{query?.reason === 'session_expired'}} 조건의 warning 토스트로 등록된다
+  - session_expired_toast_key_translated                # 토스트 번역 키가 ko/en 자원에 있다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/login-session-expired-toast.test.tsx

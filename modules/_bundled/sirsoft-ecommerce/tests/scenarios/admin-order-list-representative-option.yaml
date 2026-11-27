@@ -48,10 +48,16 @@ effects:
   - my_page_list_option_query_count_is_constant
   - my_page_list_rejects_unparseable_with_items
   - list_payload_has_no_empty_object_fields
+  # 레이아웃 원문 계약 (prunedListFieldConsumers.test.ts) — 서버가 줄인 값을 화면이 어떻게 받고 쓰는지
+  - my_page_orders_layout_requests_every_item
+  - my_page_orders_layout_params_have_no_comment_keys
+  - my_page_orders_layout_enumerates_items
+  - admin_order_list_layout_reads_representative_only
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderListDeferredJoinTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserOrderControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/prunedListFieldConsumers.test.ts
 
 notes: |
   E2E 미해당: 변경 범위가 백엔드 전용(Model 관계/Repository/Resource)이며 레이아웃 JSON 은

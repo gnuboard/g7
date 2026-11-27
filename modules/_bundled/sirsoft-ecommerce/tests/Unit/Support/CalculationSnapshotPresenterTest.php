@@ -21,6 +21,11 @@ class CalculationSnapshotPresenterTest extends ModuleTestCase
 
     protected CalculationSnapshotPresenter $presenter;
 
+    /**
+     * 각 테스트 전에 공통 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,6 +33,11 @@ class CalculationSnapshotPresenterTest extends ModuleTestCase
         $this->presenter = app(CalculationSnapshotPresenter::class);
     }
 
+    /**
+     * 각 테스트 뒤에 준비한 상태를 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -36,6 +46,8 @@ class CalculationSnapshotPresenterTest extends ModuleTestCase
 
     /**
      * 결제 통화가 USD 인 2수량 주문을 만듭니다. (부분취소가 재계산 경로를 타게)
+     *
+     * @return \Modules\Sirsoft\Ecommerce\Models\Order 만든 배송완료 주문
      */
     protected function foreignTwoItemOrder()
     {
@@ -60,6 +72,7 @@ class CalculationSnapshotPresenterTest extends ModuleTestCase
      * @scenario screen=detail
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
+     * @return void 반환값 없음
      */
     public function test_mc_snapshots_match_preview(): void
     {
@@ -90,6 +103,7 @@ class CalculationSnapshotPresenterTest extends ModuleTestCase
      * @scenario screen=detail
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
+     * @return void 반환값 없음
      */
     public function test_mc_recalculated_is_null_without_currency_snapshot(): void
     {
@@ -102,6 +116,7 @@ class CalculationSnapshotPresenterTest extends ModuleTestCase
      * 29,000 × 2 = 58,000 → 1개를 정가 35,000 옵션으로 치환하면 64,000. 1개 제외 + 1개 치환이면 35,000.
      *
      * @effects exchange_preview_two_pass_keeps_refund_math
+     * @return void 반환값 없음
      */
     public function test_list_price_total_applies_substitutions(): void
     {
@@ -128,6 +143,7 @@ class CalculationSnapshotPresenterTest extends ModuleTestCase
      * @scenario screen=detail
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
+     * @return void 반환값 없음
      */
     public function test_mc_original_follows_the_frozen_amounts_not_the_live_order(): void
     {
@@ -162,6 +178,7 @@ class CalculationSnapshotPresenterTest extends ModuleTestCase
      * 미리보기는 주문과 스냅샷이 같은 시점이라 넘길 동결값이 없다 — 그 경로를 깨지 않는다.
      *
      * @effects claim_detail_comparison_renders_from_frozen_snapshot
+     * @return void 반환값 없음
      */
     public function test_mc_original_falls_back_to_the_order_when_no_frozen_amounts_are_given(): void
     {

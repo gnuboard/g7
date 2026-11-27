@@ -35,6 +35,11 @@ class ReportDeletedStatusGuardTest extends ModuleTestCase
 
     private Board $board;
 
+    /**
+     * 각 테스트 전에 필요한 상태를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -88,6 +93,12 @@ class ReportDeletedStatusGuardTest extends ModuleTestCase
 
     /**
      * 영구삭제된 신고건을 다른 상태로 강제 변경 요청하면 422 로 거부되고 상태가 불변임을 검증합니다.
+     *
+     * @scenario endpoint=update_status, input=invalid
+     *
+     * @effects deleted_report_status_change_rejected_422, deleted_report_status_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_force_status_change_on_deleted_report_is_rejected_with_422(): void
     {
@@ -115,6 +126,12 @@ class ReportDeletedStatusGuardTest extends ModuleTestCase
 
     /**
      * 영구삭제된 신고건을 pending/rejected/suspended 등 어떤 상태로 강제 요청해도 모두 422 임을 검증합니다.
+     *
+     * @scenario endpoint=update_status, input=invalid
+     *
+     * @effects deleted_report_status_change_rejected_422, deleted_report_status_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_force_status_change_on_deleted_report_is_rejected_for_all_targets(): void
     {
@@ -141,6 +158,12 @@ class ReportDeletedStatusGuardTest extends ModuleTestCase
     /**
      * 동일 상태로의 변경 시도(pending → pending)도 전환 규칙 위반으로 422 임을 검증합니다.
      * (A 수정으로 복원되는 전환 검증의 부수 효과 — 동일 상태 전환 차단)
+     *
+     * @scenario endpoint=update_status, input=invalid
+     *
+     * @effects same_status_transition_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_same_status_transition_is_rejected_with_422(): void
     {
@@ -160,6 +183,12 @@ class ReportDeletedStatusGuardTest extends ModuleTestCase
     /**
      * 정상 전환(pending → review)은 200 으로 처리되고 상태가 변경됨을 검증합니다.
      * (A 수정이 정상 전환을 깨지 않음을 보장하는 회귀 가드)
+     *
+     * @scenario endpoint=update_status, input=valid
+     *
+     * @effects valid_status_transition_saved
+     *
+     * @return void 반환값 없음
      */
     public function test_valid_status_transition_still_succeeds(): void
     {

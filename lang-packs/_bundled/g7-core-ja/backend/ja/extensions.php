@@ -166,7 +166,7 @@ return [
         'force_label' => '警告を無視して強制アップデート(非推奨)',
     ],
     'commands' => [
-        // extension:trust-key, extension:keygen, extension:sign 명령 출력 
+        // extension:trust-key, extension:keygen, extension:sign 명령 출력
         'trust_key' => [
             'invalid_action' => '操作は add・remove・list のいずれかである必要があります。',
             'public_key_missing' => 'add には公開鍵(base64)の引数が必要です。',

@@ -24,7 +24,7 @@ class NumericRangeFilterZeroBoundaryTest extends ModuleTestCase
     /**
      * 0 이 유효 경계값인 수치 범위 필터 키 목록.
      *
-     * @return array<string, array{0: string, 1: array<int, string>}>
+     * @return array<string, array{0: string, 1: array<int, string>}> 경우 이름 => [저장소 파일, 필터 키 목록]
      */
     public static function rangeFilterProvider(): array
     {
@@ -47,7 +47,14 @@ class NumericRangeFilterZeroBoundaryTest extends ModuleTestCase
     }
 
     /**
+     * 수치 범위 필터가 empty() 판정으로 0 을 미입력처럼 버리지 않고, 필터 키가 소스에 실제로 쓰인다.
+     *
+     * @scenario repository=order, repository=product, repository=coupon
+     * @effects numeric_range_filter_keeps_zero_boundary, numeric_range_filter_keys_are_used
+     *
+     * @param  string  $file  검사할 저장소 소스 파일 경로
      * @param  array<int, string>  $keys  검사할 필터 키 목록
+     * @return void 반환값 없음
      */
     #[DataProvider('rangeFilterProvider')]
     public function test_수치_범위_필터는_empty_판정으로_0을_버리지_않는다(string $file, array $keys): void

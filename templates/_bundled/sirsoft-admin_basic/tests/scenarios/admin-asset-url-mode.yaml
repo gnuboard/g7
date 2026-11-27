@@ -1,0 +1,26 @@
+feature: 자산 URL 이중 모드(extension · extensionless) — 감지·설정·드리프트 안내
+
+description: |
+  환경설정 > 일반의 자산 URL 방식 필드와 감지 버튼, 대시보드의 드리프트 안내, 그리고 감지 핸들러의 프로브 판정을 잰다.
+  감지는 상태코드만 보지 않고 Content-Type 과 매직 토큰으로 판정하며, 결과는 토스트가 아니라 폼 상태로 인라인 안내한다.
+
+# axis 의미:
+#   surface — 설정 화면(settings_general) · 대시보드(dashboard) · 감지 핸들러(probe_handler).
+axes:
+  surface: [settings_general, dashboard, probe_handler]
+
+effects:
+  - asset_url_mode_field_renders_in_both_modes   # 두 모드 모두에서 선택 컨트롤과 감지 버튼이 같게 그려진다
+  - asset_url_mode_detect_result_shown_inline   # 감지 결과는 토스트가 아니라 상태별 인라인 안내로 보이고 초기 상태는 조용하다
+  - asset_url_mode_field_in_dedicated_card   # 자산 URL 방식 항목이 지역화 카드가 아니라 전용 카드에 있다
+  - asset_url_mode_dashboard_drift_notice   # 대시보드는 드리프트가 있을 때만 안내와 이동 버튼을 그린다
+  - asset_url_probe_classifies_modes   # 두 프로브 결과 조합이 extension · extensionless · unavailable 로 갈린다
+  - asset_url_probe_checks_body_not_only_status   # 200 이어도 Content-Type 과 매직 토큰이 맞아야 성공이다
+  - asset_url_probe_survives_network_errors   # fetch 예외가 판정·대시보드를 죽이지 않는다
+  - asset_url_drift_compares_against_saved_mode   # 드리프트는 저장값(없으면 extension) 기준으로 대조하고 판정 불가면 알리지 않는다
+  - asset_url_probe_sends_uncached_pair   # 두 경로를 쌍으로, 캐시 없이 요청한다
+  - asset_url_detect_handler_writes_form_state   # 감지 핸들러가 detecting → 판정 결과를 폼 값·상태에 기록하고 예외 시 unavailable 로 수렴한다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-asset-url-mode.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/detectAssetUrlModeHandler.test.ts

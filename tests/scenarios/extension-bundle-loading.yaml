@@ -84,6 +84,22 @@ effects:
   - zero_byte_bundle_is_statically_published
   - bundle_css_endpoint_declares_css_content_type   # CSS 번들 응답이 text/css 로 나간다
   - bundle_route_takes_precedence_over_asset_route   # bundle.js 가 개별 에셋 라우트에 잡히지 않는다
+  # 클라이언트 로더(ModuleAssetLoader) — 정적 폴백·개별 로딩 순서·번들 실패 표면화·CSS in-flight 공유
+  - bundle_stylesheet_static_miss_falls_back_to_api
+  - non_static_bundle_url_keeps_retry_contract
+  - individual_assets_appended_in_priority_order
+  - individual_scripts_load_with_async_false
+  - individual_js_fetch_starts_in_parallel
+  - individual_css_and_js_both_loaded
+  - individual_assets_empty_list_noop
+  - bundle_script_loads_with_async_false
+  - concat_without_separator_breaks_asi_boundary
+  - bundle_js_failure_rejects_after_retries
+  - bundle_js_retry_recovers
+  - bundle_css_failure_resolves
+  - css_concurrent_load_shares_inflight_promise
+  - css_load_failure_does_not_throw
+  - css_inflight_key_separate_from_js_keyspace
 
 test_files:
   - tests/Unit/Services/ExtensionBundleServiceTest.php

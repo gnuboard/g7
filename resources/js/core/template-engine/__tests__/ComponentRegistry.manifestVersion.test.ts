@@ -9,7 +9,7 @@
  * 하위 호환을 유지하고 그 경로는 v0 캐시 키 + 무버전 URL 을 사용한다
  * (서버는 `?v` 생략 시 현재 버전 폴백).
  *
- * @effects versioned_boot_urls, manifest_cache_keys_are_version_scoped
+ * 효과 요약(마커 아님 — 평문): 버전이 붙은 부팅 URL, 버전별 매니페스트 캐시 키. 마킹은 각 it 위에 있다.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -55,6 +55,9 @@ describe('ComponentRegistry 매니페스트 캐시 버전 (#122)', () => {
             .filter((u: string) => u.includes('/components'));
     }
 
+    /**
+     * @effects versioned_boot_urls
+     */
     it('버전 전달 시 components.json 요청에 `?v` 가 부착된다', async () => {
         const registry = ComponentRegistry.createIsolatedInstance();
         await registry.loadComponents('sirsoft-basic', 'user', 7);
@@ -64,6 +67,9 @@ describe('ComponentRegistry 매니페스트 캐시 버전 (#122)', () => {
         expect(calls[0]).toContain('v=7');
     });
 
+    /**
+     * @effects unversioned_editor_manifest_url_kept
+     */
     it('버전 미전달(편집기 경로) 시 무버전 URL 을 유지한다 (하위 호환)', async () => {
         const registry = ComponentRegistry.createIsolatedInstance();
         await registry.loadComponents('sirsoft-basic', 'user');
@@ -73,6 +79,9 @@ describe('ComponentRegistry 매니페스트 캐시 버전 (#122)', () => {
         expect(calls[0]).not.toContain('v=');
     });
 
+    /**
+     * @effects manifest_cache_keys_are_version_scoped
+     */
     it('정적 manifestCache 키가 버전을 포함해 교차 오염되지 않는다', async () => {
         // v7 로드 → fetch 1회
         const a = ComponentRegistry.createIsolatedInstance();
@@ -91,6 +100,9 @@ describe('ComponentRegistry 매니페스트 캐시 버전 (#122)', () => {
         expect(manifestCalls()).toHaveLength(2);
     });
 
+    /**
+     * @effects manifest_cache_keys_are_version_scoped
+     */
     it('버전 미전달 경로는 v0 캐시 키를 공유한다 (편집기 경로 캐시 유지)', async () => {
         const a = ComponentRegistry.createIsolatedInstance();
         await a.loadComponents('sirsoft-basic', 'user');

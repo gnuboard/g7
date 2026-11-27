@@ -1,0 +1,32 @@
+feature: 통합 검색의 상품 검색 리스너
+
+description: |
+  코어 통합 검색에 상품 결과를 붙이는 리스너(SearchProductsListener)의 훅 구독·검증 규칙 추가·
+  검색 실행·응답 조립을 잰다. 상한이 걸린 총 건수의 정확도 표기는 코어
+  `tests/scenarios/bounded-total-pagination.yaml` 의 효과 이름을 그대로 쓴다.
+
+  조용히 깨지는 지점은 셋이다.
+  ① 상품 탭이 아닌 탭에서 목록까지 조회하면 쓰이지 않는 행을 읽는다 — 건수만 돌려야 한다.
+  ② 권한이 없는 사용자(비회원 포함)에게 상품 결과가 실리면 노출 정책을 우회한다.
+  ③ 응답 조립이 평점·리뷰 수 같은 필드를 떨어뜨리면 카드가 빈 칸으로 그려진다.
+
+# axis 의미:
+#   stage — 리스너의 단계. hook_registration 은 훅 구독·검증 규칙, search 는 검색 실행,
+#           build_response 는 응답 조립이다.
+axes:
+  stage: [hook_registration, search, build_response]
+
+effects:
+  - product_search_listener_subscribes_expected_hooks
+  - product_search_validation_adds_price_sort_and_category_id
+  - product_search_returns_count_only_for_other_tabs
+  - product_search_skips_empty_keyword
+  - product_search_returns_empty_without_permission
+  - product_search_response_skips_without_product_results
+  - product_search_response_passes_items_through_for_all_tab
+  - product_search_response_adds_pagination_for_products_tab
+  - product_search_response_sets_products_count
+  - product_search_response_keeps_rating_fields
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/SearchProductsListenerTest.php

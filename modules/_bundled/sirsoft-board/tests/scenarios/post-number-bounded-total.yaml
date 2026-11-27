@@ -1,0 +1,18 @@
+feature: 게시글 목록 순번 — 총 건수가 상한에서 잘릴 때
+
+description: |
+  내림차순 순번은 총 건수에서 거꾸로 센다. 총 건수가 상한(BoundedCount)에서 잘리면 그 값으로
+  센 순번이 틀리고, 상한을 넘는 깊은 페이지에서는 0 과 음수까지 내려간다. 잘린 총 건수에서는
+  순번을 null 로 두고, 정확한 총 건수와 오름차순(offset 기반) 순번은 그대로 둔다.
+
+axes:
+  case: [exact_desc, truncated_desc, truncated_deep_page_desc, truncated_asc]
+
+effects:
+  - post_number_exact_when_total_exact
+  - post_number_null_when_total_truncated
+  - post_number_never_non_positive
+  - post_number_ascending_unaffected_by_truncation
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/PostNumberBoundedTotalRegressionTest.php

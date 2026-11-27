@@ -1,0 +1,17 @@
+feature: SectionLayout 레이아웃 컴포넌트 계약
+
+description: |
+  SectionLayout 이 section 태그로 자식과 제목·부제목 헤더를 그리고, padding·background·border·shadow·rounded 변형과 사용자 정의 props 를 적용하는지 잰다.
+
+# axis 의미:
+#   component — 이 매니페스트가 다루는 컴포넌트 하나(단위 시험이 직접 그린다).
+axes:
+  component: [section_layout]
+
+effects:
+  - section_layout_renders_children_and_header   # section 태그로 자식을 그리고 제목·부제목이 있을 때만 헤더를 그린다
+  - section_layout_style_variants   # padding·background·border·shadow·rounded 변형과 그 조합이 적용된다
+  - section_layout_custom_props   # 사용자 클래스·인라인 스타일·onClick 이 적용된다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/layout/__tests__/SectionLayout.test.tsx

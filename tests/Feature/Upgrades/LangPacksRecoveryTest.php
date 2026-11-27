@@ -41,6 +41,11 @@ class LangPacksRecoveryTest extends TestCase
 
     private ?string $originalBasePath = null;
 
+    /**
+     * beta.4 업그레이드 클래스를 읽어 오고 업그레이드 맥락과 원래 경로 설정을 저장한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -58,6 +63,11 @@ class LangPacksRecoveryTest extends TestCase
         $this->originalPendingPath = config('app.update.pending_path');
     }
 
+    /**
+     * 앱 루트와 임시 폴더 경로 설정을 되돌리고 만든 임시 폴더를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if ($this->originalBasePath !== null) {
@@ -80,6 +90,12 @@ class LangPacksRecoveryTest extends TestCase
      * 표준 production 경로: {pending}/core_{TS}/extracted/{wrapper}/lang-packs/_bundled
      *
      * 가장 흔한 시나리오 — 회귀 차단 핵심 케이스.
+     *
+     * @scenario case=timestamped_wrapper
+     *
+     * @effects lang_packs_recovered_from_timestamped_extracted_wrapper
+     *
+     * @return void 반환값 없음
      */
     public function test_recovery_finds_lang_packs_under_timestamped_extracted_wrapper(): void
     {
@@ -101,6 +117,12 @@ class LangPacksRecoveryTest extends TestCase
 
     /**
      * legacy 경로: {pending}/lang-packs/_bundled 직속 — 구버전 흐름 호환.
+     *
+     * @scenario case=pending_root
+     *
+     * @effects lang_packs_recovered_from_pending_root_legacy_layout
+     *
+     * @return void 반환값 없음
      */
     public function test_recovery_finds_lang_packs_directly_under_pending(): void
     {
@@ -118,6 +140,12 @@ class LangPacksRecoveryTest extends TestCase
 
     /**
      * 활성 디렉토리에 이미 정상 데이터가 있으면 복구를 건너뛰는지 검증 (멱등).
+     *
+     * @scenario case=active_already_present
+     *
+     * @effects recovery_skipped_when_active_lang_packs_present
+     *
+     * @return void 반환값 없음
      */
     public function test_recovery_skips_when_active_lang_packs_already_present(): void
     {
@@ -141,6 +169,12 @@ class LangPacksRecoveryTest extends TestCase
 
     /**
      * _pending 부재 시 안전하게 종료 + warning 로그.
+     *
+     * @scenario case=no_pending_source
+     *
+     * @effects recovery_creates_nothing_when_no_pending_source
+     *
+     * @return void 반환값 없음
      */
     public function test_recovery_warns_when_no_pending_source_found(): void
     {
@@ -159,6 +193,12 @@ class LangPacksRecoveryTest extends TestCase
 
     /**
      * 가장 최근 timestamp 디렉토리를 우선 선택하는지 검증 (다중 격리 디렉토리 시나리오).
+     *
+     * @scenario case=multiple_timestamped
+     *
+     * @effects recovery_prefers_newest_timestamped_directory
+     *
+     * @return void 반환값 없음
      */
     public function test_recovery_prefers_newest_timestamped_directory(): void
     {
@@ -185,6 +225,8 @@ class LangPacksRecoveryTest extends TestCase
 
     /**
      * 격리된 base_path + pending_path 구성.
+     *
+     * @return void 반환값 없음
      */
     private function arrangeFakeBaseAndPending(): void
     {
@@ -198,6 +240,11 @@ class LangPacksRecoveryTest extends TestCase
         config(['app.update.pending_path' => $fakePending]);
     }
 
+    /**
+     * 비공개 메서드 recoverLangPacksBundled 를 리플렉션으로 부른다.
+     *
+     * @return void 반환값 없음
+     */
     private function invokeRecover(): void
     {
         $reflection = new ReflectionClass($this->upgrade);

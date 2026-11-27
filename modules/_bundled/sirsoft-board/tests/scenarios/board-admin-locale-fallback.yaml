@@ -1,0 +1,15 @@
+feature: 게시판 관리자 레이아웃 — 로케일 폴백을 정적 'ko' 로 두지 않는다
+
+description: |
+  활성 언어팩(ja 등) 환경에서 새로고침 직후 _global.locale 이 아직 맞춰지지 않은 순간, `?? 'ko'` 로
+  박아 둔 폴백 때문에 ja 화면에도 한국어 라벨이 보였다. 게시판 유형 이름을 그리는 세 레이아웃
+  (게시판 폼 기본 탭·게시판 설정 기본 탭·게시판 유형 관리 창)이 `_global.locale ?? 'ko'` 꼴을 쓰지 않는지 잰다.
+
+axes:
+  layout: [board_type_label]
+
+effects:
+  - board_layouts_prefer_locale_over_static_ko_fallback
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/board-locale-fallback.test.ts

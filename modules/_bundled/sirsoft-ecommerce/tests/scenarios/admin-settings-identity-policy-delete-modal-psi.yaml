@@ -24,9 +24,12 @@ effects:
   - delete_modal_registered_in_settings_modals                  # 설정 레이아웃 modals 에 삭제 모달 partial 이 있다
   - delete_modal_calls_delete_api_and_refetches_policies        # 삭제 모달이 그 id 로 DELETE 를 보내고 ecommerceIdentityPolicies 를 다시 읽는다
   - delete_modal_locks_buttons_and_shows_spinner_while_deleting # 진행 중 값이 두 버튼 disabled 와 스피너 if 를 함께 잡는다
+  - identity_policy_datasource_uses_module_identifier_only      # 정책 데이터소스의 source_identifier 는 모듈 식별자만 쓴다(module: 접두사 금지 — DB 저장값과 맞지 않아 목록이 빈다)
+  - identity_policy_partial_uses_module_identifier_only         # 탭 partial 안의 모든 source_identifier 등장도 같은 형식이다
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/identityPolicyDeleteModal.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/identityPolicySourceIdentifier.test.ts
 
 validation:
   audit_rule: test-scenario-coverage

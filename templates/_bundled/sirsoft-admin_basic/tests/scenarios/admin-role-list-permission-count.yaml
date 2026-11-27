@@ -1,0 +1,25 @@
+feature: 역할 관리 목록 — 권한 배열을 뺀 뒤의 화면 계약(권한 수 열)
+
+description: |
+  역할 목록 응답에서 권한 배열(`permissions`·`permission_ids`·`permission_values`)을 뺐다(코어 매니페스트
+  `tests/scenarios/list-child-collection-pruning.yaml` 의 역할(F) 항목). 이 매니페스트는 그 소비 화면
+  `admin_role_list.json` 이 무엇을 읽고 무엇을 그리는지를 잰다.
+
+  두 방향을 함께 본다.
+    · 소비 — 뺀 3필드를 화면이 어디에서도 읽지 않는다. 남아 있으면 그 자리가 조용히 빈다.
+    · 공급 — 대신 들어온 `permissions_count` 를 열로 그리고, 0건·미집계도 빈칸이 아니라 0 으로 보인다.
+
+# axis 의미: 코어 매니페스트와 같은 축 표기를 쓴다 — 같은 시험 주석이 두 매니페스트의 조합을 함께 덮는다.
+axes:
+  resource: [role]
+  endpoint: [list]
+  observation: [consumer_screen]
+
+effects:
+  - role_list_screen_does_not_read_pruned_permission_fields   # 행 바인딩·컬럼 field 가 뺀 권한 필드를 읽지 않는다
+  - role_list_permission_count_column_bound                   # 권한 수 열이 있고 row.permissions_count 를 읽는다
+  - role_list_permission_count_header_uses_i18n_key           # 권한 수 열 헤더가 다국어 키다
+  - role_list_permission_count_renders_number_or_zero         # 셀이 그 수를 그리고 0건·미집계는 0 으로 그린다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-role-list-permission-pruning.test.tsx

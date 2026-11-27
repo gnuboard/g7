@@ -30,7 +30,9 @@ trait AssertsAutocompleteResultsCarryKeyword
     /**
      * 검색 결과를 상태에 넣는 setState 는 그 결과를 만든 키워드도 함께 넣어야 한다.
      *
-     * @param  array<int, string>  $roots
+     * @param  array<int, string>  $roots  레이아웃 JSON 을 찾을 최상위 디렉토리 목록
+     *
+     * @return void 반환값 없음
      */
     protected function assertAutocompleteResultsCarryKeyword(array $roots): void
     {
@@ -64,8 +66,8 @@ trait AssertsAutocompleteResultsCarryKeyword
     /**
      * `type: "input"` 액션이 부르는 apiCall 의 onSuccess 가 쓰는 `*SearchResults` 키를 모은다.
      *
-     * @param  array<int, string>  $roots
-     * @return array<int, array{file: string, resultsKey: string, keywordKey: string|null}>
+     * @param  array<int, string>  $roots  레이아웃 JSON 을 찾을 최상위 디렉토리 목록
+     * @return array<int, array{file: string, resultsKey: string, keywordKey: string|null}> 결과 키마다 파일·결과 키·짝 키워드 키(없으면 null)
      */
     private function collectRawAutocompleteWrites(array $roots): array
     {
@@ -87,7 +89,13 @@ trait AssertsAutocompleteResultsCarryKeyword
     }
 
     /**
-     * @param  array<int, array{file: string, resultsKey: string, keywordKey: string|null}>  $writes
+     * 레이아웃 트리를 내려가며 `type: "input"` 액션을 찾아 그 결과 저장을 기록한다.
+     *
+     * @param  mixed  $node  지금 살피는 JSON 노드
+     * @param  string  $file  기록에 남길 레이아웃 파일 상대 경로
+     * @param  array<int, array{file: string, resultsKey: string, keywordKey: string|null}>  $writes  찾은 결과 저장을 쌓는 목록(참조)
+     *
+     * @return void 반환값 없음
      */
     private function walkForInputActions(mixed $node, string $file, array &$writes): void
     {
@@ -111,7 +119,9 @@ trait AssertsAutocompleteResultsCarryKeyword
     /**
      * 액션 정의 안에 중첩된(sequence 포함) apiCall 을 모두 찾는다.
      *
-     * @return array<int, array<string, mixed>>
+     * @param  mixed  $node  지금 살피는 액션 노드
+     * @param  array<int, array<string, mixed>>  $found  지금까지 찾은 apiCall 목록
+     * @return array<int, array<string, mixed>> onSuccess 가 있는 apiCall 목록
      */
     private function apiCallsWithin(mixed $node, array $found = []): array
     {
@@ -133,7 +143,8 @@ trait AssertsAutocompleteResultsCarryKeyword
     /**
      * onSuccess 안의 setState params 들.
      *
-     * @return array<int, array<string, mixed>>
+     * @param  array<string, mixed>  $apiCall  onSuccess 를 가진 apiCall 액션
+     * @return array<int, array<string, mixed>> setState 액션들의 params 목록
      */
     private function successSetStates(array $apiCall): array
     {
@@ -154,8 +165,11 @@ trait AssertsAutocompleteResultsCarryKeyword
     /**
      * `…SearchResults` 로 끝나는 키마다 짝이 되는 `…SearchResultsKeyword` 가 있는지 본다.
      *
-     * @param  array<string, mixed>  $params
-     * @param  array<int, array{file: string, resultsKey: string, keywordKey: string|null}>  $writes
+     * @param  array<string, mixed>  $params  setState 액션의 params
+     * @param  string  $file  기록에 남길 레이아웃 파일 상대 경로
+     * @param  array<int, array{file: string, resultsKey: string, keywordKey: string|null}>  $writes  결과 저장을 쌓는 목록(참조)
+     *
+     * @return void 반환값 없음
      */
     private function recordResultWrites(array $params, string $file, array &$writes): void
     {
@@ -175,8 +189,10 @@ trait AssertsAutocompleteResultsCarryKeyword
     }
 
     /**
-     * @param  array<int, string>  $roots
-     * @return array<int, string>
+     * 주어진 디렉토리들 아래의 레이아웃 JSON 파일을 모은다(node_modules·dist·vendor·.git 제외).
+     *
+     * @param  array<int, string>  $roots  찾을 최상위 디렉토리 목록
+     * @return array<int, string> JSON 파일 절대 경로 목록
      */
     private function autocompleteLayoutFiles(array $roots): array
     {

@@ -48,11 +48,21 @@ function findById(root: unknown, id: string): Node | undefined {
 }
 
 describe('15 — 미발행 페이지 미리보기 배너 (page/show.json)', () => {
+    /**
+     * 페이지 상세 레이아웃에 미리보기 배너 블록이 있는지 잰다.
+     *
+     * @effects preview_banner_renders_when_is_preview_true
+     */
     it('미리보기 배너 블록(page_preview_banner)이 존재한다', () => {
         const banner = findById(pageShow, 'page_preview_banner');
         expect(banner).toBeDefined();
     });
 
+    /**
+     * 배너 if 가 is_preview 한 값에만 기대어 발행·게스트 응답에서는 숨는지 잰다.
+     *
+     * @effects preview_banner_renders_when_is_preview_true, preview_banner_hidden_for_published_or_guest
+     */
     it('배너의 if 가 page.data.is_preview 에 의존한다 (발행/게스트는 미노출)', () => {
         const banner = findById(pageShow, 'page_preview_banner');
         expect(typeof banner?.if).toBe('string');
@@ -61,6 +71,11 @@ describe('15 — 미발행 페이지 미리보기 배너 (page/show.json)', () =
         expect((banner?.if as string).trim()).toMatch(/^\{\{.*\}\}$/);
     });
 
+    /**
+     * 배너 문구가 다국어 키로 렌더되는지 잰다.
+     *
+     * @effects preview_banner_renders_when_is_preview_true
+     */
     it('배너 문구가 다국어 키로 렌더된다 (하드코딩 금지)', () => {
         const banner = findById(pageShow, 'page_preview_banner');
         const spans = collectNodes(banner, (n) => n.name === 'Span' && typeof n.text === 'string');
@@ -68,6 +83,11 @@ describe('15 — 미발행 페이지 미리보기 배너 (page/show.json)', () =
         expect(texts).toContain('$t:user.page.preview_banner');
     });
 
+    /**
+     * 배너가 본문 카드의 첫 자식(제목보다 앞)으로 놓이는지 잰다.
+     *
+     * @effects preview_banner_renders_when_is_preview_true
+     */
     it('배너가 본문 카드(page_content_card) 내부, 제목 영역보다 앞에 위치한다', () => {
         const card = findById(pageShow, 'page_content_card');
         expect(card).toBeDefined();

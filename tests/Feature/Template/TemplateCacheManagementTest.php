@@ -21,6 +21,11 @@ class TemplateCacheManagementTest extends TestCase
 
     protected TemplateManager $templateManager;
 
+    /**
+     * 테스트용 레이아웃 파일을 만들고 확장 폴더를 보호한 뒤 템플릿 관리자를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,6 +40,11 @@ class TemplateCacheManagementTest extends TestCase
         $this->templateManager->loadTemplates();
     }
 
+    /**
+     * 캐시를 비우고 확장 폴더 보호를 풀고 테스트용 레이아웃 파일을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 캐시 부작용 방지: 테스트 중 생성된 캐시를 정리
@@ -58,6 +68,8 @@ class TemplateCacheManagementTest extends TestCase
      * 컨테이너의 CacheInterface 바인딩은 선행 모듈/플러그인 테스트가
      * PluginCacheDriver 로 재바인딩할 수 있어 네임스페이스가 어긋날 수 있으므로,
      * 테스트도 프로덕션과 동일하게 CoreCacheDriver 로 조회한다.
+     *
+     * @return CacheInterface 코어 네임스페이스 캐시 드라이버
      */
     private function coreCache(): CacheInterface
     {
@@ -66,6 +78,10 @@ class TemplateCacheManagementTest extends TestCase
 
     /**
      * 템플릿 활성화 시 캐시 워밍 테스트
+     *
+     * @effects activate_template_warms_versioned_caches
+     *
+     * @return void 반환값 없음
      */
     public function test_activate_template_warms_cache(): void
     {
@@ -124,6 +140,12 @@ class TemplateCacheManagementTest extends TestCase
      * 템플릿 비활성화 시 캐시 버전 증가 테스트 (deactivateTemplate 메서드)
      *
      * 버전 포함 캐시(routes, language)는 능동 삭제 대신 캐시 버전 증가 + TTL 자연 만료로 무효화됩니다.
+     *
+     * @scenario cache_state=warm_current,lifecycle_trigger=deactivate,template_type=admin
+     *
+     * @effects deactivate_uninstall_bump_extension_cache_version
+     *
+     * @return void 반환값 없음
      */
     public function test_deactivate_template_increments_cache_version(): void
     {
@@ -156,6 +178,12 @@ class TemplateCacheManagementTest extends TestCase
 
     /**
      * 템플릿 비활성화 시 캐시 삭제 테스트 (deactivateTemplatesByType 메서드)
+     *
+     * @scenario cache_state=warm_current,lifecycle_trigger=deactivate,template_type=admin
+     *
+     * @effects reactivation_rewarms_routes_cache_under_new_version
+     *
+     * @return void 반환값 없음
      */
     public function test_activate_different_type_template_deactivates_and_clears_cache(): void
     {
@@ -189,6 +217,12 @@ class TemplateCacheManagementTest extends TestCase
      * 템플릿 제거 시 캐시 버전 증가 테스트
      *
      * 버전 포함 캐시는 능동 삭제 대신 캐시 버전 증가 + TTL 자연 만료로 무효화됩니다.
+     *
+     * @scenario cache_state=warm_current,lifecycle_trigger=uninstall,template_type=admin
+     *
+     * @effects deactivate_uninstall_bump_extension_cache_version
+     *
+     * @return void 반환값 없음
      */
     public function test_uninstall_template_increments_cache_version(): void
     {
@@ -223,6 +257,10 @@ class TemplateCacheManagementTest extends TestCase
      * 템플릿 설치 시에는 캐시 워밍이 되지 않는지 테스트
      *
      * 설치 시 캐시 버전은 증가하지만, 캐시 워밍(routes, language 캐시 생성)은 수행되지 않습니다.
+     *
+     * @effects install_bumps_version_without_warming_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_install_template_does_not_warm_cache(): void
     {
@@ -255,6 +293,12 @@ class TemplateCacheManagementTest extends TestCase
      * 레이아웃 내부 캐시 삭제 테스트
      *
      * 버전 없는 내부 캐시 키(template.{id}.layout.{name})가 비활성화 시 삭제되는지 확인합니다.
+     *
+     * @scenario cache_state=warm_current,lifecycle_trigger=deactivate,template_type=admin
+     *
+     * @effects deactivate_forgets_unversioned_internal_layout_caches
+     *
+     * @return void 반환값 없음
      */
     public function test_deactivate_template_clears_internal_layout_caches(): void
     {
@@ -294,6 +338,8 @@ class TemplateCacheManagementTest extends TestCase
      * @scenario cache_state=warm_stale,lifecycle_trigger=cache_clear_command_single,template_type=admin
      *
      * @effects cache_clear_command_forgets_template_config_key
+     *
+     * @return void 반환값 없음
      */
     public function test_template_cache_clear_command_forgets_public_config_cache(): void
     {
@@ -322,6 +368,8 @@ class TemplateCacheManagementTest extends TestCase
      * @scenario cache_state=warm_stale,lifecycle_trigger=cache_clear_command_all,template_type=admin
      *
      * @effects cache_clear_command_forgets_template_config_key
+     *
+     * @return void 반환값 없음
      */
     public function test_template_cache_clear_all_forgets_public_config_cache(): void
     {
@@ -354,6 +402,8 @@ class TemplateCacheManagementTest extends TestCase
      * @scenario cache_state=warm_stale,lifecycle_trigger=template_update,template_type=admin
      *
      * @effects template_update_invalidates_public_config_cache,clear_template_cache_forgets_components_manifest_variants
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_template_cache_forgets_config_and_components_manifest(): void
     {
@@ -395,6 +445,8 @@ class TemplateCacheManagementTest extends TestCase
      * @scenario cache_state=warm_stale,lifecycle_trigger=deactivate,template_type=admin
      *
      * @effects deactivate_uninstall_invalidate_public_config_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_template_deactivate_and_uninstall_invalidate_public_config_cache(): void
     {
@@ -436,6 +488,8 @@ class TemplateCacheManagementTest extends TestCase
      * @scenario cache_state=warm_stale,lifecycle_trigger=uninstall,template_type=admin
      *
      * @effects with_source_meta_layout_cache_variants_forgotten
+     *
+     * @return void 반환값 없음
      */
     public function test_deactivate_template_clears_with_source_meta_layout_caches(): void
     {
@@ -481,6 +535,8 @@ class TemplateCacheManagementTest extends TestCase
      * 이 헬퍼가 `.json` 을 직접 쓰는 것은 작성 흐름을 흉내 내는 것이 아니라,
      * **컴파일 이후 상태**(캐시·등록이 보는 형태)를 곧바로 심어 캐시 동작만 격리해
      * 검증하기 위함이다. 마크업 형식을 다루는 테스트는 `LayoutMarkup` 스위트가 맡는다.
+     *
+     * @return void 반환값 없음
      */
     protected function createTestLayoutFiles(): void
     {
@@ -518,6 +574,8 @@ class TemplateCacheManagementTest extends TestCase
 
     /**
      * 테스트용 레이아웃 파일 정리
+     *
+     * @return void 반환값 없음
      */
     protected function cleanupTestLayoutFiles(): void
     {

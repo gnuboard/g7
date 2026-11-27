@@ -144,6 +144,11 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
     if (testUtils) testUtils.cleanup();
   });
 
+  /**
+   * 경고 알림은 상단 배너에만 한 번 그려지고 하단 카드는 뜨지 않는다.
+   * @scenario severity=warning
+   * @effects warning_alert_promoted_to_top_banner, non_warning_alert_stays_in_bottom_card
+   */
   it('경고 등급 알림은 상단 배너에 렌더되고 하단 시스템 알림 카드는 뜨지 않는다', async () => {
     testUtils = createLayoutTest(dashboardLayout, {
       translations,
@@ -206,6 +211,10 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
     expect(screen.queryAllByText('결제 플러그인 자동 비활성화').length).toBe(1);
   });
 
+  /**
+   * 알림이 비면 시스템 알림 카드가 그려지지 않는다.
+   * @effects empty_alert_region_not_rendered
+   */
   it('알림 배열이 비어있을 때 시스템 알림 카드가 렌더되지 않는다', async () => {
     testUtils = createLayoutTest(dashboardLayout, {
       translations,
@@ -242,6 +251,10 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
     expect(screen.queryByText('시스템 알림')).toBeNull();
   });
 
+  /**
+   * 닫기 버튼 액션이 확장 dismiss 주소로 POST 한다.
+   * @effects alert_dismiss_posts_to_extension_dismiss_endpoint
+   */
   it('dismiss 버튼 액션이 POST /api/admin/extensions/{type}/{id}/dismiss 로 정의되어 있다', () => {
     // JSON 구조 검증 — alert_dismiss_button 의 actions[0].target
     // iteration template 안의 노드는 HTML id 유일성을 위해 `{{$idx}}` 접미가 붙는다.
@@ -293,6 +306,10 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
     expect(refetch.params.dataSourceId).toBe('dashboard_alerts');
   });
 
+  /**
+   * 시스템 알림 카드 if 가 if:false 가 아니라 dashboard_alerts 건수 기반이다.
+   * @effects system_alerts_card_visibility_follows_alert_count
+   */
   it('system_alerts_card 의 if 조건이 if:false 가 아닌 dashboard_alerts.length 기반이다 (회귀)', () => {
     // iteration template 안의 노드는 HTML id 유일성을 위해 `{{$idx}}` 접미가 붙는다.
     // 정확 일치만 보면 보간 도입 시 조용히 null 이 되므로 접미 형태도 인정한다.

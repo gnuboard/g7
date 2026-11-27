@@ -34,6 +34,8 @@ class StoreBizppurioTemplateRequest extends FormRequest
 
     /**
      * 유형과 무관한 content 잔여 필드를 검증 전에 잘라냅니다.
+     *
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {
@@ -66,6 +68,8 @@ class StoreBizppurioTemplateRequest extends FormRequest
      * 항목별 조건부 필수(linkType 별 링크 필드 등)를 after 훅으로 검증합니다.
      *
      * @param  Validator  $validator  검증기
+     *
+     * @return void 반환값 없음
      */
     public function withValidator(Validator $validator): void
     {

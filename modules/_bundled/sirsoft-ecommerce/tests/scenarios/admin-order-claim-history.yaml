@@ -95,6 +95,12 @@ effects:
   - order_claims_response_groups_items_under_each_request
   - order_claims_response_detail_url_for_every_type
   - order_claims_response_amount_carries_magnitude_only
+  - order_claims_response_ordered_by_request_time_desc
+  - order_claims_response_requires_claims_read_permission
+  - order_claims_response_keeps_claim_item_field_vocabulary
+  - order_claims_response_cancel_rows_carry_normalized_amounts
+  - order_claims_response_resolves_requester_and_reason_label
+  - order_claims_response_404_for_unknown_order
   # 브라우저 실측 (E2E)
   - order_detail_claim_history_tab_reveals_section
   - order_detail_claim_history_subtabs_switch_without_refetch

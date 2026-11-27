@@ -20,7 +20,13 @@ use Plugins\Sirsoft\Gdpr\Enums\ConsentSource;
 // audit:allow test-extension-base-class reason: 파일 내용·enum 값만 비교하는 순수 정적 검사 — DB/라우트/오토로드 부팅이 필요 없어 PluginTestCase 상속 시 불필요한 부팅 비용만 늘어난다
 class ConsentSourceVocabularyParityTest extends TestCase
 {
-    /** 플러그인 루트 경로 */
+    /**
+     * 플러그인 루트 경로에 상대 경로를 붙인다.
+     *
+     * @param  string  $relative  플러그인 루트 기준 상대 경로
+     *
+     * @return string 플러그인 루트를 붙인 절대 경로
+     */
     private function pluginPath(string $relative): string
     {
         return dirname(__DIR__, 2).'/'.$relative;
@@ -30,6 +36,12 @@ class ConsentSourceVocabularyParityTest extends TestCase
      * 소스 코드가 실제로 기록하는 출처 값이 모두 enum 에 선언되어 있는지 검사합니다.
      *
      * enum 밖에 리터럴을 두면 화면·라벨이 그 값을 영영 모릅니다.
+     *
+     * @scenario surface=record_path
+     *
+     * @effects recorded_source_literals_declared_in_enum
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 기록_경로의_출처_값이_전부_enum_에_선언되어_있다(): void
@@ -74,6 +86,12 @@ class ConsentSourceVocabularyParityTest extends TestCase
 
     /**
      * 관리자 동의 이력 화면의 출처 필터 옵션이 enum 전 케이스를 덮는지 검사합니다.
+     *
+     * @scenario surface=filter_options
+     *
+     * @effects filter_options_cover_all_enum_cases
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 화면_출처_필터_옵션이_enum_전_케이스를_덮는다(): void
@@ -102,6 +120,12 @@ class ConsentSourceVocabularyParityTest extends TestCase
      * 백엔드(`lang/{locale}/messages.php`)와 프론트엔드(`resources/lang/{locale}.json`)를
      * **둘 다** 봅니다. 관리자 화면의 `$t:` 는 프론트엔드 JSON 에서 해석되므로 PHP 쪽만
      * 채우면 화면에는 여전히 원시 키가 남습니다 (작업 중 실제로 겪은 누락).
+     *
+     * @scenario surface=source_labels
+     *
+     * @effects source_labels_exist_in_backend_and_frontend
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 모든_출처_값에_ko_en_라벨이_정의되어_있다(): void
@@ -133,6 +157,12 @@ class ConsentSourceVocabularyParityTest extends TestCase
 
     /**
      * 정책 버전 이력 페이저가 쓰는 다국어 키가 양쪽 표면에 모두 정의되어 있는지 검사합니다.
+     *
+     * @scenario surface=pager_labels
+     *
+     * @effects policy_history_pager_labels_exist_with_surface_syntax
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 정책_버전_이력_페이저_라벨이_양쪽_표면에_있다(): void
@@ -176,6 +206,12 @@ class ConsentSourceVocabularyParityTest extends TestCase
 
     /**
      * 공개 요청으로 지정 가능한 출처는 서버 자체 기록 경로를 포함하지 않아야 합니다.
+     *
+     * @scenario surface=request_selectable
+     *
+     * @effects server_only_sources_not_request_selectable
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 서버_자체_기록_출처는_요청으로_지정할_수_없다(): void

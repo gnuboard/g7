@@ -20,6 +20,10 @@ axes:
 effects:
   # 개별 게시판 수정 화면의 숫자 입력 min/max 가 폼 데이터 응답의 _meta.limits 와 같다
   - form_boundary_matches_server_limits
+  # Vitest board-form-range-contract — 레이아웃 표현식·폴백 계약(조합 축이 아니라 효과로만 매핑)
+  - per_board_form_number_inputs_have_min_max                 # 개별 게시판 수정 화면 숫자 입력이 min/max 를 갖는다
+  - per_board_form_bounds_read_meta_limits_with_server_fallback # 그 값이 _local.form._meta.limits 표현식이고 폴백이 서버 기본치와 같다
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-form-range-parity.spec.ts
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/board-form-range-contract.test.ts

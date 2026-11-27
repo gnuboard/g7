@@ -29,6 +29,11 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
 
     private string $installedFlagPath;
 
+    /**
+     * 업그레이드 스텝 클래스를 읽어 오고 앱 루트를 임시 폴더로 돌린 뒤 산출물을 비운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -49,6 +54,11 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
         $this->clearArtifacts();
     }
 
+    /**
+     * 산출물을 비우고 임시 앱 루트를 걷는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearArtifacts();
@@ -61,6 +71,8 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
 
     /**
      * 각 axis 가 완료 증거를 명시 제어할 수 있도록 세 아티팩트를 모두 제거한다.
+     *
+     * @return void 반환값 없음
      */
     private function clearArtifacts(): void
     {
@@ -78,11 +90,21 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
         }
     }
 
+    /**
+     * 7.0.3 에서 7.0.4 로 올리는 업그레이드 맥락을 만든다.
+     *
+     * @return UpgradeContext 업그레이드 스텝에 넘길 맥락
+     */
     private function context(): UpgradeContext
     {
         return new UpgradeContext('7.0.3', '7.0.4', '7.0.4');
     }
 
+    /**
+     * 검사 대상 데이터 마이그레이션을 새로 만든다.
+     *
+     * @return RedactResidualInstallerStateSecrets 잔존 비밀 정리 마이그레이션
+     */
     private function migration(): RedactResidualInstallerStateSecrets
     {
         return new RedactResidualInstallerStateSecrets;
@@ -91,7 +113,7 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
     /**
      * 평문 비밀이 들어 있는 레거시 state.json (7.0.3 이하 인스톨러가 남긴 형태).
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> 평문 비밀이 든 레거시 state 배열
      */
     private function legacyState(): array
     {
@@ -113,16 +135,32 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
         ];
     }
 
+    /**
+     * 주어진 배열을 state.json 에 쓴다.
+     *
+     * @param array $state state.json 에 쓸 배열
+     * @return void 반환값 없음
+     */
     private function writeState(array $state): void
     {
         file_put_contents($this->statePath, json_encode($state, JSON_PRETTY_PRINT));
     }
 
+    /**
+     * .env 에 INSTALLER_COMPLETED=true 를 써서 설치 완료 증거를 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private function markInstalledViaEnv(): void
     {
         file_put_contents($this->envPath, "APP_ENV=production\nINSTALLER_COMPLETED=true\n");
     }
 
+    /**
+     * g7_installed 플래그 파일을 만들어 설치 완료 증거를 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private function markInstalledViaFlag(): void
     {
         $dir = dirname($this->installedFlagPath);
@@ -133,13 +171,21 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
     }
 
     /**
-     * @return array<string, mixed>
+     * 현재 state.json 을 읽어 배열로 돌려준다.
+     *
+     * @return array<string, mixed> 해석한 state 배열
      */
     private function readState(): array
     {
         return json_decode((string) file_get_contents($this->statePath), true);
     }
 
+    /**
+     * 설정 배열에 DB·관리자 비밀번호 키가 남지 않았는지 확인한다.
+     *
+     * @param array $config state 의 config 섹션
+     * @return void 반환값 없음
+     */
     private function assertNoPlaintextSecrets(array $config): void
     {
         foreach (['db_write_password', 'db_read_password', 'admin_password', 'admin_password_confirm'] as $key) {
@@ -150,6 +196,13 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
     // -----------------------------------------------------------------------
     // axis 1: state.json 부재 → no-op
     // -----------------------------------------------------------------------
+    /**
+     * state.json 이 없으면 아무것도 하지 않는다.
+     *
+     * @effects upgrade_step_no_op_when_state_json_absent
+     *
+     * @return void 반환값 없음
+     */
     public function test_no_op_when_state_file_absent(): void
     {
         $this->assertFileDoesNotExist($this->statePath);
@@ -162,6 +215,13 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
     // -----------------------------------------------------------------------
     // axis 2: 완료 증거(.env) + state 존재 → 파일 삭제
     // -----------------------------------------------------------------------
+    /**
+     * .env 에 설치 완료 표시가 있으면 남은 state.json 을 지운다.
+     *
+     * @effects upgrade_step_deletes_state_json_when_env_installer_completed_is_true
+     *
+     * @return void 반환값 없음
+     */
     public function test_deletes_state_file_when_env_marks_installation_complete(): void
     {
         $this->writeState($this->legacyState());
@@ -175,6 +235,13 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
     // -----------------------------------------------------------------------
     // axis 3: 완료 증거(g7_installed) + state 존재 → 파일 삭제
     // -----------------------------------------------------------------------
+    /**
+     * g7_installed 플래그만 있어도 설치 완료로 보고 state.json 을 지운다.
+     *
+     * @effects upgrade_step_deletes_state_json_when_g7_installed_flag_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_deletes_state_file_when_installed_flag_present(): void
     {
         $this->writeState($this->legacyState());
@@ -195,6 +262,13 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
     // "업그레이드가 중단되지 않고, 파일이 손상되지 않으며, 운영자가 수동 삭제할 수
     // 있도록 원본이 보존된다" 이다 (경고 로그는 runInternal 이 기록).
     // -----------------------------------------------------------------------
+    /**
+     * state.json 을 지울 수 없어도 예외 없이 진행하고 파일 원본을 그대로 둔다.
+     *
+     * @effects upgrade_step_does_not_abort_upgrade_when_state_json_cannot_be_deleted
+     *
+     * @return void 반환값 없음
+     */
     public function test_does_not_abort_upgrade_when_state_file_cannot_be_deleted(): void
     {
         $original = $this->legacyState();
@@ -225,6 +299,8 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
 
     /**
      * 현재 플랫폼에서 읽기 전용 파일의 unlink 가 차단되는지 실측한다.
+     *
+     * @return bool 읽기 전용 파일 삭제가 막히면 true
      */
     private function unlinkIsBlocked(): bool
     {
@@ -245,6 +321,13 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
     // -----------------------------------------------------------------------
     // axis 5: 완료 증거 없음 → 파일 보존 + redact 만
     // -----------------------------------------------------------------------
+    /**
+     * 설치 완료 증거가 없으면 state.json 을 지우지 않고 비밀만 걷어 내며 나머지 필드는 남긴다.
+     *
+     * @effects upgrade_step_preserves_state_json_and_redacts_only_when_installation_not_complete, upgrade_step_preserves_non_secret_config_fields_so_in_progress_install_can_continue
+     *
+     * @return void 반환값 없음
+     */
     public function test_redacts_but_preserves_file_when_installation_not_complete(): void
     {
         $state = $this->legacyState();
@@ -271,6 +354,13 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
     // -----------------------------------------------------------------------
     // axis 6: JSON 파싱 실패 → 파일 원본 보존 (파괴 금지)
     // -----------------------------------------------------------------------
+    /**
+     * JSON 으로 읽을 수 없는 state.json 은 원본 그대로 둔다.
+     *
+     * @effects upgrade_step_preserves_corrupted_state_json_without_destroying_it
+     *
+     * @return void 반환값 없음
+     */
     public function test_preserves_corrupted_state_file(): void
     {
         $corrupted = '{ this is not valid json';
@@ -286,6 +376,13 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
     // -----------------------------------------------------------------------
     // axis 7: 멱등 — 2회 호출해도 동일 결과
     // -----------------------------------------------------------------------
+    /**
+     * 비밀 걷기 경로를 두 번 돌려도 파일이 더 바뀌지 않는다.
+     *
+     * @effects upgrade_step_is_idempotent_across_repeated_runs
+     *
+     * @return void 반환값 없음
+     */
     public function test_is_idempotent_on_repeated_runs(): void
     {
         $state = $this->legacyState();
@@ -305,6 +402,13 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
     // -----------------------------------------------------------------------
     // 삭제 경로 멱등 — 완료 환경에서 2회 호출
     // -----------------------------------------------------------------------
+    /**
+     * 삭제 경로를 두 번 돌려도 두 번째는 예외 없이 아무것도 하지 않는다.
+     *
+     * @effects upgrade_step_is_idempotent_across_repeated_runs
+     *
+     * @return void 반환값 없음
+     */
     public function test_delete_path_is_idempotent(): void
     {
         $this->writeState($this->legacyState());
@@ -321,6 +425,13 @@ class RedactResidualInstallerStateSecretsTest extends TestCase
     // -----------------------------------------------------------------------
     // config 섹션 없는 state → 예외 없이 통과
     // -----------------------------------------------------------------------
+    /**
+     * config 섹션이 없는 state.json 도 예외 없이 처리하고 파일을 남긴다.
+     *
+     * @effects upgrade_step_handles_state_without_config_section
+     *
+     * @return void 반환값 없음
+     */
     public function test_handles_state_without_config_section(): void
     {
         $this->writeState(['installation_status' => 'running', 'completed_tasks' => []]);

@@ -1,0 +1,24 @@
+feature: 관리자 회원 삭제 API — 슈퍼 관리자 보호·본인인증 정책 재시도·실패 안내
+
+description: |
+  관리자 회원 삭제(DELETE /api/admin/users/{uuid})가 대상과 정책 상태에 따라 맞게 응답하는지 잰다.
+  - 슈퍼 관리자는 지울 수 없고, 구체적인 안내 문구로 422 를 돌려준다.
+  - 슈퍼 관리자는 다른 관리자 계정을 지울 수 있다. 권한 판정은 권한 미들웨어가 맡는다.
+  - 삭제 본인인증 정책이 켜져 있으면 428 에 재시도용 return_request 가 실리고, 인증 토큰을 붙여 다시 보내면 삭제된다.
+  - 삭제가 실패해도 응답 문구에 `:error` 자리표시나 예외 원문이 남지 않는다.
+
+  축은 시험이 만드는 삭제 상황 하나다.
+
+axes:
+  case: [super_admin_target, admin_target, regular_target, identity_policy_challenge, identity_policy_token, failure_message]
+
+effects:
+  - admin_user_delete_refuses_super_admin_with_specific_message
+  - super_admin_can_delete_admin_user
+  - admin_user_delete_regular_user_returns_success_message
+  - admin_user_delete_428_carries_return_request
+  - admin_user_delete_with_verification_token_deletes_user
+  - admin_user_delete_failure_message_hides_placeholder_and_raw_exception
+
+test_files:
+  - tests/Feature/Api/Admin/UserControllerDeleteTest.php

@@ -14,8 +14,7 @@
  * 응답은 고정한다(개발 사이트의 실제 버전 수에 좌우되지 않도록). 요청 URL 은 브라우저가
  * 실제로 만든 것을 검사한다.
  *
- * @scenario resource=layout_version,endpoint=list,surface=code_editor
- * @effects version_list_request_carries_limit, version_list_load_more_widens_limit, version_list_load_more_hidden_when_batch_not_full, version_list_limit_ceiling_disclosed
+ * 조합·효과는 각 시험 주석이 선언한다(코드 편집기 표면).
  */
 import { test, expect, authenticatePage } from '../../fixtures/admin-template-auth';
 import type { Page, Route } from '@playwright/test';
@@ -94,6 +93,11 @@ async function openVersionHistory(page: Page, token: string): Promise<void> {
 }
 
 test.describe('@sirsoft-admin_basic 코드 편집기 버전 이력 — 상한 조회', () => {
+  /**
+   * 첫 조회가 상한(limit)을 달고 나간다.
+   * @scenario surface=code_editor
+   * @effects version_list_request_carries_limit
+   */
   test('첫 조회가 상한(limit)을 달고 나간다', async ({ page, layoutEditToken }) => {
     const seen: string[] = [];
     await stubVersions(page, 3, seen);
@@ -105,6 +109,11 @@ test.describe('@sirsoft-admin_basic 코드 편집기 버전 이력 — 상한 �
     expect(seen[seen.length - 1]).toContain(`limit=${VERSION_PAGE_SIZE}`);
   });
 
+  /**
+   * 한 묶음이 가득 차지 않으면 더 보기가 없다.
+   * @scenario surface=code_editor
+   * @effects version_list_load_more_hidden_when_batch_not_full
+   */
   test('한 묶음이 가득 차지 않으면 더 보기가 없다', async ({ page, layoutEditToken }) => {
     const seen: string[] = [];
     await stubVersions(page, 3, seen);
@@ -117,6 +126,11 @@ test.describe('@sirsoft-admin_basic 코드 편집기 버전 이력 — 상한 �
     await expect(page.getByTestId('layout-version-history-limit-reached')).toHaveCount(0);
   });
 
+  /**
+   * 묶음이 가득 차면 더 보기로 상한을 넓혀 다시 조회한다.
+   * @scenario surface=code_editor
+   * @effects version_list_load_more_widens_limit
+   */
   test('묶음이 가득 차면 더 보기로 상한을 넓혀 재조회한다', async ({ page, layoutEditToken }) => {
     const seen: string[] = [];
     await stubVersions(page, VERSION_PAGE_SIZE, seen);
@@ -135,6 +149,11 @@ test.describe('@sirsoft-admin_basic 코드 편집기 버전 이력 — 상한 �
     expect(seen[seen.length - 1]).toContain(`limit=${VERSION_PAGE_SIZE * 2}`);
   });
 
+  /**
+   * 서버 상한까지 넓히면 더 보기 대신 도달 한계를 알린다.
+   * @scenario surface=code_editor
+   * @effects version_list_limit_ceiling_disclosed
+   */
   test('서버 상한까지 넓히면 더 보기 대신 도달 한계를 알린다', async ({ page, layoutEditToken }) => {
     const seen: string[] = [];
     // 서버에 상한보다 많은 버전이 있는 상태 — 응답은 늘 요청한 상한만큼 꽉 차서 돌아온다

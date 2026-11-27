@@ -1,0 +1,25 @@
+feature: beta.4 업그레이드의 번들 언어팩 폴더 사후 복구
+
+description: |
+  beta.3 → beta.4 업그레이드에서 부모(beta.3) 프로세스는 새 폴더 `lang-packs/_bundled` 를 몰라 활성 폴더로
+  복사하지 않았다. 업그레이드 스텝의 `recoverLangPacksBundled` 가 업데이트 임시 폴더(_pending)에서 소스를 찾아
+  뒤늦게 복사한다. 실제 임시 폴더는 `core_{시각}/extracted/{감싼 폴더}/lang-packs/_bundled` 구조인데, 첫 수정이
+  시각 폴더를 건너뛰어 늘 소스를 못 찾았다.
+
+axes:
+  case:
+    - timestamped_wrapper
+    - pending_root
+    - active_already_present
+    - no_pending_source
+    - multiple_timestamped
+
+effects:
+  - lang_packs_recovered_from_timestamped_extracted_wrapper
+  - lang_packs_recovered_from_pending_root_legacy_layout
+  - recovery_skipped_when_active_lang_packs_present
+  - recovery_creates_nothing_when_no_pending_source
+  - recovery_prefers_newest_timestamped_directory
+
+test_files:
+  - tests/Feature/Upgrades/LangPacksRecoveryTest.php

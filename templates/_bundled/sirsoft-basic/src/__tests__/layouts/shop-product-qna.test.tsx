@@ -284,6 +284,12 @@ describe('상품 상세 QnA 탭', () => {
   });
 
   describe('QnA 목록 렌더링', () => {
+    /**
+     * items 배열이 비어있으면 빈 목록 안내 문구가 표시된다 — 이 명제를 잰다.
+     *
+     * @scenario section=list
+     * @effects qna_empty_list_message
+     */
     it('items 배열이 비어있으면 빈 목록 안내 문구가 표시된다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -305,6 +311,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * 문의 목록이 있으면 각 항목의 내용이 Q행으로 렌더링된다 — 이 명제를 잰다.
+     *
+     * @scenario section=list
+     * @effects qna_items_render_question_rows
+     */
     it('문의 목록이 있으면 각 항목의 내용이 Q행으로 렌더링된다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -343,6 +355,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * title이 없으면 content를 폴백으로 사용한다 — 이 명제를 잰다.
+     *
+     * @scenario section=list
+     * @effects qna_title_falls_back_to_content
+     */
     it('title이 없으면 content를 폴백으로 사용한다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -379,6 +397,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * 답변이 있으면 A행이 표시되고 is_answered가 답변완료로 렌더링된다 — 이 명제를 잰다.
+     *
+     * @scenario section=list
+     * @effects qna_answer_row_rendered_when_answered
+     */
     it('답변이 있으면 A행이 표시되고 is_answered가 답변완료로 렌더링된다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -421,6 +445,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * 답변이 없으면 A행이 렌더링되지 않는다 — 이 명제를 잰다.
+     *
+     * @scenario section=list
+     * @effects qna_answer_row_absent_when_unanswered
+     */
     it('답변이 없으면 A행이 렌더링되지 않는다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -459,6 +489,12 @@ describe('상품 상세 QnA 탭', () => {
   });
 
   describe('비밀글 처리 (is_owner 기반)', () => {
+    /**
+     * 비밀글이고 is_owner=false이면 내용 대신 "비밀글입니다."가 표시된다 — 이 명제를 잰다.
+     *
+     * @scenario section=secret
+     * @effects qna_secret_masked_for_non_owner
+     */
     it('비밀글이고 is_owner=false이면 내용 대신 "비밀글입니다."가 표시된다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -498,6 +534,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * 비밀글이고 is_owner=true이면 실제 내용이 표시된다 — 이 명제를 잰다.
+     *
+     * @scenario section=secret
+     * @effects qna_secret_shown_to_owner
+     */
     it('비밀글이고 is_owner=true이면 실제 내용이 표시된다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -537,6 +579,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * 비밀글이고 is_owner=false이면 A행(답변)도 숨겨진다 — 이 명제를 잰다.
+     *
+     * @scenario section=secret
+     * @effects qna_secret_masked_for_non_owner
+     */
     it('비밀글이고 is_owner=false이면 A행(답변)도 숨겨진다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -581,6 +629,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * 비밀글이고 is_owner=true이면 A행(답변)이 표시된다 — 이 명제를 잰다.
+     *
+     * @scenario section=secret
+     * @effects qna_secret_shown_to_owner
+     */
     it('비밀글이고 is_owner=true이면 A행(답변)이 표시된다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -627,6 +681,12 @@ describe('상품 상세 QnA 탭', () => {
   });
 
   describe('문의 작성 버튼 표시 조건 (로그인 필수)', () => {
+    /**
+     * 로그인/비로그인 무관하게 문의 작성 버튼이 항상 표시된다 — 이 명제를 잰다.
+     *
+     * @scenario section=write_button
+     * @effects qna_write_button_always_visible
+     */
     it('로그인/비로그인 무관하게 문의 작성 버튼이 항상 표시된다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -650,6 +710,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * 비회원이어도 문의 작성 버튼이 표시된다 (클릭 시 토스트 안내) — 이 명제를 잰다.
+     *
+     * @scenario section=write_button
+     * @effects qna_write_button_always_visible
+     */
     it('비회원이어도 문의 작성 버튼이 표시된다 (클릭 시 토스트 안내)', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -675,6 +741,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * 비회원이고 secret_mode=disabled여도 문의 작성 버튼이 표시된다 — 이 명제를 잰다.
+     *
+     * @scenario section=write_button
+     * @effects qna_write_button_always_visible
+     */
     it('비회원이고 secret_mode=disabled여도 문의 작성 버튼이 표시된다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -702,6 +774,12 @@ describe('상품 상세 QnA 탭', () => {
   });
 
   describe('비밀글 제외 체크박스', () => {
+    /**
+     * 비밀글 제외 체크박스가 렌더링된다 — 이 명제를 잰다.
+     *
+     * @scenario section=secret_filter
+     * @effects qna_exclude_secret_checkbox_renders
+     */
     it('비밀글 제외 체크박스가 렌더링된다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -849,6 +927,12 @@ describe('상품 상세 QnA 탭', () => {
       },
     });
 
+    /**
+     * qnaOpenId가 설정된 경우 해당 행의 인라인 상세가 표시된다 — 이 명제를 잰다.
+     *
+     * @scenario section=inline_detail
+     * @effects qna_inline_detail_follows_open_id
+     */
     it('qnaOpenId가 설정된 경우 해당 행의 인라인 상세가 표시된다', async () => {
       const testUtils = createLayoutTest(makeInlineFixture(), {
         componentRegistry: registry,
@@ -884,6 +968,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * 답변이 있으면 판매자 답변 박스가 표시된다 — 이 명제를 잰다.
+     *
+     * @scenario section=inline_detail
+     * @effects qna_inline_detail_shows_seller_answer
+     */
     it('답변이 있으면 판매자 답변 박스가 표시된다', async () => {
       const testUtils = createLayoutTest(makeInlineFixture(), {
         componentRegistry: registry,
@@ -919,6 +1009,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * 비밀글 비소유자는 상세 패널이 열리지 않는다 — 이 명제를 잰다.
+     *
+     * @scenario section=inline_detail
+     * @effects qna_inline_detail_blocked_for_secret_non_owner
+     */
     it('비밀글 비소유자는 상세 패널이 열리지 않는다', async () => {
       const testUtils = createLayoutTest(makeInlineFixture(), {
         componentRegistry: registry,
@@ -956,6 +1052,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * qnaOpenId가 null이면 상세 패널이 표시되지 않는다 — 이 명제를 잰다.
+     *
+     * @scenario section=inline_detail
+     * @effects qna_inline_detail_follows_open_id
+     */
     it('qnaOpenId가 null이면 상세 패널이 표시되지 않는다', async () => {
       const testUtils = createLayoutTest(makeInlineFixture(), {
         componentRegistry: registry,
@@ -992,6 +1094,12 @@ describe('상품 상세 QnA 탭', () => {
   });
 
   describe('탭 비활성화 시 렌더링', () => {
+    /**
+     * activeTab이 qna가 아니면 탭 내용이 표시되지 않는다 — 이 명제를 잰다.
+     *
+     * @scenario section=tab_gate
+     * @effects qna_tab_hidden_when_inactive_or_board_slug_missing
+     */
     it('activeTab이 qna가 아니면 탭 내용이 표시되지 않는다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -1010,6 +1118,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * board_slug가 null이면 activeTab=qna여도 탭 내용이 표시되지 않는다 — 이 명제를 잰다.
+     *
+     * @scenario section=tab_gate
+     * @effects qna_tab_hidden_when_inactive_or_board_slug_missing
+     */
     it('board_slug가 null이면 activeTab=qna여도 탭 내용이 표시되지 않는다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -1033,6 +1147,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * board_slug가 미설정이면 activeTab=qna여도 탭 내용이 표시되지 않는다 — 이 명제를 잰다.
+     *
+     * @scenario section=tab_gate
+     * @effects qna_tab_hidden_when_inactive_or_board_slug_missing
+     */
     it('board_slug가 미설정이면 activeTab=qna여도 탭 내용이 표시되지 않는다', async () => {
       const testUtils = createLayoutTest(makeQnaTabFixture(), {
         componentRegistry: registry,
@@ -1087,6 +1207,12 @@ describe('상품 상세 QnA 탭', () => {
       ],
     });
 
+    /**
+     * qnaErrors.content가 있으면 오류 메시지 Span이 렌더링된다 — 이 명제를 잰다.
+     *
+     * @scenario section=form_errors
+     * @effects qna_form_error_text_follows_errors_state
+     */
     it('qnaErrors.content가 있으면 오류 메시지 Span이 렌더링된다', async () => {
       const testUtils = createLayoutTest(makeModalErrorFixture(), {
         componentRegistry: registry,
@@ -1110,6 +1236,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * qnaErrors가 null이면 오류 메시지 Span이 렌더링되지 않는다 — 이 명제를 잰다.
+     *
+     * @scenario section=form_errors
+     * @effects qna_form_error_text_follows_errors_state
+     */
     it('qnaErrors가 null이면 오류 메시지 Span이 렌더링되지 않는다', async () => {
       const testUtils = createLayoutTest(makeModalErrorFixture(), {
         componentRegistry: registry,
@@ -1134,6 +1266,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * qnaErrors.title이 있으면 제목 오류 메시지 Span이 렌더링된다 — 이 명제를 잰다.
+     *
+     * @scenario section=form_errors
+     * @effects qna_form_error_text_follows_errors_state
+     */
     it('qnaErrors.title이 있으면 제목 오류 메시지 Span이 렌더링된다', async () => {
       const testUtils = createLayoutTest(makeModalErrorFixture(), {
         componentRegistry: registry,
@@ -1331,6 +1469,12 @@ describe('상품 상세 QnA 탭', () => {
       };
     };
 
+    /**
+     * 본인 소유 + 미답변이면 수정/삭제 버튼이 렌더링된다 — 이 명제를 잰다.
+     *
+     * @scenario section=owner_actions
+     * @effects qna_owner_edit_delete_only_when_unanswered
+     */
     it('본인 소유 + 미답변이면 수정/삭제 버튼이 렌더링된다', async () => {
       const testUtils = createLayoutTest(makeEditDeleteFixture(), {
         componentRegistry: registry,
@@ -1355,6 +1499,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * 본인 소유여도 이미 답변이 있으면 수정/삭제 버튼이 렌더링되지 않는다 — 이 명제를 잰다.
+     *
+     * @scenario section=owner_actions
+     * @effects qna_owner_edit_delete_only_when_unanswered
+     */
     it('본인 소유여도 이미 답변이 있으면 수정/삭제 버튼이 렌더링되지 않는다', async () => {
       const testUtils = createLayoutTest(makeEditDeleteFixture(), {
         componentRegistry: registry,
@@ -1383,6 +1533,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * 타인의 문의이면 수정/삭제 버튼이 렌더링되지 않는다 — 이 명제를 잰다.
+     *
+     * @scenario section=owner_actions
+     * @effects qna_owner_edit_delete_only_when_unanswered
+     */
     it('타인의 문의이면 수정/삭제 버튼이 렌더링되지 않는다', async () => {
       const testUtils = createLayoutTest(makeEditDeleteFixture(), {
         componentRegistry: registry,
@@ -1405,6 +1561,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * can_update 권한이 있고 답변이 있으면 답변 수정/삭제 버튼이 렌더링된다 — 이 명제를 잰다.
+     *
+     * @scenario section=owner_actions
+     * @effects qna_answer_actions_follow_can_update
+     */
     it('can_update 권한이 있고 답변이 있으면 답변 수정/삭제 버튼이 렌더링된다', async () => {
       const testUtils = createLayoutTest(makeEditDeleteFixture(), {
         componentRegistry: registry,
@@ -1436,6 +1598,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * can_update 권한이 없으면 답변 수정/삭제 버튼이 렌더링되지 않는다 — 이 명제를 잰다.
+     *
+     * @scenario section=owner_actions
+     * @effects qna_answer_actions_follow_can_update
+     */
     it('can_update 권한이 없으면 답변 수정/삭제 버튼이 렌더링되지 않는다', async () => {
       const testUtils = createLayoutTest(makeEditDeleteFixture(), {
         componentRegistry: registry,
@@ -1465,6 +1633,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * can_update 권한이 있고 미답변이면 답변 작성 버튼이 렌더링된다 — 이 명제를 잰다.
+     *
+     * @scenario section=owner_actions
+     * @effects qna_answer_actions_follow_can_update
+     */
     it('can_update 권한이 있고 미답변이면 답변 작성 버튼이 렌더링된다', async () => {
       const testUtils = createLayoutTest(makeEditDeleteFixture(), {
         componentRegistry: registry,
@@ -1588,6 +1762,12 @@ describe('상품 상세 QnA 탭', () => {
       },
     });
 
+    /**
+     * can_update=true이면 비밀글 제목이 "비밀글입니다." 대신 실제 제목으로 표시된다 — 이 명제를 잰다.
+     *
+     * @scenario section=manager_secret
+     * @effects qna_can_update_reveals_secret_inquiry
+     */
     it('can_update=true이면 비밀글 제목이 "비밀글입니다." 대신 실제 제목으로 표시된다', async () => {
       const testUtils = createLayoutTest(makeCanManageFixture(), {
         componentRegistry: registry,
@@ -1606,6 +1786,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * can_update=false이고 is_owner=false이면 "비밀글입니다."가 표시된다 — 이 명제를 잰다.
+     *
+     * @scenario section=manager_secret
+     * @effects qna_can_update_reveals_secret_inquiry
+     */
     it('can_update=false이고 is_owner=false이면 "비밀글입니다."가 표시된다', async () => {
       const testUtils = createLayoutTest(makeCanManageFixture(), {
         componentRegistry: registry,
@@ -1623,6 +1809,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * can_update=true이면 비밀글이어도 qnaOpenId 설정 시 상세 패널이 열린다 — 이 명제를 잰다.
+     *
+     * @scenario section=manager_secret
+     * @effects qna_can_update_reveals_secret_inquiry
+     */
     it('can_update=true이면 비밀글이어도 qnaOpenId 설정 시 상세 패널이 열린다', async () => {
       const testUtils = createLayoutTest(makeCanManageFixture(), {
         componentRegistry: registry,
@@ -1641,6 +1833,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * can_update=false이면 비밀글 qnaOpenId 설정 시 상세 패널이 열리지 않는다 — 이 명제를 잰다.
+     *
+     * @scenario section=manager_secret
+     * @effects qna_can_update_reveals_secret_inquiry
+     */
     it('can_update=false이면 비밀글 qnaOpenId 설정 시 상세 패널이 열리지 않는다', async () => {
       const testUtils = createLayoutTest(makeCanManageFixture(), {
         componentRegistry: registry,
@@ -1718,6 +1916,12 @@ describe('상품 상세 QnA 탭', () => {
       },
     });
 
+    /**
+     * updated_at이 created_at과 다르면 수정됨 레이블이 표시된다 — 이 명제를 잰다.
+     *
+     * @scenario section=edited_label
+     * @effects qna_edited_label_when_updated_differs
+     */
     it('updated_at이 created_at과 다르면 수정됨 레이블이 표시된다', async () => {
       const testUtils = createLayoutTest(makeUpdatedLabelFixture(), {
         componentRegistry: registry,
@@ -1752,6 +1956,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * updated_at이 created_at과 같으면 수정됨 레이블이 표시되지 않는다 — 이 명제를 잰다.
+     *
+     * @scenario section=edited_label
+     * @effects qna_edited_label_when_updated_differs
+     */
     it('updated_at이 created_at과 같으면 수정됨 레이블이 표시되지 않는다', async () => {
       const testUtils = createLayoutTest(makeUpdatedLabelFixture(), {
         componentRegistry: registry,
@@ -1786,6 +1996,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * updated_at이 null이면 수정됨 레이블이 표시되지 않는다 — 이 명제를 잰다.
+     *
+     * @scenario section=edited_label
+     * @effects qna_edited_label_when_updated_differs
+     */
     it('updated_at이 null이면 수정됨 레이블이 표시되지 않는다', async () => {
       const testUtils = createLayoutTest(makeUpdatedLabelFixture(), {
         componentRegistry: registry,
@@ -1899,6 +2115,12 @@ describe('상품 상세 QnA 탭', () => {
       },
     });
 
+    /**
+     * 삭제 버튼 클릭 시 qnaDeleteId 상태가 설정된다 — 이 명제를 잰다.
+     *
+     * @scenario section=delete_modal
+     * @effects qna_delete_button_sets_modal_state
+     */
     it('삭제 버튼 클릭 시 qnaDeleteId 상태가 설정된다', async () => {
       const testUtils = createLayoutTest(makeDeleteModalFixture(), {
         componentRegistry: registry,
@@ -1942,6 +2164,12 @@ describe('상품 상세 QnA 탭', () => {
       testUtils.cleanup();
     });
 
+    /**
+     * 삭제 버튼 클릭 시 qnaDeleteSource가 "product"로 설정된다 — 이 명제를 잰다.
+     *
+     * @scenario section=delete_modal
+     * @effects qna_delete_button_sets_modal_state
+     */
     it('삭제 버튼 클릭 시 qnaDeleteSource가 "product"로 설정된다', async () => {
       const testUtils = createLayoutTest(makeDeleteModalFixture(), {
         componentRegistry: registry,

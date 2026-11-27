@@ -1,0 +1,26 @@
+feature: 통합검색 화면 — 검색 상태를 URL 쿼리에 두는 레이아웃 계약
+
+description: |
+  통합검색 화면의 탭·게시판 필터·정렬·페이지·커서는 전역 상태가 아니라 URL 쿼리에 둔다.
+  전역 상태에만 있으면 주소가 바뀌지 않아 새로고침·뒤로가기에서 조건이 통째로 초기화되고 공유도 안 된다.
+  화면은 정상으로 보이고 콘솔 오류도 없어서 레이아웃 선언을 직접 훑어 잠근다.
+
+  코어 매니페스트 `tests/scenarios/bounded-total-pagination.yaml` 이 같은 시험 파일을 「검색 상태의 주소 승계」
+  축으로 함께 소유한다. 이 매니페스트는 그 시험 파일이 레이아웃 단에서 재는 세부 명제를 시험별로 담는다.
+
+# axis 의미:
+#   rule — population 검색 레이아웃 모집단 전수 스캔, datasource 검색 데이터소스 선언, navigation 검색 화면의 이동 액션.
+axes:
+  rule: [population, datasource, navigation]
+
+effects:
+  - search_layout_population_derived_from_directory   # 검색 레이아웃 모집단을 디렉토리에서 도출한다 (비면 스캔 단언이 헛돈다)
+  - search_datasource_reads_state_from_url_query      # searchResults 엔드포인트가 type·board_slug·sort·page·cursor 를 query 에서 읽는다
+  - search_datasource_sends_member_token              # searchResults 데이터소스가 auth_mode=optional 로 로그인 회원 토큰을 싣는다
+  - search_layout_has_no_global_search_state          # 검색 화면 어디에도 _global.search* 상태가 남지 않는다
+  - search_navigation_merges_remaining_query          # /search 이동은 mergeQuery 로 나머지 상태를 이어받는다 (의도적 리셋은 사유 표기)
+  - search_facet_change_clears_page_and_cursor        # 탭·필터·정렬을 바꾸는 이동은 page·cursor 를 함께 비운다
+  - search_page_change_carries_direction_cursor       # 페이지 이동은 방향에 맞는 next/prev 커서를 싣는다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/search-url-state-contract.test.ts

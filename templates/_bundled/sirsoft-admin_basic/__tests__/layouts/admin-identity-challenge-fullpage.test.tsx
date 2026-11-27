@@ -36,10 +36,20 @@ function walk(input: Node | Node[] | undefined, visit: (node: Node) => void): vo
 describe('Admin 본인인증 풀페이지 (sirsoft-admin_basic) — max_attempts 정합 회귀 차단', () => {
   const fp = fullPage as any;
 
+  /**
+   * state.maxAttempts 초기값이 0(무제한)이다.
+   * @scenario component=admin_identity_challenge_fullpage
+   * @effects admin_idv_fullpage_max_attempts_defaults_unlimited
+   */
   it('state.maxAttempts 초기값이 0 (무제한 기본)', () => {
     expect(initStateOf(fp)?.maxAttempts).toBe(0);
   });
 
+  /**
+   * query.max_attempts 폴백이 ?? 0 이다.
+   * @scenario component=admin_identity_challenge_fullpage
+   * @effects admin_idv_fullpage_max_attempts_defaults_unlimited
+   */
   it('init_actions 의 query.max_attempts fallback 이 ?? 0 으로 정합화', () => {
     const initActions = fp.init_actions ?? [];
     const setStateInit = initActions.find((a: any) => a.handler === 'setState' && a.params?.maxAttempts);
@@ -48,6 +58,11 @@ describe('Admin 본인인증 풀페이지 (sirsoft-admin_basic) — max_attempts
     expect(setStateInit.params.maxAttempts).not.toContain('?? 5');
   });
 
+  /**
+   * challenge_id 가 있으면 challenge 단건을 조회한다.
+   * @scenario component=admin_identity_challenge_fullpage
+   * @effects admin_idv_fullpage_fetches_challenge_for_max_attempts
+   */
   it('init_actions 가 challenge_id 가용 시 GET /api/identity/challenges/{id} 호출 (서버 정합 fetch)', () => {
     const initActions = fp.init_actions ?? [];
     const apiCall = initActions.find((a: any) => a.handler === 'apiCall');
@@ -58,6 +73,11 @@ describe('Admin 본인인증 풀페이지 (sirsoft-admin_basic) — max_attempts
     expect(apiCall.if).toContain('query.challenge_id');
   });
 
+  /**
+   * 조회 성공 시 응답의 max_attempts 로 _local.maxAttempts 를 갱신한다.
+   * @scenario component=admin_identity_challenge_fullpage
+   * @effects admin_idv_fullpage_fetches_challenge_for_max_attempts
+   */
   it('apiCall.onSuccess 가 response.data.max_attempts 로 _local.maxAttempts 를 갱신', () => {
     const initActions = fp.init_actions ?? [];
     const apiCall = initActions.find((a: any) => a.handler === 'apiCall');
@@ -67,6 +87,11 @@ describe('Admin 본인인증 풀페이지 (sirsoft-admin_basic) — max_attempts
     expect(setStateOnSuccess.params.maxAttempts).toContain('response.data.max_attempts');
   });
 
+  /**
+   * 카운트다운 문구와 확인 버튼 disabled 가 maxAttempts ?? 5 하드코딩을 쓰지 않는다.
+   * @scenario component=admin_identity_challenge_fullpage
+   * @effects admin_idv_fullpage_no_hardcoded_attempt_limit
+   */
   it('카운트다운 텍스트 + 확인 버튼 disabled 가 maxAttempts ?? 5 하드코딩을 사용하지 않는다', () => {
     const offenders: string[] = [];
     walk(fp as unknown as Node, (n) => {
@@ -80,6 +105,11 @@ describe('Admin 본인인증 풀페이지 (sirsoft-admin_basic) — max_attempts
     expect(offenders).toEqual([]);
   });
 
+  /**
+   * 서버 응답의 attempts 를 읽지 않는다.
+   * @scenario component=admin_identity_challenge_fullpage
+   * @effects admin_idv_fullpage_does_not_show_remaining_attempts
+   */
   it('서버 응답의 attempts 를 읽지 않는다 (공개 폴링 경로라 서버가 싣지 않음)', () => {
     // 회귀: getStatus 응답에서 attempts 를 뺐는데 레이아웃이 계속 그 값을 읽고 있어,
     // 외부 redirect 콜백 후 진입 시 남은 시도 횟수가 실제보다 많게 표시되던 결함.
@@ -96,10 +126,20 @@ describe('Admin 본인인증 풀페이지 (sirsoft-admin_basic) — max_attempts
     expect(offenders).toEqual([]);
   });
 
+  /**
+   * 남은 시도 횟수를 화면에 표시하지 않는다.
+   * @scenario component=admin_identity_challenge_fullpage
+   * @effects admin_idv_fullpage_does_not_show_remaining_attempts
+   */
   it('남은 시도 횟수를 화면에 표시하지 않는다 (정확한 값을 알 수 없음)', () => {
     expect(JSON.stringify(fp)).not.toContain('remaining_attempts');
   });
 
+  /**
+   * 확인 버튼 disabled 식이 무제한(0) 가드를 둔다.
+   * @scenario component=admin_identity_challenge_fullpage
+   * @effects admin_idv_fullpage_unlimited_attempts_not_disabled
+   */
   it('확인 버튼 disabled 가 maxAttempts=0 (무제한) 케이스 가드를 포함', () => {
     let hasUnlimitedGuard = false;
     walk(fp as unknown as Node, (n) => {

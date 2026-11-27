@@ -191,6 +191,11 @@ describe('admin_language_pack_list 레이아웃 렌더링 (계획서 §16.10)', 
     setupRegistry();
   });
 
+  /**
+   * 목록 행이 Vendor 열과 함께 그려진다.
+   * @scenario component=admin_language_pack_list
+   * @effects language_pack_list_renders_rows
+   */
   it('케이스 71: 언어팩 목록 — Vendor 열 포함 row 렌더링', async () => {
     const testUtils = createLayoutTest(listLayout);
     testUtils.mockApi('language_packs', {
@@ -216,6 +221,11 @@ describe('admin_language_pack_list 레이아웃 렌더링 (계획서 §16.10)', 
     testUtils.cleanup();
   });
 
+  /**
+   * scope 필터 Select 가 _local.filterScope 에 바인딩된다.
+   * @scenario component=admin_language_pack_list
+   * @effects language_pack_scope_filter_bound
+   */
   it('케이스 72: scope 필터 변경 → Select 가 _local.filterScope 값에 바인딩됨', async () => {
     // 초기 상태로 'module' 시작 — Select 의 value 가 _local 상태와 바인딩됨을 확인
     const filteredLayout = { ...listLayout, layout_name: 'list_filter_module', state: { filterScope: 'module' } };
@@ -236,6 +246,11 @@ describe('admin_language_pack_list 레이아웃 렌더링 (계획서 §16.10)', 
     testUtils.cleanup();
   });
 
+  /**
+   * 설치 모달이 installTab 에 따라 ZIP·GitHub·URL 패널을 보인다.
+   * @scenario component=admin_language_pack_list
+   * @effects language_pack_install_modal_tabs
+   */
   it('케이스 73: 설치 모달 — installTab 상태에 따라 ZIP/GitHub/URL 패널 표시', async () => {
     // 초기 zip 패널 — 기본 상태에서 zip 만 표시
     const utilsZip = createLayoutTest(modalLayout);
@@ -264,6 +279,11 @@ describe('admin_language_pack_list 레이아웃 렌더링 (계획서 §16.10)', 
     utilsUrl.cleanup();
   });
 
+  /**
+   * 빈 상태에서 안내 문구와 설치 버튼이 보인다.
+   * @scenario component=admin_language_pack_list
+   * @effects language_pack_empty_state
+   */
   it('케이스 74: 빈 상태 — 안내 메시지 + 설치 버튼 표시', async () => {
     const testUtils = createLayoutTest(listLayout);
     testUtils.mockApi('language_packs', {
@@ -279,6 +299,11 @@ describe('admin_language_pack_list 레이아웃 렌더링 (계획서 §16.10)', 
     testUtils.cleanup();
   });
 
+  /**
+   * has_update 행에 업데이트 배지가 보인다.
+   * @scenario component=admin_language_pack_list
+   * @effects language_pack_update_badge
+   */
   it('케이스 76: has_update=true 행 — 업데이트 배지 노출 (P5 회귀)', async () => {
     const updateBadgeLayout = {
       ...listLayout,
@@ -328,6 +353,11 @@ describe('admin_language_pack_list 레이아웃 렌더링 (계획서 §16.10)', 
     testUtils.cleanup();
   });
 
+  /**
+   * scopeLocked + route.identifier 면 부모 배너가 보인다.
+   * @scenario component=admin_language_pack_list
+   * @effects language_pack_scope_locked_banner
+   */
   it('케이스 77: scopeLocked=true + route.identifier — 부모 배너 노출 (P5 회귀)', async () => {
     const bannerLayout = {
       version: '1.0.0',
@@ -361,6 +391,11 @@ describe('admin_language_pack_list 레이아웃 렌더링 (계획서 §16.10)', 
     testUtils.cleanup();
   });
 
+  /**
+   * 카드형 UI 가 카드별 데이터와 액션 영역을 그린다.
+   * @scenario component=admin_language_pack_list
+   * @effects language_pack_list_renders_rows
+   */
   it('케이스 78: 카드형 UI — CardGrid 데이터 + 카드별 액션 영역 렌더', async () => {
     const TestCardGrid: React.FC<any> = ({ data, cardColumns, 'data-testid': testId }) => (
       <div data-testid={testId || 'card-grid'}>
@@ -438,6 +473,11 @@ describe('admin_language_pack_list 레이아웃 렌더링 (계획서 §16.10)', 
     utils.cleanup();
   });
 
+  /**
+   * 미설치 번들은 설치 버튼을 보이고 토글은 숨긴다.
+   * @scenario component=admin_language_pack_list
+   * @effects language_pack_row_actions_follow_status
+   */
   it('케이스 79: 미설치 번들 (status=uninstalled) — install 버튼 노출, Toggle 미노출', async () => {
     const installVisibilityLayout = {
       version: '1.0.0',
@@ -507,6 +547,11 @@ describe('admin_language_pack_list 레이아웃 렌더링 (계획서 §16.10)', 
     utils.cleanup();
   });
 
+  /**
+   * protected 팩의 제거 버튼은 disabled 다.
+   * @scenario component=admin_language_pack_list
+   * @effects language_pack_row_actions_follow_status
+   */
   it('케이스 75: protected 팩 — 제거 버튼 disabled', async () => {
     const testUtils = createLayoutTest(listLayout);
     testUtils.mockApi('language_packs', {

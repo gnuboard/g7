@@ -1,0 +1,34 @@
+feature: 마이페이지 주문내역 레이아웃 구조
+
+description: |
+  사용자 템플릿의 마이페이지 주문 목록(orders.json · _list.json)과 주문 상세(show.json)가
+  모듈 API 를 바른 경로로 부르고, 서버가 만든 표기 필드와 어휘를 그대로 그리는지 잰다.
+  API 계약 자체는 `mypage-order-api-contract.yaml` 이 맡는다.
+
+  조용히 깨지는 지점은 셋이다.
+  ① 데이터소스가 옛 경로(`/api/shop/`)나 다른 페이지네이션 경로를 읽으면 목록이 비어 보인다.
+  ② 화면이 상태 라벨·금액을 자기 키로 다시 만들면 서버 어휘와 어긋난다 — 서버가 만든
+     `status_summary`·`*_formatted` 를 그대로 써야 한다.
+  ③ 지운 옛 취소 모달의 흔적(모달 참조·로컬 상태·핸들러)이 남으면 누를 수 없는 버튼이 남는다.
+
+# axis 의미:
+#   screen — list 는 orders.json·_list.json, detail 은 show.json·_items.json 이다.
+axes:
+  screen: [list, detail]
+
+effects:
+  - mypage_orders_layout_extends_user_base
+  - mypage_orders_datasource_uses_module_api_with_page_and_status
+  - mypage_orders_init_actions_seed_page_and_status
+  - mypage_orders_list_partial_is_referenced
+  - mypage_orders_status_summary_reads_server_vocabulary
+  - mypage_orders_status_cell_click_filters_the_list
+  - mypage_orders_list_binds_server_formatted_fields
+  - mypage_orders_card_ui_branches_on_data
+  - mypage_orders_status_filter_uses_enum_values
+  - mypage_orders_pagination_reads_meta_path
+  - mypage_order_detail_uses_module_api
+  - mypage_order_detail_has_no_legacy_cancel_modal
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/mypageOrders.test.tsx
