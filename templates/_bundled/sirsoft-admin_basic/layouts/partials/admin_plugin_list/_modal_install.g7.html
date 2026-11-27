@@ -8,6 +8,7 @@
      함께 풀리고 칸이 잠긴다(깔 수 없는 것을 요청 본문에 실어 보내지 않으려는 것이다). -->
 <partial description="플러그인 설치 확인 모달 — install-preview API 응답 기반 cascade(의존 확장 + 동반 언어팩) 체크리스트 포함" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_install_modal">
   <modal data-type="composite" data-ref="plugin_install_modal" title="$t:admin.plugins.modals.install_title" size="medium">
+    <include src="partials/_shared/_extension_update_status.g7.html"/>
     <!-- 무엇이 함께 깔릴지와 각 항목의 기본 선택 여부를 서버가 정해 준다. 응답을 확장 공용 자리에 올려 두어 아래 체크리스트와 요청 본문이 같은 값을 읽게 한다. -->
     <data-source id="pluginInstallPreview" label_key="$t:editor.data_source.pluginInstallPreview" type="api" endpoint="/api/admin/plugins/{{_global.selectedPlugin.identifier}}/install-preview" :auth_required="true" initGlobal="installPreview"/>
     <div class="py-2">
@@ -166,6 +167,22 @@
           </label>
         </div>
       </div>
+      <!-- 강제 다시 설치(불완전 설치 복구) — 터미널 plugin:install --force 와 같다(7.2.1). 창을 열 때마다 꺼진다(여는 쪽 시드).
+           같은 「고급 설정」 접이식 안에 레이아웃 설치 소스 카드와 같은 모양으로 둔다. -->
+      <div data-ref="plugin_install_force" data-if="{{_global.pluginLayoutSourceOpen === true}}" class="mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:admin.extension_update.force_title</div>
+        <label class="flex items-start gap-2 cursor-pointer select-none">
+          <input type="checkbox" checked="{{_global.extInstallForce === true}}" class="w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400">
+            <on type="change">
+              <set-state target="global" extInstallForce="{{_global.extInstallForce !== true}}"/>
+            </on>
+          </input>
+          <div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">$t:admin.extension_update.install_force_label</div>
+            <div class="text-xs text-muted mt-0.5">$t:admin.extension_update.install_force_desc</div>
+          </div>
+        </label>
+      </div>
     </div>
     <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.isPluginInstalling}}">
@@ -182,8 +199,15 @@
             깐 뒤 목록·관리자 메뉴를 다시 받고 확장을 새로 읽는다 — 플러그인이 메뉴와 화면 조각을 더할 수 있다. -->
           <sequence>
             <set-state target="global" :isPluginInstalling="true"/>
+            <!-- 진행 중 안내(시작 시각·경과) — 성공·실패 갈래가 끈다 -->
+            <parallel>
+              <action handler="startExtensionUpdateClock"/>
+            </parallel>
             <api-call :auth_required="true" target="/api/admin/plugins/install" method="POST">
               <success>
+                <parallel>
+                  <action handler="stopExtensionUpdateClock"/>
+                </parallel>
                 <set-state target="global" :isPluginInstalling="false" :installSelectedDeps="null" :installSelectedLPs="null" :installSelectedIntegrations="null"/>
                 <toast type="success" message="$t:admin.plugins.install_success"/>
                 <!-- 함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4). 함께 설치하다 실패한 항목은 상태 뒤에 사유(failure_reason)를 붙인다. 막지 않는 안내라 창을 열지 않는다. -->
@@ -202,10 +226,13 @@
                 <open-modal if="{{(response?.data?.warnings?.length ?? 0) &gt; 0}}" target="lifecycle_warnings_modal"/>
               </success>
               <fail>
+                <parallel>
+                  <action handler="stopExtensionUpdateClock"/>
+                </parallel>
                 <set-state target="global" :isPluginInstalling="false"/>
                 <toast type="error" message="{{error.message}}"/>
               </fail>
-              <body plugin_name="{{_global.selectedPlugin.identifier}}" vendor_mode="{{_global.pluginInstallVendorMode ?? 'auto'}}" dependencies="{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}" language_packs="{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}" integrations="{{ (_global.installPreview?.integrations ?? []).filter(i => i.can_select === true &amp;&amp; i.status !== 'active' &amp;&amp; (_global.installSelectedIntegrations ?? (_global.installPreview?.integrations ?? []).filter(x => x.default_selected).map(x => x.type + ':' + x.identifier)).includes(i.type + ':' + i.identifier)).map(i => ({ type: i.type, identifier: i.identifier })) }}" layout_source="{{_global.pluginLayoutSource ?? 'auto'}}"/>
+              <body plugin_name="{{_global.selectedPlugin.identifier}}" force="{{_global.extInstallForce === true}}" vendor_mode="{{_global.pluginInstallVendorMode ?? 'auto'}}" dependencies="{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}" language_packs="{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}" integrations="{{ (_global.installPreview?.integrations ?? []).filter(i => i.can_select === true &amp;&amp; i.status !== 'active' &amp;&amp; (_global.installSelectedIntegrations ?? (_global.installPreview?.integrations ?? []).filter(x => x.default_selected).map(x => x.type + ':' + x.identifier)).includes(i.type + ':' + i.identifier)).map(i => ({ type: i.type, identifier: i.identifier })) }}" layout_source="{{_global.pluginLayoutSource ?? 'auto'}}"/>
             </api-call>
           </sequence>
         </on>

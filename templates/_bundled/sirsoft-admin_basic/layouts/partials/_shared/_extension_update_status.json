@@ -1,0 +1,200 @@
+{
+    "comment": "확장 업데이트·설치 창 공용 진행·실패 안내(7.2.1).\n  ⑴ 진행 중(`_global.extUpdateBusy`): 「업데이트 중입니다 — 창을 닫지 마세요」와 시작 시각·경과(화면이 1초마다 계산 — startExtensionUpdateClock).\n  ⑵ 실패(`_global.extUpdateFailure` — 실패 응답의 data: outcome·warnings·retry_command): outcome 별로 지금 상태와 할 일을 알린다.\n     restored(되돌림됨)·restore_failed(되돌리기 실패 — 파일이 섞였을 수 있음)·kept_new(새 판이 남음)·unchanged(바뀐 것 없음).\n     필드가 없는 옛 서버 응답이면 이 절은 그려지지 않고, 창의 오류 상자(서버 문구)만 남는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "확장 업데이트 진행·실패 안내"
+    },
+    "id": "ext_update_status",
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "id": "ext_update_progress",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.extUpdateBusy === true}}",
+            "props": {
+                "className": "mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg",
+                "role": "status"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm font-medium text-info-soft"
+                                    },
+                                    "text": "$t:admin.extension_update.progress_title"
+                                },
+                                {
+                                    "id": "ext_update_progress_clock",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-xs text-info-soft mt-1"
+                                    },
+                                    "text": "$t:admin.extension_update.progress_clock|started={{_global.extUpdateStartedAt ?? ''}}|elapsed={{_global.extUpdateElapsed ?? '0:00'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ext_update_failure",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!!_global.extUpdateFailure && (!!_global.extUpdateFailure.outcome || (_global.extUpdateFailure.warnings ?? []).length > 0 || !!_global.extUpdateFailure.retry_command)}}",
+            "props": {
+                "className": "mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg",
+                "role": "alert"
+            },
+            "children": [
+                {
+                    "id": "ext_update_failure_restored",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.extUpdateFailure?.outcome === 'restored'}}",
+                    "props": {
+                        "className": "text-sm text-error-soft"
+                    },
+                    "text": "$t:admin.extension_update.outcome_restored"
+                },
+                {
+                    "id": "ext_update_failure_restore_failed",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.extUpdateFailure?.outcome === 'restore_failed'}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm font-medium text-error-soft"
+                            },
+                            "text": "$t:admin.extension_update.outcome_restore_failed"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-error-soft mt-1"
+                            },
+                            "text": "$t:admin.extension_update.outcome_restore_failed_help"
+                        }
+                    ]
+                },
+                {
+                    "id": "ext_update_failure_kept_new",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.extUpdateFailure?.outcome === 'kept_new'}}",
+                    "props": {
+                        "className": "text-sm text-error-soft"
+                    },
+                    "text": "$t:admin.extension_update.outcome_kept_new"
+                },
+                {
+                    "id": "ext_update_failure_unchanged",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.extUpdateFailure?.outcome === 'unchanged'}}",
+                    "props": {
+                        "className": "text-sm text-error-soft"
+                    },
+                    "text": "$t:admin.extension_update.outcome_unchanged"
+                },
+                {
+                    "id": "ext_update_failure_warnings",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_global.extUpdateFailure?.warnings ?? []).length > 0}}",
+                    "props": {
+                        "className": "mt-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs font-medium text-warning-soft"
+                            },
+                            "text": "$t:admin.extension_update.warnings_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Ul",
+                            "props": {
+                                "className": "mt-1 space-y-0.5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "iteration": {
+                                        "source": "_global.extUpdateFailure.warnings ?? []",
+                                        "item_var": "failWarning"
+                                    },
+                                    "props": {
+                                        "className": "text-xs text-warning-soft break-all"
+                                    },
+                                    "text": "• {{typeof failWarning === 'string' ? failWarning : [failWarning.step, failWarning.target_name ?? failWarning.target, failWarning.reason ?? failWarning.message].filter(Boolean).join(' · ')}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "ext_update_failure_retry",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_global.extUpdateFailure?.retry_command}}",
+                    "props": {
+                        "className": "mt-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-secondary"
+                            },
+                            "text": "$t:admin.extension_update.retry_command_hint"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Pre",
+                            "props": {
+                                "className": "mt-1 rounded bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 text-xs p-2 whitespace-pre-wrap break-all"
+                            },
+                            "text": "{{_global.extUpdateFailure?.retry_command}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

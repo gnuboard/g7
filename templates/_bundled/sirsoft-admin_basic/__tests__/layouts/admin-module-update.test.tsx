@@ -701,8 +701,11 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
   describe('모달 콘텐츠 구조 검증', () => {
     // @scenario kind=module, area=modal_content
     // @effects update_modal_content_lists_versions
-    it('모달 타이틀이 업데이트 확인으로 설정되어 있다', () => {
-      expect(modal.props.title).toBe('$t:admin.modules.modals.update_title');
+    it('모달 타이틀은 평소 업데이트 확인이고, 다시 설치·다시 실행이면 그 상황 제목이다', () => {
+      const title = String(modal.props.title);
+      expect(title).toContain('$t:admin.modules.modals.update_title');
+      expect(title).toContain('$t:admin.extension_update.reinstall_title_module');
+      expect(title).toContain('$t:admin.extension_update.retry_title_module');
     });
 
     // @scenario kind=module, area=modal_content

@@ -48,6 +48,13 @@ import {
   submitCoreUpdateSelectionHandler,
 } from './coreUpdateHandler';
 import { rememberIdentityClaimHandler } from './identityLauncher';
+// 확장 업데이트 창 — 진행 시계와 응답이 끊긴 뒤 서버 결과 확인 (7.2.1)
+import {
+  startExtensionUpdateClockHandler,
+  stopExtensionUpdateClockHandler,
+  reconcileExtensionUpdateHandler,
+  captureExtensionUpdateFailureHandler,
+} from './extensionUpdateHandler';
 
 /**
  * 핸들러 맵
@@ -73,6 +80,12 @@ export const handlerMap = {
   refreshCoreUpdateStatus: refreshCoreUpdateStatusHandler,
   // 진행 중 선택(번들 배치·번들 업데이트 항목) 제출 뒤 이어서 진행 (7.2.1)
   submitCoreUpdateSelection: submitCoreUpdateSelectionHandler,
+  // 확장 업데이트 창 — 진행 시계 켜기·끄기, 응답이 끊긴 뒤 서버에서 결과 확인 (7.2.1)
+  startExtensionUpdateClock: startExtensionUpdateClockHandler,
+  stopExtensionUpdateClock: stopExtensionUpdateClockHandler,
+  reconcileExtensionUpdate: reconcileExtensionUpdateHandler,
+  // 실패 응답 본문의 실패 결과(outcome·warnings·retry_command)를 전역으로 넘긴다
+  captureExtensionUpdateFailure: captureExtensionUpdateFailureHandler,
   setTheme: setThemeHandler,
   initTheme: initThemeHandler,
   scrollToSection: scrollToSectionHandler,

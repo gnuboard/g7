@@ -2176,16 +2176,23 @@ class LanguagePackService
      * @param  LanguagePack  $pack  대상 언어팩
      * @param  bool  $force  버전 변동 가드 우회 여부 (true 면 같은 버전으로도 _bundled 강제 재적용)
      * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일, 7.2.0) — null 이면 미서명은 409
+     * @param  string|null  $source  업데이트 소스 (auto|bundled|github — null·auto 는 지금 동작, bundled 는 번들만, github 은 GitHub 만 — 터미널 --source 와 같다)
      * @return LanguagePack 갱신된 언어팩
      *
      * @throws LanguagePackOperationException source_type 이 github 이 아니거나 source_url 이 없는 경우, 또는 진행 중일 때
      * @throws PackageIntegrityException GitHub 에서 받은 패키지의 서명 검증이 업데이트를 멈췄을 때 (백업으로 되돌린 뒤)
      */
-    public function performUpdate(LanguagePack $pack, bool $force = false, ?PackageIntegrityOptions $integrity = null): LanguagePack
+    public function performUpdate(LanguagePack $pack, bool $force = false, ?PackageIntegrityOptions $integrity = null, ?string $source = null): LanguagePack
     {
+        $source = in_array($source, ['bundled', 'github'], true) ? $source : null;
+
         // 요구사항 4: bundled 도 update 가능. force=true 시 bundled 1순위, 그 외 GitHub 1순위 + bundled 폴백
         $githubUrl = $this->resolveGithubUrl($pack);
         if (! $githubUrl && ! $this->hasBundledManifest($pack->identifier)) {
+            throw new LanguagePackOperationException('language_packs.errors.update_no_source');
+        }
+        // 소스를 고정했는데 그 소스가 없으면 다른 소스로 넘어가지 않는다 — 종전에는 --source=github 이 force 와 함께 번들을 썼다(7.2.1 출시 전)
+        if (($source === 'github' && ! $githubUrl) || ($source === 'bundled' && ! $this->hasBundledManifest($pack->identifier))) {
             throw new LanguagePackOperationException('language_packs.errors.update_no_source');
         }
 
@@ -2218,6 +2225,10 @@ class LanguagePackService
         if (! $useBundled && $githubUrl === null) {
             // GitHub URL 해석 실패 시 bundled 폴백 자동 사용
             $useBundled = $this->hasBundledManifest($identifier);
+        }
+        // 소스 고정 — bundled 는 번들만, github 은 GitHub 만 쓴다(위에서 그 소스가 있는지 확인했다)
+        if ($source !== null) {
+            $useBundled = $source === 'bundled';
         }
 
         // 1. 상태 → Updating (가드용)

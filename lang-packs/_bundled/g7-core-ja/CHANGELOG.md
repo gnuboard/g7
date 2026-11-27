@@ -14,6 +14,10 @@
 - 등록되지 않은 본인인증 확장 지점을 강제하려 할 때의 예외 문구(`identity.errors.checkpoint_not_registered`)의 일본어 번역을 추가했습니다.
 - 웹 코어 업데이트 진행 중 선택(새로 들어온 공식 번들 배치·번들 확장·언어팩 업데이트 항목) 문구(`settings.core_update.web.selection_*`·`log_selection_*`·`log_bundled_none_selected`·`selection_kinds.*`·항목 이름 `attributes.ask_bundled_selection`·`selection_*`)의 일본어 번역을 추가했습니다.
 
+- 웹 코어 업데이트 실행 기록의 번들 항목별 결과·대상 요약(`settings.core_update.web.log_bundled_targets*`·`log_bundled_item_*`)과 단계별 세부 기록(`log_extract_done`·`log_integrity_*`·`log_applied_*`·`log_vendor_swapped`·`log_vendor_copied_files`·`log_migrations_*`·`log_upgrade_steps_*`·`log_finalize_*`·`log_list_more`) 문구의 일본어 번역을 추가했습니다.
+- 웹 코어 업데이트 마무리의 확장 오토로드·훅 캐시 재생성 결과 문구(`settings.core_update.web.log_finalize_autoload_rebuilt`·`log_finalize_autoload_failed`)와 확장 업데이트 요청 항목 이름(`validation.attributes.update_zip_file`·`update_source`·`update_force`)의 일본어 번역을 추가했습니다.
+- 관리자 화면 확장 업데이트의 수동 ZIP·업데이트 소스 검증 문구(`extensions.errors.manual_zip_not_found`·`invalid_manual_zip_name`·`invalid_update_source`)의 일본어 번역을 추가했습니다.
+
 ### Changed
 
 - 코어 버전 조건을 만족하지 않는 확장의 거절 문구(`extensions.errors.core_version_mismatch`)를 코어 7.2.1 문구에 맞춰 「コアバージョンの条件 >=7.2.1 が必要です」로 바꿨습니다(조건 뒤에 「以上」가 겹쳐 붙던 표현).

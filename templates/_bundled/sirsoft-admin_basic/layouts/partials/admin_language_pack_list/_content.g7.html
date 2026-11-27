@@ -249,17 +249,20 @@
           ...(p.status === 'uninstalled' ? [{ label: '$t:admin.language_packs.status.uninstalled', tone: 'info' }] : []),
           ...(p.is_protected === true ? [{ label: '$t:admin.language_packs.messages.protected_badge', tone: 'accent' }] : []),
           ...(p.files_missing === true ? [{ label: '$t:admin.language_packs.badge.files_missing', tone: 'danger' }] : []),
+          ...(p.unfinished_update ? [{ label: '$t:admin.extension_update.unfinished_badge', tone: 'warning', icon: 'exclamation-triangle', title: $t('admin.extension_update.unfinished_hint', {from: p.unfinished_update.from_version ?? '', to: p.unfinished_update.to_version ?? '', started: p.unfinished_update.started_at ?? ''}) }] : []),
           ...(p.has_update === true &amp;&amp; p.status !== 'uninstalled' ? [{ label: '$t:admin.language_packs.badge.update_available', tone: 'danger' }] : [])
         ],
         toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.is_protected === true || (p.abilities?.can_activate !== true &amp;&amp; p.abilities?.can_deactivate !== true), label: p.name ?? p.identifier } : null,
         secondaryAction: p.files_missing === true &amp;&amp; p.bundled_source_available === true &amp;&amp; p.abilities?.can_install === true
           ? { label: '$t:admin.language_packs.actions.reinstall', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }
-          : (p.has_update === true &amp;&amp; p.status !== 'uninstalled' &amp;&amp; language_packs?.data?.abilities?.can_update ? { label: '$t:admin.language_packs.actions.update', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined } : null),
+          : (p.unfinished_update &amp;&amp; p.status !== 'uninstalled' &amp;&amp; language_packs?.data?.abilities?.can_update ? { label: '$t:admin.extension_update.retry_force', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined } :
+            (p.has_update === true &amp;&amp; p.status !== 'uninstalled' &amp;&amp; language_packs?.data?.abilities?.can_update ? { label: '$t:admin.language_packs.actions.update', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined } : null)),
         primaryAction: p.status === 'uninstalled'
           ? { label: '$t:admin.language_packs.actions.install', icon: 'download', variant: 'solid', disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_install !== true, title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }
           : null,
         actions: [
           { id: 'view_detail', label: '$t:admin.language_packs.actions.detail', iconName: 'info-circle' },
+          { id: 'reapply', label: '$t:admin.extension_update.reinstall', iconName: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage' || p.status === 'uninstalled' || p.has_update === true || !p.id || language_packs?.data?.abilities?.can_update !== true },
           { id: 'uninstall', label: '$t:admin.language_packs.actions.uninstall', iconName: 'trash', variant: 'danger', disabledReason: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.is_protected === true || p.status === 'uninstalled' || p.abilities?.can_uninstall !== true }
         ]
       }))}}">
@@ -321,6 +324,8 @@
               <sequence>
                 <!-- 창은 행을 다시 찾지 못하므로 아이콘 재료(주소·출처·로케일)도 여기서 함께 담는다. -->
                 <set-state target="local" updateId="{{$args[0].id}}" updateCurrent="{{$args[0].version}}" updateLatest="{{$args[0].latest_version}}" updateIconUrl="{{$args[0].icon_url}}" updateIconSource="{{$args[0].icon_source}}" updateLocale="{{$args[0].locale}}"/>
+                <!-- 고급 기본값 — 끝나지 않은 업데이트가 남은 행이면 강제를 켜 둔다(7.2.1) -->
+                <set-state target="global" extUpdateKind="lang_pack" extUpdateVendorMode="auto" extUpdateSource="auto" extUpdateZipFile="" extUpdateForce="{{!!$args[0].unfinished_update}}" :extUpdateAdvancedOpen="false" :extUpdateFailure="null" :extUpdateReinstall="false" extUpdateRetry="{{$args[0].stuck_update === true || !!$args[0].unfinished_update}}" :extUpdateManualSources="[]"/>
                 <open-modal target="language_pack_update_modal"/>
               </sequence>
             </case>
@@ -337,6 +342,14 @@
           <!-- 카드 더보기 메뉴. 삭제는 무엇을 지우는지 창이 되보여 줄 수 있도록 범위·대상·언어를
                함께 담아 둔다. -->
           <switch>
+            <case when="reapply">
+              <!-- 다시 설치 — 업데이트가 없어도 같은 판을 강제로 다시 적용한다(터미널 language-pack:update --force 와 같다) -->
+              <sequence>
+                <set-state target="local" updateId="{{$args[1].id}}" updateCurrent="{{$args[1]?.version}}" updateLatest="{{$args[1]?.version}}" updateIconUrl="{{$args[1].icon_url}}" updateIconSource="{{$args[1].icon_source}}" updateLocale="{{$args[1].locale}}"/>
+                <set-state target="global" extUpdateKind="lang_pack" extUpdateVendorMode="auto" extUpdateSource="auto" extUpdateZipFile="" :extUpdateForce="true" :extUpdateAdvancedOpen="false" :extUpdateFailure="null" :extUpdateReinstall="true" :extUpdateRetry="false" :extUpdateManualSources="[]"/>
+                <open-modal target="language_pack_update_modal"/>
+              </sequence>
+            </case>
             <case when="view_detail">
               <set-state target="local" detailId="{{$args[1].id ?? $args[1].bundled_identifier ?? $args[1].identifier}}"/>
               <refetch-data-source dataSourceId="language_pack_detail"/>

@@ -47,4 +47,34 @@ final class BundledPlacementPlan
     {
         return array_filter($this->placed, fn (array $row) => $row['reason'] === $reason);
     }
+
+    /**
+     * 운영자에게 배치 여부를 물을 미배치 번들만 돌려줍니다 — 확장 언어팩은 대상 확장을 따라가므로 뺍니다.
+     *
+     * 대상 확장을 배치하면 그 언어팩도 함께 배치되므로(target_placed), 터미널과 웹 모두 언어팩을 따로 묻지 않습니다.
+     *
+     * @return array<string, array<string, mixed>> 물을 미배치 번들 (`{type}:{identifier}` => 인벤토리 항목)
+     */
+    public function askableUnplaced(): array
+    {
+        return array_filter($this->unplaced, fn (array $entry) => ($entry['type'] ?? null) !== 'language_pack');
+    }
+
+    /**
+     * 운영자가 고르지 않았는데 의존성 때문에 함께 배치되는 번들을 돌려줍니다.
+     *
+     * 고르기 전 판정($base)에는 없던 dependency 사유 항목만 셉니다 — 원래 설치돼 있어 갱신되는 의존 번들은 빼고,
+     * 이번 선택이 새로 끌어온 번들만 남깁니다.
+     *
+     * @param  BundledPlacementPlan  $base  운영자 선택 없이 내린 판정
+     * @return array<string, array{entry: array<string, mixed>, reason: string, required_by: array<int, string>}> 함께 배치되는 항목
+     */
+    public function addedByDependencySince(BundledPlacementPlan $base): array
+    {
+        return array_filter(
+            $this->placedBy('dependency'),
+            fn (array $row, string $key) => ! isset($base->placed[$key]),
+            ARRAY_FILTER_USE_BOTH,
+        );
+    }
 }

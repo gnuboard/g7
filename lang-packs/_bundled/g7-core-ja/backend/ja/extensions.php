@@ -20,6 +20,9 @@ return [
     'stuck_update_activate_hint' => '整理した拡張機能は無効状態です。再度有効にするには: :command',
     'stuck_update_unfinished_hint' => 'この更新(:from → :to)は完了していません — ファイルは新しいバージョンに替わっている可能性があるため、記録バージョンを :from に戻しました。更新をもう一度実行すると、終わっていない段階だけを続けて完了します: :command',
     'errors' => [
+        'manual_zip_not_found' => '更新 ZIP が見つかりません: :name — storage/app/extension_pending フォルダーにアップロードしたか確認してください。',
+        'invalid_manual_zip_name' => 'ZIP ファイル名が正しくありません。フォルダーのパスなしで、英数字と .-_ だけの .zip ファイル名を選んでください。',
+        'invalid_update_source' => '更新ソースが正しくありません。(auto、bundled、github のみ使用できます)',
         'state_contract_conflict' => '\':name\' 状態契約は :owner が所有しています。:extension は同じ名前を宣言できません。',
         'core_version_mismatch' => ':extension (:type)にはグヌボード7コアバージョンの条件 :required が必要です。(現在: :installed)',
         'php_extension_missing' => ':name 拡張を使用するには、サーバーに PHP 拡張 :extensions が必要です。インストール後にもう一度お試しください。',

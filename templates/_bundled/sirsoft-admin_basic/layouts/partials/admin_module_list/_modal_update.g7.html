@@ -9,7 +9,7 @@
   정책이 허용하면(`can_continue`) 실행 버튼이 「미서명으로 계속」으로 바뀌어 같은 본문에 `allow_unsigned=1` 만 더해 다시 보낸다.
   작업 잠금 409(같은 확장의 업데이트가 진행 중)는 종전대로 안내 토스트다 — 둘은 상태 코드가 아니라 응답 표지로 가른다. -->
 <partial description="모듈 업데이트 확인 모달" editor_label="$t:admin.modal_label.admin_module_list.module_update_modal">
-  <modal data-type="composite" data-ref="module_update_modal" title="$t:admin.modules.modals.update_title" size="medium">
+  <modal data-type="composite" data-ref="module_update_modal" title="{{_global.extUpdateReinstall === true ? '$t:admin.extension_update.reinstall_title_module' : (_global.extUpdateRetry === true ? '$t:admin.extension_update.retry_title_module' : '$t:admin.modules.modals.update_title')}}" size="medium">
     <div data-if="{{_global.selectedModule?.is_compatible === false}}" class="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg" role="alert">
       <div class="flex-start gap-2">
         <icon name="exclamation-triangle" class="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"/>
@@ -83,17 +83,19 @@
         <div class="text-error-soft break-all">{{_global.moduleUpdateError}}</div>
       </div>
     </div>
+    <!-- 진행 중 안내(시작 시각·경과)와 실패 결과(outcome·경고·다시 시도 명령) — 공용 조각(7.2.1) -->
+    <include src="partials/_shared/_extension_update_status.g7.html"/>
     <include src="partials/_package_integrity_notice.g7.html"/>
     <div class="py-2">
       <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="module_update_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
         <!-- thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다) -->
         <img data-if="{{_global.selectedModule?.icon_url}}" src="{{_global.selectedModule.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
         <icon data-if="{{!_global.selectedModule?.icon_url}}" name="cube" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/>
-      </span><span>$t:admin.modules.modals.update_confirm|name={{_global.selectedModule.name ?? ''}}</span></p>
+      </span><span data-if="{{_global.extUpdateReinstall === true}}">$t:admin.extension_update.reinstall_body|name={{_global.selectedModule?.name ?? ''}}|version={{_global.selectedModule?.version ?? ''}}</span><span data-if="{{_global.extUpdateReinstall !== true &amp;&amp; _global.extUpdateRetry === true}}">$t:admin.extension_update.retry_body|name={{_global.selectedModule?.name ?? ''}}</span><span data-if="{{_global.extUpdateReinstall !== true &amp;&amp; _global.extUpdateRetry !== true}}">$t:admin.modules.modals.update_confirm|name={{_global.selectedModule.name ?? ''}}</span></p>
       <div class="kv-list gap-y-2 text-sm mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
         <div class="kv-row">
           <span class="text-muted">$t:admin.modules.modals.field_version</span>
-          <span class="text-primary font-medium">$t:admin.modules.modals.update_version_info|from={{_global.selectedModule.version ?? ''}}|to={{_global.selectedModule.latest_version ?? ''}}</span>
+          <span data-if="{{_global.extUpdateReinstall === true}}" class="text-primary font-medium">{{_global.selectedModule?.version ?? ''}}</span><span data-if="{{_global.extUpdateReinstall !== true}}" class="text-primary font-medium">$t:admin.modules.modals.update_version_info|from={{_global.selectedModule.version ?? ''}}|to={{_global.selectedModule.latest_version ?? ''}}</span>
         </div>
         <div class="kv-row">
           <span class="text-muted">$t:admin.modules.modals.field_vendor</span>
@@ -138,8 +140,18 @@
       <div data-ref="module_update_layout_source_section" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
         <button data-ref="module_update_layout_source_toggle" type="button" aria-expanded="{{_global.moduleLayoutSourceOpen === true}}" class="text-label hover:text-gray-900 dark:hover:text-gray-200 inline-flex items-center gap-1">
           <on type="click">
-            <!-- 접힘/펼침만 바꾼다 — 고른 값은 그대로 둔다. -->
-            <set-state target="global" moduleLayoutSourceOpen="{{_global.moduleLayoutSourceOpen !== true}}"/>
+            <!-- 접힘/펼침만 바꾼다 — 고른 값은 그대로 둔다. 펼칠 때 직접 올린 ZIP 후보를 받는다(받지 못하면 빈 목록) -->
+            <sequence>
+              <set-state target="global" moduleLayoutSourceOpen="{{_global.moduleLayoutSourceOpen !== true}}"/>
+              <api-call :auth_required="true" target="/api/admin/modules/update-sources/manual-zip" method="GET">
+                <success>
+                  <set-state target="global" extUpdateManualSources="{{response?.data?.sources ?? []}}"/>
+                </success>
+                <fail>
+                  <set-state target="global" :extUpdateManualSources="[]"/>
+                </fail>
+              </api-call>
+            </sequence>
           </on>
           <icon name="{{_global.moduleLayoutSourceOpen === true ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" class="text-xs"/>
           <span>$t:admin.modules.modals.layout_source_advanced</span>
@@ -174,6 +186,10 @@
             </label>
           </div>
         </div>
+        <!-- 터미널 업데이트 명령의 선택지(vendor 방식·가져올 곳·직접 올린 ZIP·강제, 7.2.1) — 같은 카드 모양 -->
+        <div data-ref="module_update_advanced_options" data-if="{{_global.moduleLayoutSourceOpen === true}}">
+          <include src="partials/_shared/_extension_update_advanced.g7.html"/>
+        </div>
       </div>
       <!-- 검색 인덱스 재생성 — 인덱스 잠금·재색인 비용이 있어 기본은 미선택. 운영 중인 사이트는 유지보수 시간에 수행한다. -->
       <div data-ref="module_rebuild_search_index" class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
@@ -199,17 +215,26 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleUpdating || _global.layoutPreviewState !== 'ready' || (_global.selectedModule?.is_compatible === false &amp;&amp; _global.moduleForceUpdate !== true)}}" type="button">
+      <button class="flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleUpdating || (_global.layoutPreviewState !== 'ready' &amp;&amp; _global.extUpdateReinstall !== true) || (_global.selectedModule?.is_compatible === false &amp;&amp; _global.moduleForceUpdate !== true)}}" type="button">
         <on type="click">
           <!-- 업데이트 실행. 레이아웃 처리 방식과 강행 여부를 함께 보낸다.
                성공 갈래가 대상·선택을 기본값으로 되돌리므로 다음 모듈에 옛 값이 새지 않는다. -->
           <sequence>
-            <set-state target="global" :isModuleUpdating="true" :moduleUpdateError="null"/>
+            <set-state target="global" :isModuleUpdating="true" :moduleUpdateError="null" :extUpdateFailure="null"/>
+            <!-- 진행 중 안내의 시작 시각·경과 시간 — 요청이 끝나면 성공·실패 갈래가 끈다 -->
+            <parallel>
+              <action handler="startExtensionUpdateClock"/>
+            </parallel>
             <api-call :auth_required="true" target="/api/admin/modules/{{_global.selectedModule.identifier}}/update" method="POST">
               <success>
                 <set-state target="global" :isModuleUpdating="false"/>
+                <parallel>
+                  <action handler="stopExtensionUpdateClock"/>
+                </parallel>
+                <!-- 결과 창(7.2.1) — 대상 초기화 전에 담는다. 필드가 없는 옛 응답이면 이전 판은 목록 행, 새 판은 응답 version 으로 채운다 -->
+                <set-state target="global" extUpdateResult="{{Object.fromEntries([...Object.entries(response?.data || []), ['search_index', response?.search_index ?? response?.data?.search_index ?? null], ['kind', 'module'], ['name', _global.selectedModule?.name ?? _global.selectedModule?.identifier ?? ''], ['message', response?.message ?? null], ['from_version', response?.data?.from_version ?? _global.selectedModule?.version ?? null], ['to_version', response?.data?.to_version ?? response?.data?.version ?? null], ['no_update', response?.data?.no_update === true]])}}"/>
                 <!-- 서버 문구를 그대로 띄운다 — 업데이트할 것이 없었으면 「업데이트할 내용이 없습니다」가 온다 -->
-                <toast type="success" message="{{response?.message ?? '$t:admin.modules.update_success'}}"/>
+                <toast if="{{response?.data?.no_update !== true}}" type="success" message="{{response?.message ?? '$t:admin.modules.update_success'}}"/>
                 <!-- 새 판본의 서명 결과(응답 integrity_status) — 확인됐으면 서명자를, 서명 없이 올렸으면 그 사실을 알린다 -->
                 <toast if="{{response?.data?.integrity_status === 'verified'}}" type="success" message="$t:admin.package_integrity.result_verified|signer={{(response?.data?.integrity_key_id ?? '').split(':')[0]}}"/>
                 <toast if="{{response?.data?.integrity_status === 'unsigned' || response?.data?.integrity_status === 'unverifiable'}}" type="warning" message="$t:admin.package_integrity.result_unsigned"/>
@@ -218,11 +243,16 @@
                 <refetch-data-source dataSourceId="modules"/>
                 <close-modal/>
                 <set-state target="global" :selectedModule="null" moduleLayoutSource="auto" :moduleLayoutSourceOpen="false" layoutSyncStrategy="keep" :layoutDecisions="{}" :layoutPreview="null" :layoutUpdatePreview="null" layoutPreviewState="idle" :moduleRebuildSearchIndex="false"/>
+                <set-state target="global" extUpdateVendorMode="auto" extUpdateSource="auto" extUpdateZipFile="" :extUpdateForce="false" :extUpdateAdvancedOpen="false" :extUpdateReinstall="false" :extUpdateRetry="false"/>
+                <open-modal target="extension_update_result_modal"/>
                 <!-- 일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다. -->
                 <set-state target="global" lifecycleWarnings="{{response?.data?.warnings ?? []}}" :lifecycleWarningsOpen="false"/>
                 <open-modal if="{{(response?.data?.warnings?.length ?? 0) &gt; 0}}" target="lifecycle_warnings_modal"/>
               </success>
               <fail>
+                <parallel>
+                  <action handler="stopExtensionUpdateClock"/>
+                </parallel>
                 <!-- 409 = 같은 모듈의 업데이트가 이미 진행 중(더블클릭·CLI 동시 실행). 실패가 아니므로 오류 상자를 띄우지 않고
                      안내만 한다. 버튼은 풀어 둔다 — CLI 가 돌리는 중이면 이 창의 요청은 끝나지 않으므로 잠가 두면 창을 닫을 수 없다. -->
                 <set-state if="{{error.status === 409 &amp;&amp; !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" target="global" :isModuleUpdating="false"/>
@@ -231,13 +261,23 @@
                 <toast if="{{error.status !== 409 &amp;&amp; !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" type="error" message="{{error.message}}"/>
                 <!-- 패키지 무결성 거절 — 오류 상자·토스트 대신 위쪽 공용 안내 조각이 사유를 그린다 -->
                 <set-state if="{{!!(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" target="global" :isModuleUpdating="false" :moduleUpdateError="null" packageIntegrity="{{error.errors?.integrity ?? null}}" packageIntegrityMessage="{{error.message}}"/>
+                <!-- 실패 결과(7.2.1) — outcome·warnings·retry_command 는 오류 응답 본문 data 에 온다. 핸들러가 꺼내 전역에 담는다(옛 서버면 비운다) -->
+                <parallel>
+                  <action if="{{error.status !== 409 &amp;&amp; !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" handler="captureExtensionUpdateFailure" error="{{error}}"/>
+                </parallel>
+                <!-- 응답이 끊겼거나(응답 없음) JSON 이 아닌 게이트웨이 오류면 서버에서는 끝났을 수 있다 — 그 확장을 다시 읽어 결과를 보여 준다 -->
+                <parallel>
+                  <action if="{{((error.status ?? 0) === 0 || error.status === 502 || error.status === 504 || (error.status === 503 &amp;&amp; !error.errors))}}" handler="reconcileExtensionUpdate" kind="module" identifier="{{_global.selectedModule?.identifier}}" name="{{_global.selectedModule?.name ?? _global.selectedModule?.identifier}}" from_version="{{_global.selectedModule?.version ?? null}}" to_version="{{_global.selectedModule?.latest_version ?? null}}" message="{{error.message}}"/>
+                </parallel>
+                <refetch-data-source if="{{((error.status ?? 0) === 0 || error.status === 502 || error.status === 504 || (error.status === 503 &amp;&amp; !error.errors))}}" dataSourceId="modules"/>
+                <open-modal if="{{((error.status ?? 0) === 0 || error.status === 502 || error.status === 504 || (error.status === 503 &amp;&amp; !error.errors))}}" target="extension_update_result_modal"/>
               </fail>
-              <body layout_strategy="{{_global.layoutSyncStrategy ?? 'keep'}}" decisions="{{_global.layoutDecisions ?? {} }}" pending_token="{{_global.layoutUpdatePreview?.pending_token ?? null}}" force="{{_global.moduleForceUpdate === true}}" rebuild_search_index="{{_global.moduleRebuildSearchIndex === true}}" layout_source="{{_global.moduleLayoutSource ?? 'auto'}}" allow_unsigned="{{_global.packageIntegrity?.can_continue === true ? 1 : null}}" integrity_aware="1"/>
+              <body layout_strategy="{{_global.layoutSyncStrategy ?? 'keep'}}" decisions="{{_global.layoutDecisions ?? {} }}" pending_token="{{_global.layoutUpdatePreview?.pending_token ?? null}}" force="{{_global.moduleForceUpdate === true || _global.extUpdateForce === true || _global.extUpdateReinstall === true || _global.extUpdateRetry === true}}" vendor_mode="{{_global.extUpdateVendorMode ?? 'auto'}}" source="{{_global.extUpdateSource ?? 'auto'}}" zip_file="{{(_global.extUpdateZipFile ?? '') !== '' ? _global.extUpdateZipFile : null}}" rebuild_search_index="{{_global.moduleRebuildSearchIndex === true}}" layout_source="{{_global.moduleLayoutSource ?? 'auto'}}" allow_unsigned="{{_global.packageIntegrity?.can_continue === true ? 1 : null}}" integrity_aware="1"/>
             </api-call>
           </sequence>
         </on>
         <icon data-if="{{_global.isModuleUpdating}}" name="spinner" class="spinner-sm"/>
-        <span>{{_global.isModuleUpdating ? '$t:admin.modules.updating' : (_global.packageIntegrity?.can_continue === true ? '$t:admin.package_integrity.continue_unsigned' : '$t:admin.modules.actions.update')}}</span>
+        <span>{{_global.isModuleUpdating ? (_global.extUpdateReinstall === true ? '$t:admin.extension_update.reinstalling' : '$t:admin.modules.updating') : (_global.packageIntegrity?.can_continue === true ? '$t:admin.package_integrity.continue_unsigned' : (_global.extUpdateReinstall === true ? '$t:admin.extension_update.reinstall' : (_global.extUpdateRetry === true ? '$t:admin.extension_update.retry_force' : '$t:admin.modules.actions.update')))}}</span>
       </button>
     </footer>
   </modal>

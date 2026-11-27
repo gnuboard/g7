@@ -343,6 +343,7 @@
             ...(p.status === 'uninstalling' ? [{ label: '$t:admin.modules.status.uninstalling', tone: 'warning' }] : []),
             ...(p.status === 'updating' &amp;&amp; p.stuck_update !== true ? [{ label: '$t:admin.modules.status.updating', tone: 'accent' }] : []),
             ...(p.stuck_update === true ? [{ label: '$t:admin.modules.status.stuck_update', tone: 'warning', icon: 'exclamation-triangle', title: '$t:admin.modules.stuck_update_hint' }] : []),
+            ...(p.unfinished_update &amp;&amp; p.stuck_update !== true ? [{ label: '$t:admin.extension_update.unfinished_badge', tone: 'warning', icon: 'exclamation-triangle', title: $t('admin.extension_update.unfinished_hint', {from: p.unfinished_update.from_version ?? '', to: p.unfinished_update.to_version ?? '', started: p.unfinished_update.started_at ?? ''}) }] : []),
             ...(p.update_available &amp;&amp; p.status !== 'updating' &amp;&amp; p.status !== 'uninstalled' ? [{ label: '$t:admin.modules.update_available', tone: 'danger' }] : []),
             ...(p.is_compatible === false || p.core_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : []),
             ...((p.php_extensions?.missing_required ?? []).length > 0 ? [{ label: $t('extensions.php_extensions.badge_required_missing', {extensions: p.php_extensions.missing_required.join(', ')}), tone: 'danger', icon: 'exclamation-triangle' }] : []),
@@ -351,12 +352,13 @@
           toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_activate !== true || (['installing', 'uninstalling', 'updating'].includes(p.status) &amp;&amp; p.stuck_update !== true) || (p.status !== 'active' &amp;&amp; p.core_compatible === false), label: p.name ?? p.identifier } : null,
           primaryAction: p.status === 'uninstalled'
             ? { label: '$t:admin.modules.actions.install', icon: 'download', variant: 'solid', disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_install !== true || p.core_compatible === false, title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }
-            : (p.stuck_update === true
-              ? { label: '$t:admin.modules.actions.recover_update', icon: 'refresh', variant: 'solid', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : '$t:admin.modules.stuck_update_hint', disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_install !== true }
+            : (p.stuck_update === true || !!p.unfinished_update
+              ? { label: p.stuck_update === true ? '$t:admin.modules.actions.recover_update' : '$t:admin.extension_update.retry_force', icon: 'refresh', variant: 'solid', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : '$t:admin.modules.stuck_update_hint', disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_install !== true }
               : (p.update_available &amp;&amp; !['installing', 'uninstalling', 'updating'].includes(p.status) ? { label: '$t:admin.modules.actions.update', icon: 'refresh', variant: 'outline', disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_install !== true, title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined } : null)),
           actions: [
             { id: 'refresh_layouts', label: '$t:admin.modules.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },
             { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', href: '/admin/modules/' + p.identifier + '/language-packs', mergeQuery: true, disabled: p.status !== 'active' || modules?.data?.abilities?.can_view_language_packs !== true },
+            { id: 'reinstall', label: '$t:admin.extension_update.reinstall', iconName: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage' || p.status === 'uninstalled' || !!p.update_available || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true },
             { id: 'view_detail', label: '$t:admin.modules.actions.view_detail', iconName: 'info-circle' },
             { id: 'uninstall', label: '$t:admin.modules.actions.uninstall', iconName: 'trash', variant: 'danger', disabledReason: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_uninstall !== true }
           ]
@@ -453,13 +455,13 @@
             <switch on="{{$args[0].status === 'uninstalled' ? 'install' : 'update'}}">
               <case when="install">
                 <sequence>
-                  <set-state target="global" selectedModule="{{$args[0]}}" moduleLayoutSource="auto" :moduleLayoutSourceOpen="false" :installSelectedDeps="null" :installSelectedLPs="null" :installSelectedIntegrations="null"/>
+                  <set-state target="global" selectedModule="{{$args[0]}}" moduleLayoutSource="auto" :moduleLayoutSourceOpen="false" :installSelectedDeps="null" :installSelectedLPs="null" :installSelectedIntegrations="null" :extInstallForce="false" :extUpdateFailure="null"/>
                   <open-modal target="module_install_modal"/>
                 </sequence>
               </case>
               <case when="update">
                 <sequence>
-                  <set-state target="global" selectedModule="{{$args[0]}}" layoutSyncStrategy="keep" :layoutDecisions="{}" :layoutPreview="null" :layoutUpdatePreview="null" layoutPreviewState="loading" layoutPreviewRequest="{{({url: '/api/admin/modules/' + $args[0].identifier + '/update/preview', body: {}})}}" moduleLayoutSource="auto" :moduleLayoutSourceOpen="false" moduleForceUpdate="{{$args[0].stuck_update === true}}" :updateChangelog="[]" :moduleUpdateError="null" :moduleRebuildSearchIndex="false"/>
+                  <set-state target="global" selectedModule="{{$args[0]}}" layoutSyncStrategy="keep" :layoutDecisions="{}" :layoutPreview="null" :layoutUpdatePreview="null" layoutPreviewState="loading" layoutPreviewRequest="{{({url: '/api/admin/modules/' + $args[0].identifier + '/update/preview', body: {}})}}" moduleLayoutSource="auto" :moduleLayoutSourceOpen="false" moduleForceUpdate="{{$args[0].stuck_update === true || !!$args[0].unfinished_update}}" extUpdateKind="module" extUpdateVendorMode="auto" extUpdateSource="auto" extUpdateZipFile="" :extUpdateForce="false" :extUpdateAdvancedOpen="false" :extUpdateFailure="null" :extUpdateReinstall="false" extUpdateRetry="{{$args[0].stuck_update === true || !!$args[0].unfinished_update}}" :extUpdateManualSources="[]" :updateChangelog="[]" :moduleUpdateError="null" :moduleRebuildSearchIndex="false"/>
                   <!-- 창부터 연다 — 미리보기는 로딩 표시로 시작하고(GitHub 소스면 새 판을 내려받느라 오래 걸린다) 변경 이력·미리보기가 뒤이어 채운다. -->
                   <open-modal target="module_update_modal"/>
                   <api-call :auth_required="true" target="/api/admin/modules/{{$args[0].identifier}}/changelog?source={{$args[0].update_source ?? 'bundled'}}&amp;from_version={{$args[0].version}}&amp;to_version={{$args[0].latest_version}}" method="GET">
@@ -492,6 +494,14 @@
                 <navigate path="/admin/modules/{{$args[1].identifier}}/language-packs" :mergeQuery="true">
                   <query/>
                 </navigate>
+              </case>
+              <case when="reinstall">
+                <!-- 다시 설치 — 업데이트가 없어도 같은 판을 강제로 다시 설치한다(터미널 update --force 와 같다).
+                     같은 판이라 화면별 미리보기는 부르지 않고 업데이트 창을 그대로 쓴다. -->
+                <sequence>
+                  <set-state target="global" selectedModule="{{$args[1]}}" layoutSyncStrategy="keep" :layoutDecisions="{}" :layoutPreview="null" :layoutUpdatePreview="null" layoutPreviewState="idle" moduleLayoutSource="auto" :moduleLayoutSourceOpen="false" :moduleForceUpdate="true" :updateChangelog="[]" :moduleUpdateError="null" :moduleRebuildSearchIndex="false" extUpdateKind="module" extUpdateVendorMode="auto" extUpdateSource="auto" extUpdateZipFile="" :extUpdateForce="true" :extUpdateAdvancedOpen="false" :extUpdateFailure="null" :extUpdateReinstall="true" :extUpdateRetry="false" :extUpdateManualSources="[]"/>
+                  <open-modal target="module_update_modal"/>
+                </sequence>
               </case>
               <case when="view_detail">
                 <set-state target="global" selectedModule="{{$args[1]}}"/>
@@ -560,4 +570,5 @@
   <modal src="partials/admin_settings/_modal_core_update_guide.g7.html"/>
   <!-- 확장 작업이 「완료했지만 일부 항목이 실패」했을 때의 노란 경고 결과 창 — 성공 갈래가 응답 data.warnings 로 연다(코어 7.1.3). -->
   <modal src="partials/_modal_lifecycle_warnings.g7.html"/>
+  <modal src="partials/_shared/_modal_extension_update_result.g7.html"/>
 </layout>

@@ -62,7 +62,8 @@ class ExecuteUpgradeStepsCommand extends Command
         {--skip-resync : 코어 config 재로드 및 권한/메뉴/시더 동기화 생략 (동일 사유)}
         {--skip-version-env : .env APP_VERSION 갱신 생략 (부모 Step 11 가 처리)}
         {--skip-cache-clear : 캐시 정리 생략 (부모 Step 11 가 처리)}
-        {--skip-bundled-updates : 번들 확장 일괄 업데이트 생략 (부모가 prompt 로 처리)}';
+        {--skip-bundled-updates : 번들 확장 일괄 업데이트 생략 (부모가 prompt 로 처리)}
+        {--markers : 문서 루트 노출 통보를 부모가 읽는 표식 줄([DOCROOT_EXPOSURE])로 낸다 — 관리자 화면 업데이트가 경고로 옮긴다}';
 
     /**
      * 재동기화·오토로드 갱신 실패 경고는 표로만 보이고 종료코드는 바꾸지 않습니다 — 부모(core:update)는 종료코드 0 만 성공으로 본다.
@@ -257,14 +258,18 @@ class ExecuteUpgradeStepsCommand extends Command
         $stepsExecuted = 0;
         $stepsDiscovered = 0;
         $stepsSkipped = 0;
+        // 실행·건너뜀 스텝 버전 — 웹 실행 기록이 터미널과 같은 줄(어느 스텝을 돌렸는지)을 남기는 근거
+        $executedVersions = [];
+        $skippedVersions = [];
 
         try {
             $service->runUpgradeSteps(
                 $from,
                 $to,
-                function (string $version) use (&$stepsExecuted): void {
+                function (string $version) use (&$stepsExecuted, &$executedVersions): void {
                     $this->info(__('common.console.core_execute_upgrade_steps.step_running', ['version' => $version]));
                     $stepsExecuted++;
+                    $executedVersions[] = $version;
                 },
                 $force,
                 function (int $discovered) use (&$stepsDiscovered): void {
@@ -272,9 +277,10 @@ class ExecuteUpgradeStepsCommand extends Command
                 },
                 freshProcess: true,
                 // 같은 DB 의 다른 서버·실행이 이미 끝낸 스텝 — 실행 건수와 따로 세어 종료 신호에 싣는다
-                onSkipped: function (string $version) use (&$stepsSkipped): void {
+                onSkipped: function (string $version) use (&$stepsSkipped, &$skippedVersions): void {
                     $this->info(__('common.console.core_execute_upgrade_steps.step_already_run', ['version' => $version]));
                     $stepsSkipped++;
+                    $skippedVersions[] = $version;
                 },
             );
         } catch (UpgradeHandoffException $e) {
@@ -334,6 +340,9 @@ class ExecuteUpgradeStepsCommand extends Command
             'discovered' => $stepsDiscovered,
             // 실행 대장에 이미 끝난 것으로 있어 건너뛴 스텝 수 — 구버전 부모는 모르는 필드라 무시한다
             'skipped' => $stepsSkipped,
+            // 실행·건너뜀 스텝 버전 목록 — 구버전 부모는 모르는 필드라 무시한다
+            'versions' => $executedVersions,
+            'skippedVersions' => $skippedVersions,
             'fromVersion' => $from,
             'toVersion' => $to,
         ], JSON_UNESCAPED_UNICODE));
@@ -497,7 +506,8 @@ class ExecuteUpgradeStepsCommand extends Command
             return;
         }
 
-        if ($isSpawnChild) {
+        // 관리자 화면 업데이트(`--markers`)도 자식처럼 표식 줄로 넘긴다 — 콘솔 출력은 화면에 보이지 않는다.
+        if ($isSpawnChild || $this->option('markers')) {
             // 인코딩 실패를 삼키지 않는다. 백업 경로가 비-UTF8 바이트를 포함하는
             // 파일시스템(로케일이 다른 공유 호스팅)에서 `json_encode` 는 `false` 를
             // 돌려주고, 그러면 접두사만 실린 빈 줄이 나가 부모가 파싱하지 못한 채

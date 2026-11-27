@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Extension\CoreVersionChecker;
+use App\Extension\Support\ExtensionUpdateReport;
 use App\Helpers\TimezoneHelper;
 use App\Http\Resources\Traits\ExposesIntegratedBy;
 use App\Http\Resources\Traits\ExposesPhpExtensionRequirements;
@@ -45,6 +46,11 @@ class ModuleResource extends BaseApiResource
             // 업데이트 관련 필드
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
+            // 끝나지 않은 업데이트 — 이 서버의 진행 기록이 남아 있으면 {started_at, from_version, to_version}, 없으면 null.
+            // 관리자 행이 「끝나지 않은 업데이트」 배지와 [다시 업데이트(강제)] 를 보인다(7.2.1 출시 전, 터미널 「--force 로 다시」 안내와 같은 판정)
+            'unfinished_update' => is_string($this->getValue('identifier')) && $this->getValue('identifier') !== ''
+                ? ExtensionUpdateReport::unfinishedUpdate('module', $this->getValue('identifier'))
+                : null,
             // 패키지 서명 검증 결과(verified·unsigned·unverifiable·bundled, 기록 없으면 null) — 상세 「패키지 서명」 배지 (7.2.0)
             'integrity_status' => $this->getValue('integrity_status'),
             'integrity_key_id' => $this->getValue('integrity_key_id'),

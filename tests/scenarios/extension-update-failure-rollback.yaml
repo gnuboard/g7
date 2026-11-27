@@ -10,22 +10,54 @@ description: |
   반대로 백업을 지운 뒤(완료 훅 단계) 실패하면 파일을 되돌릴 수 없으므로 버전 칸도 새 버전으로 둔다 —
   「파일은 새 버전, DB 는 옛 버전」 의 거울상 불일치를 만들지 않는다.
 
+  웹(관리자 화면) 업데이트도 터미널과 같은 정보를 받는다(7.2.1 출시 전): 성공 응답의 판 변화·의존 경고·멈춘 업데이트 정리·
+  no_update, 실패 응답(422 모양 유지)의 outcome·경고·재실행 명령, 목록 행의 unfinished_update(진행 기록), 요청 본문의
+  vendor_mode·source·zip_file(대기 폴더 파일 이름만)·force. 언어팩 터미널 --source 가 서비스에 닿는다. 동작(판정·되돌림)은 그대로다.
+
 axes:
-  source: [module, plugin, template]
-  path: [update_failed_after_version_recorded, update_failed_after_backup_deleted]
-  unit: [version_columns]
+  source: [module, plugin, template, language_pack]
+  path: [update_failed_after_version_recorded, update_failed_after_backup_deleted, web_update_success, web_update_failure, web_update_list, web_update_input]
+  unit: [version_columns, web_response]
 
 exclusions:
   - { source: [module, plugin], path: update_failed_after_backup_deleted, reason: "백업 삭제 뒤 실패 분기(파일 복원 여부로 버전 복원 결정)는 세 관리자가 같은 코드 모양이라 템플릿 한 곳에서 잰다" }
+  - { source: language_pack, path: [update_failed_after_version_recorded, update_failed_after_backup_deleted, web_update_success, web_update_list], reason: "언어팩은 버전 칸 복원 분기·진행 기록이 없다(목록 unfinished_update 는 늘 null) — 성공 판 변화는 입력 전달 테스트가 함께 단언한다" }
+  - { path: [update_failed_after_version_recorded, update_failed_after_backup_deleted], unit: web_response, reason: "버전 칸 복원은 매니저 분기다 — 웹 응답 단위가 아니다" }
+  - { path: [web_update_success, web_update_failure, web_update_list, web_update_input], unit: version_columns, reason: "웹 응답 경로는 버전 칸을 바꾸지 않는다(이미 있는 값을 전달·노출만)" }
+  - { source: plugin, path: [web_update_success, web_update_failure, web_update_list, web_update_input], reason: "플러그인 컨트롤러·서비스는 모듈과 같은 트레이트(RespondsWithExtensionUpdateReport)·같은 코드 모양이라 모듈에서 잰다" }
+  - { source: template, path: [web_update_success, web_update_failure, web_update_list], reason: "템플릿도 같은 트레이트를 쓴다 — 인자 자리가 다른 입력 전달만 따로 잰다" }
 
 effects:
   - update_failure_after_backup_deleted_keeps_new_version
   - template_update_failure_restores_version_columns
   - module_update_failure_restores_version_columns
   - plugin_update_failure_restores_version_columns
+  # 웹 업데이트 결과·실패 안내·입력 (7.2.1 출시 전)
+  - web_update_success_reports_versions_and_warnings   # 성공 data 에 from/to_version·dependency_warnings·recovered(다시 켜는 명령)
+  - web_update_no_update_is_flagged                    # 업데이트할 것이 없으면 data.no_update=true (언어팩 「이미 최신」 422 도)
+  - web_update_failure_reports_outcome_and_retry       # 실패 422 의 data 에 outcome·warnings·retry_command
+  - web_update_list_shows_unfinished_update            # 목록 행 unfinished_update = 진행 기록 {started_at, from, to} | null
+  - web_update_passes_source_zip_force                 # vendor_mode·source·zip_file(대기 폴더 안 절대 경로)·force 가 서비스에 닿는다
+  - web_update_rejects_unknown_zip                     # 대기 폴더에 없는 ZIP·경로 든 이름·잘못된 소스는 서비스 전에 422
+  - language_pack_update_passes_source                 # 언어팩 웹·터미널 source 가 서비스에 닿는다(터미널 --source=github 무효 결함)
+  # 관리자 화면(sirsoft-admin_basic) — 같은 응답·입력을 그리는 쪽 (7.2.1 출시 전)
+  - ext_update_advanced_options_sent                  # 업데이트 창 고급 영역(vendor 방식·소스·ZIP·강제)이 요청 본문에 실린다
+  - ext_install_force_sent                            # 설치 창 「강제 다시 설치」가 본문 force 로 실린다
+  - ext_update_survives_missing_template_handlers     # 새 템플릿 핸들러는 parallel 안 — 옛 번들이어도 업데이트 요청이 나간다
+  - ext_update_progress_shows_elapsed                 # 진행 중 안내가 시작 시각·경과를 1초마다 고친다
+  - ext_list_unfinished_update_badge                  # 목록 행 「끝나지 않은 업데이트」 배지·[다시 업데이트(강제)]·[다시 설치]
+  - ext_update_result_modal_opened                    # 성공하면 결과 창(판 변화·레이아웃 처리·경고·검색 인덱스·정리 결과)을 연다
+  - ext_update_result_tolerates_old_response          # 필드 없는 옛 응답·no_update 도 결과 창이 깨지지 않는다
+  - ext_update_failure_outcome_shown                  # 실패하면 outcome·경고·다시 시도 명령을 창 안에 보인다
+  - ext_update_disconnect_reconciles_with_server      # 응답이 끊기면 그 확장을 다시 읽어 끝남·끝나지 않음·반영 안 됨을 알린다
+  - ext_update_single_advanced_section                # 창마다 「고급 설정」 접이식은 하나 — 새 선택지는 레이아웃 설치 소스 카드와 같은 모양의 카드로 그 안에 든다
+  - ext_update_reinstall_mode_labeled                 # [다시 설치]·[다시 업데이트(강제)]로 연 창은 제목·본문·버튼이 그 상황에 맞고 강제가 켜진 채 잠긴다
 
 test_files:
   - tests/Feature/Extension/ExtensionUpdateFailureRestoresVersionTest.php
+  - tests/Feature/Extension/ExtensionWebUpdateReportTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-update-result-parity.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/extensionUpdateHandler.test.ts
 
 notes:
   - 버전 기록 전 단계(스테이징·파일 교체)의 실패는 DB 를 건드리지 않으므로 상태만 복원한다 — 이 매니페스트 범위 밖.

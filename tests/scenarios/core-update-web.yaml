@@ -60,6 +60,8 @@ effects:
   - every_case_appears_in_the_sequence
   - selection_submit_validates_and_requires_a_waiting_run
   - selection_panel_shows_only_while_awaiting
+  - the_screen_names_the_item_being_processed
+  - recent_log_lines_stay_visible
   - apply_and_upgrade_steps_live_in_different_step_methods
   - the_web_pipeline_covers_every_service_call_the_cli_makes
   - no_stale_omission_declarations_remain
@@ -153,6 +155,46 @@ effects:
   - no_message_claims_the_command_line_is_the_only_way
   - recovery_guidance_exemptions_are_still_needed
   - recovery_guidance_never_points_only_at_ssh
+  # 7.2.1 — 번들 외 단계의 실행 기록을 터미널과 같은 수준으로(7.2.0 화면은 기록 줄만 보여 준다)
+  - the_download_log_states_the_integrity_result
+  - the_apply_log_states_the_file_counts
+  - the_upgrade_steps_log_names_the_step_versions
+  - the_migrate_log_names_the_migrations_that_ran
+  - the_vendor_copy_log_distinguishes_swap_and_copy
+  - the_finalize_log_reports_each_sub_task
+  - the_finalize_warns_with_the_manual_command_when_the_hook_cache_rebuild_fails
+  # 7.2.1 — 착수·진행 중 입력을 터미널과 같은 판정으로
+  - the_web_bundled_source_candidates_skip_extension_language_packs
+  - the_web_logs_bundles_placed_as_dependencies_of_the_selection
+  - the_rebuild_search_index_choice_follows_engine_maintenance_support
+  - the_manual_zip_hint_mentions_signature_auto_detection
+  # 7.2.1 — 단계 안 진행량(`run.step_progress`) — 여러 요청에 걸친 단계가 어디까지 갔는지
+  - the_download_step_progress_counts_extracted_entries     # 압축 풀기를 이어 가면 푼 항목 수 / 전체 항목 수
+  - the_plan_step_progress_counts_checked_files             # 파일 비교를 이어 가면 확인한 파일 수(전체를 모르면 total=null)
+  - the_bundled_step_progress_counts_finished_items         # 번들 단계는 끝낸 항목 수(순번-1) / 항목 수 — current_item 과 같은 근거
+  - the_step_progress_clears_when_the_step_changes          # 다른 단계·되돌리는 중·끝난 뒤에는 null
+  - the_plan_step_progress_accumulates_across_phases        # 파일 비교 확인 수가 구간(새 파일 목록→적용 대상→출하 목록)을 넘어 누적 — 화면 수치가 줄지 않는다
+  # 7.2.1 — 결과·실패 정보를 터미널과 같은 수준으로 (`run.bundled_result`·`maintenance_left_on`·`started_by`·`log_file`)
+  - the_bundled_result_lists_failed_items_with_retry_commands  # 번들 성공·실패·건너뜀 수와 실패 항목(종류·식별자·사유·다시 시도할 명령)
+  - the_bundled_result_carries_the_search_index_outcome        # 검색 인덱스 재생성 결과(rebuilt|failed|unsupported|skipped)를 자식 결과 줄에서 받아 둔다
+  - the_status_reports_maintenance_left_on                     # 되돌리기 실패·점검 해제 실패로 점검 모드가 남았는지
+  - the_status_names_the_admin_who_started_the_run             # 시작한 관리자 번호·이름 — 다른 관리자 화면이 알린다
+  - the_finished_run_leaves_a_log_file                         # 끝난 실행의 기록 전체를 storage/logs 업데이트 보고서로 남기고 상대 경로를 싣는다
+  - the_docroot_exposure_notice_reaches_the_warnings           # 업그레이드 스텝의 [DOCROOT_EXPOSURE] 표식을 터미널과 같은 머리말로 경고에 옮긴다
+  - the_permission_warning_names_paths_and_a_recovery_command  # 권한 경고에 실패 경로 앞 5개·남은 수·복구 명령 예시
+  - the_plan_and_apply_summaries_reach_the_notices             # 배치 요약·적용 방식 한 줄을 알림에도 싣는다
+  - the_web_stops_before_applying_when_a_required_php_extension_is_missing  # 내려받기 뒤 PHP 확장 점검(터미널과 같은 판정·문구) — 백업·적용 전에 멈춘다
+  # 7.2.1 — 화면 결과·실패·되돌림·시작 전 표시 (터미널과 같은 수준)
+  - the_completed_screen_lists_failed_bundles_with_retry_commands   # 번들 실패가 있으면 노랑 안내 + 종류·식별자·사유·다시 시도 명령 표, 수·검색 인덱스·판·소요·기록 파일
+  - the_failure_screen_warns_when_maintenance_is_left_on            # maintenance_left_on 이면 점검 모드 경고, 「조치 방법 보기」는 복구 안내를 펼친다
+  - the_rollback_shows_progress_like_a_run                          # 되돌리는 중에도 머리말·단계 목록·최근 기록
+  - the_screen_names_another_admin_running_the_update               # started_by 가 다른 관리자면 이름 표시
+  - the_start_screen_shows_custom_preflight_conflicts               # /check 의 custom_preflight 충돌 표와 변경사항 판 범위
+  - a_cut_off_response_is_shown_while_waiting                       # 끊김 대기 플래그·자동 이어 가기 멈춤 안내
+  - a_stale_selection_is_reloaded_on_conflict                       # 선택 제출 409 면 상태를 다시 읽어 낡은 선택 창을 닫는다
+  # 7.2.1 — 브라우저 실측(Playwright, 응답 가로채기) — 단계 안 진행 막대와 전체 기록 따라가기
+  - the_step_line_shows_progress_within_the_step                    # 지금 단계 줄 아래 막대(폭 done/total)·「n / m 항목」, total=null 이면 막대 없이 「n개 확인」, 다른 단계의 step_progress 는 그리지 않는다
+  - the_full_log_follows_new_lines                                  # 전체 기록을 펼친 뒤 줄이 늘어도 상자가 맨 아래(최신 줄)를 보여 준다
 
 pending_effects:
   # 아래는 **아직 재는 테스트가 없다**. 무CLI(P0) 프로필에서만 재현되는 축이라 PHPUnit·
@@ -187,9 +229,17 @@ test_files:
   - tests/Unit/Services/StorageLeftoverPruneServiceTest.php
   # 화면 배선·권한 게이트·안전 기본값 (W6)
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-core-update-tab.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/coreUpdateHandler.liveStatus.test.ts
   - tests/Playwright/specs/admin/settings-core-update-tab.spec.ts
   - tests/Unit/CoreUpdate/CoreUpdateSharedMessageChannelTest.php
   - tests/Unit/CoreUpdate/NoCliRecoveryGuidanceTest.php
+  - tests/Unit/CoreUpdate/CoreUpdateStepLogDetailTest.php
+  - tests/Unit/CoreUpdate/CoreUpdateInputParityTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-core-update-input-parity.test.tsx
+  - tests/Unit/CoreUpdate/CoreUpdateStepProgressTest.php
+  - tests/Unit/CoreUpdate/CoreUpdateResultExposureTest.php
+  # 진행·결과 표시 브라우저 실측 (7.2.1) — status·advance 를 가로채 상태별 화면을 그린다
+  - tests/Playwright/specs/admin/settings-core-update-progress.spec.ts
 
 coverage_strategy: pairwise
 

@@ -116,12 +116,13 @@
           ...(p.status === 'uninstalling' ? [{ label: '$t:admin.templates.status.uninstalling', tone: 'warning' }] : []),
           ...(p.status === 'updating' &amp;&amp; p.stuck_update !== true ? [{ label: '$t:admin.templates.status.updating', tone: 'accent' }] : []),
           ...(p.stuck_update === true ? [{ label: '$t:admin.templates.status.stuck_update', tone: 'warning', icon: 'exclamation-triangle', title: '$t:admin.templates.stuck_update_hint' }] : []),
+          ...(p.unfinished_update &amp;&amp; p.stuck_update !== true ? [{ label: '$t:admin.extension_update.unfinished_badge', tone: 'warning', icon: 'exclamation-triangle', title: $t('admin.extension_update.unfinished_hint', {from: p.unfinished_update.from_version ?? '', to: p.unfinished_update.to_version ?? '', started: p.unfinished_update.started_at ?? ''}) }] : []),
           ...(p.update_available &amp;&amp; p.status !== 'uninstalled' &amp;&amp; p.status !== 'updating' ? [{ label: '$t:admin.templates.update_available', tone: 'danger' }] : []),
           ...(p.is_compatible === false || p.core_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : [])
         ],
         toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.status === 'active' || (['installing', 'uninstalling', 'updating'].includes(p.status) &amp;&amp; p.stuck_update !== true) || p.abilities?.can_activate !== true || p.core_compatible === false, label: p.name ?? p.identifier } : null,
-        secondaryAction: p.stuck_update === true
-          ? { label: '$t:admin.templates.actions.recover_update', icon: 'refresh', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : '$t:admin.templates.stuck_update_hint', disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_install !== true }
+        secondaryAction: p.stuck_update === true || !!p.unfinished_update
+          ? { label: p.stuck_update === true ? '$t:admin.templates.actions.recover_update' : '$t:admin.extension_update.retry_force', icon: 'refresh', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : '$t:admin.templates.stuck_update_hint', disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_install !== true }
           : p.update_available &amp;&amp; p.status !== 'uninstalled'
           ? { label: '$t:admin.templates.actions.update', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true, title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }
           : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_code', icon: 'code', href: '/admin/templates/' + p.identifier + '/edit', disabled: p.abilities?.can_edit_layouts !== true } : null),
@@ -130,6 +131,7 @@
           : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_layout_visual', icon: 'edit', variant: 'solid', disabled: p.abilities?.can_edit_layouts !== true, href: '/admin/layout-editor/' + p.identifier, target: '_blank' } : null),
         actions: [
           { id: 'view_detail', label: '$t:admin.templates.actions.view_detail', iconName: 'info-circle' },
+          { id: 'reinstall', label: '$t:admin.extension_update.reinstall', iconName: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage' || p.status === 'uninstalled' || !!p.update_available || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true },
           { id: 'settings', label: p.abilities?.can_update_settings === true ? '$t:admin.templates.actions.settings' : '$t:admin.templates.actions.settings_read_only', iconName: p.abilities?.can_update_settings === true ? 'cog' : 'lock', href: p.settings_route, disabled: !p.has_settings || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status), disabledReason: !p.has_settings &amp;&amp; p.status !== 'uninstalled' ? '$t:admin.templates.actions.settings_unavailable' : null },
           { id: 'update', label: '$t:admin.templates.actions.update', iconName: 'refresh', disabledReason: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || !p.update_available || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true },
           { id: 'refresh_layouts', label: '$t:admin.templates.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },
@@ -170,7 +172,7 @@
                `force` 일 때만 멈춘 업데이트를 정리한다. 스위치(활성화 창)도 열어 둔다 — 활성화는 정리한 뒤 켠다.
                원문 편집은 같은 창에서 연다(지금 보는 관리자 화면과 겹치지 않는다).
                업데이트는 창부터 열고 변경 이력과 화면별 처리 미리보기를 뒤이어 받는다. -->
-          <switch on="{{$args[0].stuck_update === true || ($args[0].update_available &amp;&amp; $args[0].status !== 'uninstalled') ? 'update' : 'edit_code'}}">
+          <switch on="{{$args[0].stuck_update === true || !!$args[0].unfinished_update || ($args[0].update_available &amp;&amp; $args[0].status !== 'uninstalled') ? 'update' : 'edit_code'}}">
             <case when="edit_code">
               <navigate path="/admin/templates/{{$args[0].identifier}}/edit" :mergeQuery="true">
                 <query/>
@@ -178,7 +180,7 @@
             </case>
             <case when="update">
               <sequence>
-                <set-state target="global" selectedTemplate="{{$args[0]}}" layoutSyncStrategy="keep" :layoutDecisions="{}" :layoutPreview="null" :layoutUpdatePreview="null" layoutPreviewState="loading" layoutPreviewRequest="{{({url: '/api/admin/templates/' + $args[0].identifier + '/update/preview', body: {}})}}" templateLayoutSource="auto" :templateLayoutSourceOpen="false" templateForceUpdate="{{$args[0].stuck_update === true}}" :updateChangelog="[]" :templateUpdateError="null"/>
+                <set-state target="global" selectedTemplate="{{$args[0]}}" layoutSyncStrategy="keep" :layoutDecisions="{}" :layoutPreview="null" :layoutUpdatePreview="null" layoutPreviewState="loading" layoutPreviewRequest="{{({url: '/api/admin/templates/' + $args[0].identifier + '/update/preview', body: {}})}}" templateLayoutSource="auto" :templateLayoutSourceOpen="false" templateForceUpdate="{{$args[0].stuck_update === true || !!$args[0].unfinished_update}}" extUpdateKind="template" extUpdateVendorMode="auto" extUpdateSource="auto" extUpdateZipFile="" :extUpdateForce="false" :extUpdateAdvancedOpen="false" :extUpdateFailure="null" :extUpdateReinstall="false" extUpdateRetry="{{$args[0].stuck_update === true || !!$args[0].unfinished_update}}" :extUpdateManualSources="[]" :updateChangelog="[]" :templateUpdateError="null"/>
                 <!-- 창부터 연다 — 미리보기는 로딩 표시로 시작하고(GitHub 소스면 새 판을 내려받느라 오래 걸린다) 변경 이력·미리보기가 뒤이어 채운다. -->
                 <open-modal target="template_update_modal"/>
                 <api-call :auth_required="true" target="/api/admin/templates/{{$args[0].identifier}}/changelog?source={{$args[0].update_source ?? 'bundled'}}&amp;from_version={{$args[0].version}}&amp;to_version={{$args[0].latest_version}}" method="GET">
@@ -201,7 +203,7 @@
           <switch on="{{$args[0].status === 'uninstalled' ? 'install' : 'edit'}}">
             <case when="install">
               <sequence>
-                <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutSource="auto" :templateLayoutSourceOpen="false" :installSelectedDeps="null" :installSelectedLPs="null" :installSelectedIntegrations="null"/>
+                <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutSource="auto" :templateLayoutSourceOpen="false" :installSelectedDeps="null" :installSelectedLPs="null" :installSelectedIntegrations="null" :extInstallForce="false" :extUpdateFailure="null"/>
                 <open-modal target="template_install_modal"/>
               </sequence>
             </case>
@@ -214,6 +216,13 @@
             <case when="settings">
               <!-- audit:allow layout-list-context-navigate-merge-query 템플릿 설정 화면으로 이동 — 목적지는 각 템플릿의 설정 화면으로, 템플릿 목록 클러스터 밖이다. -->
               <navigate path="{{$args[1].settings_route}}" fallbackPath="/admin/templates"/>
+            </case>
+            <case when="reinstall">
+              <!-- 다시 설치 — 업데이트가 없어도 같은 판을 강제로 다시 설치한다(터미널 update --force 와 같다). 같은 판이라 미리보기는 부르지 않는다. -->
+              <sequence>
+                <set-state target="global" selectedTemplate="{{$args[1]}}" layoutSyncStrategy="keep" :layoutDecisions="{}" :layoutPreview="null" :layoutUpdatePreview="null" layoutPreviewState="idle" templateLayoutSource="auto" :templateLayoutSourceOpen="false" :templateForceUpdate="true" :updateChangelog="[]" :templateUpdateError="null" extUpdateKind="template" extUpdateVendorMode="auto" extUpdateSource="auto" extUpdateZipFile="" :extUpdateForce="true" :extUpdateAdvancedOpen="false" :extUpdateFailure="null" :extUpdateReinstall="true" :extUpdateRetry="false" :extUpdateManualSources="[]"/>
+                <open-modal target="template_update_modal"/>
+              </sequence>
             </case>
             <case when="view_detail">
               <set-state target="global" selectedTemplate="{{$args[1]}}"/>
@@ -230,7 +239,7 @@
             </case>
             <case when="update">
               <sequence>
-                <set-state target="global" selectedTemplate="{{$args[1]}}" layoutSyncStrategy="keep" :layoutDecisions="{}" :layoutPreview="null" :layoutUpdatePreview="null" layoutPreviewState="loading" layoutPreviewRequest="{{({url: '/api/admin/templates/' + $args[1].identifier + '/update/preview', body: {}})}}" templateLayoutSource="auto" :templateLayoutSourceOpen="false" :templateForceUpdate="false" :updateChangelog="[]" :templateUpdateError="null"/>
+                <set-state target="global" selectedTemplate="{{$args[1]}}" layoutSyncStrategy="keep" :layoutDecisions="{}" :layoutPreview="null" :layoutUpdatePreview="null" layoutPreviewState="loading" layoutPreviewRequest="{{({url: '/api/admin/templates/' + $args[1].identifier + '/update/preview', body: {}})}}" templateLayoutSource="auto" :templateLayoutSourceOpen="false" :templateForceUpdate="false" :updateChangelog="[]" :templateUpdateError="null" extUpdateKind="template" extUpdateVendorMode="auto" extUpdateSource="auto" extUpdateZipFile="" :extUpdateForce="false" :extUpdateAdvancedOpen="false" :extUpdateFailure="null" :extUpdateReinstall="false" extUpdateRetry="{{$args[1].stuck_update === true || !!$args[1].unfinished_update}}" :extUpdateManualSources="[]"/>
                 <!-- 창부터 연다 — 미리보기는 로딩 표시로 시작하고(GitHub 소스면 새 판을 내려받느라 오래 걸린다) 변경 이력·미리보기가 뒤이어 채운다. -->
                 <open-modal target="template_update_modal"/>
                 <api-call :auth_required="true" target="/api/admin/templates/{{$args[1].identifier}}/changelog?source={{$args[1].update_source ?? 'bundled'}}&amp;from_version={{$args[1].version}}&amp;to_version={{$args[1].latest_version}}" method="GET">

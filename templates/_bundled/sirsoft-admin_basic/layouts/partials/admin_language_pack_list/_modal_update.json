@@ -9,7 +9,7 @@
     "type": "composite",
     "name": "Modal",
     "props": {
-        "title": "$t:admin.language_packs.modal.update.title",
+        "title": "{{_global.extUpdateReinstall === true ? '$t:admin.extension_update.reinstall_title_lang_pack' : (_global.extUpdateRetry === true ? '$t:admin.extension_update.retry_title_lang_pack' : '$t:admin.language_packs.modal.update.title')}}",
         "size": "sm",
         "footer": [
             {
@@ -48,8 +48,17 @@
                                 "handler": "setState",
                                 "params": {
                                     "target": "global",
-                                    "isLanguagePackUpdating": true
+                                    "isLanguagePackUpdating": true,
+                                    "extUpdateFailure": null
                                 }
+                            },
+                            {
+                                "handler": "parallel",
+                                "actions": [
+                                    {
+                                        "handler": "startExtensionUpdateClock"
+                                    }
+                                ]
                             },
                             {
                                 "handler": "apiCall",
@@ -58,6 +67,8 @@
                                 "params": {
                                     "method": "POST",
                                     "body": {
+                                        "force": "{{_global.extUpdateForce === true || _global.extUpdateReinstall === true || _global.extUpdateRetry === true}}",
+                                        "source": "{{_global.extUpdateSource ?? 'auto'}}",
                                         "allow_unsigned": "{{_global.packageIntegrity?.can_continue === true ? 1 : null}}",
                                         "integrity_aware": "1"
                                     }
@@ -71,7 +82,29 @@
                                         }
                                     },
                                     {
+                                        "handler": "parallel",
+                                        "actions": [
+                                            {
+                                                "handler": "stopExtensionUpdateClock"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "결과 창(7.2.1) — 업데이트할 것이 없었으면(no_update) 성공 토스트 대신 결과 창이 정보로 안내한다",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "extUpdateResult": "{{Object.fromEntries([...Object.entries(response?.data || []), ['search_index', response?.search_index ?? response?.data?.search_index ?? null], ['kind', 'lang_pack'], ['name', response?.data?.name ?? response?.data?.identifier ?? ''], ['message', response?.message ?? null], ['from_version', response?.data?.from_version ?? _local.updateCurrent ?? null], ['to_version', response?.data?.to_version ?? response?.data?.version ?? _local.updateLatest ?? null], ['no_update', response?.data?.no_update === true]])}}",
+                                            "extUpdateVendorMode": "auto",
+                                            "extUpdateSource": "auto",
+                                            "extUpdateForce": false,
+                                            "extUpdateAdvancedOpen": false,
+                                            "extUpdateReinstall": false
+                                        }
+                                    },
+                                    {
                                         "handler": "toast",
+                                        "if": "{{response?.data?.no_update !== true}}",
                                         "params": {
                                             "type": "success",
                                             "message": "$t:admin.language_packs.messages.update_success"
@@ -108,6 +141,10 @@
                                         "target": "language_pack_update_modal"
                                     },
                                     {
+                                        "handler": "openModal",
+                                        "target": "extension_update_result_modal"
+                                    },
+                                    {
                                         "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
                                         "handler": "setState",
                                         "params": {
@@ -122,44 +159,97 @@
                                         "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
                                     }
                                 ],
-                                "onError": {
-                                    "comment": "무결성 거절(표지로 가른다)은 토스트 없이 위쪽 공용 안내 조각에 맡기고, 그 밖의 실패는 종전대로 오류 토스트다",
-                                    "handler": "conditions",
-                                    "conditions": [
-                                        {
-                                            "if": "{{!!(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}",
-                                            "then": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "isLanguagePackUpdating": false,
-                                                    "packageIntegrity": "{{error.errors?.integrity ?? null}}",
-                                                    "packageIntegrityMessage": "{{error.message}}"
-                                                }
+                                "onError": [
+                                    {
+                                        "handler": "parallel",
+                                        "actions": [
+                                            {
+                                                "handler": "stopExtensionUpdateClock"
                                             }
-                                        },
-                                        {
-                                            "then": [
-                                                {
+                                        ]
+                                    },
+                                    {
+                                        "comment": "무결성 거절(표지로 가른다)은 토스트 없이 위쪽 공용 안내 조각에 맡기고, 그 밖의 실패는 종전대로 오류 토스트다",
+                                        "handler": "conditions",
+                                        "conditions": [
+                                            {
+                                                "if": "{{!!(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}",
+                                                "then": {
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "global",
                                                         "isLanguagePackUpdating": false,
-                                                        "packageIntegrity": null,
-                                                        "packageIntegrityMessage": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message ?? '$t:admin.language_packs.messages.update_failed'}}"
+                                                        "packageIntegrity": "{{error.errors?.integrity ?? null}}",
+                                                        "packageIntegrityMessage": "{{error.message}}"
                                                     }
                                                 }
-                                            ]
+                                            },
+                                            {
+                                                "then": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isLanguagePackUpdating": false,
+                                                            "packageIntegrity": null,
+                                                            "packageIntegrityMessage": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message ?? '$t:admin.language_packs.messages.update_failed'}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "실패 결과(7.2.1) — outcome·warnings·retry_command 는 오류 응답 본문 data 에 온다. 핸들러가 꺼내 전역에 담는다(옛 서버면 비운다)",
+                                        "handler": "parallel",
+                                        "actions": [
+                                            {
+                                                "handler": "captureExtensionUpdateFailure",
+                                                "if": "{{!(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}",
+                                                "params": {
+                                                    "error": "{{error}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "응답이 끊겼으면 서버에서 다시 확인해 결과 창에 보여 준다",
+                                        "handler": "parallel",
+                                        "actions": [
+                                            {
+                                                "handler": "reconcileExtensionUpdate",
+                                                "if": "{{((error.status ?? 0) === 0 || error.status === 502 || error.status === 504 || (error.status === 503 && !error.errors))}}",
+                                                "params": {
+                                                    "kind": "lang_pack",
+                                                    "identifier": "{{_local.updateId}}",
+                                                    "name": "{{_local.updateId}}",
+                                                    "from_version": "{{_local.updateCurrent ?? null}}",
+                                                    "to_version": "{{_local.updateLatest ?? null}}",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "if": "{{((error.status ?? 0) === 0 || error.status === 502 || error.status === 504 || (error.status === 503 && !error.errors))}}",
+                                        "params": {
+                                            "dataSourceId": "language_packs"
                                         }
-                                    ]
-                                }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "extension_update_result_modal",
+                                        "if": "{{((error.status ?? 0) === 0 || error.status === 502 || error.status === 504 || (error.status === 503 && !error.errors))}}"
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -192,13 +282,17 @@
                     {
                         "type": "basic",
                         "name": "Span",
-                        "text": "{{_global.isLanguagePackUpdating ? '$t:admin.language_packs.updating' : (_global.packageIntegrity?.can_continue === true ? '$t:admin.package_integrity.continue_unsigned' : '$t:admin.language_packs.actions.update_now')}}"
+                        "text": "{{_global.isLanguagePackUpdating ? (_global.extUpdateReinstall === true ? '$t:admin.extension_update.reinstalling' : '$t:admin.language_packs.updating') : (_global.packageIntegrity?.can_continue === true ? '$t:admin.package_integrity.continue_unsigned' : (_global.extUpdateReinstall === true ? '$t:admin.extension_update.reinstall' : (_global.extUpdateRetry === true ? '$t:admin.extension_update.retry_force' : '$t:admin.language_packs.actions.update_now')))}}"
                     }
                 ]
             }
         ]
     },
     "children": [
+        {
+            "comment": "진행 중 안내와 실패 결과 — 공용 조각(7.2.1)",
+            "partial": "partials/_shared/_extension_update_status.json"
+        },
         {
             "partial": "partials/_package_integrity_notice.json"
         },
@@ -251,6 +345,19 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "if": "{{_global.extUpdateReinstall === true}}",
+                            "text": "$t:admin.extension_update.reinstall_body_version|version={{_local.updateCurrent}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.extUpdateReinstall !== true && _global.extUpdateRetry === true}}",
+                            "text": "$t:admin.extension_update.retry_body_version|current={{_local.updateCurrent}}|latest={{_local.updateLatest}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.extUpdateReinstall !== true && _global.extUpdateRetry !== true}}",
                             "text": "$t:admin.language_packs.modal.update.body|current={{_local.updateCurrent}}|latest={{_local.updateLatest}}"
                         }
                     ]
@@ -282,6 +389,63 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "text": "$t:admin.language_packs.modal.update.user_overrides_notice"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "고급 설정 — 가져올 곳·강제(터미널 language-pack:update 선택지와 같다, 7.2.1). 모듈 업데이트 창의 「고급 설정」과 같은 모양이다.\n           언어팩에는 vendor·직접 올린 ZIP 이 없어 공용 카드가 그 두 카드를 그리지 않는다. 창을 열 때마다 접힘으로 되돌린다(여는 쪽 시드).",
+                    "id": "lp_update_advanced_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border-t border-gray-200 dark:border-gray-700 pt-3"
+                    },
+                    "children": [
+                        {
+                            "id": "lp_update_advanced_toggle",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "extUpdateAdvancedOpen": "{{_global.extUpdateAdvancedOpen !== true}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "aria-expanded": "{{_global.extUpdateAdvancedOpen === true}}",
+                                "className": "text-label hover:text-gray-900 dark:hover:text-gray-200 inline-flex items-center gap-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "{{_global.extUpdateAdvancedOpen === true ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}",
+                                        "className": "text-xs"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.extension_update.advanced_title"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "lp_update_advanced_options",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.extUpdateAdvancedOpen === true}}",
+                            "children": [
+                                {
+                                    "partial": "partials/_shared/_extension_update_advanced.json"
                                 }
                             ]
                         }

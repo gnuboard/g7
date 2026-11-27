@@ -35,7 +35,12 @@ class PerformLanguagePackUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules = $this->packageIntegrityRules();
+        $rules = array_merge($this->packageIntegrityRules(), [
+            // 같은 판 재설치 — 번들 원본을 다시 적용한다(터미널 language-pack:update --force 와 같다). 생략하면 false(지금 동작)
+            'force' => ['nullable', 'boolean'],
+            // 업데이트 소스(auto|bundled|github) — 터미널 --source 와 같다. 생략하면 auto(지금 동작)
+            'source' => ['nullable', 'string', 'in:auto,bundled,github'],
+        ]);
 
         // 모듈/플러그인이 validation rules 를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.language_packs.perform_update_validation_rules', $rules, $this);
@@ -48,7 +53,9 @@ class PerformLanguagePackUpdateRequest extends FormRequest
      */
     public function messages(): array
     {
-        return $this->packageIntegrityMessages();
+        return $this->packageIntegrityMessages() + [
+            'source.in' => __('extensions.errors.invalid_update_source'),
+        ];
     }
 
     /**
@@ -58,6 +65,9 @@ class PerformLanguagePackUpdateRequest extends FormRequest
      */
     public function attributes(): array
     {
-        return $this->packageIntegrityAttributes();
+        return $this->packageIntegrityAttributes() + [
+            'force' => __('validation.attributes.update_force'),
+            'source' => __('validation.attributes.update_source'),
+        ];
     }
 }

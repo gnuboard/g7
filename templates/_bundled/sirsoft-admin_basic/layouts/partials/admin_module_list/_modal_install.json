@@ -62,6 +62,15 @@
                                 }
                             },
                             {
+                                "comment": "진행 중 안내(시작 시각·경과) — 성공·실패 갈래가 끈다",
+                                "handler": "parallel",
+                                "actions": [
+                                    {
+                                        "handler": "startExtensionUpdateClock"
+                                    }
+                                ]
+                            },
+                            {
                                 "handler": "apiCall",
                                 "target": "/api/admin/modules/install",
                                 "auth_required": true,
@@ -69,6 +78,7 @@
                                     "method": "POST",
                                     "body": {
                                         "module_name": "{{_global.selectedModule.identifier}}",
+                                        "force": "{{_global.extInstallForce === true}}",
                                         "vendor_mode": "{{_global.moduleInstallVendorMode ?? 'auto'}}",
                                         "dependencies": "{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}",
                                         "language_packs": "{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) && (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}",
@@ -77,6 +87,14 @@
                                     }
                                 },
                                 "onSuccess": [
+                                    {
+                                        "handler": "parallel",
+                                        "actions": [
+                                            {
+                                                "handler": "stopExtensionUpdateClock"
+                                            }
+                                        ]
+                                    },
                                     {
                                         "handler": "setState",
                                         "params": {
@@ -165,6 +183,14 @@
                                 ],
                                 "onError": [
                                     {
+                                        "handler": "parallel",
+                                        "actions": [
+                                            {
+                                                "handler": "stopExtensionUpdateClock"
+                                            }
+                                        ]
+                                    },
+                                    {
                                         "handler": "setState",
                                         "params": {
                                             "target": "global",
@@ -217,6 +243,9 @@
         ]
     },
     "children": [
+        {
+            "partial": "partials/_shared/_extension_update_status.json"
+        },
         {
             "type": "basic",
             "name": "Div",
@@ -1064,6 +1093,76 @@
                                                     "text": "$t:admin.modules.modals.layout_source_json_desc"
                                                 }
                                             ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "강제 다시 설치(불완전 설치 복구) — 터미널 module:install --force 와 같다(7.2.1). 창을 열 때마다 꺼진다(여는 쪽 시드).\n           같은 「고급 설정」 접이식 안에 레이아웃 설치 소스 카드와 같은 모양으로 둔다.",
+                    "id": "module_install_force",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.moduleLayoutSourceOpen === true}}",
+                    "props": {
+                        "className": "mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            },
+                            "text": "$t:admin.extension_update.force_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex items-start gap-2 cursor-pointer select-none"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extInstallForce": "{{_global.extInstallForce !== true}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "checkbox",
+                                        "checked": "{{_global.extInstallForce === true}}",
+                                        "className": "w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:admin.extension_update.install_force_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "text-xs text-muted mt-0.5"
+                                            },
+                                            "text": "$t:admin.extension_update.install_force_desc"
                                         }
                                     ]
                                 }

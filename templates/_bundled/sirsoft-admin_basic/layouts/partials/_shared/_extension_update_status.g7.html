@@ -1,0 +1,37 @@
+<!-- 확장 업데이트·설치 창 공용 진행·실패 안내(7.2.1).
+  ⑴ 진행 중(`_global.extUpdateBusy`): 「업데이트 중입니다 — 창을 닫지 마세요」와 시작 시각·경과(화면이 1초마다 계산 — startExtensionUpdateClock).
+  ⑵ 실패(`_global.extUpdateFailure` — 실패 응답의 data: outcome·warnings·retry_command): outcome 별로 지금 상태와 할 일을 알린다.
+     restored(되돌림됨)·restore_failed(되돌리기 실패 — 파일이 섞였을 수 있음)·kept_new(새 판이 남음)·unchanged(바뀐 것 없음).
+     필드가 없는 옛 서버 응답이면 이 절은 그려지지 않고, 창의 오류 상자(서버 문구)만 남는다. -->
+<partial description="확장 업데이트 진행·실패 안내">
+  <div data-ref="ext_update_status">
+    <div data-ref="ext_update_progress" data-if="{{_global.extUpdateBusy === true}}" class="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg" role="status">
+      <div class="flex-start gap-2">
+        <icon name="spinner" class="spinner-sm text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"/>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-info-soft">$t:admin.extension_update.progress_title</p>
+          <p data-ref="ext_update_progress_clock" class="text-xs text-info-soft mt-1">$t:admin.extension_update.progress_clock|started={{_global.extUpdateStartedAt ?? ''}}|elapsed={{_global.extUpdateElapsed ?? '0:00'}}</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="ext_update_failure" data-if="{{!!_global.extUpdateFailure &amp;&amp; (!!_global.extUpdateFailure.outcome || (_global.extUpdateFailure.warnings ?? []).length &gt; 0 || !!_global.extUpdateFailure.retry_command)}}" class="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg" role="alert">
+      <p data-ref="ext_update_failure_restored" data-if="{{_global.extUpdateFailure?.outcome === 'restored'}}" class="text-sm text-error-soft">$t:admin.extension_update.outcome_restored</p>
+      <div data-ref="ext_update_failure_restore_failed" data-if="{{_global.extUpdateFailure?.outcome === 'restore_failed'}}">
+        <p class="text-sm font-medium text-error-soft">$t:admin.extension_update.outcome_restore_failed</p>
+        <p class="text-xs text-error-soft mt-1">$t:admin.extension_update.outcome_restore_failed_help</p>
+      </div>
+      <p data-ref="ext_update_failure_kept_new" data-if="{{_global.extUpdateFailure?.outcome === 'kept_new'}}" class="text-sm text-error-soft">$t:admin.extension_update.outcome_kept_new</p>
+      <p data-ref="ext_update_failure_unchanged" data-if="{{_global.extUpdateFailure?.outcome === 'unchanged'}}" class="text-sm text-error-soft">$t:admin.extension_update.outcome_unchanged</p>
+      <div data-ref="ext_update_failure_warnings" data-if="{{(_global.extUpdateFailure?.warnings ?? []).length &gt; 0}}" class="mt-2">
+        <p class="text-xs font-medium text-warning-soft">$t:admin.extension_update.warnings_title</p>
+        <ul class="mt-1 space-y-0.5">
+          <li data-each="failWarning in _global.extUpdateFailure.warnings ?? []" class="text-xs text-warning-soft break-all">• {{typeof failWarning === 'string' ? failWarning : [failWarning.step, failWarning.target_name ?? failWarning.target, failWarning.reason ?? failWarning.message].filter(Boolean).join(' · ')}}</li>
+        </ul>
+      </div>
+      <div data-ref="ext_update_failure_retry" data-if="{{!!_global.extUpdateFailure?.retry_command}}" class="mt-2">
+        <p class="text-xs text-secondary">$t:admin.extension_update.retry_command_hint</p>
+        <pre class="mt-1 rounded bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 text-xs p-2 whitespace-pre-wrap break-all">{{_global.extUpdateFailure?.retry_command}}</pre>
+      </div>
+    </div>
+  </div>
+</partial>

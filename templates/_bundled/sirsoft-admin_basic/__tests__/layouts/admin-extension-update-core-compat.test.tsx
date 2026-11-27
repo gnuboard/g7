@@ -167,11 +167,12 @@ describe('업데이트 창 — 경고와 강제 업데이트', () => {
         && String(n.params?.layoutPreviewRequest ?? '').includes('/update/preview'));
       expect(setStates.length, `${label}: 업데이트 창을 여는 setState 가 없습니다.`).toBeGreaterThan(0);
       for (const s of setStates) {
-        // 멈춘 업데이트(`stuck_update`)의 「정리 후 다시 업데이트」만 강제를 켠다(서버는 force 일 때만 정리한다) —
+        // 멈춘 업데이트(`stuck_update`)의 「정리 후 다시 업데이트」와 끝나지 않은 업데이트(`unfinished_update`, 7.2.1)의
+        // 「다시 업데이트(강제)」만 강제를 켠다(서버는 force 일 때만 정리한다) —
         // 그 밖의 행에서는 거짓이어야 다른 확장에 force 가 새지 않는다.
         const value = s.params[force];
         if (typeof value === 'string') {
-          expect(value, `${label}: 강제 값은 멈춘 업데이트 조건만 허용합니다.`).toMatch(/^\{\{\$args\[\d\]\.stuck_update === true\}\}$/);
+          expect(value, `${label}: 강제 값은 멈춘 업데이트 조건만 허용합니다.`).toMatch(/^\{\{\$args\[\d\]\.stuck_update === true( \|\| !!\$args\[\d\]\.unfinished_update)?\}\}$/);
           const argIndex = Number(/\$args\[(\d)\]/.exec(value)![1]);
           const args: Json[] = [];
           args[argIndex] = { identifier: 'g7test-x', status: 'inactive', update_available: true };

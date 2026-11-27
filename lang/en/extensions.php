@@ -27,6 +27,9 @@ return [
     'stuck_update_unfinished_hint' => 'This update (:from → :to) did not finish — the files may already be the new version, so the recorded version was set back to :from. Run the update again to finish only the remaining steps: :command',
 
     'errors' => [
+        'manual_zip_not_found' => 'The update ZIP was not found: :name — check that it was uploaded to the storage/app/extension_pending folder.',
+        'invalid_manual_zip_name' => 'The ZIP file name is not valid. Choose only a .zip file name made of letters, numbers and .-_ without a folder path.',
+        'invalid_update_source' => 'The update source is not valid. (Only auto, bundled and github are allowed.)',
         'update_preview_not_installed' => 'The extension to preview is not installed: :identifier',
         'github_check_http_status' => 'Failed to check the latest version on GitHub (HTTP :status). If the request limit was exceeded (403), set G7_UPDATE_GITHUB_TOKEN in .env or try again later.',
         'update_preview_unknown_type' => 'Unknown extension type for preview: :type',

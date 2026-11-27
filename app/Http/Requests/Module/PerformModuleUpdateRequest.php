@@ -47,6 +47,10 @@ class PerformModuleUpdateRequest extends FormRequest
             'rebuild_search_index' => ['nullable', 'boolean'],
             // 레이아웃 설치 소스(auto|json) — 이 요청 동안만 설정을 덮는다. 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따른다.
             'layout_source' => ['nullable', 'string', 'in:auto,json'],
+            // 업데이트 소스(auto|bundled|github) — 터미널 --source 와 같다. 생략하면 auto(지금 동작)
+            'source' => ['nullable', 'string', 'in:auto,bundled,github'],
+            // 수동 ZIP — 대기 폴더(storage/app/extension_pending)에 올린 파일 이름만 받는다(경로 금지, 터미널 --zip 과 같은 효과)
+            'zip_file' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z0-9._-]+\.zip$/i'],
             // 업데이트 미리보기가 내려받은 새 판(`_pending`)을 다시 쓰는 토큰 — 미리보기 응답의 pending_token
             'pending_token' => ['nullable', 'string', 'alpha_num', 'size:40'],
             // 화면별 결정 — 키는 미리보기 응답의 layouts.entries[].key, 값은 take-theirs(새 판)|keep-ours(운영자 판)
@@ -71,6 +75,8 @@ class PerformModuleUpdateRequest extends FormRequest
             'layout_strategy.in' => __('modules.errors.invalid_layout_strategy'),
             'vendor_mode.in' => __('modules.errors.invalid_vendor_mode'),
             'layout_source.in' => __('modules.errors.invalid_layout_source'),
+            'source.in' => __('extensions.errors.invalid_update_source'),
+            'zip_file.regex' => __('extensions.errors.invalid_manual_zip_name'),
         ];
     }
 
@@ -83,6 +89,9 @@ class PerformModuleUpdateRequest extends FormRequest
     {
         return $this->packageIntegrityAttributes() + [
             'pending_token' => __('validation.attributes.pending_token'),
+            'zip_file' => __('validation.attributes.update_zip_file'),
+            'source' => __('validation.attributes.update_source'),
+            'force' => __('validation.attributes.update_force'),
             'decisions' => __('validation.attributes.decisions'),
             'decisions.*' => __('validation.attributes.decisions.*'),
         ];

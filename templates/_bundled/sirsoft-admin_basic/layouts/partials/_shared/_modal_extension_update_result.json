@@ -1,0 +1,487 @@
+{
+    "comment": "확장(모듈·플러그인·템플릿·언어팩) 업데이트 결과 창(7.2.1) — 터미널 업데이트 명령이 끝에 찍는 것과 같은 정보를 보여 준다.\n  업데이트 창의 성공 갈래가 응답 data 를 `_global.extUpdateResult` 에 담고(kind·name·message 를 더해) 이 창을 연다.\n  - 이전 판 → 새 판(from_version·to_version)\n  - 화면별 레이아웃 처리 결과(layout_sync — entries 의 화면·판정, 요약 수)\n  - 깨진 조각 경고(layout_warnings — file·partial·reason), 의존 경고(dependency_warnings — message)\n  - 검색 인덱스 결과(search_index), 멈춘 업데이트 정리 결과(recovered — 다시 켜는 명령 포함)\n  - no_update 이면 성공이 아니라 정보 안내(「업데이트할 내용이 없습니다」)\n  - 응답이 끊겼으면(disconnected) reconcileExtensionUpdate 가 서버에서 다시 확인한 결과(reconcile)를 보여 준다.\n  필드가 없는 옛 서버 응답이면 해당 절만 빠지고 서버 문구(message)만 남는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "확장 업데이트 결과 모달",
+        "editor_label": "$t:admin.extension_update.result_title"
+    },
+    "id": "extension_update_result_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.extension_update.result_title",
+        "size": "medium",
+        "footer": [
+            {
+                "id": "ext_result_close",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-primary"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.close"
+                    }
+                ]
+            }
+        ]
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
+            },
+            "children": [
+                {
+                    "id": "ext_result_disconnected",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.extUpdateResult?.disconnected === true}}",
+                    "props": {
+                        "className": "p-3 rounded-lg border {{_global.extUpdateResult?.reconcile === 'completed' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700'}}",
+                        "role": "status"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm font-medium text-primary"
+                            },
+                            "text": "$t:admin.extension_update.disconnected_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.extUpdateResult?.reconcile === 'completed'}}",
+                            "props": {
+                                "className": "text-sm text-success-soft mt-1"
+                            },
+                            "text": "$t:admin.extension_update.reconcile_completed|version={{_global.extUpdateResult?.current_version ?? _global.extUpdateResult?.to_version ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.extUpdateResult?.reconcile === 'unfinished'}}",
+                            "props": {
+                                "className": "text-sm text-warning-soft mt-1"
+                            },
+                            "text": "$t:admin.extension_update.reconcile_unfinished"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.extUpdateResult?.reconcile === 'not_applied'}}",
+                            "props": {
+                                "className": "text-sm text-warning-soft mt-1"
+                            },
+                            "text": "$t:admin.extension_update.reconcile_not_applied|version={{_global.extUpdateResult?.current_version ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.extUpdateResult?.reconcile === 'unknown'}}",
+                            "props": {
+                                "className": "text-sm text-warning-soft mt-1"
+                            },
+                            "text": "$t:admin.extension_update.reconcile_unknown"
+                        }
+                    ]
+                },
+                {
+                    "id": "ext_result_no_update",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.extUpdateResult?.disconnected !== true && _global.extUpdateResult?.no_update === true}}",
+                    "props": {
+                        "className": "alert-info",
+                        "role": "status"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm"
+                            },
+                            "text": "{{_global.extUpdateResult?.message ?? '$t:admin.extension_update.no_update'}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "ext_result_success",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.extUpdateResult?.disconnected !== true && _global.extUpdateResult?.no_update !== true}}",
+                    "props": {
+                        "className": "p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg",
+                        "role": "status"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-success-soft break-words"
+                            },
+                            "text": "{{_global.extUpdateResult?.message ?? '$t:admin.extension_update.success'}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "ext_result_versions",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_global.extUpdateResult?.to_version}}",
+                    "props": {
+                        "className": "kv-list gap-y-2 text-sm p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "kv-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-muted"
+                                    },
+                                    "text": "$t:admin.extension_update.target"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-primary font-medium"
+                                    },
+                                    "text": "{{_global.extUpdateResult?.name ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "kv-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-muted"
+                                    },
+                                    "text": "$t:admin.extension_update.version"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-primary font-mono"
+                                    },
+                                    "text": "{{(_global.extUpdateResult?.from_version ?? '-') + ' → ' + (_global.extUpdateResult?.to_version ?? '-')}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "ext_result_layout_sync",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_global.extUpdateResult?.layout_sync?.entries ?? []).length > 0}}",
+                    "props": {
+                        "className": "p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm font-medium text-primary mb-2"
+                            },
+                            "text": "$t:admin.extension_update.layout_sync_title|count={{(_global.extUpdateResult?.layout_sync?.entries ?? []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Table",
+                            "props": {
+                                "className": "w-full text-xs"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Thead",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Tr",
+                                            "props": {
+                                                "className": "text-left text-muted"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Th",
+                                                    "props": {
+                                                        "className": "py-1 pr-2"
+                                                    },
+                                                    "text": "$t:admin.extension_update.layout_sync_screen"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Th",
+                                                    "props": {
+                                                        "className": "py-1"
+                                                    },
+                                                    "text": "$t:admin.extension_update.layout_sync_verdict"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Tbody",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Tr",
+                                            "iteration": {
+                                                "source": "_global.extUpdateResult?.layout_sync?.entries ?? []",
+                                                "item_var": "syncEntry"
+                                            },
+                                            "props": {
+                                                "className": "border-t border-gray-200 dark:border-gray-700"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Td",
+                                                    "props": {
+                                                        "className": "py-1 pr-2 font-mono break-all text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "{{(syncEntry.template ? syncEntry.template + ' · ' : '') + (syncEntry.name ?? '')}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Td",
+                                                    "props": {
+                                                        "className": "py-1 text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "{{$t('admin.layout_sync_preview.verdict.' + syncEntry.verdict)}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "ext_result_layout_warnings",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_global.extUpdateResult?.layout_warnings ?? []).length > 0}}",
+                    "props": {
+                        "className": "p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg",
+                        "role": "alert"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm font-medium text-warning-soft"
+                            },
+                            "text": "$t:admin.extension_update.layout_warnings_title|count={{(_global.extUpdateResult?.layout_warnings ?? []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Ul",
+                            "props": {
+                                "className": "mt-1 space-y-0.5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "iteration": {
+                                        "source": "_global.extUpdateResult?.layout_warnings ?? []",
+                                        "item_var": "layoutWarning"
+                                    },
+                                    "props": {
+                                        "className": "text-xs text-warning-soft break-all"
+                                    },
+                                    "text": "• {{typeof layoutWarning === 'string' ? layoutWarning : [layoutWarning.file, layoutWarning.partial, layoutWarning.message ?? layoutWarning.reason].filter(Boolean).join(' · ')}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "ext_result_dependency_warnings",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_global.extUpdateResult?.dependency_warnings ?? []).length > 0}}",
+                    "props": {
+                        "className": "p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg",
+                        "role": "alert"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm font-medium text-warning-soft"
+                            },
+                            "text": "$t:admin.extension_update.dependency_warnings_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Ul",
+                            "props": {
+                                "className": "mt-1 space-y-0.5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "iteration": {
+                                        "source": "_global.extUpdateResult?.dependency_warnings ?? []",
+                                        "item_var": "depWarning"
+                                    },
+                                    "props": {
+                                        "className": "text-xs text-warning-soft break-all"
+                                    },
+                                    "text": "• {{typeof depWarning === 'string' ? depWarning : (depWarning.message ?? ((depWarning.name || depWarning.identifier) + ' (' + depWarning.identifier + ')'))}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "ext_result_search_index",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_global.extUpdateResult?.search_index}}",
+                    "props": {
+                        "className": "p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm font-medium text-primary"
+                            },
+                            "text": "$t:admin.extension_update.search_index_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.extUpdateResult?.search_index?.rebuilt === true}}",
+                            "props": {
+                                "className": "text-xs text-secondary mt-1"
+                            },
+                            "text": "$t:admin.extension_update.search_index_rebuilt|inspected={{_global.extUpdateResult?.search_index?.inspected ?? 0}}|repaired={{_global.extUpdateResult?.search_index?.repaired ?? 0}}|failed={{_global.extUpdateResult?.search_index?.failed ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.extUpdateResult?.search_index?.rebuilt !== true && (_global.extUpdateResult?.search_index?.stale_count ?? 0) > 0}}",
+                            "props": {
+                                "className": "text-xs text-warning-soft mt-1"
+                            },
+                            "text": "$t:admin.extension_update.search_index_stale|count={{_global.extUpdateResult?.search_index?.stale_count ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.extUpdateResult?.search_index?.rebuilt !== true && (_global.extUpdateResult?.search_index?.stale_count ?? 0) === 0}}",
+                            "props": {
+                                "className": "text-xs text-secondary mt-1"
+                            },
+                            "text": "$t:admin.extension_update.search_index_ok"
+                        }
+                    ]
+                },
+                {
+                    "id": "ext_result_recovered",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_global.extUpdateResult?.recovered ?? []).length > 0}}",
+                    "props": {
+                        "className": "p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg",
+                        "role": "status"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm font-medium text-info-soft"
+                            },
+                            "text": "$t:admin.extension_update.recovered_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-info-soft mt-1"
+                            },
+                            "text": "$t:admin.extension_update.recovered_help"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "_global.extUpdateResult?.recovered ?? []",
+                                "item_var": "recoveredItem"
+                            },
+                            "props": {
+                                "className": "mt-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-xs text-info-soft break-all"
+                                    },
+                                    "text": "• {{recoveredItem?.type ? $t('admin.settings.core_update.selection.types.' + recoveredItem.type) + ' ' : ''}}{{recoveredItem?.identifier ?? ''}} — {{recoveredItem?.unfinished ? $t('admin.extension_update.recovered_unfinished') + ((recoveredItem.unfinished?.from || recoveredItem.unfinished?.to) ? ' (' + (recoveredItem.unfinished?.from ?? '-') + ' → ' + (recoveredItem.unfinished?.to ?? '-') + ')' : '') : $t('admin.extension_update.recovered_status', Object.fromEntries([['status', ['module', 'plugin', 'template'].includes(recoveredItem?.type) ? $t('admin.' + recoveredItem.type + 's.status.' + (recoveredItem?.status ?? '')) : (recoveredItem?.status ?? '')]]))}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Pre",
+                                    "if": "{{!!recoveredItem?.activate_command}}",
+                                    "props": {
+                                        "className": "mt-1 rounded bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 text-xs p-2 whitespace-pre-wrap break-all"
+                                    },
+                                    "text": "{{recoveredItem.activate_command}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

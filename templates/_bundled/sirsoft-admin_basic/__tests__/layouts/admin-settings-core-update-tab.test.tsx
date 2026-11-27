@@ -315,10 +315,14 @@ describe('환경설정 업데이트 탭 — W6 상태 분리·진단·이어받�
     expect(button, '되돌리기가 성공해도 다음에 무엇을 할지로 가는 길이 있어야 한다 (W6 ④)').toBeDefined();
     expect(button.if as string).toContain('rolled_back');
 
+    // 실패 뒤의 「조치 방법 보기」는 터미널 업데이트 안내 창이 아니라 이 화면의 복구 안내를 펼친다.
     const action = (button.actions as Json[])[0];
-    expect(action.handler).toBe('openModal');
-    expect(action.target).toBe('core_update_guide_modal');
-    // 그 모달이 실제로 이 화면에 실려 있어야 한다.
+    expect(action.handler).toBe('setState');
+    expect(JSON.stringify(action.params)).toContain('coreUpdateRecoveryOpen');
+    expect(collect(updateTab, (obj) => obj.id === 'core_update_recovery_guide')).toHaveLength(1);
+    // 터미널 업데이트 안내 창은 고급 접기의 명령어 안내가 그대로 연다.
+    const cliGuide = collect(updateTab, (obj) => obj.id === 'core_update_cli_guide_button')[0];
+    expect(JSON.stringify(cliGuide.actions)).toContain('core_update_guide_modal');
     expect(settingsSource).toContain('_modal_core_update_guide.json');
   });
 
@@ -502,5 +506,228 @@ describe('환경설정 업데이트 탭 — 진행 중 번들 선택 (7.2.1)', (
     const resume = collect(updateTab, (obj) => obj.id === 'core_update_resume_button')[0];
 
     expect(String(resume.if)).toContain('!_computed.coreUpdateRun?.awaiting?.kind');
+  });
+});
+
+describe('환경설정 업데이트 탭 — 지금 처리 중·최근 기록 (7.2.1)', () => {
+  // @scenario actor=with_permission, run_state=running
+  // @effects the_screen_names_the_item_being_processed
+  it('번들 단계 줄 바로 아래에 번들 진행 막대와 「지금 처리 중: 종류 이름 식별자 이전 → 새 판」을 붙인다', () => {
+    const list = collect(updateTab, (obj) => obj.id === 'core_update_step_list')[0];
+    expect(list, '단계 목록이 없다').toBeDefined();
+    const listJson = JSON.stringify(list);
+
+    // 단계 줄(반복 항목) 안에 붙는다 — 단계 목록 밖의 별도 블록이 아니다.
+    expect(collect(updateTab, (obj) => obj.id === 'core_update_current')).toHaveLength(0);
+    expect(collect(updateTab, (obj) => obj.id === 'core_update_item_progress')).toHaveLength(0);
+
+    // 지금 단계이고 처리할 항목이 있을 때만, 선택을 기다리는 동안은 붙이지 않는다.
+    expect(listJson).toContain("current_step === step.key && !!_computed.coreUpdateRun?.current_item && !_computed.coreUpdateRun?.awaiting?.kind");
+    // 끝낸 항목 수(position - 1) / total 로 막대 폭을 잡는다.
+    expect(listJson).toContain('current_item?.position ?? 1) - 1');
+    expect(listJson).toContain('current_item?.total ?? 1');
+    expect(listJson).toContain('admin.settings.core_update.current_item_position');
+    expect(listJson).toContain('admin.settings.core_update.now_processing');
+    expect(listJson).toContain('admin.settings.core_update.selection.types.');
+    expect(listJson).toContain('current_item?.name');
+    expect(listJson).toContain('current_item?.identifier');
+    expect(listJson).toContain('current_item?.from_version');
+    expect(listJson).toContain('current_item?.to_version');
+  });
+
+  // @scenario actor=with_permission, run_state=running
+  // @effects the_screen_names_the_item_being_processed
+  it('식별자만 고정폭 글꼴이고 이름·단계 이름은 본문 글꼴이다', () => {
+    const list = collect(updateTab, (obj) => obj.id === 'core_update_step_list')[0];
+    const monos = collect(list, (obj) => /font-mono/.test(String((obj.props as Json | undefined)?.className ?? '')));
+    expect(monos).toHaveLength(1);
+    expect(JSON.stringify(monos[0])).toContain('current_item?.identifier');
+  });
+
+  // @scenario actor=with_permission, run_state=running
+  // @effects the_screen_names_the_item_being_processed
+  it('일반 단계도 step_progress 가 지금 단계와 같으면 그 줄 아래에 막대(폭 done/total)와 단위별 수치를 붙이고, 번들 막대는 step_progress 를 먼저 따른다', () => {
+    const list = collect(updateTab, (obj) => obj.id === 'core_update_step_list')[0];
+    const listJson = JSON.stringify(list);
+
+    // 반복 안에는 새 id 를 두지 않는다 — 단계 목록 하나만 id 를 가진다.
+    expect(collect(list, (obj) => typeof obj.id === 'string')).toHaveLength(1);
+
+    // 막대 블록: 지금 단계이고, 처리 중 항목이 있거나 같은 단계의 step_progress 에 전체 양이 있을 때.
+    const bars = collect(list, (obj) => String(obj.if ?? '').includes('step_progress?.total != null') && String(obj.if ?? '').includes('!!_computed.coreUpdateRun?.current_item ||'));
+    expect(bars, '막대 블록이 없다').toHaveLength(1);
+    expect(String(bars[0].if)).toContain('current_step === step.key');
+    expect(String(bars[0].if)).toContain('step_progress?.step === step.key');
+    expect(String(bars[0].if)).toContain('!_computed.coreUpdateRun?.awaiting?.kind');
+
+    // 폭은 step_progress(done / total) 우선, 없으면 current_item(position - 1) / total.
+    const barJson = JSON.stringify(bars[0]);
+    expect(barJson).toContain('step_progress?.done ?? 0');
+    expect(barJson).toContain('step_progress?.total ?? 1');
+    expect(barJson.indexOf('step_progress?.done')).toBeLessThan(barJson.indexOf('current_item?.position'));
+
+    // 「지금 처리 중」 줄은 처리 중 항목이 있을 때만(번들) — 막대만 있는 일반 단계에는 붙지 않는다.
+    const info = collect(bars[0], (obj) => JSON.stringify(obj.text ?? obj.children ?? '').includes('admin.settings.core_update.now_processing') && typeof obj.if === 'string');
+    expect(info.length).toBeGreaterThan(0);
+    expect(String(info[0].if)).toContain('!!_computed.coreUpdateRun?.current_item');
+
+    // 줄 오른쪽 수치: 단위별 문구(파일·항목·작업).
+    expect(listJson).toContain("admin.settings.core_update.step_progress.' + (['files', 'entries', 'items', 'tasks'].includes(");
+    [koAdmin, enAdmin, jaAdmin].forEach((pack) => {
+      const sp = (pack as unknown as Json).settings as Json;
+      const block = ((sp.core_update as Json).step_progress ?? {}) as Json;
+      ['files', 'entries', 'items', 'tasks', 'checked'].forEach((key) => expect(block[key], key).toBeTruthy());
+    });
+  });
+
+  // @scenario actor=with_permission, run_state=running
+  // @effects the_screen_names_the_item_being_processed
+  it('step_progress 의 total 이 null 이면 막대 없이 「n개 확인」 글자만 보인다', () => {
+    const list = collect(updateTab, (obj) => obj.id === 'core_update_step_list')[0];
+    const counts = collect(list, (obj) => String(obj.if ?? '').includes('step_progress?.step === step.key') && !String(obj.if ?? '').includes('total != null'));
+    expect(counts, '수치 글자가 없다').toHaveLength(1);
+    // 번들 줄은 「번들 n / m」 을 쓰므로 처리 중 항목이 없을 때만.
+    expect(String(counts[0].if)).toContain('!_computed.coreUpdateRun?.current_item');
+
+    const text = JSON.stringify(counts[0]);
+    expect(text).toContain('step_progress?.total == null');
+    expect(text).toContain('admin.settings.core_update.step_progress.checked');
+
+    // 막대 블록은 전체 양이 있을 때만 — total 이 null 이고 처리 중 항목이 없으면 막대가 그려지지 않는다.
+    const bars = collect(list, (obj) => String(obj.if ?? '').includes('step_progress?.total != null'));
+    expect(bars).toHaveLength(1);
+    expect(String(bars[0].if)).toMatch(/step_progress\?\.step === step\.key && _computed\.coreUpdateRun\?\.step_progress\?\.total != null/);
+  });
+
+  // @scenario actor=with_permission, run_state=running
+  // @effects recent_log_lines_stay_visible
+  it('진행 중에는 기록을 접어 두어도 마지막 5줄을 보여 주고, 전체 기록은 맨 아래를 따라간다', () => {
+    const tail = collect(updateTab, (obj) => obj.id === 'core_update_log_tail')[0];
+
+    expect(tail, '최근 기록 줄이 없다').toBeDefined();
+    expect(String(tail.if)).toContain('!(_local.coreUpdateLogOpen ?? false)');
+    expect(String(tail.if)).toContain("status === 'running'");
+    expect(JSON.stringify(tail)).toContain('.slice(-5)');
+
+    const full = collect(updateTab, (obj) => obj.id === 'core_update_log')[0];
+    expect(String(full.if)).toContain('coreUpdateLogOpen');
+    // 세로 역방향 flex 는 스크롤 기준을 맨 아래에 둔다 — 새 줄이 와도 맨 아래를 따라간다.
+    expect(String((full.props as Json).className)).toContain('flex-col-reverse');
+    expect(String((full.props as Json).className)).toContain('overflow-auto');
+  });
+});
+
+describe('환경설정 업데이트 탭 — 결과·실패·되돌림·시작 전 (7.2.1)', () => {
+  const byId = (id: string): Json | undefined => collect(updateTab, (obj) => obj.id === id)[0];
+  const computed = (settings as Json).computed as Json;
+
+  // @scenario actor=with_permission, run_state=finished, failing_step=bundled
+  // @effects the_completed_screen_lists_failed_bundles_with_retry_commands
+  it('번들 실패가 있으면 초록 성공 대신 노랑 안내와 실패 항목 표(종류·식별자·사유·다시 시도 명령)를 보인다', () => {
+    const success = byId('core_update_completed');
+    const partial = byId('core_update_completed_partial');
+    expect(String(success?.if)).toContain('(_computed.coreUpdateBundledResult?.failed ?? 0) === 0');
+    expect(String(partial?.if)).toContain('(_computed.coreUpdateBundledResult?.failed ?? 0) > 0');
+    expect((partial?.props as Json).type).toBe('warning');
+    expect(JSON.stringify(partial)).toContain('result.completed_with_failures|count=');
+
+    const table = byId('core_update_bundled_failures');
+    expect(table, '실패 항목 표가 없다').toBeDefined();
+    const tableJson = JSON.stringify(table);
+    ['failedItem.type', 'failedItem.identifier', 'failedItem.reason', 'failedItem.retry_command'].forEach((field) => expect(tableJson).toContain(field));
+    // 반복 안에는 id 를 두지 않는다 — 표 바깥 하나만 id 를 가진다.
+    expect(collect(table, (obj) => typeof obj.id === 'string')).toHaveLength(1);
+    // 다시 시도 명령은 고정폭이고 한 번에 골라 복사하기 쉽다.
+    const retry = collect(table, (obj) => String(obj.text ?? '').includes('retry_command'))[0];
+    expect(retry, '다시 시도 명령 칸이 없다').toBeDefined();
+    expect(String((retry.props as Json).className)).toContain('font-mono');
+    expect(String((retry.props as Json).className)).toContain('select-all');
+
+    expect(String(computed.coreUpdateBundledResult)).toContain('bundled_result ?? null');
+  });
+
+  // @scenario actor=with_permission, run_state=finished
+  // @effects the_completed_screen_lists_failed_bundles_with_retry_commands
+  it('완료 요약이 이전 판 → 새 판·소요 시간·번들 수·검색 인덱스 결과·실행 기록 파일을 그리고, 옛 서버 응답(필드 없음)이면 그 칸을 숨긴다', () => {
+    const summary = byId('core_update_result_summary');
+    const json = JSON.stringify(summary);
+    expect(json).toContain('from_version');
+    expect(json).toContain('to_version');
+    expect(json).toContain('coreUpdateDurationSeconds != null');
+    expect(json).toContain('result.bundled_counts|success=');
+    expect(json).toContain('search_index?.status');
+    expect(json).toContain('!!_computed.coreUpdateRun?.log_file');
+    // 반응형은 Tailwind 변형이 아니라 엔진 responsive 로 한다.
+    expect(json).not.toMatch(/\bsm:/);
+    expect(String(computed.coreUpdateDurationSeconds)).toContain('Date.parse');
+    expect(String(computed.coreUpdateDurationSeconds)).toContain(': null');
+  });
+
+  // @scenario actor=with_permission, run_state=finished, rollback_outcome=restore_failed
+  // @effects the_failure_screen_warns_when_maintenance_is_left_on
+  it('점검 모드가 남았으면 경고하고, 복구 안내(백업 위치·리포트·수동 복구 순서)는 그때 처음부터 펼친다', () => {
+    const warn = byId('core_update_maintenance_left_on');
+    expect(String(warn?.if)).toContain('maintenance_left_on === true');
+    expect((warn?.props as Json).type).toBe('warning');
+
+    const guide = byId('core_update_recovery_guide');
+    const guideJson = JSON.stringify(guide);
+    expect(String(guide?.if)).toContain("status === 'rollback_failed' || _computed.coreUpdateRun?.maintenance_left_on === true");
+    expect(guideJson).toContain('backup_path');
+    expect(guideJson).toContain('report_path');
+    // 터미널 수동 복구와 같은 순서: 파일 되돌리기 → composer 재설치 → 점검 해제
+    const order = ['recovery.step_restore', 'recovery.step_composer', 'recovery.step_maintenance'].map((key) => guideJson.indexOf(key));
+    expect(order.every((index) => index >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(guideJson).toContain('composer install --no-dev --optimize-autoloader');
+    expect(guideJson).toContain('php artisan up');
+  });
+
+  // @scenario actor=with_permission, run_state=rolling_back
+  // @effects the_rollback_shows_progress_like_a_run
+  it('되돌리는 중에도 진행 머리말·막대·단계 목록·최근 기록과 「되돌리는 중」 줄을 보인다', () => {
+    ['core_update_progress_header', 'core_update_progress_track', 'core_update_step_list', 'core_update_log_tail'].forEach((id) => {
+      expect(String(byId(id)?.if), id).toContain("status === 'rolling_back'");
+    });
+    expect(JSON.stringify(byId('core_update_progress_header'))).toContain('rolling_back_title');
+    expect(String(byId('core_update_rolling_back')?.if)).toContain("status === 'rolling_back'");
+  });
+
+  // @scenario actor=with_permission, run_state=running, concurrency=duplicate_request
+  // @effects the_screen_names_another_admin_running_the_update
+  it('다른 관리자가 시작한 실행이면 그 이름을 보인다 (started_by 가 없는 옛 서버면 그리지 않는다)', () => {
+    const line = byId('core_update_started_by');
+    expect(String(line?.if)).toContain('coreUpdateStartedByOther === true');
+    expect(JSON.stringify(line)).toContain('live.started_by_other|name=');
+
+    const rule = String(computed.coreUpdateStartedByOther);
+    expect(rule).toContain('!!(_global.coreUpdateStatus ?? core_update_status?.data)?.run?.started_by');
+    expect(rule).toContain('current_user?.data?.uuid');
+    expect(rule).toContain('current_user?.data?.name');
+  });
+
+  // @scenario actor=with_permission, run_state=running, concurrency=single
+  // @effects a_cut_off_response_is_shown_while_waiting
+  it('끊김 대기·자동 이어 가기 멈춤을 핸들러가 세운 전역 플래그로 그린다', () => {
+    expect(String(byId('core_update_reconnecting')?.if)).toContain('_global.coreUpdateReconnecting === true');
+    const stopped = byId('core_update_auto_stopped');
+    expect(String(stopped?.if)).toContain('_global.coreUpdateAutoStopped === true');
+    expect(String(stopped?.if)).toContain('_global.coreUpdateBusy !== true');
+  });
+
+  // @scenario actor=with_permission, run_state=idle
+  // @effects the_start_screen_shows_custom_preflight_conflicts
+  it('시작 전 custom_preflight 충돌 표를 이 탭에서도 그리고, 변경사항 보기가 지금 판 → 새 판 범위를 넘긴다', () => {
+    const block = byId('core_update_custom_preflight');
+    expect(String(block?.if)).toContain('!!_local.coreUpdateInfo?.custom_preflight');
+    const json = JSON.stringify(block);
+    expect(json).toContain('custom_preflight?.conflicts');
+    expect(json).toContain('custom_preflight?.reserved_files');
+    expect(json).toContain('admin.settings.info.custom_conflict_package');
+
+    const changelog = JSON.stringify(byId('core_update_changelog_button'));
+    expect(changelog).toContain('from_version');
+    expect(changelog).toContain('to_version');
+    expect(changelog).toContain('coreUpdateInfo?.latest_version');
   });
 });

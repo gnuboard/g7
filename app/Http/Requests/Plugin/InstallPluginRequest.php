@@ -49,6 +49,8 @@ class InstallPluginRequest extends FormRequest
             'language_packs.*' => ['string', 'max:255'],
             // 레이아웃 설치 소스(auto|json) — 이 요청 동안만 설정을 덮는다. 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따른다.
             'layout_source' => ['nullable', 'string', 'in:auto,json'],
+            // 불완전 설치 복구 재설치 — 이미 설치된 경우에도 원본으로 덮어쓰고 다시 설치(터미널 install --force 와 같다). 생략하면 false
+            'force' => ['nullable', 'boolean'],
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공

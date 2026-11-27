@@ -1060,6 +1060,23 @@
                                             }
                                         },
                                         {
+                                            "comment": "고급 기본값 — 끝나지 않은 업데이트가 남은 행이면 강제를 켜 둔다(7.2.1)",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extUpdateKind": "lang_pack",
+                                                "extUpdateVendorMode": "auto",
+                                                "extUpdateSource": "auto",
+                                                "extUpdateZipFile": "",
+                                                "extUpdateForce": "{{!!$args[0].unfinished_update}}",
+                                                "extUpdateAdvancedOpen": false,
+                                                "extUpdateFailure": null,
+                                                "extUpdateReinstall": false,
+                                                "extUpdateRetry": "{{$args[0].stuck_update === true || !!$args[0].unfinished_update}}",
+                                                "extUpdateManualSources": []
+                                            }
+                                        },
+                                        {
                                             "handler": "openModal",
                                             "target": "language_pack_update_modal"
                                         }
@@ -1093,6 +1110,44 @@
                             "event": "onAction",
                             "handler": "switch",
                             "cases": {
+                                "reapply": {
+                                    "comment": "다시 설치 — 업데이트가 없어도 같은 판을 강제로 다시 적용한다(터미널 language-pack:update --force 와 같다)",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "updateId": "{{$args[1].id}}",
+                                                "updateCurrent": "{{$args[1]?.version}}",
+                                                "updateLatest": "{{$args[1]?.version}}",
+                                                "updateIconUrl": "{{$args[1].icon_url}}",
+                                                "updateIconSource": "{{$args[1].icon_source}}",
+                                                "updateLocale": "{{$args[1].locale}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extUpdateKind": "lang_pack",
+                                                "extUpdateVendorMode": "auto",
+                                                "extUpdateSource": "auto",
+                                                "extUpdateZipFile": "",
+                                                "extUpdateForce": true,
+                                                "extUpdateAdvancedOpen": false,
+                                                "extUpdateFailure": null,
+                                                "extUpdateReinstall": true,
+                                                "extUpdateRetry": false,
+                                                "extUpdateManualSources": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "language_pack_update_modal"
+                                        }
+                                    ]
+                                },
                                 "view_detail": {
                                     "handler": "sequence",
                                     "actions": [
@@ -1167,7 +1222,7 @@
                         "currentPage": "{{language_packs?.data?.pagination?.current_page ?? 1}}",
                         "totalPages": "{{language_packs?.data?.pagination?.last_page ?? null}}",
                         "hasMorePages": "{{language_packs?.data?.pagination?.has_more_pages ?? false}}",
-                        "items": "{{(language_packs?.data?.data ?? []).map(p => ({\n        id: String(p.id ?? p.bundled_identifier ?? p.identifier),\n        row: p,\n        name: p.name ?? p.identifier,\n        version: p.version,\n        description: p.description ?? '',\n        vendor: p.vendor,\n        iconUrl: p.icon_url,\n        fallbackIcon: 'language',\n        iconBadge: p.icon_source !== 'manifest' ? { text: p.locale, srLabel: p.locale_native_name ?? p.locale ?? '' } : null,\n        dependencies: [],\n        badges: [\n          ...(p.status === 'active' ? [{ label: '$t:admin.language_packs.status.active', tone: 'success' }] : []),\n          ...(p.status === 'inactive' ? [{ label: '$t:admin.language_packs.status.inactive', tone: 'neutral' }] : []),\n          ...(p.status === 'uninstalled' ? [{ label: '$t:admin.language_packs.status.uninstalled', tone: 'info' }] : []),\n          ...(p.is_protected === true ? [{ label: '$t:admin.language_packs.messages.protected_badge', tone: 'accent' }] : []),\n          ...(p.files_missing === true ? [{ label: '$t:admin.language_packs.badge.files_missing', tone: 'danger' }] : []),\n          ...(p.has_update === true && p.status !== 'uninstalled' ? [{ label: '$t:admin.language_packs.badge.update_available', tone: 'danger' }] : [])\n        ],\n        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.is_protected === true || (p.abilities?.can_activate !== true && p.abilities?.can_deactivate !== true), label: p.name ?? p.identifier } : null,\n        secondaryAction: p.files_missing === true && p.bundled_source_available === true && p.abilities?.can_install === true\n          ? { label: '$t:admin.language_packs.actions.reinstall', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }\n          : (p.has_update === true && p.status !== 'uninstalled' && language_packs?.data?.abilities?.can_update ? { label: '$t:admin.language_packs.actions.update', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined } : null),\n        primaryAction: p.status === 'uninstalled'\n          ? { label: '$t:admin.language_packs.actions.install', icon: 'download', variant: 'solid', disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_install !== true, title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }\n          : null,\n        actions: [\n          { id: 'view_detail', label: '$t:admin.language_packs.actions.detail', iconName: 'info-circle' },\n          { id: 'uninstall', label: '$t:admin.language_packs.actions.uninstall', iconName: 'trash', variant: 'danger', disabledReason: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.is_protected === true || p.status === 'uninstalled' || p.abilities?.can_uninstall !== true }\n        ]\n      }))}}"
+                        "items": "{{(language_packs?.data?.data ?? []).map(p => ({\n        id: String(p.id ?? p.bundled_identifier ?? p.identifier),\n        row: p,\n        name: p.name ?? p.identifier,\n        version: p.version,\n        description: p.description ?? '',\n        vendor: p.vendor,\n        iconUrl: p.icon_url,\n        fallbackIcon: 'language',\n        iconBadge: p.icon_source !== 'manifest' ? { text: p.locale, srLabel: p.locale_native_name ?? p.locale ?? '' } : null,\n        dependencies: [],\n        badges: [\n          ...(p.status === 'active' ? [{ label: '$t:admin.language_packs.status.active', tone: 'success' }] : []),\n          ...(p.status === 'inactive' ? [{ label: '$t:admin.language_packs.status.inactive', tone: 'neutral' }] : []),\n          ...(p.status === 'uninstalled' ? [{ label: '$t:admin.language_packs.status.uninstalled', tone: 'info' }] : []),\n          ...(p.is_protected === true ? [{ label: '$t:admin.language_packs.messages.protected_badge', tone: 'accent' }] : []),\n          ...(p.files_missing === true ? [{ label: '$t:admin.language_packs.badge.files_missing', tone: 'danger' }] : []),\n          ...(p.unfinished_update ? [{ label: '$t:admin.extension_update.unfinished_badge', tone: 'warning', icon: 'exclamation-triangle', title: $t('admin.extension_update.unfinished_hint', {from: p.unfinished_update.from_version ?? '', to: p.unfinished_update.to_version ?? '', started: p.unfinished_update.started_at ?? ''}) }] : []),\n          ...(p.has_update === true && p.status !== 'uninstalled' ? [{ label: '$t:admin.language_packs.badge.update_available', tone: 'danger' }] : [])\n        ],\n        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.is_protected === true || (p.abilities?.can_activate !== true && p.abilities?.can_deactivate !== true), label: p.name ?? p.identifier } : null,\n        secondaryAction: p.files_missing === true && p.bundled_source_available === true && p.abilities?.can_install === true\n          ? { label: '$t:admin.language_packs.actions.reinstall', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }\n          : (p.unfinished_update && p.status !== 'uninstalled' && language_packs?.data?.abilities?.can_update ? { label: '$t:admin.extension_update.retry_force', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined } :\n            (p.has_update === true && p.status !== 'uninstalled' && language_packs?.data?.abilities?.can_update ? { label: '$t:admin.language_packs.actions.update', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined } : null)),\n        primaryAction: p.status === 'uninstalled'\n          ? { label: '$t:admin.language_packs.actions.install', icon: 'download', variant: 'solid', disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_install !== true, title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }\n          : null,\n        actions: [\n          { id: 'view_detail', label: '$t:admin.language_packs.actions.detail', iconName: 'info-circle' },\n          { id: 'reapply', label: '$t:admin.extension_update.reinstall', iconName: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage' || p.status === 'uninstalled' || p.has_update === true || !p.id || language_packs?.data?.abilities?.can_update !== true },\n          { id: 'uninstall', label: '$t:admin.language_packs.actions.uninstall', iconName: 'trash', variant: 'danger', disabledReason: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.is_protected === true || p.status === 'uninstalled' || p.abilities?.can_uninstall !== true }\n        ]\n      }))}}"
                     }
                 },
                 {

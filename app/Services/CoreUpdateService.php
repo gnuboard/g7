@@ -3671,6 +3671,21 @@ class CoreUpdateService
     }
 
     /**
+     * 마지막 {@see clearAllCaches()} 의 확장 오토로드·훅 캐시 재생성이 실패했는지.
+     */
+    private bool $autoloadRefreshFailed = false;
+
+    /**
+     * 마지막 캐시 초기화에서 확장 오토로드·훅 캐시 재생성(`extension:update-autoload`)이 실패했는지 답합니다.
+     *
+     * @return bool 실패했으면 true
+     */
+    public function autoloadRefreshFailed(): bool
+    {
+        return $this->autoloadRefreshFailed;
+    }
+
+    /**
      * 모든 캐시를 초기화하고 패키지 목록을 재생성합니다.
      *
      * vendor 교체 후 bootstrap/cache의 컴파일 캐시가 stale 상태일 수 있으므로
@@ -3693,8 +3708,9 @@ class CoreUpdateService
         //      services.php, packages.php 가 교체 전 vendor 를 참조할 수 있다.
         PackageManifestCacheHelper::rebuild();
 
-        // 4. 확장 오토로드 재생성 (코어 업데이트로 _bundled 변경 가능)
-        Artisan::call('extension:update-autoload');
+        // 4. 확장 오토로드 재생성 (코어 업데이트로 _bundled 변경 가능) — 훅 캐시도 이 명령이 다시 굽는다.
+        //    실패해도 흐름은 잇되, 웹 마무리가 운영자에게 수동 명령을 안내하도록 결과를 남긴다.
+        $this->autoloadRefreshFailed = Artisan::call('extension:update-autoload') !== 0;
 
         // 5. 디스크 상태 캐시 + opcache 초기화.
         //    Step 7 applyUpdate 가 신규 lang 파일 (예: beta.4 의 `lang/ko/identity.php`) 을

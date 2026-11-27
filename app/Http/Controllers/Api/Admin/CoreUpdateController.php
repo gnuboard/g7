@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\CoreUpdate\StartCoreUpdateRequest;
 use App\Http\Requests\CoreUpdate\SubmitCoreUpdateSelectionRequest;
 use App\Http\Requests\Extension\ChangelogRequest;
+use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use Illuminate\Http\JsonResponse;
 
@@ -232,7 +233,30 @@ class CoreUpdateController extends AdminBaseController
             $status['preflight'] = null;
         }
 
+        // 검색 인덱스 다시 만들기는 엔진이 점검 기능을 제공할 때만 고를 수 있다 — 터미널이 묻는 조건과 같다
+        $status['search_index_rebuild_available'] = $this->searchIndexRebuildAvailable();
+
         return $status;
+    }
+
+    /**
+     * 지금 검색 엔진이 인덱스 다시 만들기(점검)를 제공하는지 판정합니다.
+     *
+     * 터미널 `core:update` 가 재생성 여부를 묻는 조건(점검기 등록 + 사용 가능)과 같다. 지원하지 않는
+     * 엔진에서 옵션이 넘어와도 재생성은 「제공하지 않음」 결과만 남기고 아무것도 하지 않는다.
+     *
+     * @return bool 다시 만들기를 고를 수 있으면 true
+     */
+    private function searchIndexRebuildAvailable(): bool
+    {
+        try {
+            $manager = app(SearchIndexMaintenanceManager::class);
+
+            return $manager->hasMaintainer() && $manager->unavailableReason() === null;
+        } catch (\Throwable) {
+            // 판정 실패는 착수를 막을 사유가 아니다 — 선택지만 숨긴다.
+            return false;
+        }
     }
 
     /**

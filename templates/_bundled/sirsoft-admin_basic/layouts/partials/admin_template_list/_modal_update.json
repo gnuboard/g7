@@ -9,7 +9,7 @@
     "type": "composite",
     "name": "Modal",
     "props": {
-        "title": "$t:admin.templates.modals.update_title",
+        "title": "{{_global.extUpdateReinstall === true ? '$t:admin.extension_update.reinstall_title_template' : (_global.extUpdateRetry === true ? '$t:admin.extension_update.retry_title_template' : '$t:admin.templates.modals.update_title')}}",
         "size": "medium",
         "footer": [
             {
@@ -48,8 +48,18 @@
                                 "params": {
                                     "target": "global",
                                     "isTemplateUpdating": true,
-                                    "templateUpdateError": null
+                                    "templateUpdateError": null,
+                                    "extUpdateFailure": null
                                 }
+                            },
+                            {
+                                "comment": "진행 중 안내의 시작 시각·경과 시간 — 요청이 끝나면 성공·실패 갈래가 끈다",
+                                "handler": "parallel",
+                                "actions": [
+                                    {
+                                        "handler": "startExtensionUpdateClock"
+                                    }
+                                ]
                             },
                             {
                                 "handler": "apiCall",
@@ -61,7 +71,9 @@
                                         "layout_strategy": "{{_global.layoutSyncStrategy ?? 'keep'}}",
                                         "decisions": "{{_global.layoutDecisions ?? {} }}",
                                         "pending_token": "{{_global.layoutUpdatePreview?.pending_token ?? null}}",
-                                        "force": "{{_global.templateForceUpdate === true}}",
+                                        "force": "{{_global.templateForceUpdate === true || _global.extUpdateForce === true || _global.extUpdateReinstall === true || _global.extUpdateRetry === true}}",
+                                        "source": "{{_global.extUpdateSource ?? 'auto'}}",
+                                        "zip_file": "{{(_global.extUpdateZipFile ?? '') !== '' ? _global.extUpdateZipFile : null}}",
                                         "layout_source": "{{_global.templateLayoutSource ?? 'auto'}}",
                                         "allow_unsigned": "{{_global.packageIntegrity?.can_continue === true ? 1 : null}}",
                                         "integrity_aware": "1"
@@ -76,8 +88,25 @@
                                         }
                                     },
                                     {
+                                        "handler": "parallel",
+                                        "actions": [
+                                            {
+                                                "handler": "stopExtensionUpdateClock"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "결과 창(7.2.1) — 대상 초기화 전에 담는다. 필드가 없는 옛 응답이면 이전 판은 목록 행, 새 판은 응답 version 으로 채운다",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "extUpdateResult": "{{Object.fromEntries([...Object.entries(response?.data || []), ['search_index', response?.search_index ?? response?.data?.search_index ?? null], ['kind', 'template'], ['name', _global.selectedTemplate?.name ?? _global.selectedTemplate?.identifier ?? ''], ['message', response?.message ?? null], ['from_version', response?.data?.from_version ?? _global.selectedTemplate?.version ?? null], ['to_version', response?.data?.to_version ?? response?.data?.version ?? null], ['no_update', response?.data?.no_update === true]])}}"
+                                        }
+                                    },
+                                    {
                                         "comment": "서버 문구를 그대로 띄운다 — 업데이트할 것이 없었으면 「업데이트할 내용이 없습니다」가 온다",
                                         "handler": "toast",
+                                        "if": "{{response?.data?.no_update !== true}}",
                                         "params": {
                                             "type": "success",
                                             "message": "{{response?.message ?? '$t:admin.templates.update_success'}}"
@@ -133,6 +162,23 @@
                                         }
                                     },
                                     {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "extUpdateVendorMode": "auto",
+                                            "extUpdateSource": "auto",
+                                            "extUpdateZipFile": "",
+                                            "extUpdateForce": false,
+                                            "extUpdateAdvancedOpen": false,
+                                            "extUpdateReinstall": false,
+                                            "extUpdateRetry": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "extension_update_result_modal"
+                                    },
+                                    {
                                         "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
                                         "handler": "setState",
                                         "params": {
@@ -148,6 +194,14 @@
                                     }
                                 ],
                                 "onError": [
+                                    {
+                                        "handler": "parallel",
+                                        "actions": [
+                                            {
+                                                "handler": "stopExtensionUpdateClock"
+                                            }
+                                        ]
+                                    },
                                     {
                                         "comment": "409 = 같은 템플릿의 업데이트가 이미 진행 중(더블클릭·CLI 동시 실행). 실패가 아니므로 오류 상자를 띄우지 않고\n                     안내만 한다. 버튼은 풀어 둔다 — CLI 가 돌리는 중이면 이 창의 요청은 끝나지 않으므로 잠가 두면 창을 닫을 수 없다.",
                                         "handler": "setState",
@@ -195,6 +249,49 @@
                                             "packageIntegrity": "{{error.errors?.integrity ?? null}}",
                                             "packageIntegrityMessage": "{{error.message}}"
                                         }
+                                    },
+                                    {
+                                        "comment": "실패 결과(7.2.1) — outcome·warnings·retry_command 는 오류 응답 본문 data 에 온다. 핸들러가 꺼내 전역에 담는다(옛 서버면 비운다)",
+                                        "handler": "parallel",
+                                        "actions": [
+                                            {
+                                                "handler": "captureExtensionUpdateFailure",
+                                                "if": "{{error.status !== 409 && !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}",
+                                                "params": {
+                                                    "error": "{{error}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "응답이 끊겼거나(응답 없음) JSON 이 아닌 게이트웨이 오류면 서버에서는 끝났을 수 있다 — 그 확장을 다시 읽어 결과를 보여 준다",
+                                        "handler": "parallel",
+                                        "actions": [
+                                            {
+                                                "handler": "reconcileExtensionUpdate",
+                                                "if": "{{((error.status ?? 0) === 0 || error.status === 502 || error.status === 504 || (error.status === 503 && !error.errors))}}",
+                                                "params": {
+                                                    "kind": "template",
+                                                    "identifier": "{{_global.selectedTemplate?.identifier}}",
+                                                    "name": "{{_global.selectedTemplate?.name ?? _global.selectedTemplate?.identifier}}",
+                                                    "from_version": "{{_global.selectedTemplate?.version ?? null}}",
+                                                    "to_version": "{{_global.selectedTemplate?.latest_version ?? null}}",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "if": "{{((error.status ?? 0) === 0 || error.status === 502 || error.status === 504 || (error.status === 503 && !error.errors))}}",
+                                        "params": {
+                                            "dataSourceId": "templates"
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "extension_update_result_modal",
+                                        "if": "{{((error.status ?? 0) === 0 || error.status === 502 || error.status === 504 || (error.status === 503 && !error.errors))}}"
                                     }
                                 ]
                             }
@@ -203,7 +300,7 @@
                 ],
                 "props": {
                     "className": "flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_global.isTemplateUpdating || _global.layoutPreviewState !== 'ready' || (_global.selectedTemplate?.is_compatible === false && _global.templateForceUpdate !== true)}}",
+                    "disabled": "{{_global.isTemplateUpdating || (_global.layoutPreviewState !== 'ready' && _global.extUpdateReinstall !== true) || (_global.selectedTemplate?.is_compatible === false && _global.templateForceUpdate !== true)}}",
                     "type": "button"
                 },
                 "children": [
@@ -219,7 +316,7 @@
                     {
                         "type": "basic",
                         "name": "Span",
-                        "text": "{{_global.isTemplateUpdating ? '$t:admin.templates.updating' : (_global.packageIntegrity?.can_continue === true ? '$t:admin.package_integrity.continue_unsigned' : '$t:admin.templates.actions.update')}}"
+                        "text": "{{_global.isTemplateUpdating ? (_global.extUpdateReinstall === true ? '$t:admin.extension_update.reinstalling' : '$t:admin.templates.updating') : (_global.packageIntegrity?.can_continue === true ? '$t:admin.package_integrity.continue_unsigned' : (_global.extUpdateReinstall === true ? '$t:admin.extension_update.reinstall' : (_global.extUpdateRetry === true ? '$t:admin.extension_update.retry_force' : '$t:admin.templates.actions.update')))}}"
                     }
                 ]
             }
@@ -649,6 +746,10 @@
             ]
         },
         {
+            "comment": "진행 중 안내(시작 시각·경과)와 실패 결과(outcome·경고·다시 시도 명령) — 공용 조각(7.2.1)",
+            "partial": "partials/_shared/_extension_update_status.json"
+        },
+        {
             "partial": "partials/_package_integrity_notice.json"
         },
         {
@@ -701,6 +802,19 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "if": "{{_global.extUpdateReinstall === true}}",
+                            "text": "$t:admin.extension_update.reinstall_body|name={{_global.selectedTemplate?.name ?? ''}}|version={{_global.selectedTemplate?.version ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.extUpdateReinstall !== true && _global.extUpdateRetry === true}}",
+                            "text": "$t:admin.extension_update.retry_body|name={{_global.selectedTemplate?.name ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.extUpdateReinstall !== true && _global.extUpdateRetry !== true}}",
                             "text": "$t:admin.templates.modals.update_confirm|name={{_global.selectedTemplate.name ?? ''}}"
                         }
                     ]
@@ -730,6 +844,16 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "if": "{{_global.extUpdateReinstall === true}}",
+                                    "props": {
+                                        "className": "text-primary font-medium"
+                                    },
+                                    "text": "{{_global.selectedTemplate?.version ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_global.extUpdateReinstall !== true}}",
                                     "props": {
                                         "className": "text-primary font-medium"
                                     },
@@ -959,13 +1083,40 @@
                             "name": "Button",
                             "actions": [
                                 {
-                                    "comment": "접힘/펼침만 바꾼다 — 고른 값은 그대로 둔다.",
+                                    "comment": "접힘/펼침만 바꾼다 — 고른 값은 그대로 둔다. 펼칠 때 직접 올린 ZIP 후보를 받는다(받지 못하면 빈 목록)",
                                     "type": "click",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "templateLayoutSourceOpen": "{{_global.templateLayoutSourceOpen !== true}}"
-                                    }
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "templateLayoutSourceOpen": "{{_global.templateLayoutSourceOpen !== true}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/templates/update-sources/manual-zip",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET"
+                                            },
+                                            "onSuccess": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "extUpdateManualSources": "{{response?.data?.sources ?? []}}"
+                                                }
+                                            },
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "extUpdateManualSources": []
+                                                }
+                                            }
+                                        }
+                                    ]
                                 }
                             ],
                             "props": {
@@ -1128,6 +1279,18 @@
                                             ]
                                         }
                                     ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "터미널 업데이트 명령의 선택지(vendor 방식·가져올 곳·직접 올린 ZIP·강제, 7.2.1) — 같은 카드 모양",
+                            "id": "template_update_advanced_options",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.templateLayoutSourceOpen === true}}",
+                            "children": [
+                                {
+                                    "partial": "partials/_shared/_extension_update_advanced.json"
                                 }
                             ]
                         }

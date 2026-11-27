@@ -185,7 +185,8 @@ describe('고급 설정 — 레이아웃 설치 소스 (구조)', () => {
    * @effects layout_source_sent_in_request_body
    */
   it.each(MODALS)('$kind $action 창: 요청 본문에 layout_source(기본 auto)를 싣는다', ({ kind, modal }) => {
-    const calls = collect(modal, (n) => n.handler === 'apiCall' && typeof n.target === 'string' && n.target.startsWith('/api/admin/'));
+    // 「고급 설정」을 펼칠 때 직접 올린 ZIP 후보를 받는 GET(update-sources/manual-zip, 7.2.1)은 실행 요청이 아니다
+    const calls = collect(modal, (n) => n.handler === 'apiCall' && typeof n.target === 'string' && n.target.startsWith('/api/admin/') && !n.target.includes('/update-sources/manual-zip'));
     expect(calls.length).toBe(1);
     expect(calls[0].params?.body?.layout_source).toBe(`{{_global.${kind}LayoutSource ?? 'auto'}}`);
   });
@@ -206,10 +207,11 @@ describe('고급 설정 — 레이아웃 설치 소스 (구조)', () => {
    * @effects layout_source_reset_on_reopen_and_after_success
    */
   it.each([
-    { kind: 'module' as Kind, layout: moduleList, expected: 3 },
-    { kind: 'plugin' as Kind, layout: pluginList, expected: 3 },
-    { kind: 'template' as Kind, layout: tabAdmin, expected: 4 },
-    { kind: 'template' as Kind, layout: tabUser, expected: 4 },
+    // 7.2.1 — 더보기 메뉴 「다시 설치」가 같은 업데이트 창을 여는 지점이 하나씩 늘었다
+    { kind: 'module' as Kind, layout: moduleList, expected: 4 },
+    { kind: 'plugin' as Kind, layout: pluginList, expected: 4 },
+    { kind: 'template' as Kind, layout: tabAdmin, expected: 5 },
+    { kind: 'template' as Kind, layout: tabUser, expected: 5 },
   ])('$kind 목록: 창을 여는 모든 지점이 auto·접힘으로 초기화한다 ($expected곳)', ({ kind, layout, expected }) => {
     const openers = setStateParams(layout).filter((p) => SELECTED[kind] in p && typeof p[SELECTED[kind]] === 'string' && `${kind}LayoutSource` in p);
     expect(openers.length).toBe(expected);

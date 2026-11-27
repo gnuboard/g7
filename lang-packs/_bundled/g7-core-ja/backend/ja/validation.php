@@ -1576,6 +1576,9 @@ return [
         'decisions' => '画面ごとの決定',
         'decisions.*' => '画面ごとの決定値',
         'pending_token' => 'レイアウトプレビュートークン',
+        'update_zip_file' => '手動アップロードした ZIP ファイル',
+        'update_source' => '更新ソース',
+        'update_force' => '強制実行',
     ],
     'layout_version' => [
         'limit' => [
