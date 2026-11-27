@@ -102,7 +102,7 @@ class SeoMiddleware
                 $this->moduleOfLayout($entry['layout'] ?? null)
             ));
 
-            // 봇 SEO HTML 표식 — 코어 CSP 미들웨어가 이 응답에는 헤더를 붙이지 않는다(#158).
+            // 봇 SEO HTML 표식 — 코어 CSP 미들웨어가 이 응답에는 헤더를 붙이지 않는다(공개 #158).
             $request->attributes->set('g7.seo_bot_response', true);
 
             return response($entry['html'], 200, [

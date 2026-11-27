@@ -1,5 +1,5 @@
 <!-- 주문 상세에 KG이니시스 전용 결제 도구를 붙이는 조각 — 거래 조회·CBT 편의점 입금·에스크로 배송 등록·현금영수증을 한 자리에서 다룬다
-     e2e:allow #160 — CBT 대사·편의점 운영 시각 바인딩만 서버가 만든 *_formatted(보는 사람 시간대)로 교체했다. 대체 검증: PHPUnit 응답 단언(CbtPaymentControllerTest). Chrome MCP 매트릭스 S19 는 국내 결제조회 패널만 쟀고, 개발 사이트에 해외결제(CBT) 데이터가 없어 바꾼 CBT 칸은 브라우저로 재지 않았다. 테스트 결제창이 실제 카드사·편의점 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다. -->
+     e2e:allow 공개 #160 — CBT 대사·편의점 운영 시각 바인딩만 서버가 만든 *_formatted(보는 사람 시간대)로 교체했다. 대체 검증: PHPUnit 응답 단언(CbtPaymentControllerTest). Chrome MCP 매트릭스 S19 는 국내 결제조회 패널만 쟀고, 개발 사이트에 해외결제(CBT) 데이터가 없어 바꾼 CBT 칸은 브라우저로 재지 않았다. 테스트 결제창이 실제 카드사·편의점 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다. -->
 <extension target-layout="admin_ecommerce_order_detail">
   <inject target-id="sticky_header_container" position="append_child">
     <div data-if="{{kginicis_status.data?._is_test_mode === true}}" class="paykginicis:mx-6 paykginicis:mb-3 paykginicis:px-3 paykginicis:py-2 paykginicis:bg-orange-50 paykginicis:dark:bg-orange-900/20 paykginicis:border paykginicis:border-orange-200 paykginicis:dark:border-orange-700 paykginicis:rounded-lg paykginicis:flex paykginicis:items-center paykginicis:gap-2">

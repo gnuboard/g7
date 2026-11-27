@@ -843,7 +843,7 @@ class ActivityLogResourceTest extends TestCase
 
         $this->assertIsArray($resource['user']);
         $this->assertEquals(__('common.system'), $resource['user']['name']);
-        // uuid 를 null 로 명시한다 — 화면이 회원 메뉴를 그리지 않는 근거(#138)
+        // uuid 를 null 로 명시한다 — 화면이 회원 메뉴를 그리지 않는 근거(공개 #138)
         $this->assertArrayHasKey('uuid', $resource['user']);
         $this->assertNull($resource['user']['uuid']);
         $this->assertArrayNotHasKey('email', $resource['user']);

@@ -265,7 +265,7 @@ test('관리자 로그인 — 챌린지 응답이 서버 오류가 아니고 코
 });
 
 /**
- * 관리자 로그인은 관리자가 아닌 계정을 인증번호 발급 전에 거절한다(#40 R12 — 인증번호 메일도 보내지 않는다).
+ * 관리자 로그인은 관리자가 아닌 계정을 인증번호 발급 전에 거절한다(R12 — 인증번호 메일도 보내지 않는다).
  * 코드 확인 단계까지 가서 거절하던 이전 순서에서는 그 사이 발급된 토큰을 회수해야 했다 — 지금은 토큰도 challenge 도 없다.
  *
  * @scenario controller=admin, two_factor=on, actor=non_admin
@@ -501,7 +501,7 @@ test('인증 완료 직후 — 2단계 상태가 지워지고 사용자·토큰�
   expect(state.isLoggingIn, '로딩 표시가 켜진 채 남았습니다').toBe(false);
   expect(state.uuid.length, '로그인한 사용자가 전역 상태에 실리지 않았습니다').toBeGreaterThan(0);
   expect(state.email).toBe(memberEmail);
-  // `"undefined"` 가 저장되던 결함(#133)은 길이 9 라 존재 검사만으로는 통과한다.
+  // `"undefined"` 가 저장되던 결함(공개 #133)은 길이 9 라 존재 검사만으로는 통과한다.
   expect(state.token.length, '저장된 토큰이 실제 토큰이 아닙니다').toBeGreaterThan(20);
 });
 

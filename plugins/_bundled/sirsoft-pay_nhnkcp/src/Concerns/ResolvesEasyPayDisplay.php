@@ -191,7 +191,7 @@ trait ResolvesEasyPayDisplay
             return null;
         }
 
-        // 현재 로케일 → 사이트 기본 언어 → 영어 (#148)
+        // 현재 로케일 → 사이트 기본 언어 → 영어 (공개 #148)
         return $this->stringOrNull(LocalizedValue::pick($label, anyAsLast: false));
     }
 

@@ -191,7 +191,7 @@
               <div>
                 <responsive on="desktop" class="gdpr:col-span-2"/>
                 <input type="text" name="legal_entity_name" placeholder="$t:sirsoft-gdpr.settings.fields.legal_entity_name.placeholder" class="{{_local.errors?.legal_entity_name ? 'gdpr-input-error gdpr:dark:focus:ring-red-400 gdpr-input-error-focus' : 'gdpr:dark:focus:ring-blue-400 gdpr:dark:focus:border-blue-400'}}" disabled="{{_computed.isPluginReadOnly}}"/>
-                <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). -->
+                <!-- 필드별 422 검증 에러 메시지 (검토 10 옵션 X — 코어 admin _tab_general 패턴 채택). -->
                 <span data-if="{{_local.errors?.['legal_entity_name']}}" class="gdpr-form-error">{{_local.errors?.['legal_entity_name']?.[0] ?? ''}}</span>
               </div>
             </div>
@@ -205,7 +205,7 @@
               <div>
                 <responsive on="desktop" class="gdpr:col-span-2"/>
                 <input type="text" name="data_storage_location" placeholder="$t:sirsoft-gdpr.settings.fields.data_storage_location.placeholder" class="{{_local.errors?.data_storage_location ? 'gdpr-input-error gdpr:dark:focus:ring-red-400 gdpr-input-error-focus' : 'gdpr:dark:focus:ring-blue-400 gdpr:dark:focus:border-blue-400'}}" disabled="{{_computed.isPluginReadOnly}}"/>
-                <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). -->
+                <!-- 필드별 422 검증 에러 메시지 (검토 10 옵션 X — 코어 admin _tab_general 패턴 채택). -->
                 <span data-if="{{_local.errors?.['data_storage_location']}}" class="gdpr-form-error">{{_local.errors?.['data_storage_location']?.[0] ?? ''}}</span>
               </div>
             </div>
@@ -220,7 +220,7 @@
                 <responsive on="desktop" class="gdpr:col-span-2"/>
                 <!-- 처리방침 주소 — 운영자가 직접 입력 (/ 로 시작하는 사이트 경로 또는 https:// 주소). 형식 검증은 서버 FormRequest 가 한다. -->
                 <input type="text" name="privacy_policy_url" placeholder="$t:sirsoft-gdpr.settings.fields.privacy_policy_url.placeholder" class="{{_local.errors?.privacy_policy_url ? 'gdpr-input-error gdpr:dark:focus:ring-red-400 gdpr-input-error-focus' : 'gdpr:dark:focus:ring-blue-400 gdpr:dark:focus:border-blue-400'}}" disabled="{{_computed.isPluginReadOnly}}"/>
-                <!-- 필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택). -->
+                <!-- 필드별 422 검증 에러 메시지 (검토 10 옵션 X — 코어 admin _tab_general 패턴 채택). -->
                 <span data-if="{{_local.errors?.['privacy_policy_url']}}" class="gdpr-form-error">{{_local.errors?.['privacy_policy_url']?.[0] ?? ''}}</span>
               </div>
             </div>

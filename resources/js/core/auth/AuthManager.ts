@@ -1042,7 +1042,7 @@ export class AuthManager {
     apiClient.setToken(token);
 
     // 사용자의 language 설정 확인 및 로케일 변경 처리
-    // 회원 언어가 꺼진 언어면 사이트 기본 언어로 연다 — 회원 정보의 언어 설정은 바꾸지 않는다 (engine-v1.81.0, #148 D8)
+    // 회원 언어가 꺼진 언어면 사이트 기본 언어로 연다 — 회원 정보의 언어 설정은 바꾸지 않는다 (engine-v1.81.0, 공개 #148 D8)
     const userLanguage = user.language;
     const effectiveLocale = userLanguage ? resolveUsableLocale(userLanguage, getAppConfig(), null) : undefined;
     const currentLocale = localStorage.getItem(AuthManager.LOCALE_STORAGE_KEY);

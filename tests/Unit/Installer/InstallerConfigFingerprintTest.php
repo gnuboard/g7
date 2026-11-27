@@ -119,7 +119,7 @@ class InstallerConfigFingerprintTest extends TestCase
     }
 
     /**
-     * use_read_db=false 면 폼에 남은 read 값은 지문 대상이 아니다 (이슈 #63 회귀 가드).
+     * use_read_db=false 면 폼에 남은 read 값은 지문 대상이 아니다 (이슈 공개 #63 회귀 가드).
      *
      * @effects fingerprint_ignores_read_when_read_db_disabled
      *

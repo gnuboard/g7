@@ -1,6 +1,6 @@
 /**
  * @file admin-notification-log-mobile-recipient.test.ts
- * @description 알림 발송 로그 — 좁은 화면 카드에서 수신자 이름·이메일이 말줄임된다 (#17 M1 관찰B)
+ * @description 알림 발송 로그 — 좁은 화면 카드에서 수신자 이름·이메일이 말줄임된다 (M1 관찰B)
  *
  * 수신자 칸은 행 메뉴(ActionMenu)가 감싼다. ActionMenu 루트는 `inline-block` 이라 안쪽 글이 `truncate`(줄바꿈 금지)면
  * 최소 폭이 글 전체가 되어 카드 밖으로 넘친다(390 폭 실측 right 395 > 375). 메뉴 루트를 `block max-w-full` 로

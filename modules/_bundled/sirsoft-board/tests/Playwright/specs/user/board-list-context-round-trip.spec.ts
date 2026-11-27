@@ -87,7 +87,7 @@ async function enterDetailFromPage2(
     return { url: page.url(), viaList };
 }
 
-test.describe('목록 컨텍스트 왕복 — 이전글/다음글 (#75)', () => {
+test.describe('목록 컨텍스트 왕복 — 이전글/다음글 (공개 #75)', () => {
     // @scenario leg=enter
     // @effects list_return_preserves_query
     test('목록 2페이지에서 상세로 들어가면 page 가 상세 URL 에 실린다', async ({ page }) => {

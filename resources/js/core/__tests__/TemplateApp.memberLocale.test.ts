@@ -192,7 +192,7 @@ describe('회원 언어 기준 화면 언어 (engine-v1.79.0)', () => {
 
   // @scenario case=stale_saved_locale_on_boot
   // @effects stale_saved_locale_switches_to_site_default
-  it('저장된 화면 언어(g7_locale)가 꺼진 언어면 사이트 기본 언어로 열되 저장값은 그대로 둔다 (engine-v1.81.0, #148 D8 — 설계 확정 2026-10-19)', async () => {
+  it('저장된 화면 언어(g7_locale)가 꺼진 언어면 사이트 기본 언어로 열되 저장값은 그대로 둔다 (engine-v1.81.0, 공개 #148 D8 — 설계 확정 2026-10-19)', async () => {
     (window as any).G7Config = { appConfig: { supportedLocales: ['ko', 'en'], siteLocale: 'en' } };
     localStorage.setItem('g7_locale', 'fil');
     mockAuth(null);

@@ -44,7 +44,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      * 이미 제공한다(고아 쪽은 정적 퀵프리셋 2개 + `slice(0, 3)` + 더보기 드롭다운이라 설계가 낡았다).
      * "살아 있는 것 기준, 미사용 건은 삭제" 가 설계 판단이다.
      *
-     * 634 → **815** — #17(2026-10-16) 실측으로 하한을 현재 모집단에 맞춰 올렸다. 그 사이 늘어난 레이아웃에
+     * 634 → **815** — (2026-10-16) 실측으로 하한을 현재 모집단에 맞춰 올렸다. 그 사이 늘어난 레이아웃에
      * 이번 작업분(스케줄 관리 partial 3·큐 탭 partial 6·게시판/이커머스 설정 스케줄 탭 2 추가, 도달 경로가 0인
      * `admin_module_list/_modal_deactivate_warning` 1 삭제)이 더해진 값이다.
      */

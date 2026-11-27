@@ -178,7 +178,7 @@ class LifecycleWarnings
      *
      * Laravel QueryException 메시지는 「SQLSTATE[…]: 사유 (Connection: …, Host: …, Database: …, SQL: …)」 꼴이라 그대로 두면
      * 관리자 결과 창에 DB 호스트·이름·쿼리가 보인다. 사유 부분만 남긴다. 파일 오류(fopen·mkdir 등)의 사유에는 서버 절대경로가
-     * 들어 있어 결과 창 「자세히 보기」·명령줄 경고 표에 그대로 보였다(#161 S8) — 설치 루트 부분을 떼어 상대경로로 보인다.
+     * 들어 있어 결과 창 「자세히 보기」·명령줄 경고 표에 그대로 보였다(공개 #161 S8) — 설치 루트 부분을 떼어 상대경로로 보인다.
      *
      * @param  string  $message  원래 사유
      * @return string 접속 정보·SQL 을 떼고 설치 루트를 상대경로로 바꾼 사유

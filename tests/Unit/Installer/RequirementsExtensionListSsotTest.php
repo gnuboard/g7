@@ -8,7 +8,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
 use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
 
 /**
- * 인스톨러 PHP 확장 목록 SSoT·확장 선택 단계의 PHP 확장 요구 판정 (#151 W1-a·W1-c, D6)
+ * 인스톨러 PHP 확장 목록 SSoT·확장 선택 단계의 PHP 확장 요구 판정 (공개 #151 W1-a·W1-c, D6)
  *
  * - 요구사항 단계의 차단 목록(REQUIRED_EXTENSIONS)이 코어 SSoT 에서 나오고, 그 결과 zip·pdo_mysql 이 자동 검사 대상이 된다(14 → 16).
  * - 확장 선택 단계는 번들 확장 composer.json 의 require ext-*(없으면 선택 불가)·suggest ext-*(경고만)를 싣고,

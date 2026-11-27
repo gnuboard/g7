@@ -25,7 +25,7 @@ describe('ModuleAssetLoader', () => {
             .forEach(el => el.remove());
     });
 
-    describe('loadBundle 정적 게시 폴백 (#122)', () => {
+    describe('loadBundle 정적 게시 폴백 (공개 #122)', () => {
         /**
          * @effects bundle_script_static_miss_falls_back_to_api
          */
@@ -113,7 +113,7 @@ describe('ModuleAssetLoader', () => {
     });
 
     /**
-     * 사용자 추가 에셋(`custom/`)의 정적 게시 폴백 (#122 R2/W9).
+     * 사용자 추가 에셋(`custom/`)의 정적 게시 폴백 (공개 #122 R2/W9).
      *
      * 스타일(`type: 'style'`) 축은 형제 파일 `ModuleAssetLoader.customAssets.test.ts`
      * 가 세 확장 타입 전부에 대해 이미 고정하고 있다. 여기 남기는 것은 그 파일이 덮지
@@ -121,7 +121,7 @@ describe('ModuleAssetLoader', () => {
      * `loadScriptWithRetry` 로 서로 다른 로더를 타므로 한쪽의 통과가 다른 쪽의 근거가
      * 되지 않는다.
      */
-    describe('loadCustomAssets 정적 게시 폴백 — script 축 (#122 R2/W9)', () => {
+    describe('loadCustomAssets 정적 게시 폴백 — script 축 (공개 #122 R2/W9)', () => {
         afterEach(() => {
             delete (window as any).G7Config;
             document.querySelectorAll('[id^="g7-custom-"]').forEach(el => el.remove());

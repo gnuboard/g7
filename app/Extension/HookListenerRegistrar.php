@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
  * - Action 훅: 큐 드라이버에 따라 자동으로 큐/동기 실행
  * - Filter 훅: 항상 동기 실행 (반환값 체인)
  * - `'sync' => true` 선언 시: 큐 드라이버 무관하게 동기 실행
- * - `'queue' => [...]` 선언 시: 큐로 도는 Action 의 실행 옵션(연결·큐·재시도·제한시간 등 10개, #139).
+ * - `'queue' => [...]` 선언 시: 큐로 도는 Action 의 실행 옵션(연결·큐·재시도·제한시간 등 10개, 공개 #139).
  *   Filter·sync 와 함께 쓰면 무시하고 경고한다 — 큐로 가지 않으니 적용할 곳이 없다.
  */
 class HookListenerRegistrar
@@ -184,7 +184,7 @@ class HookListenerRegistrar
      * @param  array<int, mixed>  $boundArgs  훅 발화 인자 앞에 고정으로 붙일 인자 (직렬화 가능해야 함)
      * @param  int  $priority  실행 우선순위
      * @param  bool  $sync  true 면 큐 래핑 없이 즉시 동기 실행 (큐 드라이버 무관)
-     * @param  array<string, mixed>  $queueOptions  큐 실행 옵션 (`getSubscribedHooks()` 의 `'queue'` 와 같은 10개 키, #139)
+     * @param  array<string, mixed>  $queueOptions  큐 실행 옵션 (`getSubscribedHooks()` 의 `'queue'` 와 같은 10개 키, 공개 #139)
      * @return void 반환값 없음
      */
     public static function registerDynamicAction(
@@ -215,7 +215,7 @@ class HookListenerRegistrar
     }
 
     /**
-     * 리스너 메서드를 큐 잡으로 바로 디스패치합니다 (훅 발화 없이, #139).
+     * 리스너 메서드를 큐 잡으로 바로 디스패치합니다 (훅 발화 없이, 공개 #139).
      *
      * 리스너가 일을 나눠 자식 잡으로 보낼 때 쓴다(예: 알림 대량 발송의 수신자 묶음). 훅 리스너와 같은
      * `DispatchHookListenerJob`·직렬화·컨텍스트 캡처를 거치므로 워커에서 같은 방식으로 복원된다.

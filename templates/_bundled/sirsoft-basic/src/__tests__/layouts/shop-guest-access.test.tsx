@@ -1,6 +1,6 @@
 /**
  * @file shop-guest-access.test.tsx
- * @description 비회원(Guest) 상품 조회 접근 테스트 (Issue #21)
+ * @description 비회원(Guest) 상품 조회 접근 테스트
  *
  * 테스트 케이스:
  * - _user_base.g7.html의 current_user 401이 하위 레이아웃으로 전파되지 않음
@@ -261,7 +261,7 @@ const shopShowFixture = {
 
 // ========== 테스트 케이스 ==========
 
-describe('비회원(Guest) 상품 조회 접근 (Issue #21)', () => {
+describe('비회원(Guest) 상품 조회 접근', () => {
   let registry: ComponentRegistry;
 
   beforeEach(() => {

@@ -1,6 +1,6 @@
 /**
  * @file board-show-type-renderer.test.tsx
- * @description 게시글 상세 - _type_renderer 유형별 분기 렌더링 테스트 (이슈 #153)
+ * @description 게시글 상세 - _type_renderer 유형별 분기 렌더링 테스트 (이슈 공개 #153)
  *
  * 검증 항목:
  * 1. basic 유형: 게시글 본문(제목, 작성자, 내용) 렌더링

@@ -135,9 +135,9 @@ beforeEach(() => {
     );
 });
 
-// ========== 1. 렌더링 회귀 (이슈 #92 본체) ==========
+// ========== 1. 렌더링 회귀 (이슈 공개 #92 본체) ==========
 
-describe('_cart_list.json — 전체 선택 개수 최초 표시 (#92)', () => {
+describe('_cart_list.json — 전체 선택 개수 최초 표시 (공개 #92)', () => {
     const ITEM_COUNT = 3;
 
     /**
@@ -308,7 +308,7 @@ describe('_cart_list.json — 빈 장바구니 (T8 에지)', () => {
 
 // ========== 2. 정적 회귀 가드 ==========
 
-describe('_cart_list.json — 카운터 표시식 정적 가드 (#92)', () => {
+describe('_cart_list.json — 카운터 표시식 정적 가드 (공개 #92)', () => {
     const counterTexts = collectStringsContaining(cartListPartial, '/{{cartItems');
 
     /**

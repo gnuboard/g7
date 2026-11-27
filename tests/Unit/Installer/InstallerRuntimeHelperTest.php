@@ -307,7 +307,7 @@ class InstallerRuntimeHelperTest extends TestCase
     }
 
     /**
-     * 이슈 #63 회귀 — use_read_db=false 인데 db_read_host 에 잘못된 값이 잔존한 경우
+     * 이슈 공개 #63 회귀 — use_read_db=false 인데 db_read_host 에 잘못된 값이 잔존한 경우
      * read 커넥션을 만들지 않아야 한다 (Laravel 이 write 로 자동 fallback).
      *
      * @scenario read_db=disabled
@@ -330,7 +330,7 @@ class InstallerRuntimeHelperTest extends TestCase
     }
 
     /**
-     * 이슈 #63 회귀 — use_read_db 키 자체가 없는 레거시 state 도
+     * 이슈 공개 #63 회귀 — use_read_db 키 자체가 없는 레거시 state 도
      * read 를 만들지 않아야 한다 (기본 미사용).
      *
      * @scenario read_db=disabled
@@ -530,7 +530,7 @@ ENV;
     }
 
     /**
-     * 이슈 #63 — read 미지정(use_read_db=false) 시 DB_READ_* 를 빈 값으로 남긴다.
+     * 이슈 공개 #63 — read 미지정(use_read_db=false) 시 DB_READ_* 를 빈 값으로 남긴다.
      * write 값을 복사하지 않고 config/database.php 의 Elvis fallback 에 위임한다.
      *
      * @scenario finalize_call=success, env_state=example_only, read_db=disabled

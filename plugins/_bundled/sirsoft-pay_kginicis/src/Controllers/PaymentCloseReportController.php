@@ -129,7 +129,7 @@ class PaymentCloseReportController
                 is_string($validated['payment_method'] ?? null) ? $validated['payment_method'] : null,
             );
 
-            // 현행 세 단계 순서 그대로: 결제 실패 → 간편결제 문맥 기록 → 결제 취소 이력(부록 A3 KG #120·#123·#124).
+            // 현행 세 단계 순서 그대로: 결제 실패 → 간편결제 문맥 기록 → 결제 취소 이력(부록 A3 KG 120· 123· 124).
             $failedOrder = $this->bridge->failPayment(
                 $order->orderNumber,
                 'kginicis',

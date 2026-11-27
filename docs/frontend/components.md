@@ -41,8 +41,8 @@
 
 1. [핵심 원칙](components-types.md#핵심-원칙)
 2. [기본 컴포넌트 (Basic Component)](components-types.md#1-기본-컴포넌트-basic-component)
-3. [집합 컴포넌트 (Composite Component)](components-types.md#2-집합-컴포넌트-composite-component)
-4. [집합 컴포넌트 재사용 가이드라인](components-types.md#3-집합-컴포넌트-재사용-가이드라인)
+3. [집합 컴포넌트 (Composite Component)](components-types.md#2-집합-컴포넌트-composite-component--핵심)
+4. [집합 컴포넌트 재사용 가이드라인](components-types.md#3-집합-컴포넌트-재사용-가이드라인--매우-중요)
 5. [레이아웃 컴포넌트 (Layout Component)](components-types.md#4-레이아웃-컴포넌트-layout-component)
 
 ### 패턴 및 다국어 ([상세 문서](components-patterns.md))

@@ -109,7 +109,7 @@ class SeoDeclarationCollector
                     'routePath' => $route['path'] ?? null,
                 ];
             } catch (\Throwable $e) {
-                // 오류로 보고하고 그 라우트만 건너뛴다 — 사이트맵·봇 화면의 나머지 선언 수집은 계속한다(#155)
+                // 오류로 보고하고 그 라우트만 건너뛴다 — 사이트맵·봇 화면의 나머지 선언 수집은 계속한다(공개 #155)
                 report(new \RuntimeException('[SEO] SeoDeclarationCollector layout load failed: '.$layoutName, 0, $e));
             }
         }

@@ -109,7 +109,7 @@ class UserService
     {
         try {
             // 원본 데이터 보관 (after_create 훅에서 사용) — 비밀번호 원문은 뺀다: 큐 구독자마다 작업 표에 사본이 남고
-            // 읽는 구독자가 없다(#138 후속 — 설계 결정, 회원가입 훅과 같은 방식)
+            // 읽는 구독자가 없다(공개 #138 후속 — 설계 결정, 회원가입 훅과 같은 방식)
             $originalData = Arr::except($data, ['password', 'password_confirmation']);
 
             // Before 훅: 데이터 검증/전처리

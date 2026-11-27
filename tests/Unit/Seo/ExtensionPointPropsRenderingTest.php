@@ -11,7 +11,7 @@ use Tests\TestCase;
  * Extension Point 주입 컴포넌트의 `extensionPointProps` 가 SEO(봇) 렌더링에서
  * 평가 컨텍스트로 해석되는지 검증합니다.
  *
- * 배경 (이슈 #86):
+ * 배경 (이슈 공개 #86):
  * LayoutExtensionService 가 extension_point 호스트의 props 를 주입 컴포넌트 최상위 키
  * `extensionPointProps` 로 부착하고, 주입 컴포넌트는 `{{extensionPointProps.content}}` 로
  * 그 값을 참조한다. React DynamicRenderer 는 이를 데이터 컨텍스트에 넣어 서브트리 전체에
@@ -32,7 +32,7 @@ class ExtensionPointPropsRenderingTest extends TestCase
     /**
      * sirsoft-basic 템플릿의 실제 seo-config.json 을 로드합니다.
      *
-     * 하드코딩 config 로는 `html_content` 렌더 모드가 없어 #86 을 재현할 수 없으므로
+     * 하드코딩 config 로는 `html_content` 렌더 모드가 없어 공개 #86 을 재현할 수 없으므로
      * RealWorldRenderingTest 와 동일하게 실제 설정을 사용합니다.
      *
      * @return void 반환값 없음
@@ -143,7 +143,7 @@ class ExtensionPointPropsRenderingTest extends TestCase
     // ========================================================
 
     /**
-     * UT-1: 게시글 본문이 SEO HTML 에 출력됩니다 (이슈 #86 핵심 재현).
+     * UT-1: 게시글 본문이 SEO HTML 에 출력됩니다 (이슈 공개 #86 핵심 재현).
      *
      * @scenario ep_site=board_post, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=html_mode
      *
@@ -772,7 +772,7 @@ class ExtensionPointPropsRenderingTest extends TestCase
      * 실제 댓글 레이아웃(_reply_section.json)과 실제 ckeditor5 확장 자산을 결합해
      * 댓글 본문이 SEO HTML 에 출력되는지 검증합니다.
      *
-     * #86 의 결함은 "레이아웃 파일"과 "확장 자산 파일" 사이에 있었으므로, 두 파일 중
+     * 공개 #86 의 결함은 "레이아웃 파일"과 "확장 자산 파일" 사이에 있었으므로, 두 파일 중
      * 어느 쪽이 바뀌어도 다시 어긋나면 이 테스트가 실패합니다.
      *
      * @scenario ep_site=board_reply, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=html_mode

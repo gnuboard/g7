@@ -18,14 +18,14 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 환불 계좌·환불 수단 게이트 결함 수정 검증 (06 #10·#11·#12·minor)
+ * 환불 계좌·환불 수단 게이트 결함 수정 검증 (06 10· 11· 12·minor)
  *
  * 검증 축:
- * - [환불하기] 수단 게이트가 [금액 수정]과 같은 강도다 — 카드 주문의 계좌 수동 환불을 허용한다(#11, 2026-09-23 결정).
+ * - [환불하기] 수단 게이트가 [금액 수정]과 같은 강도다 — 카드 주문의 계좌 수동 환불을 허용한다(11, 2026-09-23 결정).
  * - 계좌 수동 환불은 보낼 계좌가 있어야 실행된다(실행 수단 축).
  * - 계좌로 돈이 돌아가는 주문은 반품 신청에서도 계좌를 필수로 받는다(2026-09-23 결정).
- * - `claimable-options` 는 등록 계좌를 가린 모양으로 내고, 손대지 않은 제출은 원문으로 되돌린다(#12).
- * - 계좌 원문 열람을 클레임 권한(`claims.*`)에도 인정한다(#12).
+ * - `claimable-options` 는 등록 계좌를 가린 모양으로 내고, 손대지 않은 제출은 원문으로 되돌린다(공개 #12).
+ * - 계좌 원문 열람을 클레임 권한(`claims.*`)에도 인정한다(공개 #12).
  * - 신청 수정 요청이 접수와 같은 강도로 사유를 검증한다(minor).
  */
 class ValidateP3RefundAccountTest extends ModuleTestCase

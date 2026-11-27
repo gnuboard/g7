@@ -6,7 +6,7 @@ use App\Seo\PipeRegistry;
 use Tests\TestCase;
 
 /**
- * SEO localized 파이프 — 사이트 기본 언어 대체 (#148 D7)
+ * SEO localized 파이프 — 사이트 기본 언어 대체 (공개 #148 D7)
  *
  * 현재 로케일 값이 없으면 종전처럼 ko 로 고정하지 않고 사이트 기본 언어(`app.site_locale`)로 대체한다.
  */

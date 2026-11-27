@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * `module:list`·`plugin:list`·`template:list` 요약줄의 활성 개수가 실제 상태와 맞는지 검증합니다 (#137 두 번째 증상).
+ * `module:list`·`plugin:list`·`template:list` 요약줄의 활성 개수가 실제 상태와 맞는지 검증합니다 (공개 #137 두 번째 증상).
  *
  * 요약은 표에 찍는 상태 문자열에 「활성」 이 들어 있는지로 셌다. 한국어에서는 「비활성」 에도 「활성」 이 들어 있어
  * 꺼진 확장까지 활성으로 셌다. 원래 상태값(active·inactive·uninstalled)으로 센다.

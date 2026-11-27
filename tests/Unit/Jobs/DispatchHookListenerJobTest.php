@@ -85,7 +85,7 @@ class DispatchHookListenerJobTest extends TestCase
 
         $this->assertEquals(3, $job->tries);
         $this->assertTrue($job->afterCommit);
-        // 큐 옵션을 선언하지 않은 잡은 종전 값 그대로 (#139)
+        // 큐 옵션을 선언하지 않은 잡은 종전 값 그대로 (공개 #139)
         $this->assertNull($job->timeout);
         $this->assertNull($job->backoff);
         $this->assertNull($job->retryUntil);
@@ -96,7 +96,7 @@ class DispatchHookListenerJobTest extends TestCase
     }
 
     /**
-     * 이벤트 ID 는 디스패치 때 한 번 만들어지고 직렬화를 거쳐도 같다 (#139).
+     * 이벤트 ID 는 디스패치 때 한 번 만들어지고 직렬화를 거쳐도 같다 (공개 #139).
      *
      * @scenario payload=current
      *
@@ -115,7 +115,7 @@ class DispatchHookListenerJobTest extends TestCase
     }
 
     /**
-     * 업데이트 전에 쌓인 옛 payload(이벤트 ID 없음)는 큐 잡 uuid 를 이벤트 ID 로 쓴다 (#139).
+     * 업데이트 전에 쌓인 옛 payload(이벤트 ID 없음)는 큐 잡 uuid 를 이벤트 ID 로 쓴다 (공개 #139).
      *
      * @scenario payload=legacy
      *
@@ -138,7 +138,7 @@ class DispatchHookListenerJobTest extends TestCase
     }
 
     /**
-     * 리스너 실행 중에는 이벤트 ID 가 바인딩되고, 끝나면 이전 값으로 돌아간다 (#139).
+     * 리스너 실행 중에는 이벤트 ID 가 바인딩되고, 끝나면 이전 값으로 돌아간다 (공개 #139).
      *
      * @scenario payload=current
      *
@@ -162,7 +162,7 @@ class DispatchHookListenerJobTest extends TestCase
     }
 
     /**
-     * 리스너가 RetryHookListenerLaterException 을 던지면 큐 잡을 요청한 지연으로 되돌린다 (#139).
+     * 리스너가 RetryHookListenerLaterException 을 던지면 큐 잡을 요청한 지연으로 되돌린다 (공개 #139).
      *
      * @scenario driver=queued
      *
@@ -183,7 +183,7 @@ class DispatchHookListenerJobTest extends TestCase
     }
 
     /**
-     * sync 드라이버(큐 잡 없음)에서는 재실행 요청을 경고로만 남기고 예외를 올리지 않는다 (#139).
+     * sync 드라이버(큐 잡 없음)에서는 재실행 요청을 경고로만 남기고 예외를 올리지 않는다 (공개 #139).
      *
      * @scenario driver=sync
      *
@@ -298,7 +298,7 @@ class DispatchHookListenerJobTest extends TestCase
 }
 
 /**
- * 이벤트 ID·재실행 요청 확인용 스텁 리스너 (#139)
+ * 이벤트 ID·재실행 요청 확인용 스텁 리스너 (공개 #139)
  */
 class EventIdStubListener
 {

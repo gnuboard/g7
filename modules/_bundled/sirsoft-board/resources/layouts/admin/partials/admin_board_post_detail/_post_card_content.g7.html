@@ -27,7 +27,7 @@
           <responsive on="portable" class-merge="board:ml-auto"/>
           <a href="/admin/board/{{route.slug}}/create?parent_id={{post?.data?.id}}" :mergeQuery="true" data-ref="reply_button" data-if="{{post?.data?.board?.use_reply &amp;&amp; !post?.data?.is_notice &amp;&amp; (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="board-button board-text-body board:inline-flex board:items-center board:gap-1 board:px-3 board:py-1.5 board:text-xs board:font-medium board:bg-gray-100 board:dark:bg-gray-700 board:hover:bg-gray-200 board:dark:hover:bg-gray-600 board:rounded board:transition-colors board:aria-disabled:opacity-50 board:aria-disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_write !== true}}">
             <on type="click">
-              <!-- 답변 작성 폼으로 이동 — parent_id 는 query 로 넘긴다. mergeQuery 는 path 의 인라인 쿼리스트링을 버리므로 path 에 붙여두면 사라진다 (#75). -->
+              <!-- 답변 작성 폼으로 이동 — parent_id 는 query 로 넘긴다. mergeQuery 는 path 의 인라인 쿼리스트링을 버리므로 path 에 붙여두면 사라진다 (공개 #75). -->
               <navigate :mergeQuery="true">
                 <query parent_id="{{post?.data?.id}}"/>
               </navigate>

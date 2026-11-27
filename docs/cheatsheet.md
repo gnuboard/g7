@@ -55,7 +55,6 @@ php artisan plugin:update sirsoft-payment --force
 ```bash
 # 코어 템플릿 엔진 (resources/js/core/template-engine/**)
 php artisan core:build                    # 기본: 템플릿 엔진만 빌드
-php artisan core:build --full             # 전체 빌드 (npm run build)
 php artisan core:build --watch            # 파일 감시 모드
 
 # 모듈 빌드 (기본: _bundled)
@@ -149,7 +148,7 @@ php artisan migrate:rollback
 # 코어 업데이트
 php artisan core:check-updates                                    # 코어 업데이트 확인
 php artisan core:update [--yes] [--force] [--no-backup] [--no-maintenance] [--prune] [--vendor-mode=auto|composer|bundled] [--bundled-sources=none|all|id,…] [--rebuild-search-index]
-php artisan core:update --zip=<파일> [--signature=<파일>] [--allow-unsigned]   # 수동 ZIP 업데이트 — 서명 파일 생략 시 ZIP 옆 <zip>.sig.json (7.2.0)
+php artisan core:update --zip=<파일> [--signature=<파일>] [--allow-unsigned]   # 수동 ZIP 업데이트 — 서명 파일 생략 시 ZIP 옆 <zip>.sig.json 또는 {base}.sig.json (7.2.0)
 php artisan core:update --source=<디렉토리>|--local                # 압축 푼 디렉토리·로컬 코드베이스를 소스로 (GitHub 다운로드 생략)
 php artisan core:bundled-sources list|place <id…>|prune [--force] [--include-modified] [--source=|--zip=]   # 공식 번들 소스 보고·배치·정리 (7.1.1+, prune 기본 미리보기)
 php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--yes|--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용 — 단독 호출 시 migration·resync·.env·캐시·번들 확장 일괄 업데이트 자동 수행. CoreUpdateCommand 내부 spawn 은 --skip-* 5개 옵션 자동 전달)
@@ -170,7 +169,7 @@ php artisan module:cache-clear [identifier?]
 php artisan module:seed [identifier] [--sample] [--count=key=value]
 php artisan module:check-updates [identifier?]
 php artisan module:update [identifier] [--yes] [--force] [--vendor-mode=auto|composer|bundled] [--layout-strategy=overwrite|keep] [--source=auto|bundled|github] [--dry-run [--json]] [--decisions=<파일>]
-php artisan module:update [identifier] --zip=<파일> [--signature=<파일>] [--allow-unsigned]   # 외부 ZIP — 서명 파일 생략 시 ZIP 옆 <zip>.sig.json (7.2.0)
+php artisan module:update [identifier] --zip=<파일> [--signature=<파일>] [--allow-unsigned]   # 외부 ZIP — 서명 파일 생략 시 ZIP 옆 <zip>.sig.json 또는 {base}.sig.json (7.2.0)
 php artisan module:refresh-layout [identifier?] [--layout-strategy=keep|overwrite] [--dry-run [--json]] [--decisions=<파일>]   # 기본 keep(운영자 수정 유지)
 
 # 플러그인
@@ -654,7 +653,6 @@ lazy 번들(편집기/devtools)이 코어 런타임(DynamicRenderer·엔진 싱�
 ```bash
 # 코어 템플릿 엔진 (resources/js/core/template-engine/**)
 php artisan core:build                    # 기본: 템플릿 엔진만 빌드
-php artisan core:build --full             # 전체 빌드 (npm run build)
 php artisan core:build --watch            # 파일 감시 모드
 
 # 모듈 빌드 (기본: _bundled 디렉토리)

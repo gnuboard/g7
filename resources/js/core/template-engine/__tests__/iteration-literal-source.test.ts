@@ -23,7 +23,7 @@ describe('iteration source / evaluateExpression - 리터럴 및 내장객체 회
     engine = new DataBindingEngine();
   });
 
-  describe('resolveIterationSource - 배열/객체 리터럴 (결함 #1/#2)', () => {
+  describe('resolveIterationSource - 배열/객체 리터럴 (결함 1/#2)', () => {
     it('문자열 배열 리터럴을 그대로 배열로 반환해야 함', () => {
       const source = "{{['requested','sent','verified','failed','expired','cancelled','policy_violation_logged']}}";
       const result = resolveIterationSource(source, {}, engine);
@@ -74,7 +74,7 @@ describe('iteration source / evaluateExpression - 리터럴 및 내장객체 회
     });
   });
 
-  describe('evaluateExpression - Set/Map 내장객체 (결함 #3)', () => {
+  describe('evaluateExpression - Set/Map 내장객체 (결함 3)', () => {
     it('Array.from(new Set([...])) 로 중복 제거 배열을 반환해야 함', () => {
       const result = engine.evaluateExpression(
         "Array.from(new Set(['sms', 'email', 'sms', 'app']))",

@@ -795,7 +795,7 @@ if (! function_exists('installComposerDependenciesSSE')) {
         if (isWindows()) {
             // OS 환경변수 경로는 문서루트 밖이다 — open_basedir 환경에서 이 stat 의 warning 이
             // SSE 프레임 경계를 깨면 진행 이벤트가 유실된다. 판정은 옳고 진단만 억제한다
-            // (20차 #8 규칙의 형제, 21차 #21-5).
+            // (20차 8 규칙의 형제, 21차 #21-5).
             if (! isset($env['TEMP']) || ! @is_dir($env['TEMP']) || ! @is_writable($env['TEMP'])) {
                 $tempDir = BASE_PATH.'/storage/temp';
                 if (! is_dir($tempDir)) {
@@ -1234,7 +1234,7 @@ if (! function_exists('dependencyPrecheckSSE')) {
                 'message_key' => 'dependency_precheck_failed',
                 'detail' => implode("\n", $missing),
                 // 사전 검증은 아무것도 바꾸지 않는다(DB 작업 전) — 되돌릴 것이 없으므로 롤백을 시도해
-                // 「롤백 실패 — DB 수동 정리」 안내가 붙지 않게 한다(#153 D7, 순환 실측에서 확인).
+                // 「롤백 실패 — DB 수동 정리」 안내가 붙지 않게 한다(공개 #153 D7, 순환 실측에서 확인).
                 'rollback_done' => true,
             ];
         }
@@ -2187,7 +2187,7 @@ if (! function_exists('optimizeRouteCacheSSE')) {
 
 if (! function_exists('publishStaticCacheSSE')) {
     /**
-     * 설치 완료 직후 부트스트랩 리소스 정적 게시(bake)를 최초 수행한다 (#122).
+     * 설치 완료 직후 부트스트랩 리소스 정적 게시(bake)를 최초 수행한다 (공개 #122).
      *
      * 이 지점이 없으면 첫 방문자가 blade 자가 치유(1회 API 폴백)를 겪는다.
      * best_effort — 실패해도 설치는 완료 처리한다(사이트는 API 폴백으로 정상).

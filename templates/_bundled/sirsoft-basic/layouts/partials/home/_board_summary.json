@@ -11,7 +11,7 @@
     },
     "children": [
         {
-            "comment": "이름 단추는 줄어들며 줄을 바꾸고 글 수 배지는 제 폭을 지킨다(#143).",
+            "comment": "이름 단추는 줄어들며 줄을 바꾸고 글 수 배지는 제 폭을 지킨다(공개 #143).",
             "type": "basic",
             "name": "Div",
             "props": {
@@ -120,7 +120,7 @@
                                             "text": "{{post.title}}"
                                         },
                                         {
-                                            "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 게시판 묶음 안의 글이라 게시판은 item.slug 에서 온다",
+                                            "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(공개 #149). 게시판 묶음 안의 글이라 게시판은 item.slug 에서 온다",
                                             "id": "ext_board_post_row_badges_home_board_summary_{{post.id}}",
                                             "type": "extension_point",
                                             "name": "board_post_row_badges",

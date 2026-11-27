@@ -5,7 +5,7 @@
     코어 번들이 없으면 재시도할 JS 자체가 없다(닭-달걀). 따라서 재시도를 의존성 없는
     손작성 ES5 정적 파일 `public/assets/core/js/g7-shell-boot.js` 로 구현한다. 종전에는
     인라인 `<script>`·`onload`/`onerror` 속성이었으나 strict CSP(`script-src 'self'`)에서
-    실행되지 않아 전 화면이 백지가 됐다(#158) — 이 파샬에 인라인 실행 코드를 다시 넣지 않는다.
+    실행되지 않아 전 화면이 백지가 됐다(공개 #158) — 이 파샬에 인라인 실행 코드를 다시 넣지 않는다.
     서버 값은 `#g7-boot-data` JSON 블록으로, 번들 태그의 load/error 는 `data-g7-boot-bundle`
     표식 + 셸의 document 캡처 리스너로 받는다.
 
@@ -29,7 +29,7 @@
     @param $initConfig     initTemplateApp 에 넘길 설정 (JSON 직렬화 가능)
 --}}
 @php
-    // 부트스트랩 셸(g7-shell-boot.js)이 읽는 서버 값 — 비실행 JSON 데이터 블록으로만 넘긴다(#158).
+    // 부트스트랩 셸(g7-shell-boot.js)이 읽는 서버 값 — 비실행 JSON 데이터 블록으로만 넘긴다(공개 #158).
     $g7BootData = [
         'label' => $templateType === 'admin' ? '[Admin]' : '[User]',
         'coreEngineSrc' => $coreEngineSrc,

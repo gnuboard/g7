@@ -4,7 +4,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.3.1] - 2026-11-26
+## [1.3.1] - 2026-11-27
 
 ### Added
 
@@ -15,6 +15,7 @@
 ### Removed
 
 - 지운 관리자 시안 화면(메인 배너·할인 코드)의 번역을 뺐습니다.
+- 쇼핑몰 1.4.1 에서 지운 배송 설정 키 2개(`address_validation_enabled`·`address_api_provider`)의 검증 문구 번역을 뺐습니다.
 
 ## [1.3.0] - 2026-11-20
 

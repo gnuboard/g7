@@ -6,7 +6,7 @@ use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 카테고리 이름의 대체 언어가 사이트 기본 언어를 따르는지 테스트 (#148 D7).
+ * 카테고리 이름의 대체 언어가 사이트 기본 언어를 따르는지 테스트 (공개 #148 D7).
  *
  * 종전 `app.fallback_locale`(env 고정, 기본 ko) 색인이라, 기본 언어가 영어인 사이트의 필리핀어 화면에서
  * 이름이 비면 한국어로 보였다. 이제 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 순이다.

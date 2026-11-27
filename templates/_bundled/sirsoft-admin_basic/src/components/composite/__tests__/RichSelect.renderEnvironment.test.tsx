@@ -1,5 +1,5 @@
 /**
- * RichSelect — component_layout 렌더 환경 전달 (이슈 #141)
+ * RichSelect — component_layout 렌더 환경 전달 (이슈 공개 #141)
  *
  * component_layout 항목은 `G7Core.renderComponentLayout` 이 그린다. 종전에는 호스트 번역·dispatcher·
  * 레지스트리로 그려 편집기 미리보기의 콘텐츠 언어·격리 dispatcher 를 무시했다. RichSelect 는 자신이 받은
@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { RichSelect } from '../RichSelect';
 
-describe('RichSelect — 렌더 환경 전달 (#141)', () => {
+describe('RichSelect — 렌더 환경 전달 (공개 #141)', () => {
   let originalG7Core: any;
   const options = [{ value: 'file1', label: 'home.json' }];
 

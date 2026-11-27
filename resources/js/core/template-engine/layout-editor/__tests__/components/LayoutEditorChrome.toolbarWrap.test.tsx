@@ -77,7 +77,7 @@ describe('[case:wysiwyg-11] 툴바 두 줄로 감기', () => {
   /** @effects editor_toolbar_wraps_lines_without_squish */
   it('감겨도 항목은 줄지 않는다 — 툴바·기기 줄·기기 툴바 직접 자식 모두 flex-shrink:0', () => {
     renderShell();
-    // 규칙은 JSX <style> 자식이 아니라 런타임 시트(RuntimeStyleSheet)로 붙는다 — 엄격한 스타일 정책에서 <style> 이 막힌다(#163)
+    // 규칙은 JSX <style> 자식이 아니라 런타임 시트(RuntimeStyleSheet)로 붙는다 — 엄격한 스타일 정책에서 <style> 이 막힌다(공개 #163)
     const toolbarCss = getCssText(TOOLBAR_STYLE_KEY) ?? '';
     const rowCss = getCssText(DEVICE_ROW_STYLE_KEY) ?? '';
     const deviceCss = getCssText(DEVICE_TOOLBAR_STYLE_KEY) ?? '';

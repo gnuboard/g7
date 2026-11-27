@@ -265,7 +265,7 @@ class DeclarativeSurfaceCollector
         $short = (string) $record['entryClassShort'];
         $uid = '_extdoc_'.bin2hex(random_bytes(6));
 
-        // 클래스명 치환·여는 태그 제거, __DIR__·__FILE__ 은 진입 파일 위치로 (#159)
+        // 클래스명 치환·여는 태그 제거, __DIR__·__FILE__ 은 진입 파일 위치로 (공개 #159)
         $renamed = ExtensionEntrySource::forEval((string) $record['entryFile'], $short, $short.$uid);
         if ($renamed === null) {
             return null;

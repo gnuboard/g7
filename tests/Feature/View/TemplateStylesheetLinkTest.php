@@ -88,7 +88,7 @@ class TemplateStylesheetLinkTest extends TestCase
     }
 
     /**
-     * CSS 를 선언하고 산출물이 있으면 선언한 파일을 링크한다(자가 복구 표식 `data-g7-template-css` 포함, 인라인 onerror 없음 — #158).
+     * CSS 를 선언하고 산출물이 있으면 선언한 파일을 링크한다(자가 복구 표식 `data-g7-template-css` 포함, 인라인 onerror 없음 — 공개 #158).
      *
      * @scenario template_type=user, css_declaration=declared_and_built
      *

@@ -477,7 +477,7 @@ class SmsChannelDriverTest extends PluginTestCase
      * 게이트만 통과시키고 끝내면 그 수신자의 로케일에 본문이 없을 때 빈 SMS 가 나간다.
      *
      * 로케일 해석은 코어 NotificationContentBehavior 와 동일한 체인이다 —
-     * `수신자 로케일 → 사이트 기본 언어 → 영어 → ''`(#148). 대체 언어에도 본문이 없으면
+     * `수신자 로케일 → 사이트 기본 언어 → 영어 → ''`(공개 #148). 대체 언어에도 본문이 없으면
      * 발송하지 않는다(개편 전 코어 템플릿 경로와 같은 결과).
      *
      * @effects sms_skipped_when_fallback_locale_body_missing

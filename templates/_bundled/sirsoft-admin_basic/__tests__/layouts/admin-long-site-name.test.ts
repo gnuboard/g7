@@ -1,6 +1,6 @@
 /**
  * @file admin-long-site-name.test.ts
- * @description 관리자 긴 사이트 이름·사용자 이름 넘침 방지 — 클래스 계약 (#143)
+ * @description 관리자 긴 사이트 이름·사용자 이름 넘침 방지 — 클래스 계약 (공개 #143)
  *
  * - A1 모바일 상단 `.mobile_header_left` 는 `min-w-0 flex-1` 이어야 한다. 이름 Span 은 이미 truncate 이고 우측은
  *   flex-shrink-0 이지만, 바깥 칸이 기본 `min-width:auto` 라 긴 이름 폭 아래로 줄지 않아 우측 단추를 화면 밖으로 밀었다.

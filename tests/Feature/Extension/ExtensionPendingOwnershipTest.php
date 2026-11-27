@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 확장 설치/업데이트 복사의 디렉토리 소유권 상속 테스트 (#122 P3).
+ * 확장 설치/업데이트 복사의 디렉토리 소유권 상속 테스트 (공개 #122 P3).
  *
  * 파일은 `FilePermissionHelper::copyFile` 이 부모 소유권을 상속시키는데 **디렉토리는
  * 그렇지 않았다.** sudo 로 실행된 설치/업데이트가 만든 디렉토리가 root 소유로 남으면

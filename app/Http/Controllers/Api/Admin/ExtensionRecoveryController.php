@@ -139,7 +139,7 @@ class ExtensionRecoveryController extends AdminBaseController
         };
 
         // 의존 확장이 조건에 맞지 않으면 매니저가 켜지 않고 경고를 돌려준다 — 종전에는 이 결과를 버려 켜지지 않았는데도
-        // 「복구되었습니다」(200)를 냈다(#152). 실패는 실패로 알린다(7.1.1 업그레이드 복구 스텝과 같은 success 확인).
+        // 「복구되었습니다」(200)를 냈다(공개 #152). 실패는 실패로 알린다(7.1.1 업그레이드 복구 스텝과 같은 success 확인).
         if (($result['success'] ?? false) !== true) {
             $missingModules = $result['missing_modules'] ?? [];
             $missingPlugins = $result['missing_plugins'] ?? [];

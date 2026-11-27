@@ -72,7 +72,7 @@ return [
         'incompatible_message' => 'Your browser is too old to run this site. Please update it to the latest version, or try a different browser.',
 
         // The HTTPS page requested an http:// asset and the browser blocked it (running behind a
-        // reverse proxy without trusted proxies configured, #124). Ordinary visitors see this
+        // reverse proxy without trusted proxies configured, 공개 #124). Ordinary visitors see this
         // screen, but only the operator can act on it, so the screen carries no server-side
         // instructions — the cause and the fix go to the console for the operator. Reloading does
         // not help, so no button is rendered and no natural recovery is implied.

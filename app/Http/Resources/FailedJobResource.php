@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 /**
- * 큐 실패 작업 목록 행 리소스 (#17)
+ * 큐 실패 작업 목록 행 리소스
  *
  * 목록 조회는 예외 앞부분만 싣는다(JobQueueRepository::EXCEPTION_PREVIEW_LENGTH). 전문은
  * {@see FailedJobDetailResource} 가 준다.

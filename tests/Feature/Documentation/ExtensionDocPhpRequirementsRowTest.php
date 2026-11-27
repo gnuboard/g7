@@ -8,7 +8,7 @@ use App\Support\ExtensionDoc\ExtensionInventory;
 use Tests\TestCase;
 
 /**
- * 확장 README 요구사항 블록의 PHP 확장 행 (#151 W1-d)
+ * 확장 README 요구사항 블록의 PHP 확장 행 (공개 #151 W1-d)
  *
  * 확장이 composer.json `require.ext-*`(필수)·`suggest.ext-*`(권장)로 선언한 PHP 확장을 README 요구사항 표에 싣는다.
  * 운영자가 설치 전에 서버 준비물을 알 수 있게 하는 표면이다.

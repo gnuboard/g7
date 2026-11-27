@@ -25,12 +25,12 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 클레임 추가결제 금액·동시성 결함 수정 검증 — 승인 대조·조건부 갱신·망취소·환급 잠금·반올림 (B)
  *
  * 검증 축:
- * - 승인 금액을 돌려주지 않은 승인은 확정하지 않는다(#11).
+ * - 승인 금액을 돌려주지 않은 승인은 확정하지 않는다(공개 #11).
  * - 승인 실패·확정 기록은 결제 대기일 때만 쓴다(조건부 갱신).
  * - API 승인 경로의 금액 거절은 망취소 훅으로 보상한다.
- * - 부분 환급은 결제 통화 자릿수로, 누적 차분으로 환산한다(#9).
+ * - 부분 환급은 결제 통화 자릿수로, 누적 차분으로 환산한다.
  * - 환급은 결제 건 행 잠금 안에서 PG 를 부른다.
- * - 마일리지 차감·환급은 결제 건 행을 잠근 트랜잭션에서 멱등하다(#10).
+ * - 마일리지 차감·환급은 결제 건 행을 잠근 트랜잭션에서 멱등하다.
  */
 class ValidateP2MoneyPaymentTest extends ModuleTestCase
 {
@@ -112,7 +112,7 @@ class ValidateP2MoneyPaymentTest extends ModuleTestCase
         ]);
     }
 
-    // ── #11 승인 금액 미반환 ──
+    // ── 공개 #11 승인 금액 미반환 ──
 
     /**
      * 승인 금액(`paid_amount`)을 돌려주지 않은 승인을 불일치로 거절하는지 검증합니다.
@@ -266,7 +266,7 @@ class ValidateP2MoneyPaymentTest extends ModuleTestCase
         $this->assertSame(0, $voids);
     }
 
-    // ── #9 부분 환급 반올림 ──
+    // ── 9 부분 환급 반올림 ──
 
     /**
      * 0 자리 결제 통화의 부분 환급이 정수로 나가고 회차 합이 결제 총액과 같은지 검증합니다.
@@ -354,7 +354,7 @@ class ValidateP2MoneyPaymentTest extends ModuleTestCase
         $this->assertSame(ClaimPaymentStatusEnum::PAID, $fresh->payment_status);
     }
 
-    // ── #10 마일리지 멱등 ──
+    // ── 마일리지 멱등 ──
 
     /**
      * 마일리지 환급 상한을 잠근 행에서 다시 읽는지 검증합니다.

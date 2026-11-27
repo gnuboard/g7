@@ -8,7 +8,7 @@ use Plugins\Sirsoft\Ckeditor5\Models\Ckeditor5ImageUpload;
 use Plugins\Sirsoft\Ckeditor5\Tests\PluginTestCase;
 
 /**
- * 미참조 이미지 정리 드라이런 표의 업로드 시각 테스트 (#160)
+ * 미참조 이미지 정리 드라이런 표의 업로드 시각 테스트 (공개 #160)
  *
  * 운영자 콘솔 출력은 사이트 시간대로 찍는다 — UTC 원문이면 사이트 시각과 시간대 차이만큼 어긋난다.
  */

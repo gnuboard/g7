@@ -40,7 +40,7 @@
                 <!-- 함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4). 막지 않는 안내라 창을 열지 않는다. -->
                 <toast if="{{(response?.data?.integration_notices ?? []).length !== 0}}" type="info" message="$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + ')').join(', ')}}"/>
                 <refetch-data-source dataSourceId="templates"/>
-                <!-- 호환성 배너도 다시 받는다 — 켠 템플릿이 새로 고치기 전까지 배너에 남지 않게 한다(#145 F8). -->
+                <!-- 호환성 배너도 다시 받는다 — 켠 템플릿이 새로 고치기 전까지 배너에 남지 않게 한다(공개 #145 F8). -->
                 <refetch-data-source dataSourceId="auto_deactivated_banner"/>
                 <!-- 확장 다시 싣기는 사용자 템플릿을 켰을 때만 — 관리자 템플릿을 켜면 곧 페이지를 새로 고치고(언어팩 창이 뜨면 창이 닫힐 때),
                      지금 그리는 관리자 화면은 방금 꺼진 관리자 템플릿이라 그 config·routes·문구 파일을 다시 받으면 404 가 난다. -->
@@ -66,7 +66,7 @@
               <error-handling>
                 <on-code code="409">
                   <!-- 같은 확장에 다른 작업(설치·업데이트·활성화 등)이 진행 중이라 거절된 409(errors.operation_in_progress, 코어 7.1.5)는
-                       의존 경고·강제 활성 창 응답과 다르다 — 창을 열지 않고 서버 문구를 안내 토스트로 보인다(#161). -->
+                       의존 경고·강제 활성 창 응답과 다르다 — 창을 열지 않고 서버 문구를 안내 토스트로 보인다(공개 #161). -->
                   <set-state target="global" :isTemplateActivating="false" activateWarningData="{{error.errors?.operation_in_progress ? null : error.errors}}"/>
                   <close-modal/>
                   <toast if="{{error.errors?.operation_in_progress}}" type="info" message="{{error.message}}"/>

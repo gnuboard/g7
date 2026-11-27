@@ -46,7 +46,7 @@ describe('SeoOgForm — 3계층 + 출처 + override', () => {
     );
     // 모듈 기본값(title) placeholder.
     expect(screen.getByTestId('g7le-seo-og-title-field-mock')).toHaveAttribute('placeholder', '신선한 원두');
-    // 코어 출처 칩 — #4 로 칸 아래 별도 줄 → 칸 안 어포던스로 이관(site_name=textRow).
+    // 코어 출처 칩 — 4 로 칸 아래 별도 줄 → 칸 안 어포던스로 이관(site_name=textRow).
     expect(screen.getByTestId('g7le-seo-og-site_name-overlay-source')).toBeInTheDocument();
   });
 

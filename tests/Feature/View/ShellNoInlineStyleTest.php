@@ -10,7 +10,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 /**
- * [case:network-strict-style-csp-inline-style-blocked] 코어가 그리는 HTML 에 인라인 스타일이 없다 (#163).
+ * [case:network-strict-style-csp-inline-style-blocked] 코어가 그리는 HTML 에 인라인 스타일이 없다 (공개 #163).
  *
  * 운영자가 웹서버나 환경설정에서 `style-src 'self'; style-src-attr 'none'` 을 강제하면 `<style>` 요소와
  * 태그의 `style="…"` 속성이 적용되지 않는다. 종전에는 셸의 지연 안내 숨김 규칙이 `<style>` 블록에 있어

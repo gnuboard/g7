@@ -1,6 +1,6 @@
 /**
  * @file search-pages-section.test.tsx
- * @description 통합검색 pages 섹션 Partial 렌더링 테스트 (Issue #99)
+ * @description 통합검색 pages 섹션 Partial 렌더링 테스트 (Issue 공개 #99)
  *
  * 테스트 케이스:
  * - 기본 렌더링: all 탭에서 섹션 헤더 표시
@@ -184,7 +184,7 @@ function makeFakePageItem(overrides: Partial<{
 
 // ========== 테스트 케이스 ==========
 
-describe('partials/search/pages/_section.g7.html 렌더링 (Issue #99)', () => {
+describe('partials/search/pages/_section.g7.html 렌더링 (Issue 공개 #99)', () => {
   let registry: ComponentRegistry;
 
   beforeEach(() => {

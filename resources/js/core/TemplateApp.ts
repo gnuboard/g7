@@ -524,7 +524,7 @@ export class TemplateApp {
         // - 기본값: config('app.locale')
         //
         // 저장된 언어가 꺼진 언어(언어팩 비활성 등)면 주 언어가 같은 지원 언어 → 사이트 기본 언어 → 서버 언어 순으로
-        // 연다 — 종전에는 꺼진 언어로 부팅해 화면이 영어로 떨어졌다 (engine-v1.81.0, #148 D8). 저장값(g7_locale)은
+        // 연다 — 종전에는 꺼진 언어로 부팅해 화면이 영어로 떨어졌다 (engine-v1.81.0, 공개 #148 D8). 저장값(g7_locale)은
         // 고쳐 쓰지 않는다: 언어팩 업데이트·잠깐 끄기 동안 들어온 비회원의 선택이 지워지지 않고, 팩이 다시 켜지면
         // 다음 방문부터 그 언어로 돌아온다(설계 확정 2026-10-19). 지원 목록을 모르면 종전대로.
         this.serverLocale = config.locale;
@@ -755,7 +755,7 @@ export class TemplateApp {
 
             // 캐시 버전 시드 — blade 주입값(현재 렌더와 동일 버전) 우선, 부재 시 localStorage 폴백.
             // localStorage 만 보면 stale 버전으로 첫 burst 가 나가고 config 핸드셰이크가
-            // routes + lang 을 통째로 재로드하는 이중 로드가 발생한다 (#122, @since engine-v1.61.0)
+            // routes + lang 을 통째로 재로드하는 이중 로드가 발생한다 (공개 #122, @since engine-v1.61.0)
             const injectedCacheVersion =
                 typeof window !== 'undefined' ? Number((window as any).G7Config?.cache_version) || 0 : 0;
             const storedCacheVersion =
@@ -794,7 +794,7 @@ export class TemplateApp {
                     storedCacheVersion
                 ),
                 // routes.json 로딩 (저장된 캐시 버전 사용)
-                // 정적 게시본(bake) 우선 — miss 면 즉시 종전 API 로 폴백 (#122).
+                // 정적 게시본(bake) 우선 — miss 면 즉시 종전 API 로 폴백 (공개 #122).
                 // legacy 측은 네트워크 일시 실패(응답 없음)에만 재시도. HTTP 에러는 아래 체인이 종전대로 throw.
                 // base-path:allow 첫 인자는 `extStaticUrl()` 산출물 아니면 null 이다 — 삼항이라 게이트가 형태를 읽지 못한다.
                 fetchStaticFirst(
@@ -874,7 +874,7 @@ export class TemplateApp {
             // 확장 기능 캐시 버전 저장 (모듈/플러그인 활성화 시 갱신됨)
             if (templateConfig?.cache_version !== undefined) {
                 // 재로드 판정 기준은 "이번 burst 가 실제 사용한 버전" — stale localStorage 와
-                // 비교하면 blade 시드로 이미 최신 URL 을 쓴 경우에도 재로드가 발화한다 (#122)
+                // 비교하면 blade 시드로 이미 최신 URL 을 쓴 경우에도 재로드가 발화한다 (공개 #122)
                 const previousVersion = storedCacheVersion > 0 ? storedCacheVersion : null;
                 this.extensionCacheVersion = templateConfig.cache_version;
                 this.saveCacheVersionToStorage(this.extensionCacheVersion);
@@ -885,7 +885,7 @@ export class TemplateApp {
                     logger.log('Cache version changed, reloading routes...');
                     // routes.json을 새 캐시 버전으로 다시 로드
                     // 재로드는 **새 버전** 정적 경로를 조합한다 — 아직 미게시면 404 →
-                    // fetchStaticFirst 가 legacy 로 즉시 폴백 (#122)
+                    // fetchStaticFirst 가 legacy 로 즉시 폴백 (공개 #122)
                     const newRoutesData = await fetchStaticFirst(
                         extStaticUrl(`templates/${this.config.templateId}/routes.json`, this.extensionCacheVersion),
                         suffixed(`/api/templates/${this.config.templateId}/routes`, 'json', this.extensionCacheVersion),
@@ -3468,7 +3468,7 @@ export class TemplateApp {
             // - 문서 수준 규칙 → React 렌더 트리 외부 (재렌더 시 소멸하지 않음)
             // - ::after는 부모의 스태킹 컨텍스트 내부 → 형제 요소(header 등) 가림 불가
             // - React가 DOM 교체해도 같은 ID에 CSS 규칙 재매칭
-            // - <style> 요소를 만들지 않는다 — 엄격한 스타일 정책에서 막혀 덮개가 사라진다(#163).
+            // - <style> 요소를 만들지 않는다 — 엄격한 스타일 정책에서 막혀 덮개가 사라진다(공개 #163).
             //   <head> 에는 같은 id 의 표식 요소가 남는다(덮개 생존 신호 계약).
             const selector = `#${CSS.escape(normalized.target)}`;
             this.transitionOverlayEl = setRuntimeStyleRules(
@@ -3579,7 +3579,7 @@ export class TemplateApp {
         const isDark = document.documentElement.classList.contains('dark');
         const bgColor = isDark ? 'rgb(17,24,39)' : 'rgb(249,250,251)';
 
-        // Step 1: 런타임 CSS 규칙으로 즉시 이전 컨텐츠 가림 (동기, 즉시 반영 — <style> 요소 없이, #163)
+        // Step 1: 런타임 CSS 규칙으로 즉시 이전 컨텐츠 가림 (동기, 즉시 반영 — <style> 요소 없이, 공개 #163)
         // ::after 의사 요소는 React 렌더와 무관하게 즉시 적용됨
         // renderTemplate()이 #app DOM을 교체해도 새 #target에 ::after가 재매칭됨
         const cssTargetId = skeletonScope === 'fullpage' ? 'app'
@@ -3786,7 +3786,7 @@ export class TemplateApp {
         this.hideSkeletonOverlay();
 
         // 런타임 CSS 규칙 — 타겟에 position:relative만 설정한다.
-        // 회전 keyframes(`g7-spin`)는 코어 정적 CSS(g7-core.css)에 있다 — 번들 템플릿 PageLoading 이 그 이름에 기댄다(#163).
+        // 회전 keyframes(`g7-spin`)는 코어 정적 CSS(g7-core.css)에 있다 — 번들 템플릿 PageLoading 이 그 이름에 기댄다(공개 #163).
         // 비주얼 스타일(배경색, z-index 등)은 컴포넌트가 결정
         const cssTargetId = spinnerScope === 'fullpage' ? 'app'
             : spinnerScope === 'fallback' ? fallbackTarget!
@@ -3872,7 +3872,7 @@ export class TemplateApp {
 
         // 기본 스피너 폴백 (커스텀 컴포넌트 미지정 시) — 커스텀 컴포넌트 사용 시 이 코드는 실행되지 않음.
         // 모양은 코어 정적 CSS(g7-core.css)의 클래스로 준다. HTML 문자열의 style 속성은 엄격한 스타일 정책에서
-        // 막혀 스피너가 보이지 않는다(#163). 색은 종전대로 CSS 변수 --g7-overlay-bg·--g7-spinner-color 로 바꾼다.
+        // 막혀 스피너가 보이지 않는다(공개 #163). 색은 종전대로 CSS 변수 --g7-overlay-bg·--g7-spinner-color 로 바꾼다.
         // 배경 기본값은 다른 덮개와 같은 판정으로 다크 모드면 gray-900 이다 — 수식 클래스 g7-spinner-overlay--dark 의
         // 규칙(g7-core.css)이 준다. --g7-overlay-bg 를 정의하는 곳이 없어 종전에는 다크 모드에서도 밝은 회색이 그려졌다
         const isDark = document.documentElement.classList.contains('dark');

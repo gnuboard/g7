@@ -9,7 +9,7 @@ use Plugins\Sirsoft\PayNhnkcp\Services\KcpSoapService;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
 /**
- * 모바일 승인키 발급 SOAP 서비스가 PHP soap 확장 부재를 안내 예외로 바꾸는지 검증한다 (#151)
+ * 모바일 승인키 발급 SOAP 서비스가 PHP soap 확장 부재를 안내 예외로 바꾸는지 검증한다 (공개 #151)
  *
  * soap 확장이 없으면 `new SoapClient` 가 치명 오류(Class not found)가 되어 컨트롤러의
  * `NhnKcpApiException` 분기를 지나치고 500 이 났다. 고객에게는 일반 문구만, 원인은 로그에 남긴다.

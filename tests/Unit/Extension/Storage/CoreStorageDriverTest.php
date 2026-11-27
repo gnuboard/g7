@@ -353,7 +353,7 @@ class CoreStorageDriverTest extends TestCase
     #[Test]
     public function filter_url_hook_fires_even_when_url_is_null(): void
     {
-        // 확정 #5 — null 일 때도 항상 발화 (훅이 URL 을 공급할 수 있다)
+        // 확정 5 — null 일 때도 항상 발화 (훅이 URL 을 공급할 수 있다)
         HookManager::addFilter('core.storage.filter_url', function ($url, array $context) {
             $this->assertNull($url);
 

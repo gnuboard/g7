@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * schedule_histories 에 (schedule_id, started_at) 인덱스를 추가합니다 (#17, 7.2.0).
+ * schedule_histories 에 (schedule_id, started_at) 인덱스를 추가합니다 (17, 7.2.0).
  *
  * 스케줄별 최근 이력 조회(목록의 마지막 실행·이력 모달)가 스케줄 단위로 started_at 정렬을 한다.
  */

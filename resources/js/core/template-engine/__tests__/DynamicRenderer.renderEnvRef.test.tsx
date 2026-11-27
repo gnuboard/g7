@@ -1,5 +1,5 @@
 /**
- * DynamicRenderer 렌더 환경 ref (이슈 #141)
+ * DynamicRenderer 렌더 환경 ref (이슈 공개 #141)
  *
  * 셀 렌더 함수는 React Context 를 읽지 못하므로, DynamicRenderer 가 자기 렌더 환경
  * (미리보기 폭·번역 컨텍스트·엔진·dispatcher·레지스트리·편집 모드)을 안정 ref 에 기록해

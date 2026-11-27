@@ -710,7 +710,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
      */
     public function handleExtraFeeAfterBulkDelete(array $ids, int $count, array $snapshots = []): void
     {
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($ids, $snapshots) {
                 foreach ($ids as $id) {
@@ -746,7 +746,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     {
         $templates = $this->extraFeeTemplateRepository->findByIdsKeyed($ids);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($ids, $isActive, $snapshots, $templates) {
                 foreach ($ids as $id) {
@@ -786,7 +786,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     public function handleExtraFeeAfterBulkCreate(array $items, int $count, $createdTemplates = null): void
     {
         if ($createdTemplates && $createdTemplates->isNotEmpty()) {
-            // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+            // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
             try {
                 DB::transaction(function () use ($createdTemplates) {
                     foreach ($createdTemplates as $template) {
@@ -830,7 +830,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
      */
     public function handleShippingPolicyAfterBulkDelete(array $ids, int $count, array $snapshots = []): void
     {
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($ids, $snapshots) {
                 foreach ($ids as $id) {
@@ -866,7 +866,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     {
         $policies = $this->shippingPolicyRepository->findByIdsKeyed($ids);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($ids, $isActive, $policies, $snapshots) {
                 foreach ($ids as $id) {
@@ -1093,7 +1093,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     {
         $options = $this->productOptionRepository->findByIdsKeyed($optionIds);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($action, $descriptionKeySuffix, $optionIds, $options, $snapshots) {
                 foreach ($optionIds as $optionId) {
@@ -1165,7 +1165,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
      */
     public function handleReviewAfterBulkDelete(array $ids, array $snapshots = []): void
     {
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($ids, $snapshots) {
                 foreach ($ids as $id) {
@@ -1207,7 +1207,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     {
         $byId = $this->indexSnapshotsById($snapshots);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($byId, $count, $ids) {
                 foreach ($ids as $id) {
@@ -1243,7 +1243,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     {
         $byId = $this->indexSnapshotsById($snapshots);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($byId, $count, $ids) {
                 foreach ($ids as $id) {
@@ -1279,7 +1279,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     {
         $byId = $this->indexSnapshotsById($snapshots);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($byId, $count, $ids) {
                 foreach ($ids as $id) {
@@ -1334,7 +1334,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
      */
     public function handleProductInquiryAfterBulkDelete(array $ids, int $count): void
     {
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($count, $ids) {
                 foreach ($ids as $id) {

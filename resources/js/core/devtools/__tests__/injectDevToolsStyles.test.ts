@@ -1,5 +1,5 @@
 /**
- * DevTools 패널 CSS 주입 — `<style>` 요소 없이 붙는지 잠근다 (#163)
+ * DevTools 패널 CSS 주입 — `<style>` 요소 없이 붙는지 잠근다 (공개 #163)
  *
  * 엄격한 스타일 정책(`style-src 'self'`)에서는 스크립트가 만든 `<style>` 요소가 적용되지 않는다.
  * 패널 CSS 는 생성형 스타일시트(`adoptedStyleSheets`)로 붙고, 지원하지 않는 환경(jsdom·구형 브라우저)에서만

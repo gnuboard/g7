@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * SEO 봇 HTML 의 템플릿 CSS URL 은 정적 게시(bake) 경로를 우회해야 한다 (#122).
+ * SEO 봇 HTML 의 템플릿 CSS URL 은 정적 게시(bake) 경로를 우회해야 한다 (공개 #122).
  *
  * 봇 HTML 은 SeoCacheManager(`seo.page.*` — 키에 cache_version 미포함, TTL 수시간)에
  * 캐시되는데, 정적 게시 디렉토리는 GC 가 현재+직전 1개만 보존한다. 캐시된 HTML 이

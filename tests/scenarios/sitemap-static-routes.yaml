@@ -1,5 +1,5 @@
 # audit:allow test-scenario-coverage[cross_product] reason: issue:#846 축마다 표면이 다르다(정적 화면 판정은 생성기·번들 실물, 재생성 API 는 큐·잠금 상태, 구조 검사는 소스 전역). 한 매니페스트의 축 곱으로 묶으면 실재하지 않는 조합(잠금 × 레이아웃 토글 등)이 생겨, 축은 각 테스트의 @scenario 로 표면별로 표시하고 이 매니페스트는 effects 로 전수 검증한다.
-feature: 사이트맵 정적 화면 포함 기준·중복 제거·생성 오류 보고와 「지금 생성」 잠금 교정 (#155)
+feature: 사이트맵 정적 화면 포함 기준·중복 제거·생성 오류 보고와 「지금 생성」 잠금 교정 (공개#155)
 
 description: |
   사이트맵 생성기가 인스턴스 메서드 TemplateManager::getActiveTemplate() 를 정적으로 불러 PHP 8 에서 Error 가 났고,

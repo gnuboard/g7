@@ -84,7 +84,7 @@ class HardcodedLocaleRegressionTest extends TestCase
     }
 
     /**
-     * #1 회귀: 기본 언어 = ja 로 환경설정 저장 시 422 거부되지 않아야 한다.
+     * 1 회귀: 기본 언어 = ja 로 환경설정 저장 시 422 거부되지 않아야 한다.
      *
      * @scenario surface=settings_save
      *
@@ -113,7 +113,7 @@ class HardcodedLocaleRegressionTest extends TestCase
     }
 
     /**
-     * #2 회귀: 프로필 언어 변경 API 가 활성 언어팩 ja 를 거부하지 않아야 한다.
+     * 2 회귀: 프로필 언어 변경 API 가 활성 언어팩 ja 를 거부하지 않아야 한다.
      *
      * @scenario surface=profile_language
      *
@@ -135,7 +135,7 @@ class HardcodedLocaleRegressionTest extends TestCase
     }
 
     /**
-     * #3 회귀: DriverRegistryService 가 활성 translatable_locales 모든 키에 대해 라벨을 반환해야 한다.
+     * 3 회귀: DriverRegistryService 가 활성 translatable_locales 모든 키에 대해 라벨을 반환해야 한다.
      *
      * @scenario surface=driver_labels
      *
@@ -163,7 +163,7 @@ class HardcodedLocaleRegressionTest extends TestCase
     }
 
     /**
-     * #4 회귀: AuthService Accept-Language 국가 매핑이 config 기반으로 동작.
+     * 4 회귀: AuthService Accept-Language 국가 매핑이 config 기반으로 동작.
      *
      * @scenario surface=country_fallback
      *
@@ -221,7 +221,7 @@ class HardcodedLocaleRegressionTest extends TestCase
     }
 
     /**
-     * #5 회귀: ModuleManager / PluginManager 의 string→JSON 승격이
+     * 5 회귀: ModuleManager / PluginManager 의 string→JSON 승격이
      *           활성 translatable_locales 의 모든 키를 포함해야 한다.
      *
      * @scenario surface=translatable_promotion

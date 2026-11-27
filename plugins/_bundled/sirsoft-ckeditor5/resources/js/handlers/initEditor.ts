@@ -1149,7 +1149,7 @@ function createMultilingualTabs(
         tab.type = 'button';
         tab.dataset.locale = locale;
         tab.className = ['ckeditor-locale-tab', isActive ? 'ckeditor-locale-tab--active' : '', isDefault ? 'ckeditor-locale-tab--default' : ''].filter(Boolean).join(' ');
-        // 언어 이름(언어팩 문자열)은 textContent 로만 넣는다 — innerHTML 금지 (#148 F5x)
+        // 언어 이름(언어팩 문자열)은 textContent 로만 넣는다 — innerHTML 금지 (공개 #148 F5x)
         buildLocaleTabContent(tab, locale, isDefault);
         tab.addEventListener('click', async () => {
             // 탭 활성화 전환 (에디터 생성 전에 먼저 실행)

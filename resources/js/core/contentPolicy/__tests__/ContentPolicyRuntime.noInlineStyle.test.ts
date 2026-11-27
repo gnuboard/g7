@@ -1,5 +1,5 @@
 /**
- * 본문 콘텐츠 규칙 런타임 — 외부 영상 박스에 style 속성이 없고, 본문 서식은 플래그가 있을 때만 지연한다 (#163, engine-v1.91.0)
+ * 본문 콘텐츠 규칙 런타임 — 외부 영상 박스에 style 속성이 없고, 본문 서식은 플래그가 있을 때만 지연한다 (공개 #163, engine-v1.91.0)
  *
  * [case:network-strict-style-csp-inline-style-blocked]
  *

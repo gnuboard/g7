@@ -9,8 +9,8 @@ description: |
     - 회원: "저장된 배송지" 탭(주소록 선택, address_id) + "직접 입력" 탭. user/orders endpoint.
     - 비회원: 주소록이 없어 탭 없이 직접 입력 폼만. guest/orders endpoint + X-Guest-Order-Token 헤더.
 
-  배경 (이슈 #55):
-    - 회원 흐름 버그(#5): 모달이 부모 _local 미접근(별도 컨텍스트)이라 직접입력 폼이 빈 값 전송 +
+  배경:
+    - 회원 흐름 버그: 모달이 부모 _local 미접근(별도 컨텍스트)이라 직접입력 폼이 빈 값 전송 +
       적용 버튼에 confirm 달린 apiCall 2개라 확인창 두 번. → _global.editingShippingAddress dataKey
       패턴(_modal_address.g7.html 동일)으로 해결, confirm 1회로 정리, 로딩 스피너 추가.
     - 비회원 배송지 변경 재도입: 44ee97599 에서 제거됐던 guest endpoint/FormRequest/라우트 복원.

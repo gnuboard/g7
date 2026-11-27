@@ -101,7 +101,7 @@ effects:
   - test_new_file_is_added_to_apply_list                                   # base 없음 → added
   - test_size_differing_file_is_changed                                    # size 다름 → changed
   - test_same_size_different_content_file_is_changed                       # md5 다름 → changed
-  - test_apply_update_incremental_preserves_user_modified_unchanged_file   # 이슈 #64 회귀 가드 (.htaccess)
+  - test_apply_update_incremental_preserves_user_modified_unchanged_file   # 이슈 공개#64 회귀 가드 (.htaccess)
   - test_apply_update_incremental_applies_only_listed_files                # 목록만 적용
   - test_apply_update_incremental_does_not_remove_orphans                  # 증분=삭제 안 함
   - test_apply_update_prune_removes_orphans_and_overwrites_all             # prune=전체 덮어쓰기+삭제

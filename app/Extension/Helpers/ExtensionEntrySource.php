@@ -19,7 +19,7 @@ class ExtensionEntrySource
      *
      * 예외: 진입 파일 옆 `vendor/autoload.php` 의 Composer 오토로더 클래스가 이미 선언돼 있으면 `__DIR__`·`__FILE__` 을
      * 바꾸지 않는다(종전 동작). 활성 사본이 vendor 를 이미 선언한 상태에서 `_bundled` 사본을 eval 할 때 고친 `__DIR__` 이
-     * `_bundled` vendor 를 불러 같은 이름의 오토로더를 다시 선언하면 잡을 수 없는 치명 오류로 죽기 때문이다(#159).
+     * `_bundled` vendor 를 불러 같은 이름의 오토로더를 다시 선언하면 잡을 수 없는 치명 오류로 죽기 때문이다(공개 #159).
      *
      * @param  string  $file  진입 파일 절대경로
      * @param  string  $fromClass  원래 짧은 클래스명 (예: Plugin)

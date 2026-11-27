@@ -70,7 +70,7 @@ const usePreferredCurrency = (): string => {
 };
 
 // G7Core.dispatch() navigate 헬퍼
-// preserveListQuery 면 목록 컨텍스트 왕복 규약(#75)에 따라 현재 URL 의 목록 상태를 승계한다.
+// preserveListQuery 면 목록 컨텍스트 왕복 규약(공개 #75)에 따라 현재 URL 의 목록 상태를 승계한다.
 const navigate = (path: string, preserveListQuery = false) => {
   (window as any).G7Core?.dispatch?.({
     handler: 'navigate',
@@ -144,7 +144,7 @@ interface ProductCardProps {
   /** 쇼핑몰 base 경로 (예: '/shop', '/store', '/') */
   shopBase?: string;
   /**
-   * 목록 컨텍스트 왕복 보존 여부 (#75).
+   * 목록 컨텍스트 왕복 보존 여부 (공개 #75).
    *
    * 상품 목록 그리드처럼 이 카드가 페이지네이션 목록의 일부인 자리에서만 true 로 켠다.
    * 켜면 상세로 이동할 때 현재 URL 의 page/sort/keyword/category 를 상세 URL 로 승계해,

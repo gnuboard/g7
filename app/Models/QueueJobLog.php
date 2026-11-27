@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * 큐 작업 처리 기록 (#17)
+ * 큐 작업 처리 기록
  *
  * 워커가 처리를 마친 작업 1건(성공·실패)을 남긴다. 처리 기록 리스너(RecordQueueJobLog)만 쓰고,
  * 정리 명령(queue:prune-records)이 보관 기간이 지난 행을 지운다. 생성 시각만 있고 수정되지 않는다.

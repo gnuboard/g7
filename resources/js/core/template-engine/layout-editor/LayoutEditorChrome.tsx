@@ -518,11 +518,11 @@ function LayoutEditorChromeBody({
   usePreviewBodyScrollIsolation();
 
   // CSS 매체 격리 — 프리뷰가 동일 문서의 div 라 폭 `@media`·`vw` 가 브라우저 창 폭으로 판정된다.
-  // 편집기 생존 동안 폭 조건을 프리뷰 프레임 컨테이너 기준으로 나눠 두고 언마운트 때 되돌린다(#141).
+  // 편집기 생존 동안 폭 조건을 프리뷰 프레임 컨테이너 기준으로 나눠 두고 언마운트 때 되돌린다(공개 #141).
   // usePreviewMediaIsolation 참조.
   usePreviewMediaIsolation();
 
-  // 기기 줄 압착 차단 규칙 — 런타임 시트로 붙이고 언마운트 때 뗀다(#163, 종전 JSX <style> 자식)
+  // 기기 줄 압착 차단 규칙 — 런타임 시트로 붙이고 언마운트 때 뗀다(공개 #163, 종전 JSX <style> 자식)
   useEffect(() => {
     applyEditorStyle(DEVICE_ROW_STYLE_KEY, DEVICE_ROW_STYLE_CSS);
     return () => removeEditorStyle(DEVICE_ROW_STYLE_KEY);
@@ -1089,7 +1089,7 @@ function LayoutEditorChromeBody({
           >
             {/* 기기 줄 항목(기기 툴바, 페이지 상태 전환기)도 툴바처럼 줄 단위로 감고 줄이지 않는다.
                 기기 툴바는 줄 폭을 넘지 않게(maxWidth) 자기 안에서 다시 감긴다. 그 규칙은 editorRuntimeStyles 의
-                DEVICE_ROW_STYLE_CSS 로 붙인다(위 useEffect — <style> 요소는 엄격한 스타일 정책에서 막힌다, #163). */}
+                DEVICE_ROW_STYLE_CSS 로 붙인다(위 useEffect — <style> 요소는 엄격한 스타일 정책에서 막힌다, 공개 #163). */}
             <DevicePreviewToolbar />
             <PageStateSwitcher />
           </div>

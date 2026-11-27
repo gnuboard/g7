@@ -84,7 +84,7 @@ describe('알림 채널 라벨 — registry payload string contract 회귀 가�
 });
 
 /**
- * 채널 토글 저장 + 하단 서브탭 필터 회귀 가드 (#28)
+ * 채널 토글 저장 + 하단 서브탭 필터 회귀 가드
  *
  * 회귀 시나리오:
  *  1) 토글 저장이 `.map()` 만 쓰면(기존 엔트리만 변형) 설정에 없던 확장 채널(sms/alimtalk)은
@@ -95,7 +95,7 @@ describe('알림 채널 라벨 — registry payload string contract 회귀 가�
  *     (사이트내 알림처럼 사라지지 않음). 코어 기본 채널(source==='core')은 미저장 시 노출 유지,
  *     확장 채널은 미저장 시 숨김이어야 하므로 `c.source === 'core'` 분기가 있어야 한다.
  */
-describe('채널 토글 저장 upsert + 하단 서브탭 필터 (#28)', () => {
+describe('채널 토글 저장 upsert + 하단 서브탭 필터', () => {
     // 표현식은 text 뿐 아니라 setState params 키 값 / iteration.source 등에도 있으므로
     // 레이아웃 전체를 직렬화해 표현식 문자열을 검사한다.
     const tabJson = JSON.stringify(notifTab);

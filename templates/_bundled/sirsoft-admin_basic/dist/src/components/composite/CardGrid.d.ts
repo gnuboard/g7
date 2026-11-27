@@ -102,7 +102,7 @@ export interface CardGridProps {
      *
      * `renderEnvRef.current` 는 이 CardGrid 를 그린 렌더러의 렌더 환경(폭·언어·dispatcher·레지스트리·
      * 편집 모드)이다. 셀을 그릴 때 이 값을 넘겨, 레이아웃 편집기 미리보기에서 셀이 브라우저 창 폭·
-     * 호스트 언어가 아니라 미리보기 값을 따르게 한다(#141).
+     * 호스트 언어가 아니라 미리보기 값을 따르게 한다(공개 #141).
      *
      * @internal 템플릿 엔진 내부 사용
      */

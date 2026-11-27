@@ -51,7 +51,7 @@ import {
   type ComponentPath,
 } from '../utils/layoutTreeUtils';
 
-/** `{owner}.props.{slot}.N` — 컴포넌트 배열 prop 안 노드 path 에서 소유 노드 path 를 뗀다(#141). */
+/** `{owner}.props.{slot}.N` — 컴포넌트 배열 prop 안 노드 path 에서 소유 노드 path 를 뗀다(공개 #141). */
 const PROP_SLOT_PARENT_RE = new RegExp(String.raw`^(.*)\.props\.(?:${EDITOR_PROP_SLOTS.join('|')})\.\d+$`);
 import { ElementOverlay } from './ElementOverlay';
 import { InsertionAffordances } from './InsertionAffordances';

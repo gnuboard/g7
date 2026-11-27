@@ -1,6 +1,6 @@
 /**
  * @file login.test.tsx
- * @description 로그인 폼 레이아웃 렌더링 테스트 (Issue #72)
+ * @description 로그인 폼 레이아웃 렌더링 테스트
  *
  * 테스트 케이스:
  * - 기본 렌더링: 로그인 폼 구성 요소 확인
@@ -322,7 +322,7 @@ function setupTestRegistry(): ComponentRegistry {
 
 // ========== 테스트 케이스 ==========
 
-describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
+describe('로그인 폼 레이아웃 렌더링', () => {
   let registry: ComponentRegistry;
 
   beforeEach(() => {
@@ -373,7 +373,7 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
   describe('로딩 상태 (isLoggingIn)', () => {
     // @scenario phase=logging_in
     // @effects login_no_blur_overlay_while_submitting
-    it('로그인 중 블러 오버레이가 표시되지 않는다 (Issue #72 핵심)', async () => {
+    it('로그인 중 블러 오버레이가 표시되지 않는다 (핵심)', async () => {
       // Given: isLoggingIn=true 상태
       const testUtils = createLayoutTest(loginFormFixture, {
         componentRegistry: registry,

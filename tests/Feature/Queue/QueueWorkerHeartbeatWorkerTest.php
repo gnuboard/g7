@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * 실제 큐 워커가 자기 연결·큐의 생존 신호(하트비트)를 남긴다 (#139)
+ * 실제 큐 워커가 자기 연결·큐의 생존 신호(하트비트)를 남긴다 (공개 #139)
  *
  * 워커 루프(`Looping`)와 잡 시작(`JobProcessing` — `--once` 워커는 루프 이벤트가 없다) 리스너가 EventServiceProvider 에
  * 붙어 있는지, 그리고 그 신호를 드라이버 탭 상태가 읽는지 실워커로 확인한다.

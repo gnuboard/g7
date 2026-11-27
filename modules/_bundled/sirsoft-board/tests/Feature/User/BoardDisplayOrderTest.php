@@ -18,7 +18,7 @@ use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 게시판 표시 순서 동작 테스트 (#142)
+ * 게시판 표시 순서 동작 테스트 (공개 #142)
  *
  * 순서를 정하지 않은 사이트(모두 0)는 만든 순서이고(같은 초는 id), 순서를 정한 뒤 새로 만들거나 복사한
  * 게시판은 맨 끝에 붙는다. 비활성 게시판도 자리를 가져 다시 켜면 그 자리에 나온다. 인기 게시판은 글 수 기준을 유지한다.

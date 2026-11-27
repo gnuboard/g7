@@ -47,7 +47,7 @@ afterEach(() => {
 describe('사용자 헤더 언어 메뉴 listbox', () => {
   // @scenario case=pack_locale_label
   // @effects option_label_uses_language_pack_name
-  it('언어팩으로 켠 언어는 대문자 코드가 아니라 언어팩의 언어 이름으로 보인다 (#148 — 종전 FIL-PH·ZH-HANT)', async () => {
+  it('언어팩으로 켠 언어는 대문자 코드가 아니라 언어팩의 언어 이름으로 보인다 (공개 #148 — 종전 FIL-PH·ZH-HANT)', async () => {
     const user = userEvent.setup();
     (window as any).G7Core.state.get = () => ({ appConfig: { localeNames: { 'fil-PH': 'Filipino (Pilipinas)', 'zh-Hant': '繁體中文' } } });
     render(<Header siteName="S" availableLocales={['ko', 'fil-PH', 'zh-Hant', 'haw']} currentLocale="ko" />);

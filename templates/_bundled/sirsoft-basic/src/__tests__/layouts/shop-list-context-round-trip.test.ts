@@ -1,6 +1,6 @@
 /**
  * @file shop-list-context-round-trip.test.ts
- * @description 상품 목록 컨텍스트 왕복 시 URL 목록 상태 보존 회귀 (#75)
+ * @description 상품 목록 컨텍스트 왕복 시 URL 목록 상태 보존 회귀 (공개 #75)
  *
  * 결함: 상품 목록(`/shop/products`)에서 상품을 열면 `preserveListQuery` 덕에 page·정렬·
  *   검색어가 상세 URL 까지 따라오지만, 상세 화면의 탭(상세정보/리뷰/문의)을 한 번 누르는

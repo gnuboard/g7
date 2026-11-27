@@ -506,7 +506,7 @@ describe('SDK URL 신뢰 호스트 게이트', () => {
         const reasons: Record<string, string> = manifest.trusted_script_hosts_reason ?? {};
 
         // manifest 는 SDK 가 이어서 싣는 연동 스크립트 호스트(npay·spay 계열)까지 선언하므로
-        // 주입 게이트(KNOWN_SDK_HOSTS)보다 넓다 — 게이트 호스트가 빠지는 것만 막는다(#158).
+        // 주입 게이트(KNOWN_SDK_HOSTS)보다 넓다 — 게이트 호스트가 빠지는 것만 막는다(공개 #158).
         expect(KNOWN_SDK_HOSTS.length).toBeGreaterThan(0);
         for (const host of KNOWN_SDK_HOSTS) {
             expect(hosts).toContain(host);

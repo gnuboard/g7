@@ -1284,7 +1284,7 @@ class PostRepository implements PostRepositoryInterface
 
         // 쿼리 2: SUM(comments_count) + SUM(view_count) — idx_board_posts_user_board_stats 커버링
         // comments_count 는 PostCountSyncListener 가 정확히 동기화하므로 SUM 으로 대체 (JOIN 제거)
-        // 소프트 삭제된 게시글은 통계에서 제외 (이슈 #104 요구사항) — withTrashed 미사용
+        // 소프트 삭제된 게시글은 통계에서 제외 (이슈 공개 #104 요구사항) — withTrashed 미사용
         $statsQuery = Post::where('user_id', $userId);
         if (! empty($inactiveBoardIds)) {
             $statsQuery->whereNotIn('board_id', $inactiveBoardIds);

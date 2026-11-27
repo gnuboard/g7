@@ -1,7 +1,7 @@
 // e2e:allow 표시 전용 select 제거(동작 경로 무변경) — 브라우저 확인은 관리자 배송정책 목록 수동 점검(select 부재·키워드 검색)이 맡는다
 /**
  * @file shippingPolicyFilterSearchRow.test.tsx
- * @description 배송정책 목록 검색줄에 표시 전용 검색대상 select 가 없다 (#17)
+ * @description 배송정책 목록 검색줄에 표시 전용 검색대상 select 가 없다
  *
  * 선택지가 '정책명' 하나뿐인 검색대상 select 는 서버로 보내지도 않는 표시 전용 컨트롤이었다 —
  * 운영자가 다른 대상을 고를 수 있는 것처럼 보인다. 제거하고, 검색어는 엔터와 [검색] 버튼이 같은

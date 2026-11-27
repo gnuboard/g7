@@ -76,7 +76,7 @@ describe('F15 — 미등록 핸들러 `if` (예약 작업 일괄 상태변경 �
 
     /** @effects bulk_status_change_routes_through_conditions */
     it('일괄 상태변경은 고른 방향이 있을 때만 bulk-status 를 호출한다(확인 창 경유)', () => {
-        // #17 후속: 일괄 적용은 확인 창을 거친다 — 표 위 버튼은 창만 열고, 호출은 창의 확인 버튼이 한다.
+        // 후속: 일괄 적용은 확인 창을 거친다 — 표 위 버튼은 창만 열고, 호출은 창의 확인 버튼이 한다.
         // 「방향(bulkStatusAction)이 없으면 보내지 않는다」는 옛 conditions 갈래의 보장은 두 버튼의 잠금이 진다.
         const statusModal = require('../../layouts/partials/admin_schedule_list/_modal_bulk_status.json');
         const findById = (n: any, id: string): any => {

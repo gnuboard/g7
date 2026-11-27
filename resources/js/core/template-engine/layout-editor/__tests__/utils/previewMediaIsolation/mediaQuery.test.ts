@@ -1,5 +1,5 @@
 /**
- * 미리보기 매체 격리 — `@media` 조건식 분석·변환 (이슈 #141 D7)
+ * 미리보기 매체 격리 — `@media` 조건식 분석·변환 (이슈 공개 #141 D7)
  *
  * 폭 조건은 미리보기 프레임 컨테이너 조건(`@container g7le-preview …`)으로 옮기고, 폭이 아닌
  * 조건(hover·prefers-*·orientation)은 바깥 `@media` 로 남긴다. `@container` 의 rem/em 은

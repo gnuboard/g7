@@ -7,7 +7,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 디스크 `config/app.php` 의 코어 버전 기본값(이 코드가 출시된 버전)을 읽는 헬퍼 테스트 (#145 W3).
+ * 디스크 `config/app.php` 의 코어 버전 기본값(이 코드가 출시된 버전)을 읽는 헬퍼 테스트 (공개 #145 W3).
  *
  * 메모리의 `config('app.version')` 은 옛 부모가 물려준 env 나 오염된 config 캐시를 따라갈 수 있어, 자동 비활성화
  * 안전망과 beta.7 전용 복구 가드는 디스크 파일을 직접 읽는다. 옛 업데이터와 버전 동기 검사도 같은 줄을 정규식으로

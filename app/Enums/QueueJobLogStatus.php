@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * 큐 작업 처리 기록 결과 (#17)
+ * 큐 작업 처리 기록 결과
  *
  * queue_job_logs.status 의 SSoT.
  */

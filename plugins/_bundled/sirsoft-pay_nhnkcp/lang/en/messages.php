@@ -89,7 +89,7 @@ return [
         'redirect_url_format' => 'The post-payment redirect address must start with {shopBase}, /, http:// or https:// and cannot contain spaces. Protocol-relative //addresses and javascript: are not allowed.',
     ],
     'kcp_frame' => [
-        // Field label for the PC payment frame request (#158) — validation failures return an empty 400.
+        // Field label for the PC payment frame request (공개 #158) — validation failures return an empty 400.
         'sdk' => 'payment window SDK URL',
     ],
     // Cancel reason sent to KCP when closing the virtual account of an order cancelled before deposit

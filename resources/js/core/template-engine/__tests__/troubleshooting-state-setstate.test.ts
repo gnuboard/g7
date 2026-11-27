@@ -3337,7 +3337,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         shipping: { zipcode: '', address: '' },
       };
 
-      // sequence 내 setState #1: shipping.zipcode 업데이트
+      // sequence 내 setState 1: shipping.zipcode 업데이트
       // dot notation을 nested object로 변환
       const nestedUpdate1 = { shipping: { zipcode: '13479', address: '경기도 성남시' } };
 
@@ -3347,7 +3347,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         shipping: { ...initialState.shipping, ...nestedUpdate1.shipping },
       };
 
-      // setState #2: checkout.zipcode, checkout.country_code 업데이트
+      // setState 2: checkout.zipcode, checkout.country_code 업데이트
       const nestedUpdate2 = { checkout: { zipcode: '13479', country_code: 'KR' } };
 
       const afterSetState2 = {

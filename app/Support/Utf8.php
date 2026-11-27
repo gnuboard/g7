@@ -7,7 +7,7 @@ namespace App\Support;
  *
  * 깨진 멀티바이트가 섞인 문자열을 `JsonResponse` 가 그대로 받으면 "Malformed UTF-8" 로 500 이 난다.
  * 깨진 바이트만 떼고 나머지 내용은 그대로 둔다. iconv 는 코어 기준 「선택」 확장이라 없는 서버가 있다 —
- * `@iconv()` 의 `@` 는 미정의 함수 Error 를 막지 못해 폴백까지 닿지 않고 500 이 났다(#151). 그래서 iconv 가
+ * `@iconv()` 의 `@` 는 미정의 함수 Error 를 막지 못해 폴백까지 닿지 않고 500 이 났다(공개 #151). 그래서 iconv 가
  * 있을 때만 쓰고, 없거나 실패하면 필수 확장(mbstring)으로 같은 결과를 낸다.
  */
 final class Utf8

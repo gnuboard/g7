@@ -12,19 +12,19 @@ use Tests\Concerns\CleansTemporaryBasePath;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * DB 권한 사전 검사의 스코프·토큰·롤 판정 회귀 가드 (20차 #4·#5·#6, 제품 결정 §16.26.4 #2)
+ * DB 권한 사전 검사의 스코프·토큰·롤 판정 회귀 가드 (20차 4· 5· 6, 제품 결정 §16.26.4 2)
  *
  * 세 결함을 잠근다:
  *
- * - **#4 스코프 부재**: `checkDatabasePrivileges()` 가 `$database` 인자를 본문에서 쓰지 않아,
+ * - ** 4 스코프 부재**: `checkDatabasePrivileges()` 가 `$database` 인자를 본문에서 쓰지 않아,
  *   한 계정에 DB 가 둘 붙은 공유 호스팅에서 **다른 DB** 의 `ALL PRIVILEGES` 로 검사가
  *   통과했다. 설치는 `db_migrate` 에서 1142 로 죽고, 운영자는 "권한은 정상" 화면을 이미
  *   지나온 뒤다.
- * - **#5 부분문자열 매칭**: `strpos` 판정이라 `CREATE TEMPORARY TABLES` 가 `CREATE` 로,
+ * - ** 5 부분문자열 매칭**: `strpos` 판정이라 `CREATE TEMPORARY TABLES` 가 `CREATE` 로,
  *   `ALTER ROUTINE` 이 `ALTER` 로 집계되어 `missing` 안내가 틀렸다.
- * - **#6 롤 미전개 → 거짓 차단**: `SHOW GRANTS FOR CURRENT_USER()` 는 MySQL 8 롤을
+ * - ** 6 롤 미전개 → 거짓 차단**: `SHOW GRANTS FOR CURRENT_USER()` 는 MySQL 8 롤을
  *   전개하지 않는다. 롤로만 권한을 받은 계정은 전부 `missing` 으로 떨어져 설치가
- *   시작조차 되지 않았다. 제품 결정(§16.26.4 #2): 롤 전개를 시도하고, **끝내 확인 불가면
+ *   시작조차 되지 않았다. 제품 결정(§16.26.4 2): 롤 전개를 시도하고, **끝내 확인 불가면
  *   `indeterminate` 로 강등해 게이트는 경고만 하고 진행을 허용**한다. 실제 부족은 설치 중
  *   해당 단계가 사유와 함께 잡는다.
  *
@@ -96,7 +96,7 @@ class InstallerDbPrivilegeScopeTest extends TestCase
     }
 
     /**
-     * #4: 다른 DB 에만 부여된 ALL PRIVILEGES 는 대상 DB 검사를 통과시키지 못한다.
+     * 4: 다른 DB 에만 부여된 ALL PRIVILEGES 는 대상 DB 검사를 통과시키지 못한다.
      *
      * @effects installer_db_privilege_check_scopes_to_target_database
      *
@@ -112,7 +112,7 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
         $result = checkDatabasePrivileges($pdo, 'target_db');
 
-        $this->assertFalse($result['has_all'], '다른 DB 의 ALL PRIVILEGES 로 통과하면 안 된다 (#4)');
+        $this->assertFalse($result['has_all'], '다른 DB 의 ALL PRIVILEGES 로 통과하면 안 된다');
         $this->assertNotEmpty($result['missing']);
         $this->assertFalse((bool) ($result['indeterminate'] ?? false), '해석이 확정된 부족은 indeterminate 가 아니다');
     }
@@ -156,7 +156,7 @@ class InstallerDbPrivilegeScopeTest extends TestCase
     }
 
     /**
-     * #5: 권한명은 토큰 단위로 대조한다 — CREATE TEMPORARY TABLES 는 CREATE 가 아니다.
+     * 5: 권한명은 토큰 단위로 대조한다 — CREATE TEMPORARY TABLES 는 CREATE 가 아니다.
      *
      * @effects installer_db_privilege_check_scopes_to_target_database
      *
@@ -172,14 +172,14 @@ class InstallerDbPrivilegeScopeTest extends TestCase
         $result = checkDatabasePrivileges($pdo, 'target_db');
 
         $this->assertContains('SELECT', $result['found']);
-        $this->assertNotContains('CREATE', $result['found'], 'CREATE TEMPORARY TABLES 가 CREATE 로 집계되면 안 된다 (#5)');
-        $this->assertNotContains('ALTER', $result['found'], 'ALTER ROUTINE 이 ALTER 로 집계되면 안 된다 (#5)');
+        $this->assertNotContains('CREATE', $result['found'], 'CREATE TEMPORARY TABLES 가 CREATE 로 집계되면 안 된다');
+        $this->assertNotContains('ALTER', $result['found'], 'ALTER ROUTINE 이 ALTER 로 집계되면 안 된다');
         $this->assertContains('CREATE', $result['missing']);
         $this->assertContains('ALTER', $result['missing']);
     }
 
     /**
-     * #6: 롤로만 권한을 받은 계정은 USING 전개 재조회로 확인한다.
+     * 6: 롤로만 권한을 받은 계정은 USING 전개 재조회로 확인한다.
      *
      * @effects installer_db_privilege_check_scopes_to_target_database
      *
@@ -202,14 +202,14 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
         $result = checkDatabasePrivileges($pdo, 'target_db');
 
-        $this->assertTrue($result['has_all'], '롤 전개로 확인된 권한은 통과한다 (#6)');
+        $this->assertTrue($result['has_all'], '롤 전개로 확인된 권한은 통과한다');
         $usingQueries = array_values(array_filter($queries, fn (string $q): bool => str_contains($q, 'USING')));
         $this->assertCount(1, $usingQueries, 'USING 전개 재조회가 정확히 한 번 나가야 한다');
         $this->assertStringContainsString('`app_rw`@`%`', $usingQueries[0], '롤 토큰은 서버 출력 원문 그대로 전달한다');
     }
 
     /**
-     * #6/제품 결정: 롤 전개가 실패하면 차단이 아니라 「확인 불가」로 강등한다.
+     * 6/제품 결정: 롤 전개가 실패하면 차단이 아니라 「확인 불가」로 강등한다.
      *
      * @effects installer_db_privilege_check_scopes_to_target_database
      *
@@ -235,7 +235,7 @@ class InstallerDbPrivilegeScopeTest extends TestCase
     }
 
     /**
-     * #6/제품 결정: SHOW GRANTS 자체가 거부되는 환경도 차단이 아니라 「확인 불가」다.
+     * 6/제품 결정: SHOW GRANTS 자체가 거부되는 환경도 차단이 아니라 「확인 불가」다.
      *
      * @effects installer_db_privilege_check_scopes_to_target_database
      *
@@ -250,7 +250,7 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
         $this->assertFalse($result['has_all']);
         $this->assertTrue((bool) ($result['indeterminate'] ?? false));
-        $this->assertSame([], $result['missing'], 'SHOW GRANTS 거부가 설치 차단으로 새면 안 된다 (#6)');
+        $this->assertSame([], $result['missing'], 'SHOW GRANTS 거부가 설치 차단으로 새면 안 된다');
     }
 
     /**
@@ -388,7 +388,7 @@ class InstallerDbPrivilegeScopeTest extends TestCase
     }
 
     /**
-     * #7: DB 서버 버전 하한 미달 안내 — MySQL 8.0 / MariaDB 10.3 미만이면 경고, 이상·해석 불가면 null.
+     * 7: DB 서버 버전 하한 미달 안내 — MySQL 8.0 / MariaDB 10.3 미만이면 경고, 이상·해석 불가면 null.
      *
      * 해석 불가를 경고로 접지 않는 이유: 포크·프록시가 임의 문자열을 돌려줄 수 있고,
      * 그때 뜨는 거짓 경고는 운영자가 진짜 경고를 무시하게 만든다.

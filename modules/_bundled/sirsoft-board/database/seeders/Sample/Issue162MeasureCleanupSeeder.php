@@ -13,7 +13,7 @@ use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Services\BoardService;
 
 /**
- * #162 브라우저 실측 데이터 정리 시더 (CLI + G7_PLAYWRIGHT_BYPASS=1 전용)
+ * 공개 #162 브라우저 실측 데이터 정리 시더 (CLI + G7_PLAYWRIGHT_BYPASS=1 전용)
  *
  * `Issue162MeasureSeeder` 가 만든 것만 지운다 — 실측 게시판 셋(그 글·첨부·파일 포함), 실측 회원 둘.
  * 다른 게시판에 실측 중 올린 `[실측-162]` 표지 글도 지운다. 삭제 건수를 출력한다.

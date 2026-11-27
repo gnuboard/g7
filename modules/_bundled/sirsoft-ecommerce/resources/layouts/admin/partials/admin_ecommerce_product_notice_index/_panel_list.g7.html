@@ -62,7 +62,7 @@
                 </case>
                 <case when="false">
                   <set-state target="global" selectedTemplateId="{{template.id}}" selectedTemplate="{{template}}" panelMode="view"/>
-                  <!-- 선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어는 그대로 둔다 (#75). -->
+                  <!-- 선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어는 그대로 둔다 (공개 #75). -->
                   <replace-url :mergeQuery="true">
                     <query id="{{template.id}}" mode="view"/>
                   </replace-url>

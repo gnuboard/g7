@@ -19,7 +19,7 @@ use Plugins\Sirsoft\VerificationKginicis\Support\InicisIdentityHasher;
 use Plugins\Sirsoft\VerificationKginicis\Tests\PluginTestCase;
 
 /**
- * 로그인 회원 본인인증의 동일인 충돌 검사 (#40 K12 · R11)
+ * 로그인 회원 본인인증의 동일인 충돌 검사 (K12 · R11)
  *
  * 가입 경로만 동일인 중복을 막으면, 일단 다른 정보로 가입한 뒤 마이페이지 본인인증으로 **다른 회원에 이미 묶인** 본인인증
  * 결과를 자기 계정에 붙일 수 있었다. 로그인 회원 본인인증(log.user_id 있음)도 다른 회원의 DI/CI 와 겹치면 실패하고

@@ -129,7 +129,7 @@ const ITEMS = [
   { identifier: 'g7test-b', name: '나', version: '2.0.0' },
 ];
 
-describe('미배치 공식 번들 안내 — 렌더 (#146)', () => {
+describe('미배치 공식 번들 안내 — 렌더 (공개 #146)', () => {
   let registry: ComponentRegistry;
   let testUtils: ReturnType<typeof createLayoutTest> | undefined;
 

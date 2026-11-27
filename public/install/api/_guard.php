@@ -243,8 +243,8 @@ if (! function_exists('installer_installation_finished_without_env_flag')) {
      * `installer_finalize_is_completed()` 는 `.env` 의 `INSTALLER_COMPLETED` **단독**으로
      * 판정하는데, 그 값을 쓰는 곳은 finalize 하나뿐이다. `.env` 쓰기가 권한 문제로 실패하면
      * DB·관리자 계정이 완비된 **운영 사이트**에서 인스톨러 엔드포인트가 영구히 열린 채 남는다.
-     * §16.8 #10 은 「토큰이 필요해 위험이 낮다」로 존치했으나, 그 토큰이 무세션 GET 한 번으로
-     * 유출된다는 것이 이번 라운드에서 확인됐으므로(보안#3) 그 근거가 성립하지 않는다.
+     * §16.8 10 은 「토큰이 필요해 위험이 낮다」로 존치했으나, 그 토큰이 무세션 GET 한 번으로
+     * 유출된다는 것이 이번 라운드에서 확인됐으므로(보안 3) 그 근거가 성립하지 않는다.
      *
      * 그래서 세 번째 신호를 둔다: 락 파일(`g7_installed`) **과** 상태 파일의 완료 마커
      * (`completed_tasks ∋ complete_flag`)가 **둘 다** 참이면 설치는 실제로 끝난 것이다.

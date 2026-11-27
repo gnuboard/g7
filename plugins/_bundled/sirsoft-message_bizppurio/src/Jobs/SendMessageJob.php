@@ -78,7 +78,7 @@ class SendMessageJob implements ShouldQueue
      */
     public function handle(BizppurioApiClient $client, BizppurioDispatchRepositoryInterface $dispatches): void
     {
-        // 이미 접수됐거나 결과가 확정된 건은 다시 보내지 않는다(#139) — 재시도·재예약된 사본이
+        // 이미 접수됐거나 결과가 확정된 건은 다시 보내지 않는다(공개 #139) — 재시도·재예약된 사본이
         // 같은 문자를 한 번 더 접수시키면 수신자가 두 통을 받는다. 이력이 없는 옛 건은 종전처럼 보낸다.
         $existing = $dispatches->findByRefkey($this->refkey);
         if ($existing !== null && $existing->status !== DispatchStatus::Pending) {

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * 알림 수신자별 발송 기록 (#139)
+ * 알림 수신자별 발송 기록 (공개 #139)
  *
  * 알림 발송 잡이 재시도·재예약으로 다시 돌 때 이미 보낸 수신자를 건너뛰기 위한 중복 방지 행.
  * 키는 sha256(이벤트 ID ␟ 알림 유형 ␟ 채널 ␟ 수신자 키) — NotificationDeliveryGuard::deliveryKey().

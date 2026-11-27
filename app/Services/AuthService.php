@@ -122,7 +122,7 @@ class AuthService
     /**
      * Accept-Language 헤더에서 국가 코드를 추출합니다.
      *
-     * 첫 항목을 언어팩 규칙(BCP 47)으로 읽는다(#148): 지역 하위 태그가 국가면 그것
+     * 첫 항목을 언어팩 규칙(BCP 47)으로 읽는다(공개 #148): 지역 하위 태그가 국가면 그것
      * (`fil-PH`→PH, `zh-Hant-TW`→TW), 숫자 지역(`es-419`)·문자 표기만 있는 코드(`zh-Hant`)는
      * 나라를 하나로 정할 수 없어 비운다. 언어만 있으면 기본 국가 매핑(config)을 쓴다 —
      * 매핑에 없는 `fil` 은 비운다.
@@ -1636,7 +1636,7 @@ class AuthService
             'identity_policy' => $skipReason !== null ? 'skip' : null,
             // 모듈이 동적 추가한 가입 필드(예: 결제 통화)를 리스너가 읽을 수 있도록 검증된 가입 데이터 전달.
             // request() 직접 접근을 피하기 위해 Service 가 도메인 객체로 넘긴다(Listener 규율).
-            // 비밀번호 원문은 뺀다 — 큐 구독자마다 작업 표에 사본이 남고, 읽는 구독자가 없다(#138 후속 — 설계 결정).
+            // 비밀번호 원문은 뺀다 — 큐 구독자마다 작업 표에 사본이 남고, 읽는 구독자가 없다(공개 #138 후속 — 설계 결정).
             'registration_data' => Arr::except($data, ['password', 'password_confirmation']),
         ]);
 
@@ -2142,7 +2142,7 @@ class AuthService
         // 플러그인 확장 동의 처리 (마케팅 등 추가 동의)
         // 동의 시각은 ISO8601 문자열로 넘긴다 — 구독자 시그니처(string)가 이 모양을 계약으로 받는다(큐 직렬화는
         // 날짜 객체도 되살리지만, 이 훅은 공개 계약이라 문자열 모양을 유지한다).
-        // 가입 데이터의 비밀번호 원문은 넘기지 않는다 — 큐 구독자(활동 로그)의 작업 표에 사본이 남는다(#138 후속 — 설계 결정)
+        // 가입 데이터의 비밀번호 원문은 넘기지 않는다 — 큐 구독자(활동 로그)의 작업 표에 사본이 남는다(공개 #138 후속 — 설계 결정)
         HookManager::doAction('core.auth.record_consents', $user, Arr::except($data, ['password', 'password_confirmation']), $agreedAt->toIso8601String(), $ip);
     }
 }

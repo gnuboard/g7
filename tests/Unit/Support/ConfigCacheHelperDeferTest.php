@@ -9,7 +9,7 @@ use RuntimeException;
 use Tests\TestCase;
 
 /**
- * config 캐시 재생성 묶기(`ConfigCacheHelper::deferRebuilds()`) 테스트 (#145 F6).
+ * config 캐시 재생성 묶기(`ConfigCacheHelper::deferRebuilds()`) 테스트 (공개 #145 F6).
  *
  * 자동 비활성화 연쇄에서 확장 1건마다 리스너가 config:cache(일회용 앱 부팅)를 돌려 17건 연쇄에서 MySQL 연결 151개가
  * 고갈됐다. 묶는 동안의 재생성 요청은 대기 표시만 하고, 가장 바깥 호출이 끝날 때 한 번만 재생성한다.

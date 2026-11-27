@@ -35,12 +35,12 @@ class HookContextCapture
     public const ORIGIN_BINDING = 'hook.context.origin';
 
     /**
-     * 실행 중인 리스너 잡의 이벤트 ID 를 담는 컨테이너 키 (#139).
+     * 실행 중인 리스너 잡의 이벤트 ID 를 담는 컨테이너 키 (공개 #139).
      */
     public const EVENT_ID_BINDING = 'hook.context.event_id';
 
     /**
-     * 지금 실행 중인 훅 리스너 잡의 이벤트 ID 를 반환합니다 (#139).
+     * 지금 실행 중인 훅 리스너 잡의 이벤트 ID 를 반환합니다 (공개 #139).
      *
      * `DispatchHookListenerJob` 이 디스패치 때 만든 uuid 로, 그 잡이 재시도·재예약되어도 같다. 리스너는 이 값으로
      * 「이 사건에서 이미 한 일」을 가려낸다(예: 알림 수신자별 중복 방지 키). 리스너 잡 단위라 같은 훅의 다른

@@ -1,5 +1,5 @@
 /**
- * Modal — titlePrefix/titleSuffix/footer 렌더 환경 (이슈 #141 D9)
+ * Modal — titlePrefix/titleSuffix/footer 렌더 환경 (이슈 공개 #141 D9)
  *
  * footer 의 DynamicRenderer 는 호스트 레지스트리·dispatcher 로 그려졌고 편집 모드도 몰라, 편집기
  * 미리보기에서 버튼 액션이 바인딩됐다. 받은 렌더 환경을 먼저 쓴다.
@@ -13,7 +13,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { Modal } from '../Modal';
 
-describe('Modal — footer 렌더 환경 (#141)', () => {
+describe('Modal — footer 렌더 환경 (공개 #141)', () => {
   let originalG7Core: any;
   let received: any[];
 

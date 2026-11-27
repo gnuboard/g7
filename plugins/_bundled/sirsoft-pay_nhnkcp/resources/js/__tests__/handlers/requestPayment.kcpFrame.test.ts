@@ -1,6 +1,6 @@
 // e2e:allow 프레임 브리지의 부모-자식 배선 단위. 실제 KCP 결제창(외부 SDK)은 브라우저 실측(이력 §8 T8 PG 행)이 덮는다.
 /**
- * NHN KCP PC 결제창 — 인라인 스크립트 없는 같은 출처 프레임 (#158 strict CSP)
+ * NHN KCP PC 결제창 — 인라인 스크립트 없는 같은 출처 프레임 (공개 #158 strict CSP)
  *
  * 종전에는 빈 iframe 에 `document.write` 로 SDK 와 인라인 `<script>` 를 써 넣었다. 사이트가 `script-src 'self'` 를
  * 걸면 그 인라인 코드가 실행되지 않아 PC 결제가 15초 뒤 시간 초과로 끝났다. 이제 iframe 은 같은 출처 프레임
@@ -36,7 +36,7 @@ function runBridge(parentBridge: unknown, sdk?: (form: HTMLFormElement) => void)
     return { frameWin, form: frameDoc.forms.namedItem('order_info') as HTMLFormElement };
 }
 
-describe('KCP PC 결제창 프레임 (#158)', () => {
+describe('KCP PC 결제창 프레임 (공개 #158)', () => {
     /**
      * @scenario page=kcp_pc_frame
      * @effects kcp_pc_frame_without_inline_script

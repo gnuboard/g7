@@ -13,7 +13,7 @@ effects:
   - error_screen_text_follows_locale
   # engine-v1.78.6 — 레이아웃 편집기 번들 실패 화면 문구도 내장 ko/en/ja 를 갖는다(7.1.0 잔여 관측 R-15)
   - layout_editor_failure_text_has_builtin_ko_en_ja
-  # engine-v1.81.0 (#148 F2) — 내장 문구 선택은 앞 두 글자가 아니라 주 언어 하위 태그로 비교한다(kok→영어, ja_JP→일본어)
+  # engine-v1.81.0 (공개#148 F2) — 내장 문구 선택은 앞 두 글자가 아니라 주 언어 하위 태그로 비교한다(kok→영어, ja_JP→일본어)
   - error_screen_builtin_text_uses_primary_subtag
 
 test_files:

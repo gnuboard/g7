@@ -206,7 +206,7 @@ class SafeArchiveExtractor
     public static function extractTarGz(string $path, string $destination): array
     {
         // zlib(gzopen)·phar(PharData)는 코어 기준 「선택」 확장이다 — 없으면 「Call to undefined function…」이
-        // 원인 모를 실패 메시지로 화면에 나갔다(#151). 무엇이 없는지 알리는 메시지로 먼저 멈춘다.
+        // 원인 모를 실패 메시지로 화면에 나갔다(공개 #151). 무엇이 없는지 알리는 메시지로 먼저 멈춘다.
         if (! function_exists('gzopen') || ! class_exists(\PharData::class)) {
             throw new \RuntimeException(__('common.errors.archive_php_extension_missing', ['extensions' => 'zlib, phar']));
         }

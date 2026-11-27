@@ -242,7 +242,7 @@ class GdprConsentControllerTest extends PluginTestCase
     /**
      * consent/me 응답이 current_policy_version 메타를 노출.
      *
-     * #23 — 사용자가 자신의 동의 시점 정책 버전 vs 현재 정책 버전을 비교 가능 (Art.7(1) 투명성).
+     * 23 — 사용자가 자신의 동의 시점 정책 버전 vs 현재 정책 버전을 비교 가능 (Art.7(1) 투명성).
      */
     public function test_consent_me_returns_current_policy_version(): void
     {
@@ -261,7 +261,7 @@ class GdprConsentControllerTest extends PluginTestCase
     /**
      * needsRenewal 판정에서 *필수 쿠키 제외* 회귀 가드.
      *
-     * #22 + 필수 쿠키 검토 — 필수 쿠키만 옛 버전이고 선택형은 모두 최신이면 needs_renewal=false.
+     * 22 + 필수 쿠키 검토 — 필수 쿠키만 옛 버전이고 선택형은 모두 최신이면 needs_renewal=false.
      * 옛 동작 (모든 동의 검사) 으로 회귀하면 true 가 되어 amber 박스가 영구 노출되는 버그 재발.
      */
     public function test_needs_renewal_ignores_required_category_old_version(): void
@@ -344,7 +344,7 @@ class GdprConsentControllerTest extends PluginTestCase
     /**
      * renew-all 엔드포인트 — 활성 선택형 동의의 policy_version 만 새 버전으로 bump.
      *
-     * #19 — 필수 쿠키 / 철회 상태는 대상 외. 각 갱신 항목마다 history 행 누적.
+     * 19 — 필수 쿠키 / 철회 상태는 대상 외. 각 갱신 항목마다 history 행 누적.
      */
     public function test_renew_all_bumps_active_optional_consents_only(): void
     {
@@ -453,7 +453,7 @@ class GdprConsentControllerTest extends PluginTestCase
     /**
      * Resource 의 needs_renewal_this_item 플래그 + can_grant 분기 회귀 가드.
      *
-     * #21 — 활성 + 옛 버전 → can_grant=true (최신 정책으로 갱신 가능).
+     * 21 — 활성 + 옛 버전 → can_grant=true (최신 정책으로 갱신 가능).
      */
     public function test_resource_exposes_needs_renewal_this_item_for_outdated_active(): void
     {

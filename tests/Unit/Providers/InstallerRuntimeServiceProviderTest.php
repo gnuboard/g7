@@ -343,7 +343,7 @@ class InstallerRuntimeServiceProviderTest extends TestCase
     //   4. .env 의 INSTALLER_COMPLETED 가 truthy (finalize 성공 신호)
     //
     // 위 4개를 모두 만족하면 .env 의 DB_* / APP_KEY 를 process ENV (getenv/$_ENV/$_SERVER)
-    // 에 적용. 정상 환경에서는 #3 (stale 시그니처) 가 false 라 트리거 안 됨.
+    // 에 적용. 정상 환경에서는 3 (stale 시그니처) 가 false 라 트리거 안 됨.
     // -----------------------------------------------------------------------
 
     /**

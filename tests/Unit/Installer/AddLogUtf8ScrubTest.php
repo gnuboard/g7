@@ -277,7 +277,7 @@ class AddLogUtf8ScrubTest extends TestCase
     /**
      * SSE 이벤트 스트림도 invalid UTF-8 로그로 인해 빈 data 라인을 송출하면 안 된다 (인코딩 계약).
      *
-     * 폴링 모드로 제보됐으나(#62), 근본 원인(외부 유래 invalid UTF-8 → json_encode false)은
+     * 폴링 모드로 제보됐으나(공개 #62), 근본 원인(외부 유래 invalid UTF-8 → json_encode false)은
      * SSE 모드에도 동일하게 존재한다. SseEmitter::emit 의 json_encode 가 false 를 반환하면
      * "data: \n\n" 이 송출되어 프론트 EventSource 의 JSON.parse(e.data) 가 throw → 로그 이벤트 유실.
      *

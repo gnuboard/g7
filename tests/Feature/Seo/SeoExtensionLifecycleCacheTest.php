@@ -10,7 +10,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * 확장 생명주기 — 끄거나 지워도 SEO 캐시가 비워진다 (#138 후속 전수 점검 7번)
+ * 확장 생명주기 — 끄거나 지워도 SEO 캐시가 비워진다 (공개 #138 후속 전수 점검 7번)
  *
  * SEO 캐시 정리는 설치·켜기·업데이트(그것도 deprecated 된 옛 훅 이름)에만 걸려 있어, 게시판 모듈을 끄거나
  * 지워도 검색 봇은 캐시에 남은 게시판 페이지를 계속 받았다(SeoMiddleware 는 캐시 적중 시 모듈 활성 여부를

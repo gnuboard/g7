@@ -8,7 +8,7 @@
     <icon data-if="{{(comment?.depth ?? 0) > 0}}" name="turn-up" size="sm" class="fa-rotate-90 text-muted flex-shrink-0 self-start mt-4"/>
     <!-- 댓글 작성자 아바타 -->
     <avatar data-type="composite" author="{{comment?.author}}" size="sm"/>
-    <!-- 본문 칸은 줄어들 수 있고(min-w-0) 댓글 글은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 URL 이 화면 밖으로 넘쳤다(#143). -->
+    <!-- 본문 칸은 줄어들 수 있고(min-w-0) 댓글 글은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 URL 이 화면 밖으로 넘쳤다(공개 #143). -->
     <div class="flex-1 min-w-0">
       <!-- 작성자 정보 + 버튼 영역 -->
       <div class="flex items-start justify-between mb-1">
@@ -16,7 +16,7 @@
         <div class="flex items-center gap-1">
           <!-- UserInfo 컴포넌트 (이름 + 작성일시 한 줄) -->
           <user-info data-type="composite" author="{{comment?.author}}" subText="{{comment?.created_at_formatted ?? ''}}" subTextTitle="{{comment?.created_at ?? ''}}" layout="horizontal"/>
-          <!-- 확장 자리 — 확장이 댓글마다 배지를 붙인다(#149). 조각은 extensionPointProps.commentId·postId 로 이 댓글을 읽는다 -->
+          <!-- 확장 자리 — 확장이 댓글마다 배지를 붙인다(공개 #149). 조각은 extensionPointProps.commentId·postId 로 이 댓글을 읽는다 -->
           <extension-point name="board_comment_row_badges" data-ref="ext_board_comment_row_badges_{{comment.id}}" class="contents" data-extension-point="board_comment_row_badges" commentData="{{comment}}" commentId="{{comment?.id}}" postId="{{post?.data?.id}}" boardSlug="{{route?.slug}}" context="board_show_comment"/>
         </div>
         <!-- 더보기 드롭다운 메뉴 (답글/수정/삭제/신고) - 삭제/블라인드 댓글에서 숨김, 가능한 액션이 없으면 숨김 -->

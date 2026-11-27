@@ -1,5 +1,5 @@
 /**
- * E2E: 게시판 메뉴 요청의 로그인 토큰 전달 (게시판 1.2.1 #142).
+ * E2E: 게시판 메뉴 요청의 로그인 토큰 전달 (게시판 1.2.1 공개 #142).
  *
  * 게시판 메뉴(`boards/board-menu`)는 보는 사람이 열람할 수 있는 게시판만 돌려준다. 머리글 데이터소스가 토큰을 보내지 않으면
  * 로그인한 회원도 비회원 메뉴를 받는다 — 실측에서 회원의 마이페이지 게시판 선택칸이 7건(비회원 기준)으로 나왔다.
@@ -16,7 +16,7 @@ import { issueToken, authenticatePage } from '../../../../../../tests/Playwright
 
 const MENU_PATH = '/api/modules/sirsoft-board/boards/board-menu';
 
-test.describe('게시판 메뉴 — 로그인 토큰 전달 (#142)', () => {
+test.describe('게시판 메뉴 — 로그인 토큰 전달 (공개 #142)', () => {
   // @scenario case=e2e_board_menu_token_by_login_state
   // @effects e2e_board_menu_request_carries_token_when_logged_in
   test('비회원은 토큰 없이, 로그인한 회원은 토큰을 실어 게시판 메뉴를 부른다', async ({ browser }) => {

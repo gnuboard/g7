@@ -1,6 +1,6 @@
 'use strict';
 /**
- * 설치 마법사 data-action 위임 (#158 strict CSP) — installer-boot.js
+ * 설치 마법사 data-action 위임 (공개 #158 strict CSP) — installer-boot.js
  *
  * 실행: node --test tests/installer/installer-delegation.test.cjs
  *

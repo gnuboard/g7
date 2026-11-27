@@ -144,7 +144,7 @@ class ClaimApproveDepositMethodGuardTest extends PluginTestCase
      *
      * 브라우저 값은 청구액과 같아도(3000) 응답 금액(2500)이 다르면 승인분을 취소하고 거절한다 —
      * 대조를 모듈에 넘기면 그 거절의 보상은 서버 콜백 경로에만 있어 클라이언트 승인 API 경로에서는
-     * 청구된 채 남는다(validate 07 #8 로 판정을 리스너로 옮겼다).
+     * 청구된 채 남는다(validate 07 8 로 판정을 리스너로 옮겼다).
      *
      * @return void 반환값 없음
      *

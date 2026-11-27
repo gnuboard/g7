@@ -88,7 +88,7 @@ class KcpBridgeController extends PublicBaseController
         // 문서 루트를 가리켜 본인인증을 마친 사용자가 사이트 밖에 떨어진다. 절대 URL·접두사 보유 값은 그대로 둔다.
         $homeUrl = json_encode(AssetUrl::sitePath(ScreenUrl::path('home', '/')), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
         // 동작은 정적 브리지 파일이 한다 — 인라인 <script> 는 strict CSP(script-src 'self')에서 실행되지 않아
-        // 인증 결과가 전달되지 않고 팝업도 닫히지 않았다(#158). 서버 값은 비실행 JSON 데이터 블록으로만 넘긴다.
+        // 인증 결과가 전달되지 않고 팝업도 닫히지 않았다(공개 #158). 서버 값은 비실행 JSON 데이터 블록으로만 넘긴다.
         $bridgeData = '<script type="application/json" id="bridge-data">{"siteOrigin":'.$siteOrigin.',"homeUrl":'.$homeUrl.',"payload":'.$payloadJson.'}</script>';
         $bridgeScript = BridgeScript::tag('kcp-bridge.js');
 

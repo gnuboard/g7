@@ -1,7 +1,7 @@
 # 레이아웃 JSON - 에러 핸들링
 
 > **메인 문서**: [layout-json-features.md](layout-json-features.md)
-> **관련 문서**: [액션 핸들러 - 에러 핸들링 시스템](actions-handlers-state.md#에러-핸들링-시스템-errorhandling) | [데이터 소스 - 에러 핸들링](data-sources.md#에러-핸들링-설정-v160)
+> **관련 문서**: [액션 핸들러 - 에러 핸들링 시스템](actions-handlers-state.md#에러-핸들링-시스템-errorhandling) | [데이터 소스 - 에러 핸들링](data-sources-advanced.md#에러-핸들링-설정-engine-v160)
 
 ---
 

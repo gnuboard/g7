@@ -949,7 +949,7 @@ trait ValidatesLayoutFiles
         $primary = null;
         $tried = [];
 
-        // 실재하는 첫 후보를 먼저 고르고, 보안 검증은 고른 경로 하나에만 한다 (#144).
+        // 실재하는 첫 후보를 먼저 고르고, 보안 검증은 고른 경로 하나에만 한다 (공개 #144).
         // 종전에는 후보마다 보안 검증을 먼저 했는데, 없는 `.g7.html` 후보가 검증에서 "layouts 밖" 으로 오판되면
         // (리눅스 절대경로의 선행 `/` 소실) 실재하는 `.json` 후보로 넘어가지 못해 JSON 전용 확장이 설치·업데이트되지 않았다.
         foreach ($this->layoutSourceCandidates($partialPath) as $candidate) {
@@ -1153,7 +1153,7 @@ trait ValidatesLayoutFiles
     /**
      * 경로를 정규화합니다 (.과 .. 처리, 루트 보존).
      *
-     * 종전 수동 정규화는 빈 조각을 버리면서 리눅스 절대경로의 맨 앞 `/` 를 잃었다(#144) — {@see PathGuard} 에 위임한다.
+     * 종전 수동 정규화는 빈 조각을 버리면서 리눅스 절대경로의 맨 앞 `/` 를 잃었다(공개 #144) — {@see PathGuard} 에 위임한다.
      *
      * @param  string  $path  경로
      * @return string 정규화된 경로 (구분자 `/`)
@@ -1184,7 +1184,7 @@ trait ValidatesLayoutFiles
         // 생기든 같은 규칙으로 동작한다.
         //
         // 사이트가 `/srv/layouts/g7` 처럼 이름이 `layouts` 인 폴더 아래 설치되면 경로 첫 `layouts` 가 프로젝트 바깥을
-        // 가리켜 루트·보안 경계·조각 출처 키가 모두 어긋났다(#144) — 프로젝트 안 경로면 프로젝트 루트 뒤에서만 찾는다.
+        // 가리켜 루트·보안 경계·조각 출처 키가 모두 어긋났다(공개 #144) — 프로젝트 안 경로면 프로젝트 루트 뒤에서만 찾는다.
         $normalized = PathGuard::canonicalize($basePath);
         $prefix = '';
         $relative = $normalized;

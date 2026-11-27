@@ -1,5 +1,5 @@
 /**
- * TemplateApp 캐시 버전 시드 테스트 (#122 이중 로드 제거)
+ * TemplateApp 캐시 버전 시드 테스트 (공개 #122 이중 로드 제거)
  *
  * blade 는 이미 `window.G7Config.cache_version` 을 주입하는데 TemplateApp 이
  * localStorage 만 읽어, stale localStorage 를 가진 재방문자의 첫 burst 가
@@ -141,7 +141,7 @@ function callsMatching(fetchMock: ReturnType<typeof vi.fn>, needle: string): str
         .filter((u: string) => u.includes(needle));
 }
 
-describe('TemplateApp 캐시 버전 시드 (#122)', () => {
+describe('TemplateApp 캐시 버전 시드 (공개 #122)', () => {
     beforeEach(() => {
         document.body.innerHTML = '<div id="app"></div>';
         vi.clearAllMocks();

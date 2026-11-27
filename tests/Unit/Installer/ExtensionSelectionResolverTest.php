@@ -257,12 +257,12 @@ class ExtensionSelectionResolverTest extends TestCase
             strpos($source, '$resolution = installer_resolve_extension_selection('),
             '해석(정렬)은 state 저장보다 먼저 일어나야 합니다.'
         );
-        // Step 5 「…에 필요」 표시용 앞당김 기록도 같은 해석 결과에서 저장한다(#153 D9) — 웹·터미널 같은 키
+        // Step 5 「…에 필요」 표시용 앞당김 기록도 같은 해석 결과에서 저장한다(공개 #153 D9) — 웹·터미널 같은 키
         $this->assertStringContainsString("\$state['install_pulled_by'] = \$resolution['pulled_by'];", $source);
         $cli = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/cli/install-flow.php');
         $this->assertStringContainsString("\$state['install_pulled_by'] = \$selection['pulled_by'];", $cli);
         $view = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/views/5-installation.php');
-        // 서버 값은 비실행 JSON 데이터 블록으로, 전역 대입은 단계 스크립트가 한다(#158 strict CSP)
+        // 서버 값은 비실행 JSON 데이터 블록으로, 전역 대입은 단계 스크립트가 한다(공개 #158 strict CSP)
         $this->assertStringContainsString("'pulled_by' => (object) (\$state['install_pulled_by'] ?? []),", $view);
         $stepScript = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/assets/js/step-5-installation.js');
         $this->assertStringContainsString('window.INSTALLER_PULLED_BY = data.pulled_by || {};', $stepScript);

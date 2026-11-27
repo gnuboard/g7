@@ -257,7 +257,7 @@ class TemplateLayoutAttachmentService
      * 서빙 가능한 첨부의 인라인 스트림 응답과 캐싱 메타를 돌려줍니다.
      *
      * 첨부가 주어진 템플릿 소속인지 검증하고, 행 disk 를 따르는 스토리지 스트림
-     * 응답을 반환한다 (S3 등 원격 디스크 행 포함 — 로컬 절대 경로 방식은 #99 에서
+     * 응답을 반환한다 (S3 등 원격 디스크 행 포함 — 로컬 절대 경로 방식은 공개 #99 에서
      * filemtime 500). 소속 불일치 / 파일 부재 시 null (컨트롤러가 404).
      *
      * @param  string  $templateIdentifier  요청 경로의 템플릿 식별자
@@ -273,7 +273,7 @@ class TemplateLayoutAttachmentService
         }
 
         // 행 disk 기준 인라인 스트림 (존재 검사는 response() 내부에서 수행).
-        // 로컬 절대 경로 조립(getBasePath)은 S3 등 원격 디스크 행에서 성립하지 않는다 (#99).
+        // 로컬 절대 경로 조립(getBasePath)은 S3 등 원격 디스크 행에서 성립하지 않는다 (공개 #99).
         $response = $this->storageForRow($attachment->disk)->response(
             self::STORAGE_CATEGORY,
             $attachment->path,

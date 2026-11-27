@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 관리자 화면 API 의 생성·수정 시각이 보는 사람 시간대로 나가는지 검증 (#160)
+ * 관리자 화면 API 의 생성·수정 시각이 보는 사람 시간대로 나가는지 검증 (공개 #160)
  *
  * - 카테고리 상세(`CategoryResource`) — 카테고리 관리 상세 패널
  * - 상품 폼 데이터(`ProductService::getDetailForForm`) — 상품 수정·복사 화면

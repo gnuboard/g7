@@ -34,7 +34,7 @@
             }
         },
         {
-            "comment": "본문 칸은 줄어들 수 있고(min-w-0) 댓글 글은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 URL 이 화면 밖으로 넘쳤다(#143).",
+            "comment": "본문 칸은 줄어들 수 있고(min-w-0) 댓글 글은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 URL 이 화면 밖으로 넘쳤다(공개 #143).",
             "type": "basic",
             "name": "Div",
             "props": {
@@ -69,7 +69,7 @@
                                     }
                                 },
                                 {
-                                    "comment": "확장 자리 — 확장이 댓글마다 배지를 붙인다(#149). 조각은 extensionPointProps.commentId·postId 로 이 댓글을 읽는다",
+                                    "comment": "확장 자리 — 확장이 댓글마다 배지를 붙인다(공개 #149). 조각은 extensionPointProps.commentId·postId 로 이 댓글을 읽는다",
                                     "id": "ext_board_comment_row_badges_{{comment.id}}",
                                     "type": "extension_point",
                                     "name": "board_comment_row_badges",

@@ -14,7 +14,7 @@ effects:
   - approval_key_returns_pay_url_and_fields          # 결제 주소 + 승인키·주문번호·금액 필드
   - retryable_cancelled_order_is_restored_for_payment # 닫혀 취소된 결제 전 주문을 재결제 때 되살림
   - soap_failure_returns_422                         # SOAP 실패 → 422
-  - missing_soap_returns_422_with_generic_message    # soap 확장 부재 → 422 + 고객용 일반 문구(#151)
+  - missing_soap_returns_422_with_generic_message    # soap 확장 부재 → 422 + 고객용 일반 문구(공개#151)
   - approval_requires_the_order_owner                # 회원 주문: 비로그인·남의 회원 403 · 없는 주문 404
   - guest_order_mobile_approval_with_order_token     # 비회원 주문: 그 주문의 조회 토큰 200, 없음·다른 주문 토큰 401
   - amount_and_currency_are_verified_before_approval # 금액 불일치·청구 불가 통화·비원화 → 422

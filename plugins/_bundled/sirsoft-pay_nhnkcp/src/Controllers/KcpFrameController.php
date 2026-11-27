@@ -10,7 +10,7 @@ use Plugins\Sirsoft\PayNhnkcp\Http\Requests\KcpFrameRequest;
 use Plugins\Sirsoft\PayNhnkcp\Support\BridgeScript;
 
 /**
- * PC 결제창 프레임 페이지 (#158)
+ * PC 결제창 프레임 페이지 (공개 #158)
  *
  * 주문 화면이 투명 iframe 으로 연다. KCP SDK 를 정적 `<script src>` 로 먼저 싣고(SDK 가 파싱 중
  * `document.write` 를 쓰므로 동기 로드여야 한다), 뒤이어 브리지(`assets/bridge/kcp-frame.js`)가 부모가 넘긴

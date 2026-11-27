@@ -11,7 +11,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 테이블 삭제 범위의 공개·기록 회귀 가드 (21차 #21-2, 제품 결정 §16.27.1 #2 「목록 표시+기록」)
+ * 테이블 삭제 범위의 공개·기록 회귀 가드 (21차 #21-2, 제품 결정 §16.27.1 2 「목록 표시+기록」)
  *
  * 삭제 대상 선정은 무경계 접두 매칭이다 — 같은 DB 에 더 긴 접두사 사이트(`g7_` 입력 시
  * `g7_shop_*`)가 있으면 [테이블 삭제] 동의가 이웃 사이트를 통째로 DROP 한다. 제품 결정은

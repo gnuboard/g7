@@ -142,7 +142,7 @@ export function parseEditorPath(path: string): ComponentPath {
       continue;
     }
     if (token === 'props' && EDITOR_PROP_SLOTS.includes(tokens[i + 1] ?? '')) {
-      // 컴포넌트 배열 prop 세그먼트(#141) — 소스 위치(`node.props[key]`)를 바꾸므로 보존한다.
+      // 컴포넌트 배열 prop 세그먼트(공개 #141) — 소스 위치(`node.props[key]`)를 바꾸므로 보존한다.
       out.push({ propSlot: tokens[i + 1]! });
       i += 1; // 키 토큰 소비
       continue;

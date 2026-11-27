@@ -180,7 +180,7 @@ describe('#5 Select 는 placeholder 를 그리지 않는다 — 빈 선택지를
     });
 });
 
-describe('#6 · #7 정의 없는 클래스·prop 을 걷어낸다', () => {
+describe('#6 · 7 정의 없는 클래스·prop 을 걷어낸다', () => {
     /**
      * @scenario surface=claim_list, defect=btn_square_undefined
      * @effects list_back_button_uses_defined_classes
@@ -354,7 +354,7 @@ describe('#18 탭 스크롤 내비 — 컴포넌트가 모르는 onChange 를 �
     });
 });
 
-describe('#20 · #21 사유 카드 폴백', () => {
+describe('#20 · 21 사유 카드 폴백', () => {
     /**
      * 설정이 비면 `maxSize` 가 0 이 되어 업로더가 모든 파일을 거절했다.
      *

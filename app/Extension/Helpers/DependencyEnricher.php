@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Log;
  * 「의존 확장이 조건을 만족하는가」는 템플릿 설치·활성화·런타임 503·목록 API, 모듈·플러그인 설치·활성화
  * (ChecksDependencyVersions), 설치 미리보기, 업데이트 경고가 모두 이 판정식({@see statusOf()})을 부릅니다.
  * 판정을 경로마다 따로 구현하던 동안 템플릿 활성화 사본만 버전 비교를 빠뜨려, 활성화 200 직후 사이트 전체가
- * 503 이 됐습니다(#152). 사유는 `not_installed` → `inactive` → `version_mismatch` 순으로 하나만 보고합니다.
+ * 503 이 됐습니다(공개 #152). 사유는 `not_installed` → `inactive` → `version_mismatch` 순으로 하나만 보고합니다.
  */
 class DependencyEnricher
 {

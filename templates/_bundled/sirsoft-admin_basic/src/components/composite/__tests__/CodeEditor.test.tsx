@@ -46,7 +46,7 @@ vi.mock('@monaco-editor/react', () => ({
       </div>
     );
   },
-  // CodeEditor 가 동봉 Monaco 를 가리키도록 loader 를 쓴다(#123 Phase 4).
+  // CodeEditor 가 동봉 Monaco 를 가리키도록 loader 를 쓴다(공개 #123 Phase 4).
   // 이 스텁이 없으면 렌더 시점에 loader 가 undefined 라 컴포넌트가 통째로 실패한다.
   loader: {
     init: () => Promise.resolve({}),

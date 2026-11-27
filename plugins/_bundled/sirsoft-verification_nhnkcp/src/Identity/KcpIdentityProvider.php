@@ -1014,7 +1014,7 @@ class KcpIdentityProvider implements IdentityVerificationInterface, ProvidesVeri
      * - 로그인 회원의 본인인증(대상 회원이 있는 challenge) — **다른 회원**에 이미 묶인 DI/CI 를 자기 계정에 붙이지
      *   못하게 막는다. 판정은 본인을 뺀 다른 회원과의 충돌만 보므로(`findConflictColumn(..., exceptUserId: 본인)`)
      *   같은 회원의 재인증은 그대로 통과한다. 가입만 막으면 다른 정보로 가입한 뒤 마이페이지 본인인증으로 남의
-     *   본인인증 결과를 붙여 「본인인증 회원」이 될 수 있었다(#40 R11).
+     *   본인인증 결과를 붙여 「본인인증 회원」이 될 수 있었다(R11).
      * - 그 밖(비로그인 비밀번호 재설정 등)은 동일인이 존재하는 것이 정상이라 대상이 아니다.
      *
      * @param  IdentityVerificationLog  $log  대상 로그

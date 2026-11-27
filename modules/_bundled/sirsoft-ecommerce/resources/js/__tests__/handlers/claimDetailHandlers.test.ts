@@ -1104,7 +1104,7 @@ describe('환불 실행 (D18·D19)', () => {
             currencyCode: 'KRW',
             refundAmount: 24000,
             refundPointsAmount: 1000,
-            // 표시용 합계 — 핸들러가 부동소수 오차를 걷어 넘긴다(P7 #14). 교환 차액 환급이 있으면 더한다.
+            // 표시용 합계 — 핸들러가 부동소수 오차를 걷어 넘긴다(P7 14). 교환 차액 환급이 있으면 더한다.
             refundTotal: 25000,
             // 창이 그리는 표기 — 숫자에 통화 코드를 붙인 `24000 KRW` 가 아니다(S3-D1).
             refundAmountFormatted: '24,000원',

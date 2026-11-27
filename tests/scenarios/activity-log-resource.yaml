@@ -2,7 +2,7 @@ feature: 활동 로그 API 리소스 변환
 
 description: |
   활동 로그 응답의 다국어 설명·액션 라벨·변경 이력(단일/일괄, enum·boolean·다국어 JSON 라벨)·행위자 정보 변환.
-  회원이 없는 로그의 user 폴백은 uuid 를 null 로 명시한다(#138 — 화면의 회원 메뉴 노출 근거).
+  회원이 없는 로그의 user 폴백은 uuid 를 null 로 명시한다(공개#138 — 화면의 회원 메뉴 노출 근거).
 
 axes:
   actor: [member, system]

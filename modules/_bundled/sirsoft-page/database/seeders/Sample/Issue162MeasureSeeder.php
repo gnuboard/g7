@@ -11,7 +11,7 @@ use Modules\Sirsoft\Page\Models\Page;
 use Modules\Sirsoft\Page\Services\PageContentMediaService;
 
 /**
- * #162 브라우저 실측용 페이지 시더 (CLI + G7_PLAYWRIGHT_BYPASS=1 전용)
+ * 공개 #162 브라우저 실측용 페이지 시더 (CLI + G7_PLAYWRIGHT_BYPASS=1 전용)
  *
  * 발행 페이지(본문 동영상 1)와 미발행 페이지(본문 동영상 1)를 만든다. 동영상은 실제 업로드 경로
  * (`PageContentMediaService::upload` → `syncWithContent`)로 붙인다. 슬러그 접두 `m162-` 가 정리 표지다.

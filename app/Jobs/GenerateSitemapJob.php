@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Log;
  * 대용량(수백만 URL) 생성은 수 분~수십 분이 걸리므로 동시 실행을 막고(ShouldBeUnique)
  * 타임아웃/재시도 한계를 넉넉히 잡습니다. 재시도는 tries(3)·backoff(120초)로 끝이 정해진다.
  *
- * retryUntil 을 두지 않는다(#139) — 라라벨은 retryUntil 이 있으면 tries 를 무시하고, 마감(30분)이 timeout(30분)과
+ * retryUntil 을 두지 않는다(공개 #139) — 라라벨은 retryUntil 이 있으면 tries 를 무시하고, 마감(30분)이 timeout(30분)과
  * 같아 시간 초과 뒤에는 재시도할 수 없었으며, 큐에서 30분 넘게 기다리면 한 번도 돌지 못하고 실패로 끝났다.
  * 중복 방지 잠금(uniqueFor)은 재시도 전체 기간(timeout×tries + backoff×(tries−1) + 대기 여유)을 덮는다 —
  * 짧으면 첫 시도가 도는 중에 잠금이 풀려 같은 생성이 또 큐에 들어간다. 워커가 강제 종료되면 최대 그 시간

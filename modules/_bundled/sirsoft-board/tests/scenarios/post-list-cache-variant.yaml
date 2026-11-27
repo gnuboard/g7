@@ -1,4 +1,4 @@
-feature: 목록 캐시 확장 축 훅 sirsoft-board.post.filter_list_cache_variant (#147)
+feature: 목록 캐시 확장 축 훅 sirsoft-board.post.filter_list_cache_variant (공개#147)
 
 description: |
   목록 쿼리 확장 훅으로 결과를 사람·언어마다 다르게 좁히는 확장이, 같은 축을 목록 캐시 키에 넣을 수 있게 하는

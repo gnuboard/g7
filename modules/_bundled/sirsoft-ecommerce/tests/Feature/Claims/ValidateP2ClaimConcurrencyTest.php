@@ -31,11 +31,11 @@ use ReflectionMethod;
  * 넘겨 같은 판정을 부른다 — 잠금 안에서 다시 읽지 않는 경로는 그 낡은 값을 믿고 두 번 실행한다.
  *
  * 검증 축:
- * - 완료가 잠금 안에서 대상을 다시 골라 재고·완료 훅이 1회다(#3).
- * - 분할 행 부분 완료의 재고 플래그가 실제로 전이된 행에 적힌다(#4).
- * - 소수 청구가 0원 자동 승인을 통과하지 않는다(#5), 자동 승인 실패가 접수를 실패로 만들지 않는다(#20).
- * - 신청 수정이 잠금 안에서 수정 가능 여부를 다시 판정한다(#8), 계좌 3필드 짝을 본다(#9).
- * - 도메인 훅이 커밋 뒤에 발화하고(#7), 헤더 동기화 쓰기가 상품 전이와 같은 잠금 트랜잭션 안이다(#19).
+ * - 완료가 잠금 안에서 대상을 다시 골라 재고·완료 훅이 1회다.
+ * - 분할 행 부분 완료의 재고 플래그가 실제로 전이된 행에 적힌다.
+ * - 소수 청구가 0원 자동 승인을 통과하지 않는다, 자동 승인 실패가 접수를 실패로 만들지 않는다.
+ * - 신청 수정이 잠금 안에서 수정 가능 여부를 다시 판정한다, 계좌 3필드 짝을 본다.
+ * - 도메인 훅이 커밋 뒤에 발화하고, 헤더 동기화 쓰기가 상품 전이와 같은 잠금 트랜잭션 안이다.
  */
 class ValidateP2ClaimConcurrencyTest extends ModuleTestCase
 {
@@ -130,7 +130,7 @@ class ValidateP2ClaimConcurrencyTest extends ModuleTestCase
         return new ClaimCompletionOptions(restoreStockByItem: $map, createRefundRequest: false);
     }
 
-    // ── #3 완료의 잠금 안 재판정 ──
+    // ── 3 완료의 잠금 안 재판정 ──
 
     /**
      * 이미 완료된 반품을 낡은 모델로 다시 완료하면 재고·완료 훅이 두 번 돌지 않는지 검증합니다.
@@ -191,7 +191,7 @@ class ValidateP2ClaimConcurrencyTest extends ModuleTestCase
         $this->assertSame(1, $completedHooks);
     }
 
-    // ── #4 분할 행 부분 완료 ──
+    // ── 4 분할 행 부분 완료 ──
 
     /**
      * 분할 행을 부분 완료하면 재고 플래그가 반품완료로 전이된 행에 적히는지 검증합니다.
@@ -228,7 +228,7 @@ class ValidateP2ClaimConcurrencyTest extends ModuleTestCase
         $this->assertTrue((bool) $inCourse->is_stock_deducted, '아직 코스에 남은 행은 재고를 점유하고 있다');
     }
 
-    // ── #5 · #20 0원 자동 승인 ──
+    // ── 5 · 20 0원 자동 승인 ──
 
     /**
      * 소수 통화의 0.5 청구가 0원 자동 승인을 통과하지 않는지 검증합니다.
@@ -272,7 +272,7 @@ class ValidateP2ClaimConcurrencyTest extends ModuleTestCase
         $this->assertSame(ReturnStatusEnum::WITHDRAWN, $return->return_status);
     }
 
-    // ── #8 · #9 신청 수정 ──
+    // ── 8 · 9 신청 수정 ──
 
     /**
      * 이미 승인된 반품을 낡은 모델로 수정하면 잠금 안에서 다시 판정해 거절하는지 검증합니다.
@@ -375,7 +375,7 @@ class ValidateP2ClaimConcurrencyTest extends ModuleTestCase
         return $refund;
     }
 
-    // ── #7 · #19 훅 발화 시점과 헤더 동기화 잠금 ──
+    // ── 7 · 19 훅 발화 시점과 헤더 동기화 잠금 ──
 
     /**
      * 신청서 단위 전이가 끌고 간 상품 축 훅이 트랜잭션 안이 아니라 커밋 뒤에 발화하는지 검증합니다.

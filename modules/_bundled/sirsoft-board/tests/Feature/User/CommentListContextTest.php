@@ -18,7 +18,7 @@ use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 사용자 댓글 목록 API 의 권한 맥락 테스트 (#142 W9)
+ * 사용자 댓글 목록 API 의 권한 맥락 테스트 (공개 #142 W9)
  *
  * `GET boards/{slug}/posts/{postId}/comments` 가 댓글 범위 권한을 사용자 맥락
  * (`sirsoft-board.{slug}.comments.read`)으로 판정하고, 삭제 댓글은 게시판 매니저가

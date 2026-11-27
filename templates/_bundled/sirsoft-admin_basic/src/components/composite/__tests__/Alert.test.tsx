@@ -312,7 +312,7 @@ describe('Alert 컴포넌트', () => {
   // 편집기에서 Alert 를 추가한 직후(작성자가 type 미지정 / 잘못된
   // defaultNode 키) typeConfig[type] 가 undefined → config.containerClass 접근 크래시로
   // "컴포넌트 로드 실패" 폴백이 떴다. type 미지정/미지원 값에도 크래시 없이 info 로 폴백해야 한다.
-  describe('결함#4 — type 미지정/미지원 안전 폴백', () => {
+  describe('결함 4 — type 미지정/미지원 안전 폴백', () => {
     // @scenario component=alert
     // @effects alert_contract_with_decorative_icon
     it('type 미지정 시 크래시 없이 info 스타일로 렌더된다', () => {

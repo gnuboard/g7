@@ -70,7 +70,7 @@ describe('회원/마이페이지 도메인 편집기 샘플 — sirsoft-basic', 
     'profile', 'postStats', 'recentPosts', 'userProfile', 'userPosts',
   ];
 
-  describe('DoD #1 — 스텁 0', () => {
+  describe('DoD 1 — 스텁 0', () => {
     for (const id of targets) {
       it(`${id} 하위에 "샘플" stub 이 없다`, () => {
         expect(byId[id]).toBeTruthy();
@@ -79,7 +79,7 @@ describe('회원/마이페이지 도메인 편집기 샘플 — sirsoft-basic', 
     }
   });
 
-  describe('DoD #5 — 실제 Resource shape (바인딩 경로 충족)', () => {
+  describe('DoD 5 — 실제 Resource shape (바인딩 경로 충족)', () => {
     it('user.data 는 프로필 바인딩 경로를 채운다 (name 은 문자열)', () => {
       const d = byId.user.data;
       expect(typeof d.name).toBe('string');
@@ -229,7 +229,7 @@ describe('회원/마이페이지 도메인 편집기 샘플 — sirsoft-basic', 
     });
   });
 
-  describe('DoD #3 — 상태 override 가 base 와 동일 shape', () => {
+  describe('DoD 3 — 상태 override 가 base 와 동일 shape', () => {
     it('empty_notifications override 는 base 와 동일 shape (data.data 배열만 비움)', () => {
       const g = findGroup(states, '/mypage/notifications');
       const empty = g.items.find((s: any) => s.id === 'empty_notifications');
@@ -277,7 +277,7 @@ describe('회원/마이페이지 도메인 편집기 샘플 — sirsoft-basic', 
 });
 
 describe('관리자 회원 편집기 샘플 — sirsoft-admin_basic', () => {
-  describe('DoD #1 / #5 — user (withAdminInfo shape)', () => {
+  describe('DoD 1 / 5 — user (withAdminInfo shape)', () => {
     it('admin user.data 는 관리자 표시 필드를 채운다 (name 문자열, stub 0)', () => {
       const d = adminById.user.data;
       expect(hasStub(adminById.user)).toBe(false);
@@ -308,7 +308,7 @@ describe('관리자 회원 편집기 샘플 — sirsoft-admin_basic', () => {
     });
   });
 
-  describe('DoD #6 / 1.1-bis #9 — edit-form prefill 시드', () => {
+  describe('DoD 6 / 1.1-bis 9 — edit-form prefill 시드', () => {
     const editGroup = (adminStates.groups || []).find(
       (g: any) => g.scope?.match === '*/admin/users/:id/edit',
     );

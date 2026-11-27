@@ -6,7 +6,7 @@ feature: kginicis_validate_p2_claim_payment_hardening
 description: |
   브랜치 검증이 찾은 결제 플러그인 결함 중 KG 이니시스 몫.
 
-  - #8 클라이언트 승인 API 경로(`claim-payments/{no}/approve` → `respondApprove`)는 서버 콜백과 같은
+  - 8 클라이언트 승인 API 경로(`claim-payments/{no}/approve` → `respondApprove`)는 서버 콜백과 같은
     `claim_payment.approve` 필터를 타지만, 승인 뒤 거절의 보상(PC 망취소 · 모바일 취소 · CBT 환불)은
     서버 콜백 컨트롤러의 클로저에만 있었다. 리스너가 승인 응답의 금액·주문번호를 청구액·결제 건과
     대조하고, 어긋나면 리스너가 되돌린 뒤 거절한다 — 어느 경로로 들어와도 같다. 청구액 기준

@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 /**
  * ClaimTrackingGroups::overdueOf() 의 회수 지연 일수 테스트
  *
- * 지연 일수는 알림(`overdue_days`)·관리자 목록·사용자 상세가 함께 쓰는 값이다 — 사이트 날짜로 센다(#160).
+ * 지연 일수는 알림(`overdue_days`)·관리자 목록·사용자 상세가 함께 쓰는 값이다 — 사이트 날짜로 센다(공개 #160).
  */
 class ClaimTrackingGroupsTest extends ModuleTestCase
 {

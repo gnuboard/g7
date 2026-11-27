@@ -9,7 +9,7 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * template:uninstall 의 --force · --delete-data 옵션 (#138 실측 ⑤)
+ * template:uninstall 의 --force · --delete-data 옵션 (공개 #138 실측 ⑤)
  *
  * 모듈·플러그인 제거 명령은 두 옵션이 있는데 템플릿만 없어, CLI 에서는 확인 질문을 건너뛸 수 없고 관리자 화면의
  * 「데이터도 삭제」 선택을 줄 수 없었다(활동 로그·after_uninstall 구독자가 받는 deleteData 가 늘 false).

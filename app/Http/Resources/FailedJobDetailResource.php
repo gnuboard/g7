@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 
 /**
- * 큐 실패 작업 상세 리소스 (#17)
+ * 큐 실패 작업 상세 리소스
  *
  * 예외 전문과 payload 메타를 싣는다. payload 의 직렬화된 작업 객체(data.command)는 **싣지 않는다** —
  * 작업 인자(수신자 주소·토큰 등)가 그대로 들어 있어 화면에 노출할 이유가 없다.

@@ -3,7 +3,7 @@
 #   합집합 규칙이다. 각 테스트는 자기가 바꾸는 축만 @scenario 로 고정한다 — 전 축 곱은 같은 합집합 판정을 반복할 뿐이다.
 #   effects·test_files 는 그대로 검사한다.
 
-feature: 스케줄 보안 정책 서버 덮어쓰기(storage/app/schedule_security.json)와 읽기 전용 조회 API (#17 U5)
+feature: 스케줄 보안 정책 서버 덮어쓰기(storage/app/schedule_security.json)와 읽기 전용 조회 API (U5)
 
 description: |
   스케줄 실행 보안 정책(`config/schedule_security.php`)은 코드 소유라 서버 관리자가 바꾸려면 코어 파일을 고쳐야 했고,

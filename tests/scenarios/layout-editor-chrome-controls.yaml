@@ -88,7 +88,7 @@ sub_flows:
       - narrow_window_produces_horizontal_scroll_not_compression
   - id: prop_slot_footer_edit
     description: |
-      컴포넌트 배열 prop(`props.footer`) 안 노드 편집(#141) — Modal 하단 단추를 children 과 같은
+      컴포넌트 배열 prop(`props.footer`) 안 노드 편집(공개#141) — Modal 하단 단추를 children 과 같은
       트리 함수로 고르고 고친다. path 표기 `{owner}.props.footer.{index}`.
       축: footer_operation(select·patch·remove·duplicate·move_within_footer·move_footer_to_children·
           move_children_to_footer·drop_slot·save_serialize)

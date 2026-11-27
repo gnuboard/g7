@@ -95,7 +95,7 @@ class InstallerViewAccessibilityContractTest extends TestCase
                 if (! preg_match('/<svg\b/', $line)) {
                     continue;
                 }
-                // 19차 G#6 — docblock 과 실패 문구가 **두 속성**을 계약으로 선언하는데
+                // docblock 과 실패 문구가 **두 속성**을 계약으로 선언하는데
                 // 단언은 `aria-hidden` 하나뿐이었다. `focusable="false"` 가 빠지면 SVG 가
                 // Tab 순서에 들어와 키보드 사용자가 뜻 없는 정거장을 지나야 한다. 형제
                 // 검사(`InstallerMonitorContractTest`)는 이미 두 속성을 함께 본다.
@@ -164,7 +164,7 @@ class InstallerViewAccessibilityContractTest extends TestCase
         // 스피너/빈 상태 → 결과로 **통째로** 교체되는 컨테이너. 교체 자체는 조용하므로
         // 라이브 리전 선언이 없으면 결과가 화면 밖에 전달되지 않는다.
         //
-        // 19차 G#5 — 모집단을 **소스에서 도출한다**. 종전에는 7개를 손으로 적었고, 같은
+        // 모집단을 **소스에서 도출한다**. 종전에는 7개를 손으로 적었고, 같은
         // 클래스의 형제 4개 메서드는 전부 `scanFiles()` 재귀 스캔으로 도출하는데 이 하나만
         // 하드코딩이었다. 「스피너 → 결과로 통째로 교체」 패턴은 화면이 늘 때마다 함께 느는데,
         // 목록을 사람이 갱신해야 하면 갱신을 잊는 순간 그 화면이 영원히 사각이 된다.

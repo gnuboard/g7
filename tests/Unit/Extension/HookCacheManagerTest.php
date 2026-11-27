@@ -145,7 +145,7 @@ class HookCacheManagerTest extends TestCase
     }
 
     /**
-     * 리스너의 'queue' 옵션이 훅 캐시를 거쳐도 스캔 경로와 같은 잡 프로퍼티를 만든다 (#139).
+     * 리스너의 'queue' 옵션이 훅 캐시를 거쳐도 스캔 경로와 같은 잡 프로퍼티를 만든다 (공개 #139).
      *
      * 캐시는 getSubscribedHooks() 배열을 통째로 var_export 해 저장한다 — 같은 형식으로 왕복시켜 비교한다.
      *
@@ -524,7 +524,7 @@ class HookCacheManagerTest extends TestCase
 class HookCacheStubQueued implements HookListenerInterface
 {
     /**
-     * 큐 옵션을 선언한 구독 훅을 돌려줍니다 (#139).
+     * 큐 옵션을 선언한 구독 훅을 돌려줍니다 (공개 #139).
      *
      * @return array<string, array<string, mixed>> 훅 이름 => 구독 설정
      */

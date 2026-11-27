@@ -514,7 +514,7 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
     /**
      * 반송 기한 날짜는 사이트 시간대 날짜다 — 알림을 만든 요청자(관리자)의 시간대가 UTC 여도 바뀌지 않는다.
      *
-     * 회귀(#160): 요청자 시간대(user_timezone)로 찍어, 관리자가 처리하면 관리자 시간대 날짜가 고객 알림에 들어갔다.
+     * 회귀(공개 #160): 요청자 시간대(user_timezone)로 찍어, 관리자가 처리하면 관리자 시간대 날짜가 고객 알림에 들어갔다.
      *
      * @scenario surface=collection_due_date
      *

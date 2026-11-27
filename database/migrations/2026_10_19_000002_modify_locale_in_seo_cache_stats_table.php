@@ -11,7 +11,7 @@ return new class extends Migration
      * SEO 캐시 통계의 locale 칸을 언어팩 언어 코드 길이(20자)에 맞춥니다.
      *
      * 다섯 글자보다 긴 언어(`zh-Hant-TW`)의 통계 기록이 엄격 모드에서 실패하고 통계 서비스가
-     * 그 예외를 삼켜 조용히 빠졌다(#148). 20 은 `language_packs.locale` 폭이다.
+     * 그 예외를 삼켜 조용히 빠졌다(공개 #148). 20 은 `language_packs.locale` 폭이다.
      *
      * @return void 반환값 없음
      */

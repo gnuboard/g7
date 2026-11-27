@@ -27,10 +27,10 @@ use ReflectionMethod;
  * 장부·예외 계약 결함 수정 검증 — 헤더 결제금액 통화·Repository 경계·세금 컬럼 화이트리스트·예외 키 (B)
  *
  * 검증 축:
- * - 헤더 결제금액 정합화가 결제 통화 금액을 기준 통화 칸에 적지 않고 소수를 보존한다(#6).
- * - 병합 시 클레임 신청상품 이전이 Repository 를 거친다(#7).
- * - 클레임 환불이 주문 헤더에 쓰는 컬럼은 세금 분류 화이트리스트뿐이다(#8).
- * - PG 환불 실패·클레임 접수 거절 예외가 다국어 키와 치환 파라미터를 싣는다(#4 · minor).
+ * - 헤더 결제금액 정합화가 결제 통화 금액을 기준 통화 칸에 적지 않고 소수를 보존한다.
+ * - 병합 시 클레임 신청상품 이전이 Repository 를 거친다.
+ * - 클레임 환불이 주문 헤더에 쓰는 컬럼은 세금 분류 화이트리스트뿐이다.
+ * - PG 환불 실패·클레임 접수 거절 예외가 다국어 키와 치환 파라미터를 싣는다(4 · minor).
  * - 세금계산서 조회가 Repository 를 거친다(minor).
  */
 class ValidateP2MoneyLedgerTest extends ModuleTestCase
@@ -80,7 +80,7 @@ class ValidateP2MoneyLedgerTest extends ModuleTestCase
         return $order->fresh(['options', 'payment']);
     }
 
-    // ── #6 헤더 결제금액 통화 ──
+    // ── 6 헤더 결제금액 통화 ──
 
     /**
      * 기준 통화 수납액이 없는 외화 결제행의 결제 통화 금액을 헤더에 옮기지 않는지 검증합니다.
@@ -122,7 +122,7 @@ class ValidateP2MoneyLedgerTest extends ModuleTestCase
         $this->assertEqualsWithDelta(29000.5, (float) $order->fresh()->total_paid_amount, 0.001);
     }
 
-    // ── #7 Repository 경계 ──
+    // ── 7 Repository 경계 ──
 
     /**
      * 병합 시 클레임 신청상품 이전을 Repository 가 맡는지 검증합니다.
@@ -154,7 +154,7 @@ class ValidateP2MoneyLedgerTest extends ModuleTestCase
         $this->assertStringNotContainsString('OrderRefundOption::class', $source, '서비스가 신청상품 모델을 직접 질의합니다.');
     }
 
-    // ── #8 세금 컬럼 화이트리스트 ──
+    // ── 8 세금 컬럼 화이트리스트 ──
 
     /**
      * 클레임 환불이 재계산 결과의 금액 컬럼을 주문 헤더에 쓰지 않는지 검증합니다.

@@ -1,6 +1,6 @@
 /**
  * @file page-show.test.tsx
- * @description 페이지 상세 레이아웃 렌더링 테스트 (Issue #99)
+ * @description 페이지 상세 레이아웃 렌더링 테스트 (Issue 공개 #99)
  *
  * 테스트 케이스:
  * - 기본 렌더링: 페이지 데이터 있을 때 제목/본문/첨부파일 영역 확인
@@ -205,7 +205,7 @@ function makePageApiResponse(overrides: Record<string, unknown> = {}) {
 
 // ========== 테스트 케이스 ==========
 
-describe('page/show.g7.html 레이아웃 렌더링 (Issue #99)', () => {
+describe('page/show.g7.html 레이아웃 렌더링 (Issue 공개 #99)', () => {
   let registry: ComponentRegistry;
 
   beforeEach(() => {

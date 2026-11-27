@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 치환자가 있는 번역 키를 로그 문구로 쓸 때 치환 인자를 빠뜨리지 않는지 잠근다 (#144 부수 관찰).
+ * 치환자가 있는 번역 키를 로그 문구로 쓸 때 치환 인자를 빠뜨리지 않는지 잠근다 (공개 #144 부수 관찰).
  *
  * `Log::error(__('templates.errors.layout_registration_failed'), [...])` 의 두 번째 배열은 로그 문맥이지 번역 치환 인자가
  * 아니다. 그래서 로그에 `레이아웃 등록에 실패했습니다: :error` 처럼 자리표시가 그대로 남아, 레이아웃 등록이 왜 실패했는지

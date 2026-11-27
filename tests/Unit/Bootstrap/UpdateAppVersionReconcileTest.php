@@ -6,7 +6,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 업데이트 트리 안 프로세스의 APP_VERSION 을 디스크 `.env` 기준으로 올리는 부트스트랩 함수 단위 테스트 (#145, #137).
+ * 업데이트 트리 안 프로세스의 APP_VERSION 을 디스크 `.env` 기준으로 올리는 부트스트랩 함수 단위 테스트 (공개 #145, 공개 #137).
  *
  * 7.0.0~7.0.10 부모 `core:update` 는 `.env` 의 APP_VERSION 만 바꾸고 자기 프로세스 env 는 옛 값으로 둔다. 그 env 를
  * 물려받은 새 코드 자식(번들 일괄 업데이트, 언어팩 단계)과 부모 안의 `config:cache` 일회용 앱이 옛 버전을

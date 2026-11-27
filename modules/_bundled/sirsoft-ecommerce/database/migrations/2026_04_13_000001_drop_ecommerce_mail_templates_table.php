@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * ecommerce_mail_templates 테이블 삭제.
      *
-     * notification_templates 시스템으로 통합 완료 (#146).
+     * notification_templates 시스템으로 통합 완료.
      * 운영 환경 데이터 이관은 이커머스 모듈 Upgrade_1_0_0_beta_2 에서 수행됨.
      *
      * @return void

@@ -83,7 +83,7 @@ describe('parseEditorPath ↔ serializeEditorPath round-trip', () => {
    * @effects branch_path_roundtrip_keeps_segments
    */
   it('responsive + iteration 공존 — 가상 인덱스 제외, 분기 보존 (G-2)', () => {
-    // 분기 안 iteration 인스턴스 #3 의 첫 자식. iteration.3 은 가상 → 제외,
+    // 분기 안 iteration 인스턴스 3 의 첫 자식. iteration.3 은 가상 → 제외,
     // responsive.portable 는 실 위치 → 보존.
     const dom = '0.responsive.portable.children.0.iteration.3.children.0';
     const parsed = parseEditorPath(dom);

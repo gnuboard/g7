@@ -29,7 +29,7 @@ use Modules\Sirsoft\Ecommerce\Services\UserCouponService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 주문 도메인 액션의 예외 → 상태코드 페어 검증 (#104)
+ * 주문 도메인 액션의 예외 → 상태코드 페어 검증 (공개 #104)
  *
  * 배송지 변경(본체)에서 확인된 "인프라 예외가 422 로 위장되는" 결함은 같은 도메인의
  * 다른 액션에도 같은 형태로 존재했다. 여기서는 취소·구매확정·재주문·입금확인·쿠폰

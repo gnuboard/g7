@@ -1,7 +1,7 @@
 feature: 스케줄 관리 화면·API (7.2.0 DB 등록제) — 검색·필터 전 축, 소유 잠금, 즉시 실행 분기, 상태 카드
 
 description: |
-  #17 화면 결함(검색어 미동작 — 서버가 `search` 를 버림, 모듈 필터 선택지 「전체」뿐 + 서버가 모르는 `module` 키,
+  화면 결함(검색어 미동작 — 서버가 `search` 를 버림, 모듈 필터 선택지 「전체」뿐 + 서버가 모르는 `module` 키,
   일괄 「실행」 select 무동작, 초기화가 다른 상태를 지움, 헤더 「초기화」 무동작)을 쿠폰 목록형 필터로 고치고,
   DB 등록제 필드(다국어 명칭·소유·실행 방식·이력 기록 방식·중복 방지 분)를 목록·수정 창·즉시 실행 창에 연결한다.
   - 목록 쿼리 키는 화면 data_source params 와 서버 ScheduleListRequest 가 1:1 이다(PHP 가드 LayoutQueryParamGateParityTest).
@@ -51,7 +51,7 @@ effects:
   - schedule_form_modal_binds_registry_fields
   # (E2E) 등록 창에서 명칭·이름·명령을 채워 저장하면 201 로 행이 생기고 목록에 명칭으로 보인다(원복 포함)
   - schedule_modal_save_creates_row
-  # 작업명이 모든 언어에서 비면 작업명 오류만 내고 식별자 필수 오류는 겹쳐 내지 않는다(#17 K-U4)
+  # 작업명이 모든 언어에서 비면 작업명 오류만 내고 식별자 필수 오류는 겹쳐 내지 않는다(K-U4)
   - schedule_create_blank_label_reports_label_only
   # 명령의 줄바꿈·연속 공백·앞뒤 공백을 저장 전에 공백 하나로 접는다(여러 줄 입력 칸, 등록·수정 공통)
   - schedule_command_whitespace_collapsed

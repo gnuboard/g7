@@ -141,7 +141,7 @@ effects:
   # 초록이었다. 그래서 **계산된 값**(padding·모서리·굵기)을 재는 케이스로 잠근다.
   - update_tab_buttons_carry_the_button_base_class
 
-  # 609 후속(7.2.0 병합 뒤) — 7.2.0 이 CLI 에 더한 배포본 판정 두 가지(공식 번들 배치 #146, custom 사전 검사)를
+  # 609 후속(7.2.0 병합 뒤) — 7.2.0 이 CLI 에 더한 배포본 판정 두 가지(공식 번들 배치 공개#146, custom 사전 검사)를
   # 웹 단계도 거친다. 웹만 미설치 번들을 통째로 받거나 custom 충돌 배포본을 그대로 적용하던 갈림을 잰다.
   - the_web_run_skips_unplaced_bundles_like_the_cli
   - the_web_run_stops_before_backup_when_the_release_hits_a_custom_reserved_path

@@ -5,7 +5,7 @@ namespace Tests\Feature\Http;
 use Tests\TestCase;
 
 /**
- * `validationError()` 메시지 키 자리 계약 (#138 후속 validate)
+ * `validationError()` 메시지 키 자리 계약 (공개 #138 후속 validate)
  *
  * 응답 첫 인자는 다국어 키 전용이다(docs/backend/exceptions.md 「응답에는 메시지 키를 넘긴다」). 하위 계층이 이미
  * 번역해 둔 실패 사유를 그대로 응답 문구로 쓰고 싶을 때도 키 자리가 아니라 치환 자리로 넘긴다 —

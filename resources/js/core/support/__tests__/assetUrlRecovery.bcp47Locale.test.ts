@@ -1,6 +1,6 @@
 // e2e:allow 정적→API 역변환 규칙의 순수 로직 단위. 브라우저 계층은 asset-url-mode.spec.ts 가 커버한다.
 /**
- * 정적 게시 언어 파일 역변환 — 언어팩 규칙(BCP 47) 로케일 (#148, engine-v1.81.0)
+ * 정적 게시 언어 파일 역변환 — 언어팩 규칙(BCP 47) 로케일 (공개 #148, engine-v1.81.0)
  *
  * 역변환 정규식이 `lang\/([a-zA-Z-]+)` 라 숫자 지역(`es-419`)을 놓쳐, 그 언어의 정적 언어 파일이 404 일 때
  * API 주소로 복구하지 못했다. TS `staticToLegacy` 와 셸 head 복구기 두 사본이 같은 결과를 내는지도 본다.
@@ -12,7 +12,7 @@ import { resolve } from 'node:path';
 import { staticToLegacy } from '../assetUrl';
 
 /**
- * 셸 head 스크립트(public/assets/core/js/g7-shell-head.js — 종전 blade 인라인, #158)의 `staticToLegacy` 를 추출해 실행 가능한 함수로 만든다.
+ * 셸 head 스크립트(public/assets/core/js/g7-shell-head.js — 종전 blade 인라인, 공개 #158)의 `staticToLegacy` 를 추출해 실행 가능한 함수로 만든다.
  *
  * @returns 인라인 역변환 함수
  */
@@ -47,7 +47,7 @@ function loadInlineStaticToLegacy(): (url: string) => string | null {
     )() as (url: string) => string | null;
 }
 
-describe('정적 게시 언어 파일 역변환 — BCP 47 로케일 (#148)', () => {
+describe('정적 게시 언어 파일 역변환 — BCP 47 로케일 (공개 #148)', () => {
     // @scenario shape=numeric_region
     // @effects asset_recovery_handles_numeric_region_locale
     it('숫자 지역 로케일(es-419) 언어 파일도 API 주소로 역변환한다', () => {

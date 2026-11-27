@@ -1,4 +1,4 @@
-// e2e:allow편집기 선택 결함#8 수정(빈 데이터 분기에 id/editorAttrs 부착). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 CategoryTree.test.tsx 빈 상태 editorAttrs describe.
+// e2e:allow편집기 선택 결함 8 수정(빈 데이터 분기에 id/editorAttrs 부착). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 CategoryTree.test.tsx 빈 상태 editorAttrs describe.
 import React, { useCallback, useMemo } from 'react';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';

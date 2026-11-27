@@ -65,7 +65,7 @@ class CouponDirectIssueTest extends ModuleTestCase
     }
 
     /**
-     * #1 회원 2명 지정, 둘 다 issuable → CouponIssue 2건 + issued_count +2 + DR- + 활동로그 2건
+     * 1 회원 2명 지정, 둘 다 issuable → CouponIssue 2건 + issued_count +2 + DR- + 활동로그 2건
      *
      * @scenario user_set=multi, eligibility=issuable
      *
@@ -102,7 +102,7 @@ class CouponDirectIssueTest extends ModuleTestCase
     }
 
     /**
-     * #2 1명 per_user_limit 도달 → 1건 발급 + skip 사유 1건 (전체 롤백 아님)
+     * 2 1명 per_user_limit 도달 → 1건 발급 + skip 사유 1건 (전체 롤백 아님)
      *
      * @scenario user_set=multi, eligibility=per_user_limit_reached
      *
@@ -132,7 +132,7 @@ class CouponDirectIssueTest extends ModuleTestCase
     }
 
     /**
-     * #3 user_uuids=[] → 422 (IssueCouponDirectRequest min:1)
+     * 3 user_uuids=[] → 422 (IssueCouponDirectRequest min:1)
      *
      * @scenario user_set=empty, eligibility=issuable
      *
@@ -149,7 +149,7 @@ class CouponDirectIssueTest extends ModuleTestCase
     }
 
     /**
-     * #4 발급기간이 끝난 쿠폰을 직접 발급 → 400 + 사유 메시지 (500 아님)
+     * 4 발급기간이 끝난 쿠폰을 직접 발급 → 400 + 사유 메시지 (500 아님)
      *
      * 발급 불가는 운영자가 고칠 수 있는 도메인 조건이다. 500 으로 뭉개면 운영자는
      * 「작업 처리 중 오류가 발생했습니다」만 보고 발급기간이 끝났다는 사실을 알 수 없다.
@@ -178,7 +178,7 @@ class CouponDirectIssueTest extends ModuleTestCase
     }
 
     /**
-     * #5 발급중단된 쿠폰을 직접 발급 → 400 + 사유 메시지
+     * 5 발급중단된 쿠폰을 직접 발급 → 400 + 사유 메시지
      *
      * @scenario case=admin_direct_issue_stopped_coupon
      *
@@ -203,7 +203,7 @@ class CouponDirectIssueTest extends ModuleTestCase
     }
 
     /**
-     * #6 코어 회귀: downloadCoupon() 추출 후에도 DL- 코드·동일 동작
+     * 6 코어 회귀: downloadCoupon() 추출 후에도 DL- 코드·동일 동작
      *
      * @scenario case=coupon_valid_download
      *

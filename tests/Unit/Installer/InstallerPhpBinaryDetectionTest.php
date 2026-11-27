@@ -176,7 +176,7 @@ class InstallerPhpBinaryDetectionTest extends TestCase
         $this->assertArrayHasKey('cli_sapi', $result, '버전만 맞고 SAPI 가 다른 경우를 응답만 보고 구분할 수 있어야 한다');
         $this->assertSame('php', $result['cli_path'], '경로 기본값은 실행 모드 헬퍼가 SSoT 다');
 
-        // 키만 보면 값을 늘 null 로 채워도 초록이다 — 8차 #38 이 세 지점의
+        // 키만 보면 값을 늘 null 로 채워도 초록이다 — 8차 38 이 세 지점의
         // 반환 shape 을 동형화한 그 키가 정확히 그 형태로만 지켜지고 있었다.
         if ($result['cli_sapi'] !== null) {
             $this->assertIsString($result['cli_sapi']);

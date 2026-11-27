@@ -1119,7 +1119,7 @@ class OrderOptionService
      * 지워져, 신청서에 금액만 남고 **무엇을 신청했는지가 사라진다**.
      *
      * 쓰기는 Repository 가 맡는다 — 서비스가 네 모델을 직접 질의하면 데이터 접근 규율
-     * (Service → RepositoryInterface)을 벗어난다(validate P2 #7).
+     * (Service → RepositoryInterface)을 벗어난다(validate P2 7).
      *
      * @param  int  $fromOrderOptionId  피흡수 옵션 ID
      * @param  int  $toOrderOptionId  생존 옵션 ID

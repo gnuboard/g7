@@ -16,7 +16,7 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * 켜진 의존 확장 조회 — 매니페스트의 dependencies.{modules,plugins} 맵으로 판정한다 (#138 실측 ①)
+ * 켜진 의존 확장 조회 — 매니페스트의 dependencies.{modules,plugins} 맵으로 판정한다 (공개 #138 실측 ①)
  *
  * 모듈·플러그인 저장소의 의존 조회 4곳이 존재하지 않는 메서드(getModuleDependencies·getPluginDependencies)를
  * 찾거나 `{modules: {...}, plugins: {...}}` 모양의 매니페스트에 in_array 를 써서 **한 번도 의존 확장을 찾지

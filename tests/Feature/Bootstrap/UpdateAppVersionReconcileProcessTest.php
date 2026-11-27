@@ -7,7 +7,7 @@ use Tests\TestCase;
 
 /**
  * 새 `bootstrap/app.php` 가 업데이트 트리 안에서 부팅될 때 옛 부모가 물려준 APP_VERSION 을 디스크 값으로
- * 바로잡는지 실제 별도 PHP 프로세스로 확인합니다 (#145, #137).
+ * 바로잡는지 실제 별도 PHP 프로세스로 확인합니다 (공개 #145, 공개 #137).
  *
  * Laravel 의 `config:cache` 는 어느 프로세스에서 돌든 `bootstrap/app.php` 를 디스크에서 새로 require 해 일회용
  * 앱을 만든다. 그래서 이 파일은 옛 부모(7.0.0~7.0.10) 안의 config:cache 와 그 부모가 띄운 모든 새 코드 자식에서

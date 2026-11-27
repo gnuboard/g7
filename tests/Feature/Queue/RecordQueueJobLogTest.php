@@ -13,7 +13,7 @@ use Tests\Fixtures\Queue\QueueProbeJob;
 use Tests\TestCase;
 
 /**
- * 큐 작업 처리 기록 리스너 테스트 (#17)
+ * 큐 작업 처리 기록 리스너 테스트
  *
  * sync 연결은 요청 종료까지 버퍼에 모아 한 번에 넣고, 워커 연결은 한 건씩 바로 넣는다. 재시도 대기(release)는
  * 처리가 끝난 것이 아니므로 남기지 않는다. 트랜잭션으로 격리한다.

@@ -493,7 +493,7 @@ class RoutesRequiresFilterTest extends TestCase
             $this->assertStringNotContainsString('applyRequires: false', $source, $file);
         }
 
-        // 사이트맵 정적 화면은 SEO 선언 수집기(위 목록의 필터 적용 호출처)를 거쳐 라우트를 받는다 (#155)
+        // 사이트맵 정적 화면은 SEO 선언 수집기(위 목록의 필터 적용 호출처)를 거쳐 라우트를 받는다 (공개 #155)
         $sitemap = (string) file_get_contents(base_path('app/Seo/SitemapGenerator.php'));
         $this->assertStringContainsString('$this->declarationCollector->collect()', $sitemap);
         $this->assertStringNotContainsString('applyRequires: false', $sitemap);

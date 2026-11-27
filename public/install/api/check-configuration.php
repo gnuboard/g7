@@ -19,7 +19,7 @@ require_once __DIR__.'/../includes/execution-mode.php';
 
 // 오류 텍스트가 JSON 본문에 섞이지 않게 한다 — **include 체인보다 앞**.
 // 이 파일의 detect-php 는 문서루트 밖 후보 경로를 stat 하므로 open_basedir 환경에서 warning
-// 발생이 정상 시나리오다 (#8) — 그 텍스트가 본문 앞에 붙으면 클라이언트의 response.json() 이
+// 발생이 정상 시나리오다 — 그 텍스트가 본문 앞에 붙으면 클라이언트의 response.json() 이
 // throw 해 PHP 자동 감지가 사유 없이 무동작이 된다.
 //
 // 라이브러리 모드(단위 테스트) 에서도 무는 자리다. utf8.php 는 선언 전용이 아니라
@@ -59,7 +59,7 @@ class ValidationApi
         $method = $_SERVER['REQUEST_METHOD'];
         $action = $_GET['action'] ?? ($method === 'GET' ? 'requirements' : null);
 
-        // 설치 창에는 인증이 없다 (보안#7). 그 사이 `test-db` 는 임의 host:port 로
+        // 설치 창에는 인증이 없다 (보안 7). 그 사이 `test-db` 는 임의 host:port 로
         // 나가는 접속 프록시이고 `test-php-binary` 는 임의 절대경로를 `--version` 으로 실행한다 —
         // 정상 설치에는 몇 번이면 충분하므로 창당 호출 수에 상한을 둔다. 상한 판정은
         // execution-mode.php 가 소유하고, 기록에 실패하면 통과시킨다(정상 설치를 막지 않는다).
@@ -239,7 +239,7 @@ class ValidationApi
             'message' => $result['message'],
             'type' => $type,
             'privileges' => $result['privileges'],
-            // 권한 「확인 불가」 안내와 DB 서버 버전 하한 안내 — 둘 다 차단이 아니다 (20차 #6·#7).
+            // 권한 「확인 불가」 안내와 DB 서버 버전 하한 안내 — 둘 다 차단이 아니다 (20차 6· 7).
             'privilege_warning' => $result['privilege_warning'] ?? null,
             'db_server_notice' => $result['db_server_notice'] ?? null,
             'existing_tables' => $result['existing_tables'],

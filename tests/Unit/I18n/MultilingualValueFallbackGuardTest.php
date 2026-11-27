@@ -6,7 +6,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 다국어 값 대체 순서 강제 검사 (#148 D7·D9).
+ * 다국어 값 대체 순서 강제 검사 (공개 #148 D7·D9).
  *
  * 다국어 값(`['ko' => …, 'en' => …]`)에 지금 보는 언어의 값이 없을 때 자리마다
  * `app.fallback_locale`(env 고정, 번역 문구 대체용)이나 `'ko'` 를 직접 색인해, 한국어가 기본이

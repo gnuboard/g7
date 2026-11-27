@@ -11,7 +11,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\TestCase;
 
 /**
- * 번들 확장 일괄 업데이트 실패가 `core:update`·단독 `core:execute-upgrade-steps` 의 종료 코드로 드러나는지 봉인한다 (#144).
+ * 번들 확장 일괄 업데이트 실패가 `core:update`·단독 `core:execute-upgrade-steps` 의 종료 코드로 드러나는지 봉인한다 (공개 #144).
  *
  * 종전에는 번들 확장이 실패해도 두 명령이 0 으로 끝났고, 결과를 남기지 못하고 죽은 spawn 자식은 "성공 0 / 실패 0" 으로
  * 세어졌다 — 자동화 스크립트가 실패를 알 길이 없었다.

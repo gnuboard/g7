@@ -8,7 +8,7 @@ use RecursiveIteratorIterator;
 use ReflectionClass;
 
 /**
- * `X::m()` 정적 호출의 대상 메서드가 static 인지 잠근다 (#155).
+ * `X::m()` 정적 호출의 대상 메서드가 static 인지 잠근다 (공개 #155).
  *
  * 사이트맵 생성기가 인스턴스 메서드 `TemplateManager::getActiveTemplate()` 을 정적으로 불러 PHP 8 에서 Error 가 났고,
  * catch 가 경고 한 줄로 삼켜 모든 사이트의 sitemap.xml 에서 정적 화면이 통째로 빠졌다. 단위 테스트는 운영 로직을 복사해

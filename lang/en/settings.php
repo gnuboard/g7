@@ -595,7 +595,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Official bundled source placement (core:update --bundled-sources, core:bundled-sources) (#146)
+    | Official bundled source placement (core:update --bundled-sources, core:bundled-sources) (공개 #146)
     |--------------------------------------------------------------------------
     */
     'bundled_sources' => [
@@ -684,7 +684,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Trusted Proxy Diagnostic (#124)
+    | Trusted Proxy Diagnostic (공개 #124)
     |--------------------------------------------------------------------------
     |
     | The value is edited on the same card in Settings > Advanced — no-CLI installs

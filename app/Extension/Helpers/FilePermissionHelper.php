@@ -49,11 +49,11 @@ class FilePermissionHelper
      *                                                 symlink/junction 의 상대경로 화이트리스트(이 디렉토리 루트 기준, 예 `['storage']`).
      *                                                 `removeOrphans=true` 라도 이 목록에 매칭되는 orphan 링크는 삭제하지 않는다 — 코어
      *                                                 업데이트 prune 모드에서 `public/storage` symlink 가 orphan 으로 판정되어 삭제되던
-     *                                                 결함(#43) 차단. 화이트리스트 밖 orphan 링크는 기존대로 삭제된다.
+     *                                                 결함(공개 #43) 차단. 화이트리스트 밖 orphan 링크는 기존대로 삭제된다.
      * @param  array<int, string>  $skipPaths  복사·orphan 정리를 모두 건너뛸 상대경로(이 디렉토리 루트 기준, 예
      *                                         `['sirsoft-gdpr']`). 경로와 정확히 같거나 그 하위면 건너뛴다 — `excludes` 의 단순 이름과
      *                                         달리 다른 깊이의 같은 이름은 매치하지 않는다. 재귀에 그대로 하향 전달한다. 코어 업데이트가
-     *                                         설치되지 않았고 디스크에도 없는 공식 번들을 배치하지 않기 위함(#146). 기본값 `[]` 은 기존 동작.
+     *                                         설치되지 않았고 디스크에도 없는 공식 번들을 배치하지 않기 위함(공개 #146). 기본값 `[]` 은 기존 동작.
      * @return void 반환값 없음
      */
     public static function copyDirectory(string $source, string $destination, ?\Closure $onProgress = null, array $excludes = [], string $relativePath = '', bool $removeOrphans = false, bool $preserveTopLevelOrphans = false, ?array $applyList = null, array $preserveLinkPaths = [], array $skipPaths = []): void
@@ -887,7 +887,7 @@ class FilePermissionHelper
      * @param  bool  $preserveTopLevelOrphans  최상위 한 레벨의 orphan 보존 여부
      * @param  array<int, string>  $preserveLinkPaths  삭제하지 않고 보존할 경로 (링크 여부 무관)
      *                                                 상대경로 화이트리스트(루트 기준). orphan 이 링크이면서 이 목록에 매칭되면 삭제하지
-     *                                                 않고 보존한다 — `public/storage` symlink 보호(#43). 화이트리스트 밖 orphan 링크는 삭제.
+     *                                                 않고 보존한다 — `public/storage` symlink 보호(공개 #43). 화이트리스트 밖 orphan 링크는 삭제.
      * @param  array<int, string>  $skipPaths  orphan 정리에서도 건너뛸 상대경로(루트 기준) — 복사를 건너뛴 경로는 지우지도 않는다
      * @return void 반환값 없음
      */
@@ -920,7 +920,7 @@ class FilePermissionHelper
             if (! File::exists($srcPath) && ! File::isDirectory($srcPath)) {
                 // 보호 화이트리스트 매칭 링크/junction 은 orphan 이어도 보존 — 코어 업데이트
                 // prune 모드에서 `public/storage` symlink 가 릴리즈 소스에 없다는 이유로 삭제되어
-                // 업로드 파일이 404 되던 결함(#43) 차단. 화이트리스트 밖 orphan 링크는 아래에서 삭제.
+                // 업로드 파일이 404 되던 결함(공개 #43) 차단. 화이트리스트 밖 orphan 링크는 아래에서 삭제.
                 // 보호는 **경로 기준**이다 — 링크일 때만 걸면 그 경로가 링크가 **아닌**
                 // 형태로 존재하는 사이트에서 보호가 통째로 빠진다. `public/storage` 가
                 // 일반 디렉토리인 상태(심볼릭 링크를 만들 수 없어 복사로 운영하거나,

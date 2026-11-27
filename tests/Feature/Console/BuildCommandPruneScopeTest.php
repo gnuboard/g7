@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 빌드 산출물 정리의 경로 범위 테스트 (#122 C1).
+ * 빌드 산출물 정리의 경로 범위 테스트 (공개 #122 C1).
  *
  * `pruneBuildOutput()` 은 빌드 **전에** 실행된다. 웹이 서빙 중인 활성 디렉토리의 `dist/` 를
  * 비우면 prune~빌드 완료 구간 전체가 서빙 공백이 되고, 빌드가 실패하면 빈 채로 남는다.

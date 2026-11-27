@@ -9,7 +9,7 @@ use App\Support\PhpExtensionProbe;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 코어 업데이트 PHP 확장 사전점검 (#151 D9).
+ * 코어 업데이트 PHP 확장 사전점검 (공개 #151 D9).
  *
  * 새 배포본의 코어 SSoT(`app/Support/Requirements/php-extensions.json`)가 요구하는 필수 확장이 서버에
  * 없으면 업데이트를 막는다 — 파일을 적용한 뒤에야 부팅이 깨지는 것보다 시작 전에 멈추는 편이 사이트가 온전하다.

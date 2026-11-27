@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 확장 composer.json 의 PHP 확장 요구(require/suggest ext-*) 읽기 단위 테스트 (#151)
+ * 확장 composer.json 의 PHP 확장 요구(require/suggest ext-*) 읽기 단위 테스트 (공개 #151)
  *
  * `getComposerDependencies[At]()` 는 composer install 을 돌릴지만 정하므로 ext-* 를 버린다(그대로 둔다 —
  * ExtensionManagerComposerTest 가 잠근다). PHP 확장 요구는 별도 함수가 읽고, 로드 여부는 컨테이너의

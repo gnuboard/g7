@@ -1,4 +1,4 @@
-// e2e:allow편집기 추가 직후 price 미지정 시 크래시("컴포넌트 로드 실패") 결함#5 수정(price 폴백). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/속성편집/저장200/reload영속/게스트 사용자화면 ₩55000 렌더)로 수행, 단위 회귀는 ProductCard.test.tsx 결함#5 describe.
+// e2e:allow편집기 추가 직후 price 미지정 시 크래시("컴포넌트 로드 실패") 결함 5 수정(price 폴백). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/속성편집/저장200/reload영속/게스트 사용자화면 ₩55000 렌더)로 수행, 단위 회귀는 ProductCard.test.tsx 결함 5 describe.
 import React from 'react';
 import { Div } from '../basic/Div';
 import { Img } from '../basic/Img';

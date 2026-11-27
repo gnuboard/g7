@@ -33,7 +33,7 @@ function queryOf(url: string): URLSearchParams {
   return new URL(url).searchParams;
 }
 
-test.describe('관리자 게시글 목록 컨텍스트 왕복 (#75)', () => {
+test.describe('관리자 게시글 목록 컨텍스트 왕복 (공개 #75)', () => {
   // @scenario leg=enter
   // @effects list_return_preserves_query
   test('2페이지에서 글 제목을 누르면 상세 URL 에 page 가 실린다', async ({ page, boardManageToken }) => {

@@ -10,10 +10,10 @@
  *
  * 8-a 분류표(계획서 (E))대로 미커버 데이터 표면이 nodeEditor 로 부착됐는지, 그리고 각
  * nodeEditor 의 `newItem` shape 가 **컴포넌트가 읽는 prop shape 와 일치**하는지를 잠근다
- * (1-c-verify-4 결함#7 — 편집기가 쓰는 shape ≠ 컴포넌트 read shape 회귀 차단, 계획서 §아키텍처
+ * (1-c-verify-4 결함 7 — 편집기가 쓰는 shape ≠ 컴포넌트 read shape 회귀 차단, 계획서 §아키텍처
  * "defaultNode shape 정합").
  *
- * 검토군 판정(계획서 (E) #6) 회귀 가드: ChipCheckbox.value 는 propControl ccValue(propValue→
+ * 검토군 판정(계획서 (E) 6) 회귀 가드: ChipCheckbox.value 는 propControl ccValue(propValue→
  * value)로 커버되므로 nodeEditor/dataProps 데이터 편집 대상이 아님을 확인한다.
  *
  * 8-c(데이터 정의 전수 검증 잠금): 파일 하단 "전 draggable 데이터 편집 누락 0 게이트"
@@ -40,7 +40,7 @@ const admin = (adminCaps as any).componentCapabilities ?? (adminCaps as any);
 const basic = (basicCaps as any).componentCapabilities ?? (basicCaps as any);
 
 describe('데이터 정의 빌트인 capability 정합', () => {
-  describe('단순 배열 부착(8-a (E) #1~#4)', () => {
+  describe('단순 배열 부착(8-a (E) 1~ 4)', () => {
     /**
      * @scenario aspect=capability_attach, data_surface=single_object_array
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates
@@ -89,7 +89,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
     });
   });
 
-  describe('다중 배열 / 중첩 셀 트리(8-a (E) #5~#6)', () => {
+  describe('다중 배열 / 중첩 셀 트리(8-a (E) 5~ 6)', () => {
     /**
      * @scenario aspect=capability_attach, data_surface=multi_array
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates
@@ -119,7 +119,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
     });
   });
 
-  describe('newItem shape ↔ 컴포넌트 read shape 정합(1-c-verify-4 결함#7 회귀 가드)', () => {
+  describe('newItem shape ↔ 컴포넌트 read shape 정합(1-c-verify-4 결함 7 회귀 가드)', () => {
     /**
      * @scenario aspect=field_widget, data_surface=single_object_array
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates, array_editor_newitem_shape_matches_component_read_shape
@@ -165,7 +165,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
     });
   });
 
-  describe('검토군 판정(8-a (E) #6) — 데이터 편집 비대상 회귀 가드', () => {
+  describe('검토군 판정(8-a (E) 6) — 데이터 편집 비대상 회귀 가드', () => {
     /**
      * @scenario aspect=capability_attach, data_surface=single_object_array
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates, review_group_chipcheckbox_value_covered_by_propcontrol_not_dataprop

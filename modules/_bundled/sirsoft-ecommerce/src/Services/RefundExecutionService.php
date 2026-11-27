@@ -291,7 +291,7 @@ class RefundExecutionService
      */
     protected function taxColumnUpdates(Order $order, AdjustmentResult $result): array
     {
-        // 쓰기 직전에 **화이트리스트로 거른다**(validate P2 #8). 종전에는 「호출부가 이미
+        // 쓰기 직전에 **화이트리스트로 거른다**(validate P2 8). 종전에는 「호출부가 이미
         // 골라 실었다」를 믿고 `orderUpdates` 를 통째로 썼는데, 그 전제가 깨지면(재계산 결과를
         // 그대로 넘기는 새 호출부) `total_paid_amount` 가 재계산값으로 덮여 잔여 한도가 두 번
         // 깎인다 — 오류 없이 다음 환불이 0 원이 된다. 목록은 `TAX_SYNC_COLUMNS` 하나가 정본이다.

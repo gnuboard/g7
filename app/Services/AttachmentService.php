@@ -613,7 +613,7 @@ class AttachmentService
      *
      * 권한 체크 후 인라인 스트림 응답과 캐싱용 메타를 반환합니다.
      * 로컬 절대 경로 조립(getBasePath) 방식은 S3 등 원격 디스크 행에서 성립하지
-     * 않으므로(#99 — filemtime stat 실패 500), 행 disk 를 그대로 따르는
+     * 않으므로(공개 #99 — filemtime stat 실패 500), 행 disk 를 그대로 따르는
      * StorageInterface::response() 스트림으로 서빙합니다. 컨트롤러는
      * streamedFileResponse() 로 캐싱 헤더(ETag/304)를 입혀 응답합니다.
      *

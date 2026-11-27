@@ -294,7 +294,7 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
             $currentLifecycleStatus = $state['installation_status'] ?? null;
 
             // state.json 에는 비밀(DB/관리자 비밀번호) 을 저장하지 않는다.
-            // read 필드 정리(이슈 #63 2단계 방어) 도 sanitizeConfigForState 가 함께 수행.
+            // read 필드 정리(이슈 공개 #63 2단계 방어) 도 sanitizeConfigForState 가 함께 수행.
             $state['config'] = sanitizeConfigForState($formData);
             $state['current_step'] = 4;
             $state['step_status'][3] = 'completed';

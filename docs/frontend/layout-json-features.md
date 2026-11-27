@@ -32,8 +32,8 @@
 
 ### 스타일 및 계산된 값 ([상세 문서](layout-json-features-styling.md))
 
-1. [classMap - 조건부 스타일](layout-json-features-styling.md#classmap---조건부-스타일-v190) (engine-v1.9.0+)
-2. [computed - 계산된 값](layout-json-features-styling.md#computed---계산된-값-v190) (engine-v1.9.0+)
+1. [classMap - 조건부 스타일](layout-json-features-styling.md#classmap---조건부-스타일-engine-v190) (engine-v1.9.0+)
+2. [computed - 계산된 값](layout-json-features-styling.md#computed---계산된-값-engine-v190) (engine-v1.9.0+)
 
 ### 에러 핸들링 ([상세 문서](layout-json-features-error.md))
 
@@ -78,7 +78,7 @@
 }
 ```
 
-→ [상세 문서](layout-json-features-styling.md#classmap---조건부-스타일-v190)
+→ [상세 문서](layout-json-features-styling.md#classmap---조건부-스타일-engine-v190)
 
 ### computed - 계산된 값
 
@@ -98,7 +98,7 @@
 }
 ```
 
-→ [상세 문서](layout-json-features-styling.md#computed---계산된-값-v190)
+→ [상세 문서](layout-json-features-styling.md#computed---계산된-값-engine-v190)
 
 ### errorHandling - 에러 핸들링
 

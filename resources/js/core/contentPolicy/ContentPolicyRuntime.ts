@@ -195,7 +195,7 @@ export class ContentPolicyRuntime {
       }
     });
 
-    // 본문 서식 지연(#163) — 정화(=문자열 파싱) 전에 style 속성 이름을 바꿔 두고, 훅이 data-g7-style 로 올린다.
+    // 본문 서식 지연(공개 #163) — 정화(=문자열 파싱) 전에 style 속성 이름을 바꿔 두고, 훅이 data-g7-style 로 올린다.
     // 후보 태그(video 등)는 정해진 속성만 받으므로 그 목록에 style 이 없으면 서식을 버린다(종전 결과와 같다).
     let source = html;
     if (deferStyleFlag === true) {
@@ -279,7 +279,7 @@ export class ContentPolicyRuntime {
         const box = doc.createElement('div');
         box.setAttribute('class', 'g7-embed');
         box.setAttribute('data-provider', resolved.provider.id);
-        // 모양은 코어 정적 CSS(`.g7-embed`, `.g7-embed[data-aspect=…]`)가 준다 — style 속성은 엄격한 스타일 정책에서 막힌다(#163).
+        // 모양은 코어 정적 CSS(`.g7-embed`, `.g7-embed[data-aspect=…]`)가 준다 — style 속성은 엄격한 스타일 정책에서 막힌다(공개 #163).
         // 비율은 유한(4종)하므로 data 속성으로 고른다. 목록 밖 비율은 기본(16:9)이다.
         if (ASPECT_RATIO[resolved.aspect]) {
           box.setAttribute('data-aspect', resolved.aspect);

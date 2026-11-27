@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Tests\TestCase;
 
 /**
- * 신뢰 프록시 진단 판정 (#124).
+ * 신뢰 프록시 진단 판정 (공개 #124).
  *
  * 판정식은 "HTTPS 인식 실패" 가 아니라 다음이다:
  *

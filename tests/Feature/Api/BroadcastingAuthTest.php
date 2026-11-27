@@ -131,7 +131,7 @@ class BroadcastingAuthTest extends TestCase
     /**
      * `broadcasting/auth` 로 끝나는 라우트는 게이트된 `api/broadcasting/auth` 하나뿐이어야 한다.
      *
-     * 배경 (이슈 #128 F4):
+     * 배경 (이슈 공개 #128 F4):
      *   `bootstrap/app.php` 의 `withRouting(channels: ...)` 인자는 ApplicationBuilder 가
      *   `withBroadcasting()` 을 자동 호출하게 만들고, 그 결과 `booted` 에서 `Broadcast::routes()`
      *   가 **게이트 없는** `GET|POST /broadcasting/auth` 를 등록했다. 프론트는 이 경로를 쓰지

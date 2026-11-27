@@ -182,7 +182,7 @@ class ActivityLogActionLabelTest extends TestCase
      * loggable·extension_origin 이 모두 없는 옛 행은 설명 키의 네임스페이스로 origin 을 추론한다.
      *
      * 출처 자동 주입(extension_origin)이 들어오기 전에 쌓인 행은 properties 가 비어 있어, 확장 lang 의 라벨을
-     * 찾지 못하고 `category.reorder` 같은 원문 키가 목록에 보였다(#138 실측 ⑧ 전수 조사).
+     * 찾지 못하고 `category.reorder` 같은 원문 키가 목록에 보였다(공개 #138 실측 ⑧ 전수 조사).
      *
      * @scenario origin_type=module, loggable_state=properties_origin_empty
      *

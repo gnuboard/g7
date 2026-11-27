@@ -17,7 +17,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * `ProductInquiryService` 가 도메인 실패를 `ProductInquiryOperationException` 으로
  * 승격한 뒤에도 사용자 컨트롤러는 `catch (\RuntimeException)` 을 유지하고 있었다.
  * 그 catch 는 승격된 도메인 예외보다 넓어서, 남는 것은 인프라 RuntimeException 뿐인데
- * 그것까지 422 + 예외 원문으로 뭉갰다 — #104 가 없애려던 바로 그 형태다.
+ * 그것까지 422 + 예외 원문으로 뭉갰다 — 공개 #104 가 없애려던 바로 그 형태다.
  *
  * 반대 방향의 짝도 있었다. `destroy` 는 `deleteInquiry` 가 던지는 도메인 예외를
  * 구분하는 catch 가 없어, 운영자가 고칠 수 있는 사유(문의 게시판 미설정)가 500 으로

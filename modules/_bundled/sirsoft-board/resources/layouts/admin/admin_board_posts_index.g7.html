@@ -50,7 +50,7 @@
           </a>
           <button type="button" aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="refresh_button" class="board-btn-icon">
             <on type="click">
-              <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75). -->
+              <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (공개 #75). -->
               <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true">
                 <query/>
               </navigate>
@@ -88,7 +88,7 @@
               <set-state searchQuery="{{$event.target.value}}"/>
             </on>
             <on type="keypress" key="Enter">
-              <!-- 검색 실행 — 검색 버튼과 동일하게 page 는 1페이지로 되돌린다. 되돌리지 않으면 5페이지를 보던 중 검색 시 결과의 5페이지로 가 빈 화면이 열린다 (#75). -->
+              <!-- 검색 실행 — 검색 버튼과 동일하게 page 는 1페이지로 되돌린다. 되돌리지 않으면 5페이지를 보던 중 검색 시 결과의 5페이지로 가 빈 화면이 열린다 (공개 #75). -->
               <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" :replace="true" transition_overlay_target="posts_data_grid__body">
                 <query page="" filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{$event.target.value}}" filters[0][operator]="like"/>
               </navigate>
@@ -143,7 +143,7 @@
                 <item label="$t:sirsoft-board.admin.posts.filters.status_secret" value="secret"/>
               </prop>
               <on type="change">
-                <!-- 상태 필터 변경 — 카테고리 필터와 동일하게 page 를 1페이지로 되돌린다. 되돌리지 않으면 뒤쪽 페이지에서 필터를 바꿀 때 빈 화면이 열린다 (#75). -->
+                <!-- 상태 필터 변경 — 카테고리 필터와 동일하게 page 를 1페이지로 되돌린다. 되돌리지 않으면 뒤쪽 페이지에서 필터를 바꿀 때 빈 화면이 열린다 (공개 #75). -->
                 <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" :replace="true" transition_overlay_target="posts_data_grid__body">
                   <query status="{{$event.target.value}}" :page="1"/>
                 </navigate>
@@ -168,7 +168,7 @@
           <button type="button" data-ref="search_button" class="board:px-4 board:py-2 board:bg-gray-800 board:dark:bg-gray-600 board:text-white board:rounded-lg board:hover:bg-gray-900 board:dark:hover:bg-gray-500 board:transition-colors board:text-sm board:font-medium">
             <responsive on="portable" class-merge="board:w-full"/>
             <on type="click">
-              <!-- 검색 실행 — 열거한 검색 조건만 덮어쓰고 정렬/페이지당 개수 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다 (#75). -->
+              <!-- 검색 실행 — 열거한 검색 조건만 덮어쓰고 정렬/페이지당 개수 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다 (공개 #75). -->
               <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" :replace="true" transition_overlay_target="posts_data_grid__body">
                 <query page="" filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{_local.searchQuery || ''}}" filters[0][operator]="like" category="{{_global.categoryFilter !== undefined ? _global.categoryFilter : (query.category || '')}}" created_at_from="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.created_at_from || '')}}" created_at_to="{{_global.dateTo !== undefined ? _global.dateTo : (query.created_at_to || '')}}"/>
               </navigate>
@@ -257,7 +257,7 @@
                 <field name="paddingLeft" value="{{(row?.depth ?? 0) > 0 ? (row?.depth * 1) + 'rem' : '0'}}"/>
               </prop>
               <icon data-if="{{row.is_reply}}" name="level-up-alt" class="board:text-sm board:rotate-90 board:mt-1 board-text-muted"/>
-              <!-- 제목 칸은 줄어들 수 있고 제목은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 제목이 좁은 화면에서 본문을 622px 넘겼다(#143). -->
+              <!-- 제목 칸은 줄어들 수 있고 제목은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 제목이 좁은 화면에서 본문을 622px 넘겼다(공개 #143). -->
               <div class="board:flex-1 board:min-w-0">
                 <div class="board-flex-center board:gap-2 board:flex-wrap">
                   <!-- 카테고리 배지 -->

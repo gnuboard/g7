@@ -9,7 +9,7 @@ use ReflectionMethod;
 use Tests\PureTestCase;
 
 /**
- * 역방향 의존 안내의 연결 지점 — 재설치(`install --force`)·강제 비활성화·멈춘 업데이트 정리·업데이트 성공 경로 (#152 D6)
+ * 역방향 의존 안내의 연결 지점 — 재설치(`install --force`)·강제 비활성화·멈춘 업데이트 정리·업데이트 성공 경로 (공개 #152 D6)
  *
  * 판정과 안내 수준은 DependencyVersionWarningsDependentsTest 가 잠근다. 여기서는 매니저 메서드가 안내를 부르는지 잠근다.
  * 실제로 비활성화·재설치를 돌리면 라우트 캐시 재굽기·훅 캐시 재생성이 따라와 시험 중 실행할 수 없으므로(테스트 중 캐시 재굽기 금지)

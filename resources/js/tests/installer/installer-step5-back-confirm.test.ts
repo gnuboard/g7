@@ -142,7 +142,7 @@ async function bootFailureScreen(state: Record<string, unknown>) {
 /**
  * 실패 화면 버튼을 누르고 확인 창 문구를 돌려준다.
  *
- * 버튼은 인라인 onclick 이 아니라 `data-action` 이름으로 위임 리스너(installer-boot.js)에 묶인다(#158 strict CSP) —
+ * 버튼은 인라인 onclick 이 아니라 `data-action` 이름으로 위임 리스너(installer-boot.js)에 묶인다(공개 #158 strict CSP) —
  * 뷰 마크업의 data-action 이 가리키는 함수 이름을 읽어 같은 전역 함수를 직접 부른다(버튼 ↔ 함수 연결도 함께 확인된다).
  */
 async function clickAndCaptureConfirm(button: HTMLElement, accept: boolean) {

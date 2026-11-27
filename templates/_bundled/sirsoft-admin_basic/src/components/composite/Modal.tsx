@@ -63,7 +63,7 @@ export interface ModalProps {
    * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트 (내부 사용)
    *
    * `renderEnvRef.current` 의 레지스트리·엔진·dispatcher·편집 모드로 titlePrefix/titleSuffix/footer 를
-   * 그린다 — 레이아웃 편집기 미리보기에서 호스트 값 대신 미리보기 값을 따른다(#141).
+   * 그린다 — 레이아웃 편집기 미리보기에서 호스트 값 대신 미리보기 값을 따른다(공개 #141).
    */
   __componentContext?: {
     renderEnvRef?: {
@@ -79,7 +79,7 @@ export interface ModalProps {
     parentDataContext?: Record<string, any>;
     /**
      * Modal 노드의 편집기 경로(레이아웃 편집기 미리보기에서만 값이 있다). footer 단추마다
-     * `${componentPath}.props.footer.${index}` 를 넘겨 편집기가 footer 단추를 고르게 한다(#141).
+     * `${componentPath}.props.footer.${index}` 를 넘겨 편집기가 footer 단추를 고르게 한다(공개 #141).
      */
     componentPath?: string;
     [key: string]: any;
@@ -288,7 +288,7 @@ export const Modal: React.FC<ModalProps> = ({
     // 렌더 환경(이 Modal 을 그린 렌더러) > 호스트 값. 편집 모드면 액션을 바인딩하지 않는다.
     const env = __componentContext?.renderEnvRef?.current ?? null;
     // 편집기 경로 — footer 만 넘긴다. 엔진이 실어 준 Modal 노드 경로 뒤에 `.props.footer.{index}` 를
-    // 붙이면 편집기가 `props.footer` 배열 항목으로 읽어 children 과 같게 고르고 고친다(#141).
+    // 붙이면 편집기가 `props.footer` 배열 항목으로 읽어 children 과 같게 고르고 고친다(공개 #141).
     // titlePrefix/titleSuffix 는 편집기 경로 문법(EDITOR_PROP_SLOTS)에 없어 넘기지 않는다.
     const ownerPath = editorSlot ? __componentContext?.componentPath : undefined;
     // 데이터 컨텍스트와 상태 범위는 엔진이 본문 자식을 그릴 때와 같게 준다 — Modal 노드의 확장 컨텍스트와

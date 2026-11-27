@@ -387,7 +387,7 @@ $service->restoreOwnership($snapshot, $onProgress, $detailedSnapshot);
 
 1. spawn 자식(NEW 코드) 의 upgrade step 이 update 시작 시점의 트리를 재귀 스냅샷 → **디스크에 직렬화 보존** (`storage/framework/cache/permission_snapshot_pending.json`)
 2. 부모(OLD 코드) 가 망가뜨려도 직렬화 파일은 무사 (chown 만 영향, 내용 그대로)
-3. update 종료 후 첫 ServiceProvider boot (NEW 코드) 가 `PermissionRestoreHelper::restoreFromPendingSnapshot()` 로 항목별 정확 복원 → 마커 삭제
+3. update 종료 후 첫 ServiceProvider boot (NEW 코드) 가 `PermissionRestoreHelper::restoreFromPendingSnapshot()`(당시 코드, 현재는 제거됨) 로 항목별 정확 복원 → 마커 삭제
 
 자가 무력화: 부모도 NEW 코드인 다음 release transition 부터는 마커 작성 자체를 skip (가드: `method_exists` 또는 OLD 결함 부재 조건). beta.3 → beta.4 에서 `Upgrade_7_0_0_beta_4::recordPermissionSnapshotForLegacyParent()` 가 본 패턴의 참조 구현.
 

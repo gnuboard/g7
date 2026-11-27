@@ -281,7 +281,7 @@ class HookArgumentSerializerTest extends TestCase
      * 날짜 값(Carbon·CarbonImmutable·DateTime)이 큐를 거쳐도 같은 시각·시간대·클래스로 돌아온다.
      *
      * 예전에는 직렬화 불가 객체로 취급돼 null 로 바뀌고 경고 로그가 남았다 — 가입 훅의 registration_time,
-     * 약관 동의 시각 등이 큐 리스너에서 비어 보였다(#138 후속 전수 점검 11번 ②).
+     * 약관 동의 시각 등이 큐 리스너에서 비어 보였다(공개 #138 후속 전수 점검 11번 ②).
      *
      * @scenario value=datetime
      *

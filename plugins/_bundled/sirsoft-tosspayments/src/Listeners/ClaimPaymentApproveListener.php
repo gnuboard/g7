@@ -149,7 +149,7 @@ class ClaimPaymentApproveListener implements HookListenerInterface
             // 필터(이 리스너의 `voidApproval()`)가 맡는다. 그래도 여기서 먼저 판정하는 것은 모듈이 보지
             // 않는 축(응답 주문번호)까지 한 번에 닫고, 서버 콜백·클라이언트 승인 API
             // (`claim-payments/{no}/approve` → `respondApprove`) 어느 경로로 들어와도 같은 판정·같은
-            // 취소가 일어나게 하기 위해서다 (validate 07 #8).
+            // 취소가 일어나게 하기 위해서다 (validate 07 8).
             //
             // 승인액은 **응답** 값만 쓴다 — 응답에 없을 때 콜백 금액으로 채우면 대조가 항등식이 된다.
             $approvedAmount = isset($response['totalAmount']) && is_numeric($response['totalAmount'])

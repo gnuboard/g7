@@ -103,7 +103,7 @@ export function EditEntryFab(props: EditEntryFabProps): React.ReactElement | nul
   });
 
   // 인라인 style 로 줄 수 없는 규칙(인쇄, 다크, 포커스 표시, 눌림)은 단추가 보이는 동안만 런타임 시트로 붙인다.
-  // 종전 JSX <style> 자식은 엄격한 스타일 정책(style-src 'self')에서 막혀 단추가 고정 위치를 잃고 문서 흐름에 그려졌다(#163).
+  // 종전 JSX <style> 자식은 엄격한 스타일 정책(style-src 'self')에서 막혀 단추가 고정 위치를 잃고 문서 흐름에 그려졌다(공개 #163).
   // 그리기 전에 붙여야 첫 화면에 무스타일 단추가 비치지 않는다(useLayoutEffect).
   useLayoutEffect(() => {
     if (!shouldShow) return undefined;

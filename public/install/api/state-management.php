@@ -486,7 +486,7 @@ class StateManagementApi
         // 판정 근거다) — 흔적 정리는 아래 installerApplyAbortedState() 가 맡는다.
         installerMarkAbortRequested();
 
-        // 대기 상한은 이 요청에 **실제로 적용된** 시간 예산에서 도출한다 (환경#9 와 같은 규율) —
+        // 대기 상한은 이 요청에 **실제로 적용된** 시간 예산에서 도출한다 (환경 9 와 같은 규율) —
         // 대기가 요청 수명을 다 써 버리면 되돌리기가 시작되기도 전에 응답이 끊긴다.
         $abortTimeBudget = installerSetTimeLimit(INSTALLER_ABORT_REQUEST_TIME_LIMIT);
         $abortWaitCap = installerAbortWaitCapSeconds($abortTimeBudget);

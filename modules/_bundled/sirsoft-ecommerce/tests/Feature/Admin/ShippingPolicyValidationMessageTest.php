@@ -335,7 +335,7 @@ class ShippingPolicyValidationMessageTest extends ModuleTestCase
         $response->assertStatus(422);
     }
 
-    // ───────── #94: 구간 필수값·경계 규칙 ─────────
+    // ───────── 공개 #94: 구간 필수값·경계 규칙 ─────────
 
     #[Test]
     public function test_range_policy_without_tiers_is_rejected(): void
@@ -524,7 +524,7 @@ class ShippingPolicyValidationMessageTest extends ModuleTestCase
         $this->assertStringContainsString('정수', implode(' ', $this->allMessages($response)));
     }
 
-    // ───────── #94: 도서산간 우편번호 형식 ─────────
+    // ───────── 공개 #94: 도서산간 우편번호 형식 ─────────
 
     #[Test]
     public function test_extra_fee_accepts_three_supported_zipcode_formats(): void

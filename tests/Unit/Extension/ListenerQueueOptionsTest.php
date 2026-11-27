@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 /**
- * 훅 리스너 큐 옵션 정규화 테스트 (#139)
+ * 훅 리스너 큐 옵션 정규화 테스트 (공개 #139)
  *
  * `getSubscribedHooks()` 의 `'queue' => [...]` 덩어리에서 유효한 키만 남기고, 잘못된 키·값은 그 키만 버리며
  * 경고를 남기는지 검증한다.

@@ -16,7 +16,7 @@ use Symfony\Component\Console\Output\NullOutput;
 /**
  * OrderSeeder 재고 차감 플래그(is_stock_deducted) 정합성 테스트.
  *
- * 회귀 배경(이슈 #44): 시더가 옵션 상태만 직접 세팅하고 StockService::deductStock 라이프사이클을
+ * 회귀 배경: 시더가 옵션 상태만 직접 세팅하고 StockService::deductStock 라이프사이클을
  * 거치지 않아, 결제완료 이후 상태(상품준비중 등)인 옵션도 is_stock_deducted=false 로 남아
  * 관리자 주문상세에 "재고 미차감"으로 표시되던 데이터 부정합을 차단한다.
  *

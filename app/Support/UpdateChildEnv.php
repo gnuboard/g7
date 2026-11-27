@@ -11,7 +11,7 @@ use App\Extension\CoreVersionChecker;
  * 자식(번들 일괄 업데이트 `core:execute-bundled-updates`, 그 안의 언어팩 단계 새 프로세스, 훅 캐시 새 프로세스)은
  * 부팅하면서 config/hooks 캐시를 다시 굽는다. 상속 env 를 그대로 넘기면 부모 env 의 APP_VERSION 이 그대로 캐시에
  * 구워지므로(Laravel env 저장소는 immutable 이라 `.env` 가 덮지 못한다), 업그레이드 스텝 자식
- * (`CoreUpdateCommand::spawnUpgradeStepsProcess()`)과 같이 현재 코어 버전과 업데이트 플래그를 명시한다(#145 F10).
+ * (`CoreUpdateCommand::spawnUpgradeStepsProcess()`)과 같이 현재 코어 버전과 업데이트 플래그를 명시한다(공개 #145 F10).
  *
  * 업데이트 트리 밖(확장 롤백의 훅 캐시 복구 등)에서는 상속 env 를 그대로 넘긴다. 그때 고정할 수 있는 값은 config 뿐이라,
  * config 캐시가 오염돼 있으면 그 값을 자식에게 퍼뜨릴 뿐이다.

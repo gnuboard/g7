@@ -10,7 +10,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * PostResource 썸네일 URL 호출측 회귀 테스트 (#100 URL 조립 단일화)
+ * PostResource 썸네일 URL 호출측 회귀 테스트 (공개 #100 URL 조립 단일화)
  *
  * previewUrlForSlug() 헬퍼 자체가 아니라 **호출측**(PostResource
  * getThumbnailUrlFromRelations)이 slug 인자를 올바르게 전달해 응답 문자열이

@@ -191,7 +191,7 @@ class OrderActivityLogListener implements HookListenerInterface
     {
         $orders = $this->orderRepository->findByIdsKeyed($ids);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($ids, $orders, $snapshots, $updatedCount) {
                 foreach ($ids as $id) {
@@ -229,7 +229,7 @@ class OrderActivityLogListener implements HookListenerInterface
     {
         $orders = $this->orderRepository->findByIdsKeyed($ids);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($ids, $orders, $snapshots, $updatedCount) {
                 foreach ($ids as $id) {
@@ -267,7 +267,7 @@ class OrderActivityLogListener implements HookListenerInterface
     {
         $orders = $this->orderRepository->findByIdsKeyed($ids);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($ids, $orders, $snapshots, $updatedCount) {
                 foreach ($ids as $id) {
@@ -474,7 +474,7 @@ class OrderActivityLogListener implements HookListenerInterface
         $targetIds = array_unique(array_filter($targetIds));
         $options = $this->orderOptionRepository->findByIdsKeyed($targetIds);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($newStatus, $options, $results, $snapshots) {
                 foreach ($results as $result) {
@@ -556,7 +556,7 @@ class OrderActivityLogListener implements HookListenerInterface
         // 그 수만큼 쿼리가 늘어난다(N+1).
         $orders = $this->orderRepository->findByIdsKeyed(array_keys($byOrder));
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($byOrder, $newStatus, $orders, $source) {
                 foreach ($byOrder as $orderId => $rows) {
@@ -759,7 +759,7 @@ class OrderActivityLogListener implements HookListenerInterface
             ? $this->orderOptionRepository->findByIdsKeyed(array_column($cancelItems, 'order_option_id'))
             : null;
 
-        // 주문 행과 옵션별 행을 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 주문 행과 옵션별 행을 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($order, $cancelSnapshot, $orderSnapshot, $cancelItems, $options) {
                 // Order 레벨 로그 (합산액 변경 기록)

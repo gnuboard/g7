@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 7.0.x → 7.1.0 업데이트 뒤 「코어 버전 호환성 문제」 로 잘못 꺼진 확장과 그때 함께 꺼진 언어팩을 한 번 다시 켭니다 (#145, #137).
+ * 7.0.x → 7.1.0 업데이트 뒤 「코어 버전 호환성 문제」 로 잘못 꺼진 확장과 그때 함께 꺼진 언어팩을 한 번 다시 켭니다 (공개 #145, 공개 #137).
  *
  * 7.0.0~7.0.10 부모 `core:update` 가 옛 APP_VERSION 을 env 로 물려줘 config 캐시에 옛 버전(7.0.0)이 구워졌고, 업데이트 뒤
  * 첫 프로세스가 `>=7.1.0` 을 요구하는 확장을 `incompatible_core` 로 껐다. 콘솔(크론·큐 워커)이 먼저 부팅하면 게시판·페이지
@@ -122,7 +122,7 @@ class RecoverFalselyAutoDeactivatedExtensions implements DataMigration
             return;
         }
 
-        // audit:allow upgrade-step-vone-safety reason: 확장 활성화는 레이아웃·권한·훅·캐시를 함께 다루는 매니저 흐름이라 DB 행만 바꾸면 반쪽 활성화가 된다 — 자식(새 코드)에서 매니저를 부르고 method_exists 로 가드한다 (#145 D2)
+        // audit:allow upgrade-step-vone-safety reason: 확장 활성화는 레이아웃·권한·훅·캐시를 함께 다루는 매니저 흐름이라 DB 행만 바꾸면 반쪽 활성화가 된다 — 자식(새 코드)에서 매니저를 부르고 method_exists 로 가드한다 (공개 #145 D2)
         // audit:allow upgrade-step-data-snapshot reason: 위와 같음 — 동결 사본으로 대신할 수 없는 활성화 흐름이다
         $manager = app($managerClass);
         if (! method_exists($manager, $activateMethod)) {
@@ -180,7 +180,7 @@ class RecoverFalselyAutoDeactivatedExtensions implements DataMigration
 
         // (1) host_deactivated 표시 + (2) 7.1.0 캐시 목록 — 새 코드의 재활성화 후보 조회가 둘을 합쳐 돌려준다.
         $ids = [];
-        // audit:allow upgrade-step-vone-safety reason: 7.1.0 이 캐시에 남긴 재활성화 목록을 읽는 유일한 경로 — method_exists 로 가드한다 (#145 D2)
+        // audit:allow upgrade-step-vone-safety reason: 7.1.0 이 캐시에 남긴 재활성화 목록을 읽는 유일한 경로 — method_exists 로 가드한다 (공개 #145 D2)
         $registrar = app(LanguagePackBundledRegistrar::class);
         if (method_exists($registrar, 'getPendingForReactivation')) {
             $ids = array_column($registrar->getPendingForReactivation($scope, $identifier), 'id');
@@ -204,7 +204,7 @@ class RecoverFalselyAutoDeactivatedExtensions implements DataMigration
             return [];
         }
 
-        // audit:allow upgrade-step-vone-safety reason: 언어팩 활성화는 슬롯 정리·레지스트리 캐시·훅을 함께 다루는 서비스 흐름이다 — method_exists 로 가드한다 (#145 D2)
+        // audit:allow upgrade-step-vone-safety reason: 언어팩 활성화는 슬롯 정리·레지스트리 캐시·훅을 함께 다루는 서비스 흐름이다 — method_exists 로 가드한다 (공개 #145 D2)
         // audit:allow upgrade-step-data-snapshot reason: 위와 같음 — 동결 사본으로 대신할 수 없는 활성화 흐름이다
         $service = app(LanguagePackService::class);
         $repository = app(LanguagePackRepositoryInterface::class);

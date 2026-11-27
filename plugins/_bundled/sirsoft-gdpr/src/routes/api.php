@@ -60,7 +60,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/consent/grant', [GdprConsentController::class, 'grant'])
         ->name('consent.grant');
 
-    // 정책 버전 bump 후 *활성 선택형 동의* 만 일괄 새 버전으로 grant — "전체 항목 다시 동의" (#19).
+    // 정책 버전 bump 후 *활성 선택형 동의* 만 일괄 새 버전으로 grant — "전체 항목 다시 동의".
     // 필수 쿠키 / 철회 상태는 대상 외.
     Route::post('/consent/renew-all', [GdprConsentController::class, 'renewAll'])
         ->name('consent.renew_all');

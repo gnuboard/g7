@@ -119,7 +119,7 @@ class AdminProductInquiryControllerTest extends ModuleTestCase
             ->deleteJson("{$this->apiBase}/{$this->inquiry->id}");
 
         $response->assertOk();
-        // SoftDeletes 도입(#107 후속) — 게시판 복원 경로와의 대칭을 위해 피벗은 소프트 삭제된다
+        // SoftDeletes 도입(공개 #107 후속) — 게시판 복원 경로와의 대칭을 위해 피벗은 소프트 삭제된다
         $this->assertSoftDeleted('ecommerce_product_inquiries', ['id' => $this->inquiry->id]);
     }
 
@@ -298,7 +298,7 @@ class AdminProductInquiryControllerTest extends ModuleTestCase
     }
 
     /**
-     * 과거 결함(#106)으로 답변이 여러 건 쌓인 문의에서 하나만 삭제한 경우 —
+     * 과거 결함(공개 #106)으로 답변이 여러 건 쌓인 문의에서 하나만 삭제한 경우 —
      * 잔여 답변이 있으면(count_replies > 0) 답변완료 표기를 유지해야 한다.
      */
     #[Test]

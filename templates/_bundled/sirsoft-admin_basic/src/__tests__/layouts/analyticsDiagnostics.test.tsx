@@ -130,7 +130,7 @@ describe('상태 카드와 버튼', () => {
   it('번역 파라미터는 데이터 소스 경로로 읽는다 — computed 로 읽으면 값이 조용히 빠진다', () => {
     // `$t:키|id={{_computed.x}}` 는 번역문의 `{{id}}` 자리를 그대로 화면에 내보낸다
     // (브라우저 실측 M7-T3c: 「실행 중 #{{id}}」). 같은 화면의 다른 파라미터 10건처럼
-    // 데이터 소스 경로로 읽으면 값이 들어온다(「실행 중 #117」).
+    // 데이터 소스 경로로 읽으면 값이 들어온다(「실행 중 117」).
     const texts = stringify(layout).match(/\$t:[a-zA-Z0-9._]+\|[a-z_]+=\{\{[^"]*?\}\}/g) ?? [];
     expect(texts.length).toBeGreaterThan(0);
     for (const t of texts) {

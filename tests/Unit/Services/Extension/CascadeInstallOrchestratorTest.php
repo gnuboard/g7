@@ -44,7 +44,7 @@ class CascadeInstallOrchestratorTest extends TestCase
         parent::setUp();
 
         // 설치 판정은 manifest 만 읽는 조회를 쓴다 — 미설치 확장의 PHP 진입 파일을 실행하면 Composer 음성 캐시가 남아
-        // 이어지는 설치가 Class not found 로 죽는다 (#159). 진입 파일을 읽는 상세 조회는 스텁하지 않아 부르면 실패한다.
+        // 이어지는 설치가 Class not found 로 죽는다 (공개 #159). 진입 파일을 읽는 상세 조회는 스텁하지 않아 부르면 실패한다.
         $this->moduleService = Mockery::mock(ModuleService::class);
         $this->moduleService->shouldReceive('getModuleManifestInfo')->andReturnUsing(fn (string $id) => $this->modules[$id] ?? null);
         $this->pluginService = Mockery::mock(PluginService::class);
@@ -109,7 +109,7 @@ class CascadeInstallOrchestratorTest extends TestCase
     }
 
     /**
-     * 의존 계획은 manifest 조회만 쓰고, 진입 파일을 실행하는 상세 조회는 부르지 않는다 (#159).
+     * 의존 계획은 manifest 조회만 쓰고, 진입 파일을 실행하는 상세 조회는 부르지 않는다 (공개 #159).
      *
      * @effects cascade_plan_reads_manifest_only
      *
@@ -189,7 +189,7 @@ class CascadeInstallOrchestratorTest extends TestCase
             $this->fail('활성화 실패가 통과했다');
         } catch (RuntimeException $e) {
             $this->assertStringContainsString('shop', $e->getMessage());
-            // 사유는 사람이 읽는 문장이다 — 원문(not_installed)을 내보내지 않는다(#152 D5)
+            // 사유는 사람이 읽는 문장이다 — 원문(not_installed)을 내보내지 않는다(공개 #152 D5)
             $this->assertStringContainsString('base '.__('extensions.dependency_status.not_installed'), $e->getMessage());
             $this->assertStringNotContainsString('(not_installed)', $e->getMessage());
         }

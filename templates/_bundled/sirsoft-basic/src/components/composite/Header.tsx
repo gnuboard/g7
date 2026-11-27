@@ -520,7 +520,7 @@ const Header: React.FC<HeaderProps> = ({
 
         return (
           <React.Fragment key={key}>
-            {/* 게시판 탭은 최대 20rem 에서 이름을 한 줄 … 로 자른다 — 긴 이름 탭 하나가 줄 전체(768px)를 차지했다(#143). */}
+            {/* 게시판 탭은 최대 20rem 에서 이름을 한 줄 … 로 자른다 — 긴 이름 탭 하나가 줄 전체(768px)를 차지했다(공개 #143). */}
             {list.map((board) => (
               <LinkButton
                 key={board.id}
@@ -690,7 +690,7 @@ const Header: React.FC<HeaderProps> = ({
     closeLangMenu(true);
   };
 
-  // 로케일 코드 → 표시명 (활성 언어팩 native_name 우선, 폴백 사전 — #148: state.get(경로) 는 인자를 받지 않아 언어팩 이름을 못 읽었다)
+  // 로케일 코드 → 표시명 (활성 언어팩 native_name 우선, 폴백 사전 — 공개 #148: state.get(경로) 는 인자를 받지 않아 언어팩 이름을 못 읽었다)
   const getLocaleName = (locale: string): string => getLocaleDisplayName(locale);
 
   return (
@@ -703,7 +703,7 @@ const Header: React.FC<HeaderProps> = ({
         <Div className="flex items-center justify-between h-16">
           {/* 로고 — 이름이 길면 이 칸이 먼저 줄어들고(shrink-1000, 최소 6rem) 최대 20rem 에서 이름이 한 줄 … 로 잘린다.
               검색창은 32rem 을 기준 폭으로 잡고(basis-lg) 줄어드는 몫은 로고·회원 이름이 먼저 진다 — 이름 길이와 무관하게 검색창 폭이
-              같다(#143). 종전에는 검색창이 남는 폭만 받아(flex-1) 이름이 길수록 좁아졌다(1024px 329→192·1280px 512→345 실측). */}
+              같다(공개 #143). 종전에는 검색창이 남는 폭만 받아(flex-1) 이름이 길수록 좁아졌다(1024px 329→192·1280px 512→345 실측). */}
           <LinkButton href="/" onNavigate={() => navigate('/')} className="justify-start flex items-center gap-2 min-w-24 max-w-xs shrink-1000 cursor-pointer">
             {/* 다크 로고가 있으면 어두운 화면에서는 그것만 보인다 — 밝은 화면은 사이트 로고(없으면 이름) */}
             {logo ? (
@@ -870,7 +870,7 @@ const Header: React.FC<HeaderProps> = ({
                     size="sm"
                   />
                   {/* 이름은 한 줄 … (최대 8rem). truncate(nowrap)는 최소 폭이 이름 전체라 묶음이 줄지 못한다 — 줄바꿈을 허용하고(break-all)
-                      한 줄만 보이게(line-clamp-1) 해 최소 폭을 3rem 으로 낮춘다. 이름이 길어도 검색창이 좁아지지 않는다(#143). */}
+                      한 줄만 보이게(line-clamp-1) 해 최소 폭을 3rem 으로 낮춘다. 이름이 길어도 검색창이 좁아지지 않는다(공개 #143). */}
                   <Span
                     className={
                       viewportWidth >= BREAKPOINTS.sm

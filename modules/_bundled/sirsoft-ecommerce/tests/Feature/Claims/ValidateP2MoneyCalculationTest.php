@@ -41,10 +41,10 @@ use ReflectionMethod;
  * 금액 산정 결함 수정 검증 — 회차 차분·기준선·후속 행 단가·정가 합계·치환 라인 (B)
  *
  * 검증 축:
- * - 반품 발 환불신청서의 취소 가능 한도가 완료 경로와 같은 회차 차분이다(#1).
- * - 재계산 기준선은 누적 환불액이 아니라 종결 행의 존재로 다시 구한다(#2).
- * - 교환 후속 행의 회계 단가가 엔진 단가와 같다(#3).
- * - 정가 합계가 교환완료 원 행과 후속 행을 두 번 세지 않는다(#5).
+ * - 반품 발 환불신청서의 취소 가능 한도가 완료 경로와 같은 회차 차분이다.
+ * - 재계산 기준선은 누적 환불액이 아니라 종결 행의 존재로 다시 구한다.
+ * - 교환 후속 행의 회계 단가가 엔진 단가와 같다.
+ * - 정가 합계가 교환완료 원 행과 후속 행을 두 번 세지 않는다.
  * - 치환 라인의 쿠폰 상한 분배 합이 원 상한과 같고, 치환은 그 주문 행의 라인을 고른다(minor).
  * - 환율이 없는 결제 통화의 원값 폴백을 경고로 남긴다(minor).
  * - 환불 상품 행의 단가·소계·환불액이 한 단가로 맞는다(minor).
@@ -199,7 +199,7 @@ class ValidateP2MoneyCalculationTest extends ModuleTestCase
         return $successor;
     }
 
-    // ── #1 반품 2회차 D19 상한 ──
+    // ── 1 반품 2회차 D19 상한 ──
 
     /**
      * 반품 2회차 환불신청서의 취소 가능 한도가 그 회차 몫(완료 경로의 차분)과 같은지 검증합니다.
@@ -245,7 +245,7 @@ class ValidateP2MoneyCalculationTest extends ModuleTestCase
         );
     }
 
-    // ── #2 기준선 판정 ──
+    // ── 2 기준선 판정 ──
 
     /**
      * 환불액 0 원으로 닫힌 행이 있는 주문의 부분취소가 그 행 값을 다시 돌려주지 않는지 검증합니다.
@@ -275,7 +275,7 @@ class ValidateP2MoneyCalculationTest extends ModuleTestCase
         $this->assertEqualsWithDelta(10000.0, $result->getTotalRefundAmount(), 0.01);
     }
 
-    // ── #3 후속 행 회계 단가 ──
+    // ── 3 후속 행 회계 단가 ──
 
     /**
      * 상품가가 바뀐 뒤의 저가 교환 후속 행을 취소하면 신규 단가만큼 돌려주는지 검증합니다.
@@ -306,7 +306,7 @@ class ValidateP2MoneyCalculationTest extends ModuleTestCase
         $this->assertEqualsWithDelta(20000.0, (float) $result->adjustedItems[0]['cancel_amount'], 0.01, '취소 장부와 재계산 단가가 갈렸습니다.');
     }
 
-    // ── #5 정가 합계 이중 집계 ──
+    // ── 5 정가 합계 이중 집계 ──
 
     /**
      * 교환이 끝난 주문의 정가 합계가 원 행과 후속 행을 한 번만 세는지 검증합니다.

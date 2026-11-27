@@ -317,7 +317,7 @@ Route::post('user/orders', [PublicOrderController::class, 'store'])
 // 비회원 주문 조회 인증 API (주문번호+전화번호+비밀번호 → 조회 토큰 발급)
 // POST /api/modules/sirsoft-ecommerce/guest/orders/verify
 // 무차별 대입 방어는 라우트 throttle(분당 20회, IP 기준) + 조회 비밀번호 정책(영문+숫자 8자 이상)이
-// 담당한다. 업계 표준·로그인/IDV 일관성을 고려해 별도 N회 잠금은 두지 않는다(#55 결정).
+// 담당한다. 업계 표준·로그인/IDV 일관성을 고려해 별도 N회 잠금은 두지 않는다(결정).
 // 상한은 **이름 있는 리미터**다(`EcommerceServiceProvider::registerRateLimiters()`). 이름 없는
 // `throttle:20,1` 은 키가 IP 하나라, 같은 IP 에서 나간 다른 이름 없는 throttle 라우트의 요청과
 // 한 카운터를 나눠 쓴다 — 클레임 미리보기 몇 번에 조회 인증이 429 로 막힌다.

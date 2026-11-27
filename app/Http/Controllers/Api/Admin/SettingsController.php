@@ -65,7 +65,7 @@ class SettingsController extends AdminBaseController
      * @param  PrivacyRetentionManager  $privacyRetentionManager  개인정보 보유기간 처리 진입점
      * @param  DormantAccountService  $dormantAccountService  휴면 계정 생명주기 서비스
      * @param  PasswordExpiryService  $passwordExpiryService  비밀번호 만료 정책 서비스
-     * @param  QueueWorkerRegistry  $queueWorkerRegistry  큐 워커 등록·상태 (#139)
+     * @param  QueueWorkerRegistry  $queueWorkerRegistry  큐 워커 등록·상태 (공개 #139)
      * @param  TrustedProxyProbe  $trustedProxyProbe  신뢰 프록시 사전 검사
      * @param  SearchHistoryService  $searchHistoryService  최근 검색어 서비스 (개인정보 탭 범위 메타, 7.1.5)
      */
@@ -96,8 +96,8 @@ class SettingsController extends AdminBaseController
      * - `env_locked`: `.env` 로 잠긴 필드 목록 (프론트엔드 키 기준)
      * - `consent_providers`: 등록된 동의 관리 제공자 `[{id, label}]` (개인정보 탭의 선택 목록, 수집을 꺼 둔 제공자 포함)
      * - `consent_selection`: 지금 선택 상태 `{state, reason, provider_id, provider_label}`
-     * - `queue_connection_options`: 큐 워커로 등록할 수 있는 연결 `[{name, driver}]` (sync·null 제외, #139)
-     * - `csp`: 콘텐츠 보안 정책 섹션 메타 `{override, preview, auto_hosts, style_override, style_preview, style_auto_hosts}` (#158, 스타일 3키는 7.1.6)
+     * - `queue_connection_options`: 큐 워커로 등록할 수 있는 연결 `[{name, driver}]` (sync·null 제외, 공개 #139)
+     * - `csp`: 콘텐츠 보안 정책 섹션 메타 `{override, preview, auto_hosts, style_override, style_preview, style_auto_hosts}` (공개 #158, 스타일 3키는 7.1.6)
      * - `thumbnail_engine_available`: 이 서버에 쓸 수 있는 이미지 처리 엔진이 있는지 (없으면 업로드 탭이 「썸네일 없이 원본」 안내)
      * - `thumbnail_disk_options`: 썸네일 저장 위치 선택지 `{public: [{id, label}], gated: [{id, label}]}` — label 은 로케일 맵
      * - `thumbnail_server_defaults`: 업로드 탭 「고급」 칸(썸네일 서버 보호 값)을 비웠을 때 쓸 값 — `.env` G7_THUMBNAIL_* 가 있으면 그 값,
@@ -158,7 +158,7 @@ class SettingsController extends AdminBaseController
     }
 
     /**
-     * 보안 탭 「콘텐츠 보안 정책」 섹션이 읽는 메타를 만듭니다 (#158).
+     * 보안 탭 「콘텐츠 보안 정책」 섹션이 읽는 메타를 만듭니다 (공개 #158).
      *
      * - `override`: `.env G7_CSP_MODE` 탈출구 값 (없으면 null) — 있으면 화면의 모드 선택을 잠근다
      * - `preview`: 지금 저장값으로 붙을 정책 문자열 (모드가 끔이어도 미리 보여 준다)
@@ -347,7 +347,7 @@ class SettingsController extends AdminBaseController
     }
 
     /**
-     * 신뢰 프록시(리버스 프록시) 설정 진단 결과를 조회합니다 (#124).
+     * 신뢰 프록시(리버스 프록시) 설정 진단 결과를 조회합니다 (공개 #124).
      *
      * 이 엔드포인트는 진단만 돌려준다. 값은 환경설정 > 고급의 신뢰 프록시 카드에서
      * 저장하고(`debug.trusted_proxies`), 저장 전 확인은 {@see testTrustedProxy()} 가 맡는다.
@@ -519,7 +519,7 @@ class SettingsController extends AdminBaseController
     }
 
     /**
-     * 큐 워커 상태(연결·큐별 대기 건수·마지막 워커 신호·경고)를 조회합니다 (#139).
+     * 큐 워커 상태(연결·큐별 대기 건수·마지막 워커 신호·경고)를 조회합니다 (공개 #139).
      *
      * 드라이버 탭 「큐 워커」 구역이 쓴다. 읽기 전용이며 입력이 없어 FormRequest 를 두지 않는다
      * (`staticCacheStatus` 와 동형). 판정은 등록 목록으로 하고 하트비트는 표시만 한다.
@@ -664,7 +664,7 @@ class SettingsController extends AdminBaseController
                 'backup_path' => $backupPath,
             ]);
         } catch (PhpExtensionUnavailableException $e) {
-            // 선택 확장(zip) 부재는 서버 장애가 아니라 환경 조건이다 — 원인을 알리는 422 (#151)
+            // 선택 확장(zip) 부재는 서버 장애가 아니라 환경 조건이다 — 원인을 알리는 422 (공개 #151)
             return $this->error($e->messageKey, 422, null, ['extension' => $e->extension]);
         } catch (\Exception $e) {
             return $this->error('settings.backup_failed', 500, $e->getMessage());

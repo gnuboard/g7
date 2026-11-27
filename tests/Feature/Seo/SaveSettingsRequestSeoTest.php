@@ -290,7 +290,7 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * 사이트맵 생성 주기·시각은 더 이상 SEO 설정 키가 아니다 — 스케줄 관리의 `sitemap-generate` 행이 정한다
-     * (#17 D10). 보내도 검증하지 않고(형식이 틀려도 422 아님) 저장하지도 않는다.
+     * (D10). 보내도 검증하지 않고(형식이 틀려도 422 아님) 저장하지도 않는다.
      *
      * @scenario tab=seo
      *

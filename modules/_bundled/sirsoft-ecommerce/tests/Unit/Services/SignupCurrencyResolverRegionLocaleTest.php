@@ -8,7 +8,7 @@ use Modules\Sirsoft\Ecommerce\Services\SignupCurrencyResolver;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 가입 통화 리졸버 — 지역·세 글자 언어 코드 매칭 (#148)
+ * 가입 통화 리졸버 — 지역·세 글자 언어 코드 매칭 (공개 #148)
  *
  * 통화 사용 언어에 지역이 붙어 있으면(zh-TW) 정확일치가 먼저이고, 정확일치가 없으면
  * 주 언어가 같은 통화 언어(fil → fil-PH)로 고른다. 종전에는 화면 언어를 두 글자로 잘라 매칭이 실패했다.

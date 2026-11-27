@@ -1,5 +1,5 @@
 /**
- * localeTag — 화면 쪽 언어 코드(BCP 47)·다국어 값 대체 순서 (engine-v1.81.0, #148)
+ * localeTag — 화면 쪽 언어 코드(BCP 47)·다국어 값 대체 순서 (engine-v1.81.0, 공개 #148)
  *
  * 백엔드 짝 `tests/Unit/Support/LocaleTagTest.php`·`LocalizedValueTest.php` 와 같은 표를 쓴다 —
  * 서버 렌더(SEO)와 SPA 화면의 글자가 갈리지 않도록.

@@ -1,5 +1,5 @@
 /**
- * editorRuntimeStyles.ts — 편집기 전용 동적 CSS 규칙 (#163)
+ * editorRuntimeStyles.ts — 편집기 전용 동적 CSS 규칙 (공개 #163)
  *
  * 편집기 코어는 별도 CSS 파일을 두지 않는다. 인라인 style 로 표현할 수 없는 규칙(@keyframes,
  * 의사 요소, 자손 선택자)은 번들 안 상수로 두고 `RuntimeStyleSheet` 로 문서에 붙인다 —

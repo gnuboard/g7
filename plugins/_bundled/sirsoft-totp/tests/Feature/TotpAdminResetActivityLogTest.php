@@ -151,7 +151,7 @@ class TotpAdminResetActivityLogTest extends PluginTestCase
     /**
      * 서버 셸의 `totp:reset` 강제 해제도 같은 감사 로그를 남기는지 확인합니다.
      *
-     * 훅을 컨트롤러에서만 발화해 CLI 로 풀면 아무 기록도 남지 않았다(#138 후속 전수 점검 6번).
+     * 훅을 컨트롤러에서만 발화해 CLI 로 풀면 아무 기록도 남지 않았다(공개 #138 후속 전수 점검 6번).
      * CLI 는 요청 사용자·IP 가 없으므로 행위자·IP 는 비어 있고, 진입점이 CLI 로 표시된다.
      *
      * @effects cli_forced_reset_is_written_to_the_activity_log

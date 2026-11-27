@@ -1,5 +1,5 @@
 /**
- * getLocaleDisplayName — 사용자 헤더 언어 메뉴의 언어 이름 (#148)
+ * getLocaleDisplayName — 사용자 헤더 언어 메뉴의 언어 이름 (공개 #148)
  *
  * @vitest-environment jsdom
  */

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * schedules.description 을 다국어 JSON 으로 바꿉니다 (#17, 7.2.0).
+ * schedules.description 을 다국어 JSON 으로 바꿉니다 (17, 7.2.0).
  *
  * 평문 설명은 {app.locale: 원문} 으로 감싼 뒤 컬럼을 json 으로 변경한다.
  * 행 변환과 컬럼 변경 사이에 중단돼도 재실행에 안전하다 — 이미 JSON 객체로 해석되는 값은 건너뛴다.

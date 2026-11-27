@@ -11,11 +11,11 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 템플릿을 불러오지 않은 프로세스(콘솔)에서도 템플릿 역의존성을 판정하는지 검증합니다 (#145 F4, D4).
+ * 템플릿을 불러오지 않은 프로세스(콘솔)에서도 템플릿 역의존성을 판정하는지 검증합니다 (공개 #145 F4, D4).
  *
  * 콘솔 부팅은 성능을 위해 템플릿 로딩을 건너뛴다. 그래서 `TemplateManager::getTemplate()` 이 null 을 돌려
  * 역의존성 조회가 빈 결과가 되고, 크론·큐 워커 같은 콘솔 프로세스가 템플릿이 쓰는 모듈을 그대로 자동 비활성화했다
- * (게시판·페이지 모듈이 꺼지고 사용자 홈 503 — #145 패턴). 조회 전에 `ensureLoaded()` 로 템플릿을 불러온다.
+ * (게시판·페이지 모듈이 꺼지고 사용자 홈 503 — 공개 #145 패턴). 조회 전에 `ensureLoaded()` 로 템플릿을 불러온다.
  */
 class TemplateDependencyConsoleTest extends TestCase
 {

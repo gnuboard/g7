@@ -883,7 +883,7 @@ class InstallerStepwiseRunnerTest extends TestCase
      *
      * 실패를 completed 로 기록하지 않으면 다음 요청이 같은 태스크를 다시 뽑아 무한 루프가 된다 —
      * config_cache 는 목록 최후미라 completed 가 영영 나오지 않아 finalize 가 수행되지 않는다
-     * (감사 2차 #1). 실패는 best_effort_failed_tasks 에 따로 남겨 화면이 "경고" 로 보여 주고
+     * (감사 2차 1). 실패는 best_effort_failed_tasks 에 따로 남겨 화면이 "경고" 로 보여 주고
      * 재시도 때 다시 시도할 수 있게 한다.
      *
      * @scenario installation_mode=stepwise, task=config_cache, task_outcome=best_effort_failed
@@ -920,7 +920,7 @@ class InstallerStepwiseRunnerTest extends TestCase
 
     /**
      * 태스크 도중 워커 lock 을 잃으면 빈 응답(exit)이 아니라 예외로 올라온다 — run-task.php 가
-     * busy 로 응답해 브라우저가 재시도하게 한다. 일반 실패(failed)로 뭉개지면 안 된다 (감사 2차 #8).
+     * busy 로 응답해 브라우저가 재시도하게 한다. 일반 실패(failed)로 뭉개지면 안 된다 (감사 2차 8).
      *
      * @scenario installation_mode=stepwise, resume_point=first_pending
      *
@@ -1046,7 +1046,7 @@ class InstallerStepwiseRunnerTest extends TestCase
     /**
      * 예외로 죽은 태스크의 error 이벤트도 실패 경로(handleInstallationTaskFailure)와 같은
      * 표시 정보를 실어야 한다 — 싣지 않으면 SSE·stepwise 는 [건너뛰고 계속] 과 수동 복구
-     * 안내가 없고, 새로고침하면 그제야 나타난다 (§16.11.3 #13 이 state 만 고친 잔여 축).
+     * 안내가 없고, 새로고침하면 그제야 나타난다 (§16.11.3 13 이 state 만 고친 잔여 축).
      *
      * @scenario task=module, task_outcome=failed_extension, skip_request=skippable
      *
@@ -1200,7 +1200,7 @@ class InstallerStepwiseRunnerTest extends TestCase
 
                 // 「키가 창 안에 있다」가 아니라 「그 값이 비어 있지 않다」를 본다.
                 // `'message_params' => []` 는 종전 판정을 통과하면서 화면에는 자리표시자를
-                // 그대로 내보낸다 — 7차 #1·8차 #16 이 닫은 결함군의 재현 통로다.
+                // 그대로 내보낸다 — 7차 1·8차 16 이 닫은 결함군의 재현 통로다.
                 $this->assertMatchesRegularExpression(
                     "/'message_params'\s*=>\s*(?!\[\s*\])\S/",
                     substr($source, $start, max(1, $end - $start)),

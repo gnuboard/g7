@@ -76,7 +76,7 @@ interface RoleRepositoryInterface
     public function getUsersByIdentifiers(array $identifiers): Collection;
 
     /**
-     * 여러 역할 식별자에 속한 사용자의 id 만 오름차순으로 조회합니다. (중복 제거, #139)
+     * 여러 역할 식별자에 속한 사용자의 id 만 오름차순으로 조회합니다. (중복 제거, 공개 #139)
      *
      * 알림 대량 발송이 수신자를 묶음으로 나눌 때 쓴다 — 전 회원 역할이면 모델·권한을 한꺼번에 메모리에
      * 올리지 않도록 id 만 뽑는다. 모델은 묶음마다 UserRepository::findNotifiablesByIds() 로 다시 싣는다.

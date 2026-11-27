@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
- * SeoToggleEvaluator 단위 테스트 (#155)
+ * SeoToggleEvaluator 단위 테스트 (공개 #155)
  *
  * 레이아웃 `meta.seo.toggle_setting` 판정은 봇 화면(SeoRenderer)과 사이트맵 정적 화면(SitemapGenerator)이
  * 같은 답을 내야 한다. SeoRenderer 의 private 판정을 공용 클래스로 옮기면서 동작이 바뀌지 않았는지 잠근다.
@@ -48,7 +48,7 @@ class SeoToggleEvaluatorTest extends TestCase
     /**
      * `$module_settings:key` 는 라우트의 모듈 식별자로 설정을 읽는다 (암묵 ID).
      *
-     * #154 의 「식별자만 있으면 정상」 판정을 이 케이스가 잠근다.
+     * 공개 #154 의 「식별자만 있으면 정상」 판정을 이 케이스가 잠근다.
      *
      * @scenario toggle=module_implicit
      *

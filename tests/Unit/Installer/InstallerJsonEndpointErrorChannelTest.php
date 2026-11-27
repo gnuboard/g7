@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 인스톨러 API 진입점의 오류 출력 채널 가드 (20차 #8·#9·#13)
+ * 인스톨러 API 진입점의 오류 출력 채널 가드 (20차 8· 9· 13)
  *
  * 인스톨러 API 는 전부 구조화 응답(JSON/SSE)을 돌려주고 클라이언트가 파싱한다.
  * `display_errors=On` 호스트(XAMPP 기본, php.ini-development 기본)에서는 warning 한 줄이
@@ -17,7 +17,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 모집단은 `public/install/api/*.php` 디렉토리 스캔으로 도출한다 — 수기 목록은 그 자체가
  * 사각이다(§16.25.10 규약 ②). 새 엔드포인트가 추가되면 이 게이트가 자동으로 요구한다.
  *
- * 같은 축의 open_basedir 절반(#8·#9): `detect-php` 는 문서루트 **밖** 후보 8경로를,
+ * 같은 축의 open_basedir 절반(8· 9): `detect-php` 는 문서루트 **밖** 후보 8경로를,
  * `check-core-pending-path` 는 운영자 임의 절대경로를 stat 한다. open_basedir 환경에서
  * 그 stat 은 warning 을 내므로(반환은 false — 판정은 그대로 옳다) 진단 억제가 필요하다.
  * `file_exists`/`is_dir` 는 차단 함수 축(hosting-blocked-function)이 아니라 **경고 채널**
@@ -39,7 +39,7 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
 
     /**
      * 주석을 걷어낸 소스 — 주석 처리된 배선이 「살아 있는 배선」으로 오인되면 게이트가
-     * 주석 한 줄로 꺼진다 (19차 #4 가 실측한 위장 형태). 토크나이저가 지우므로 코드 뒤
+     * 주석 한 줄로 꺼진다 (19차 4 가 실측한 위장 형태). 토크나이저가 지우므로 코드 뒤
      * 꼬리 주석도 걷히고 문자열 안 `//`(URL)는 보존된다 — 종전의 정규식(줄 시작 `//` 만)은
      * 꼬리 주석 속 배선을 남겼다.
      *
@@ -172,7 +172,7 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
     }
 
     /**
-     * #13: 모든 API 진입점이 display_errors 를 가드된 형태로 끄고 error_reporting 을 유지한다.
+     * 13: 모든 API 진입점이 display_errors 를 가드된 형태로 끄고 error_reporting 을 유지한다.
      *
      * @scenario error_channel_surface=display_errors_guard
      *
@@ -288,7 +288,7 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
     }
 
     /**
-     * #8: detect-php 의 문서루트 밖 후보 stat 은 진단을 억제한다 (open_basedir warning → 본문 오염 차단).
+     * 8: detect-php 의 문서루트 밖 후보 stat 은 진단을 억제한다 (open_basedir warning → 본문 오염 차단).
      *
      * @scenario error_channel_surface=stat_diagnostics
      *
@@ -306,12 +306,12 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
         $this->assertMatchesRegularExpression(
             '/if \(! @file_exists\(\$path\)\)/',
             $source,
-            'detect-php 공통 경로 스캔의 file_exists 는 @ 로 진단을 억제해야 한다 (#8)'
+            'detect-php 공통 경로 스캔의 file_exists 는 @ 로 진단을 억제해야 한다'
         );
     }
 
     /**
-     * #9: check-core-pending-path 의 후속 stat(is_dir·is_writable)도 진단을 억제한다.
+     * 9: check-core-pending-path 의 후속 stat(is_dir·is_writable)도 진단을 억제한다.
      *
      * @scenario error_channel_surface=stat_diagnostics
      *
@@ -324,7 +324,7 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
         // check-core-pending-path 본문도 공유 파일(includes/requirements.php)로 옮겨졌다.
         $source = $this->sharedRequirementsSource();
 
-        $this->assertStringContainsString('! @is_dir($resolved)', $source, 'is_dir 진단 억제 부재 (#9)');
-        $this->assertStringContainsString('@is_writable($resolved)', $source, 'is_writable 진단 억제 부재 (#9)');
+        $this->assertStringContainsString('! @is_dir($resolved)', $source, 'is_dir 진단 억제 부재');
+        $this->assertStringContainsString('@is_writable($resolved)', $source, 'is_writable 진단 억제 부재');
     }
 }

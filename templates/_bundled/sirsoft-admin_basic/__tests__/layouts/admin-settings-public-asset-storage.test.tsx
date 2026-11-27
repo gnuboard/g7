@@ -2,7 +2,7 @@
  * 드라이버 탭 — 공개 자산 스토리지 카드 테스트 (공개#100)
  *
  * @description
- * 신규 "공개 자산 스토리지" 카드는 storage 카드(#99 작업 구역)의 **형제**로 존재해야
+ * 신규 "공개 자산 스토리지" 카드는 storage 카드(공개 #99 작업 구역)의 **형제**로 존재해야
  * 하며, Select 는 저장 키(drivers.public_asset_disk)와 서버 카탈로그
  * (available_drivers.public_asset)를 정확히 바인딩해야 한다. 화면 옵션이 카탈로그를
  * 벗어나면 저장 단계(레지스트리 조회 closure rule)에서 422 가 된다.
@@ -166,7 +166,7 @@ function makeUtils(selectedDisk: string) {
 }
 
 describe('드라이버 탭 공개 자산 스토리지 카드 — 계약', () => {
-    it('storage 카드의 형제로 카드가 존재한다 (#99 s3 블록 비접촉)', () => {
+    it('storage 카드의 형제로 카드가 존재한다 (공개 #99 s3 블록 비접촉)', () => {
         const ids = (tabDrivers as any).children.map((c: any) => c.id);
 
         expect(ids).toContain('card_storage_settings');

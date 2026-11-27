@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Services\SequenceService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * SequenceService 의 날짜 기준 테스트 (#160 D3)
+ * SequenceService 의 날짜 기준 테스트 (공개 #160 D3)
  *
  * 주문·클레임 번호의 날짜·시각 부분과 일일 순번 리셋은 사이트 시간대의 날짜를 쓴다.
  */

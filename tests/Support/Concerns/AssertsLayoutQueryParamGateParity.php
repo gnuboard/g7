@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use ReflectionClass;
 
 /**
- * 화면 조회 조건 ↔ 서버 게이트 키 회귀 가드 (#17).
+ * 화면 조회 조건 ↔ 서버 게이트 키 회귀 가드.
  *
  * 목록 화면의 검색·필터는 세 단계를 거쳐 서버에 닿는다.
  *

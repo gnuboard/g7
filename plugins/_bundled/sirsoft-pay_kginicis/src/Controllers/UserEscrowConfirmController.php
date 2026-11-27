@@ -140,7 +140,7 @@ class UserEscrowConfirmController extends Controller
             ]);
         }
 
-        // 팝업 닫기 + 부모 창 새로고침 — 정적 브리지 파일(인라인 <script> 는 strict CSP 에서 실행되지 않는다, #158)
+        // 팝업 닫기 + 부모 창 새로고침 — 정적 브리지 파일(인라인 <script> 는 strict CSP 에서 실행되지 않는다, 공개 #158)
         return $this->htmlResponse(BridgeScript::tag('escrow-confirm.js', ['data-mode' => 'pc-return']));
     }
 
@@ -246,7 +246,7 @@ class UserEscrowConfirmController extends Controller
         $lang = e(app()->getLocale());
         $title = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_page_title'));
         $preparing = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_preparing'));
-        // 문서가 다 뜨면 구매결정 창을 띄운다 — 이니시스 스크립트 다음에 싣는다(#158 strict CSP)
+        // 문서가 다 뜨면 구매결정 창을 띄운다 — 이니시스 스크립트 다음에 싣는다(공개 #158 strict CSP)
         $bridgeScript = BridgeScript::tag('escrow-confirm.js', ['data-mode' => 'pc-open', 'data-form' => 'escrow_confirm_form']);
         // 안내 문구 배치는 같은 출처 CSS 파일로 건다 — 스타일 보안 정책이 인라인 `<style>` 을 막는다
         $stylesheet = BridgeScript::stylesheetTag('escrow-confirm.css');
@@ -298,7 +298,7 @@ class UserEscrowConfirmController extends Controller
         $lang = e(app()->getLocale());
         $title = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_page_title'));
         $redirecting = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_redirecting'));
-        // 폼 자동 제출 — 정적 브리지 파일(인라인 <script> 는 strict CSP 에서 실행되지 않는다, #158)
+        // 폼 자동 제출 — 정적 브리지 파일(인라인 <script> 는 strict CSP 에서 실행되지 않는다, 공개 #158)
         $bridgeScript = BridgeScript::tag('escrow-confirm.js', ['data-mode' => 'mobile-submit', 'data-form' => 'mobile_confirm_form']);
         // 안내 문구 배치는 같은 출처 CSS 파일로 건다 — 스타일 보안 정책이 인라인 `<style>` 을 막는다
         $stylesheet = BridgeScript::stylesheetTag('escrow-confirm.css');

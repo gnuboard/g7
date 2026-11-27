@@ -70,10 +70,10 @@ class CouponSeeder extends Seeder
 
         $couponsData = [
             // ============================================================
-            // 그룹 1: 상품금액 할인 쿠폰 (20개, #1~#20)
+            // 그룹 1: 상품금액 할인 쿠폰 (20개, 1~ 20)
             // ============================================================
 
-            // #1 - 정액 1,000원 할인 (수동, 직접발급, 전체상품)
+            // 1 - 정액 1,000원 할인 (수동, 직접발급, 전체상품)
             [
                 'name' => ['ko' => '상품 1,000원 할인 쿠폰', 'en' => 'Product 1,000 KRW Off'],
                 'description' => ['ko' => '전 상품 1,000원 할인', 'en' => '1,000 KRW off on all products'],
@@ -98,7 +98,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #2 - 정액 3,000원 할인 (수동, 다운로드, 전체상품)
+            // 2 - 정액 3,000원 할인 (수동, 다운로드, 전체상품)
             [
                 'name' => ['ko' => '상품 3,000원 할인 쿠폰', 'en' => 'Product 3,000 KRW Off'],
                 'description' => ['ko' => '3,000원 할인 다운로드 쿠폰', 'en' => '3,000 KRW off download coupon'],
@@ -123,7 +123,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #3 - 정액 5,000원 할인 (회원가입, 자동발급, 전체상품)
+            // 3 - 정액 5,000원 할인 (회원가입, 자동발급, 전체상품)
             [
                 'name' => ['ko' => '신규회원 가입축하 5,000원 할인', 'en' => 'Welcome 5,000 KRW Off'],
                 'description' => ['ko' => '회원가입 시 자동 발급', 'en' => 'Auto-issued on signup'],
@@ -148,7 +148,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #4 - 정액 10,000원 할인 (수동, 직접발급, 특정상품) - 중복할인불가
+            // 4 - 정액 10,000원 할인 (수동, 직접발급, 특정상품) - 중복할인불가
             [
                 'name' => ['ko' => '특가 상품 10,000원 할인 (중복할인불가)', 'en' => 'Special Product 10,000 KRW Off (Non-combinable)'],
                 'description' => ['ko' => '특정 상품 한정 할인 (다른 쿠폰과 중복 사용 불가)', 'en' => 'Discount on selected products only (Cannot combine with other coupons)'],
@@ -173,7 +173,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'products',
             ],
 
-            // #5 - 정액 15,000원 할인 (수동, 다운로드, 특정카테고리)
+            // 5 - 정액 15,000원 할인 (수동, 다운로드, 특정카테고리)
             [
                 'name' => ['ko' => '카테고리 한정 15,000원 할인', 'en' => 'Category 15,000 KRW Off'],
                 'description' => ['ko' => '특정 카테고리 상품 할인', 'en' => 'Discount on selected categories'],
@@ -198,7 +198,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'categories',
             ],
 
-            // #6 - 정액 20,000원 할인 (첫구매, 자동발급, 전체상품)
+            // 6 - 정액 20,000원 할인 (첫구매, 자동발급, 전체상품)
             [
                 'name' => ['ko' => '첫구매 20,000원 할인', 'en' => 'First Purchase 20,000 KRW Off'],
                 'description' => ['ko' => '첫 구매 시 자동 발급', 'en' => 'Auto-issued on first purchase'],
@@ -223,7 +223,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #7 - 정액 50,000원 할인 (수동, 직접발급, 특정상품, 발급중단)
+            // 7 - 정액 50,000원 할인 (수동, 직접발급, 특정상품, 발급중단)
             [
                 'name' => ['ko' => 'VIP 전용 50,000원 할인', 'en' => 'VIP Exclusive 50,000 KRW Off'],
                 'description' => ['ko' => 'VIP 회원 전용 대폭 할인', 'en' => 'Exclusive discount for VIP members'],
@@ -248,7 +248,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'products',
             ],
 
-            // #8 - 정률 5% 할인 (수동, 직접발급, 전체상품)
+            // 8 - 정률 5% 할인 (수동, 직접발급, 전체상품)
             [
                 'name' => ['ko' => '상품 5% 할인 쿠폰', 'en' => 'Product 5% Off'],
                 'description' => ['ko' => '전 상품 5% 할인', 'en' => '5% off on all products'],
@@ -273,7 +273,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #9 - 정률 10% 할인 (수동, 다운로드, 전체상품)
+            // 9 - 정률 10% 할인 (수동, 다운로드, 전체상품)
             [
                 'name' => ['ko' => '상품 10% 할인 쿠폰', 'en' => 'Product 10% Off'],
                 'description' => ['ko' => '전 상품 10% 할인', 'en' => '10% off on all products'],
@@ -298,7 +298,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #10 - 정률 15% 할인 (회원가입, 자동발급, 전체상품)
+            // 10 - 정률 15% 할인 (회원가입, 자동발급, 전체상품)
             [
                 'name' => ['ko' => '신규회원 15% 할인', 'en' => 'New Member 15% Off'],
                 'description' => ['ko' => '회원가입 축하 15% 할인', 'en' => '15% off welcome coupon'],
@@ -323,7 +323,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #11 - 정률 20% 할인 (수동, 직접발급, 특정카테고리)
+            // 11 - 정률 20% 할인 (수동, 직접발급, 특정카테고리)
             [
                 'name' => ['ko' => '여름 시즌 20% 할인', 'en' => 'Summer Season 20% Off'],
                 'description' => ['ko' => '여름 시즌 한정 카테고리 할인', 'en' => 'Summer season category discount'],
@@ -348,7 +348,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'categories',
             ],
 
-            // #12 - 정률 25% 할인 (생일, 자동발급, 전체상품)
+            // 12 - 정률 25% 할인 (생일, 자동발급, 전체상품)
             [
                 'name' => ['ko' => '생일축하 25% 할인', 'en' => 'Birthday 25% Off'],
                 'description' => ['ko' => '생일 축하 특별 할인', 'en' => 'Special birthday discount'],
@@ -373,7 +373,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #13 - 정률 30% 할인 (수동, 다운로드, 특정상품, 발급중단)
+            // 13 - 정률 30% 할인 (수동, 다운로드, 특정상품, 발급중단)
             [
                 'name' => ['ko' => '초특가 30% 할인', 'en' => 'Super Sale 30% Off'],
                 'description' => ['ko' => '특정 상품 한정 30% 할인 (종료)', 'en' => '30% off on selected products (ended)'],
@@ -398,7 +398,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'products',
             ],
 
-            // #14 - 정액 2,000원 할인 (수동, 직접발급, 전체상품)
+            // 14 - 정액 2,000원 할인 (수동, 직접발급, 전체상품)
             [
                 'name' => ['ko' => '주간 한정 2,000원 할인', 'en' => 'Weekly 2,000 KRW Off'],
                 'description' => ['ko' => '매주 선착순 할인', 'en' => 'Weekly first-come discount'],
@@ -423,7 +423,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #15 - 정액 7,000원 할인 (수동, 다운로드, 전체상품, 중복가능)
+            // 15 - 정액 7,000원 할인 (수동, 다운로드, 전체상품, 중복가능)
             [
                 'name' => ['ko' => '앱 전용 7,000원 할인', 'en' => 'App Exclusive 7,000 KRW Off'],
                 'description' => ['ko' => '앱에서만 다운로드 가능', 'en' => 'Download only via app'],
@@ -448,7 +448,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #16 - 정률 3% 할인 (수동, 직접발급, 특정상품)
+            // 16 - 정률 3% 할인 (수동, 직접발급, 특정상품)
             [
                 'name' => ['ko' => '인기상품 3% 할인', 'en' => 'Popular Product 3% Off'],
                 'description' => ['ko' => '인기 상품 한정 소폭 할인', 'en' => 'Small discount on popular products'],
@@ -473,7 +473,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'products',
             ],
 
-            // #17 - 정률 7% 할인 (첫구매, 자동발급, 전체상품)
+            // 17 - 정률 7% 할인 (첫구매, 자동발급, 전체상품)
             [
                 'name' => ['ko' => '첫구매 7% 할인', 'en' => 'First Purchase 7% Off'],
                 'description' => ['ko' => '첫 구매 회원 전용', 'en' => 'For first-time buyers only'],
@@ -498,7 +498,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #18 - 정액 30,000원 할인 (수동, 직접발급, 특정카테고리) - 중복할인불가
+            // 18 - 정액 30,000원 할인 (수동, 직접발급, 특정카테고리) - 중복할인불가
             [
                 'name' => ['ko' => '프리미엄 카테고리 30,000원 할인 (중복할인불가)', 'en' => 'Premium Category 30,000 KRW Off (Non-combinable)'],
                 'description' => ['ko' => '프리미엄 카테고리 한정 (다른 쿠폰과 중복 사용 불가)', 'en' => 'Premium category only (Cannot combine with other coupons)'],
@@ -523,7 +523,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'categories',
             ],
 
-            // #19 - 정률 12% 할인 (생일, 자동발급, 전체상품)
+            // 19 - 정률 12% 할인 (생일, 자동발급, 전체상품)
             [
                 'name' => ['ko' => '생일 특별 12% 할인', 'en' => 'Birthday Special 12% Off'],
                 'description' => ['ko' => '생일 회원 전용', 'en' => 'Birthday members only'],
@@ -548,7 +548,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #20 - 정액 5,000원 할인 (수동, 다운로드, 특정상품, 발급중단)
+            // 20 - 정액 5,000원 할인 (수동, 다운로드, 특정상품, 발급중단)
             [
                 'name' => ['ko' => '이벤트 종료 5,000원 할인', 'en' => 'Event Ended 5,000 KRW Off'],
                 'description' => ['ko' => '이벤트 종료 쿠폰', 'en' => 'Event ended coupon'],
@@ -574,10 +574,10 @@ class CouponSeeder extends Seeder
             ],
 
             // ============================================================
-            // 그룹 2: 주문금액 할인 쿠폰 (20개, #21~#40)
+            // 그룹 2: 주문금액 할인 쿠폰 (20개, 21~ 40)
             // ============================================================
 
-            // #21 - 정액 2,000원 (수동, 직접발급, 전체)
+            // 21 - 정액 2,000원 (수동, 직접발급, 전체)
             [
                 'name' => ['ko' => '주문 2,000원 할인', 'en' => 'Order 2,000 KRW Off'],
                 'description' => ['ko' => '주문금액 기준 2,000원 할인', 'en' => '2,000 KRW off on order amount'],
@@ -602,7 +602,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #22 - 정액 5,000원 (수동, 다운로드, 전체)
+            // 22 - 정액 5,000원 (수동, 다운로드, 전체)
             [
                 'name' => ['ko' => '주문 5,000원 할인', 'en' => 'Order 5,000 KRW Off'],
                 'description' => ['ko' => '5만원 이상 주문 시', 'en' => 'On orders over 50,000 KRW'],
@@ -627,7 +627,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #23 - 정액 10,000원 (회원가입, 자동, 전체)
+            // 23 - 정액 10,000원 (회원가입, 자동, 전체)
             [
                 'name' => ['ko' => '가입축하 주문 10,000원 할인', 'en' => 'Welcome Order 10,000 KRW Off'],
                 'description' => ['ko' => '신규 회원 주문금액 할인', 'en' => 'New member order discount'],
@@ -652,7 +652,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #24 - 정액 15,000원 (첫구매, 자동, 전체)
+            // 24 - 정액 15,000원 (첫구매, 자동, 전체)
             [
                 'name' => ['ko' => '첫주문 15,000원 할인', 'en' => 'First Order 15,000 KRW Off'],
                 'description' => ['ko' => '첫 주문 시 15,000원 할인', 'en' => '15,000 KRW off on first order'],
@@ -677,7 +677,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #25 - 정액 3,000원 (생일, 자동, 전체, 중복가능)
+            // 25 - 정액 3,000원 (생일, 자동, 전체, 중복가능)
             [
                 'name' => ['ko' => '생일축하 주문 3,000원 할인', 'en' => 'Birthday Order 3,000 KRW Off'],
                 'description' => ['ko' => '생일 축하 주문 할인', 'en' => 'Birthday order discount'],
@@ -702,7 +702,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #26 - 정률 5% (수동, 직접발급, 전체)
+            // 26 - 정률 5% (수동, 직접발급, 전체)
             [
                 'name' => ['ko' => '주문금액 5% 할인', 'en' => 'Order 5% Off'],
                 'description' => ['ko' => '주문금액 5% 할인', 'en' => '5% off on order amount'],
@@ -727,7 +727,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #27 - 정률 10% (수동, 다운로드, 특정상품)
+            // 27 - 정률 10% (수동, 다운로드, 특정상품)
             [
                 'name' => ['ko' => '인기상품 주문 10% 할인', 'en' => 'Popular Product Order 10% Off'],
                 'description' => ['ko' => '인기 상품 주문 시 10% 할인', 'en' => '10% off on popular product orders'],
@@ -752,7 +752,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'products',
             ],
 
-            // #28 - 정률 15% (수동, 직접발급, 특정카테고리, 중복가능)
+            // 28 - 정률 15% (수동, 직접발급, 특정카테고리, 중복가능)
             [
                 'name' => ['ko' => '카테고리 주문 15% 할인', 'en' => 'Category Order 15% Off'],
                 'description' => ['ko' => '특정 카테고리 주문 15% 할인', 'en' => '15% off on category orders'],
@@ -777,7 +777,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'categories',
             ],
 
-            // #29 - 정률 20% (수동, 다운로드, 전체)
+            // 29 - 정률 20% (수동, 다운로드, 전체)
             [
                 'name' => ['ko' => '봄맞이 주문 20% 할인', 'en' => 'Spring Order 20% Off'],
                 'description' => ['ko' => '봄 시즌 주문 할인', 'en' => 'Spring season order discount'],
@@ -802,7 +802,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #30 - 정률 8% (회원가입, 자동, 전체)
+            // 30 - 정률 8% (회원가입, 자동, 전체)
             [
                 'name' => ['ko' => '가입축하 주문 8% 할인', 'en' => 'Welcome Order 8% Off'],
                 'description' => ['ko' => '회원가입 축하 주문금액 할인', 'en' => 'Welcome order discount'],
@@ -827,7 +827,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #31 - 정액 20,000원 (수동, 직접발급, 전체, 발급중단)
+            // 31 - 정액 20,000원 (수동, 직접발급, 전체, 발급중단)
             [
                 'name' => ['ko' => '연말 특별 20,000원 할인 (종료)', 'en' => 'Year-end 20,000 KRW Off (Ended)'],
                 'description' => ['ko' => '연말 이벤트 종료', 'en' => 'Year-end event ended'],
@@ -852,7 +852,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #32 - 정률 25% (첫구매, 자동, 전체) - 중복할인불가
+            // 32 - 정률 25% (첫구매, 자동, 전체) - 중복할인불가
             [
                 'name' => ['ko' => '첫주문 25% 할인 (중복할인불가)', 'en' => 'First Order 25% Off (Non-combinable)'],
                 'description' => ['ko' => '첫 주문 고객 특별 25% 할인 (다른 쿠폰과 중복 사용 불가)', 'en' => 'Special 25% off for first order (Cannot combine with other coupons)'],
@@ -877,7 +877,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #33 - 정액 8,000원 (수동, 다운로드, 특정카테고리)
+            // 33 - 정액 8,000원 (수동, 다운로드, 특정카테고리)
             [
                 'name' => ['ko' => '카테고리 주문 8,000원 할인', 'en' => 'Category Order 8,000 KRW Off'],
                 'description' => ['ko' => '특정 카테고리 주문 시 할인', 'en' => 'Discount on category orders'],
@@ -902,7 +902,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'categories',
             ],
 
-            // #34 - 정률 12% (생일, 자동, 전체, 중복가능)
+            // 34 - 정률 12% (생일, 자동, 전체, 중복가능)
             [
                 'name' => ['ko' => '생일 주문 12% 할인', 'en' => 'Birthday Order 12% Off'],
                 'description' => ['ko' => '생일 축하 주문 12% 할인', 'en' => 'Birthday order 12% discount'],
@@ -927,7 +927,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #35 - 정액 1,000원 (수동, 직접발급, 전체, 무제한)
+            // 35 - 정액 1,000원 (수동, 직접발급, 전체, 무제한)
             [
                 'name' => ['ko' => '소액 주문 1,000원 할인', 'en' => 'Small Order 1,000 KRW Off'],
                 'description' => ['ko' => '소액 주문 할인', 'en' => 'Small order discount'],
@@ -952,7 +952,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #36 - 정률 30% (수동, 직접발급, 특정상품, 발급중단)
+            // 36 - 정률 30% (수동, 직접발급, 특정상품, 발급중단)
             [
                 'name' => ['ko' => '블프 주문 30% 할인 (종료)', 'en' => 'Black Friday Order 30% Off (Ended)'],
                 'description' => ['ko' => '블랙프라이데이 이벤트 종료', 'en' => 'Black Friday event ended'],
@@ -977,7 +977,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'products',
             ],
 
-            // #37 - 정액 12,000원 (수동, 다운로드, 전체)
+            // 37 - 정액 12,000원 (수동, 다운로드, 전체)
             [
                 'name' => ['ko' => '대량주문 12,000원 할인', 'en' => 'Bulk Order 12,000 KRW Off'],
                 'description' => ['ko' => '대량 주문 시 할인', 'en' => 'Discount on bulk orders'],
@@ -1002,7 +1002,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #38 - 정률 7% (수동, 직접발급, 전체, 미래 발급)
+            // 38 - 정률 7% (수동, 직접발급, 전체, 미래 발급)
             [
                 'name' => ['ko' => '가을 시즌 7% 할인 (예정)', 'en' => 'Autumn Season 7% Off (Upcoming)'],
                 'description' => ['ko' => '가을 시즌 예정 쿠폰', 'en' => 'Upcoming autumn season coupon'],
@@ -1027,7 +1027,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #39 - 정액 25,000원 (수동, 직접발급, 특정카테고리) - 중복할인불가
+            // 39 - 정액 25,000원 (수동, 직접발급, 특정카테고리) - 중복할인불가
             [
                 'name' => ['ko' => '카테고리 주문 25,000원 할인 (중복할인불가)', 'en' => 'Category Order 25,000 KRW Off (Non-combinable)'],
                 'description' => ['ko' => '특정 카테고리 대량 주문 할인 (다른 쿠폰과 중복 사용 불가)', 'en' => 'Category bulk order discount (Cannot combine with other coupons)'],
@@ -1052,7 +1052,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'categories',
             ],
 
-            // #40 - 정률 18% (첫구매, 자동, 전체, 중복가능)
+            // 40 - 정률 18% (첫구매, 자동, 전체, 중복가능)
             [
                 'name' => ['ko' => '첫주문 18% 특별 할인', 'en' => 'First Order 18% Special Off'],
                 'description' => ['ko' => '첫 주문 고객 18% 특별 할인', 'en' => 'Special 18% off for first-time orders'],
@@ -1078,10 +1078,10 @@ class CouponSeeder extends Seeder
             ],
 
             // ============================================================
-            // 그룹 3: 배송비 할인 쿠폰 (10개, #41~#50)
+            // 그룹 3: 배송비 할인 쿠폰 (10개, 41~ 50)
             // ============================================================
 
-            // #41 - 무료배송 (수동, 직접발급, 전체)
+            // 41 - 무료배송 (수동, 직접발급, 전체)
             [
                 'name' => ['ko' => '무료배송 쿠폰', 'en' => 'Free Shipping Coupon'],
                 'description' => ['ko' => '배송비 전액 무료', 'en' => 'Free shipping on all orders'],
@@ -1106,7 +1106,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #42 - 무료배송 (회원가입, 자동, 전체)
+            // 42 - 무료배송 (회원가입, 자동, 전체)
             [
                 'name' => ['ko' => '신규회원 무료배송', 'en' => 'New Member Free Shipping'],
                 'description' => ['ko' => '회원가입 시 무료배송 쿠폰 자동 발급', 'en' => 'Free shipping on signup'],
@@ -1131,7 +1131,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #43 - 배송비 50% 할인 (수동, 다운로드, 전체)
+            // 43 - 배송비 50% 할인 (수동, 다운로드, 전체)
             [
                 'name' => ['ko' => '배송비 50% 할인', 'en' => 'Shipping 50% Off'],
                 'description' => ['ko' => '배송비 반값 할인', 'en' => '50% off shipping fee'],
@@ -1156,7 +1156,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #44 - 배송비 100% 할인 (첫구매, 자동, 전체) - 중복할인불가
+            // 44 - 배송비 100% 할인 (첫구매, 자동, 전체) - 중복할인불가
             [
                 'name' => ['ko' => '첫구매 무료배송 (중복할인불가)', 'en' => 'First Purchase Free Shipping (Non-combinable)'],
                 'description' => ['ko' => '첫 구매 시 배송비 무료 (다른 쿠폰과 중복 사용 불가)', 'en' => 'Free shipping on first purchase (Cannot combine with other coupons)'],
@@ -1181,7 +1181,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #45 - 배송비 2,000원 할인 (수동, 직접발급, 특정상품)
+            // 45 - 배송비 2,000원 할인 (수동, 직접발급, 특정상품)
             [
                 'name' => ['ko' => '특정상품 배송비 2,000원 할인', 'en' => 'Product Shipping 2,000 KRW Off'],
                 'description' => ['ko' => '특정 상품 배송비 할인', 'en' => 'Shipping discount on selected products'],
@@ -1206,7 +1206,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'products',
             ],
 
-            // #46 - 생일 무료배송 (생일, 자동, 전체)
+            // 46 - 생일 무료배송 (생일, 자동, 전체)
             [
                 'name' => ['ko' => '생일축하 무료배송', 'en' => 'Birthday Free Shipping'],
                 'description' => ['ko' => '생일 축하 무료배송 쿠폰', 'en' => 'Free shipping for birthday'],
@@ -1231,7 +1231,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #47 - 배송비 3,000원 할인 (수동, 다운로드, 특정카테고리)
+            // 47 - 배송비 3,000원 할인 (수동, 다운로드, 특정카테고리)
             [
                 'name' => ['ko' => '카테고리 배송비 3,000원 할인', 'en' => 'Category Shipping 3,000 KRW Off'],
                 'description' => ['ko' => '특정 카테고리 배송비 할인', 'en' => 'Shipping discount on categories'],
@@ -1256,7 +1256,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'categories',
             ],
 
-            // #48 - 무료배송 (수동, 직접발급, 전체, 발급중단)
+            // 48 - 무료배송 (수동, 직접발급, 전체, 발급중단)
             [
                 'name' => ['ko' => '겨울 무료배송 (종료)', 'en' => 'Winter Free Shipping (Ended)'],
                 'description' => ['ko' => '겨울 이벤트 종료', 'en' => 'Winter event ended'],
@@ -1281,7 +1281,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #49 - 배송비 30% 할인 (수동, 다운로드, 전체, 발급중단)
+            // 49 - 배송비 30% 할인 (수동, 다운로드, 전체, 발급중단)
             [
                 'name' => ['ko' => '배송비 30% 할인 (종료)', 'en' => 'Shipping 30% Off (Ended)'],
                 'description' => ['ko' => '배송비 30% 할인 이벤트 종료', 'en' => 'Shipping 30% off event ended'],
@@ -1306,7 +1306,7 @@ class CouponSeeder extends Seeder
                 'target_scope' => 'all',
             ],
 
-            // #50 - 무료배송 (수동, 직접발급, 전체, 미래 발급 예정)
+            // 50 - 무료배송 (수동, 직접발급, 전체, 미래 발급 예정)
             [
                 'name' => ['ko' => '설날 무료배송 (예정)', 'en' => 'Lunar New Year Free Shipping (Upcoming)'],
                 'description' => ['ko' => '설날 특별 무료배송 예정', 'en' => 'Upcoming Lunar New Year free shipping'],

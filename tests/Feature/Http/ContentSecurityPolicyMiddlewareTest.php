@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 /**
- * 코어 CSP 헤더 미들웨어 (#158)
+ * 코어 CSP 헤더 미들웨어 (공개 #158)
  *
  * web 그룹의 HTML 응답에만, 모드에 맞는 헤더 이름으로 붙는다. 개발 대시보드(`/dev`)·봇 SEO 응답·
  * 이미 CSP 를 단 응답·HTML 이 아닌 응답에는 붙이지 않는다. `.env` 탈출구가 저장값보다 우선한다.

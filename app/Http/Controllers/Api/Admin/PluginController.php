@@ -248,7 +248,7 @@ class PluginController extends AdminBaseController
                 ]);
             }
         } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — 공개 #161
             return $this->operationLockError($e);
         } catch (ValidationException $e) {
             // Service에서 이미 번역된 메시지를 errors에 포함하므로
@@ -295,7 +295,7 @@ class PluginController extends AdminBaseController
             if ($result['success']) {
                 $pluginInfo = $result['plugin_info'] ?? null;
 
-                // 요구사항 #7: 재활성화 시 cascade 비활성화됐던 언어팩 목록 응답에 포함
+                // 요구사항 7: 재활성화 시 cascade 비활성화됐던 언어팩 목록 응답에 포함
                 $pendingLanguagePacks = app(LanguagePackBundledRegistrar::class)
                     ->getPendingForReactivation('plugin', $pluginName);
 
@@ -318,7 +318,7 @@ class PluginController extends AdminBaseController
                 ]);
             }
         } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — 공개 #161
             return $this->operationLockError($e);
         } catch (ValidationException $e) {
             return $this->error(
@@ -381,7 +381,7 @@ class PluginController extends AdminBaseController
                 ]);
             }
         } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — 공개 #161
             return $this->operationLockError($e);
         } catch (ValidationException $e) {
             return $this->error(
@@ -472,11 +472,11 @@ class PluginController extends AdminBaseController
                 ]);
             }
         } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — 공개 #161
             return $this->operationLockError($e);
         } catch (ValidationException $e) {
             // Service 가 이미 「…제거에 실패했습니다: 사유」로 감싸 두었으므로 첫 사유를 그대로 쓴다 — 같은 문구로 한 번 더
-            // 감싸면 「…실패했습니다: …실패했습니다: …」가 된다(#138 실측 ① 후속, performUpdate 와 같은 처리)
+            // 감싸면 「…실패했습니다: …실패했습니다: …」가 된다(공개 #138 실측 ① 후속, performUpdate 와 같은 처리)
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('plugins.uninstall_validation_failed', ['plugin' => '', 'error' => '']);
 
@@ -528,7 +528,7 @@ class PluginController extends AdminBaseController
             // 미서명 확인 필요(409, 「미서명으로 계속」 가능 여부 포함)·서명 불일치·미신뢰 키(422) — 7.2.0
             return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — 공개 #161
             return $this->operationLockError($e);
         } catch (PluginOperationException $e) {
             // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
@@ -560,7 +560,7 @@ class PluginController extends AdminBaseController
             // 미서명 확인 필요(409, 「미서명으로 계속」 가능 여부 포함)·서명 불일치·미신뢰 키(422) — 7.2.0
             return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — 공개 #161
             return $this->operationLockError($e);
         } catch (PluginOperationException $e) {
             // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
@@ -671,7 +671,7 @@ class PluginController extends AdminBaseController
 
             $pluginInfo = $result['plugin_info'] ?? null;
 
-            // 업데이트할 것이 없었으면(success=false) 「업데이트되었습니다」가 아니라 「업데이트할 내용이 없습니다」로 답한다(#138 실측 ④)
+            // 업데이트할 것이 없었으면(success=false) 「업데이트되었습니다」가 아니라 「업데이트할 내용이 없습니다」로 답한다(공개 #138 실측 ④)
             $messageKey = ($result['success'] ?? true) === false ? 'plugins.no_update_available' : 'plugins.update_success';
 
             // 성공 메시지는 ":plugin"/":version" 치환자를 쓰므로 값을 함께 넘긴다
@@ -711,7 +711,7 @@ class PluginController extends AdminBaseController
             // 미서명 확인 필요(409, 「미서명으로 계속」 가능 여부 포함)·서명 불일치·미신뢰 키(422) — 7.2.0
             return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — 공개 #161
             return $this->operationLockError($e);
         } catch (ValidationException $e) {
             // Service/Manager에서 이미 번역된 메시지를 errors에 포함하므로

@@ -35,7 +35,7 @@ final class HtmlPage
         $lang = e(str_replace('_', '-', app()->getLocale()));
         $title = e($title);
         // 모양은 같은 출처 정적 파일로 싣는다 — 사이트가 스타일 보안 정책(`style-src 'self'`)을 걸면 `<style>` 요소가 막혀
-        // 화면이 무스타일로 떴다(코어 #163, 7.1.6). 페이지에는 `<link>` 만 둔다
+        // 화면이 무스타일로 떴다(코어 공개 #163, 7.1.6). 페이지에는 `<link>` 만 둔다
         $stylesheet = '<link rel="stylesheet" href="'.e(self::stylesheetUrl()).'">';
 
         $html = <<<HTML

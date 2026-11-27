@@ -38,8 +38,8 @@ class CashReceiptIdentifierTypeTest extends PureTestCase
     public static function validBusinessNumberProvider(): array
     {
         return [
-            '체크섬 유효 #1' => ['1248100998'],
-            '체크섬 유효 #2' => ['1018116293'],
+            '체크섬 유효 1' => ['1248100998'],
+            '체크섬 유효 2' => ['1018116293'],
         ];
     }
 

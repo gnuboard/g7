@@ -1446,7 +1446,7 @@
                                     "width": "260px",
                                     "cellChildren": [
                                         {
-                                            "comment": "회원 row 의 이름·이메일 클릭 시 회원 상세 페이지로 이동 (검토 #26). DPO 가 이상 패턴 발견 시 즉시 회원 상세 조회 가능. 게스트 row 는 user_id 가 없어 분기가 다름.",
+                                            "comment": "회원 row 의 이름·이메일 클릭 시 회원 상세 페이지로 이동 (검토 26). DPO 가 이상 패턴 발견 시 즉시 회원 상세 조회 가능. 게스트 row 는 user_id 가 없어 분기가 다름.",
                                             "type": "basic",
                                             "name": "A",
                                             "if": "{{!!row.user_id}}",

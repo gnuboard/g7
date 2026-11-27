@@ -1,7 +1,7 @@
 feature: 관리자 회원 목록 열 데이터 일괄 필터 (core.user.filter_list_rows)
 
 description: |
-  목록은 행마다 리소스 필터를 걸지 않고(N+1) 페이지 전체 행과 회원 모델 묶음을 `core.user.filter_list_rows` 에 한 번 넘긴다(#40 K6).
+  목록은 행마다 리소스 필터를 걸지 않고(N+1) 페이지 전체 행과 회원 모델 묶음을 `core.user.filter_list_rows` 에 한 번 넘긴다(K6).
   확장은 회원 id 로 한 번 조회해 행에 키를 더한다. 배열이 아니거나 행 수가 다른 반환은 버리고 원래 행을 쓴다.
 
 axes:

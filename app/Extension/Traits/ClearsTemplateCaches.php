@@ -86,7 +86,7 @@ trait ClearsTemplateCaches
         }
 
         // 부트스트랩 리소스 정적 게시(bake) 예약 — 모든 bump 호출부(수명주기 전체)가
-        // 이 단일 지점을 경유하므로 재게시 트리거 누락이 구조적으로 불가능하다 (#122).
+        // 이 단일 지점을 경유하므로 재게시 트리거 누락이 구조적으로 불가능하다 (공개 #122).
         // terminating 시점에 프로세스당 1회, 실행 시점의 최종 버전으로 게시된다
         // (연속 bump 자연 병합). 실패해도 사이트는 API 폴백으로 정상.
         ExtensionStaticCacheService::schedulePublishOnTerminate();
@@ -148,7 +148,7 @@ trait ClearsTemplateCaches
         }
 
         // 재생성도 bump 다 — 게시를 예약한다. `incrementExtensionCacheVersion()` 과
-        // 동형화해 "캐시 버전 갱신 → 게시" 가 **모든 경로**에서 성립하게 한다 (#122).
+        // 동형화해 "캐시 버전 갱신 → 게시" 가 **모든 경로**에서 성립하게 한다 (공개 #122).
         //
         // 이 경로가 빠져 있던 동안 `cache:clear` 후 첫 호출자가 CLI 면 포인터만 새 버전으로
         // 점프하고 산출물은 옛 버전에 남았다. 스케줄 GC(`ext-static:cleanup`)가 바로 그

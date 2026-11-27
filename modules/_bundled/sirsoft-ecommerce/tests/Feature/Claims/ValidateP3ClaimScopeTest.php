@@ -17,7 +17,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 관리자 클레임의 권한 스코프가 주문 스코프를 물려받는지 검증합니다. (validate P3 #4)
+ * 관리자 클레임의 권한 스코프가 주문 스코프를 물려받는지 검증합니다. (validate P3 4)
  *
  * 신청서는 한 주문에 속하고, 그 주문을 볼 수 없는 운영자가 신청서로는 같은 고객의 주문 내용·환불
  * 계좌를 보거나 환불을 실행할 수 있으면 주문 스코프가 우회된다. 수정 전에는 `claims` 권한에 스코프

@@ -1,7 +1,7 @@
 /**
- * 허용 확장자 미지정 게시판의 첨부 선택 (#78 R3).
+ * 허용 확장자 미지정 게시판의 첨부 선택 (공개 #78 R3).
  *
- * 백엔드는 Phase 2 #7 로 이미 고쳐졌지만(빈 확장자 → 기본 확장자 폴백), 프런트에 동일한
+ * 백엔드는 Phase 2 7 로 이미 고쳐졌지만(빈 확장자 → 기본 확장자 폴백), 프런트에 동일한
  * `[]`-truthiness 쌍둥이가 남아 있어 사용자는 **파일 선택 단계에서** 막혔다. 요청 자체가
  * 발생하지 않으므로 서버측 회귀 테스트로는 잡히지 않는다.
  *
@@ -35,7 +35,7 @@ async function readAcceptAttribute(page: import('@playwright/test').Page): Promi
   });
 }
 
-test.describe.skip('허용 확장자 미지정 게시판의 첨부 (#78 R3)', () => {
+test.describe.skip('허용 확장자 미지정 게시판의 첨부 (공개 #78 R3)', () => {
   // @scenario allowed_extensions=empty
   // @effects empty_extensions_accept_falls_back_to_defaults
   test('확장자 미지정 게시판의 사용자 글쓰기 accept 는 기본 확장자로 폴백된다', async ({

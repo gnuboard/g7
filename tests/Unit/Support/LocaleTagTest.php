@@ -8,7 +8,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 언어 코드(BCP 47) 단일 기준 테스트 (#148).
+ * 언어 코드(BCP 47) 단일 기준 테스트 (공개 #148).
  *
  * 언어팩 설치 검사가 받는 코드면 화면·API·정적 게시·국가 추정에서도 그대로 쓸 수 있어야 한다.
  * 화면 짝 `resources/js/core/support/__tests__/localeTag.test.ts` 와 같은 표를 쓴다.

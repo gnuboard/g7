@@ -99,7 +99,7 @@ class SitemapWriter
         $this->urlsPerFile = max(1, min($urlsPerFile, self::HARD_URL_CAP));
 
         // zlib 은 코어 기준 「선택」 확장이다. 설정 저장은 zlib 없이 gzip 을 켜지 못하게 막지만(SaveSettingsRequest),
-        // 이미 켜진 설정에서 서버의 zlib 이 사라지면 생성이 매번 실패했다(#151) — 압축 없이 기록하고 알린다.
+        // 이미 켜진 설정에서 서버의 zlib 이 사라지면 생성이 매번 실패했다(공개 #151) — 압축 없이 기록하고 알린다.
         // 파일명·sitemap index 의 loc·manifest 의 gzip 이 모두 이 값을 따르므로 `.xml` 로 일관된다.
         if ($gzip && ! app(PhpExtensionProbe::class)->functionAvailable('gzencode')) {
             Log::warning('[SEO] 사이트맵 gzip 이 켜져 있지만 PHP zlib(gzencode)이 없어 압축 없이 기록합니다');

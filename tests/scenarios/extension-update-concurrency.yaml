@@ -1,13 +1,13 @@
 feature: 확장 업데이트 동시 실행 거절과 「업데이트할 것 없음」 응답 문구
 
 description: |
-  #138 실측 ②·④. 업데이트 확인 버튼을 두 번 누르면 두 요청이 상태 가드(status=updating)를 세우기 전 구간을
+  공개#138 실측 ②·④. 업데이트 확인 버튼을 두 번 누르면 두 요청이 상태 가드(status=updating)를 세우기 전 구간을
   함께 지나 업데이트가 두 번 수행됐다. Manager 진입점(CLI·관리자 공통)에서 같은 확장의 업데이트를 원자적
   잠금으로 하나만 수행하고, 두 번째 요청은 직전 훅도 발화하지 않고 거절한다. API 는 409 로 답하고, 관리자
   화면은 409 를 실패가 아닌 안내로 보인다(버튼은 풀어 둔다 — CLI 가 업데이트 중이면 창을 닫을 수 있어야 한다).
   업데이트할 것이 없으면 응답 문구가 「업데이트할 내용이 없습니다」이고, 화면 성공 토스트는 서버 문구를 띄운다.
 
-  #161(7.1.5): 잠금 저장소가 오류를 내면 잠금 없이 진행하던 것(fail-open)을 거절(503, errors.operation_lock_unavailable)로 바꾸고,
+  공개#161(7.1.5): 잠금 저장소가 오류를 내면 잠금 없이 진행하던 것(fail-open)을 거절(503, errors.operation_lock_unavailable)로 바꾸고,
   같은 잠금을 설치·활성화·비활성화·제거와 언어팩·코어 업데이트로 넓혔다(겹치면 409, errors.operation_in_progress). 같은 프로세스의
   재진입은 합류하고, 진행 중에는 단계마다 잠금을 늘린다. 번들 일괄 업데이트는 저장소 장애를 만나면 첫 항목에서 멈춘다. 관리자 화면의
   켜기/끄기·템플릿 활성화 409 는 「진행 중」이면 강제·충돌 창 대신 안내 토스트를 띄운다.
@@ -22,7 +22,7 @@ effects:
   - no_update_response_message_says_nothing_to_update
   - update_modal_treats_409_as_notice_and_shows_server_message
   - update_modal_routes_integrity_409_to_panel_not_lock_notice  # 미서명 409(errors.package_unsigned)는 잠금 안내·오류 상자 없이 무결성 기록만 담는다
-  # #161
+  # 공개#161
   - lock_store_error_refuses_operation
   - lock_store_error_api_503_without_raw_error
   - lifecycle_rejected_409_while_same_extension_locked

@@ -1,6 +1,6 @@
 /**
  * @file login-handoff.test.tsx
- * @description 로그인 인계 진입·확장점 회귀 테스트 (sirsoft-basic, #40)
+ * @description 로그인 인계 진입·확장점 회귀 테스트 (sirsoft-basic,)
  *
  * 외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원을 `/login?login_handoff={코드}` 로 보내면, 로그인 화면이 진입 시
  * `loginHandoff` 액션으로 코드를 교환한다. 응답 분기는 비밀번호 로그인(`login`)과 **같은 명명 액션**(`applyLoginResult`)이
@@ -123,7 +123,7 @@ async function exchange(t: ReturnType<typeof createLayoutTest>): Promise<void> {
   await t.triggerAction({ ...handoffAction, params: { ...(handoffAction.params ?? {}), body: { code: 'HANDOFF-CODE' } } });
 }
 
-describe('sirsoft-basic 로그인 인계·확장점 (#40)', () => {
+describe('sirsoft-basic 로그인 인계·확장점', () => {
   beforeEach(() => {
     setupRegistry();
     apiPost.mockReset();

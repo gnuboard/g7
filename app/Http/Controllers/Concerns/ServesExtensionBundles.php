@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * 확장(모듈/플러그인) 병합 번들 서빙의 공통 판정 (#122 E1/E2).
+ * 확장(모듈/플러그인) 병합 번들 서빙의 공통 판정 (공개 #122 E1/E2).
  *
  * 모듈 컨트롤러와 플러그인 컨트롤러가 **같은 판정**을 해야 한다. 각자 구현하면 한쪽만
  * 고쳐진 채 다른 쪽이 조용히 옛 동작으로 남는다 — 실제로 두 컨트롤러는 지금까지 동일

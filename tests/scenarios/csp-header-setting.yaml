@@ -1,7 +1,7 @@
 feature: csp_header_setting
 
 description: |
-  코어 CSP 헤더 설정 (#158 스크립트 정책, #163 스타일 정책) — 관리자 환경설정 > 보안 > 「콘텐츠 보안 정책」.
+  코어 CSP 헤더 설정 (공개#158 스크립트 정책, 공개#163 스타일 정책) — 관리자 환경설정 > 보안 > 「콘텐츠 보안 정책」.
 
   핵심 동작(스크립트 정책):
     - 모드 끔(기본)·점검만(Content-Security-Policy-Report-Only)·강제(Content-Security-Policy)
@@ -37,7 +37,7 @@ axes:
     - format_oversized
     - input_valid_host
     - input_invalid_host
-    # 스타일 정책 (#163)
+    # 스타일 정책 (공개#163)
     - style_level_basic               # 강도 기본 — style-src-elem
     - style_level_strict              # 강도 엄격 — style-src + style-src-attr 'none'
     - style_source_template_externals # 활성 템플릿 externals 의 외부 스타일시트 호스트 자동 합산
@@ -63,7 +63,7 @@ effects:
   - csp_settings_persisted_normalized
   - csp_settings_rejects_invalid_input
   - csp_meta_reflects_saved_policy
-  # 스타일 정책 (#163) — 정책 문자열·헤더
+  # 스타일 정책 (공개#163) — 정책 문자열·헤더
   - csp_style_directives_follow_level        # 강도별 지시어가 정확히 일치한다
   - csp_style_hosts_merged_deduped_sorted    # 'self' + 자동 + 추가 호스트를 합쳐 중복 제거·정렬한다
   - csp_style_extension_declared_hosts_included   # 켜진 확장이 선언한 스타일 호스트가 스타일 정책에 들어가고 script-src 에는 섞이지 않는다
@@ -74,13 +74,13 @@ effects:
   - csp_headers_combined_by_mode             # 두 모드 조합에 따라 헤더 0·1·2개, 헤더마다 report-uri
   - csp_script_policy_unchanged              # 스크립트 정책 문자열(build())은 종전과 같다
   - template_external_style_hosts_collected  # externals 에서 외부 스타일시트 호스트만 모은다
-  # 스타일 정책 (#163) — 설정 저장·응답 메타·위반 보고
+  # 스타일 정책 (공개#163) — 설정 저장·응답 메타·위반 보고
   - csp_style_settings_persisted_normalized  # 3키 저장 + 호스트 정규화
   - csp_style_settings_rejects_invalid_input # 잘못된 모드·강도·호스트는 422
   - csp_style_meta_reflects_saved_policy     # _meta.csp 의 style_* 3키가 저장값을 따른다
   - csp_style_settings_default_when_absent   # 새 키 없이 저장해도 기본값(끔·basic·빈 목록)
   - csp_style_report_logged                  # style-src-elem · style-src-attr 위반 보고가 기록된다
-  # 스타일 정책 (#163) — 설정 화면
+  # 스타일 정책 (공개#163) — 설정 화면
   - csp_style_block_structure                        # 미리보기 뒤에 소제목 + 필드 5개, 설정 키 바인딩
   - csp_style_block_renders_saved_policy             # 자동 호스트·미리보기·빈 상태 문구
   - csp_style_level_warning_follows_effective_mode   # 강도별 경고는 실제 적용 모드(.env 포함)를 본다
@@ -102,9 +102,9 @@ test_files:
 notes: |
   비활성 확장의 호스트가 빠지는 것은 TrustedScriptHosts 가 활성 목록만 읽는 데서 오며
   CspPolicyBuilderTest 가 활성·전체 목록을 함께 내주는 모의로 잠근다(csp_inactive_extension_hosts_excluded).
-  스크립트 정책 카드의 표시·저장·잠금 상태는 브라우저 실측(#158 이력 문서 §8 T2~T6)이 덮는다.
+  스크립트 정책 카드의 표시·저장·잠금 상태는 브라우저 실측(공개#158 이력 문서 §8 T2~T6)이 덮는다.
 
-  스타일 정책(#163):
+  스타일 정책(공개#163):
     - 헤더 조합(끔·점검만·강제 3×3)은 CspPolicyBuilderTest 의 데이터 프로바이더가 전수로,
       미들웨어 테스트가 실제 응답 헤더로 잠근다(style_header_combination).
     - 스타일 호스트를 확장이 선언하는 키는 두지 않는다(번들 확장의 외부 CSS 사용 0건) — 자동 합산은 활성 템플릿 externals 뿐이다.

@@ -115,7 +115,7 @@ class ProductInquiryService
             $pagePivots = $pivots->forPage($page, $perPage);
             $lastPage = (int) ceil($total / $perPage);
         } else {
-            // 화면 목록은 쿼리 레벨 페이지네이션 — 전량 적재 후 PHP 잘라내기(#102 동형)를
+            // 화면 목록은 쿼리 레벨 페이지네이션 — 전량 적재 후 PHP 잘라내기(공개 #102 동형)를
             // 하지 않는다. 게시글 데이터도 이 페이지 분량만 일괄 조회한다.
             $paginator = $this->repository->paginateByProductId($productId, $perPage, $page);
             $pagePivots = collect($paginator->items());
@@ -576,7 +576,7 @@ class ProductInquiryService
         );
 
         // ② 잔여 답변이 없을 때만 피벗 is_answered=false 업데이트.
-        // 기설치본에는 과거 결함(#106)으로 답변이 여러 건 쌓인 문의가 있을 수 있다 —
+        // 기설치본에는 과거 결함(공개 #106)으로 답변이 여러 건 쌓인 문의가 있을 수 있다 —
         // 첫 답변만 지웠는데 무조건 해제하면 "답변이 남았는데 미답변" 표기가 된다.
         // 기본값 null = 판정 불가: 공급자(board 리스너) 부재 시 0 으로 접혀
         // 답변완료가 오해제되는 fail-open 을 막는다.
@@ -611,7 +611,7 @@ class ProductInquiryService
      * 상품 삭제 시 그 상품의 문의 스레드(질문+답변 Post)와 피벗을 정리합니다.
      *
      * 상품이 forceDelete 되면 피벗은 FK 캐스케이드로 하드 소멸하지만, 게시판의
-     * 질문·답변 Post 는 published 로 잔존했다(#107 확대판). 애플리케이션이 먼저
+     * 질문·답변 Post 는 published 로 잔존했다(공개 #107 확대판). 애플리케이션이 먼저
      * 훅으로 Post 를 소프트 삭제(cascade_replies 로 답변 포함)한 뒤 피벗을
      * forceDelete 한다 — FK 캐스케이드는 백스톱으로만 유지.
      *

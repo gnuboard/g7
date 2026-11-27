@@ -136,7 +136,7 @@ class GdprConsentController extends AuthBaseController
     }
 
     /**
-     * 정책 버전 bump 후 활성 선택형 동의를 일괄 새 버전으로 갱신합니다 (전체 항목 다시 동의 — #19).
+     * 정책 버전 bump 후 활성 선택형 동의를 일괄 새 버전으로 갱신합니다 (전체 항목 다시 동의 — 19).
      *
      * 필수 쿠키와 철회 상태는 대상 외. 의사 변경은 없으나 *재동의 의사 표명* 으로 처리되어
      * history 에 action=granted 행이 N개 누적됨 (각 갱신 항목당 1행, Art.7(1) 입증 트레일).

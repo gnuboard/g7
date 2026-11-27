@@ -12,7 +12,7 @@ use Modules\Sirsoft\Page\Services\PageService;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 
 /**
- * 통합 검색 페이지 결과의 발행일 테스트 (#160)
+ * 통합 검색 페이지 결과의 발행일 테스트 (공개 #160)
  *
  * 검색은 웹 요청이라 발행일은 보는 사람 시간대의 날짜다 — UTC 날짜면 한국 시간 새벽 0~9시 발행분이 전날로 보인다.
  */

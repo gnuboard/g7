@@ -2,7 +2,7 @@
  * @file component-manifest-integrity.test.ts
  * @description 컴포넌트 manifest(components.json) 정합성 검증
  *
- * 배경(이슈 #44): 마일리지 내역 화면의 PC 테이블이 Thead/Tbody 를 사용하는데
+ * 배경: 마일리지 내역 화면의 PC 테이블이 Thead/Tbody 를 사용하는데
  * components.json manifest 에 Thead/Tbody/Tr/Th/Td 가 누락되어 ComponentRegistry 에
  * 등록되지 않아("컴포넌트를 찾을 수 없습니다") 테이블 영역이 빈 화면으로 렌더된 회귀.
  *

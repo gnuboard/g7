@@ -11,7 +11,7 @@ use Illuminate\Console\Command;
  *
  * 수명주기 이벤트(terminating 트리거)와 blade 자가 치유가 정상 경로지만,
  * 배포 직후 워밍이나 수동 복구가 필요할 때 이 커맨드로 즉시 게시한다.
- * 설치기 완료 단계에서도 호출된다 (#122).
+ * 설치기 완료 단계에서도 호출된다 (공개 #122).
  */
 class PublishExtensionStaticCacheCommand extends Command
 {

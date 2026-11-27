@@ -64,7 +64,7 @@ async function dashboardShape(page: Page): Promise<{ frame: number; cols: number
   );
 }
 
-test.describe('@layout-editor 미리보기 렌더 환경 격리 (#141)', () => {
+test.describe('@layout-editor 미리보기 렌더 환경 격리 (공개 #141)', () => {
   // 편집기 첫 진입은 편집 대상 템플릿 자산·확장 스펙 20여 건을 받는다 — 기본 30초로는 병렬 실행 때 모자란다
   test.describe.configure({ timeout: 120_000 });
 

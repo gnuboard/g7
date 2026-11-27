@@ -597,7 +597,7 @@ export function evaluateRenderCondition(
  * DynamicRenderer의 effectiveComponentDef 로직과 동일한 패턴을 사용합니다.
  *
  * 폭은 호출자가 확정한 렌더 환경 폭이다. 종전에는 여기서 전역 싱글톤(브라우저 창 폭)을 직접 읽어,
- * 편집기 미리보기에서 DynamicRenderer 경로(미리보기 폭)와 다른 분기를 골랐다(이슈 #141).
+ * 편집기 미리보기에서 DynamicRenderer 경로(미리보기 폭)와 다른 분기를 골랐다(이슈 공개 #141).
  *
  * @param componentDef - 원본 컴포넌트 정의
  * @param width - responsive 분기를 고를 폭 @since engine-v1.75.2
@@ -798,7 +798,7 @@ export function renderItemChildren(
 
   // 렌더 환경 확정 — 명시 옵션 > renderEnv > componentContext.renderEnvRef.current > 호스트 기본값.
   // 편집기 미리보기는 렌더 환경에 미리보기 폭·콘텐츠 언어·격리 dispatcher·편집 모드를 싣는다.
-  // 편집기 밖에서는 렌더 환경이 곧 호스트 값이라 결과가 같다. @since engine-v1.75.2 (#141)
+  // 편집기 밖에서는 렌더 환경이 곧 호스트 값이라 결과가 같다. @since engine-v1.75.2 (공개 #141)
   const env = resolveRenderEnvironment(
     options,
     options?.renderEnv ?? options?.componentContext?.renderEnvRef?.current ?? null,

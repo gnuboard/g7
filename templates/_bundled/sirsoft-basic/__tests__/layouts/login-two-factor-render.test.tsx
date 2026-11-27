@@ -144,7 +144,7 @@ function setupRegistry(): ComponentRegistry {
 const layout = {
   version: '1.0.0',
   layout_name: 'auth/login',
-  // 로그인 응답 분기는 로그인 화면의 명명 액션(`applyLoginResult`)에 있다 — 파셜의 `login` 성공이 그것을 부른다(#40).
+  // 로그인 응답 분기는 로그인 화면의 명명 액션(`applyLoginResult`)에 있다 — 파셜의 `login` 성공이 그것을 부른다.
   named_actions: (loginPage as any).named_actions,
   components: [loginForm as any],
 };

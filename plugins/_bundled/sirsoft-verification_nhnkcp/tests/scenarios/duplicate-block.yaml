@@ -29,7 +29,7 @@ exclusions:
   - { gate: verify, relation: missing_hash, reason: "인증 시점에는 신원 가드가 식별값 부재를 먼저 차단한다 — 중복 판정에 도달하지 않음" }
   - { gate: register, relation: self_reverify, reason: "가입 직전 게이트는 신규 가입만 다룬다 — 본인 재인증은 verify 조합으로 대표" }
   - { gate: register, relation: logged_in_other_user, reason: "로그인 회원 본인인증은 가입 게이트를 거치지 않는다 — verify 조합으로 대표" }
-  - { relation: logged_in_other_user, basis: ci, reason: "본인 제외 조회는 기준 필드와 무관 — di 조합으로 대표(#40 R11)" }
+  - { relation: logged_in_other_user, basis: ci, reason: "본인 제외 조회는 기준 필드와 무관 — di 조합으로 대표(R11)" }
 
 effects:
   - verify_blocks_duplicate_signup_with_duplicate_code

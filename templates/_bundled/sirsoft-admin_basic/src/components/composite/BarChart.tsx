@@ -1,4 +1,4 @@
-// e2e:allow편집기 결함#7 수정(datasets undefined 폴백 + height 숫자문자열 px 정규화). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/높이편집→캔버스반영/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 BarChart.test.tsx verify-4 describe.
+// e2e:allow편집기 결함 7 수정(datasets undefined 폴백 + height 숫자문자열 px 정규화). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/높이편집→캔버스반영/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 BarChart.test.tsx verify-4 describe.
 import React, { useMemo, memo } from 'react';
 import {
   Chart as ChartJS,

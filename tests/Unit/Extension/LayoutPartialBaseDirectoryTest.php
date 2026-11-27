@@ -138,7 +138,7 @@ class LayoutPartialBaseDirectoryTest extends TestCase
     }
 
     /**
-     * 사이트가 이름이 `layouts` 인 폴더 아래 설치돼도 루트는 프로젝트 안의 첫 `layouts` 다 (#144).
+     * 사이트가 이름이 `layouts` 인 폴더 아래 설치돼도 루트는 프로젝트 안의 첫 `layouts` 다 (공개 #144).
      *
      * 종전에는 경로에서 처음 나오는 `layouts` 를 루트로 잡아 `/srv/layouts/g7/templates/x/layouts/…` 의 루트가
      * `/srv/layouts` 가 됐다 — 보안 경계가 프로젝트 전체로 넓어지고 `partials/…` 폴백·조각 출처 키가 어긋났다.

@@ -808,7 +808,7 @@ if (! function_exists('sanitizeConfigForState')) {
      * state.json 에 저장하기 전 config 배열을 정제한다.
      *
      * 1) 비밀 5종 제거 (GitHub 토큰 포함)
-     * 2) use_read_db 미사용 시 read 접속 필드 잔존값 제거 (이슈 #63 2단계 방어)
+     * 2) use_read_db 미사용 시 read 접속 필드 잔존값 제거 (이슈 공개 #63 2단계 방어)
      *    — use_read_db=false 인데 db_read_host 등이 남아 있으면 하류
      *      (installer-runtime.php) 로 유입되어 잘못된 read 커넥션을 만들 수 있다.
      *
@@ -2733,7 +2733,7 @@ function getInstallationLogs(int $offset = 0): array
     $lines = installerReadLogLines();
     $total = count($lines);
 
-    // 증분 조회의 절단은 **배열화보다 앞**이어야 한다 (20차 #2) — offset 뒤에 자르면 폴링
+    // 증분 조회의 절단은 **배열화보다 앞**이어야 한다 (20차 2) — offset 뒤에 자르면 폴링
     // 1회가 회전·상한 없는 파일 전량을 연관배열로 부풀린 뒤 버린다. PHP 연관배열은 원문
     // 대비 배수로 커지므로 낮은 memory_limit 호스트에서 긴 설치 중 폴링 응답이 OOM 으로
     // 죽고, 화면은 진행 갱신만 잃는다 (폴링 진입점에는 shutdown 승격 훅이 없어 설치

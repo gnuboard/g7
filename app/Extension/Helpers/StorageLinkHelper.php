@@ -13,7 +13,7 @@ use Psr\Log\LoggerInterface;
  * `public/storage` symlink 멱등 복구 헬퍼.
  *
  * 코어 업데이트(특히 `--prune`) 이후 `public/storage` symlink 가 부재/손상 상태로 남는
- * 결함(#43)을 종료 시점에 방어 복구한다. `is_link` 이면 no-op, 부재/일반 디렉토리이면
+ * 결함(공개 #43)을 종료 시점에 방어 복구한다. `is_link` 이면 no-op, 부재/일반 디렉토리이면
  * `storage/app/public` 을 가리키는 symlink 를 (필요 시 백업 후) 재생성한다.
  *
  * V-1 안전: 이 헬퍼는 beta.5 DataMigration `RecoverPublicStorageSymlink` 가 in-process
@@ -584,7 +584,7 @@ class StorageLinkHelper
      * `symlink()` 는 소유권 지정 인자가 없어 실행 프로세스(sudo → root)의 소유로 링크를
      * 만든다. 이 때문에 sudo 로 실행된 코어 업데이트가 종료 시점에 `public/storage` 를
      * 재생성하면 링크가 root:root 로 남아, 원래 앱 실행 유저 소유였던 링크의 소유권이
-     * 바뀌던 문제(#43 후속)를 차단한다. 부모 `public/` 의 owner/group 을 기준으로 삼아
+     * 바뀌던 문제(공개 #43 후속)를 차단한다. 부모 `public/` 의 owner/group 을 기준으로 삼아
      * 이 프로젝트의 "신규 항목은 부모 소유권 상속" 컨벤션(`FilePermissionHelper`)과 일치시킨다.
      *
      * `chown`/`chgrp` 은 심볼릭 링크의 target 을 따라가므로, 링크 *자체* 를 대상으로 하는

@@ -180,7 +180,7 @@ class ProductActivityLogListener implements HookListenerInterface
 
         $products = $this->productRepository->findByIdsKeyed($ids);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($ids, $products, $snapshots) {
                 foreach ($ids as $productId) {
@@ -218,7 +218,7 @@ class ProductActivityLogListener implements HookListenerInterface
     {
         $products = $this->productRepository->findByIdsKeyed($ids);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($ids, $products, $snapshots) {
                 foreach ($ids as $productId) {
@@ -256,7 +256,7 @@ class ProductActivityLogListener implements HookListenerInterface
     {
         $products = $this->productRepository->findByIdsKeyed($ids);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($ids, $products, $snapshots) {
                 foreach ($ids as $productId) {

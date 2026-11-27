@@ -1,6 +1,6 @@
 // e2e:allow 셸 부트스트랩의 순수 DOM 로직 단위. 브라우저 계층(strict CSP 실제 차단)은 strict-csp.spec.ts 가 커버한다.
 /**
- * 부트스트랩 셸 `public/assets/core/js/g7-shell-boot.js` (#158)
+ * 부트스트랩 셸 `public/assets/core/js/g7-shell-boot.js` (공개 #158)
  *
  * 종전 인라인 부트스트랩·G7Config 대입·번들 `<script onload/onerror>` 를 정적 파일로 옮겼다.
  * strict CSP(`script-src 'self'`)에서 인라인 코드가 막혀 전 화면이 백지가 되던 결함의 회귀 가드다.
@@ -88,7 +88,7 @@ function trackListeners(target: EventTarget): void {
     });
 }
 
-describe('[case:network-strict-csp-inline-shell-blank] 부트스트랩 셸 g7-shell-boot.js (#158)', () => {
+describe('[case:network-strict-csp-inline-shell-blank] 부트스트랩 셸 g7-shell-boot.js (공개 #158)', () => {
     let reload: ReturnType<typeof vi.fn>;
     const originalLocation = window.location;
 

@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 /**
- * 큐 대기(jobs)·실패(failed_jobs) 표 조회 Repository (#17)
+ * 큐 대기(jobs)·실패(failed_jobs) 표 조회 Repository
  *
  * 두 표 모두 운영 중에 계속 쌓일 수 있어 총 건수는 상한까지만 센다(BoundedPaginator).
  * 검색어는 payload JSON 원문에 대해 LIKE 로 찾는다 — 큐가 payload 를 `JSON_UNESCAPED_UNICODE`

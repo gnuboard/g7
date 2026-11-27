@@ -329,7 +329,7 @@ class LanguagePackManifestValidatorTest extends TestCase
     }
 
     /**
-     * 세 글자·지역·문자 표기 locale 은 통과합니다 (#148 — 화면 규칙 `LocaleTag` 와 같은 기준).
+     * 세 글자·지역·문자 표기 locale 은 통과합니다 (공개 #148 — 화면 규칙 `LocaleTag` 와 같은 기준).
      *
      * @scenario extension_type=language_pack
      *
@@ -351,7 +351,7 @@ class LanguagePackManifestValidatorTest extends TestCase
     }
 
     /**
-     * `language_packs.locale` varchar(20) 를 넘는 locale 은 설치 전에 거부합니다 (#148 — 종전 22001).
+     * `language_packs.locale` varchar(20) 를 넘는 locale 은 설치 전에 거부합니다 (공개 #148 — 종전 22001).
      *
      * @scenario extension_type=language_pack
      *

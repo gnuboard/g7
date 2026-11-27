@@ -13,7 +13,7 @@ use App\Support\Query\PaginationLimits;
 use Carbon\CarbonInterface;
 
 /**
- * 큐 작업 처리 기록(queue_job_logs) Repository (#17)
+ * 큐 작업 처리 기록(queue_job_logs) Repository
  *
  * 처리 기록은 작업마다 1행씩 계속 쌓이는 원장이라 총 건수는 상한까지만 세고, 정리는 기본키 배치로 끊는다.
  */

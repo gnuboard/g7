@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * queue:prune-records 테스트 (#17 — 처리 기록·실패 작업 공통 보관 기간, 기본 7일)
+ * queue:prune-records 테스트 (— 처리 기록·실패 작업 공통 보관 기간, 기본 7일)
  */
 class PruneQueueRecordsCommandTest extends TestCase
 {

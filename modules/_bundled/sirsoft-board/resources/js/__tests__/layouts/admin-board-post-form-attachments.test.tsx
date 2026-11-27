@@ -378,7 +378,7 @@ describe('업로드 에러 시 isSaving 복구 (onUploadError)', () => {
     });
 
     // ==========================================
-    // accept 표현식 — 빈 확장자 배열 truthiness (#78 R3 회귀)
+    // accept 표현식 — 빈 확장자 배열 truthiness (공개 #78 R3 회귀)
     //
     // API 는 allowed_extensions 를 "항상 배열"로 직렬화한다(BoardResource 가 NULL → []).
     // 그런데 레이아웃이 `ext ? ... : fallback` 으로 판정하면 []가 JS 에서 truthy 라
@@ -404,7 +404,7 @@ describe('업로드 에러 시 isSaving 복구 (onUploadError)', () => {
     it.each([
         ['관리자 첨부파일', () => findComponentsByName(adminAttachments, 'FileUploader')[0]],
         ['사용자 폼', () => findComponentsByName(userPostForm, 'FileUploader')[0]],
-    ])('%s accept 는 빈 확장자 배열에서 기본 확장자로 폴백해야 합니다 (#78 R3)', (_label, getUploader) => {
+    ])('%s accept 는 빈 확장자 배열에서 기본 확장자로 폴백해야 합니다 (공개 #78 R3)', (_label, getUploader) => {
         const accept = (getUploader() as any).props.accept as string;
 
         expect(evaluateAccept(accept, [])).toBe(FALLBACK);

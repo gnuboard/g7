@@ -20,7 +20,7 @@ effects:
   - escape_closes_and_returns_focus
   - cart_named_with_count
   - mobile_menu_named
-  # #148 — 언어팩으로 켠 fil-PH·zh-Hant 항목은 대문자 코드가 아니라 언어팩의 언어 이름(appConfig.localeNames)으로 보인다
+  # 공개#148 — 언어팩으로 켠 fil-PH·zh-Hant 항목은 대문자 코드가 아니라 언어팩의 언어 이름(appConfig.localeNames)으로 보인다
   - option_label_uses_language_pack_name
 
 test_files:

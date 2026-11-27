@@ -9,7 +9,7 @@ use Modules\Sirsoft\Page\Models\Page;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 
 /**
- * #162 실측 페이지 정리 시더 — 슬러그 접두 `m162-` 페이지와 그 첨부·본문 미디어(행·파일)를 지운다
+ * 공개 #162 실측 페이지 정리 시더 — 슬러그 접두 `m162-` 페이지와 그 첨부·본문 미디어(행·파일)를 지운다
  *
  * 실측 중 남은 임시 본문 미디어(`page_id` 없음)도 실측 페이지에 쓰인 적 없는 것은 판별할 수 없으므로, 이 시더 실행 이후
  * 생긴 것은 지우지 않는다 — 임시 첨부 정리 명령(`sirsoft-page:prune-temp-attachments` 보존기간)에 맡긴다.

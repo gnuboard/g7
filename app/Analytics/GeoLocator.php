@@ -66,7 +66,7 @@ class GeoLocator
      *
      * `ko-KR`·`ja-JP`·`zh-Hant-TW` 처럼 지역 서브태그가 있을 때만 씁니다. `ko` 처럼 언어만
      * 있거나 숫자 지역(`es-419`)이면 나라가 여럿일 수 있어 추정하지 않습니다. 형식 판정은
-     * 언어팩 규칙(BCP 47, `LocaleTag`)과 같습니다(#148).
+     * 언어팩 규칙(BCP 47, `LocaleTag`)과 같습니다(공개 #148).
      *
      * @param  string|null  $browserLanguage  브라우저 언어
      * @return string|null 국가 코드 (추정 불가 시 null)

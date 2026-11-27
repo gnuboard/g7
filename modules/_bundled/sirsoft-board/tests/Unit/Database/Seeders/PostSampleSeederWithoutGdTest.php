@@ -7,7 +7,7 @@ use Modules\Sirsoft\Board\Database\Seeders\Sample\PostSampleSeeder;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * gd 확장이 없는 서버에서 게시판 샘플 시더가 이미지 없이 진행하는지 검증한다 (#151 W8)
+ * gd 확장이 없는 서버에서 게시판 샘플 시더가 이미지 없이 진행하는지 검증한다 (공개 #151 W8)
  *
  * gd 는 코어 기준 「선택」 확장이다. 예전에는 `imagecreatetruecolor()` 를 가드 없이 불러 `--sample` 시더가 CLI 에서
  * 중단됐다. 이제 경고 한 줄을 남기고 샘플 이미지·첨부 없이 게시글 생성을 이어간다(ClaimSeeder·PageSampleSeeder 와 같은 가드).

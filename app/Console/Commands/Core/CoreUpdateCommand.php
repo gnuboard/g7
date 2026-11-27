@@ -144,7 +144,7 @@ class CoreUpdateCommand extends Command
         $secret = null;
         $logEntries = [];
         $ownershipSnapshot = [];
-        // 공식 번들 배치 판정(#146) — 설치·디스크에 있는 번들과 그 의존만 갱신, 나머지는 운영자 선택
+        // 공식 번들 배치 판정(공개 #146) — 설치·디스크에 있는 번들과 그 의존만 갱신, 나머지는 운영자 선택
         $bundledPlan = null;
         $bundledRecordBackup = null;
         $bundledRecordWritten = false;
@@ -152,7 +152,7 @@ class CoreUpdateCommand extends Command
         $applyRootFileWarnings = [];
         $planner = app(BundledSourcePlanner::class);
         $bundledOption = is_string($this->option('bundled-sources')) ? $this->option('bundled-sources') : null;
-        // PHP 확장 사전점검(#151 D9) — --source/--zip 은 유지보수 전, 그 밖에는 Step 4 다운로드 직후
+        // PHP 확장 사전점검(공개 #151 D9) — --source/--zip 은 유지보수 전, 그 밖에는 Step 4 다운로드 직후
         $phpPreflight = app(PhpRequirementPreflight::class);
         $phpPreflightDone = false;
 
@@ -178,7 +178,7 @@ class CoreUpdateCommand extends Command
 
         try {
             // 코어 업데이트는 한 번에 하나만 — 두 곳에서 동시에 돌리면 먼저 끝난 쪽이 유지보수 모드를 풀어 교체 중인 사이트가
-            // 열리고 스텝이 두 번 돌았다(#161 S5). 유지보수 진입 전이라 거절해도 정리할 것이 없다. 잠금 저장소 오류면 시작하지
+            // 열리고 스텝이 두 번 돌았다(공개 #161 S5). 유지보수 진입 전이라 거절해도 정리할 것이 없다. 잠금 저장소 오류면 시작하지
             // 않는다. 이 지역 변수가 handle() 을 빠져나갈 때 풀린다. 자식 프로세스(업그레이드 스텝·번들 일괄 업데이트)는 잡지 않는다.
             try {
                 $coreLock = ExtensionOperationLock::acquireCore();
@@ -334,7 +334,7 @@ class CoreUpdateCommand extends Command
                 }
             }
 
-            // ── 공식 번들 배치 판정 (#146 D6) ──
+            // ── 공식 번들 배치 판정 (공개 #146 D6) ──
             // --source/--local 은 디렉토리, --zip 은 풀지 않고 목록만 읽어 유지보수 모드 전에 묻는다.
             // GitHub 다운로드 경로와 zip 목록을 못 읽은 경우는 Step 4 직후(유지보수 중)에 묻는다.
             $earlyInventory = null;
@@ -384,7 +384,7 @@ class CoreUpdateCommand extends Command
                 }
             }
 
-            // ── PHP 확장 사전점검 (#151 D9) — 새 코어 필수 확장이 없으면 유지보수 모드 전에 멈춘다 ──
+            // ── PHP 확장 사전점검 (공개 #151 D9) — 새 코어 필수 확장이 없으면 유지보수 모드 전에 멈춘다 ──
             $earlyPhpResult = $sourceDir ? $phpPreflight->inspectDirectory($sourceDir) : ($zipPath ? $phpPreflight->inspectZip($zipPath) : null);
             if ($earlyPhpResult !== null) {
                 $phpPreflightDone = true;
@@ -580,7 +580,7 @@ class CoreUpdateCommand extends Command
             $bundledSkipPaths = $bundledPlan->skipPaths();
 
             // GitHub 다운로드(또는 zip 목록을 못 읽은) 경로: 받은 배포본으로 지금 PHP 확장을 판정한다(유지보수 중).
-            // 아직 백업·파일 적용 전이라 공식 번들 선택 오류와 같은 모양으로 깨끗이 끝낸다(#151 D9).
+            // 아직 백업·파일 적용 전이라 공식 번들 선택 오류와 같은 모양으로 깨끗이 끝낸다(공개 #151 D9).
             if (! $phpPreflightDone && ! $this->option('local')) {
                 $phpPreflightDone = true;
                 $bar->clear();
@@ -909,7 +909,7 @@ class CoreUpdateCommand extends Command
             $log('업데이트 경로 소유권 복원 완료');
 
             // 소유권 복원 완료 후 · 유지보수 해제 전에 `public/storage` symlink 를 방어 복구한다.
-            // `--prune` 이 릴리즈 소스에 없는 symlink 를 orphan 으로 삭제했거나(#43) 손상된
+            // `--prune` 이 릴리즈 소스에 없는 symlink 를 orphan 으로 삭제했거나(공개 #43) 손상된
             // 경우에도, 첫 요청부터 `/storage/...` 가 200 을 반환하도록 링크를 재생성한다.
             StorageLinkHelper::ensurePublicStorageLink();
             $log('public/storage symlink 확인/복구 완료');
@@ -944,7 +944,7 @@ class CoreUpdateCommand extends Command
             RouteCacheHelper::rebuild();
 
             // 훅 캐시는 새 프로세스에서 한 번 더 굽는다 — 이 프로세스는 이전 코드로 부팅해, 업데이트 시작 때
-            // 훅 캐시가 없던 사이트에서는 이전 리스너 구독으로 구워졌을 수 있다(#138 후속).
+            // 훅 캐시가 없던 사이트에서는 이전 리스너 구독으로 구워졌을 수 있다(공개 #138 후속).
             $stage = 'hook_cache';
             $this->rebuildHookCacheInFreshProcess($log);
 
@@ -989,7 +989,7 @@ class CoreUpdateCommand extends Command
                 }
             }
 
-            // 공식 번들 처리 결과 4구분 요약 (#146 제안 5)
+            // 공식 번들 처리 결과 4구분 요약 (공개 #146 제안 5)
             $this->summarizeBundledPlacement($bundledPlan, $promptResult);
 
             $bundledFailed = (int) ($promptResult['failed'] ?? 0);
@@ -1059,7 +1059,7 @@ class CoreUpdateCommand extends Command
                 // 캐시 비우기(redis·memcached flush)가 잠금까지 지웠을 수 있다 — 바로 늘리거나 다시 잡는다
                 $coreLock?->keepAlive(force: true);
                 // 핸드오프는 정상 종료 경로의 훅 캐시 재굽기를 지나지 않는다 — 파일은 이미 toVersion 이므로
-                // 새 코드로 부팅하는 새 프로세스에서 굽는다(#138 후속).
+                // 새 코드로 부팅하는 새 프로세스에서 굽는다(공개 #138 후속).
                 $this->rebuildHookCacheInFreshProcess($log);
                 // 핸드오프로 멈춰도 파일은 이미 toVersion 이므로 워커는 새 코드로 재기동해야 한다.
                 $service->signalQueueRestart();
@@ -1074,7 +1074,7 @@ class CoreUpdateCommand extends Command
                 $log('핸드오프 cleanup 완료 (버전 toVersion 고정 + 캐시 clear + 소유권 복원)');
 
                 // 핸드오프 시에도 파일은 이미 toVersion 으로 반영돼 `public/storage` symlink 가
-                // 삭제/손상됐을 수 있으므로 유지보수 해제 전에 동일하게 방어 복구한다(#43).
+                // 삭제/손상됐을 수 있으므로 유지보수 해제 전에 동일하게 방어 복구한다(공개 #43).
                 StorageLinkHelper::ensurePublicStorageLink();
                 $log('public/storage symlink 확인/복구 완료 (핸드오프)');
 
@@ -1513,7 +1513,7 @@ class CoreUpdateCommand extends Command
     }
 
     /**
-     * PHP 확장 사전점검 결과를 출력하고 차단 여부를 반환합니다. (#151 D9)
+     * PHP 확장 사전점검 결과를 출력하고 차단 여부를 반환합니다. (공개 #151 D9)
      *
      * 새 코어 필수 확장 미충족은 오류(차단), 함께 갱신될 번들 확장의 필수 확장 미충족은 경고만 낸다.
      *
@@ -1969,7 +1969,7 @@ class CoreUpdateCommand extends Command
      * 훅 캐시를 새 프로세스에서 다시 굽고, 실패하면 운영자에게 수동 명령을 안내합니다.
      *
      * 이 프로세스는 이전 코드로 부팅했으므로 여기서 구운 훅 캐시는 이전 리스너 구독을 담을 수 있다.
-     * 새 프로세스는 디스크의 새 코드로 부팅한다. 실패해도 업데이트는 되돌리지 않는다(#138 후속).
+     * 새 프로세스는 디스크의 새 코드로 부팅한다. 실패해도 업데이트는 되돌리지 않는다(공개 #138 후속).
      *
      * @param  \Closure  $log  업데이트 로그 기록 콜백
      * @return void 반환값 없음

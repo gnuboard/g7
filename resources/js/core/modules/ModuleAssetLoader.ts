@@ -381,7 +381,7 @@ export class ModuleAssetLoader {
             return;
         }
 
-        // 정적 게시(bake) URL 이면 1회만 시도하고, 미스 시 종전 API URL 로 전환한다 (#122).
+        // 정적 게시(bake) URL 이면 1회만 시도하고, 미스 시 종전 API URL 로 전환한다 (공개 #122).
         // 게시 디렉토리는 GC(현재+직전 1개 보존) 대상이라 캐시된 HTML 의 구버전 정적 URL 이
         // 404 가 될 수 있고, 같은 정적 URL 재시도는 그 상태를 복구하지 못한다.
         const legacyUrl = staticToLegacy(url);
@@ -454,7 +454,7 @@ export class ModuleAssetLoader {
         }
 
         // 정적 게시(bake) URL 이면 1회만 시도하고, 미스 시 종전 API URL 로 전환해 기존
-        // 재시도 예산을 이어간다 (#122 — fetchStaticFirst 와 동형: 정적 1 + 레거시 재시도).
+        // 재시도 예산을 이어간다 (공개 #122 — fetchStaticFirst 와 동형: 정적 1 + 레거시 재시도).
         // 게시 디렉토리는 GC(현재+직전 1개 보존) 대상이라 캐시된 HTML 의 구버전 정적
         // URL 이 404 가 될 수 있고, 같은 정적 URL 재시도는 그 상태를 복구하지 못한다.
         const legacyUrl = staticToLegacy(url);

@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 
 /**
- * 큐 대기 작업 목록 컬렉션 (#17)
+ * 큐 대기 작업 목록 컬렉션
  *
  * `meta` 에 측정 가능 여부를 싣는다 — database 드라이버가 아니면 목록은 비고 `measurable=false` 다.
  */

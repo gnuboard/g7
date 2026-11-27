@@ -615,7 +615,7 @@ class CoreBackupHelper
      * @param  array  $excludes  제외 패턴 목록 (예: ['node_modules', '.git'])
      * @param  array<int, string>  $skipPaths  이번 업데이트가 배치하지 않는 경로(base 상대). 경로와 정확히 같거나
      *                                         그 하위면 제외한다. `excludes` 와 달리 이름이 아니라 경로로만 매치한다 —
-     *                                         미설치·미배치 공식 번들(`plugins/_bundled/{id}` 등)을 건너뛰는 용도(#146).
+     *                                         미설치·미배치 공식 번들(`plugins/_bundled/{id}` 등)을 건너뛰는 용도(공개 #146).
      * @return array{apply:array<int,string>, added_count:int, changed_count:int, has_symlink:bool}
      *                                                                                              apply = 적용 대상 상대경로 목록(정렬됨, 슬래시 정규화)
      */

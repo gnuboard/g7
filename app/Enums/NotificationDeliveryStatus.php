@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * 알림 수신자별 발송 기록 상태 (#139)
+ * 알림 수신자별 발송 기록 상태 (공개 #139)
  *
  * notification_deliveries.status 의 SSoT.
  */

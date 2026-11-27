@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * 알림 수신자 참조 해석 테스트 (#139)
+ * 알림 수신자 참조 해석 테스트 (공개 #139)
  *
  * resolveRefs() 는 resolve() 와 같은 규칙·같은 중복 제거 키를 쓰되 회원 모델 대신 id 만 뽑는다 —
  * 전 회원 역할이어도 모델·권한을 한꺼번에 싣지 않고 결정적 순서로 나눌 수 있어야 한다.

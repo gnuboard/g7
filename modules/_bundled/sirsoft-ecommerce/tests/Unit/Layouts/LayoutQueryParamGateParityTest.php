@@ -6,7 +6,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Tests\Support\Concerns\AssertsLayoutQueryParamGateParity;
 
 /**
- * 화면 조회 조건 ↔ 서버 게이트 키 회귀 가드 — 이커머스 모듈 (#17).
+ * 화면 조회 조건 ↔ 서버 게이트 키 회귀 가드 — 이커머스 모듈.
  *
  * 코어 스위트가 아니라 **모듈 스위트**에 두는 이유: 모듈 라우트는 모듈이 활성일 때만 등록된다.
  * 코어 스위트에서는 `/api/modules/sirsoft-ecommerce/...` 엔드포인트가 라우트에 닿지 않아

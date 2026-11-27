@@ -114,7 +114,7 @@
                                         }
                                     },
                                     {
-                                        "comment": "호환성 배너도 다시 받는다 — 켠 템플릿이 새로 고치기 전까지 배너에 남지 않게 한다(#145 F8).",
+                                        "comment": "호환성 배너도 다시 받는다 — 켠 템플릿이 새로 고치기 전까지 배너에 남지 않게 한다(공개 #145 F8).",
                                         "handler": "refetchDataSource",
                                         "params": {
                                             "dataSourceId": "auto_deactivated_banner"
@@ -189,7 +189,7 @@
                                         "handler": "sequence",
                                         "actions": [
                                             {
-                                                "comment": "같은 확장에 다른 작업(설치·업데이트·활성화 등)이 진행 중이라 거절된 409(errors.operation_in_progress, 코어 7.1.5)는\n                       의존 경고·강제 활성 창 응답과 다르다 — 창을 열지 않고 서버 문구를 안내 토스트로 보인다(#161).",
+                                                "comment": "같은 확장에 다른 작업(설치·업데이트·활성화 등)이 진행 중이라 거절된 409(errors.operation_in_progress, 코어 7.1.5)는\n                       의존 경고·강제 활성 창 응답과 다르다 — 창을 열지 않고 서버 문구를 안내 토스트로 보인다(공개 #161).",
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "global",

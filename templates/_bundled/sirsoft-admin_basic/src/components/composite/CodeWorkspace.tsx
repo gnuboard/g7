@@ -167,7 +167,7 @@ const MOBILE_MAX_WIDTH_EXCLUSIVE = 768;
 /**
  * 기기 기본 글자 크기 — 데스크톱 14 / 모바일 13 (§7.6)
  *
- * @param width 렌더 폭(`useRenderWidth` — Provider 폭 우선, 편집기 미리보기에서는 기기 폭, #141)
+ * @param width 렌더 폭(`useRenderWidth` — Provider 폭 우선, 편집기 미리보기에서는 기기 폭, 공개 #141)
  * @returns 글자 크기(px)
  */
 const deviceDefaultFontSize = (width: number): number => (width < MOBILE_MAX_WIDTH_EXCLUSIVE ? 13 : 14);
@@ -249,7 +249,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
   editorAttrs,
   children,
 }) => {
-  // 렌더 폭 — 기기 기본값(글자 크기·줄바꿈)을 고른다. 창 폭이 아니라 Provider 폭이 우선이다(#141).
+  // 렌더 폭 — 기기 기본값(글자 크기·줄바꿈)을 고른다. 창 폭이 아니라 Provider 폭이 우선이다(공개 #141).
   const renderWidth = useRenderWidth();
   const [buffers, setBuffers] = useState<Record<string, Buffer>>({});
 

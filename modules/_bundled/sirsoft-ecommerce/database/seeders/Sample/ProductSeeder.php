@@ -1425,7 +1425,7 @@ class ProductSeeder extends Seeder
      */
     public function applyColorFilter(string $imageContent): string
     {
-        // gd 는 코어 기준 「선택」 확장이다 — 없으면 필터 없이 원본을 쓴다(#151). 경고는 한 번만 낸다.
+        // gd 는 코어 기준 「선택」 확장이다 — 없으면 필터 없이 원본을 쓴다(공개 #151). 경고는 한 번만 낸다.
         if (! $this->gdAvailable()) {
             if (! $this->gdWarningShown) {
                 $this->gdWarningShown = true;

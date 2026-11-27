@@ -1,5 +1,5 @@
 /**
- * 회귀: G7Core 셀 렌더 래퍼가 미리보기 렌더 환경을 호스트 값보다 먼저 쓴다 (이슈 #141)
+ * 회귀: G7Core 셀 렌더 래퍼가 미리보기 렌더 환경을 호스트 값보다 먼저 쓴다 (이슈 공개 #141)
  *
  * `G7Core.renderItemChildren`·`renderComponentLayout`·`renderExpandContent` 는 종전에
  * 호스트(관리자 화면)의 번역 컨텍스트·엔진·dispatcher·컴포넌트 목록을 무조건 주입했다.

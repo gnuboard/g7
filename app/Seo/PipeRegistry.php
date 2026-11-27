@@ -466,7 +466,7 @@ class PipeRegistry
                 return (string) $value;
             }
 
-            // 대상 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148 — 화면 localized 파이프와 같은 SSoT)
+            // 대상 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (공개 #148 — 화면 localized 파이프와 같은 SSoT)
             return LocalizedValue::pick($value, $locale ?? $this->locale) ?? '';
         };
 

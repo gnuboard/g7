@@ -134,7 +134,7 @@ class SettingsListDeletionPersistenceTest extends ModuleTestCase
     /**
      * 결제수단은 카탈로그 병합 모델이라 저장본에서 빠져도 카탈로그에서 다시 채워진다.
      *
-     * 삭제 UX 가 아니라 is_active 토글 모델이므로 #91 과 다른 구조다 — 그 사실을 고정한다.
+     * 삭제 UX 가 아니라 is_active 토글 모델이므로 공개 #91 과 다른 구조다 — 그 사실을 고정한다.
      *
      * @scenario saved_currency_set=default_removed_by_admin, deletion_tombstone=has_removed_codes
      *

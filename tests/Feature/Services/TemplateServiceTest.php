@@ -83,7 +83,7 @@ class TemplateServiceTest extends TestCase
     /**
      * 템플릿 활성화 시 Service 가 생명주기 훅을 직접 발화하지 않는지 검증
      *
-     * before_activate·after_activate 모두 TemplateManager 가 발화한다(#138 — CLI·어드민 UI 공통 단일 발화).
+     * before_activate·after_activate 모두 TemplateManager 가 발화한다(공개 #138 — CLI·어드민 UI 공통 단일 발화).
      * 여기서는 Manager 를 mock 했으므로 Service 가 두 훅을 중복 발화하지 않는 것까지 잠근다.
      * Manager 쪽 발화는 ExtensionLifecycleHookContractTest 가 실제 설치로 검증한다.
      *
@@ -223,7 +223,7 @@ class TemplateServiceTest extends TestCase
      * filter_activate_data 훅은 Service 가 아니라 Manager 가 직전 훅 뒤에 발화한다 — Service 는 중복으로 적용하지 않는다.
      *
      * 직전 훅을 CLI·어드민 UI 공통으로 Manager 에 옮기면서 Service 의 필터가 직전 훅보다 먼저 돌게 됐다(before → filter
-     * 순서 역전). 필터도 Manager 로 옮겼으므로(#138 후속 — 설계 결정) Manager 를 mock 한 이 경로에서는 필터가 돌지 않아야 한다.
+     * 순서 역전). 필터도 Manager 로 옮겼으므로(공개 #138 후속 — 설계 결정) Manager 를 mock 한 이 경로에서는 필터가 돌지 않아야 한다.
      * 실제 순서는 ExtensionLifecycleHookContractTest 가 잠근다.
      *
      * @scenario operation=activate

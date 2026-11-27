@@ -72,7 +72,7 @@ async function bodyText(page: Page): Promise<string> {
 }
 
 /**
- * 정적 게시(bake, #122) fast path 강제 미스.
+ * 정적 게시(bake, 공개 #122) fast path 강제 미스.
  *
  * 정적 게시가 완료된 프로덕션 사이트에서는 routes/components/lang/번들이
  * `/build/ext/{v}/…` 를 먼저 타므로, `/api/**` 패턴 인터셉트가 한 건도 걸리지

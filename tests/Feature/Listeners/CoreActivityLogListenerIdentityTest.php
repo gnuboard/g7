@@ -16,7 +16,7 @@ use Tests\TestCase;
 /**
  * CoreActivityLogListener 의 IDV 훅 매핑 동작 테스트.
  *
- * 계획서 PR#2 요구: `core.identity.after_request` / `.after_verify` / `.challenge_expired`
+ * 계획서 PR 2 요구: `core.identity.after_request` / `.after_verify` / `.challenge_expired`
  * 3 훅이 activity_logs 에 정확히 파생되는지 검증.
  */
 class CoreActivityLogListenerIdentityTest extends TestCase

@@ -63,7 +63,7 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
  * 로케일 코드를 사람이 읽을 수 있는 이름으로 변환
  */
 function getLocaleName(locale: string): string {
-  // 언어팩 이름 → 번역 → 내장 표 → 코드 (#148 — 종전 state.get(경로) 는 인자를 무시해 언어팩 이름을 못 읽었다)
+  // 언어팩 이름 → 번역 → 내장 표 → 코드 (공개 #148 — 종전 state.get(경로) 는 인자를 무시해 언어팩 이름을 못 읽었다)
   return getLocaleDisplayName(locale);
 }
 

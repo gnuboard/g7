@@ -388,7 +388,7 @@ class CoreBackupHelperApplyListTest extends TestCase
     }
 
     /**
-     * skipPaths 에 든 번들 경로(정확 일치·하위 접두사)는 base 에 없어도 적용 목록에서 빠집니다 (#146).
+     * skipPaths 에 든 번들 경로(정확 일치·하위 접두사)는 base 에 없어도 적용 목록에서 빠집니다 (공개 #146).
      *
      * 3-way base 는 업데이트 직전 디스크 스냅샷이라, 운영자가 지운 번들이나 이번 판에 새로 든
      * 번들이 모두 added 로 판정돼 통째로 배치되던 결함을 막는다.
@@ -451,7 +451,7 @@ class CoreBackupHelperApplyListTest extends TestCase
     }
 
     /**
-     * 롤백 manifest 도 같은 skipPaths 로 건너뛰어 적용 목록과 일치합니다 (#146 S4).
+     * 롤백 manifest 도 같은 skipPaths 로 건너뛰어 적용 목록과 일치합니다 (공개 #146 S4).
      *
      * @effects new_files_manifest_honors_skip_paths
      *

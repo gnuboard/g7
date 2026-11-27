@@ -89,7 +89,7 @@ describe('ErrorDisplay 화면 언어', () => {
   });
 
   /**
-   * 내장 문구는 앞 두 글자가 아니라 주 언어 하위 태그로 고른다 (engine-v1.81.0, #148 F2).
+   * 내장 문구는 앞 두 글자가 아니라 주 언어 하위 태그로 고른다 (engine-v1.81.0, 공개 #148 F2).
    * 종전 `.slice(0, 2)` 는 콘칸어(`kok`)를 한국어로, 자메이카 크리올(`jam`)을 일본어로 잘못 골랐다.
    *
    * @scenario case=error_primary_subtag

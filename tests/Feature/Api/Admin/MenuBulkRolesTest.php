@@ -146,7 +146,7 @@ class MenuBulkRolesTest extends TestCase
 
     /**
      * 관리 목록은 행마다 부여된 역할을 ID 로 싣는다 — 일괄로 자식에 더한 역할이 부모·자식 행 모두에 보이고,
-     * 하위 메뉴의 역할 객체(roles)는 #76 정리대로 여전히 싣지 않는다.
+     * 하위 메뉴의 역할 객체(roles)는 공개 #76 정리대로 여전히 싣지 않는다.
      *
      * @scenario entry=menu_bulk_add, actor=super_admin, menu_shape=child_only
      *

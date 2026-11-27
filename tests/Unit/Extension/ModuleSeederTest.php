@@ -159,7 +159,7 @@ class ModuleSeederTest extends TestCase
      * sirsoft-ecommerce 모듈의 getSeeders()가 필수 시더를 포함하는지 테스트합니다.
      *
      * 2026-02-09 최초 작성 당시에는 SequenceSeeder 1개만 반환했으나,
-     * 2026-03-03 배송사 관리 기능 추가(#19) 이후 ShippingCarrierSeeder 등이
+     * 2026-03-03 배송사 관리 기능 추가 이후 ShippingCarrierSeeder 등이
      * 설치 시 실행되는 필수 시더로 추가되었다. 본 테스트는 설치 시 반드시 실행되어야
      * 하는 시더들이 모두 포함되어 있는지 검증한다.
      */

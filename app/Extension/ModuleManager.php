@@ -273,7 +273,7 @@ class ModuleManager implements ModuleManagerInterface
                 // 클래스가 아직 로드되지 않은 경우에만 require
                 // (_bundled에서 이미 로드된 경우 중복 선언 방지)
                 if (! class_exists($moduleClass, false)) {
-                    // 오토로드 캐시에 없는 폴더(고아 사본)는 자기 PSR-4 를 먼저 등록한다 — 진입 클래스가 자기 소스를 상속하면 부팅이 죽는다 (#159)
+                    // 오토로드 캐시에 없는 폴더(고아 사본)는 자기 PSR-4 를 먼저 등록한다 — 진입 클래스가 자기 소스를 상속하면 부팅이 죽는다 (공개 #159)
                     ExtensionManager::registerAutoloadIfMissing($directory, 'modules:'.$moduleName);
                     $hashBeforeLoad = md5_file($moduleFile) ?: null;
                     require_once $moduleFile;
@@ -479,10 +479,10 @@ class ModuleManager implements ModuleManagerInterface
         ?string &$failureReason = null,
     ): bool {
         // 같은 모듈의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(공개 #161).
         $operationLock = ExtensionOperationLock::acquire('module', $moduleName, 'install');
 
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, 공개 #138 후속)
         HookManager::doAction('core.modules.before_install', $moduleName);
 
         $failureReason = null;
@@ -624,7 +624,7 @@ class ModuleManager implements ModuleManagerInterface
                 'module'
             );
 
-            // 확장이 composer.json require.ext-* 로 선언한 PHP 확장 검증 — 없으면 설치를 막는다(#151)
+            // 확장이 composer.json require.ext-* 로 선언한 PHP 확장 검증 — 없으면 설치를 막는다(공개 #151)
             $this->extensionManager->assertPhpExtensionRequirements(
                 'module',
                 $module->getIdentifier(),
@@ -807,13 +807,13 @@ class ModuleManager implements ModuleManagerInterface
         }
 
         // 정규 훅 — Service 경유 여부와 무관하게 CLI 에서도 리스너(큐 재시작·활동 로그·언어팩)가
-        // 돈다(#138). 설치 롤백 try 밖에서 발화해, 리스너 예외가 방금 끝난 설치를 되돌리지 않게 한다.
+        // 돈다(공개 #138). 설치 롤백 try 밖에서 발화해, 리스너 예외가 방금 끝난 설치를 되돌리지 않게 한다.
         app(ExtensionIntegrityRecorder::class)->recordInstallSource('module', $moduleName, $integritySource);
 
         HookManager::doAction('core.modules.after_install', $moduleName, $this->getModuleInfo($moduleName) ?? []);
 
         // 기존 레코드 위 재설치(--force) — 판·상태가 manifest 값으로 바뀌어 이 확장을 요구하던 활성 의존자가 깨질 수 있다.
-        // 막지 않고 깨지는 의존자를 안내로 남긴다(#152 D6)
+        // 막지 않고 깨지는 의존자를 안내로 남긴다(공개 #152 D6)
         if ($existingRecord !== null) {
             DependencyVersionWarnings::noticeDependents('module', $moduleName);
         }
@@ -831,10 +831,10 @@ class ModuleManager implements ModuleManagerInterface
     public function activateModule(string $moduleName, bool $force = false): array
     {
         // 같은 모듈의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(공개 #161).
         $operationLock = ExtensionOperationLock::acquire('module', $moduleName, 'activate');
 
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, 공개 #138 후속)
         HookManager::doAction('core.modules.before_activate', $moduleName, $force);
 
         $module = $this->getModule($moduleName);
@@ -875,7 +875,7 @@ class ModuleManager implements ModuleManagerInterface
         }
 
         // 필수 PHP 확장(composer.json require.ext-*) 검증 — 코어 버전 검사와 같은 조건으로 막고,
-        // 강제 활성화·코어 업데이트 중에는 경고만 남긴다(#151)
+        // 강제 활성화·코어 업데이트 중에는 경고만 남긴다(공개 #151)
         $phpExtensionPath = $this->modulesPath.DIRECTORY_SEPARATOR.$module->getIdentifier();
         if (! $force && ! CoreServiceProvider::isCoreUpdateInProgress()) {
             $this->extensionManager->assertPhpExtensionRequirements('module', $module->getIdentifier(), $phpExtensionPath, fn () => $module->getName());
@@ -983,7 +983,7 @@ class ModuleManager implements ModuleManagerInterface
             // @deprecated 'core.modules.activated' — identifier 1개만 전달하는 구훅. 정규 훅은 after_activate.
             HookManager::doAction('core.modules.activated', $moduleName);
 
-            // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138)
+            // 정규 훅 — CLI·어드민 UI 공통 단일 발화(공개 #138)
             HookManager::doAction('core.modules.after_activate', $moduleName, $this->getModuleInfo($moduleName) ?? []);
         }
 
@@ -1047,10 +1047,10 @@ class ModuleManager implements ModuleManagerInterface
         ?string $incompatibleRequiredVersion = null,
     ): array {
         // 같은 모듈의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(공개 #161).
         $operationLock = ExtensionOperationLock::acquire('module', $moduleName, 'deactivate');
 
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, 공개 #138 후속)
         HookManager::doAction('core.modules.before_deactivate', $moduleName, $force);
 
         $module = $this->getModule($moduleName);
@@ -1164,10 +1164,10 @@ class ModuleManager implements ModuleManagerInterface
             // (스캔 폴백은 캐시에 그 확장 항목이 없을 때만) 끈 확장의 리스너가 남는다 (7.1.3)
             $this->extensionManager->regenerateHookCache();
 
-            // 요구사항 #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
+            // 요구사항 6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
             HookManager::doAction('core.modules.after_deactivate', $module->getIdentifier());
 
-            // 강제 비활성화 — 의존자 경고(409)를 건너뛰고 끈 경우, 깨지는 의존자를 안내로 남긴다(#152 D6). 종료 코드는 그대로
+            // 강제 비활성화 — 의존자 경고(409)를 건너뛰고 끈 경우, 깨지는 의존자를 안내로 남긴다(공개 #152 D6). 종료 코드는 그대로
             if ($hasDependents) {
                 DependencyVersionWarnings::noticeDependents('module', $module->getIdentifier());
             }
@@ -1244,10 +1244,10 @@ class ModuleManager implements ModuleManagerInterface
         ?array &$preservedBackups = null,
     ): bool {
         // 같은 모듈의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(공개 #161).
         $operationLock = ExtensionOperationLock::acquire('module', $moduleName, 'uninstall');
 
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, 공개 #138 후속)
         HookManager::doAction('core.modules.before_uninstall', $moduleName, $deleteData);
 
         $failureReason = null;
@@ -1268,7 +1268,7 @@ class ModuleManager implements ModuleManagerInterface
         }
 
         // 켜진 확장이 의존하면 제거하지 않는다 — 비활성화는 경고 뒤 강제로 진행할 수 있지만 제거는 되돌릴 수 없고,
-        // 남은 의존 확장이 필요한 모듈 없이 켜진 채로 남는다(#138 실측 ①).
+        // 남은 의존 확장이 필요한 모듈 없이 켜진 채로 남는다(공개 #138 실측 ①).
         $activeDependents = $this->activeDependentIdentifiers($moduleName);
         if ($activeDependents !== []) {
             throw new \Exception(__('modules.errors.uninstall_blocked_by_dependents', [
@@ -1434,7 +1434,7 @@ class ModuleManager implements ModuleManagerInterface
             throw $e;
         }
 
-        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). 커밋·파일 삭제가 끝난 뒤 try 밖에서 발화해
+        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(공개 #138). 커밋·파일 삭제가 끝난 뒤 try 밖에서 발화해
         // 리스너 예외가 이미 커밋된 제거를 롤백 경로로 보내지 않게 한다.
         if ($result) {
             HookManager::doAction('core.modules.after_uninstall', $moduleName, $moduleInfo, $deleteData);
@@ -1915,7 +1915,7 @@ class ModuleManager implements ModuleManagerInterface
      * 활성 인스턴스가 있으면(부팅 때 PSR-4 가 등록된 설치본) 상세 조회와 같은 값을 돌려준다. 미설치(pending·bundled)
      * 모듈은 진입 파일(module.php)을 실행하지 않는다 — 진입 클래스가 자기 PSR-4 클래스를 상속하면 이 시점엔 부모를
      * 못 찾고, Composer 가 그 실패를 음성 캐시(missingClasses)에 남겨 같은 프로세스의 이어지는 설치가 「Class not found」
-     * 로 죽는다(#159). 진입 파일이 자체 vendor 를 부르면 `_bundled` 경로 오토로더를 먼저 선언해 설치 마지막 단계가
+     * 로 죽는다(공개 #159). 진입 파일이 자체 vendor 를 부르면 `_bundled` 경로 오토로더를 먼저 선언해 설치 마지막 단계가
      * 「Cannot declare class」 로도 죽는다. 설치 판정이 읽는 이름·버전·의존·연동은 원래 manifest 가 SSoT 다.
      *
      * @param  string  $moduleName  모듈 식별자
@@ -2050,7 +2050,7 @@ class ModuleManager implements ModuleManagerInterface
 
         // 배열인 경우 로케일에 맞는 값 반환
         if (is_array($value)) {
-            // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 번째 값 → 빈 문자열 (#148)
+            // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 번째 값 → 빈 문자열 (공개 #148)
             return LocalizedValue::pick($value, $locale) ?? '';
         }
 
@@ -4687,7 +4687,7 @@ class ModuleManager implements ModuleManagerInterface
     {
         $uid = '_fresh_'.uniqid();
 
-        // 클래스명만 변경 (namespace 유지 → use/extends 정상 작동), __DIR__·__FILE__ 은 진입 파일 위치로 (#159)
+        // 클래스명만 변경 (namespace 유지 → use/extends 정상 작동), __DIR__·__FILE__ 은 진입 파일 위치로 (공개 #159)
         $content = ExtensionEntrySource::forEval($moduleFile, 'Module', 'Module'.$uid);
         if ($content === null) {
             return null;
@@ -5184,12 +5184,12 @@ class ModuleManager implements ModuleManagerInterface
     ): array {
         $integrity ??= PackageIntegrityOptions::none();
         // 같은 모듈의 업데이트는 한 번에 하나만 — 상태 가드(status=updating)가 서기 전 구간에 들어온 두 번째 요청이
-        // 함께 통과해 업데이트가 두 번 수행됐다(#138 실측 ② 버튼 더블클릭). 직전 훅보다 먼저 잠그고, 이 지역 변수가
+        // 함께 통과해 업데이트가 두 번 수행됐다(공개 #138 실측 ② 버튼 더블클릭). 직전 훅보다 먼저 잠그고, 이 지역 변수가
         // 메서드를 빠져나갈 때(정상 반환·예외 모두) 잠금이 풀린다.
         $operationLock = ExtensionOperationLock::acquire('module', $identifier);
 
         // 진행 중 하트비트 — 단계마다(30초 간격) 잠금을 늘리고, `updating` 기록 뒤에는 행 `updated_at` 도 갱신한다. 10분 넘게
-        // 걸리는 업데이트가 잠금 만료·`updated_at` 경과로 「멈춘 업데이트」로 오판돼 활성화·정리가 되돌리는 일을 막는다(#161 D4).
+        // 걸리는 업데이트가 잠금 만료·`updated_at` 경과로 「멈춘 업데이트」로 오판돼 활성화·정리가 되돌리는 일을 막는다(공개 #161 D4).
         $statusUpdating = false;
         $touch = function () use (&$statusUpdating, $identifier): void {
             if ($statusUpdating) {
@@ -5203,7 +5203,7 @@ class ModuleManager implements ModuleManagerInterface
             return $onUpgradeStep !== null ? $onUpgradeStep(...$args) : null;
         };
 
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, 공개 #138 후속)
         HookManager::doAction('core.modules.before_update', $identifier);
 
         $record = $this->moduleRepository->findByIdentifier($identifier);
@@ -5384,7 +5384,7 @@ class ModuleManager implements ModuleManagerInterface
                     );
                 }
 
-                // 3.4.1. 새 버전 composer.json 의 필수 PHP 확장 — 업데이트는 막지 않고 경고만 남긴다(#151 D3).
+                // 3.4.1. 새 버전 composer.json 의 필수 PHP 확장 — 업데이트는 막지 않고 경고만 남긴다(공개 #151 D3).
                 // 번들 일괄 업데이트(force)·코어 업데이트 중에도 같은 경고를 남긴다. 기준은 스테이징 composer.json 이다.
                 if ($stagingPath) {
                     $this->extensionManager->warnPhpExtensionRequirements('module', $identifier, $stagingPath);
@@ -5606,7 +5606,7 @@ class ModuleManager implements ModuleManagerInterface
                 $this->modulesPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'module.json'
             );
 
-            // 역방향 — 이 확장을 요구하던 활성 의존자가 새 판(강제 업데이트는 더 낮은 판일 수 있다)으로 깨지면 함께 알린다(#152)
+            // 역방향 — 이 확장을 요구하던 활성 의존자가 새 판(강제 업데이트는 더 낮은 판일 수 있다)으로 깨지면 함께 알린다(공개 #152)
             $dependencyWarnings = [...$dependencyWarnings, ...DependencyVersionWarnings::forDependents('module', $identifier)];
 
             // 선택 연동(integrations) 안내 — 막지 않고 결과·완료 문구로만 알린다 (7.1.4 D10)
@@ -5713,7 +5713,7 @@ class ModuleManager implements ModuleManagerInterface
             );
         }
 
-        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). 업데이트 롤백(백업 복원) try 밖에서 발화해,
+        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(공개 #138). 업데이트 롤백(백업 복원) try 밖에서 발화해,
         // 리스너 예외가 이미 끝난 업데이트를 되돌리는 경로로 들어가지 않게 한다.
         HookManager::doAction('core.modules.after_update', $identifier, $result, $this->getModuleInfo($identifier) ?? []);
 

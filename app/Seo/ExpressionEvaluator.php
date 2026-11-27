@@ -2850,7 +2850,7 @@ class ExpressionEvaluator
      * $localized() 함수 호출을 평가합니다.
      *
      * 다국어 객체 {ko: "한국어", en: "English"} 에서 현재 로케일에 해당하는 값을 반환합니다.
-     * fallback 순서: 현재 로케일 → 사이트 기본 언어 → 'en' → 첫 번째 값 (#148 — 화면 `$localized` 와 같은 SSoT)
+     * fallback 순서: 현재 로케일 → 사이트 기본 언어 → 'en' → 첫 번째 값 (공개 #148 — 화면 `$localized` 와 같은 SSoT)
      *
      * @param  mixed  $value  다국어 객체 (배열)
      * @param  array  $context  데이터 컨텍스트
@@ -3439,7 +3439,7 @@ class ExpressionEvaluator
         }
 
         if (is_array($value)) {
-            // 다국어 객체 자동 해석: {"ko": "값", "en": "value"} → 현재 로케일 → 사이트 기본 언어 → 영어 (#148)
+            // 다국어 객체 자동 해석: {"ko": "값", "en": "value"} → 현재 로케일 → 사이트 기본 언어 → 영어 (공개 #148)
             $localized = LocalizedValue::pick($value, anyAsLast: false);
             if ($localized !== null) {
                 return $localized;

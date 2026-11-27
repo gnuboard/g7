@@ -5,7 +5,7 @@ namespace App\Http\Requests\Public\Csp;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * CSP 위반 보고 요청 (#158)
+ * CSP 위반 보고 요청 (공개 #158)
  *
  * 브라우저가 보내는 두 본문 형식을 기록용 필드로 정리한다 — 검증 실패로 4xx 를 돌려주지 않는다
  * (보고에 4xx 를 주면 방문자 콘솔에 오류가 쌓인다). 형식이 맞지 않으면 {@see reports()} 가 빈 배열을 돌려주고

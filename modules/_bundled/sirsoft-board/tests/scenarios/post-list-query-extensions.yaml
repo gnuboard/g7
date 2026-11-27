@@ -1,4 +1,4 @@
-feature: 게시글 목록 쿼리 확장 훅 sirsoft-board.post.list_query_extensions (#147)
+feature: 게시글 목록 쿼리 확장 훅 sirsoft-board.post.list_query_extensions (공개#147)
 
 description: |
   확장이 게시판 목록 성격의 쿼리에 조건을 더할 수 있는 필터 훅이다. 리스너는 `fn (Builder $query, array $context)`

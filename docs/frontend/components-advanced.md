@@ -19,7 +19,7 @@
 
 컴포넌트 간 직접 통신이 필요한 경우 `G7Core.componentEvent`를 사용합니다.
 
-> 전체 API 레퍼런스: [g7core-api.md](g7core-api.md#컴포넌트-이벤트-g7corecomponentevent)
+> 전체 API 레퍼런스: [g7core-api.md](g7core-api-advanced.md#컴포넌트-이벤트-g7corecomponentevent)
 
 ### 핵심 원칙
 
@@ -83,7 +83,7 @@ cleanup 필수: useEffect에서 반환된 unsubscribe 함수 호출
 
 ActionDispatcher와 호환되는 이벤트 객체를 생성하는 헬퍼 함수들입니다.
 
-> 전체 API 레퍼런스: [g7core-api.md](g7core-api.md#이벤트-생성-헬퍼)
+> 전체 API 레퍼런스: [g7core-api.md](g7core-api-advanced.md#이벤트-생성-헬퍼)
 
 ### 이벤트 헬퍼 함수 목록
 

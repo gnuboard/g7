@@ -223,7 +223,7 @@ describe('ExtensionCardGrid — 아이콘', () => {
 
   // @scenario shape=region_tagged
   // @effects language_pack_composite_badge, long_locale_badge_is_not_clipped
-  it('긴 로케일 배지(fil-PH)는 작은 글자·말줄임·title 로 상자 안에 둔다 (#148)', () => {
+  it('긴 로케일 배지(fil-PH)는 작은 글자·말줄임·title 로 상자 안에 둔다 (공개 #148)', () => {
     setContainerWidth(1072);
     const { container } = render(
       <ExtensionCardGrid items={[baseItem({ iconBadge: { text: 'fil-PH', srLabel: 'Filipino (Pilipinas) 언어팩' } })]} />

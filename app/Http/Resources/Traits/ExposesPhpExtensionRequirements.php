@@ -5,7 +5,7 @@ namespace App\Http\Resources\Traits;
 use App\Extension\ExtensionManager;
 
 /**
- * 확장 목록·상세 행의 PHP 확장 요구 필드를 직렬화하는 Trait (#151)
+ * 확장 목록·상세 행의 PHP 확장 요구 필드를 직렬화하는 Trait (공개 #151)
  *
  * 확장 composer.json 의 `require.ext-*`(필수 — 설치·활성화 차단)와 `suggest.ext-*`(권장 — 경고만)를
  * 서버 로드 상태와 함께 싣는다. 관리자 모듈·플러그인 목록 카드와 상세 창이 「PHP 확장 필요: soap(미설치)」 /

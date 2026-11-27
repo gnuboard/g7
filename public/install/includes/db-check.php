@@ -120,8 +120,8 @@ if (! function_exists('installer_test_database')) {
 
             $privileges = checkDatabasePrivileges($pdo, $database, $isReadDb);
 
-            // 「확인 불가」는 차단하지 않는다 (제품 결정 §16.26.4 #2) — SHOW GRANTS 거부·롤 전개
-            // 실패 환경에서 권한이 실재해도 설치가 원리상 불가능해지던 거짓 차단(20차 #6)의 수정.
+            // 「확인 불가」는 차단하지 않는다 (제품 결정 §16.26.4 2) — SHOW GRANTS 거부·롤 전개
+            // 실패 환경에서 권한이 실재해도 설치가 원리상 불가능해지던 거짓 차단(20차 6)의 수정.
             // 실제 부족은 설치 중 해당 단계가 사유와 함께 잡는다 (실패 화면 기정비).
             if (! empty($privileges['indeterminate'])) {
                 $result['privilege_warning'] = lang('warning_db_privileges_indeterminate', ['type' => $dbTypeLabel]);
@@ -133,7 +133,7 @@ if (! function_exists('installer_test_database')) {
                 ]));
             }
 
-            // DB 서버 버전 하한 안내 (20차 #7 — 차단 아님). 조회 실패는 안내 대상이 아니다.
+            // DB 서버 버전 하한 안내 (20차 7 — 차단 아님). 조회 실패는 안내 대상이 아니다.
             try {
                 $serverVersionNotice = installerDbServerVersionNotice((string) $pdo->getAttribute(PDO::ATTR_SERVER_VERSION));
                 if ($serverVersionNotice !== null) {

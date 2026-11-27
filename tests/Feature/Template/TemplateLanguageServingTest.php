@@ -188,7 +188,7 @@ class TemplateLanguageServingTest extends TestCase
      */
     public function test_cache_control_header_is_set(): void
     {
-        // public max-age 는 프로덕션 정책 (dev 는 no-cache 환경 분기, #122 작업 C)
+        // public max-age 는 프로덕션 정책 (dev 는 no-cache 환경 분기, 공개 #122 작업 C)
         app()['env'] = 'production';
 
         $response = $this->getJson('/api/templates/sirsoft-admin_basic/lang/ko.json');
@@ -203,7 +203,7 @@ class TemplateLanguageServingTest extends TestCase
     }
 
     /**
-     * lang If-None-Match 일치 시 304 (조건부 캐시 — #122 작업 C)
+     * lang If-None-Match 일치 시 304 (조건부 캐시 — 공개 #122 작업 C)
      *
      * @effects fallback_api_serves_etag_304
      *

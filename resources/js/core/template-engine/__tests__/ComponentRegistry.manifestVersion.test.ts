@@ -1,5 +1,5 @@
 /**
- * ComponentRegistry 매니페스트 캐시 버전 테스트 (#122 작업 B)
+ * ComponentRegistry 매니페스트 캐시 버전 테스트 (공개 #122 작업 B)
  *
  * components.json 요청에 `?v`(확장 캐시 버전)가 부착되지 않아 확장
  * 라이프사이클 직후 stale 매니페스트를 받을 수 있던 결함과, 정적
@@ -28,7 +28,7 @@ function manifestOk(): Response {
     } as unknown as Response;
 }
 
-describe('ComponentRegistry 매니페스트 캐시 버전 (#122)', () => {
+describe('ComponentRegistry 매니페스트 캐시 버전 (공개 #122)', () => {
     let fetchMock: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {

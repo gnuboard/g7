@@ -1,5 +1,5 @@
 /**
- * localeLabel — CKEditor 다국어 탭 라벨 (#148 F5·F5x)
+ * localeLabel — CKEditor 다국어 탭 라벨 (공개 #148 F5·F5x)
  *
  * 언어팩으로 켠 `fil-PH` 탭이 `FIL-PH` 로만 보이던 것을 언어팩 이름으로 보이게 하고, 그 이름(언어팩 manifest
  * 문자열)이 `innerHTML` 로 들어가 스크립트가 실행될 수 있던 자리를 `textContent` 로 바꾼다.

@@ -21,7 +21,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 신고 알림 통합 테스트 (이슈 #35 Phase 1 + Phase 2 + Phase 3)
+ * 신고 알림 통합 테스트 (Phase 1 + Phase 2 + Phase 3)
  *
  * Phase 1: 신고 처리(블라인드/삭제/복원) 시 피신고자 알림 발송 검증
  * Phase 2: 신고 접수 시 관리자 알림 발송 검증 (postTitle, reasonType 내용 포함)

@@ -25,7 +25,7 @@ use Tests\Concerns\SimulatesOperationLockStore;
 use Tests\TestCase;
 
 /**
- * 확장 업데이트 동시 실행 거절과 「업데이트할 것 없음」 응답 문구 (#138 실측 ②·④)
+ * 확장 업데이트 동시 실행 거절과 「업데이트할 것 없음」 응답 문구 (공개 #138 실측 ②·④)
  *
  * ② 업데이트 확인 버튼을 두 번 누르면 두 요청이 상태 가드(status=updating)를 세우기 전 구간을 함께 지나
  *    업데이트가 두 번 수행됐다. 같은 확장의 업데이트는 원자적 잠금으로 하나만 수행하고, 두 번째 요청은 409 로
@@ -211,7 +211,7 @@ class ExtensionUpdateConcurrencyTest extends TestCase
     }
 
     /**
-     * 잠금 저장소가 오류를 내면 Manager 가 업데이트를 시작하지 않고(직전 훅 0회) 503 예외로 거절한다 — 7.1.4 는 잠금 없이 진행했다(#161).
+     * 잠금 저장소가 오류를 내면 Manager 가 업데이트를 시작하지 않고(직전 훅 0회) 503 예외로 거절한다 — 7.1.4 는 잠금 없이 진행했다(공개 #161).
      *
      * @scenario case=lock_store_down_manager
      *
@@ -244,7 +244,7 @@ class ExtensionUpdateConcurrencyTest extends TestCase
     }
 
     /**
-     * 관리자 업데이트 요청은 잠금 저장소 오류에 503 과 번역 문구로 답하고, 원본 오류(서버 경로·저장소 표지)는 응답에 싣지 않는다(#161 D1).
+     * 관리자 업데이트 요청은 잠금 저장소 오류에 503 과 번역 문구로 답하고, 원본 오류(서버 경로·저장소 표지)는 응답에 싣지 않는다(공개 #161 D1).
      *
      * @scenario case=lock_store_down_api
      *
@@ -293,7 +293,7 @@ class ExtensionUpdateConcurrencyTest extends TestCase
     }
 
     /**
-     * 같은 확장에 다른 작업(업데이트 등)이 진행 중이면 설치·활성화·비활성화·제거도 409 로 거절한다 — 7.1.4 는 업데이트만 잠갔다(#161 D2).
+     * 같은 확장에 다른 작업(업데이트 등)이 진행 중이면 설치·활성화·비활성화·제거도 409 로 거절한다 — 7.1.4 는 업데이트만 잠갔다(공개 #161 D2).
      *
      * @scenario case=lifecycle_lock_held
      *
@@ -352,7 +352,7 @@ class ExtensionUpdateConcurrencyTest extends TestCase
 
     /**
      * 관리자 활성화·비활성화·제거 요청이 진행 중 작업과 겹치면 409 와 `errors.operation_in_progress` 로 답한다 — 화면은 이 표지로
-     * 의존 경고 409 와 가른다(#161 W3).
+     * 의존 경고 409 와 가른다(공개 #161 W3).
      *
      * @scenario case=lifecycle_lock_held
      *
@@ -389,7 +389,7 @@ class ExtensionUpdateConcurrencyTest extends TestCase
 
     /**
      * ZIP 설치는 `_pending` 으로 옮기기 전에 잠근다 — 같은 확장에 다른 작업이 진행 중이면 압축을 풀기만 하고 `_pending` 을 건드리지
-     * 않은 채 409 로 거절한다(동시 업로드가 남의 pending 을 덮거나 지우지 않게, #161).
+     * 않은 채 409 로 거절한다(동시 업로드가 남의 pending 을 덮거나 지우지 않게, 공개 #161).
      *
      * @scenario case=lifecycle_lock_held
      *

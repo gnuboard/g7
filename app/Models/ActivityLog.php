@@ -246,7 +246,7 @@ class ActivityLog extends Model
         }
 
         // 출처 자동 주입(extension_origin) 이전에 쌓인 행은 properties 가 비어 있다 — 설명 키가
-        // 확장 lang 네임스페이스(`sirsoft-ecommerce::...`)면 그것이 출처다(#138 실측 ⑧).
+        // 확장 lang 네임스페이스(`sirsoft-ecommerce::...`)면 그것이 출처다(공개 #138 실측 ⑧).
         $descriptionKey = (string) ($this->description_key ?? '');
         if (str_contains($descriptionKey, '::')) {
             return strstr($descriptionKey, '::', true) ?: null;

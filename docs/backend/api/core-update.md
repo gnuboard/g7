@@ -431,9 +431,10 @@ Content-Type: application/json
 | 422 | Unprocessable Entity | `kind`·`items` 형식이 틀린 경우 |
 | 500 | Server Error | 선택 저장 중 예기치 못한 오류 |
 
-**설명** (7.2.1) `ask_bundled_selection` 으로 시작한 실행이 멈춰 기다리는 선택에 답한다. 명령줄 `core:update` 가 코어 파일을
-적용한 뒤 묻는 질문과 같다 — `bundled_sources` 는 새 판에 처음 들어온 미배치 공식 번들 중 배치할 것(`--bundled-sources`),
-`bundled_updates` 는 번들 확장·언어팩 중 올릴 것과 확장별 레이아웃 전략. 답을 받으면 대기를 풀고, 화면이 `advance` 를 다시 부른다.
+**설명** (7.2.1) `ask_bundled_selection` 으로 시작한 실행이 멈춰 기다리는 선택에 답한다. 명령줄 `core:update` 가 묻는 질문과
+같으며 묻는 시점이 둘로 나뉜다 — `bundled_sources` 는 코어 파일 **적용 전**(계획 단계)에 묻는 것으로, 새 판에 처음 들어온
+미배치 공식 번들 중 배치할 것(`--bundled-sources`). `bundled_updates` 는 코어 파일 적용 뒤 **번들 단계**에서 묻는 것으로, 번들
+확장·언어팩 중 올릴 것과 확장별 레이아웃 전략. 답을 받으면 대기를 풀고, 화면이 `advance` 를 다시 부른다.
 점검 모드 중에 불리므로 `advance` 처럼 점검 모드 우회 쿠키를 싣는다.
 
 ### POST /api/admin/core-update/dismiss

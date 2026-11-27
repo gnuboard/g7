@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * 실패 큐 작업 (#17)
+ * 실패 큐 작업
  *
  * Laravel 기본 `failed_jobs` 테이블의 조회 전용 매핑. 행 추가는 프레임워크 failer(queue.failer)가 하고,
  * 재시도·삭제도 failer 를 거친다(JobQueueService) — 이 모델로 직접 쓰지 않는다.

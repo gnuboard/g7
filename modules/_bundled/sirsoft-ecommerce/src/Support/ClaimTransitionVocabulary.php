@@ -87,7 +87,7 @@ class ClaimTransitionVocabulary
 
             // 결제대기 행의 승인은 **결제 확정이 잇는 전이**다(`confirmPaid()` → paid → 승인).
             // 상품 행에서 직접 승인을 내면 운영자가 돈을 받기 전에 그 행을 승인하고, 헤더가
-            // `payment_pending → approved` 로 따라가 미수납 게이트를 우회한다(validate P2 #1).
+            // `payment_pending → approved` 로 따라가 미수납 게이트를 우회한다(validate P2 1).
             if ($excludePaymentPending && $current->value === self::PAYMENT_PENDING && $target->value === self::APPROVED) {
                 continue;
             }

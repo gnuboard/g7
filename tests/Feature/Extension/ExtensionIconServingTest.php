@@ -149,7 +149,7 @@ class ExtensionIconServingTest extends TestCase
     }
 
     /**
-     * 지역 표기(대문자)가 든 언어팩 식별자의 아이콘도 서빙됩니다 (#148 — 종전 422).
+     * 지역 표기(대문자)가 든 언어팩 식별자의 아이콘도 서빙됩니다 (공개 #148 — 종전 422).
      *
      * @scenario extension_type=language_pack, location=bundled, declaration=manifest_path, surface=public_route
      *

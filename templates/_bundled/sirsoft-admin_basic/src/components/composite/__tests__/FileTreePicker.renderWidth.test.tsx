@@ -1,5 +1,5 @@
 /**
- * FileTreePicker — `mode="auto"` 는 렌더 폭을 따른다 (이슈 #141 D4)
+ * FileTreePicker — `mode="auto"` 는 렌더 폭을 따른다 (이슈 공개 #141 D4)
  *
  * 브라우저 창 폭이 아니라 **렌더 폭**(`G7Core.useResponsive()`)으로 인라인·서랍·시트를 고른다. 레이아웃
  * 편집기 미리보기는 iframe 이 아니라 같은 문서의 div 라서, 창 폭은 미리보기 기기 폭과 무관하다 —
@@ -15,7 +15,7 @@ const NODES: FileTreeNode[] = [
   { key: 'layout:admin_dashboard', kind: 'layout', path: 'admin_dashboard', label: 'admin_dashboard' },
 ];
 
-describe('FileTreePicker — mode=auto 는 렌더 폭을 따른다 (#141)', () => {
+describe('FileTreePicker — mode=auto 는 렌더 폭을 따른다 (공개 #141)', () => {
   let originalG7Core: any;
   let originalWidth: number;
 

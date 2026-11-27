@@ -56,7 +56,7 @@ class SetLocale
         }
 
         // 2. Accept-Language 헤더 확인 (브라우저 기본 언어)
-        //    정확일치 → 주 언어 → 같은 주 언어의 다른 지역 순 — fil-PH 만 켠 사이트도 fil 요청을 받는다 (#148)
+        //    정확일치 → 주 언어 → 같은 주 언어의 다른 지역 순 — fil-PH 만 켠 사이트도 fil 요청을 받는다 (공개 #148)
         $acceptLanguage = $request->header('Accept-Language');
         if ($acceptLanguage) {
             $locale = LocaleTag::negotiate($acceptLanguage, $supportedLocales);

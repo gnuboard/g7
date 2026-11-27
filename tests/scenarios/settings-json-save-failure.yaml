@@ -1,4 +1,4 @@
-feature: 설정 JSON 저장 실패 판정 (#161 F5)
+feature: 설정 JSON 저장 실패 판정 (공개#161 F5)
 
 description: |
   JsonConfigRepository::saveCategory() 는 7.1.4 까지 파일 잠금을 못 잡아 쓰지 않았어도, 쓰기가 잘렸어도

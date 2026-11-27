@@ -47,7 +47,7 @@ effects:
   - admin_menu_seed_injector_is_scope_aware
   - plugin_activation_menu_sync_passes_through_the_translation_filter
   - every_menu_declaring_extension_pack_ships_a_menu_seed
-  # #153 — 코어 범위 팩 먼저, 확장 팩의 core_locale_missing 은 그 팩 차례에 다시 판정(한 번 실행으로 완료)
+  # 공개#153 — 코어 범위 팩 먼저, 확장 팩의 core_locale_missing 은 그 팩 차례에 다시 판정(한 번 실행으로 완료)
   - core_scope_pack_first_then_extension_packs_rechecked_in_one_run
 
 test_files:

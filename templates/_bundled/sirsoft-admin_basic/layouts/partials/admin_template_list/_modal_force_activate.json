@@ -88,7 +88,7 @@
                                         }
                                     },
                                     {
-                                        "comment": "호환성 배너도 다시 받는다 — 켠 템플릿이 새로 고치기 전까지 배너에 남지 않게 한다(#145 F8).",
+                                        "comment": "호환성 배너도 다시 받는다 — 켠 템플릿이 새로 고치기 전까지 배너에 남지 않게 한다(공개 #145 F8).",
                                         "handler": "refetchDataSource",
                                         "params": {
                                             "dataSourceId": "auto_deactivated_banner"

@@ -13,7 +13,7 @@ return [
         'language_pack' => '언어팩',
     ],
 
-    // 의존 확장 종류 이름 — 의존 미충족 문구의 :type (#153)
+    // 의존 확장 종류 이름 — 의존 미충족 문구의 :type (공개 #153)
     'dependency_types' => [
         'module' => '모듈',
         'plugin' => '플러그인',

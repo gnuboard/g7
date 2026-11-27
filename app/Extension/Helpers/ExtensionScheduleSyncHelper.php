@@ -124,7 +124,7 @@ class ExtensionScheduleSyncHelper
                     $converted[$field] = $def[$field];
                 }
             }
-            // 옛 형식 선언의 기본값 — 중복 실행 방지(1440분)(#161 F3, 7.1.5). 길어진 매시 작업이 다음 회차와 겹치던 것을
+            // 옛 형식 선언의 기본값 — 중복 실행 방지(1440분)(공개 #161 F3, 7.1.5). 길어진 매시 작업이 다음 회차와 겹치던 것을
             // 막는다. 끄려면 `without_overlapping => false`, 분 단위 정수면 그 시간 뒤 잠금이 만료된다.
             // 「한 서버에서만 실행」(`on_one_server`)은 새 스키마 기본값이 이미 true 다.
             $converted['without_overlapping'] ??= true;

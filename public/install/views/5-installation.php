@@ -297,7 +297,7 @@ echo renderInstallResultSection('aborted', 'warning', 'installation_aborted', 'i
     <!-- 실패 섹션 -->
     <?php
 // 「Step 4 로 돌아가기」는 의존성 사전 검증 실패(순환·누락)일 때만 installer.js showError() 가 드러낸다 —
-// 재시도로 풀리지 않는 실패라 주 버튼으로 앞세우고 재시도는 보조로 바꾼다(#153). 이동은 기존 초기화 경로(항상 Step 4)이고,
+// 재시도로 풀리지 않는 실패라 주 버튼으로 앞세우고 재시도는 보조로 바꾼다(공개 #153). 이동은 기존 초기화 경로(항상 Step 4)이고,
 // DB 를 건드리기 전 실패라 확인 창에 DB 수동 정리 안내를 넣지 않는다(goBackToExtensionSelection).
 // [건너뛰고 계속] 은 실패한 단계가 선택 확장일 때만 JS 가 노출한다 (W3 — 필수 단계에서는 숨김)
 $failureButtons = '<button id="back-to-extensions-btn" data-action="goBackToExtensionSelection" class="btn btn-primary hidden">'.htmlspecialchars(lang('back_to_extension_selection')).'</button>
@@ -463,7 +463,7 @@ $languagePacks = $selectedExtensions['language_packs'] ?? [];
     'config' => $config,
     'selected_extensions' => $selectedExtensions,
     'extension_names' => $state['extension_names'] ?? [],
-    // 의존 때문에 종류 경계를 넘어 앞당겨 설치하는 항목 → 요구한 확장 (작업 행의 「…에 필요」 표시, #153)
+    // 의존 때문에 종류 경계를 넘어 앞당겨 설치하는 항목 → 요구한 확장 (작업 행의 「…에 필요」 표시, 공개 #153)
     'pulled_by' => (object) ($state['install_pulled_by'] ?? []),
     // 유효 실행 모드 (subprocess|inprocess). 화면 분기는 서버가 이미 마친 상태로 렌더하므로
     // JS 소비처는 없다 — 무CLI 환경 실측에서 콘솔로 확인하기 위한 진단용 노출이다.

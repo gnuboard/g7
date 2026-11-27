@@ -34,7 +34,7 @@ use Illuminate\Support\Str;
 class NotificationHookListener implements HookListenerInterface
 {
     /**
-     * 발송 잡의 큐 옵션 (#139).
+     * 발송 잡의 큐 옵션 (공개 #139).
      *
      * 다른 사본이 보내는 중인 수신자를 기다리느라 잡을 미루는 release 도 시도 1회를 쓰므로 3 → 5 로 늘린다.
      *
@@ -180,7 +180,7 @@ class NotificationHookListener implements HookListenerInterface
         }
 
         $resolver = app(NotificationRecipientResolver::class);
-        // 재시도·재예약된 사본도 같은 값 — 수신자별 중복 방지 키의 첫 성분 (#139)
+        // 재시도·재예약된 사본도 같은 값 — 수신자별 중복 방지 키의 첫 성분 (공개 #139)
         $eventId = HookContextCapture::eventId() ?? (string) Str::uuid();
         $chunkSize = max(1, (int) config('notification.fanout.chunk_size', 100));
 
@@ -197,7 +197,7 @@ class NotificationHookListener implements HookListenerInterface
             $notifiables = null;
 
             if (! empty($recipientRules)) {
-                // 회원은 id 만 뽑는다 — 전 회원 역할이어도 모델·권한을 한꺼번에 싣지 않는다 (#139)
+                // 회원은 id 만 뽑는다 — 전 회원 역할이어도 모델·권한을 한꺼번에 싣지 않는다 (공개 #139)
                 $refs = $resolver->resolveRefs($recipientRules, $context);
                 if ($refs === null) {
                     $notifiables = $resolver->resolve($recipientRules, $context);
@@ -257,7 +257,7 @@ class NotificationHookListener implements HookListenerInterface
     }
 
     /**
-     * 알림 대량 발송의 자식 잡 진입점 — 수신자 묶음 하나를 보냅니다 (#139).
+     * 알림 대량 발송의 자식 잡 진입점 — 수신자 묶음 하나를 보냅니다 (공개 #139).
      *
      * 부모 잡(dispatch)이 수신자 참조를 묶음으로 나눠 `HookListenerRegistrar::dispatchQueued()` 로 띄운다.
      * 이벤트 ID 는 부모의 값이라 같은 묶음이 두 번 전달되거나 다시 예약돼도 수신자마다 한 번만 간다.
@@ -300,7 +300,7 @@ class NotificationHookListener implements HookListenerInterface
     }
 
     /**
-     * 수신자 참조를 발송할 수 있는 객체로 다시 만듭니다 (#139).
+     * 수신자 참조를 발송할 수 있는 객체로 다시 만듭니다 (공개 #139).
      *
      * 회원은 id 순으로 한 번에 싣고(역할·권한은 좁혀서), 그 사이 사라진 회원은 info 로그만 남기고 건너뛴다.
      * 비회원은 표준 guest_recipient 배열에서 다시 만든다.
@@ -344,7 +344,7 @@ class NotificationHookListener implements HookListenerInterface
     }
 
     /**
-     * 수신자들에게 한 채널로 보냅니다 — 수신자마다 중복 방지 선점을 거칩니다 (#139).
+     * 수신자들에게 한 채널로 보냅니다 — 수신자마다 중복 방지 선점을 거칩니다 (공개 #139).
      *
      * 수신자 키를 만들 수 있으면 보내기 전에 선점하고(NotificationDeliveryGuard), 이미 끝난 수신자는 건너뛰고,
      * 다른 사본이 보내는 중이면 보류한다. 발송 결과는 채널별 결과 보고서로 판정한다 — 디스패처가 채널 예외를

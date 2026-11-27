@@ -28,7 +28,7 @@ use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 게시판 사용자 조회 결과 훅 테스트 (#142)
+ * 게시판 사용자 조회 결과 훅 테스트 (공개 #142)
  *
  * 사용자 조회 19곳에서 조회 전(before_*)·결과(filter_*_result)·조회 후(after_*) 훅이 실제 HTTP 요청 한 번에
  * 각 1회 발행되고, ctx 에 현재 사용자·화면 언어·경로별 값이 실리며, 리스너가 고친 값이 응답에 나타나는지 본다.
@@ -946,7 +946,7 @@ class BoardReadResultHooksTest extends ModuleTestCase
 }
 
 /**
- * 시험용 선언형 리스너 — 게시판 메뉴 결과를 뒤집는다(#142 이슈 예시 A,B,C,D → D,C,B,A).
+ * 시험용 선언형 리스너 — 게시판 메뉴 결과를 뒤집는다(공개 #142 이슈 예시 A,B,C,D → D,C,B,A).
  */
 class ReverseMenuResultListener implements HookListenerInterface
 {

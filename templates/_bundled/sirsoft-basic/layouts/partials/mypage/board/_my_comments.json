@@ -406,7 +406,7 @@
                                                     "text": "{{comment.post_title}}"
                                                 },
                                                 {
-                                                    "comment": "확장 자리 — 확장이 댓글마다 배지를 붙인다(#149). 이 목록의 원글 id 는 comment.post_id_val 이다",
+                                                    "comment": "확장 자리 — 확장이 댓글마다 배지를 붙인다(공개 #149). 이 목록의 원글 id 는 comment.post_id_val 이다",
                                                     "id": "ext_board_comment_row_badges_{{comment.id}}",
                                                     "type": "extension_point",
                                                     "name": "board_comment_row_badges",

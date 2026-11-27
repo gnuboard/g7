@@ -517,7 +517,7 @@
             "id": "edit_mode",
             "label": "$t:editor.state.edit_existing",
             "default": true,
-            "comment": "1.1-bis #9 — init_actions 가 수정 모드에서 _local.form 미시드(runtime API→form 흐름 부재). 편집기 prefill 을 위해 pageData 와 동일 값으로 _local.form 직접 시드. 읽기전용 표시/첨부는 pageData.data.",
+            "comment": "1.1-bis 9 — init_actions 가 수정 모드에서 _local.form 미시드(runtime API→form 흐름 부재). 편집기 prefill 을 위해 pageData 와 동일 값으로 _local.form 직접 시드. 읽기전용 표시/첨부는 pageData.data.",
             "initialState": {
               "local": {
                 "form": {

@@ -1,7 +1,7 @@
 /**
  * previewCanvasStore.test.ts — 캔버스 ↔ 호스트 격리 façade swap 회귀 방지
  *
- *  (S4'') / 위험요소 #30
+ *  (S4'') / 위험요소 30
  *
  * 본 테스트의 목적: PreviewCanvas 가 마운트되어 있는 동안 `window.__templateApp`
  * 과 `G7Core.dispatch`/`modal`/`toast` 가 격리 façade 로 swap 되어 캔버스 안

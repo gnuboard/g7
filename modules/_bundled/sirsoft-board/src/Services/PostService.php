@@ -214,7 +214,7 @@ class PostService
         // 축이므로 캐시를 우회하는 대신 **키를 나눈다** — 두 값이 서로를 덮어쓰지 않는다.
         // 맥락(관리자·사용자 목록)과 읽기 범위도 결과가 달라지는 축이다. 범위가 걸린 열람자(본인만·소유역할)는
         // 사람마다 건수가 달라 자기 키를 쓰고, 전체 범위 사용자·비회원은 공용 키를 쓴다 — 종전에는 먼저 목록을 연
-        // 사람의 건수가 다른 사람의 전체 건수·페이지 수로 보였다(#147). 확장 축(filter_list_cache_variant)이 끝에 붙는다.
+        // 사람의 건수가 다른 사람의 전체 건수·페이지 수로 보였다(공개 #147). 확장 축(filter_list_cache_variant)이 끝에 붙는다.
         $scopePermission = $context === 'admin'
             ? "sirsoft-board.{$slug}.admin.posts.read"
             : "sirsoft-board.{$slug}.posts.read";
@@ -674,7 +674,7 @@ class PostService
         // 훅: after_blind
         HookManager::doAction('sirsoft-board.post.after_blind', $blindedPost, $slug);
 
-        // 캐시 무효화 — 비우지 않으면 블라인드한 글이 홈 최근·인기 게시글과 이웃 글의 이전/다음에 TTL 동안 남는다(#147).
+        // 캐시 무효화 — 비우지 않으면 블라인드한 글이 홈 최근·인기 게시글과 이웃 글의 이전/다음에 TTL 동안 남는다(공개 #147).
         // 단건·일괄·신고 처리·자동 숨김이 모두 이 지점을 지난다(executeDelete 와 같은 위치·방식)
         $this->invalidatePostCaches($slug);
 
@@ -763,7 +763,7 @@ class PostService
         // 훅: after_restore
         HookManager::doAction('sirsoft-board.post.after_restore', $restoredPost, $slug);
 
-        // 캐시 무효화 — 비우지 않으면 복원한 글이 TTL 동안 최근·인기 게시글과 이전/다음에 돌아오지 않는다(#147)
+        // 캐시 무효화 — 비우지 않으면 복원한 글이 TTL 동안 최근·인기 게시글과 이전/다음에 돌아오지 않는다(공개 #147)
         $this->invalidatePostCaches($slug);
 
         return $restoredPost;

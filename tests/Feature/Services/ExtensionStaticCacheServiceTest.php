@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 /**
- * 부트스트랩 리소스 정적 게시(bake) 서비스 테스트 (#122 S1).
+ * 부트스트랩 리소스 정적 게시(bake) 서비스 테스트 (공개 #122 S1).
  *
  * 게시 트리 형상(병합 결과 = 폴백 API 페이로드), 원자성(tmp → rename → manifest
  * 마지막), 멱등(skip), 비활성 산출물 부재, 경로 검증 거부, GC 보존 정책,

@@ -47,7 +47,7 @@
             "if": "{{current_user !== undefined && (_computed.canReadLanguagePacks !== false)}}",
             "children": [
                 {
-                    "comment": "미배치 공식 번들 안내(#146). [닫기]는 이 관리자에게서만 숨기고(다음 기록에서 다시 보임),\n      배치·정리하면 서버가 항목을 빼 모두에게서 사라진다. 명령은 클릭 한 번에 전체 선택된다.",
+                    "comment": "미배치 공식 번들 안내(공개 #146). [닫기]는 이 관리자에게서만 숨기고(다음 기록에서 다시 보임),\n      배치·정리하면 서버가 항목을 빼 모두에게서 사라진다. 명령은 클릭 한 번에 전체 선택된다.",
                     "id": "unplaced_bundled_notice_wrapper",
                     "type": "basic",
                     "name": "Div",

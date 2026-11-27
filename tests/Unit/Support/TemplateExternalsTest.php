@@ -247,7 +247,7 @@ class TemplateExternalsTest extends TestCase
      * 태그의 error 이벤트가 그 유일한 통로다.
      *
      * strict CSP(`script-src 'self'`)에서도 신호가 살아 있도록 인라인 `onerror` 가 아니라
-     * 표식 속성(`data-g7-external`·`data-g7-external-label`)을 내고, 셸 캡처 리스너가 받는다(#158).
+     * 표식 속성(`data-g7-external`·`data-g7-external-label`)을 내고, 셸 캡처 리스너가 받는다(공개 #158).
      *
      * @scenario asset_class=vendored, outcome=failed
      *

@@ -361,7 +361,7 @@ class PrivacyRetentionManager
             // 건너뛴다. 같은 행을 두 프로세스가 동시에 처리하면 prune 훅이 두 번 나가고 삭제
             // 방식은 서로의 대상을 지운다. 건너뛴 것은 다음 주기가 다시 잡는다.
             // 잠금 저장소 오류는 이 항목만 실패로 남기고 다음 핸들러로 간다 — 7.1.4 까지는 예외가 루프 밖으로 나가 남은 핸들러가
-            // 모두 처리되지 않았다(#161 F6). 잠금 없이 파기하지 않는다(prune 훅 중복·서로의 대상 삭제 방지).
+            // 모두 처리되지 않았다(공개 #161 F6). 잠금 없이 파기하지 않는다(prune 훅 중복·서로의 대상 삭제 방지).
             try {
                 $lock = $dryRun ? null : Cache::lock(self::lockKey($id), self::RUN_LOCK_SECONDS);
                 $acquired = $lock === null || $lock->get();

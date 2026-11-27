@@ -9,7 +9,7 @@ use App\Extension\Helpers\DependencyEnricher;
  *
  * 종전에는 「활성인지」만 봐서 지원하지 않는 옛 의존 버전 위에 설치·활성화됐고, 설치 미리보기
  * (DependencyEnricher)는 같은 상황을 「미충족」으로 보여 두 판정이 엇갈렸다. 판정식은
- * DependencyEnricher 하나를 쓰고 이 trait 는 그 위의 얇은 위임이다(템플릿 활성화도 이 trait 를 쓴다, #152).
+ * DependencyEnricher 하나를 쓰고 이 trait 는 그 위의 얇은 위임이다(템플릿 활성화도 이 trait 를 쓴다, 공개 #152).
  */
 trait ChecksDependencyVersions
 {
@@ -67,7 +67,7 @@ trait ChecksDependencyVersions
         $messages = [];
         $unmet = $this->collectUnmetDependencies($dependencies);
 
-        // 미설치·비활성 문구는 의존 대상의 실제 종류를 현지화해 싣는다 — 종전에는 플러그인도 「모듈」이라 불렀다(#153)
+        // 미설치·비활성 문구는 의존 대상의 실제 종류를 현지화해 싣는다 — 종전에는 플러그인도 「모듈」이라 불렀다(공개 #153)
         foreach (['modules' => 'module', 'plugins' => 'plugin'] as $bucket => $type) {
             foreach ($unmet[$bucket] as $item) {
                 $messages[] = $item['status'] === 'version_mismatch'

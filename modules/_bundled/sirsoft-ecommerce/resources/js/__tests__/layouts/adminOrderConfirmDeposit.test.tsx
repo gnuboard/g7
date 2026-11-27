@@ -1,14 +1,14 @@
 // e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * @file adminOrderConfirmDeposit.test.tsx
- * @description 관리자 주문상세 무통장 입금확인 버튼+모달 구조 + 핸들러 회귀 테스트 (B2 / D7 / 입금UI#2 scope)
+ * @description 관리자 주문상세 무통장 입금확인 버튼+모달 구조 + 핸들러 회귀 테스트 (B2 / D7 / 입금UI 2 scope)
  *
  * 테스트 대상:
  * - layouts/admin/partials/admin_ecommerce_order_detail/_partial_payment_info.json (입금확인 버튼)
  * - layouts/admin/partials/admin_ecommerce_order_detail/_modal_confirm_deposit.json (모달)
  * - resources/js/handlers/orderDetailHandlers.ts (openConfirmDepositModalHandler / confirmDepositHandler)
  *
- * 회귀 배경 (입금UI#2 scope 단절):
+ * 회귀 배경 (입금UI 2 scope 단절):
  *   modals 섹션 모달은 격리 scope 라, 모달 input 이 쓴 $parent._local 값이 페이지 globalLocal 에
  *   도달하지 않는다. 선언적 apiCall + onError(sequence 내 setState + toast) 패턴은 422 토스트/인라인
  *   에러가 글로벌 상태 경합으로 소실된다. 이를 취소모달 패턴(모달 열기 전 setLocal 시드 + JS 핸들러
@@ -69,7 +69,7 @@ function collectActions(actions: Action[] | undefined, acc: Action[] = []): Acti
   return acc;
 }
 
-describe('_partial_payment_info.json — 입금확인 버튼 (B2 / 입금UI#2)', () => {
+describe('_partial_payment_info.json — 입금확인 버튼 (B2 / 입금UI 2)', () => {
   const nodes = flatten(paymentInfo);
 
   function depositButton(): Node | undefined {
@@ -123,7 +123,7 @@ describe('_partial_payment_info.json — 입금확인 버튼 (B2 / 입금UI#2)',
   });
 });
 
-describe('_modal_confirm_deposit.json — 입금확인 모달 (B2 / D7 / 입금UI#2)', () => {
+describe('_modal_confirm_deposit.json — 입금확인 모달 (B2 / D7 / 입금UI 2)', () => {
   const modal = depositModal as Node;
   const nodes = flatten(modal);
 
@@ -285,7 +285,7 @@ describe('_modal_confirm_deposit.json — 입금확인 모달 (B2 / D7 / 입금U
   });
 });
 
-describe('openConfirmDepositModalHandler — 모달 열기 전 페이지 _local 시드 (입금UI#2 scope)', () => {
+describe('openConfirmDepositModalHandler — 모달 열기 전 페이지 _local 시드 (입금UI 2 scope)', () => {
   let setLocalMock: ReturnType<typeof vi.fn>;
   let modalOpenMock: ReturnType<typeof vi.fn>;
 
@@ -328,7 +328,7 @@ describe('openConfirmDepositModalHandler — 모달 열기 전 페이지 _local 
   });
 });
 
-describe('confirmDepositHandler — 422 인라인 에러 + 토스트 동시 표시 (입금UI#2 scope)', () => {
+describe('confirmDepositHandler — 422 인라인 에러 + 토스트 동시 표시 (입금UI 2 scope)', () => {
   let setLocalMock: ReturnType<typeof vi.fn>;
   let toastErrorMock: ReturnType<typeof vi.fn>;
   let toastSuccessMock: ReturnType<typeof vi.fn>;

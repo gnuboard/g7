@@ -254,7 +254,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
 
         // @scenario asset_url_mode=extension, base_path=root, fetch_origin=core_bundle
         // @effects frontend_extension_mode_urls_match_pre_builder_strings
-        it('ComponentRegistry loadManifest components.json (버전 있음/없음 — #122 작업 B)', () => {
+        it('ComponentRegistry loadManifest components.json (버전 있음/없음 — 공개 #122 작업 B)', () => {
             // 편집기 경로(버전 미전달)는 무버전 URL 유지 (서버가 현재 버전 폴백)
             expect(suffixed('/api/templates/sirsoft-basic/components', 'json')).toBe(
                 '/api/templates/sirsoft-basic/components.json',

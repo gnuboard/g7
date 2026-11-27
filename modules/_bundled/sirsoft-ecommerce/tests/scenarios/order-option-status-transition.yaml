@@ -92,7 +92,7 @@ effects:
   - can_confirm_true_only_for_shipping_or_delivered_status
   - can_write_review_true_only_after_confirmed
   - confirm_option_earns_mileage_via_order_option_after_confirm
-  # 관리자 옵션 상태변경 → 구매확정 대칭 (이슈 #61: changeStatusWithQuantity 경로가 유저 셀프 확정과 대칭)
+  # 관리자 옵션 상태변경 → 구매확정 대칭 (이슈 공개#61: changeStatusWithQuantity 경로가 유저 셀프 확정과 대칭)
   - admin_full_quantity_confirm_stamps_confirmed_at                  # 전체수량 CONFIRMED → 옵션 confirmed_at 기록
   - admin_split_confirm_stamps_confirmed_at                          # 부분수량 CONFIRMED 분할 → 분할 레코드 confirmed_at 기록
   - admin_confirm_fires_after_confirm_hook                           # CONFIRMED 전이 → order-option.after_confirm 발화(생존 레코드 인자)

@@ -291,7 +291,7 @@ return [
         'github_url' => env('G7_UPDATE_GITHUB_URL', 'https://github.com/gnuboard/g7'),
         'github_token' => env('G7_UPDATE_GITHUB_TOKEN', ''),
         'pending_path' => env('G7_UPDATE_PENDING_PATH') ?: storage_path('app/core_pending'),
-        // build/ext: 부트스트랩 리소스 정적 게시본(#122) — 각 서버가 재생성하는 로컬 파생물이라
+        // build/ext: 부트스트랩 리소스 정적 게시본(공개 #122) — 각 서버가 재생성하는 로컬 파생물이라
         // 릴리즈 소스에 없다. 제외하지 않으면 --prune 업데이트가 orphan 으로 삭제해
         // 업데이트 완료까지 정적 fast path 가 불필요하게 끊긴다 (백업 대상에서도 제외).
         'excludes' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_EXCLUDES', 'node_modules,.git,bootstrap/cache,build/ext')))),
@@ -370,14 +370,14 @@ return [
         // 백업 내부 모듈 storage 에 `.preserve-ownership` 마커가 있으면 그 서브트리만
         // 자동 skip 되어 부작용 없음.
         //
-        // `public/build/ext`: 부트스트랩 리소스 정적 게시본(#122). root 프로세스는 자동 게시를
+        // `public/build/ext`: 부트스트랩 리소스 정적 게시본(공개 #122). root 프로세스는 자동 게시를
         // 예약하지 않는다(`schedulePublishOnTerminate` 의 root 가드) — 이 항목은 **실존하는** 게시
         // 트리(이미 웹 계정이 게시한 사이트)의 소유권을 코어 업데이트 뒤 되돌리기 위한 것이다.
         // 트리가 root 소유가 되면 이후 php-fpm 의 재게시·GC 가 Permission denied 로 실패해 정적
         // fast path 가 영구 꺼진다(사이트는 API 폴백으로 정상). 임시 산출물(사용자 데이터 아님)이므로
         // extension_backups 와 같은 근거로 chown 대상.
         //
-        // `storage/app/core_update`: 미배치 공식 번들 기록(`bundled_sources.json`, #146). sudo 업데이트가 root
+        // `storage/app/core_update`: 미배치 공식 번들 기록(`bundled_sources.json`, 공개 #146). sudo 업데이트가 root
         // 소유로 쓰면 관리자 목록 안내 API(웹 계정)가 읽지 못하므로 업데이트 뒤 원래 소유자로 되돌린다.
         //
         // 환경변수 `G7_UPDATE_RESTORE_OWNERSHIP` 로 공유 호스팅 등 축소 필요 시 재정의 가능.
@@ -412,7 +412,7 @@ return [
         //
         // 자식 디렉토리(예: plugins/sirsoft-*)는 syncGroupWritability 가 재귀 순회하여
         // 자동 정상화되므로 상위 루트만 지정하면 충분. 환경변수로 재정의 가능.
-        //  - public/build/ext: 정적 게시본(#122) — php-fpm 이 재게시/GC 를 수행하므로
+        //  - public/build/ext: 정적 게시본(공개 #122) — php-fpm 이 재게시/GC 를 수행하므로
         //    restore_ownership 과 같은 근거로 g+w 정상화 대상.
         //  - storage/app/core_update(미배치 번들 기록·사용자 정의 사전 점검), storage/app/core-update(웹 실행 상태·
         //    출하 목록·배포 조각 원장): 업데이트가 만들고 쓰는 기록 영역 — 웹 계정과 명령줄 계정이 함께 쓴다. 백업 폴더처럼

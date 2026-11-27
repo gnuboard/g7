@@ -13,7 +13,7 @@ use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\TestCase;
 
 /**
- * 관리자 회원 목록 열 데이터 일괄 필터 `core.user.filter_list_rows` (#40 K6 · P22)
+ * 관리자 회원 목록 열 데이터 일괄 필터 `core.user.filter_list_rows` (K6 · P22)
  *
  * 목록은 행마다 리소스 필터를 걸지 않고(N+1) 페이지 전체 행과 회원 묶음을 한 번 넘긴다. 확장이 더한 키는 응답에 실리고,
  * 배열이 아니거나 행 수가 다른 반환은 버리고 원래 행을 쓴다.

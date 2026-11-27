@@ -1,5 +1,5 @@
 /**
- * CKEditor5 평문 폴백 — 다국어 탭 글자 (#148)
+ * CKEditor5 평문 폴백 — 다국어 탭 글자 (공개 #148)
  *
  * 편집기를 못 세웠을 때 그리는 평문 폴백의 다국어 탭도 언어 이름으로 보인다 — 종전 대문자 코드(KO·EN·JA·FIL-PH).
  * 언어팩으로 켠 언어는 서버가 주는 언어팩의 언어 이름(`appConfig.localeNames`)을 쓴다.
@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderTextareaFallback } from '../../handlers/textareaFallback';
 
-describe('CKEditor5 평문 폴백 다국어 탭 글자 (#148)', () => {
+describe('CKEditor5 평문 폴백 다국어 탭 글자 (공개 #148)', () => {
     let container: HTMLElement;
 
     beforeEach(() => {

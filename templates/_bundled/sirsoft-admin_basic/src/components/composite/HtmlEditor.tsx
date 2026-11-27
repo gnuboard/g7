@@ -23,7 +23,7 @@ const getSupportedLocales = (): string[] => {
   return G7Core()?.locale?.supported?.() ?? ['ko', 'en'];
 };
 
-// 언어 코드로 언어명 가져오기 — 언어팩 이름 → 번역 → 내장 표 → 코드 (#148)
+// 언어 코드로 언어명 가져오기 — 언어팩 이름 → 번역 → 내장 표 → 코드 (공개 #148)
 const getLocaleNameByCode = (code: string): string => getLocaleDisplayName(code);
 
 // 다국어 값 타입

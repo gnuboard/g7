@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 
 /**
- * 큐 실패 작업 목록 컬렉션 (#17)
+ * 큐 실패 작업 목록 컬렉션
  */
 class FailedJobCollection extends BaseApiCollection
 {

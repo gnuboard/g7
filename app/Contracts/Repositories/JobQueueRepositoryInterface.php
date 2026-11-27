@@ -6,7 +6,7 @@ use App\Models\FailedJob;
 use App\Support\Query\BoundedPage;
 
 /**
- * 큐 대기(jobs)·실패(failed_jobs) 표 조회 Repository 인터페이스 (#17)
+ * 큐 대기(jobs)·실패(failed_jobs) 표 조회 Repository 인터페이스
  *
  * 두 표는 Laravel 큐 인프라가 쓰고 지우는 표다. 이 저장소는 조회만 한다 — 재시도·삭제는 서비스가
  * 프레임워크 failer(queue.failer)를 거쳐 처리한다(드라이버 중립).

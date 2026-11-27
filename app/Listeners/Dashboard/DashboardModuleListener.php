@@ -21,7 +21,7 @@ class DashboardModuleListener implements HookListenerInterface
     public static function getSubscribedHooks(): array
     {
         // 훅 이름은 복수형(core.modules.*)이다 — 종전 단수형(core.module.*)은 발화처가 없어
-        // 이 리스너가 한 번도 실행되지 않았다(#138).
+        // 이 리스너가 한 번도 실행되지 않았다(공개 #138).
         return [
             'core.modules.after_activate' => ['method' => 'handleModuleUpdate', 'priority' => 10],
             'core.modules.after_deactivate' => ['method' => 'handleModuleUpdate', 'priority' => 10],

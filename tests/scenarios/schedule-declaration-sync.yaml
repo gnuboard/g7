@@ -1,4 +1,4 @@
-feature: 스케줄 선언 동기화 — 코어 카탈로그·확장 getSchedules → DB 등록부 (이슈 #17, 7.2.0)
+feature: 스케줄 선언 동기화 — 코어 카탈로그·확장 getSchedules → DB 등록부 (7.2.0)
 
 description: |
   routes/console.php 에 하드코딩하던 예약을 DB 행으로 옮기는 동기화 계층이다.

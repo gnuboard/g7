@@ -41,7 +41,7 @@ class AnonymizeLedgerJob implements ShouldQueue
      * 재시도 횟수
      *
      * 익명화는 되돌릴 수 없는 변경이라 자동 재시도로 같은 구간을 두 번 훑지 않는다 — 진짜 예외는
-     * maxExceptions = 1 로 한 번에 실패한다. 1 이 아니라 3 인 이유는 ArchiveRangeJob 과 같다(#139): 다른 워커가
+     * maxExceptions = 1 로 한 번에 실패한다. 1 이 아니라 3 인 이유는 ArchiveRangeJob 과 같다(공개 #139): 다른 워커가
      * 다시 집은 사본이 handle 에 들어와 단일 실행 잠금에 막혀 조용히 끝나게 하려는 것이다.
      */
     public int $tries = 3;
@@ -90,7 +90,7 @@ class AnonymizeLedgerJob implements ShouldQueue
         $this->queuedAt = AnalyticsClock::now()->toDateTimeString();
         $this->dispatchId = (string) Str::uuid();
 
-        // 긴 작업 연결·큐가 등록돼 있으면 그쪽으로 (#139)
+        // 긴 작업 연결·큐가 등록돼 있으면 그쪽으로 (공개 #139)
         if (($placement = app(QueueWorkerRegistry::class)->longPlacement()) !== null) {
             $this->onConnection($placement['connection']);
             $this->onQueue($placement['queue']);
@@ -155,7 +155,7 @@ class AnonymizeLedgerJob implements ShouldQueue
      */
     public function failed(Throwable $exception): void
     {
-        // 재예약이 거듭돼 시도 횟수가 다 찬 사본은 원본이 아직 도는 중이다 — 이력을 닫지 않는다(#139).
+        // 재예약이 거듭돼 시도 횟수가 다 찬 사본은 원본이 아직 도는 중이다 — 이력을 닫지 않는다(공개 #139).
         if ($exception instanceof MaxAttemptsExceededException
             && ! $exception instanceof TimeoutExceededException
             && $this->dispatchId !== ''

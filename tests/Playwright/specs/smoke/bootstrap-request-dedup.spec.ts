@@ -1,5 +1,5 @@
 /**
- * Smoke: stale 캐시버전 재방문의 부트 이중 로드 제거 (#122 작업 A·B)
+ * Smoke: stale 캐시버전 재방문의 부트 이중 로드 제거 (공개 #122 작업 A·B)
  *
  * localStorage `g7_cache_version` 이 stale 이면 첫 burst 가 구버전 `?v` 로 나가고,
  * config 핸드셰이크가 routes 재로드 + lang(ko·en, `_=` 버스터) 재다운로드를 유발해
@@ -53,7 +53,7 @@ function collectBootRequests(page: Page) {
   return { routesUrls, langUrls, componentUrls, busterUrls };
 }
 
-test.describe('부트 이중 로드 제거 (#122)', () => {
+test.describe('부트 이중 로드 제거 (공개 #122)', () => {
   test('@smoke stale localStorage 재방문 — routes 1회·lang 로케일당 1회·`_=` 0건·버전드 URL', async ({ page }) => {
     // stale 캐시버전 시드 (재방문자 시뮬레이션 — 종전엔 이중 로드 트리거)
     await page.addInitScript(() => {

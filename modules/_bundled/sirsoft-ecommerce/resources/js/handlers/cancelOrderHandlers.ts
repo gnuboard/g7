@@ -306,7 +306,7 @@ export async function executeCancelOrderHandler(
     // 선택한 항목을 항상 items(type:partial)로 전송한다. 프론트에서 전체취소를 휴리스틱으로 판단하지 않는다.
     // 진짜 전체취소(모든 활성 옵션 전량)도 items 전량으로 보내면 백엔드 shouldConvertToFullCancel 이 FULL 로
     // 승격해 동작·환불 결과가 동일하다. 종전 라인수+수량 휴리스틱은 단일 항목 주문을 항상 full 로 처리해
-    // 수량을 줄여도 전량 취소되는 결함이 있었고(MP03 §9 발견#2), 유저 핸들러와도 판정 기준이 어긋났다.
+    // 수량을 줄여도 전량 취소되는 결함이 있었고(MP03 §9 발견 2), 유저 핸들러와도 판정 기준이 어긋났다.
     const body: Record<string, any> = {
         type: 'partial',
         // `cancel_pg` 는 없앴다(P2). 끈 채로 카드 취소를 하면 PG 를 부르지 않고도 환불이

@@ -1,5 +1,5 @@
 /**
- * 본문 서식 지연 장치 — HTML 문자열의 `style` 속성을 「화면에 붙인 뒤 CSSOM 대입」으로 바꿔 입힌다 (#163).
+ * 본문 서식 지연 장치 — HTML 문자열의 `style` 속성을 「화면에 붙인 뒤 CSSOM 대입」으로 바꿔 입힌다 (공개 #163).
  *
  * 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)에서는 HTML 문자열에 든 `style="…"` 이
  * 적용되지 않는다. 문자열을 `DOMParser`·`<template>` 로 **파싱만 해도** 위반이 보고된다(Chrome 실측).

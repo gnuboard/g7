@@ -180,11 +180,11 @@ class CartControllerTest extends ModuleTestCase
     }
 
     // ========================================
-    // #84 존재하지 않는 옵션 담기 시도 테스트
+    // 84 존재하지 않는 옵션 담기 시도 테스트
     // ========================================
 
     /**
-     * #84 존재하지 않는 상품 ID로 장바구니 담기 시도 시 422 에러를 반환합니다.
+     * 84 존재하지 않는 상품 ID로 장바구니 담기 시도 시 422 에러를 반환합니다.
      */
     public function test_add_to_cart_returns_422_for_non_existent_product(): void
     {
@@ -207,7 +207,7 @@ class CartControllerTest extends ModuleTestCase
     }
 
     // ========================================
-    // #90 수량 변경 테스트
+    // 90 수량 변경 테스트
     // ========================================
 
     /**
@@ -312,7 +312,7 @@ class CartControllerTest extends ModuleTestCase
     }
 
     /**
-     * #90 수량을 0으로 변경 시도 시 422 에러를 반환합니다.
+     * 90 수량을 0으로 변경 시도 시 422 에러를 반환합니다.
      */
     public function test_update_quantity_returns_422_for_zero_quantity(): void
     {
@@ -345,7 +345,7 @@ class CartControllerTest extends ModuleTestCase
     }
 
     /**
-     * #90 음수 수량으로 변경 시도 시 422 에러를 반환합니다.
+     * 90 음수 수량으로 변경 시도 시 422 에러를 반환합니다.
      */
     public function test_update_quantity_returns_422_for_negative_quantity(): void
     {
@@ -522,7 +522,7 @@ class CartControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 테스트 #111: X-Cart-Key 헤더 누락 시 비회원 조회 → 에러
+     * 테스트 111: X-Cart-Key 헤더 누락 시 비회원 조회 → 에러
      *
      * 비회원이 X-Cart-Key 헤더 없이 장바구니 조회 시 400 Bad Request 반환
      */
@@ -539,7 +539,7 @@ class CartControllerTest extends ModuleTestCase
     }
 
     /**
-     * 테스트 #112: 잘못된 cart_key 형식 → 에러
+     * 테스트 112: 잘못된 cart_key 형식 → 에러
      *
      * 올바르지 않은 형식의 cart_key로 요청 시 400 Bad Request 반환
      * (형식: /^ck_[a-zA-Z0-9]{32}$/)

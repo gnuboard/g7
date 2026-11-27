@@ -2,7 +2,7 @@
 /**
  * 동의 이력 관리자 레이아웃 (gdpr_consent_log)
  *
- * #27 회귀 가드 — 체크박스 필터의 옵션 C 하이브리드 동작:
+ * 27 회귀 가드 — 체크박스 필터의 옵션 C 하이브리드 동작:
  *   1. 체크박스 토글 시 _local.filter 즉시 갱신 (UI 체크 상태 반영)
  *   2. 같은 핸들러에서 searchConsentLogs 를 debounce 300 으로 실행 (URL/API 재호출)
  *   3. 텍스트 입력 (이메일/세션 ID) 은 검색 버튼/Enter 로만 적용 — 즉시 미적용
@@ -16,7 +16,7 @@ import type { AnyNode } from './helpers';
 import { findById } from './helpers';
 import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
-describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용 + debounce', () => {
+describe('layouts/admin/gdpr_consent_log.json — 27 체크박스 즉시 적용 + debounce', () => {
     const root = layout as unknown as AnyNode;
 
     type ActionDef = {
@@ -64,7 +64,7 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
         /**
          * 한 체크박스의 actions 가 sequence 패턴을 따르는지 검증.
          *
-         * sequence 패턴 (#27 옵션 A 최종 형태):
+         * sequence 패턴 (27 옵션 A 최종 형태):
          *   - actions[0]: handler=sequence, type=change
          *   - callbacksOf(actions[0], 'actions')[0]: setState (filter.{key} 갱신)
          *   - callbacksOf(actions[0], 'actions')[1]: actionRef=searchConsentLogs
@@ -192,7 +192,7 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
         });
     });
 
-    describe('subject 컬럼 — 회원 row 클릭 시 회원 상세 페이지 이동 (검토 #26)', () => {
+    describe('subject 컬럼 — 회원 row 클릭 시 회원 상세 페이지 이동 (검토 26)', () => {
         /**
          * 회귀 가드: subject 컬럼의 회원 row (row.user_id 존재) 는 클릭 시
          * /admin/users/{{row.user.uuid}} 로 이동해야 함. DPO 가 이상 패턴 발견 시
@@ -218,7 +218,7 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
             // 게스트 row 식별 — if 조건이 !row.user_id
             expect(layoutJson).toContain('"if":"{{!row.user_id}}"');
             // 게스트 row 가 actions: [{ ... navigate ... }] 형태를 갖지 않아야 함.
-            // 회원 상세 이동 (#26) 외에 다른 navigate (검색/필터/마이페이지 진입 등) 는 별개 기능이므로
+            // 회원 상세 이동 외에 다른 navigate (검색/필터/마이페이지 진입 등) 는 별개 기능이므로
             // 게스트 row 의 *주체 셀 안에* navigate 가 있는지만 강하게 검증.
             // 주체 셀의 게스트 분기는 if=!row.user_id 인 Span — actions 키 미존재 필수.
             expect(layoutJson).not.toMatch(/"if":"\{\{!row\.user_id\}\}"[^}]*"actions"/);

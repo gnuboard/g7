@@ -128,7 +128,7 @@ class ExtensionManager
         // 캐시와 동일 생명주기로 config 캐시를 재빌드해 캐시가 비활성 상태로 남지 않게 한다.
         // activate/deactivate 는 이 메서드를 거치지 않는다 — after_activate/after_deactivate 훅의
         // ExtensionConfigCacheListener 가 재생성한다. 여러 건을 한꺼번에 바꾸는 경로는 ConfigCacheHelper::deferRebuilds()
-        // 로 감싸 마지막에 한 번만 재생성한다(#145 F6).
+        // 로 감싸 마지막에 한 번만 재생성한다(공개 #145 F6).
         ConfigCacheHelper::rebuild();
     }
 
@@ -306,7 +306,7 @@ class ExtensionManager
      * 코어(base_path('vendor')) Composer ClassLoader 를 돌려줍니다.
      *
      * `ClassLoader::getRegisteredLoaders()` 의 첫 항목은 코어 로더가 아니다 — Composer 오토로더는 자신을 맨 앞에 넣으므로
-     * 확장 자체 vendor 오토로더가 불린 뒤에는 마지막에 불린 확장 vendor 로더가 첫 항목이다(#159). 키(vendorDir)를 정규화해
+     * 확장 자체 vendor 오토로더가 불린 뒤에는 마지막에 불린 확장 vendor 로더가 첫 항목이다(공개 #159). 키(vendorDir)를 정규화해
      * 코어 vendor 와 같은 로더를 고른다. 일치하는 키가 없을 때만 코어 autoload.php 의 싱글턴으로 폴백한다 — 제자리 vendor
      * 교체 뒤 다시 부르면 새 접미어의 루트 로더가 하나 더 등록될 수 있어 1순위로 쓰지 않는다.
      *
@@ -823,7 +823,7 @@ PHP;
         // Vendor autoloads 로드 (모듈/플러그인의 composer 의존성)
         // 오토로더 클래스가 이미 선언돼 있으면 건너뛴다 — 진입 파일이 자체 vendor 를 부르는 확장은 설치 전 확인이
         // _bundled 경로 사본으로 같은 이름의 ComposerAutoloaderInit 를 먼저 선언할 수 있고, 경로가 달라 require_once 의
-        // 중복 제거가 통하지 않아 "Cannot declare class" 로 프로세스가 죽는다(#159).
+        // 중복 제거가 통하지 않아 "Cannot declare class" 로 프로세스가 죽는다(공개 #159).
         if (! empty($autoloads['vendor_autoloads'])) {
             foreach ($autoloads['vendor_autoloads'] as $vendorAutoload) {
                 $absolutePath = base_path($vendorAutoload);
@@ -1597,7 +1597,7 @@ PHP;
             }
         }
 
-        // PSR-4 만으로는 같은 프로세스의 앞선 실패 조회(설치 전 확인·고아 폴더 부팅 등)가 남긴 음성 캐시를 풀지 못한다 (#159)
+        // PSR-4 만으로는 같은 프로세스의 앞선 실패 조회(설치 전 확인·고아 폴더 부팅 등)가 남긴 음성 캐시를 풀지 못한다 (공개 #159)
         self::registerExtensionClassmapAt(base_path("{$type}/{$dirName}"), $loader);
     }
 
@@ -1696,7 +1696,7 @@ PHP;
      *
      * 부팅의 확장 로드는 활성 디렉토리 진입 파일을 모두 읽는다. 설치된 확장은 진입점이 캐시로 먼저 등록하지만, 캐시에 없는
      * 폴더(설치가 끊겨 DB 행만 지워진 사본·손으로 복사한 사본)는 등록되지 않아, 진입 클래스가 자기 PSR-4 클래스를 상속하면
-     * 부팅이 「Class not found」 로 죽고 복구 명령(`{type}:install {id} --force`)조차 실행되지 않았다(#159). 캐시 지문에
+     * 부팅이 「Class not found」 로 죽고 복구 명령(`{type}:install {id} --force`)조차 실행되지 않았다(공개 #159). 캐시 지문에
      * 있거나 composer.json 의 PSR-4 접두가 모두 등록된 확장은 아무것도 하지 않는다(설치된 확장의 부팅 비용 없음).
      *
      * @param  string  $absoluteExtensionDir  확장 활성 디렉토리 절대경로
@@ -1950,7 +1950,7 @@ PHP;
      * 확장이 필수로 선언한 PHP 확장이 서버에 없으면 경고만 남깁니다. (업데이트·강제 활성화·코어 업데이트 중 활성화)
      *
      * 생명주기 경고(`php_extension_missing`)와 로그에 남기고 작업은 계속한다 — 업데이트를 막으면 보안 수정까지
-     * 못 받게 되므로 차단하지 않는다(#151 D3). 권장(suggest) 미충족은 관리자 배지로만 알린다.
+     * 못 받게 되므로 차단하지 않는다(공개 #151 D3). 권장(suggest) 미충족은 관리자 배지로만 알린다.
      *
      * @param  string  $extensionType  확장 타입 (module|plugin)
      * @param  string  $identifier  확장 식별자

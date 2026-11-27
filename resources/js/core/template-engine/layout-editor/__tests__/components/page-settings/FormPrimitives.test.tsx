@@ -91,7 +91,7 @@ describe('DisabledFieldset (D-M)', () => {
   });
 });
 
-describe('OverlaySourceField (#4 — 칸 안에 녹이기)', () => {
+describe('OverlaySourceField (4 — 칸 안에 녹이기)', () => {
   /**
    * @scenario subject=form_primitives
    * @effects form_overlay_source_empty_shows_source_chip

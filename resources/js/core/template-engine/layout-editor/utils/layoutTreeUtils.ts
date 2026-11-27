@@ -363,7 +363,7 @@ export interface ResponsiveSegment {
 
 /**
  * 컴포넌트 배열 prop 세그먼트 — base children 이 아니라 `node.props[propSlot]` 배열로 내려가는
- * 선택자다(#141). Modal 의 `footer`(본문 아래 고정 단추 자리)처럼 children 이 아닌 prop 에 레이아웃
+ * 선택자다(공개 #141). Modal 의 `footer`(본문 아래 고정 단추 자리)처럼 children 이 아닌 prop 에 레이아웃
  * 컴포넌트 배열을 담는 자리를 편집 path 1급으로 다룬다.
  *
  * responsive 세그먼트와 같이 노드를 한 단계 내리지 않고 「다음 number 세그먼트가 인덱싱할 배열을

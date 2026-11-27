@@ -8,7 +8,7 @@ namespace App\Support;
  * 지금 보는 언어의 값이 없거나 비어 있으면 사이트 기본 언어(환경설정 「기본 언어」 =
  * `app.site_locale`) → 영어 순으로 대신한다. 종전에는 자리마다 `app.fallback_locale`(env 고정,
  * 번역 문구 대체용)이나 `'ko'` 를 직접 색인해, 한국어가 기본이 아닌 사이트에서도 빈 값이
- * 한국어로 채워졌다(#148 D7). 화면 쪽 짝은 `resources/js/core/support/localeTag.ts`
+ * 한국어로 채워졌다(공개 #148 D7). 화면 쪽 짝은 `resources/js/core/support/localeTag.ts`
  * 의 `pickLocalized` 이며 두 규칙은 같아야 한다(SEO 봇 화면과 SPA 화면의 글자가 같도록).
  *
  * `app.locale` 은 요청마다 보는 사람의 언어로 바뀌므로 기준으로 쓰지 않는다.

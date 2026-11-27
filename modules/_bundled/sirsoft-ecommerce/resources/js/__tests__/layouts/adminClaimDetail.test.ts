@@ -279,7 +279,7 @@ describe('상세 셸 — 라우트·데이터소스·모달 (S9a)', () => {
     expect(endpoints).toEqual([
       '/api/modules/sirsoft-ecommerce/admin/claims/{{route.claimNumber}}',
       '/api/modules/sirsoft-ecommerce/admin/claims/{{route.claimNumber}}/logs',
-      // 환불 실행 모달의 은행 코드표 — 공개 결제 설정이라 권한 게이트가 없다(P7 #15).
+      // 환불 실행 모달의 은행 코드표 — 공개 결제 설정이라 권한 게이트가 없다(P7 15).
       '/api/modules/sirsoft-ecommerce/settings/payment',
     ]);
     // `settings.read` 게이트 — 완료 기본값·택배사는 상세 응답이 나른다.
@@ -315,7 +315,7 @@ describe('상세 셸 — 라우트·데이터소스·모달 (S9a)', () => {
       // 수량 확인 모달도 같은 이유로 상세 소유다 (§4-6) — 주문상세 모달을 복제하지 않는다:
       // 그 파일은 주문 상태 어휘·`_local.changeQuantities` 키·`confirmItems` 계약에 묶여 있다.
       'partials/admin_ecommerce_claim_detail/_modal_claim_item_quantity_confirm.json',
-      // 첨부 일괄 정리 확인 모달 — 되돌릴 수 없는 삭제라 한 번 더 묻는다(P7 #4). 상세만 연다.
+      // 첨부 일괄 정리 확인 모달 — 되돌릴 수 없는 삭제라 한 번 더 묻는다(P7 4). 상세만 연다.
       'partials/admin_ecommerce_claim_detail/_modal_claim_images_clear.json',
       // 진행 방식 전환(D1) · 고객 요청 대리 철회(S14) · 신청 내용 수정(S15) — 상세만 여는 확인 모달.
       'partials/admin_ecommerce_claim_detail/_modal_claim_exchange_mode_confirm.json',
@@ -1254,7 +1254,7 @@ describe('환불 실행 — 취소 가능 금액과 실행 (D18·D19)', () => {
     const values = strings(refundExecuteModal).join(' ');
 
     expect(values).toContain('refund_bank_input_title');
-    // 은행은 코드표 Select 로 고른다(P7 #15) — 빈 선택지 라벨이 은행 선택 안내다.
+    // 은행은 코드표 Select 로 고른다(P7 15) — 빈 선택지 라벨이 은행 선택 안내다.
     expect(values).toContain('refund_bank_select');
     expect(values).toContain('refund_bank_account_placeholder');
     expect(values).toContain('refund_bank_holder_placeholder');

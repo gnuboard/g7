@@ -97,7 +97,7 @@ class HookArgumentSerializer
         }
 
         // 날짜 → 클래스명 + 마이크로초·시간대까지 담은 문자열. 예전에는 직렬화 불가로 null 이 돼
-        // 큐 리스너가 가입 시각·동의 시각을 비어 있는 값으로 받았다(#138 후속).
+        // 큐 리스너가 가입 시각·동의 시각을 비어 있는 값으로 받았다(공개 #138 후속).
         if ($value instanceof \DateTimeInterface) {
             return [
                 self::DATETIME_MARKER => true,

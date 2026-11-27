@@ -55,7 +55,7 @@ async function firstPageId(page: import('@playwright/test').Page): Promise<numbe
   return id as number;
 }
 
-test.describe('관리자 페이지 목록 컨텍스트 왕복 (#75)', () => {
+test.describe('관리자 페이지 목록 컨텍스트 왕복 (공개 #75)', () => {
   // @scenario leg=back
   // @effects list_return_preserves_query
   test('상세에서 목록으로 돌아오면 목록 상태가 복원된다', async ({ page, pageManageToken }) => {

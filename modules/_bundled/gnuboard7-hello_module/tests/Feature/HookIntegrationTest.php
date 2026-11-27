@@ -70,7 +70,7 @@ class HookIntegrationTest extends FeatureTestCase
      * 메모 제목이 저장 전에 `gnuboard7-hello_module.memo.title.filter` 필터를 거친다.
      *
      * Hello 플러그인의 FilterMemoTitleListener 가 이 필터를 구독하는데 모듈에 발화처가 없어 한 번도
-     * 실행되지 않았다(#138 후속 — 문서·구독에만 있는 훅은 발화를 만든다).
+     * 실행되지 않았다(공개 #138 후속 — 문서·구독에만 있는 훅은 발화를 만든다).
      *
      * @scenario case=memo_title_filter
      *

@@ -244,7 +244,7 @@ effects:
   # green 이므로 **두 축이 각각 독립으로** 덮는다(상속원이 자식과 같은 공개 진입점으로 불려 온다).
   # 그래서 이 경로는 확장 조각과 달리 공개 릴리스에서 샌 적이 없다.
   - injected_comments_in_base_layouts_never_reach_the_child_serving_response
-  # 6차 병합 — LayoutServingTest 는 이 트랙과 ext-static-cache.yaml(develop #122 정적 게시)이 공유하는 파일이다.
+  # 6차 병합 — LayoutServingTest 는 이 트랙과 ext-static-cache.yaml(develop 공개#122 정적 게시)이 공유하는 파일이다.
   # 그 매니페스트가 소유하는 두 효과를 여기서도 선언한다 — 이 게이트는 자기 test_files 의 마킹 전량이 자기 effects 에 있어야 하기 때문(38차 축).
   - fallback_api_serves_etag_304
   - fallback_api_no_cache_in_dev

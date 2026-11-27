@@ -104,7 +104,7 @@ class LoginController extends Controller
         // file-serving:allow 파일이 아니라 이 자리에서 만든 결과 화면(HTML)이다 — 본문은 전부 이스케이프한 값이고 `no-store` 로 남기지 않는다.
         $html = '<!doctype html><html lang="'.e(app()->getLocale()).'"><head><meta charset="utf-8">'
             .'<meta name="viewport" content="width=device-width,initial-scale=1"><title>'.$title.'</title>'
-            // 모양은 정적 파일이 준다 — 인라인 <style> 은 스타일 보안 정책(style-src 'self')에서 막힌다(#163)
+            // 모양은 정적 파일이 준다 — 인라인 <style> 은 스타일 보안 정책(style-src 'self')에서 막힌다(공개 #163)
             .BridgeScript::stylesheetTag('test-result.css').'</head>'
             .'<body><h1>'.$title.'</h1>'.$body.'</body></html>';
 

@@ -6,7 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * 실패 작업 일괄 삭제 요청 (#17)
+ * 실패 작업 일괄 삭제 요청
  *
  * 요청당 최대 {@see BulkRetryFailedJobRequest::MAX_ITEMS} 건 — 초과하면 422.
  */

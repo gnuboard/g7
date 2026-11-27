@@ -17,7 +17,7 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\ProductInquiryFactory;
  * 이커머스 상품과 외부 컨텐츠(게시판 게시글 등)를 다형성 관계로 연결합니다.
  *
  * SoftDeletes: 게시판에서 질문 글을 삭제→복원하는 경로에서 피벗도 함께
- * 복원할 수 있어야 한다 — 하드 삭제는 복원 대칭이 불가능했다(#107 후속).
+ * 복원할 수 있어야 한다 — 하드 삭제는 복원 대칭이 불가능했다(공개 #107 후속).
  * 상품 자체가 forceDelete 되는 경로만 피벗도 forceDelete 한다.
  */
 class ProductInquiry extends Model

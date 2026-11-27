@@ -1,4 +1,4 @@
-// e2e:allow편집기 위젯(icon-picker) 등록을 module-load 시점으로 이동(결함#3, admin 동기 — 직접 하드로드 시 위젯 누락 해소). 단위 회귀는 registerEditorWidgets.test.ts(module-load 등록 + index.ts 최상위 호출 정적 가드).
+// e2e:allow편집기 위젯(icon-picker) 등록을 module-load 시점으로 이동(결함 3, admin 동기 — 직접 하드로드 시 위젯 누락 해소). 단위 회귀는 registerEditorWidgets.test.ts(module-load 등록 + index.ts 최상위 호출 정적 가드).
 /**
  * Sirsoft Basic User Template
  *

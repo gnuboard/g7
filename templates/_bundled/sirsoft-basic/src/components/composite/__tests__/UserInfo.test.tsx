@@ -423,7 +423,7 @@ describe('UserInfo 드롭다운 위치 (fixed 배치)', () => {
   });
 });
 
-// #1 회귀: UserInfo 의 비회원/탈퇴 분기 렌더가
+// 1 회귀: UserInfo 의 비회원/탈퇴 분기 렌더가
 // editorAttrs(data-editor-*) 와 id 를 루트에 전달해야 한다. 누락 시 레이아웃 편집기에서
 // isGuest/isWithdrawn 상태의 UserInfo 가 캔버스에서 선택·편집 불가(데이터 결정 노드처럼
 // data-editor-name 미부착). 회원 분기는 이미 전달하므로 세 분기 모두 패리티를 보장한다.

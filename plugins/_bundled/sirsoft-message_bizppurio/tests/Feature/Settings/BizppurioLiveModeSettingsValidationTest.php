@@ -356,7 +356,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
      * 표준 이름(core.plugin_settings.update_validation_rules)을 구독한다.
      *
      * 옛 이름(core.plugin_settings.update_rules)은 코어가 호환용으로만 함께 발행하며, 구독자가 있으면
-     * 개명 경고 로그를 남긴다 — 번들 플러그인이 그 경고를 매번 내던 것을 바로잡았다(#138 후속 11번 ③).
+     * 개명 경고 로그를 남긴다 — 번들 플러그인이 그 경고를 매번 내던 것을 바로잡았다(공개 #138 후속 11번 ③).
      *
      * @scenario test_mode=off, credential_state=filled
      *

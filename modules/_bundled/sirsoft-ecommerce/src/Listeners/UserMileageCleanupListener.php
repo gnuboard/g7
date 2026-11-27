@@ -8,7 +8,7 @@ use Modules\Sirsoft\Ecommerce\Services\UserDataPurgeService;
 use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
 
 /**
- * 회원 탈퇴/삭제 시 마일리지·회원 소유 데이터 정리 리스너 (정책 확정 #8)
+ * 회원 탈퇴/삭제 시 마일리지·회원 소유 데이터 정리 리스너 (정책 확정 8)
  *
  * 코어 UserService 의 탈퇴(before_withdraw)·삭제(before_delete) 훅을 구독합니다 (E3).
  *

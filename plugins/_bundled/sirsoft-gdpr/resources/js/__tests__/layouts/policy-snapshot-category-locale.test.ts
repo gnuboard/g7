@@ -53,7 +53,7 @@ function findDescriptionExpression(): string {
  * @returns 화면에 그려질 설명 문자열
  */
 function renderDescription(category: Record<string, unknown>, locale: string): string {
-    // 엔진 $localized 와 같은 규칙(코어 pickLocalized) — 사이트 기본 언어 ko 인 사이트 (#148)
+    // 엔진 $localized 와 같은 규칙(코어 pickLocalized) — 사이트 기본 언어 ko 인 사이트 (공개 #148)
     (window as any).G7Config = { appConfig: { siteLocale: 'ko' } };
     const $localized = (value: unknown): string =>
         value == null ? '' : typeof value === 'string' ? value : (pickLocalized(value, locale) ?? '');

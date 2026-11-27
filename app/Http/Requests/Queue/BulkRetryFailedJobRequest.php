@@ -6,7 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * 실패 작업 일괄 재시도 요청 (#17)
+ * 실패 작업 일괄 재시도 요청
  *
  * 요청당 최대 {@see self::MAX_ITEMS} 건 — 초과하면 422(대량 재시도로 큐를 한 번에 채우지 않도록 거는 상한).
  */

@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 정적 게시 — 언어팩 규칙(BCP 47) 로케일의 lang 파일 (#148)
+ * 정적 게시 — 언어팩 규칙(BCP 47) 로케일의 lang 파일 (공개 #148)
  *
  * 종전 패턴(`[a-z]{2}…`)이 `fil` 을 걸러 정적 게시본에서 빠지고, 매 요청 API 폴백(그 API 도 404)으로 떨어졌다.
  * 게시 트리 격리·버전 시드는 `ExtensionStaticCacheServiceTest` 와 같은 방식이다(운영 게시본을 지우지 않는다).

@@ -94,7 +94,7 @@ G7Core.toast.success('저장 완료', 5000);
 G7Core.toast.show('메시지', { type: 'info', icon: 'bell', duration: 3000 });
 ```
 
-> **참고**: 토스트 핸들러에 대한 자세한 내용은 [actions-handlers.md](actions-handlers.md#toast)를 참조하세요.
+> **참고**: 토스트 핸들러에 대한 자세한 내용은 [actions-handlers.md](actions-handlers-ui.md#toast)를 참조하세요.
 
 ### modalStack / activeModal (모달 시스템)
 
@@ -352,7 +352,7 @@ console.log(window.__g7PendingLocalState);
 }
 ```
 
-> **참고**: 모달 시스템에 대한 자세한 내용은 [layout-json-features.md](layout-json-features.md#모달-시스템-modals)를 참조하세요.
+> **참고**: 모달 시스템에 대한 자세한 내용은 [layout-json-features.md](layout-json-features.md#modals---모달-시스템)를 참조하세요.
 
 ---
 

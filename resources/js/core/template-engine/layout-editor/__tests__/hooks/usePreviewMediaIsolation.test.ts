@@ -1,5 +1,5 @@
 /**
- * usePreviewMediaIsolation 회귀 테스트 (이슈 #141 D7)
+ * usePreviewMediaIsolation 회귀 테스트 (이슈 공개 #141 D7)
  *
  * 편집기 생존 동안만 미리보기 프레임을 이름 있는 컨테이너로 지정하고(시트의 폭 `@media` 를
  * `@container` 로 나누는 재작성은 sheetRewriter 테스트가 잠근다), 언마운트 때 흔적을 남기지 않는다.

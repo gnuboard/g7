@@ -10,7 +10,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * 큐 작업 처리 기록 목록 조회 요청 (#17)
+ * 큐 작업 처리 기록 목록 조회 요청
  *
  * 쿼리 키: search_field(all,job,error,uuid)·search_keyword·status(processed,failed)·
  * queue·connection·created_start_date/created_end_date·per_page·sort_by·sort_order.

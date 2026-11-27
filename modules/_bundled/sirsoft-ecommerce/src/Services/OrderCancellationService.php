@@ -420,7 +420,7 @@ class OrderCancellationService
         } catch (OrderClaimException $e) {
             // 키·치환 파라미터를 그대로 옮긴다(`validateNotLockedByClaim()` 과 같은 형태). 종전에는
             // 이미 번역된 문장을 키 자리에 넣어, 키로 응답을 조립하는 면이 키 대신 문장을 받고
-            // 치환 파라미터(:type·:status 등)는 잃었다(validate P2 #4).
+            // 치환 파라미터(:type·:status 등)는 잃었다(validate P2 4).
             throw new OrderCancellationException($e->getMessage(), $e->getMessageKey(), $e->getMessageParams());
         }
     }

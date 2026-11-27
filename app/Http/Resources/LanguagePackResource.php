@@ -97,7 +97,7 @@ class LanguagePackResource extends BaseApiResource
             return null;
         }
 
-        // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+        // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (공개 #148)
         return LocalizedValue::pick($value, App::getLocale());
     }
 

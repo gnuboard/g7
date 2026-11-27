@@ -7,7 +7,7 @@ use Modules\Sirsoft\Ecommerce\Database\Seeders\Sample\ProductSeeder;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * gd 확장이 없는 서버에서 상품 샘플 시더가 색상 변형 없이 원본 이미지를 쓰는지 검증한다 (#151 W8)
+ * gd 확장이 없는 서버에서 상품 샘플 시더가 색상 변형 없이 원본 이미지를 쓰는지 검증한다 (공개 #151 W8)
  *
  * gd 는 코어 기준 「선택」 확장이다. `applyColorFilter()` 가 `imagecreatefromstring()` 을 `@` 로만 감싸 gd 없는 서버에서
  * 미정의 함수 오류로 시더가 중단됐다. 이제 원본 이미지를 그대로 쓰고 경고는 한 번만 낸다.

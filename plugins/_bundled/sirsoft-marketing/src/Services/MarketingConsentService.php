@@ -378,7 +378,7 @@ class MarketingConsentService
      */
     public function updateConsents(int $userId, array $data, string $source): void
     {
-        // 다른 확장이 저장 전 동의 데이터를 가공할 기회 — 선언만 있고 발화처가 없던 것을 채웠다(#138 후속)
+        // 다른 확장이 저장 전 동의 데이터를 가공할 기회 — 선언만 있고 발화처가 없던 것을 채웠다(공개 #138 후속)
         $data = HookManager::applyFilters('sirsoft-marketing.filter_consent_data', $data, $userId, $source);
 
         // marketing_consent(master)를 먼저 처리하여 채널 처리 시 자동 활성화 중복 방지

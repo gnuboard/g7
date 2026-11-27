@@ -3,7 +3,7 @@
 <partial description="상품명, 카테고리, 찜하기">
   <div>
     <div class="flex items-start justify-between">
-      <!-- 상품명 칸은 줄어들 수 있고(min-w-0) 이름은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 상품명이 찜하기 단추를 밀어냈다(#143). -->
+      <!-- 상품명 칸은 줄어들 수 있고(min-w-0) 이름은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 상품명이 찜하기 단추를 밀어냈다(공개 #143). -->
       <div class="min-w-0">
         <!-- 분류 경로 — 대표 분류 화면으로 잇는다. 분류 주소(slug)를 주지 않는 옛 응답이면 글자로만 보인다 -->
         <nav data-if="{{!!product.data?.category_name}}" aria-label="$t:shop.product.category_path" class="block min-w-0 truncate text-sm text-muted">

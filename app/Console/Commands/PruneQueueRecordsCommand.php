@@ -7,7 +7,7 @@ use App\Services\JobQueueService;
 use Illuminate\Console\Command;
 
 /**
- * 보관 기간이 지난 큐 처리 기록과 실패 작업을 정리하는 커맨드 (#17)
+ * 보관 기간이 지난 큐 처리 기록과 실패 작업을 정리하는 커맨드
  *
  * 처리 기록(queue_job_logs)과 실패 작업(failed_jobs)은 보관 기간 설정 1개(drivers.queue_record_retention_days,
  * 기본 7일)를 함께 따른다. 기존 `queue:prune-failed` 예약을 대신한다(코어 카탈로그 `queue-prune-records`).

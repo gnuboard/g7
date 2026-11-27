@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
- * `users.language` 확장 마이그레이션(5 → 20자) 테스트 (#148).
+ * `users.language` 확장 마이그레이션(5 → 20자) 테스트 (공개 #148).
  *
  * 언어팩으로 켤 수 있는 `fil-PH`·`zh-Hant-TW` 는 다섯 글자를 넘어, 회원 가입·프로필·관리자 회원 수정이
  * 엄격 모드에서 22001 로 실패했다. 칸 폭은 `language_packs.locale` varchar(20) 와 같다.

@@ -211,7 +211,7 @@ class ScheduleExecutor
             return $lock->get() ? $lock : false;
         } catch (Throwable $e) {
             // 수동 실행(「지금 실행」)은 잠금 없이 돌리지 않는다 — 중복 실행 방지를 보장할 수 없고, 누른 사람이 다시
-            // 시도할 수 있다(#161 F4). 원본 저장소 오류 문구는 응답에 싣지 않고 로그에만 남긴다.
+            // 시도할 수 있다(공개 #161 F4). 원본 저장소 오류 문구는 응답에 싣지 않고 로그에만 남긴다.
             if ($trigger === ScheduleTriggerType::Manual) {
                 Log::error('스케줄 실행 잠금 저장소 오류 — 실행하지 않습니다', ['schedule_id' => $schedule->id, 'error' => $e->getMessage()]);
 

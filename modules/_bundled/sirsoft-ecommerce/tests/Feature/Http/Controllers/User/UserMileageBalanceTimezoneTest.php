@@ -7,7 +7,7 @@ use Modules\Sirsoft\Ecommerce\Models\MileageBalance;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 사용자 마일리지 잔액 API 의 소멸 예정일 표시값 테스트 (#160)
+ * 사용자 마일리지 잔액 API 의 소멸 예정일 표시값 테스트 (공개 #160)
  *
  * 마이페이지 마일리지 카드는 ISO 원문(`expiring_date`)이 아니라 보는 사람 날짜(`expiring_date_formatted`)를 쓴다.
  */

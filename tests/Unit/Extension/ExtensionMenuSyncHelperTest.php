@@ -22,7 +22,7 @@ use Tests\TestCase;
  * user_overrides 기반 필드 보호 동작을 검증합니다:
  * - 필드별 독립 보호 (name, icon, order, url 각각)
  * - parent_id, is_active 도 운영자 수정 표식이 없을 때만 갱신 (종전엔 항상 갱신)
- * - stale 메뉴 정리 (자식 포함, UpgradeStep 전용 — 자동 호출 폐기 #135)
+ * - stale 메뉴 정리 (자식 포함, UpgradeStep 전용 — 자동 호출 폐기)
  * - 재귀 메뉴 동기화
  */
 class ExtensionMenuSyncHelperTest extends TestCase

@@ -154,7 +154,7 @@ class OrderAdjustmentService
             // 교환 신청 시점에 상품가가 바뀐 주문에서 엔진 단가가 `new_unit_price`(현재 상품가
             // 기준)와 어긋나, 후속 행을 취소할 때 그 차이만큼 덜(또는 더) 환불된다. 치환 패스
             // (`applySubstitutions()`)와 같은 식으로 조정액을 역산해 엔진 단가 == 신규 단가로
-            // 맞춘다(validate P2 #3).
+            // 맞춘다(validate P2 3).
             $snapshot['price_adjustment'] = (float) $exchangeItem->new_unit_price
                 - (float) (($successor->product_snapshot ?? [])['selling_price'] ?? 0);
 
@@ -241,7 +241,7 @@ class OrderAdjustmentService
         // 판정 근거는 **종결 행의 존재**다 — 누적 환불액(`total_refunded_amount`)이 아니다.
         // 환불액이 0 으로 확정된 부분 환불(운영자가 0 원으로 수정, 무상 증정 행 등)도 행은
         // 취소로 닫히는데, 누적 환불액만 보면 그 뒤의 신청이 원 결제금액을 기준선으로 삼아 닫힌
-        // 행의 값까지 한 번 더 돌려준다(validate P2 #2). 반대로 기준선을 다시 구해도 종결
+        // 행의 값까지 한 번 더 돌려준다(validate P2 2). 반대로 기준선을 다시 구해도 종결
         // 행이 없으면 값은 원 결제금액과 같으므로 판정을 넓혀 잃는 것은 계산 한 번뿐이다.
         $baselineAmount = $originalPaidAmount + $originalPointsUsed;
         // 배송비 정책별 상세(12)의 원 주문 측도 이 기준선 재계산을 쓴다 — 종결 행이 있는 주문의 배송 행은

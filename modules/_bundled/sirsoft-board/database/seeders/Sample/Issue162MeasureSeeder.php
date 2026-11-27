@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\PostContentMediaService;
 
 /**
- * #162 브라우저 실측용 게시판 데이터 시더 (CLI + G7_PLAYWRIGHT_BYPASS=1 전용)
+ * 공개 #162 브라우저 실측용 게시판 데이터 시더 (CLI + G7_PLAYWRIGHT_BYPASS=1 전용)
  *
  * 비회원 업로드·본문 미디어·외부 영상·정화 표본을 실측하는 게시판 셋과 회원 둘, 표본 글을 만든다.
  * 모든 행 제목·이름에 표지 `[실측-162]` 를 붙여 정리 시더(`Issue162MeasureCleanupSeeder`)가 그것만 지운다.

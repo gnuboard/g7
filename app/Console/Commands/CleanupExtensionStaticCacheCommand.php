@@ -12,7 +12,7 @@ use Illuminate\Console\Command;
  * 게시 디렉토리(`public/build/ext/{version}/`)는 캐시 스토어 밖 파일시스템이라
  * version bump 가 구버전 디렉토리를 지우지 않는다. 게시 성공 직후 인라인 GC 가
  * 돌지만, 게시가 오래 없거나 실패한 환경의 잔존물을 이 커맨드가 회수한다.
- * (`CleanupExtensionBundlesCommand` 파일 산출물 GC 패턴 미러, #122)
+ * (`CleanupExtensionBundlesCommand` 파일 산출물 GC 패턴 미러, 공개 #122)
  */
 class CleanupExtensionStaticCacheCommand extends Command
 {

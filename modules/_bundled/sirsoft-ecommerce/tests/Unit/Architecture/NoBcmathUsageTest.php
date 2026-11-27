@@ -8,7 +8,7 @@ use RecursiveIteratorIterator;
 use Tests\PureTestCase;
 
 /**
- * 모듈 소스가 bcmath 함수를 부르지 않는지 잠근다 (#151)
+ * 모듈 소스가 bcmath 함수를 부르지 않는지 잠근다 (공개 #151)
  *
  * bcmath 는 코어 기준 「선택」 확장이라 없는 서버가 있다. 모듈 composer.json 에 `ext-bcmath` 를
  * 선언하지 않았으므로, 소스에 `bc*()` 호출이 다시 들어오면 그 서버에서 주문 상세·취소가 500 이 된다.

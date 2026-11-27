@@ -250,7 +250,7 @@ class AssetUrlTest extends TestCase
         $this->assertSame(AssetUrl::MODE_EXTENSION, AssetUrl::mode());
     }
 
-    // ── 정적 게시(bake) 게이트 (#122 S2) ─────────────────────────────────
+    // ── 정적 게시(bake) 게이트 (공개 #122 S2) ─────────────────────────────────
 
     /**
      * 정적 게이트용 게시 픽스처를 만든다.

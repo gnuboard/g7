@@ -128,7 +128,7 @@ class LayoutFixtureCommandSourceTest extends TestCase
     }
 
     /**
-     * JSON 레이아웃의 없는 조각은 설치와 같이 빈 자리로 관용돼 fixture 가 만들어지고 경고가 출력된다 (관용, #144 W9).
+     * JSON 레이아웃의 없는 조각은 설치와 같이 빈 자리로 관용돼 fixture 가 만들어지고 경고가 출력된다 (관용, 공개 #144 W9).
      *
      * 종전에는 이 명령만 관용 플래그를 넘기지 않아, 설치는 통과하는 JSON 레이아웃의 fixture 를 만들 수 없었다.
      *

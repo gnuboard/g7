@@ -7,7 +7,7 @@ use App\Services\JobQueueService;
 use Tests\TestCase;
 
 /**
- * 큐 처리 기록 설정 키 테스트 (#17 — drivers.queue_job_log_enabled · drivers.queue_record_retention_days)
+ * 큐 처리 기록 설정 키 테스트 (— drivers.queue_job_log_enabled · drivers.queue_record_retention_days)
  */
 class QueueJobLogSettingsTest extends TestCase
 {

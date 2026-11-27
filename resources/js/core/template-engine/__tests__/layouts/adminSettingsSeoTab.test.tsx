@@ -10,7 +10,7 @@
  * 2. 봇 UA 관리 TagInput creatable 설정 — creatable=true
  * 3. 캐시 설정 Toggle 바인딩 — seo.cache_enabled 바인딩 확인
  * 4. Sitemap 설정 섹션 존재 — sitemap_enabled Toggle, 생성 주기 링크 블록 존재(픽스처 ↔ 실제 _tab_seo.json 동기 대조 포함)
- * 5. 생성 주기·시각 입력 칸 없음 — 7.2.0(#17, D10) 부터 주기는 코어 스케줄 행(core/sitemap-generate)이 원천이다
+ * 5. 생성 주기·시각 입력 칸 없음 — 7.2.0(D10) 부터 주기는 코어 스케줄 행(core/sitemap-generate)이 원천이다
  * 6. 스케줄 관리 링크 — 소유=코어 + 식별자 검색 쿼리로 그 행을 걸러 연다, 저장 폼 값과 무관하게 보인다
  * 7. sitemap_cache_ttl NumberInput 존재 — seo.sitemap_cache_ttl 바인딩 확인
  * 8. 저장 버튼 apiCall params에 _tab=seo — body에 _tab, seo 데이터 포함
@@ -405,7 +405,7 @@ const seoTabPartial: any = {
             {
               id: 'field_sitemap_schedule_link', type: 'basic', name: 'Div',
               props: { className: 'alert-info' },
-              // 실제 블록은 [아이콘 · 문장 · 다음 실행 · 링크] 묶음이다(#17 후속 H-42) — 픽스처는 아이콘과 다음 실행 줄을 뺀 골격만 베낀다.
+              // 실제 블록은 [아이콘 · 문장 · 다음 실행 · 링크] 묶음이다(후속 H-42) — 픽스처는 아이콘과 다음 실행 줄을 뺀 골격만 베낀다.
               children: [
                 {
                   type: 'basic', name: 'Div', props: { className: 'flex gap-3' },
@@ -729,7 +729,7 @@ describe('환경설정 SEO 탭 레이아웃', () => {
   });
 
   // ==============================
-  // 5. 생성 주기·시각 입력 칸 없음 (7.2.0 #17 D10)
+  // 5. 생성 주기·시각 입력 칸 없음 (7.2.0 D10)
   // ==============================
 
   describe('사이트맵 생성 주기·시각 입력 칸 없음', () => {

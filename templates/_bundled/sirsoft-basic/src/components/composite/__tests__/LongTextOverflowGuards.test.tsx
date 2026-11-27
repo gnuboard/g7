@@ -1,7 +1,7 @@
 // e2e:allow Vitest 컴포넌트 렌더 테스트(긴 텍스트 클래스 계약). 실제 폭에서의 넘침 수치는 tests/Playwright/specs/long-text-overflow.spec.ts 와 Chrome MCP 실측이 맡는다.
 /**
  * @file LongTextOverflowGuards.test.tsx
- * @description 긴 텍스트 넘침 방지 — 컴포넌트 클래스 계약 (#143)
+ * @description 긴 텍스트 넘침 방지 — 컴포넌트 클래스 계약 (공개 #143)
  *
  * jsdom 은 레이아웃을 계산하지 않으므로 여기서는 긴 이름을 주입해 렌더한 뒤, 넘침을 막는 클래스가 그 텍스트를
  * 그리는 요소에 붙어 있는지만 확인한다.

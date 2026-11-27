@@ -73,7 +73,7 @@ class UninstallTemplateCommand extends Command
                 return Command::FAILURE;
             }
 
-            // 삭제 확인 프롬프트 (--force 면 묻지 않는다 — 모듈·플러그인 제거 명령과 같은 옵션, #138 실측 ⑤)
+            // 삭제 확인 프롬프트 (--force 면 묻지 않는다 — 모듈·플러그인 제거 명령과 같은 옵션, 공개 #138 실측 ⑤)
             if (! $this->option('force')) {
                 $this->warn(__('templates.commands.uninstall.confirm_prompt', ['template' => $identifier]));
                 $this->warn(trans_choice('templates.commands.uninstall.confirm_details.layouts', $template->layouts()->count()));

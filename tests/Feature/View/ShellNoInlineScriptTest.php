@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * [case:network-strict-csp-inline-shell-blank] 관리자·사용자 셸 HTML 에 실행형 인라인 코드가 없다 (#158).
+ * [case:network-strict-csp-inline-shell-blank] 관리자·사용자 셸 HTML 에 실행형 인라인 코드가 없다 (공개 #158).
  *
  * 운영자가 웹서버에 `Content-Security-Policy: script-src 'self'`(unsafe-inline 없음)를 걸면
  * 인라인 `<script>` 와 on* 속성은 실행되지 않는다. 종전에는 G7Config 대입·자산 복구·부트스트랩이
@@ -248,7 +248,7 @@ class ShellNoInlineScriptTest extends TestCase
         $this->assertStringContainsString(e(__('errors.bootstrap.reload')), $html);
 
         // 지연 표시·숨김 규칙은 셸 HTML 안이 아니라 코어 정적 CSS 에 있다 — 뷰 안 스타일 블록은
-        // 엄격한 스타일 정책에서 막혀 안내문이 정상 화면 아래에 늘 보였다(#163).
+        // 엄격한 스타일 정책에서 막혀 안내문이 정상 화면 아래에 늘 보였다(공개 #163).
         $this->assertMatchesRegularExpression('#<link rel="stylesheet" href="[^"]*assets/core/css/g7-core\.css\?v=\d+" data-g7-core-css="core">#', $html);
         $coreCss = file_get_contents(public_path('assets/core/css/g7-core.css'));
         $this->assertStringContainsString('html:not(.g7-shell-ok) #g7-shell-stall', $coreCss);

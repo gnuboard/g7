@@ -93,7 +93,7 @@ class PublicAttachmentController extends PublicBaseController
             }
 
             // 이미지 파일은 캐싱 헤더와 함께 인라인 응답 (환경설정 레이아웃 캐시 TTL 사용, 기본 24시간)
-            // 행 disk 를 따르는 스토리지 스트림 — 로컬 경로 전제 fileResponse 는 S3 행에서 성립하지 않는다 (#99)
+            // 행 disk 를 따르는 스토리지 스트림 — 로컬 경로 전제 fileResponse 는 S3 행에서 성립하지 않는다 (공개 #99)
             //
             // 서빙 메타 키의 부재는 **조용히 폴백하지 않는다** — 그 판정은 코어 헬퍼
             // (`streamedFileResponseFromMeta()`)가 소유한다. 종전에는 이 컨트롤러가 `array_key_exists`

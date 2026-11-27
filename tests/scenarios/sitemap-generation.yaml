@@ -107,7 +107,7 @@ effects:
   - sitemap_url_block_escapes_xml_special_characters
   - sitemap_contributors_are_streamed_one_at_a_time
   - sitemap_loc_origin_follows_configured_site_url
-  # ── 동기 실행(--sync·sync 큐)의 중복 방지 잠금 (#161 F2) ──
+  # ── 동기 실행(--sync·sync 큐)의 중복 방지 잠금 (공개#161 F2) ──
   - sitemap_sync_run_holds_job_unique_lock            # 큐 잡과 같은 잠금을 잡은 채 돌고 끝나면 푼다
   - sitemap_sync_run_skips_while_job_holds_lock       # 큐 잡이 잠금을 쥐고 있으면 「이미 생성 중」 + 성공 종료
   - sitemap_sync_run_releases_only_its_own_lock       # 실행 중 주인이 바뀐 잠금은 풀지 않는다

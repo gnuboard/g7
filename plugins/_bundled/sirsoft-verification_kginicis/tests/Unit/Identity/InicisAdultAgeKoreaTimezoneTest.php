@@ -8,7 +8,7 @@ use Plugins\Sirsoft\VerificationKginicis\Tests\PluginTestCase;
 use ReflectionClass;
 
 /**
- * KG이니시스 성인 판정의 기준 날짜 테스트 (#160 D10)
+ * KG이니시스 성인 판정의 기준 날짜 테스트 (공개 #160 D10)
  *
  * 만 나이는 한국 법상 나이라 한국 시간(Asia/Seoul)의 날짜로 센다 — 서버 시간대(UTC)의 날짜로 세면
  * 한국 시간 0~9시에 생일을 맞은 사람이 하루 늦게 성인이 된다.

@@ -896,7 +896,7 @@ class TemplateAssetServingTest extends TestCase
      */
     public function test_serves_components_json(): void
     {
-        // Arrange — public max-age 는 프로덕션 정책 (dev 는 no-cache 환경 분기, #122 작업 C)
+        // Arrange — public max-age 는 프로덕션 정책 (dev 는 no-cache 환경 분기, 공개 #122 작업 C)
         app()['env'] = 'production';
         $componentsPath = base_path("templates/{$this->testIdentifier}/components.json");
         file_put_contents($componentsPath, json_encode([
@@ -919,7 +919,7 @@ class TemplateAssetServingTest extends TestCase
     }
 
     /**
-     * components.json If-None-Match 일치 시 304 (조건부 캐시 — #122 작업 C)
+     * components.json If-None-Match 일치 시 304 (조건부 캐시 — 공개 #122 작업 C)
      *
      * @scenario case=components
      *

@@ -8,7 +8,7 @@ use App\Extension\PluginManager;
 use App\Support\AssetUrl;
 
 /**
- * 독립 HTML 응답(SAML POST 바인딩 자동 제출)의 스크립트 태그 조립 (#158 strict CSP)
+ * 독립 HTML 응답(SAML POST 바인딩 자동 제출)의 스크립트 태그 조립 (공개 #158 strict CSP)
  *
  * 이 플러그인이 직접 내는 HTML 페이지는 엔진 셸 밖이라, 동작을 인라인 `onload`·`<script>` 로 넣으면
  * 사이트가 `Content-Security-Policy: script-src 'self'` 를 걸었을 때 실행되지 않는다. 동작은 플러그인 루트의
@@ -34,7 +34,7 @@ final class BridgeScript
      * 독립 페이지의 스타일시트 `<link>` 태그를 만듭니다.
      *
      * 사이트가 스타일 보안 정책(`style-src 'self'; style-src-attr 'none'`)을 걸면 `<style>` 요소와 `style="…"` 속성이
-     * 막힌다(코어 #163, 7.1.6). 이 플러그인이 직접 내는 HTML 페이지(자동 제출·테스트 결과·모의 IdP 승인 화면)의 모양은
+     * 막힌다(코어 공개 #163, 7.1.6). 이 플러그인이 직접 내는 HTML 페이지(자동 제출·테스트 결과·모의 IdP 승인 화면)의 모양은
      * 같은 출처 정적 파일(`assets/bridge/*.css`)로 싣는다.
      *
      * @param  string  $file  `assets/bridge/` 아래 파일명 (예: `test-result.css`)

@@ -75,7 +75,7 @@ class PluginResource extends BaseApiResource
             ...$this->updateCoreCompatibilityFields(),
             // 업데이트 대상 판이 요구하는 의존·연동 중 못 미치는 것(업데이트가 있을 때만) — 업데이트 창이 실행 전에 경고한다.
             ...$this->updateTargetRequirementFields(),
-            // composer.json require/suggest ext-* 와 서버 로드 상태 — 목록 카드의 PHP 확장 배지(#151)
+            // composer.json require/suggest ext-* 와 서버 로드 상태 — 목록 카드의 PHP 확장 배지(공개 #151)
             ...$this->phpExtensionRequirementFields('plugin'),
 
             ...$this->formatTimestamps(),
@@ -170,7 +170,7 @@ class PluginResource extends BaseApiResource
             'deactivated_reason' => $this->getDeactivatedReasonValue(),
             'deactivated_at' => $this->getValue('deactivated_at'),
             'incompatible_required_version' => $this->getValue('incompatible_required_version'),
-            // composer.json require/suggest ext-* 와 서버 로드 상태 — 상세 창의 PHP 확장 배지(#151)
+            // composer.json require/suggest ext-* 와 서버 로드 상태 — 상세 창의 PHP 확장 배지(공개 #151)
             ...$this->phpExtensionRequirementFields('plugin'),
             // 타임스탬프
             'created_at' => $this->getValue('created_at'),

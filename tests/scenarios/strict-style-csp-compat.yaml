@@ -110,7 +110,7 @@ effects:
   - editor_toolbar_rules_removed_on_unmount
   - editor_slot_label_via_css_variable
   - editor_empty_cell_rules_attached_once
-  - editor_entry_fab_rules_via_runtime_sheet           # 운영 화면 편집 진입 단추 규칙은 보이는 동안만 런타임 시트로 붙고 숨으면 떨어진다(7.2.0, #163)
+  - editor_entry_fab_rules_via_runtime_sheet           # 운영 화면 편집 진입 단추 규칙은 보이는 동안만 런타임 시트로 붙고 숨으면 떨어진다(7.2.0, 공개#163)
   - editor_media_isolation_excludes_own_sheet
   - editor_guarded_css_via_runtime_sheet
   - editor_public_css_stays_link                       # 공개·외부 CSS 는 종전대로 <link>

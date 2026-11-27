@@ -300,7 +300,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               className="block px-4 py-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               onClick={(event) => handleLinkClick(event, openUserDetail)}
             >
-              {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (#143) */}
+              {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (공개 #143) */}
               <Div className="font-semibold text-gray-900 dark:text-white truncate">{userShownName}</Div>
               <Div className="text-gray-500 dark:text-gray-300 text-sm truncate">{user.email}</Div>
             </a>
@@ -311,7 +311,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               // 주소 링크가 없을 때의 내 정보 칸 — 키보드로도 회원 상세로 간다(키보드 접근)
               {...keyboardActivationProps(openUserDetail)}
             >
-              {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (#143) */}
+              {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (공개 #143) */}
               <Div className="font-semibold text-gray-900 dark:text-white truncate">{userShownName}</Div>
               <Div className="text-gray-500 dark:text-gray-300 text-sm truncate">{user.email}</Div>
             </Div>

@@ -1276,7 +1276,7 @@ class ExportService
      */
     private function fallbackLocale(): string
     {
-        // 다국어 값의 대체 언어는 사이트 기본 언어다(#148 D7 — app.fallback_locale 은 번역 문구 대체용 env 고정값)
+        // 다국어 값의 대체 언어는 사이트 기본 언어다(공개 #148 D7 — app.fallback_locale 은 번역 문구 대체용 env 고정값)
         $fallback = (string) config('app.site_locale', config('app.locale'));
         $locales = $this->dataLocales();
 

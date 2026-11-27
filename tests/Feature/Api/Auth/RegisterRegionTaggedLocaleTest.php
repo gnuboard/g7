@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 회원가입 — 지역 하위 태그 국가·지역 표기 언어 저장 (#148)
+ * 회원가입 — 지역 하위 태그 국가·지역 표기 언어 저장 (공개 #148)
  *
  * 종전 정규식(`^([a-z]{2})-([A-Z]{2})`)은 `fil-PH` 를 놓치고 `zh-Hant-TW` 를 중국(CN)으로,
  * `es-419` 를 스페인(ES)으로 잘못 저장했고, `users.language` varchar(5) 가 다섯 글자보다 긴 언어를 거부해 500 이었다.

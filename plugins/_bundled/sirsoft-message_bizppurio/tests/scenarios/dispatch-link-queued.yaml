@@ -3,7 +3,7 @@
 feature: dispatch_link_queued
 
 description: |
-  큐 드라이버가 database·redis 면 문자 발송은 워커에서 일어난다(#139). 종전에는 코어 발송 로그 기록과 이 플러그인의
+  큐 드라이버가 database·redis 면 문자 발송은 워커에서 일어난다(공개#139). 종전에는 코어 발송 로그 기록과 이 플러그인의
   로그 연결 리스너가 각각 별도 큐 잡으로 밀려, 드라이버가 발송 프로세스에 남긴 refkey 표식(요청 단위 싱글턴)을
   찾지 못해 dispatch.notification_log_id 가 늘 비었다. 또 재시도·재예약된 SendMessageJob 사본이 이미 접수된 문자를
   한 번 더 접수시킬 수 있었다.

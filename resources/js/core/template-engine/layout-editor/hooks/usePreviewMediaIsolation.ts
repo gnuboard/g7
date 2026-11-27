@@ -1,5 +1,5 @@
 /**
- * usePreviewMediaIsolation.ts — 편집기 미리보기 CSS 매체 격리 (이슈 #141 D7)
+ * usePreviewMediaIsolation.ts — 편집기 미리보기 CSS 매체 격리 (이슈 공개 #141 D7)
  *
  * 미리보기는 iframe 이 아니라 관리자 문서 안의 div(`.g7le-preview-frame`, 폭 = 기기 폭)다. CSS 의
  * 폭 `@media` 와 `vw` 는 브라우저가 언제나 **창 폭**으로 판정하므로, 창 1440 에서 모바일 미리보기(390)를

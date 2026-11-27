@@ -1,6 +1,6 @@
 /**
  * @file admin-long-text-overflow.test.ts
- * @description 관리자 화면의 긴 게시판 이름·글 제목 넘침 방지 (#143 실측 후속)
+ * @description 관리자 화면의 긴 게시판 이름·글 제목 넘침 방지 (공개 #143 실측 후속)
  *
  * 2026-10-13 Chrome MCP 실측: 공백 없는 긴 게시판 이름·글 제목(`https://example.com/aaaa…`)이면
  * - 관리자 대시보드 「최근 게시글」 카드의 메타 줄(게시판 · 작성자 · 시각)이 줄바꿈 없이 뻗어 297px 본문이 378px 넘쳤다.

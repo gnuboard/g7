@@ -1,5 +1,5 @@
 /**
- * sirsoft-admin_basic — 긴 사이트 이름 넘침 방지 (#143)
+ * sirsoft-admin_basic — 긴 사이트 이름 넘침 방지 (공개 #143)
  *
  * 배경: 모바일 관리자 상단 좌측 칸(`.mobile_header_left` — 메뉴 단추 + 이름)이 `flex items-center gap-3` 뿐이라
  * flex 자식 기본값 `min-width:auto` 로 긴 이름 폭 아래로 줄지 않았다. 이름 Span 은 이미 truncate 이고 우측 묶음은

@@ -1,5 +1,5 @@
 /**
- * RenderEnvironment — 렌더 환경 우선순위 (이슈 #141)
+ * RenderEnvironment — 렌더 환경 우선순위 (이슈 공개 #141)
  *
  * 셀 렌더 함수·G7Core 래퍼·SlotContainer 가 값을 「명시 옵션 > 렌더 환경 > 호스트 전역값」
  * 순서로 고르는 규칙을 한 곳에서 잠근다.

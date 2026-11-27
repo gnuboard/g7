@@ -6,7 +6,7 @@ use App\Support\PhpExtensionRequirements;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 코어 PHP 확장 요구 목록 SSoT 단위 테스트 (#151)
+ * 코어 PHP 확장 요구 목록 SSoT 단위 테스트 (공개 #151)
  *
  * 인스톨러·관리자 정보 탭·코어 업데이트 사전점검·audit 룰이 같은 JSON 을 읽는다. 문서(docs/requirements.md §1.4)와
  * 목록이 다시 어긋나지 않도록 표와 대조해 잠근다. 인스톨러가 프레임워크 없이 `require_once` 하므로 이 클래스는

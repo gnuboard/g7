@@ -21,7 +21,7 @@ use Tests\Fixtures\Queue\QueueProbeJob;
 use Tests\TestCase;
 
 /**
- * 큐 관리 API (`/api/admin/schedules/queue/*`) 테스트 (#17)
+ * 큐 관리 API (`/api/admin/schedules/queue/*`) 테스트
  *
  * 실패 작업은 진짜 작업을 database 큐에 넣은 뒤 그 payload 를 failer 로 옮겨 만든다 — 재시도하면 실제로
  * 처리되는 payload 다. 스키마를 새로 만들지 않도록 트랜잭션으로 격리한다.

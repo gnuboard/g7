@@ -227,7 +227,7 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
             if (index === 0) {
                 button.classList.add('ckeditor-locale-tab--default');
             }
-            // 언어팩 이름 → 내장 표 → 코드 (#148)
+            // 언어팩 이름 → 내장 표 → 코드 (공개 #148)
             button.textContent = getLocaleLabel(locale);
 
             const check = document.createElement('span');

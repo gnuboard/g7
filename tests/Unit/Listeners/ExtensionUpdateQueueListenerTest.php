@@ -53,7 +53,7 @@ class ExtensionUpdateQueueListenerTest extends TestCase
 
     /**
      * 세 확장 종류(모듈·플러그인·템플릿)의 설치·활성화·업데이트·제거 12건을 구독하고,
-     * 전부 동기 실행이다 — 큐로 가면 CLI 에서는 처리 주체가 없고, 워커가 자기 재시작을 실행하게 된다(#138).
+     * 전부 동기 실행이다 — 큐로 가면 CLI 에서는 처리 주체가 없고, 워커가 자기 재시작을 실행하게 된다(공개 #138).
      * 제거는 설계 확정(2026-11-08)으로 들어왔다 — 지운 확장의 클래스·리스너를 상주 워커가 재시작 전까지 계속 들고 있다.
      *
      * @effects queue_restart_listener_subscribes_code_intake_events_sync

@@ -39,7 +39,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
  * 로 묶인 **상품 리뷰는 이미지 파일째 함께 사라지고**, 교환·반품·환불 신청서와 **클레임 첨부 사진도
  * 파일째** 사라진다(첨부 행은 주문 FK 가 없어 CASCADE 로도 남는다). 쿠폰 발급·마일리지 거래는
  * 행을 남기되 주문 연결만 끊긴다(nullOnDelete 와 같은 결과를 명시적으로). 결제 플러그인의 주문번호 문자열 역조회는
- * FK 가 없어 이 목록에 잡히지 않으므로 삭제 후 그 주문의 영수증·거래 조회가 불가능해진다(#46) —
+ * FK 가 없어 이 목록에 잡히지 않으므로 삭제 후 그 주문의 영수증·거래 조회가 불가능해진다 —
  * 설정 화면의 삭제 경고가 이를 적고, 기본 방식을 익명화로 두는 근거다.
  */
 class OrderPrivacyRetentionService

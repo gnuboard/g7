@@ -1,7 +1,7 @@
 /**
  * AuthManager 로그인 리다이렉트 테스트
  *
- * Issue #57: 로그아웃 후 redirect= 에 queryString이 미포함되는 문제 수정 검증
+ * 로그아웃 후 redirect= 에 queryString이 미포함되는 문제 수정 검증
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -29,7 +29,7 @@ vi.mock('../utils/Logger', () => ({
   }),
 }));
 
-describe('AuthManager - 로그인 리다이렉트 (Issue #57)', () => {
+describe('AuthManager - 로그인 리다이렉트', () => {
   let authManager: AuthManager;
 
   beforeEach(() => {

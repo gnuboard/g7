@@ -19,7 +19,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  * 게시판 네비게이션 메뉴 API 테스트
  *
  * 네비게이션 메뉴용 경량 API의 동작을 검증합니다. 메뉴는 호출자가 열람할 수 있는 게시판만 돌려주므로
- * (#142, 게시판 목록 화면과 같은 기준) 비회원 시점 검증용 게시판에는 guest 읽기 권한을 부여한다
+ * (공개 #142, 게시판 목록 화면과 같은 기준) 비회원 시점 검증용 게시판에는 guest 읽기 권한을 부여한다
  * (BoardListApiTest 와 같은 관례).
  */
 class BoardMenuApiTest extends ModuleTestCase

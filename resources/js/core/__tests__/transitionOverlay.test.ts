@@ -6,10 +6,10 @@
  *
  * - target 지정 시: 런타임 CSS 규칙(RuntimeStyleSheet) + ::after 의사 요소 (React 렌더 트리 외부).
  *   jsdom 에는 생성형 스타일시트가 없어 `<style id>` 폴백으로 붙는다 — 실제 브라우저 경로(<style> 0개)는
- *   `TemplateApp.overlayNoInlineStyle.test.ts` 가 실제 TemplateApp 메서드로 잠근다 (#163, engine-v1.91.0)
+ *   `TemplateApp.overlayNoInlineStyle.test.ts` 가 실제 TemplateApp 메서드로 잠근다 (공개 #163, engine-v1.91.0)
  * - target 미지정 시: DOM 오버레이 (document.body에 fixed)
  * - spinner 스타일: 대상 안에 빈 컨테이너(#g7-skeleton-overlay)를 넣고 기본 스피너를 그린다.
- *   기본 스피너 모양·색은 코어 정적 CSS(g7-core.css)의 클래스가 준다 — 요소에 style 속성이 없다 (#163)
+ *   기본 스피너 모양·색은 코어 정적 CSS(g7-core.css)의 클래스가 준다 — 요소에 style 속성이 없다 (공개 #163)
  *
  * 종전에는 TemplateApp 의 덮개 로직을 이 파일 안에 베껴 두고 그 사본만 검사했다. 원본이 깨져도 통과했고,
  * 스피너 사본은 원본과 이미 달랐다(원본은 ::after 배경과 position:fixed 를 쓰지 않고, 색은 CSS 변수로 받는다).
@@ -407,7 +407,7 @@ describe('transition_overlay', () => {
 
         // @scenario area=spinner
         // @effects spinner_overlay_mounted_in_target, spinner_overlay_container_contract
-        it('대상에 position:relative 규칙만 주입하고 회전 keyframes 는 넣지 않는다(코어 정적 CSS 에 있다, #163)', () => {
+        it('대상에 position:relative 규칙만 주입하고 회전 keyframes 는 넣지 않는다(코어 정적 CSS 에 있다, 공개 #163)', () => {
             createTargetContainer('main_content_area');
 
             spinner('main_content_area');
@@ -508,7 +508,7 @@ describe('transition_overlay', () => {
 
             spinner('main_content_area');
 
-            // 엄격한 스타일 정책(#163)으로 style 속성 대신 수식 클래스 + g7-core.css 규칙이 준다
+            // 엄격한 스타일 정책(공개 #163)으로 style 속성 대신 수식 클래스 + g7-core.css 규칙이 준다
             expect(container()!.querySelector('.g7-spinner-overlay.g7-spinner-overlay--dark')).not.toBeNull();
             expect(coreCss()).toMatch(/\.g7-spinner-overlay--dark\{[^}]*background:var\(--g7-overlay-bg, rgb\(17,24,39\)\)/);
         });

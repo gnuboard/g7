@@ -217,7 +217,7 @@ class ExecuteBundledUpdatesCommandTest extends TestCase
     }
 
     /**
-     * 잠금 저장소 장애를 만나면 첫 항목에서 멈추고, 남은 항목 수를 한 번만 알리고 실패로 끝난다 — 같은 오류를 항목마다 반복하지 않는다(#161 D8).
+     * 잠금 저장소 장애를 만나면 첫 항목에서 멈추고, 남은 항목 수를 한 번만 알리고 실패로 끝난다 — 같은 오류를 항목마다 반복하지 않는다(공개 #161 D8).
      *
      * @scenario case=bulk_abort
      *

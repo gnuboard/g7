@@ -377,7 +377,7 @@ class LanguagePackServiceProvider extends ServiceProvider
         });
         // 템플릿 버전 업데이트는 after_version_update 다. after_update 는 템플릿 **레코드 수정**
         // 훅이라 버전 업데이트에 반응하지 않았고, 넘어오는 $data 에 version 키가 없어
-        // 언어팩 버전이 늘 '1.0.0' 으로 폴백됐다(#138).
+        // 언어팩 버전이 늘 '1.0.0' 으로 폴백됐다(공개 #138).
         HookManager::addAction('core.templates.after_version_update', function ($identifier, $result = null, $info = null) use ($syncFor) {
             $syncFor('template', (string) $identifier, is_array($info) ? $info : null, 'templates');
         });
@@ -385,7 +385,7 @@ class LanguagePackServiceProvider extends ServiceProvider
             $registrar->cleanupForExtension('template', (string) $identifier);
         });
 
-        // 요구사항 #6: 호스트 확장 비활성화 시 종속 언어팩 cascade 비활성화
+        // 요구사항 6: 호스트 확장 비활성화 시 종속 언어팩 cascade 비활성화
         HookManager::addAction('core.modules.after_deactivate', function ($identifier) use ($registrar) {
             $registrar->deactivateForExtension('module', (string) $identifier);
         });

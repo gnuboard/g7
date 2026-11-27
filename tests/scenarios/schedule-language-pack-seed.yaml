@@ -1,4 +1,4 @@
-feature: 스케줄 명칭·설명의 언어팩 seed 경로 (이슈 #17, 7.2.0)
+feature: 스케줄 명칭·설명의 언어팩 seed 경로 (7.2.0)
 
 description: |
   스케줄 label·description 의 ja 등 추가 로케일은 언어팩 seed/schedules.json 으로 들어간다.

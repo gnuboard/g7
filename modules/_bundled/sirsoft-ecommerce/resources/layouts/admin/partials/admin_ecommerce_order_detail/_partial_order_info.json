@@ -1410,7 +1410,7 @@
                                                             "handler": "switch",
                                                             "cases": {
                                                                 "search_by_orderer": {
-                                                                    "comment": "주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75).",
+                                                                    "comment": "주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (공개 #75).",
                                                                     "handler": "navigate",
                                                                     "params": {
                                                                         "path": "/admin/ecommerce/orders",

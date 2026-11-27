@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 /**
- * 신뢰 프록시 설정 계약 (#124).
+ * 신뢰 프록시 설정 계약 (공개 #124).
  *
  * `config/trustedproxy.php` 는 코어 PHP 코드 수정 없이 Laravel 내장 TrustProxies 미들웨어에
  * 값을 전달하는 **유일한 배선점**이다(`$this->proxies() ?: config('trustedproxy.proxies')`).

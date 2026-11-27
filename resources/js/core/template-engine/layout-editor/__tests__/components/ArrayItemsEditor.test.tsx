@@ -570,7 +570,7 @@ describe('ArrayItemsEditor — props 배열 항목 편집', () => {
   });
 
   // 차트/데이터 정의용 신규 필드 위젯(number/color/number-list).
-  // 부록8 (E) #4 — DonutChart.data(name/value/color) / BarChart.datasets(label/data:number[]/bg).
+  // 부록8 (E) 4 — DonutChart.data(name/value/color) / BarChart.datasets(label/data:number[]/bg).
   describe('number/color/number-list 필드 위젯', () => {
     /** DonutChart data 필드 스키마(name/value/color). */
     const donutParams = {

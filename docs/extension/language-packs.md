@@ -221,7 +221,7 @@ UI 에서 라디오로 즉시 전환 가능. 활성 팩이 제거되면 slot 의
 6. 다운그레이드 차단 (version_compare)
 7. `_pending` → `lang-packs/{identifier}/` 이동
 8. DB 레코드 생성/업데이트, 슬롯이 비어있으면 자동 active 승격. 대상 확장이 꺼져 있으면 꺼진 채(installed) 두고, 켜 달라는 요청이었으면 「대상 켜짐 대기」로 표시 — 아래 「꺼진 확장의 언어팩」
-9. `HookManager::doAction('core.language_packs.after_activate', $pack)` → `SyncDatabaseTranslations` 리스너가 DB JSON 컬럼 갱신
+9. `HookManager::doAction('core.language_packs.activated', $pack)` → `SyncDatabaseTranslations` 리스너가 DB JSON 컬럼 갱신
 
 ### 웹 인스톨러 (`public/install/`) 동반 설치
 

@@ -90,7 +90,7 @@ class SendMessageJobTest extends PluginTestCase
     }
 
     /**
-     * 이미 접수(sent)·확정된 이력은 다시 보내지 않는다 — 재시도·재예약 사본이 같은 문자를 두 번 접수시키지 않는다 (#139).
+     * 이미 접수(sent)·확정된 이력은 다시 보내지 않는다 — 재시도·재예약 사본이 같은 문자를 두 번 접수시키지 않는다 (공개 #139).
      *
      * @scenario process=queue_worker, dispatch_state=sent
      *
@@ -115,7 +115,7 @@ class SendMessageJobTest extends PluginTestCase
     }
 
     /**
-     * 접수에 성공한 뒤 이력 갱신이 실패해도 예외를 올리지 않는다 — 올리면 큐가 재시도해 같은 문자를 또 보낸다 (#139).
+     * 접수에 성공한 뒤 이력 갱신이 실패해도 예외를 올리지 않는다 — 올리면 큐가 재시도해 같은 문자를 또 보낸다 (공개 #139).
      *
      * @scenario process=queue_worker, dispatch_state=pending
      *

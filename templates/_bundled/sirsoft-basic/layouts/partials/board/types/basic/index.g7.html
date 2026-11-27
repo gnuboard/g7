@@ -3,7 +3,7 @@
   <div>
     <!-- 헤더 (게시판명 + 설명 + 글쓰기 버튼)
          좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 실측).
-         제목 칸은 최소 8rem 을 지키며 남는 폭을 쓰고, 그 폭도 안 나오면 버튼 묶음이 다음 줄 오른쪽 끝(ml-auto)으로 내린다 — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(#143). 보통 이름은 수정 전처럼 제목 옆 오른쪽에 둔다. -->
+         제목 칸은 최소 8rem 을 지키며 남는 폭을 쓰고, 그 폭도 안 나오면 버튼 묶음이 다음 줄 오른쪽 끝(ml-auto)으로 내린다 — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(공개 #143). 보통 이름은 수정 전처럼 제목 옆 오른쪽에 둔다. -->
     <div class="flex flex-wrap justify-between items-start gap-3 mb-6">
       <div class="min-w-0 flex-1 basis-32">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white break-words">{{posts?.data?.board?.name ?? ''}}</h1>
@@ -118,7 +118,7 @@
                 <!-- 블라인드 아이콘 -->
                 <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-600 dark:text-orange-400 flex-shrink-0"/>
                 <span class="text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}}">{{post?.title}}</span>
-                <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 데스크톱 행이라 모바일 카드에도 같은 자리가 있다. 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다 -->
+                <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(공개 #149). 데스크톱 행이라 모바일 카드에도 같은 자리가 있다. 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다 -->
                 <extension-point name="board_post_row_badges" data-ref="ext_board_post_row_badges_desktop_{{post.id}}" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{route?.slug}}" context="board_list"/>
                 <!-- 첨부파일 아이콘 -->
                 <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-muted flex-shrink-0"/>
@@ -165,9 +165,9 @@
                     <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-muted flex-shrink-0"/>
                     <!-- 블라인드 아이콘 -->
                     <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-600 dark:text-orange-400 flex-shrink-0"/>
-                    <!-- 제목은 한 줄 … — 공백 없는 긴 제목이 N 배지·댓글 수를 화면 밖으로 밀었다(#143) -->
+                    <!-- 제목은 한 줄 … — 공백 없는 긴 제목이 N 배지·댓글 수를 화면 밖으로 밀었다(공개 #143) -->
                     <span class="text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}}">{{post?.title}}</span>
-                    <!-- 확장 자리 — 모바일 카드의 글 배지 자리(#149). 데스크톱 행과 같은 이름이라 조각이 두 번 렌더되고 화면 폭에 따라 한쪽만 보인다 -->
+                    <!-- 확장 자리 — 모바일 카드의 글 배지 자리(공개 #149). 데스크톱 행과 같은 이름이라 조각이 두 번 렌더되고 화면 폭에 따라 한쪽만 보인다 -->
                     <extension-point name="board_post_row_badges" data-ref="ext_board_post_row_badges_mobile_{{post.id}}" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{route?.slug}}" context="board_list"/>
                     <!-- 첨부파일 아이콘 -->
                     <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-muted flex-shrink-0"/>

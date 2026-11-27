@@ -108,7 +108,7 @@ describe('LayoutEditorChrome — 대화면 전용 최소 너비 (좁은 창 압�
     renderShell();
     const toolbar = screen.getByTestId('g7le-toolbar');
     expect(toolbar.children.length).toBeGreaterThan(1);
-    // 규칙은 <style> 요소가 아니라 런타임 시트로 붙는다(엄격한 스타일 정책 호환, #163)
+    // 규칙은 <style> 요소가 아니라 런타임 시트로 붙는다(엄격한 스타일 정책 호환, 공개 #163)
     expect(toolbar.querySelector('style')).toBeNull();
     const css = getCssText(TOOLBAR_STYLE_KEY);
     expect(css).toContain('.g7le-toolbar > *');

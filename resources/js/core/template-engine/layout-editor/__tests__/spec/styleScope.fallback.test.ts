@@ -1,5 +1,5 @@
 /**
- * resolveBranchSeparationMode — 폭 미전달 폴백 (이슈 #141 D6)
+ * resolveBranchSeparationMode — 폭 미전달 폴백 (이슈 공개 #141 D6)
  *
  * 폭을 넘겨받지 못한 판정은 브라우저 창 폭이 아니라 결정적인 값으로 폴백해야 한다.
  * 레이아웃 편집기 미리보기는 같은 문서의 div 라서 창 폭이 미리보기 기기 폭과 무관하다.

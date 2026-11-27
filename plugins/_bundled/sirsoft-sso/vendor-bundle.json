@@ -1,15 +1,15 @@
 {
     "schema_version": "1.0",
-    "generated_at": "2026-11-21T11:18:08+00:00",
+    "generated_at": "2026-11-27T00:00:35+00:00",
     "generator": "g7 vendor-bundle:build",
     "target": "plugin:sirsoft-sso",
     "composer_json_sha256": "e4a15b6cd5b8faadbf5db695af11e5d4633043e85b2c44940edf540b195d4728",
-    "composer_lock_sha256": "58d5131a043be0fde46c1ffdc72e9c8c771c6005eab3fa1900ef6e4b156a908c",
-    "zip_sha256": "f6a541d57bc00b5579646c6a4097c4b468073f19a5df9b3e8b357a215f2d6dd2",
-    "zip_size": 845042,
+    "composer_lock_sha256": "e1c18deb222b931ed044972cdc606c835a3d5a5c54ddcb1b1f32bedadf7eb8c5",
+    "zip_sha256": "0ce655dafd77c8d5bae4e307c745ae05cb896d914574491ec954c7ac3179d187",
+    "zip_size": 848723,
     "package_count": 6,
     "php_requirement": "^8.2",
-    "g7_version": "7.2.0",
+    "g7_version": "7.2.1",
     "packages": [
         {
             "name": "firebase/php-jwt",
@@ -18,7 +18,7 @@
         },
         {
             "name": "onelogin/php-saml",
-            "version": "4.5.0",
+            "version": "4.6.0",
             "type": "library"
         },
         {
@@ -33,7 +33,7 @@
         },
         {
             "name": "phpseclib/phpseclib",
-            "version": "3.0.58",
+            "version": "3.0.59",
             "type": "library"
         },
         {

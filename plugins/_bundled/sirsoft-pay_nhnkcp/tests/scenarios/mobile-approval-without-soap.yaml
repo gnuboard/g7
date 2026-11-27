@@ -1,4 +1,4 @@
-feature: PHP soap 확장 없는 서버의 모바일 결제 승인키 발급 (#151)
+feature: PHP soap 확장 없는 서버의 모바일 결제 승인키 발급 (공개#151)
 
 description: |
   모바일 결제(SmartPhone Pay)는 서버가 SOAP 으로 승인키를 받아야 결제창을 연다. soap 확장이 없으면

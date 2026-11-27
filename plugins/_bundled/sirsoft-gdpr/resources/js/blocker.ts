@@ -356,7 +356,7 @@ function restoreElement(placeholder: HTMLElement): void {
     }
 
     // innerHTML 로 만든 <script> 는 문서에 붙여도 실행되지 않는다 — 동의 후에도 막혔던 추적 스크립트가
-    // 돌지 않았다(#158 부수 결함). 새 script 요소를 만들어 허용 속성만 옮긴다. 본문 텍스트는 옮기지 않는다
+    // 돌지 않았다(공개 #158 부수 결함). 새 script 요소를 만들어 허용 속성만 옮긴다. 본문 텍스트는 옮기지 않는다
     // (인라인 실행 금지 — strict CSP 에서도 막히고, 보존 문자열에서 코드를 되살리지 않는다).
     if (restored instanceof HTMLScriptElement) {
         const src = restored.getAttribute('src');

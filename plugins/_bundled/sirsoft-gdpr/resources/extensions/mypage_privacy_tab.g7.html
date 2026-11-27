@@ -14,13 +14,13 @@ e2e:allow 항목 이름 접미사 중복 방지 표현식 2곳 — 표현식 평
         <p data-if="{{!!gdprPublicSettings?.data?.legal_entity_name &amp;&amp; !gdprPublicSettings?.data?.data_storage_location}}">$t:sirsoft-gdpr.mypage.privacy.operator_only_meta|entity={{gdprPublicSettings?.data?.legal_entity_name ?? ''}}</p>
         <p data-if="{{!gdprPublicSettings?.data?.legal_entity_name &amp;&amp; !!gdprPublicSettings?.data?.data_storage_location}}">$t:sirsoft-gdpr.mypage.privacy.storage_only_meta|location={{gdprPublicSettings?.data?.data_storage_location ?? ''}}</p>
       </div>
-      <!-- 정책 갱신 안내 (#22 옵션 C) — 현재 정책 버전 노출 + 전체 다시 동의 액션. 필수 쿠키는 ePrivacy Art.5(3) 면제로 갱신 대상 아님을 hint 로 명시. -->
+      <!-- 정책 갱신 안내 (22 옵션 C) — 현재 정책 버전 노출 + 전체 다시 동의 액션. 필수 쿠키는 ePrivacy Art.5(3) 면제로 갱신 대상 아님을 hint 로 명시. -->
       <div data-ref="gdpr_needs_renewal_banner" data-if="{{gdprMeConsents?.data?.needs_renewal === true}}" class="gdpr:mb-4 gdpr:rounded-lg gdpr:border gdpr:border-amber-300 gdpr:dark:border-amber-700 gdpr:bg-amber-50 gdpr:dark:bg-amber-900/20 gdpr:px-4 gdpr:py-3 gdpr:flex gdpr:flex-col gdpr:gap-2">
         <responsive on="640-" class-merge="gdpr:flex-row gdpr:items-center"/>
         <div class="gdpr:flex gdpr:items-center gdpr:gap-3 gdpr:flex-1">
           <icon name="triangle-exclamation" size="sm" class="gdpr:text-amber-600 gdpr:dark:text-amber-400 gdpr:flex-shrink-0"/>
           <div class="gdpr:flex-1">
-            <!-- 현재 정책 버전을 노출하여 사용자가 어느 버전에 동의하는지 인지 (#23 — informed consent). G7 표준 $t:key|param={{value}} 토큰 사용 — lang 파일의 {version} placeholder 가 치환됨. -->
+            <!-- 현재 정책 버전을 노출하여 사용자가 어느 버전에 동의하는지 인지 (23 — informed consent). G7 표준 $t:key|param={{value}} 토큰 사용 — lang 파일의 {version} placeholder 가 치환됨. -->
             <p class="gdpr:text-xs gdpr:text-yellow-700 gdpr:dark:text-yellow-300">$t:sirsoft-gdpr.mypage.privacy.needs_renewal_with_version|version={{gdprMeConsents?.data?.current_policy_version ?? '-'}}</p>
             <!-- 필수 쿠키는 ePrivacy Art.5(3) 면제로 정책 갱신 대상이 아님을 명시. -->
             <p class="gdpr:mt-1 gdpr:text-xs gdpr:text-yellow-700 gdpr:dark:text-yellow-300">$t:sirsoft-gdpr.mypage.privacy.needs_renewal_hint</p>
@@ -28,7 +28,7 @@ e2e:allow 항목 이름 접미사 중복 방지 표현식 2곳 — 표현식 평
         </div>
         <div class="gdpr:flex gdpr:items-center gdpr:flex-wrap gdpr:gap-2">
           <responsive on="640-" class-merge="gdpr:flex-shrink-0"/>
-          <!-- 전체 항목 다시 동의 (#19) — 활성 선택형 동의를 새 버전으로 일괄 grant (재동의 의사 표명). isRenewingAll 플래그로 클릭 직후 spinner 노출 + 중복 클릭 차단. -->
+          <!-- 전체 항목 다시 동의 — 활성 선택형 동의를 새 버전으로 일괄 grant (재동의 의사 표명). isRenewingAll 플래그로 클릭 직후 spinner 노출 + 중복 클릭 차단. -->
           <button type="button" disabled="{{_local.isRenewingAll}}" class="gdpr:px-3 gdpr:py-1.5 gdpr:text-xs gdpr:bg-amber-700 gdpr:dark:bg-amber-700 gdpr:text-white gdpr:rounded gdpr:hover:bg-amber-800 gdpr:dark:hover:bg-amber-800 gdpr:font-medium gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed gdpr:inline-flex gdpr:items-center">
             <on type="click">
               <set-state target="local" :isRenewingAll="true"/>

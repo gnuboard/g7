@@ -36,7 +36,7 @@ const getSupportedLocales = (): string[] => {
   return (window as any).G7Core?.locale?.supported?.() ?? ['ko', 'en'];
 };
 
-// 언어 코드로 언어명 가져오기 — 언어팩 이름 → 번역 → 내장 표 → 코드 (#148)
+// 언어 코드로 언어명 가져오기 — 언어팩 이름 → 번역 → 내장 표 → 코드 (공개 #148)
 const getLocaleNameByCode = (code: string): string => getLocaleDisplayName(code);
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
@@ -245,7 +245,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
   // 현재 선택된 언어 탭 (tabs 레이아웃용)
   const [currentLocale, setCurrentLocale] = useState<string>(actualDefaultLocale);
 
-  // ── 비어 있는 필수 언어 탭 열기 (#17 P10) ──
+  // ── 비어 있는 필수 언어 탭 열기 (P10) ──
   // tabs 배치는 지금 탭이 아닌 언어 칸을 hidden 으로 숨긴다. 필수 칸이 빈 채 다른 탭에서 저장하면 브라우저 검증이
   // 숨은 칸에서 「포커스할 수 없음」으로 멈춰 안내 없이 제출이 끝났다. invalid 가 오면 그 탭을 열고, 칸이 보인 뒤
   // 포커스·검증 말풍선을 띄운다(다시 오는 invalid 는 이미 그 탭이라 되풀이되지 않는다).

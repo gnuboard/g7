@@ -1,5 +1,5 @@
 /**
- * getLocaleDisplayName — 언어팩 언어 이름을 칸 라벨로 (#148 F5)
+ * getLocaleDisplayName — 언어팩 언어 이름을 칸 라벨로 (공개 #148 F5)
  *
  * @vitest-environment jsdom
  */

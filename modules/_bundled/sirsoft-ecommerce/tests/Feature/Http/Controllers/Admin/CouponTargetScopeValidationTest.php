@@ -84,7 +84,7 @@ class CouponTargetScopeValidationTest extends ModuleTestCase
     // ─────────────────────────────────────────────────────────
 
     /**
-     * #1 store: scope=products + 상품 빈 배열 → 422
+     * 1 store: scope=products + 상품 빈 배열 → 422
      */
     public function test_store_scope_products_empty_is_blocked(): void
     {
@@ -95,7 +95,7 @@ class CouponTargetScopeValidationTest extends ModuleTestCase
     }
 
     /**
-     * #2 store: scope=products + exclude 만 → 422 (include 0건)
+     * 2 store: scope=products + exclude 만 → 422 (include 0건)
      */
     public function test_store_scope_products_exclude_only_is_blocked(): void
     {
@@ -108,7 +108,7 @@ class CouponTargetScopeValidationTest extends ModuleTestCase
     }
 
     /**
-     * #3 store: scope=products + include 1건 → 통과
+     * 3 store: scope=products + include 1건 → 통과
      */
     public function test_store_scope_products_include_passes(): void
     {
@@ -141,7 +141,7 @@ class CouponTargetScopeValidationTest extends ModuleTestCase
     }
 
     /**
-     * #4 store: scope=categories + 카테고리 빈 배열 → 422
+     * 4 store: scope=categories + 카테고리 빈 배열 → 422
      */
     public function test_store_scope_categories_empty_is_blocked(): void
     {
@@ -152,7 +152,7 @@ class CouponTargetScopeValidationTest extends ModuleTestCase
     }
 
     /**
-     * #5 store: scope=categories + exclude 만 → 422
+     * 5 store: scope=categories + exclude 만 → 422
      */
     public function test_store_scope_categories_exclude_only_is_blocked(): void
     {
@@ -165,7 +165,7 @@ class CouponTargetScopeValidationTest extends ModuleTestCase
     }
 
     /**
-     * #6 store: scope=categories + include 1건 → 통과
+     * 6 store: scope=categories + include 1건 → 통과
      */
     public function test_store_scope_categories_include_passes(): void
     {
@@ -182,7 +182,7 @@ class CouponTargetScopeValidationTest extends ModuleTestCase
     // ─────────────────────────────────────────────────────────
 
     /**
-     * #7 store: scope=all + 비어도 통과 (전체 적용 의도)
+     * 7 store: scope=all + 비어도 통과 (전체 적용 의도)
      */
     public function test_store_scope_all_empty_passes(): void
     {
@@ -194,7 +194,7 @@ class CouponTargetScopeValidationTest extends ModuleTestCase
     }
 
     /**
-     * #8 store: target_scope 미전송 → all 폴백 → 통과
+     * 8 store: target_scope 미전송 → all 폴백 → 통과
      */
     public function test_store_scope_omitted_falls_back_to_all(): void
     {
@@ -207,7 +207,7 @@ class CouponTargetScopeValidationTest extends ModuleTestCase
     }
 
     /**
-     * #9 update: scope=products 로 변경 + 상품 미전송 → 422 차단
+     * 9 update: scope=products 로 변경 + 상품 미전송 → 422 차단
      */
     public function test_update_scope_products_without_products_is_blocked(): void
     {
@@ -222,7 +222,7 @@ class CouponTargetScopeValidationTest extends ModuleTestCase
     }
 
     /**
-     * #10 update: scope=products + include 1건 → 통과
+     * update: scope=products + include 1건 → 통과
      */
     public function test_update_scope_products_with_include_passes(): void
     {

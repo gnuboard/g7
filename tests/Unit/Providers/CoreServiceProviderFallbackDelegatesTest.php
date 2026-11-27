@@ -6,7 +6,7 @@ use App\Providers\CoreServiceProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 진입점(artisan·index.php)을 거치지 않은 부팅의 확장 오토로드 폴백은 ExtensionManager 등록 함수에 위임한다 (#159).
+ * 진입점(artisan·index.php)을 거치지 않은 부팅의 확장 오토로드 폴백은 ExtensionManager 등록 함수에 위임한다 (공개 #159).
  *
  * 폴백 분기가 PSR-4·classmap·files 를 직접 등록하던 사본은 `vendor_autoloads` 를 빠뜨려, 그 부팅에서는 확장이 쓰는
  * 외부 패키지를 찾지 못했다. 한 함수로 위임하면 vendor 로드와 중복 선언 가드까지 같은 경로를 탄다.

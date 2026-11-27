@@ -28,7 +28,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 /**
  * 회원/비회원 공유 주문 (Public\OrderController) 테스트
  *
- * 이슈 #55 — 회원/비회원 모두 POST /user/orders 단일 endpoint 로 주문을 생성하며,
+ * 회원/비회원 모두 POST /user/orders 단일 endpoint 로 주문을 생성하며,
  * 컨트롤러가 Auth::id() 로 회원/비회원을 분기 처리한다. 본 테스트는 비회원 주문 생성과
  * 비회원 토큰 후속 액션(verify, cancel, 배송지 변경 등) 의 회원 주문 보호/경계를 검증한다.
  *
@@ -258,7 +258,7 @@ class OrderControllerTest extends ModuleTestCase
     }
 
     /**
-     * 2. 비회원 주문은 is_first_order = false 로 저장된다 (이슈 #55 정책)
+     * 2. 비회원 주문은 is_first_order = false 로 저장된다 (정책)
      *
      * @effects guest_orders_store_returns_201_with_order_number
      *

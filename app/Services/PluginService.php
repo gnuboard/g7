@@ -183,7 +183,7 @@ class PluginService
     ): ?array {
         $failureReason = null;
 
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(공개 #138 후속, Service 중복 발화 제거)
 
         try {
             $this->pluginManager->loadPlugins();
@@ -193,7 +193,7 @@ class PluginService
                 // 설치 후 플러그인 정보 반환
                 $pluginInfo = $this->pluginManager->getPluginInfo($pluginName);
 
-                // after_install 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // after_install 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(공개 #138)
                 // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return $pluginInfo;
@@ -202,7 +202,7 @@ class PluginService
             return null;
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            // 보여 준다(공개 #138 실측 ②, 공개 #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
@@ -224,7 +224,7 @@ class PluginService
      */
     public function activatePlugin(string $pluginName, bool $force = false): array
     {
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(공개 #138 후속, Service 중복 발화 제거)
 
         try {
             $this->pluginManager->loadPlugins();
@@ -238,7 +238,7 @@ class PluginService
             if ($result['success']) {
                 $pluginInfo = $this->pluginManager->getPluginInfo($pluginName);
 
-                // after_activate 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // after_activate 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(공개 #138)
                 // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return [
@@ -254,7 +254,7 @@ class PluginService
             return $result;
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            // 보여 준다(공개 #138 실측 ②, 공개 #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
@@ -276,7 +276,7 @@ class PluginService
      */
     public function deactivatePlugin(string $pluginName, bool $force = false): array
     {
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(공개 #138 후속, Service 중복 발화 제거)
 
         try {
             $this->pluginManager->loadPlugins();
@@ -299,7 +299,7 @@ class PluginService
             return $result;
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            // 보여 준다(공개 #138 실측 ②, 공개 #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
@@ -329,7 +329,7 @@ class PluginService
         $failureReason = null;
         $preservedBackups = [];
 
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(공개 #138 후속, Service 중복 발화 제거)
 
         try {
             $this->pluginManager->loadPlugins();
@@ -342,13 +342,13 @@ class PluginService
                 $preservedBackups
             );
 
-            // after_uninstall 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+            // after_uninstall 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(공개 #138)
             // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
             return $result;
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            // 보여 준다(공개 #138 실측 ②, 공개 #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
@@ -549,7 +549,7 @@ class PluginService
 
         // 다국어 필드인 경우 (name, description)
         if (is_array($value)) {
-            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (공개 #148)
             return LocalizedValue::pick($value);
         }
 
@@ -600,7 +600,7 @@ class PluginService
         bool $force = false,
         ?PackageIntegrityOptions $integrity = null,
     ): array {
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(공개 #138 후속, Service 중복 발화 제거)
 
         try {
             $this->pluginManager->loadPlugins();
@@ -615,7 +615,7 @@ class PluginService
 
             $pluginInfo = $this->pluginManager->getPluginInfo($pluginName);
 
-            // after_update 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+            // after_update 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(공개 #138)
             // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
             return array_merge($result, [
@@ -623,7 +623,7 @@ class PluginService
             ]);
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            // 보여 준다(공개 #138 실측 ②, 공개 #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (PackageIntegrityException $e) {
             // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 422 로 감싸지 않고 그대로 올린다(7.2.0)
@@ -1050,7 +1050,7 @@ class PluginService
             $verification = $acquirer->confirmManifest($verification, $result['config'], $integrity);
 
             // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
-            // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
+            // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(공개 #161).
             $operationLock = ExtensionOperationLock::acquire('plugin', $result['identifier'], 'install');
 
             $this->ensurePluginNotInstalled($result['identifier']);
@@ -1074,7 +1074,7 @@ class PluginService
             }
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            // 보여 준다(공개 #138 실측 ②, 공개 #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (PackageIntegrityException $e) {
             // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 표지와 페이로드를 그대로 올려 컨트롤러가 싣는다(7.2.0)
@@ -1136,7 +1136,7 @@ class PluginService
             $verification = $acquirer->confirmManifest($acquired->verification, $result['config'], $integrity);
 
             // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
-            // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
+            // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(공개 #161).
             $operationLock = ExtensionOperationLock::acquire('plugin', $result['identifier'], 'install');
 
             $this->ensurePluginNotInstalled($result['identifier']);
@@ -1160,7 +1160,7 @@ class PluginService
             }
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            // 보여 준다(공개 #138 실측 ②, 공개 #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (PackageIntegrityException $e) {
             // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 표지와 페이로드를 그대로 올려 컨트롤러가 싣는다(7.2.0)
@@ -1197,7 +1197,7 @@ class PluginService
     private function ensurePluginNotInstalled(string $identifier): void
     {
         $this->pluginManager->loadPlugins();
-        // 같은 요청에서 곧 설치하므로 `_bundled`·`_pending` 사본의 진입 파일을 실행하지 않는다 (#159)
+        // 같은 요청에서 곧 설치하므로 `_bundled`·`_pending` 사본의 진입 파일을 실행하지 않는다 (공개 #159)
         $existingPlugin = $this->pluginManager->getPluginManifestInfo($identifier);
 
         if ($existingPlugin && $existingPlugin['is_installed']) {

@@ -113,7 +113,7 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 ## 3. 핵심 흐름
 
 <!-- @intent START -->
-**동의 부여**: `Public\GdprCookieConsentController` → `GdprConsentService::grantConsent()` —
+**동의 부여**: `Public\GdprCookieConsentController` → `GdprConsentService::updateConsents()`(항목마다 `updateConsent()`) —
 회원이면 `user_id`, 게스트면 서명된 `gdpr_session` 쿠키로 식별한 뒤 `GdprUserConsent`(현재
 상태, upsert)와 `GdprUserConsentHistory`(이력, insert-only) 를 같은 트랜잭션에서 함께 기록하고
 `sirsoft-gdpr.consent.granted` 훅을 발행합니다. 이 흐름은 배너·마이페이지·회원가입·전체

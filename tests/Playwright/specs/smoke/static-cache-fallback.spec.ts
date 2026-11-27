@@ -1,5 +1,5 @@
 /**
- * Smoke: 정적 게시(bake) fast path + API 폴백 (#122 S2·S3)
+ * Smoke: 정적 게시(bake) fast path + API 폴백 (공개 #122 S2·S3)
  *
  * 정적 게시가 켜진 프로덕션 사이트에서 ① 부트 리소스가 `/build/ext/{v}/…` 로
  * 수신되고 ② 정적 응답을 브라우저단에서 404 로 강제해도 legacy API 폴백으로
@@ -31,7 +31,7 @@ async function probeStaticBase(page: Page): Promise<string | null> {
   return typeof base === 'string' ? base : null;
 }
 
-test.describe('정적 게시 fast path + 폴백 (#122)', () => {
+test.describe('정적 게시 fast path + 폴백 (공개 #122)', () => {
   /**
    * @scenario publish_state=published, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=self_heal, process_user=web
    * @effects versioned_boot_urls

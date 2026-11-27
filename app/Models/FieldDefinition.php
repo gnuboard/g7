@@ -227,7 +227,7 @@ class FieldDefinition extends Model
             return null;
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 아무 언어 (#148 D7 — 값 표시 대체 순서의 단일 기준)
+        // 요청 언어 → 사이트 기본 언어 → 영어 → 아무 언어 (공개 #148 D7 — 값 표시 대체 순서의 단일 기준)
         return LocalizedValue::pick($value, $locale);
     }
 }

@@ -49,7 +49,7 @@ const createDefaultItemFromColumns = (columns: DynamicFieldColumn[]): Record<str
   columns.forEach((column) => {
     if (column.type === 'multilingual') {
       const g7Core = getG7Core();
-      // 켜진 언어마다 칸을 만든다 — 종전 locale.all() 은 없는 API 라 늘 ko·en 만 생겼다 (#148)
+      // 켜진 언어마다 칸을 만든다 — 종전 locale.all() 은 없는 API 라 늘 ko·en 만 생겼다 (공개 #148)
       const locales = g7Core?.locale?.supported?.() || ['ko', 'en'];
       const multiValue: Record<string, string> = {};
       locales.forEach((locale: string) => {

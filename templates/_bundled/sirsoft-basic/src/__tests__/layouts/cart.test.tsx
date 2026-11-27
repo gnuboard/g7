@@ -2,11 +2,11 @@
  * @file cart.test.tsx
  * @description 장바구니 페이지 레이아웃 렌더링 테스트
  *
- * 테스트 케이스 (#113~#128, 16개)
- * - 7.19.1 기본 렌더링: #113~#116 (4개)
- * - 7.19.2 체크박스 및 선택 상태: #117~#120 (4개)
- * - 7.19.3 모달 인터랙션: #121~#124 (4개)
- * - 7.19.4 API 연동 및 상태 업데이트: #125~#128 (4개)
+ * 테스트 케이스 (113~128, 16개)
+ * - 7.19.1 기본 렌더링: 113~116 (4개)
+ * - 7.19.2 체크박스 및 선택 상태: 117~120 (4개)
+ * - 7.19.3 모달 인터랙션: 121~124 (4개)
+ * - 7.19.4 API 연동 및 상태 업데이트: 125~128 (4개)
  *
  * @vitest-environment jsdom
  */
@@ -497,7 +497,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
   });
 
   describe('7.19.1 기본 렌더링 테스트', () => {
-    // #113: 빈 장바구니 렌더링
+    // 113: 빈 장바구니 렌더링
     // @scenario area=render
     // @effects cart_empty_state_renders
     it('#113 빈 장바구니 시 기본 레이아웃이 렌더링된다', async () => {
@@ -529,7 +529,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
-    // #114: 장바구니 기본 구조 렌더링
+    // 114: 장바구니 기본 구조 렌더링
     // @scenario area=render
     // @effects cart_structure_renders
     it('#114 장바구니 기본 구조가 렌더링된다', async () => {
@@ -580,7 +580,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
-    // #115: 주문 요약 패널 렌더링
+    // 115: 주문 요약 패널 렌더링
     // @scenario area=render
     // @effects cart_summary_panel_renders
     it('#115 주문 요약 패널을 렌더링한다', async () => {
@@ -619,7 +619,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
-    // #116: 초기 상태 올바른 설정
+    // 116: 초기 상태 올바른 설정
     // @scenario area=render
     // @effects cart_initial_state_seeded
     it('#116 초기 상태가 올바르게 설정된다', async () => {
@@ -654,7 +654,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
   });
 
   describe('7.19.2 체크박스 및 선택 상태 테스트', () => {
-    // #117: 개별 아이템 체크 해제
+    // 117: 개별 아이템 체크 해제
     // @scenario area=selection
     // @effects cart_item_toggle_updates_selection
     it('#117 개별 아이템 체크 해제 시 selectedItems에서 제거된다', async () => {
@@ -694,7 +694,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
-    // #118: 개별 아이템 재체크
+    // 118: 개별 아이템 재체크
     // @scenario area=selection
     // @effects cart_item_toggle_updates_selection
     it('#118 개별 아이템 재체크 시 selectedItems에 추가된다', async () => {
@@ -733,7 +733,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
-    // #119: 전체 선택 토글 (해제)
+    // 119: 전체 선택 토글 (해제)
     // @scenario area=selection
     // @effects cart_select_all_updates_selection
     it('#119 전체 선택 해제 시 selectedItems가 비워진다', async () => {
@@ -776,7 +776,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
-    // #120: 전체 선택 토글 (선택)
+    // 120: 전체 선택 토글 (선택)
     // @scenario area=selection
     // @effects cart_select_all_updates_selection
     it('#120 전체 선택 시 모든 아이템이 selectedItems에 추가된다', async () => {
@@ -818,7 +818,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
   });
 
   describe('7.19.3 모달 인터랙션 테스트', () => {
-    // #121: 옵션/수량 변경 모달 열기
+    // 121: 옵션/수량 변경 모달 열기
     // @scenario area=modal
     // @effects cart_option_modal_opens_with_target
     it('#121 옵션 변경 버튼 클릭 시 모달이 열린다', async () => {
@@ -864,7 +864,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
-    // #122: 옵션/수량 변경 모달 닫기
+    // 122: 옵션/수량 변경 모달 닫기
     // @scenario area=modal
     // @effects cart_option_modal_closes
     it('#122 모달 취소 시 optionModal이 닫힌다', async () => {
@@ -891,7 +891,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
-    // #123: 삭제 확인 모달 열기
+    // 123: 삭제 확인 모달 열기
     // @scenario area=modal
     // @effects cart_delete_modal_opens_with_targets
     it('#123 삭제 버튼 클릭 시 deleteModal이 열린다', async () => {
@@ -925,7 +925,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
-    // #124: 선택 삭제 모달 열기
+    // 124: 선택 삭제 모달 열기
     // @scenario area=modal
     // @effects cart_delete_modal_opens_with_targets
     it('#124 선택삭제 버튼 클릭 시 선택된 아이템들로 deleteModal이 열린다', async () => {
@@ -967,7 +967,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
   });
 
   describe('7.19.4 API 연동 및 상태 업데이트 테스트', () => {
-    // #125: 선택 변경 시 금액 재계산
+    // 125: 선택 변경 시 금액 재계산
     // @scenario area=api
     // @effects cart_recalculate_marks_calculating
     it('#125 선택 변경 시 recalculateCart가 호출된다', async () => {
@@ -1007,7 +1007,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
-    // #126: API Mock이 올바르게 동작하는지 확인
+    // 126: API Mock이 올바르게 동작하는지 확인
     // @scenario area=api
     // @effects cart_mocked_data_renders
     it('#126 API Mock이 올바르게 설정되고 데이터를 반환한다', async () => {
@@ -1037,7 +1037,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
-    // #127: 삭제 후 목록 갱신
+    // 127: 삭제 후 목록 갱신
     // @scenario area=api
     // @effects cart_empty_after_delete
     it('#127 삭제 후 아이템이 목록에서 제거된다', async () => {
@@ -1063,7 +1063,7 @@ describe('장바구니 페이지 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
-    // #128: 주문하기 버튼 클릭
+    // 128: 주문하기 버튼 클릭
     // @scenario area=api
     // @effects cart_checkout_button_disabled_without_selection
     it('#128 주문하기 버튼이 렌더링되고 비활성화 상태를 확인한다', async () => {

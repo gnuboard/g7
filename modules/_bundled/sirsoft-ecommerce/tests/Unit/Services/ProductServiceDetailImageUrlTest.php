@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 상품 상세 폼 직렬화 이미지 URL 호출측 회귀 테스트 (#100 URL 조립 단일화)
+ * 상품 상세 폼 직렬화 이미지 URL 호출측 회귀 테스트 (공개 #100 URL 조립 단일화)
  *
  * accessor(download_url) 자체가 아니라 **호출측**(ProductService getDetailForForm)이
  * accessor 에 위임해 직렬화하는지 고정합니다 — 손조립 문자열로 회귀하면 행 disk

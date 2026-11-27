@@ -3902,7 +3902,7 @@ class ComponentHtmlMapperTest extends TestCase
     /**
      * 알 수 없는 conditions 형식은 렌더링됩니다 (React evaluateRenderCondition 동형).
      *
-     * 여기서 숨기면 봇 화면에서만 노드가 사라진다 — #86 과 동일한 실패 모드.
+     * 여기서 숨기면 봇 화면에서만 노드가 사라진다 — 공개 #86 과 동일한 실패 모드.
      *
      * @scenario render_concern=renderer_parity
      *

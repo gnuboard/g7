@@ -550,7 +550,7 @@ class AdminClaimService
      *
      * 신청서 단위 승인과 상품 단위 승인이 **같은 게이트**를 지나야 한다. 상품 행 승인이 이
      * 판정을 건너뛰면 헤더가 `payment_pending → approved` 로 따라가(`syncHeaderFromOptions`)
-     * 돈을 받지 않은 채 승인된다(validate P2 #1).
+     * 돈을 받지 않은 채 승인된다(validate P2 1).
      *
      * - `pay_on_approval`: 결제 건을 만들고 결제대기로 옮긴다 — 결제 확정이 승인을 잇는다.
      * - `pay_on_request`: 결제 통로가 이미 열려 있으므로 `claim_payment_outstanding` 로 거절한다.
@@ -585,7 +585,7 @@ class AdminClaimService
      * **종결은 돈을 닫는 자리다.** 결제 가드가 보는 것은 결제행의 `isPending()` 뿐이고 신청서
      * 상태가 아니라(`ClaimPaymentService::pay()`), 종결 경로가 대기 건을 닫지 않으면 이미 끝난
      * 신청서에 구매자가 돈을 낼 수 있고 그 돈을 되돌릴 자리도 남지 않는다.
-     * 신청서 단위 반려와 상품 단위 전량 반려·철회가 모두 이 한 곳을 지난다(validate P2 #2).
+     * 신청서 단위 반려와 상품 단위 전량 반려·철회가 모두 이 한 곳을 지난다(validate P2 2).
      * 고아 정리 배치(`CancelOrphanClaimPaymentsCommand`)도 이 정리를 전제로 적혀 있다.
      *
      * @param  OrderExchange|OrderReturn  $claim  전이된 신청서
@@ -720,7 +720,7 @@ class AdminClaimService
                 // 부분 성공 계약은 **예상하지 못한 실패**에도 적용된다. 반려 직후의 환급(PG 호출)이나
                 // 리스너 장애처럼 도메인 예외가 아닌 실패가 한 건에서 나면, 예전에는 그 한 건이
                 // 요청 전체를 500 으로 끊어 앞서 처리된 건의 결과까지 운영자가 알 수 없었다
-                // (validate P2 #11). 원인은 로그에 남기고 응답에는 원문을 싣지 않는다.
+                // (validate P2 11). 원인은 로그에 남기고 응답에는 원문을 싣지 않는다.
                 Log::error('[claim.bulk] 일괄 전이 중 건별 처리 실패 — skip 으로 보고', [
                     'claim_id' => $claim->id,
                     'claim_number' => $this->claimNumberOf($claim),
@@ -788,14 +788,14 @@ class AdminClaimService
         $itemIds = ClaimItemSpecs::ids(ClaimItemSpecs::normalize($items));
 
         if ($target !== 'completed') {
-            // 상품 단위 승인도 신청서 단위 승인과 같은 미수납 게이트를 지난다(#1).
+            // 상품 단위 승인도 신청서 단위 승인과 같은 미수납 게이트를 지난다.
             if ($this->divertApprovalToPayment($claim, $target, $context['processed_by'] ?? null)) {
                 return ['succeeded' => [], 'skipped' => [], 'split' => [], 'payment_requested' => true];
             }
 
             $wasFinal = $claim->isFinal();
 
-            // 상품 단위 전량 반려·철회로 헤더가 종결되면 헤더 경로와 같이 돈을 닫는다(#2). 전이와 환급은 한
+            // 상품 단위 전량 반려·철회로 헤더가 종결되면 헤더 경로와 같이 돈을 닫는다. 전이와 환급은 한
             // 트랜잭션이다(S6) — 환급이 거절되면 상품 단위 전이도 되돌린다.
             [$result, $reloaded] = DB::transaction(function () use ($claim, $items, $target, $context, $wasFinal) {
                 $result = $claim instanceof OrderExchange
@@ -989,7 +989,7 @@ class AdminClaimService
      * @param  int|null  $processedBy  처리 관리자 ID
      * @return OrderExchange|OrderReturn|OrderRefund 갱신된 신청서
      *
-     * 금액 갱신과 청구 정산(`settleChargeDifference()`)은 **한 트랜잭션**이다(validate P2 #12).
+     * 금액 갱신과 청구 정산(`settleChargeDifference()`)은 **한 트랜잭션**이다(validate P2 12).
      * 정산이 실패하면(결제 수단 해석 불가 등) 금액도 함께 되돌아간다 — 예전에는 금액만 바뀐 채
      * 남아 화면은 미수납을 적는데 낼 자리가 없었다. 수정 훅은 커밋 뒤에 나간다.
      *
@@ -1018,7 +1018,7 @@ class AdminClaimService
         array $amounts,
         ?int $processedBy,
     ): OrderExchange|OrderReturn|OrderRefund {
-        // 이미 낸 청구를 환불금 차감으로 바꾸면 같은 돈을 두 번 받는다(#13).
+        // 이미 낸 청구를 환불금 차감으로 바꾸면 같은 돈을 두 번 받는다.
         if (($claim instanceof OrderExchange || $claim instanceof OrderReturn) && array_key_exists('charge_method', $amounts)) {
             $this->userClaimService->assertChargeMethodChangeAllowed($claim, $amounts['charge_method']);
         }
@@ -1546,7 +1546,7 @@ class AdminClaimService
      * 방어적 폴백이며 현재 스키마에서는 도달하지 않는다 — `order_exchanges.currency_code` ·
      * `order_returns.currency_code` 가 NOT NULL(기본값 보유)이라 호출부의 `?:` 좌변이 항상
      * 참이다. 판정 규칙은 클레임 서비스 공용 헬퍼
-     * (`CurrencyConversionService::resolveOrderBaseCurrency()`) 하나가 소유한다(validate P2 #14).
+     * (`CurrencyConversionService::resolveOrderBaseCurrency()`) 하나가 소유한다(validate P2 14).
      *
      * @param  Order|null  $order  주문
      * @return string 기준 통화 코드

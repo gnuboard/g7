@@ -852,7 +852,7 @@ class SettingsControllerTest extends TestCase
     /**
      * 허용값이 닫힌 설정(실행 모드)은 단건 저장 경로에서도 선언 밖 값을 거부한다.
      *
-     * 회귀 테스트 (검증 16.2 #1): 벌크 저장(`SaveSettingsRequest`)만 허용값을
+     * 회귀 테스트 (검증 16.2 1): 벌크 저장(`SaveSettingsRequest`)만 허용값을
      * 검사하면 `PUT /settings/{key}` 가 우회로가 되어 임의 문자열이 `system.json` 에 남는다.
      * 런타임은 Auto 로 폴백해 파손은 없지만 설정 파일에 뜻 모를 값이 기록되는 것 자체를 막는다.
      *
@@ -1911,7 +1911,7 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
-     * probe 실패 격리(핵심 회귀 #59): 개별 항목 수집이 예외/Error 를 던져도
+     * probe 실패 격리(핵심 회귀 공개 #59): 개별 항목 수집이 예외/Error 를 던져도
      * API 전체는 500 이 아니라 200 을 반환하고, 실패 항목만 'unknown' 폴백으로 채운다.
      *
      * disable_functions/open_basedir 호스팅에서 php_uname·shell_exec·disk_*_space 가

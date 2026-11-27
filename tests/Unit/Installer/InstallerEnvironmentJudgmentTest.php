@@ -14,10 +14,10 @@ use Tests\Concerns\CleansTemporaryBasePath;
  * 그래서 판정을 한 파일이 소유하고, 그 판정 자체를 부른다 (소스 대조는 배선만 본다).
  *
  * 고정하는 계약:
- *  - 번들 가용성은 파일 존재 **와** ZipArchive 가용성을 함께 본다 (환경#4)
- *  - HTTPS 판정은 프록시 헤더를 본다 — 세션 쿠키와 요구사항 화면이 같은 답을 쓴다 (환경#17)
- *  - 상태 변경 요청은 다른 출처에서 오면 거부된다 (보안#4)
- *  - 스트리밍 워커는 진행 중이 아닌 설치를 받지 않고, 자기 모드가 아닌 설치도 받지 않는다 (보안#5·F6)
+ *  - 번들 가용성은 파일 존재 **와** ZipArchive 가용성을 함께 본다 (환경 4)
+ *  - HTTPS 판정은 프록시 헤더를 본다 — 세션 쿠키와 요구사항 화면이 같은 답을 쓴다 (환경 17)
+ *  - 상태 변경 요청은 다른 출처에서 오면 거부된다 (보안 4)
+ *  - 스트리밍 워커는 진행 중이 아닌 설치를 받지 않고, 자기 모드가 아닌 설치도 받지 않는다 (보안 5·F6)
  *  - finalize 의 멱등 재호출은 **상태 파일 부재**로 판정한다 (D10)
  *
  * 커버 축: bundle_state missing·present / request_scheme direct_https·forwarded_https·plain / request_origin same·cross·absent·opaque / worker_entry running·completed·not_started·failed·polling_mode / finalize_call state_file_present·state_file_absent

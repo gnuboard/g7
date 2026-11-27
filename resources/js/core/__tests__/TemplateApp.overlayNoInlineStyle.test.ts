@@ -1,6 +1,6 @@
 /**
  * @file TemplateApp.overlayNoInlineStyle.test.ts
- * @description 전환 덮개가 `<style>` 요소·style 속성 문자열 없이 그려진다 (#163, engine-v1.91.0)
+ * @description 전환 덮개가 `<style>` 요소·style 속성 문자열 없이 그려진다 (공개 #163, engine-v1.91.0)
  *
  * 버그: 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)에서 덮개 3종(전환·스켈레톤·스피너)의
  *   `<style>` 주입과 기본 스피너의 innerHTML style 속성이 막혀, 화면 전환 중 덮개와 스피너가 보이지 않았다.

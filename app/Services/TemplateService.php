@@ -148,7 +148,7 @@ class TemplateService
     {
         // before_list/after_list 는 전체 목록(getAllTemplates)에서 유형 문자열을 싣는데, 여기서는 필터 배열을
         // 실어 발화처마다 모양이 달랐다. 서드파티 호환을 위해 기존 발화는 그대로 두고(이 자리의 발화는
-        // deprecated), 모양을 이름에 드러낸 *_list_paginated 를 나란히 발화한다(#138 후속).
+        // deprecated), 모양을 이름에 드러낸 *_list_paginated 를 나란히 발화한다(공개 #138 후속).
         HookManager::doAction('core.templates.before_list', $filters);
         HookManager::doAction('core.templates.before_list_paginated', $filters);
 
@@ -346,7 +346,7 @@ class TemplateService
 
         // 다국어 필드인 경우 (name, description)
         if (is_array($value)) {
-            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (공개 #148)
             return LocalizedValue::pick($value);
         }
 
@@ -539,7 +539,7 @@ class TemplateService
      */
     public function installTemplate(string $identifier, bool $force = false): ?array
     {
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(공개 #138 후속, Service 중복 발화 제거)
 
         try {
             $result = $this->templateManager->installTemplate($identifier, null, $force);
@@ -547,7 +547,7 @@ class TemplateService
             if ($result) {
                 $templateInfo = $this->templateManager->getTemplateInfo($identifier);
 
-                // after_install 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // after_install 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(공개 #138)
                 // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return $this->withLayoutWarnings($templateInfo);
@@ -556,7 +556,7 @@ class TemplateService
             return null;
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            // 보여 준다(공개 #138 실측 ②, 공개 #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
@@ -589,7 +589,7 @@ class TemplateService
             $this->assertNotLastActiveOfType($record, 'templates.errors.last_active_uninstall');
         }
 
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(공개 #138 후속, Service 중복 발화 제거)
 
         try {
             // 제거 전 템플릿 정보 보존
@@ -599,7 +599,7 @@ class TemplateService
             $result = $this->templateManager->uninstallTemplate($identifier, null, $preservedBackups, $deleteData);
 
             if ($result) {
-                // after_uninstall 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // after_uninstall 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(공개 #138)
                 // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return $templateInfo;
@@ -608,7 +608,7 @@ class TemplateService
             return null;
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            // 보여 준다(공개 #138 실측 ②, 공개 #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
@@ -658,7 +658,7 @@ class TemplateService
         // 전환은 같은 유형의 다른 템플릿을 활성화하는 것으로만 한다
         $this->assertNotLastActiveOfType($template, 'templates.errors.last_active_deactivate');
 
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(공개 #138 후속, Service 중복 발화 제거)
 
         try {
             // 위치 인자로 넘긴다 — 이 의존성은 인터페이스 타입이고 테스트가 그 인터페이스를
@@ -682,7 +682,7 @@ class TemplateService
             return null;
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            // 보여 준다(공개 #138 실측 ②, 공개 #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
@@ -744,10 +744,10 @@ class TemplateService
             ]);
         }
 
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(공개 #138 후속, Service 중복 발화 제거)
 
         try {
-            // 활성화 데이터 필터는 Manager 가 직전 훅 뒤에 발화한다 — CLI·어드민 UI 공통(#138 후속, before → filter 순서 복원)
+            // 활성화 데이터 필터는 Manager 가 직전 훅 뒤에 발화한다 — CLI·어드민 UI 공통(공개 #138 후속, before → filter 순서 복원)
 
             // TemplateManager에 활성화 로직 위임 (force 파라미터 전달)
             $result = $this->templateManager->activateTemplate($template->identifier, $force);
@@ -761,7 +761,7 @@ class TemplateService
             $this->templateManager->loadTemplates();
             $templateInfo = $this->templateManager->getTemplateInfo($template->identifier);
 
-            // after_activate 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+            // after_activate 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(공개 #138)
             // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
             return [
@@ -770,7 +770,7 @@ class TemplateService
             ];
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            // 보여 준다(공개 #138 실측 ②, 공개 #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
@@ -2070,7 +2070,7 @@ class TemplateService
                     continue;
                 }
                 // 보안 — layouts 디렉토리 밖 참조 거부(경로 traversal 방지). 폴더 경계를 지킨다 — 문자열 접두
-                // 비교는 `layouts-x` 같은 이름이 비슷한 형제 폴더를 통과시켰다(#144).
+                // 비교는 `layouts-x` 같은 이름이 비슷한 형제 폴더를 통과시켰다(공개 #144).
                 if (! PathGuard::isWithin($layoutDirReal, $candidate)) {
                     continue;
                 }
@@ -2472,7 +2472,7 @@ class TemplateService
             $verification = $acquirer->confirmManifest($verification, $result['config'], $integrity);
 
             // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
-            // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
+            // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(공개 #161).
             $operationLock = ExtensionOperationLock::acquire('template', $result['identifier'], 'install');
 
             $this->ensureTemplateNotInstalled($result['identifier']);
@@ -2496,7 +2496,7 @@ class TemplateService
             }
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            // 보여 준다(공개 #138 실측 ②, 공개 #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (PackageIntegrityException $e) {
             // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 표지와 페이로드를 그대로 올려 컨트롤러가 싣는다(7.2.0)
@@ -2558,7 +2558,7 @@ class TemplateService
             $verification = $acquirer->confirmManifest($acquired->verification, $result['config'], $integrity);
 
             // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
-            // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
+            // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(공개 #161).
             $operationLock = ExtensionOperationLock::acquire('template', $result['identifier'], 'install');
 
             $this->ensureTemplateNotInstalled($result['identifier']);
@@ -2582,7 +2582,7 @@ class TemplateService
             }
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            // 보여 준다(공개 #138 실측 ②, 공개 #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (PackageIntegrityException $e) {
             // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 표지와 페이로드를 그대로 올려 컨트롤러가 싣는다(7.2.0)
@@ -2909,7 +2909,7 @@ class TemplateService
      */
     public function performVersionUpdate(string $templateName, string $layoutStrategy = 'overwrite', bool $force = false, ?PackageIntegrityOptions $integrity = null): array
     {
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(공개 #138 후속, Service 중복 발화 제거)
 
         try {
             $this->templateManager->loadTemplates();
@@ -2917,7 +2917,7 @@ class TemplateService
 
             $templateInfo = $this->templateManager->getTemplateInfo($templateName);
 
-            // after_version_update 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+            // after_version_update 훅은 TemplateManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(공개 #138)
             // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
             return array_merge($result, [
@@ -2925,7 +2925,7 @@ class TemplateService
             ]);
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            // 보여 준다(공개 #138 실측 ②, 공개 #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (PackageIntegrityException $e) {
             // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 422 로 감싸지 않고 그대로 올린다(7.2.0)

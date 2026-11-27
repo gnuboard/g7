@@ -7,8 +7,8 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 서명 파일 = ZIP 이름 뒤에 .sig.json — 자산 이름 {identifier}-{version}.zip(코어 g7-{version}.zip), ZIP 루트는 {identifier}-{version}/ 하나
-2. 제작자: extension:keygen 으로 키 → extension:sign 으로 ZIP·서명 파일 → 태그 릴리스에 둘 다 올림. 비밀키 파일은 저장소·배포물 밖
+1. 서명 파일 = extension:sign 은 {zip}.sig.json 을 만들고, 릴리스 자산은 {base}.sig.json 으로 올림 — 자산 이름 {identifier}-{version}.zip(코어 g7-{version}.zip), ZIP 루트는 {identifier}-{version}/ 하나
+2. 제작자: extension:keygen 으로 키 → extension:sign 으로 ZIP·서명 파일 → 서명 파일 이름을 {base}.sig.json 으로 바꿔 태그 릴리스에 둘 다 올림. 비밀키 파일은 저장소·배포물 밖
 3. 운영자: 제작자 공개키를 환경설정 > 보안 「확장 신뢰 키」(또는 extension:trust-key add)에 vendor 범위와 함께 등록
 4. 서명 불일치(invalid)·미신뢰 키(untrusted)는 늘 차단(422). 미서명(unsigned)·검증 불가(unverifiable)는 관리자 확인 뒤 계속(409)
 5. 「미서명 패키지 차단」(security.extension_block_unsigned, 기본 꺼짐)을 켜면 미서명은 확인으로도 진행 불가
@@ -50,9 +50,9 @@
 | 모듈·플러그인·템플릿 GitHub 설치(관리자 화면) | 태그 릴리스 자산 `{base}.zip` + `{base}.sig.json` (옛 이름 `{base}.zip.sig.json` 도 읽음) |
 | 모듈·플러그인·템플릿 수동 ZIP 업로드(관리자 화면) | 업로드 창의 선택 칸 「서명 파일」(`signature`) |
 | 모듈·플러그인·템플릿 업데이트 — GitHub(화면·`{type}:update`) | 태그 릴리스 자산 |
-| 모듈·플러그인·템플릿 업데이트 — `{type}:update --zip=` | `--signature=` 로 준 파일, 생략하면 ZIP 옆 `<zip>.sig.json` |
+| 모듈·플러그인·템플릿 업데이트 — `{type}:update --zip=` | `--signature=` 로 준 파일, 생략하면 ZIP 옆 `<zip>.sig.json` 또는 `{base}.sig.json` |
 | 코어 업데이트 — GitHub(화면·`core:update`) | 태그 릴리스 자산 `g7-{version}.zip` + `.sig.json` |
-| 코어 업데이트 — 운영자 ZIP(화면의 올려 둔 ZIP, `core:update --zip=`) | ZIP 옆 `<zip>.sig.json`(명령은 `--signature=` 로 지정 가능) |
+| 코어 업데이트 — 운영자 ZIP(화면의 올려 둔 ZIP, `core:update --zip=`) | ZIP 옆 `<zip>.sig.json` 또는 `{base}.sig.json`(명령은 `--signature=` 로 지정 가능) |
 | 외부 언어팩 GitHub 설치 | 태그 릴리스 자산 |
 | 외부 언어팩 URL 설치 | 선택 칸 서명 파일 주소(`signature_url`). 주소를 추측해 따로 요청하지 않는다 |
 | 외부 언어팩 업로드 | 업로드 창의 선택 칸 「서명 파일」(`signature`) |
@@ -207,6 +207,8 @@ php artisan extension:sign ./acme-shop --key=/secure/keys/acme-signing-key.json 
 # → dist/acme-shop-1.2.0.zip, dist/acme-shop-1.2.0.zip.sig.json
 ```
 
+만들어지는 서명 파일 이름은 `{zip}.sig.json` 입니다. 릴리스에 올릴 때는 3단계처럼 `{base}.sig.json` 으로 이름을 바꿉니다.
+
 이미 만든 ZIP 을 주면 ZIP 은 그대로 두고 서명 파일만 만듭니다.
 
 ```bash
@@ -227,7 +229,9 @@ php artisan extension:sign ./dist/acme-shop-1.2.0.zip --key=/secure/keys/acme-si
 
 ### 3. 릴리스에 올리기
 
-GitHub 에 **태그 릴리스**(`v1.2.0` 또는 `1.2.0`)를 만들고 ZIP 과 서명 파일을 둘 다 자산으로 올립니다. 태그만 푸시하고 릴리스를
+GitHub 에 **태그 릴리스**(`v1.2.0` 또는 `1.2.0`)를 만들고 ZIP 과 서명 파일을 둘 다 자산으로 올립니다. 릴리스에 올릴 때는
+서명 파일 이름을 `{base}.sig.json` 으로 바꿔 올립니다 — `acme-shop-1.2.0.zip` 옆에 `acme-shop-1.2.0.sig.json`. `extension:sign` 이
+만든 `acme-shop-1.2.0.zip.sig.json` 이름 그대로 올리면 7.2.0 업데이터가 그 짝을 받다가 실패합니다([자산 이름과 ZIP 구조](#자산-이름과-zip-구조)). 태그만 푸시하고 릴리스를
 만들지 않으면 자산이 없으므로 미서명으로 다뤄집니다. 서명한 뒤 ZIP 을 다시 만들거나 고치면 크기·SHA-256 이 달라져 `invalid`
 가 되므로, 올린 ZIP 이 서명한 그 파일인지 확인합니다.
 
@@ -321,8 +325,8 @@ key_id 는 서버가 이름과 공개키로 계산합니다. 제작자가 알려
 
 | 명령 | 무결성 옵션 |
 | --- | --- |
-| `module:update`·`plugin:update`·`template:update` | `--allow-unsigned`, `--signature=`(`--zip` 의 서명 파일. 생략하면 ZIP 옆 `<zip>.sig.json`) |
-| `core:update` | `--allow-unsigned`, `--signature=`(`--zip` 의 서명 파일. 생략하면 ZIP 옆 `<zip>.sig.json`) |
+| `module:update`·`plugin:update`·`template:update` | `--allow-unsigned`, `--signature=`(`--zip` 의 서명 파일. 생략하면 ZIP 옆 `<zip>.sig.json` 또는 `{base}.sig.json`) |
+| `core:update` | `--allow-unsigned`, `--signature=`(`--zip` 의 서명 파일. 생략하면 ZIP 옆 `<zip>.sig.json` 또는 `{base}.sig.json`) |
 | `language-pack:install` | `--allow-unsigned`, `--signature=`(`--source=url` 일 때 서명 파일 주소) |
 | `language-pack:update` | `--allow-unsigned` |
 

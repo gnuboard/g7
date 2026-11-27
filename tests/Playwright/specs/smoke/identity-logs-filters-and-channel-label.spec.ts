@@ -2,10 +2,10 @@
  * 본인인증 이력 화면 — 필터 체크박스 렌더 + 채널명 다국어 라벨 회귀
  *
  * 배경 (엔진 v1.50.2 + 채널 라벨 수정):
- *  - 결함 #1/#2: 상태/발생유형 필터의 배열 리터럴 source(`['requested'...]`)가
+ *  - 결함 1/#2: 상태/발생유형 필터의 배열 리터럴 source(`['requested'...]`)가
  *    isComplexExpression 정규식에 `[]{}` 누락으로 resolve() 경로 → undefined 가 되어
  *    체크박스가 전혀 렌더되지 않던 결함.
- *  - 결함 #3: 채널 필터의 `Array.from(new Set(...))` 가 reserved 화이트리스트에
+ *  - 결함 3: 채널 필터의 `Array.from(new Set(...))` 가 reserved 화이트리스트에
  *    Set 누락으로 `new undefined()` 에러 → 빈 배열 → 체크박스 미렌더.
  *  - 채널명 버그: 채널이 `email`/`ipin` 영문 코드(식별자)로 표시되던 것을, 각 provider 가
  *    getChannelLabels() 로 제공하는 다국어 라벨로 표시하도록 수정.
@@ -67,12 +67,12 @@ async function collectFilterCheckboxLabels(page: import('@playwright/test').Page
 
 // @scenario interaction=initial_load
 // @effects status_and_purpose_filter_checkboxes_render
-test('@smoke 본인인증 이력 — 상태/목적 필터 체크박스가 다수 렌더된다 (결함 #1)', async ({ page }) => {
+test('@smoke 본인인증 이력 — 상태/목적 필터 체크박스가 다수 렌더된다 (결함 1)', async ({ page }) => {
   const token = issueToken(IDENTITY_LOGS_PERMISSION);
   await authenticatePage(page, token);
   await gotoIdentityLogs(page);
 
-  // 결함 #1 이전: 상태/목적 필터가 '전체' 체크박스만 렌더되어 총 체크박스가 매우 적었다.
+  // 결함 1 이전: 상태/목적 필터가 '전체' 체크박스만 렌더되어 총 체크박스가 매우 적었다.
   // 수정 후: 상태 7종 + (전체) + 목적 6종 + (전체) + 채널 → 10개 이상.
   // 데이터소스 비동기 로딩이 있으므로 polling 으로 안정화될 때까지 대기한다.
   await page.waitForFunction(
@@ -82,12 +82,12 @@ test('@smoke 본인인증 이력 — 상태/목적 필터 체크박스가 다수
   const count = await page.evaluate(
     () => document.querySelectorAll('input[type="checkbox"]').length,
   );
-  expect(count, '필터 체크박스가 거의 렌더되지 않음 — 배열 리터럴 source 미렌더 결함 #1 회귀').toBeGreaterThanOrEqual(10);
+  expect(count, '필터 체크박스가 거의 렌더되지 않음 — 배열 리터럴 source 미렌더 결함 1 회귀').toBeGreaterThanOrEqual(10);
 });
 
 // @scenario interaction=advanced_filters_toggle
 // @effects origin_type_filter_checkboxes_render_on_advanced_toggle
-test('@smoke 본인인증 이력 — 발생 유형(고급 검색) 필터 체크박스가 렌더된다 (결함 #2)', async ({ page }) => {
+test('@smoke 본인인증 이력 — 발생 유형(고급 검색) 필터 체크박스가 렌더된다 (결함 2)', async ({ page }) => {
   const token = issueToken(IDENTITY_LOGS_PERMISSION);
   await authenticatePage(page, token);
   await gotoIdentityLogs(page);
@@ -111,12 +111,12 @@ test('@smoke 본인인증 이력 — 발생 유형(고급 검색) 필터 체크�
     () => document.querySelectorAll('input[type="checkbox"]').length,
   );
   // origin_type 7종이 추가됨 → 최소 7개 증가
-  expect(after - before, '고급 검색 펼침 후 발생 유형 체크박스가 추가되지 않음 — 결함 #2 회귀').toBeGreaterThanOrEqual(7);
+  expect(after - before, '고급 검색 펼침 후 발생 유형 체크박스가 추가되지 않음 — 결함 2 회귀').toBeGreaterThanOrEqual(7);
 });
 
 // @scenario interaction=initial_load
 // @effects channel_filter_shows_labels_not_identifiers, channel_filter_checkboxes_render
-test('@smoke 본인인증 이력 — 채널 필터가 식별자가 아닌 라벨로 표시된다 (결함 #3 + 채널명 버그)', async ({ page }) => {
+test('@smoke 본인인증 이력 — 채널 필터가 식별자가 아닌 라벨로 표시된다 (결함 3 + 채널명 버그)', async ({ page }) => {
   const token = issueToken(IDENTITY_LOGS_PERMISSION);
   await authenticatePage(page, token);
   await gotoIdentityLogs(page);
@@ -141,10 +141,10 @@ test('@smoke 본인인증 이력 — 채널 필터가 식별자가 아닌 라벨
   expect(labels, "채널 필터가 raw 식별자 'email' 로 표시됨 (채널명 버그 회귀)").not.toContain('email');
   expect(labels, "채널 필터가 raw 식별자 'ipin' 로 표시됨 (채널명 버그 회귀)").not.toContain('ipin');
 
-  // 결함 #3: 채널 체크박스 자체가 렌더되어야 한다. 채널 라벨은 provider 가 제공하므로
+  // 결함 3: 채널 체크박스 자체가 렌더되어야 한다. 채널 라벨은 provider 가 제공하므로
   // 코어 이메일 채널 라벨(ko='이메일' / en='Email')이 존재해야 한다.
   const hasEmailChannel = labels.some((l) => l === '이메일' || l === 'Email');
-  expect(hasEmailChannel, '채널 필터에 이메일 채널 라벨이 렌더되지 않음 — 결함 #3 회귀').toBe(true);
+  expect(hasEmailChannel, '채널 필터에 이메일 채널 라벨이 렌더되지 않음 — 결함 3 회귀').toBe(true);
 });
 
 // @scenario tab-switch-filter-reset

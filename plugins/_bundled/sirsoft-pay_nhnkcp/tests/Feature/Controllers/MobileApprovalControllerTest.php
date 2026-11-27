@@ -294,7 +294,7 @@ class MobileApprovalControllerTest extends PluginTestCase
     }
 
     /**
-     * 서버에 PHP soap 확장이 없으면 500 이 아니라 422 와 고객용 일반 문구로 실패를 알린다 (#151).
+     * 서버에 PHP soap 확장이 없으면 500 이 아니라 422 와 고객용 일반 문구로 실패를 알린다 (공개 #151).
      *
      * @return void 반환값 없음
      *

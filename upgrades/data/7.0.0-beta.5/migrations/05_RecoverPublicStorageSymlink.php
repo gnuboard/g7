@@ -14,7 +14,7 @@ use App\Extension\UpgradeContext;
  * symlink 가 일반 디렉토리로 변질되는 결함이 잔존한다. 본 step 이 단발성 자동 복구
  * (rename 보존 + symlink 재생성) 로 보완한다.
  *
- * 복구 로직은 `StorageLinkHelper::ensurePublicStorageLink()` 로 일원화되어 있다 (#43 에서
+ * 복구 로직은 `StorageLinkHelper::ensurePublicStorageLink()` 로 일원화되어 있다 (공개 #43 에서
  * 코어 업데이트 종료 시점과 공유). 헬퍼가 멱등이며 "부재→재생성" 케이스까지 처리하므로
  * 본 step 의 기존 동작(정상 symlink skip / 손상 디렉토리 rename+재생성 / 실패 원복)은
  * 상위호환으로 유지된다.

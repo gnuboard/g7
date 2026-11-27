@@ -2,7 +2,7 @@
  * validate 결함 수정 — 이커머스 관리자(클레임 외) 레이아웃 계약
  *
  * 주문 목록·상세, 배송정책 폼, 회원 배송지, 쿠폰, 설정 화면에서 브랜치 검증이 찾은 결함을
- * **구워진 짝 `.json`** 으로 잠근다. 주석 정합(#16)처럼 JSON 에 남지 않는 것은 소스를 읽는다.
+ * **구워진 짝 `.json`** 으로 잠근다. 주석 정합처럼 JSON 에 남지 않는 것은 소스를 읽는다.
  *
  * @vitest-environment node
  */
@@ -129,7 +129,7 @@ describe('10-#4 회원 배송지 PC 행 메뉴 — 회원 없는 행·관리 권
     });
 });
 
-describe('10-#6 · #7 · #8 주문 상세 클레임 축', () => {
+describe('10-#6 · 7 · 8 주문 상세 클레임 축', () => {
     /**
      * @scenario surface=order_detail_cancel, defect=navigate_without_claim_permission
      * @effects order_cancel_navigates_only_with_claim_access
@@ -166,7 +166,7 @@ describe('10-#6 · #7 · #8 주문 상세 클레임 축', () => {
     });
 });
 
-describe('10-#10 · #11 회원 자동완성 늦은 응답 가드', () => {
+describe('10-#10 · 11 회원 자동완성 늦은 응답 가드', () => {
     /**
      * 서버는 검색어를 trim 해 돌려준다 — 앞뒤 공백이 있는 입력과 `===` 로 견주면 결과가 영영 숨는다.
      *
@@ -217,7 +217,7 @@ describe('10-#12 클레임 신청일 from > to — 목록 전체가 422 가 되�
     });
 });
 
-describe('10-#14 · #15 · #16 · #19 표기·주석 정합', () => {
+describe('10-#14 · 15 · 16 · 19 표기·주석 정합', () => {
     /**
      * @scenario surface=order_detail_cancel, defect=undefined_class_text_caption
      * @effects cancel_modal_uses_defined_text_class

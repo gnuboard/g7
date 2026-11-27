@@ -14,7 +14,7 @@ use Mockery\MockInterface;
 use Tests\TestCase;
 
 /**
- * template|module|plugin:activate 경고의 의존 상태 라벨 — 버전 미달을 「비활성」으로 출력하지 않는다 (#152)
+ * template|module|plugin:activate 경고의 의존 상태 라벨 — 버전 미달을 「비활성」으로 출력하지 않는다 (공개 #152)
  *
  * 회귀: 세 명령의 라벨 분기가 `not_installed` 가 아니면 모두 「비활성」이라, 켜져 있지만 요구 버전에 못 미치는 의존도
  * 「비활성」으로 보였다. 판정 자체는 TemplateActivationDependencyVersionTest·ExtensionDependencyVersionCheckTest 가 잠그고,

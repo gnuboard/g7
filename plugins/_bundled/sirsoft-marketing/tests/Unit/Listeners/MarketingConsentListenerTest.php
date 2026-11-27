@@ -480,7 +480,7 @@ class MarketingConsentListenerTest extends PluginTestCase
 
         $data = ['id' => $user->id];
 
-        // 동의 이력 시각은 보는 사람(관리자) 시간대 — 같은 화면의 가입일과 같은 기준(#160)
+        // 동의 이력 시각은 보는 사람(관리자) 시간대 — 같은 화면의 가입일과 같은 기준(공개 #160)
         app()->instance('user_timezone', 'Asia/Seoul');
         $result = $this->listener->filterResourceData($data, $user);
 

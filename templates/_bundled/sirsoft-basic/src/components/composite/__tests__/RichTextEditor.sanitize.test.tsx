@@ -1,6 +1,6 @@
 // e2e:allow 번들 레이아웃 사용처가 없는 부품의 초기값 정화 단위 — 브라우저 실측 미커버(사유: 이력 문서 §8 「B3」 행).
 /**
- * RichTextEditor 초기값 정화 (#158 부수 결함 B3)
+ * RichTextEditor 초기값 정화 (공개 #158 부수 결함 B3)
  *
  * 초기화 useEffect 가 `innerHTML = initialValue` 로 정화 없이 넣어, 초기값의 <script>·on* 이 편집 영역에서
  * 살아나는 XSS 싱크였다(현재 번들 레이아웃 사용처 0). HtmlContent 와 같은 DOMPurify 로 거른다.

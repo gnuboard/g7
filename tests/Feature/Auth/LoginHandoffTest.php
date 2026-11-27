@@ -19,7 +19,7 @@ use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
- * 로그인 인계 `POST /api/auth/login/handoff` (#40 K2 · R4)
+ * 로그인 인계 `POST /api/auth/login/handoff` (K2 · R4)
  *
  * 외부 인증이 발급한 일회용 코드를 로그인 화면이 교환하면 비밀번호 로그인(`POST /api/auth/login`)과 같은 모양의 응답
  * (인증 완료 · 2단계 인증 · 비밀번호 변경)이 온다. 코드는 한 번·120초만 통하고, 관리자 경로 인계와 사라진 회원은 거절한다.

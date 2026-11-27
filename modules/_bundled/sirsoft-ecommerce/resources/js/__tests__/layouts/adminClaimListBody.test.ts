@@ -358,7 +358,7 @@ describe('컬럼 표시 영속 — SSoT 는 ColumnSelector 자기 키 하나다 
     const grid = byId(datagrid, 'claim_datagrid');
 
     expect(selector.props.id).toBe('admin_claim_list_columns');
-    // DataGrid 에는 `columnSelectorId` prop 이 없다(조용히 버려졌다 — P7 #7). 둘은 selector id 가
+    // DataGrid 에는 `columnSelectorId` prop 이 없다(조용히 버려졌다 — P7 7). 둘은 selector id 가
     // 아니라 `_local.visibleColumns` 하나를 함께 읽어 이어진다.
     expect(grid.props).not.toHaveProperty('columnSelectorId');
     expect(selector.props.visibleColumns).toBe('{{_local.visibleColumns}}');

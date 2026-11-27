@@ -10,7 +10,7 @@
       <p class="text-warning-soft">$t:admin.settings.permission_required.language_packs</p>
     </div>
     <div data-ref="language_packs_body" data-if="{{current_user !== undefined &amp;&amp; (_computed.canReadLanguagePacks !== false)}}">
-    <!-- 미배치 공식 번들 안내(#146). [닫기]는 이 관리자에게서만 숨기고(다음 기록에서 다시 보임),
+    <!-- 미배치 공식 번들 안내(공개 #146). [닫기]는 이 관리자에게서만 숨기고(다음 기록에서 다시 보임),
       배치·정리하면 서버가 항목을 빼 모두에게서 사라진다. 명령은 클릭 한 번에 전체 선택된다. -->
     <div data-ref="unplaced_bundled_notice_wrapper" data-if="{{(unplaced_bundled_notice?.data?.items?.language_packs?.length ?? 0) > 0}}" class="alert-info mb-4" role="status">
       <div class="flex-start justify-between gap-4 w-full">

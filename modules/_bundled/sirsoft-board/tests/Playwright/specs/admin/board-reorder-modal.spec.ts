@@ -1,5 +1,5 @@
 /**
- * 관리자 게시판 목록 — 「순서 변경」 모달 브라우저 흐름 (#142).
+ * 관리자 게시판 목록 — 「순서 변경」 모달 브라우저 흐름 (공개 #142).
  *
  * 단위(Vitest admin-board-reorder-modal)는 레이아웃 JSON 의 바인딩 식을 값으로 평가하고, Feature(BoardReorderApiTest)는
  * 서버 저장·422·403 을 검증한다. 이 spec 은 실제 브라우저에서 단추 → 모달 → ▼ 로 옮기기 → 저장 활성 → 취소 → 다시 열면
@@ -24,7 +24,7 @@ async function rowSlugs(page: import('@playwright/test').Page): Promise<string[]
     .evaluateAll((rows) => rows.map((row) => (row.getAttribute('data-testid') ?? '').replace('board-reorder-row-', '')));
 }
 
-test.describe('관리자 게시판 목록 — 순서 변경 모달 (#142)', () => {
+test.describe('관리자 게시판 목록 — 순서 변경 모달 (공개 #142)', () => {
   // @scenario case=e2e_reorder_modal_flow
   // @effects e2e_reorder_modal_opens_moves_cancels
   test('단추로 모달을 열고 ▼ 로 옮기면 저장이 켜지며, 취소 후 다시 열면 서버 순서 그대로다', async ({ page, boardManageToken }) => {

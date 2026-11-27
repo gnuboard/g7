@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 이슈 #55 비회원 주문 흐름 SSoT 로 기록. axes 7종 cross product(5000조합)는 docblock 전수 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(백엔드 PHPUnit + 프론트 Vitest + Playwright E2E)로 커버한다. effects 는 작업 영역(주문생성/조회/상세/구매제한/관리자/알림)을 망라 기록.
+# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 비회원 주문 흐름 SSoT 로 기록. axes 7종 cross product(5000조합)는 docblock 전수 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(백엔드 PHPUnit + 프론트 Vitest + Playwright E2E)로 커버한다. effects 는 작업 영역(주문생성/조회/상세/구매제한/관리자/알림)을 망라 기록.
 # audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 # 원장: 이 매니페스트는 :cross-product 로 좁히면 effects 66건이 미검증으로 드러난다.
 #   그 짝 맞추기는 이 공정(이커머스 비회원 주문)의 몫이며, 좁히는 시점에 함께 처리한다.

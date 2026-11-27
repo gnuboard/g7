@@ -1,6 +1,6 @@
 /**
  * @file long-text-overflow-guards.test.ts
- * @description 긴 텍스트 넘침 방지 — 레이아웃 JSON 의 className 토큰 회귀 차단 (#143)
+ * @description 긴 텍스트 넘침 방지 — 레이아웃 JSON 의 className 토큰 회귀 차단 (공개 #143)
  *
  * 사이트 이름이 공백 없이 길면(`SirSoftBasicMenuReverse`) 모바일 상단 우측 단추가 화면 밖으로 밀리고
  * 홈 환영 카드 제목이 카드를 넘쳤다. flex 자식은 기본 `min-width:auto` 라 줄바꿈할 수 없는 토큰 폭 아래로

@@ -2,7 +2,7 @@
  * @file named-radio-autobinding-guard.test.ts
  * @description 폼 자동 바인딩(dataKey) 아래의 이름 있는 라디오는 :autoBinding="false" — 번들 레이아웃 전체
  *
- * 배경 (#17):
+ * 배경:
  *  dataKey 가 있는 폼 안의 이름 있는 입력은 엔진이 `{dataKey}.{name}` 상태에 자동으로 묶는다. 라디오도 예외가 아니라서
  *  상태값이 boolean 이 아니면 value 를 지금 상태값으로 덮어 같은 이름의 라디오가 모두 같은 value 를 갖고, 바꿀 때 옛 값이
  *  다시 써지거나(스케줄 필터에서 처음 확인) value 가 없는 라디오는 브라우저 기본값 "on" 을 폼 상태에 흘린다.

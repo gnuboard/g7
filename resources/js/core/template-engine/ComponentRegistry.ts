@@ -313,7 +313,7 @@ export class ComponentRegistry {
    * @param templateType 템플릿 타입 (admin 또는 user)
    * @param cacheVersion 확장 캐시 버전 — 0(기본)이면 무버전 URL(편집기 경로,
    *   서버는 `?v` 생략 시 현재 버전 폴백). 매니페스트 캐시 키에도 포함되어
-   *   버전 간 교차 오염을 막는다 (#122, @since engine-v1.61.0)
+   *   버전 간 교차 오염을 막는다 (공개 #122, @since engine-v1.61.0)
    */
   public async loadComponents(templateId: string, templateType: string, cacheVersion: number = 0): Promise<void> {
     if (this.loadingState === 'loading') {
@@ -386,7 +386,7 @@ export class ComponentRegistry {
         'json',
         this.cacheVersion > 0 ? this.cacheVersion : null,
       );
-      // 정적 게시본(bake) 우선 (#122) — 편집기 경로(v0)는 legacy 직행 유지.
+      // 정적 게시본(bake) 우선 (공개 #122) — 편집기 경로(v0)는 legacy 직행 유지.
       // miss 는 fetchStaticFirst 가 legacy 로 폴백하고, legacy 측이 fetchWithRetry 를 재사용한다.
       // base-path:allow 첫 인자는 `extStaticUrl()` 산출물 아니면 null 이다 — 삼항이라 게이트가 형태를 읽지 못한다.
       const response = await fetchStaticFirst(

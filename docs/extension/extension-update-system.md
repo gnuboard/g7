@@ -158,7 +158,7 @@
 | 값 | 동작 |
 | --- | --- |
 | `--zip=/path/to/ext.zip` | 지정 ZIP 을 추출하여 소스로 사용. `manifest.json`(module.json / plugin.json / template.json)의 `identifier` 가 대상 확장과 일치해야 하며, `version` 은 manifest 기준으로 자동 결정 |
-| `--signature=/path/to/ext.zip.sig.json` | `--zip` 의 서명 파일 (7.2.0). 생략하면 ZIP 옆 `<zip>.sig.json` 을 자동으로 쓰고, 그것도 없으면 미서명. 지정한 파일이 없으면 시작 전에 실패 |
+| `--signature=/path/to/ext.zip.sig.json` | `--zip` 의 서명 파일 (7.2.0). 생략하면 ZIP 옆 `<zip>.sig.json` 또는 `{base}.sig.json` 을 자동으로 쓰고, 그것도 없으면 미서명. 지정한 파일이 없으면 시작 전에 실패 |
 | `--allow-unsigned` | 미서명·검증 불가 ZIP 을 확인 없이 계속 (7.2.0, 위 「미서명 패키지 확인」) |
 
 동작 요약:
@@ -188,7 +188,7 @@
 
 GitHub 소스 업데이트 시 아카이브 URL 해석 → 다운로드 → 압축 해제 과정을 거칩니다:
 
-**태그 릴리스와 서명 자산 (7.2.0~)**: 받을 판의 태그 릴리스에 `{identifier}-{version}.zip` 과 `{identifier}-{version}.zip.sig.json` 이 짝으로 있으면 그 자산을 받아 풀기 전에 검증합니다. 짝이 없으면 아래 태그 zipball 을 미서명으로 받는데, 미서명 정책이 허락하지 않으면 **받기 전에** 멈춥니다(관리자 화면은 409 경고 창, 명령은 확인 질문). 릴리스·태그가 없으면 `main`·`master` 브랜치로 물러서지 않고 실패합니다. 상세: [패키지 서명 — GitHub 설치는 태그 릴리스만](package-signing.md#github-설치는-태그-릴리스만)
+**태그 릴리스와 서명 자산 (7.2.0~)**: 받을 판의 태그 릴리스에 `{identifier}-{version}.zip` 과 서명 파일 `{identifier}-{version}.sig.json`(7.2.1 이후 올리는 이름. 옛 이름 `{identifier}-{version}.zip.sig.json` 도 읽지만 7.2.0 업데이터가 그 짝에서 실패하므로 올리지 않는다)이 짝으로 있으면 그 자산을 받아 풀기 전에 검증합니다. 짝이 없으면 아래 태그 zipball 을 미서명으로 받는데, 미서명 정책이 허락하지 않으면 **받기 전에** 멈춥니다(관리자 화면은 409 경고 창, 명령은 확인 질문). 릴리스·태그가 없으면 `main`·`master` 브랜치로 물러서지 않고 실패합니다. 상세: [패키지 서명 — GitHub 설치는 태그 릴리스만](package-signing.md#github-설치는-태그-릴리스만)
 
 **v접두사 자동 감지 및 태그 실재 검증** (`resolveGithubArchiveUrl`):
 
