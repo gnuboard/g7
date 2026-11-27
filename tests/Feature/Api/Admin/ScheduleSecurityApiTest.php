@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * 스케줄 보안 정책 조회 API·상태 API 의 Shell 사용 여부·덮어쓰기의 저장/실행 반영 테스트 (#17)
+ * 스케줄 보안 정책 조회 API·상태 API 의 Shell 사용 여부·덮어쓰기의 저장/실행 반영 테스트
  *
  * 덮어쓰기 파일은 `storage/framework/testing/` 아래 임시 이름으로 만든다 — 화면에 보이는 경로가 프로젝트 기준
  * 상대경로인지(서버 절대경로 미노출)까지 함께 본다.

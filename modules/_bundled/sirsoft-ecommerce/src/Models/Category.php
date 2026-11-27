@@ -156,7 +156,7 @@ class Category extends Model implements FulltextSearchable
         $locale = $locale ?? app()->getLocale();
         $name = $this->name;
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (공개 #148)
         return LocalizedValue::pick($name, $locale) ?? '';
     }
 

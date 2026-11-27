@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 모듈/플러그인 components.json 서빙의 폴백 API 캐시 계약 (#122 작업 C).
+ * 모듈/플러그인 components.json 서빙의 폴백 API 캐시 계약 (공개 #122 작업 C).
  *
  * `cachedJsonResponse` 가 ETag/304 조건부 캐시와 환경 분기(prod: public
  * max-age / dev: no-cache)를 적용하는지 검증한다. 정적 게시본(fast path)

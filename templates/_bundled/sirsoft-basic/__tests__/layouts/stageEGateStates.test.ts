@@ -91,15 +91,15 @@ describe('단계 E — 상품상세 리뷰/문의 탭 게이트 상태', () => {
   it('reviews_tab override 는 유저 탭 shape(reviews.data.reviews.data + rating_stats + option_filters)를 채운다', () => {
     const rv = item(g, 'reviews_tab').sampleDataOverrides?.byDataSourceId?.reviews?.data;
     expect(rv).toBeTruthy();
-    // 본체 실재 가드: 리뷰 목록 ≥3 (DoD #2 복수성)
+    // 본체 실재 가드: 리뷰 목록 ≥3 (DoD 2 복수성)
     expect(Array.isArray(rv.reviews?.data)).toBe(true);
     expect(rv.reviews.data.length).toBeGreaterThanOrEqual(3);
-    // 분기 양면(DoD #3): has_reply on/off, image on/off 공존
+    // 분기 양면(DoD 3): has_reply on/off, image on/off 공존
     expect(rv.reviews.data.some((r: any) => r.has_reply === true)).toBe(true);
     expect(rv.reviews.data.some((r: any) => r.has_reply === false)).toBe(true);
     expect(rv.reviews.data.some((r: any) => (r.images ?? []).length > 0)).toBe(true);
     expect(rv.reviews.data.some((r: any) => (r.images ?? []).length === 0)).toBe(true);
-    // 요약/분포(DoD #4): rating_stats 전 별점 경로
+    // 요약/분포(DoD 4): rating_stats 전 별점 경로
     expect(rv.rating_stats?.avg).toBeGreaterThan(0);
     for (const star of ['1', '2', '3', '4', '5']) {
       expect(rv.rating_stats[star]?.count).toBeGreaterThanOrEqual(0);
@@ -133,7 +133,7 @@ describe('단계 E — 상품상세 리뷰/문의 탭 게이트 상태', () => {
    */
   it('qna SSoT(basic 템플릿) 샘플이 stub 없이 유저 shape(items[] + meta) 분기를 채운다', () => {
     // qna 데이터소스는 /shop/products/:id(basic 템플릿 shop/show.g7.html) 만 소비 → SSoT 는 basic 템플릿
-    // sampleData(메커니즘 #1 — 선언 레이아웃 __source). qna_tab 상태는 activeTab + board_slug 만 패치하면
+    // sampleData(메커니즘 1 — 선언 레이아웃 __source). qna_tab 상태는 activeTab + board_slug 만 패치하면
     // 충분(데이터 override 불필요 — base qna 가 이미 풍부). ecommerce spec 의 동명 qna 는 비소비 중복.
     const qd = byId.qna?.data;
     expect(qd).toBeTruthy();
@@ -141,7 +141,7 @@ describe('단계 E — 상품상세 리뷰/문의 탭 게이트 상태', () => {
     expect(Array.isArray(qd.items)).toBe(true);
     expect(qd.items.length).toBeGreaterThanOrEqual(3);
     expect(qd.items.every((i: any) => i !== '샘플')).toBe(true);
-    // 분기 양면(DoD #3): 답변완료/대기, 비밀/공개, 소유/비소유 공존
+    // 분기 양면(DoD 3): 답변완료/대기, 비밀/공개, 소유/비소유 공존
     expect(qd.items.some((i: any) => i.is_answered === true)).toBe(true);
     expect(qd.items.some((i: any) => i.is_answered === false)).toBe(true);
     expect(qd.items.some((i: any) => i.is_secret === true)).toBe(true);

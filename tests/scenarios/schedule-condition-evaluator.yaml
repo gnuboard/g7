@@ -1,4 +1,4 @@
-feature: 스케줄 실행 조건 해석 — enabled_condition (이슈 #17, 7.2.0 · 옛 커밋 결함 d)
+feature: 스케줄 실행 조건 해석 — enabled_condition (7.2.0 · 옛 커밋 결함 d)
 
 description: |
   옛 구현은 실행 조건을 config() 로만 읽어 코어 설정(g7_core_settings)에 있는 사이트맵·GeoIP 토글을

@@ -89,7 +89,7 @@ function policyPayload(name: string, countrySetting: Record<string, any>) {
   };
 }
 
-test.describe('배송정책 구간 경계·단위 환산 (#94)', () => {
+test.describe('배송정책 구간 경계·단위 환산 (공개 #94)', () => {
   test('저장 검증: 무음 0원을 만드는 설정은 422 로 차단된다', async ({ page, shippingBoundaryToken }) => {
     await authenticatePage(page, shippingBoundaryToken);
     await page.goto(POLICY_FORM_URL);

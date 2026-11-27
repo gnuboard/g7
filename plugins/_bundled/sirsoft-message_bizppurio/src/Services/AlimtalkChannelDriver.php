@@ -37,7 +37,7 @@ use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioTemplateRep
  *
  * 처리 흐름:
  *  1. 알림 유형(type)으로 템플릿 행 조회 → 발송 게이트 판정. 불충족 시
- *     NotificationSendSkippedException(코어가 실패로 기록 — 이슈 #28 계약 유지).
+ *     NotificationSendSkippedException(코어가 실패로 기록 — 계약 유지).
  *  2. 전화번호 해석(회원=mobile, 비회원=data 의 _recipient_phone — SmsChannelDriver 와 동일 계약).
  *  3. 승인 스냅샷 → 발송 형식 변환 + 변수(#{var}) 치환(AlimtalkPayloadMapper — 등록
  *     페이로드와 kapi 상세의 필드명이 동일해 스냅샷을 그대로 공급한다).
@@ -174,7 +174,7 @@ class AlimtalkChannelDriver
 
         // A-2: 이 발송 사이클 직후 발화할 코어 알림 로그(after_log_sent)에 이 dispatch 를 잇도록
         // refkey 를 컨텍스트에 남긴다. LinkNotificationLogListener 가 그 로그 id 를 여기에 연결한다.
-        // 컨텍스트는 발송할 때마다 컨테이너에서 꺼낸다(#139) — 채널 매니저가 이 드라이버를 프로세스 동안 재사용하는데
+        // 컨텍스트는 발송할 때마다 컨테이너에서 꺼낸다(공개 #139) — 채널 매니저가 이 드라이버를 프로세스 동안 재사용하는데
         // 큐 워커는 잡마다 scoped 인스턴스를 비우므로, 생성자에서 받아 두면 두 번째 잡부터 옛 컨텍스트에 남아 연결이 빈다.
         app(DispatchLinkContext::class)->remember($refkey);
 

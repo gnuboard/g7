@@ -157,7 +157,7 @@ trait BundledExtensionUpdatePrompt
      * 번들 일괄 업데이트 결과로 종료 코드를 정하고, 실패가 있으면 경고 1줄을 남깁니다.
      *
      * 코어는 이미 새 버전이어도 번들 확장 하나가 실패했으면 종료 코드 1 을 돌려준다 — 자동화 스크립트가 성공으로 읽고
-     * 넘어가면 실패한 확장이 옛 버전·옛 레이아웃으로 조용히 남는다(#144). `core:update` 와 단독
+     * 넘어가면 실패한 확장이 옛 버전·옛 레이아웃으로 조용히 남는다(공개 #144). `core:update` 와 단독
      * `core:execute-upgrade-steps` 가 같은 규칙을 쓰도록 한 곳에 둔다.
      *
      * @param  array{failed?: int}  $promptResult  {@see runBundledExtensionUpdatePrompt()} 결과
@@ -432,7 +432,7 @@ trait BundledExtensionUpdatePrompt
                 2 => ['pipe', 'w'],
             ];
 
-            // ENV 합집합 + 업데이트 트리면 APP_VERSION·G7_UPDATE_IN_PROGRESS 고정 (#145 F10 — 상속 env 의 옛 버전이
+            // ENV 합집합 + 업데이트 트리면 APP_VERSION·G7_UPDATE_IN_PROGRESS 고정 (공개 #145 F10 — 상속 env 의 옛 버전이
             // 자식의 config/hooks 캐시에 구워지지 않게 한다).
             // 상속 env 의 `getenv` 판정과 `$_SERVER` 폴백은 형제 러너(SubprocessCommandRunner::inheritedEnvironment)
             // 가 SSoT 로 갖는다 — 이 자리는 `proc_open` 가드 안쪽이라 「proc_open 은 되는데 getenv 만 막힌」
@@ -490,7 +490,7 @@ trait BundledExtensionUpdatePrompt
      *
      * 자식(`core:execute-bundled-updates`)은 대상이 0건이어도 정상 종료 경로에서 결과 줄(`[BUNDLED-RESULT]`)을 늘 출력한다.
      * 그러니 결과 줄이 없으면 종료 코드와 무관하게 결과를 알 수 없는 것이고, 실패 1건으로 센다 — 0/0 으로 두면 부모가
-     * 성공으로 끝내 자동화 스크립트가 실패를 알 수 없다(비정상 종료 #144, 정상 종료인데 결과 없음).
+     * 성공으로 끝내 자동화 스크립트가 실패를 알 수 없다(비정상 종료 공개 #144, 정상 종료인데 결과 없음).
      *
      * @param  array<string, mixed>|null  $resultPayload  결과 줄에서 읽은 페이로드 (없으면 null)
      * @param  int  $exitCode  자식 종료 코드
@@ -589,7 +589,7 @@ trait BundledExtensionUpdatePrompt
         $success = 0;
         $failed = 0;
         $failedItems = [];
-        // 잠금 저장소 장애로 멈췄는지 — 처리한 항목 수로 남은(건너뛴) 항목 수를 센다(#161 D8)
+        // 잠금 저장소 장애로 멈췄는지 — 처리한 항목 수로 남은(건너뛴) 항목 수를 센다(공개 #161 D8)
         $aborted = false;
         $attempted = 0;
 
@@ -620,7 +620,7 @@ trait BundledExtensionUpdatePrompt
                 $this->renderDependencyWarnings($result, '  ');
                 $success++;
             } catch (ExtensionOperationLockUnavailableException $e) {
-                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
+                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(공개 #161 D8)
                 $failed++;
                 $aborted = true;
                 Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => $type, 'id' => $id]);
@@ -644,7 +644,7 @@ trait BundledExtensionUpdatePrompt
                 $this->renderDependencyWarnings($result, '  ');
                 $success++;
             } catch (ExtensionOperationLockUnavailableException $e) {
-                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
+                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(공개 #161 D8)
                 $failed++;
                 $aborted = true;
                 Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => 'template', 'id' => $id]);
@@ -670,7 +670,7 @@ trait BundledExtensionUpdatePrompt
                 $langPackService->performUpdate($pack, true);
                 $success++;
             } catch (ExtensionOperationLockUnavailableException $e) {
-                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
+                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(공개 #161 D8)
                 $failed++;
                 $aborted = true;
                 Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => 'lang_pack', 'id' => $id]);

@@ -1,6 +1,6 @@
 /**
  * @file admin-list-context-round-trip.test.ts
- * @description 관리자 페이지 목록 컨텍스트 왕복 시 URL 목록 상태 보존 회귀 (#75)
+ * @description 관리자 페이지 목록 컨텍스트 왕복 시 URL 목록 상태 보존 회귀 (공개 #75)
  *
  * 결함: 페이지 목록(`/admin/pages`) 에서 상세·수정 폼으로 들어갔다 돌아오면 navigate 가
  *   `mergeQuery` 없이 실행되어 page/검색 필터가 URL 에서 사라지고 1페이지로 되돌아갔다.

@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * `disable_functions` 환경에서 인스톨러 화면이 서는지 실측한다 (환경#18).
+ * `disable_functions` 환경에서 인스톨러 화면이 서는지 실측한다 (환경 18).
  *
  * ## 왜 하위 프로세스인가
  *
@@ -348,7 +348,7 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      * 있으나 호출이 **false 를 돌려준** 갈래(NFS/CIFS 마운트·일부 컨테이너 볼륨)는
      * passed=false 로 떨어져 있었다 — 같은 「확인 불가」가 8줄 간격으로 반대 판정을 내고,
      * 화면은 그것을 빨강+차단으로 증폭한다. 디스크는 넉넉한데 설치가 원리상 진행 불가가
-     * 되는 거짓 차단이다(20차 #6 과 같은 형태).
+     * 되는 거짓 차단이다(20차 6 과 같은 형태).
      *
      * 행위 재현이 불가한 갈래(실 디스크에서 false 를 강제할 수 없음)라 소스 계약으로
      * 고정한다 — false 갈래의 반환 배열이 차단 갈래와 같은 3상태 값을 갖는지.

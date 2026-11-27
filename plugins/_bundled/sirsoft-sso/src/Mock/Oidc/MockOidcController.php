@@ -264,7 +264,7 @@ class MockOidcController extends Controller
         }
 
         $html = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-            // 모양은 정적 파일이 준다 — 인라인 <style> 은 스타일 보안 정책(style-src 'self')에서 막힌다(#163)
+            // 모양은 정적 파일이 준다 — 인라인 <style> 은 스타일 보안 정책(style-src 'self')에서 막힌다(공개 #163)
             .'<title>Mock OIDC IdP</title>'.BridgeScript::stylesheetTag('mock-idp.css').'</head><body>'
             .'<h1>Mock OIDC IdP</h1><p>'.e(__('sirsoft-sso::oidc.mock.notice')).'</p>'
             .'<form method="post" action="'.e(self::issuer().'/authorize').'">'.$hidden

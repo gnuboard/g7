@@ -23,7 +23,7 @@
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.board.index.title" description="$t:sirsoft-board.admin.board.index.description">
         <button type="button" data-ref="refresh_button" class="board-btn-icon" aria-label="$t:common.refresh">
           <on type="click">
-            <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색을 유지한다 (#75). -->
+            <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색을 유지한다 (공개 #75). -->
             <navigate path="/admin/boards" :mergeQuery="true">
               <query/>
             </navigate>
@@ -194,7 +194,7 @@
             <close-modal target="copy_confirm_modal"/>
           </on>
           <on type="click">
-            <!-- 복사 생성 폼으로 이동 — copy_id 는 query 로 넘긴다. mergeQuery 는 path 의 인라인 쿼리스트링을 버리므로 path 에 붙여두면 사라진다 (#75). -->
+            <!-- 복사 생성 폼으로 이동 — copy_id 는 query 로 넘긴다. mergeQuery 는 path 의 인라인 쿼리스트링을 버리므로 path 에 붙여두면 사라진다 (공개 #75). -->
             <navigate path="/admin/boards/create" :mergeQuery="true">
               <query copy_id="{{_global.modal_data.id}}"/>
             </navigate>

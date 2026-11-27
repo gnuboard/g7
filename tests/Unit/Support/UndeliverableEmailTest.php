@@ -8,7 +8,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 메일을 보낼 수 없는 주소 판정 (#40 K10 · R10)
+ * 메일을 보낼 수 없는 주소 판정 (K10 · R10)
  *
  * 외부 인증 회원의 대체 주소(`…@xxx.invalid`)와 빈 값은 「이메일 없음」으로 본다.
  */

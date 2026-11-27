@@ -4,7 +4,7 @@
 feature: hook_listener_queue_options
 
 description: |
-  큐 리스너는 getSubscribedHooks() 의 queue 키(또는 registerDynamicAction 의 queueOptions)로 잡 단위 큐 옵션을 선언한다(#139).
+  큐 리스너는 getSubscribedHooks() 의 queue 키(또는 registerDynamicAction 의 queueOptions)로 잡 단위 큐 옵션을 선언한다(공개#139).
   connection·queue·delay·after_commit·tries·timeout·backoff·retry_until·max_exceptions·fail_on_timeout 10개만 받는다.
 
   핵심 동작:

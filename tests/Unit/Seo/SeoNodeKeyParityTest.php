@@ -10,7 +10,7 @@ use Tests\TestCase;
 /**
  * SEO(봇) 렌더러가 해석하지 못하는 노드 키가 봇 대상 화면에 유입되는지 감시합니다.
  *
- * 배경 (이슈 #86):
+ * 배경 (이슈 공개 #86):
  * 같은 레이아웃 JSON 을 React 렌더러와 SEO PHP 렌더러가 각각 그린다. React 에만 새 노드
  * 키 처리를 추가하면 봇 화면에서는 그 부분이 조용히 사라지는데, 실제로 확장 주입 props
  * (`extensionPointProps`) 가 그렇게 누락되어 게시글·댓글·페이지·상품 설명 본문이
@@ -151,7 +151,7 @@ class SeoNodeKeyParityTest extends TestCase
      * 문서 루트가 곧 노드인 partial 파일도 실제로 스캔됩니다.
      *
      * 수집 진입점이 `components`/`slots` 뿐이면 봇 대상 자산의 대부분(partial)이 통째로
-     * 스킵되어 위 분류 단언이 항상 통과한다 — 이슈 #86 이 터진 `_reply_section.json` 이
+     * 스킵되어 위 분류 단언이 항상 통과한다 — 이슈 공개 #86 이 터진 `_reply_section.json` 이
      * 바로 그 형태이므로, 감시망이 비어 있는 채로 초록이 되는 상황을 여기서 차단한다.
      *
      * @effects node_rooted_partials_are_scanned
@@ -613,7 +613,7 @@ class SeoNodeKeyParityTest extends TestCase
      * 2. `injections[].components` — 주입 목록 형 확장 자산
      * 3. 위 어느 것도 없고 `type`/`name` 이 있으면 **문서 루트 자체가 컴포넌트 노드** (partial)
      *
-     * 3번을 빠뜨리면 봇 대상 자산의 대부분(partial)이 통째로 감시망 밖에 남는다 — 이슈 #86 이
+     * 3번을 빠뜨리면 봇 대상 자산의 대부분(partial)이 통째로 감시망 밖에 남는다 — 이슈 공개 #86 이
      * 실제로 터진 `partials/board/show/_reply_section.json` 이 정확히 이 형태다.
      *
      * 각 노드에서 `children` / `default` / `responsive.*.children` / `itemTemplate` 로 재귀한다.

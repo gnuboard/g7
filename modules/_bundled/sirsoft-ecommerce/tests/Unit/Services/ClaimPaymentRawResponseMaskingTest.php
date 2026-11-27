@@ -85,7 +85,7 @@ class ClaimPaymentRawResponseMaskingTest extends ModuleTestCase
             'handled' => true,
             'success' => $success,
             'transaction_id' => $success ? 'TXN-MASK' : null,
-            // 승인 금액을 돌려주지 않으면 서버가 대조 불가로 거절한다(validate P2 #11).
+            // 승인 금액을 돌려주지 않으면 서버가 대조 불가로 거절한다(validate P2 11).
             'paid_amount' => $success ? $this->service->resolvePaymentCharge($payment)['minor_unit_amount'] : null,
             'error_code' => $success ? null : 'PG_DECLINED',
             'error_message' => $success ? null : 'declined',

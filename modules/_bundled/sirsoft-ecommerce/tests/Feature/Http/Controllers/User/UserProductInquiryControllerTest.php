@@ -251,7 +251,7 @@ class UserProductInquiryControllerTest extends ModuleTestCase
             );
 
         $response->assertOk();
-        // SoftDeletes 도입(#107 후속) — 게시판 복원 경로와의 대칭을 위해 피벗은 소프트 삭제된다
+        // SoftDeletes 도입(공개 #107 후속) — 게시판 복원 경로와의 대칭을 위해 피벗은 소프트 삭제된다
         $this->assertSoftDeleted('ecommerce_product_inquiries', ['id' => $this->inquiry->id]);
     }
 

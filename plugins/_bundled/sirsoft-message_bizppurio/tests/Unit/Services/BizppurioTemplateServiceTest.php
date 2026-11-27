@@ -941,7 +941,7 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         app()->setLocale('en');
         $this->assertSame('English body', $this->makeService()->summaryMap()['welcome']['sms_body_preview']);
 
-        // 해당 로케일 본문이 없으면 사이트 기본 언어로 내려간다 (하드코딩 'ko' 가 아니다, #148)
+        // 해당 로케일 본문이 없으면 사이트 기본 언어로 내려간다 (하드코딩 'ko' 가 아니다, 공개 #148)
         config(['app.site_locale' => 'en', 'app.fallback_locale' => 'ko']);
         app()->setLocale('ja');
         $this->assertSame('English body', $this->makeService()->summaryMap()['welcome']['sms_body_preview']);

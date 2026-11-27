@@ -1,5 +1,5 @@
 /**
- * MultilingualInput — 언어팩으로 켠 언어의 칸 라벨 (#148)
+ * MultilingualInput — 언어팩으로 켠 언어의 칸 라벨 (공개 #148)
  *
  * 종전에는 내장 표에 없는 언어(fil-PH)의 라벨이 대문자 코드(FIL-PH)였다. 서버가 주는 언어팩의 언어 이름
  * (`appConfig.localeNames`)을 먼저 쓴다.
@@ -30,7 +30,7 @@ afterEach(() => {
   delete (window as any).G7Core;
 });
 
-describe('MultilingualInput 언어팩 언어 라벨 (#148)', () => {
+describe('MultilingualInput 언어팩 언어 라벨 (공개 #148)', () => {
   // @scenario shape=region_tagged
   // @effects admin_locale_label_uses_language_pack_name
   it('언어팩으로 켠 언어(fil-PH)의 칸 라벨은 언어팩 이름이다 (종전 FIL-PH)', () => {

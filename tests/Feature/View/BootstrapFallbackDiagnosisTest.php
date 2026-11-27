@@ -15,7 +15,7 @@ use Tests\TestCase;
  * 없어도 동작해야 하므로 ES5 로만 작성한다 — 화살표 함수·const·템플릿 리터럴·옵셔널 체이닝이
  * 섞이면 이 계층까지 구형 브라우저에서 죽어 안내조차 뜨지 않는다.
  *
- * 종전 인라인 `<script>` 였던 부트스트랩은 strict CSP 대응으로 정적 파일로 옮겼다(#158).
+ * 종전 인라인 `<script>` 였던 부트스트랩은 strict CSP 대응으로 정적 파일로 옮겼다(공개 #158).
  * 분기 로직 검사는 그 파일을, 서버가 넘기는 값(문구·URL)은 파샬의 JSON 데이터 블록을 본다.
  *
  * @scenario entrypoint=user, failure_mode=parse_error
@@ -109,7 +109,7 @@ class BootstrapFallbackDiagnosisTest extends TestCase
     }
 
     /**
-     * HTTPS 페이지가 http 자산을 요청해 차단된 경우를 별도 사유로 가른다 (#124).
+     * HTTPS 페이지가 http 자산을 요청해 차단된 경우를 별도 사유로 가른다 (공개 #124).
      *
      * 이 실패는 회선이 멀쩡하고 새로고침으로도 낫지 않으므로, 네트워크 문구 + 새로고침
      * 버튼은 두 겹의 거짓 안내가 된다.
@@ -148,7 +148,7 @@ class BootstrapFallbackDiagnosisTest extends TestCase
     }
 
     /**
-     * 차단 안내는 화면(방문자)과 콘솔(운영자)로 대상을 나눈다 (#124).
+     * 차단 안내는 화면(방문자)과 콘솔(운영자)로 대상을 나눈다 (공개 #124).
      *
      * 화면 문구에 서버 설정 지시를 쓰면 방문자에게 실행 불가능한 지시를 주는 셈이고,
      * 원인을 통째로 감추면 운영자가 도달할 통로가 사라진다.
@@ -342,7 +342,7 @@ class BootstrapFallbackDiagnosisTest extends TestCase
     }
 
     /**
-     * 부트스트랩 파샬은 실행형 인라인 코드를 내지 않는다 (#158).
+     * 부트스트랩 파샬은 실행형 인라인 코드를 내지 않는다 (공개 #158).
      *
      * strict CSP(`script-src 'self'`)에서 인라인 `<script>` 와 on* 속성은 실행되지 않는다.
      * 엔진 초기화 신호가 그것에 묶이면 전 화면이 백지가 되고 폴백 안내조차 뜨지 않는다.

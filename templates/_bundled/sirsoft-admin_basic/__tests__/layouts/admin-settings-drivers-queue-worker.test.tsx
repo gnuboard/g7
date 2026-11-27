@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-drivers-queue-worker.test.tsx
- * @description 드라이버 탭 「큐 워커」 구역 렌더 테스트 (#139)
+ * @description 드라이버 탭 「큐 워커」 구역 렌더 테스트 (공개 #139)
  *
  * 큐 드라이버가 sync 면 워커가 필요 없다는 안내만, 그 밖이면 워커를 돌리는 연결·연결별 큐 입력칸을 그린다.
  * 상태 표는 **저장된** 드라이버 기준 응답(queueStatus)을 그리고, 서버 422 오류 키는 해당 칸 아래에만 단다

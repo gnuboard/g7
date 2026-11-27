@@ -4,7 +4,7 @@
  * 레이아웃 JSON에서 {{_global.shopBase}} 바인딩이 navigate params와
  * href 속성에 올바르게 적용되는지 검증합니다.
  *
- * 관련 이슈: #64 (이커머스 환경설정 > 라우트 (shop) 연동 처리)
+ * 관련 이슈: (이커머스 환경설정 > 라우트 (shop) 연동 처리)
  *
  * 참고: init_actions의 shopBase 표현식 평가는 TemplateApp.resolveRouteExpressions
  * 유닛 테스트에서 검증. 이 테스트는 shopBase 값이 설정된 상태에서의 렌더링 검증에 집중.

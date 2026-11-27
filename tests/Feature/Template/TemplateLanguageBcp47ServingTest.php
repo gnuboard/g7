@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /**
- * 템플릿 언어 파일 서빙 — 언어팩 설치 규칙(BCP 47) 로케일 (#148)
+ * 템플릿 언어 파일 서빙 — 언어팩 설치 규칙(BCP 47) 로케일 (공개 #148)
  *
  * 라우트·서비스가 소문자 두 글자만 받아 `fil`·`fil-PH`·`zh-Hant`·`es-419` 언어팩을 켜도 언어 파일이 404 였다.
  * 형식 판정은 `App\Support\LocaleTag` 하나로 통일하고, 형식은 맞지만 지원하지 않는 언어는 서비스 단계에서 404 다.

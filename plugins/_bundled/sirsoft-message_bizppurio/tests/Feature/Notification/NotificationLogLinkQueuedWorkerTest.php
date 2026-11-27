@@ -23,7 +23,7 @@ use Plugins\Sirsoft\MessageBizppurio\Services\SmsChannelDriver;
 use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
- * 큐 워커에서 발송해도 코어 알림 로그가 비즈뿌리오 dispatch 에 연결되는지 검증 (#139).
+ * 큐 워커에서 발송해도 코어 알림 로그가 비즈뿌리오 dispatch 에 연결되는지 검증 (공개 #139).
  *
  * 큐 드라이버가 database 이면 발송은 워커에서 일어난다. 종전에는 코어 발송 로그 기록과 연결 리스너가 각각
  * 별도 큐 잡으로 밀려, 드라이버가 발송 프로세스에 남긴 refkey 표식(요청 단위 싱글턴)을 찾지 못해 연결이

@@ -1382,7 +1382,7 @@ export interface DynamicRendererProps {
      * 같은 객체다 — computed 스코프 물려받기 조건 (a) 가 이 동일성을 본다(engine-v1.74.0).
      */
     parentDataContext?: Record<string, any>;
-    /** 부모 렌더러의 렌더 환경 ref (engine-v1.75.2, #141) — 번역 문맥이 빠진 자식이 이어받는다 */
+    /** 부모 렌더러의 렌더 환경 ref (engine-v1.75.2, 공개 #141) — 번역 문맥이 빠진 자식이 이어받는다 */
     renderEnvRef?: { current: RenderEnvironment | null };
   };
 
@@ -1837,7 +1837,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
     // 이 렌더러의 렌더 환경(폭·번역·엔진·dispatcher·레지스트리·편집 모드)을 가리키는 안정 ref.
     // 셀 렌더 함수(renderItemChildren)·G7Core 래퍼·SlotContainer 는 React Context 를 못 읽으므로
-    // `__componentContext.renderEnvRef` 로 이 값을 받아 호스트 전역값 대신 쓴다(#141).
+    // `__componentContext.renderEnvRef` 로 이 값을 받아 호스트 전역값 대신 쓴다(공개 #141).
     // ref 라서 identity 가 불변이다 — componentContext 를 deps 로 쓰는 곳을 폭 변화로 다시 돌리지 않는다.
     // @since engine-v1.75.2
     const renderEnvRef = useRef<RenderEnvironment | null>(null);
@@ -2581,7 +2581,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     // useCallback으로 캐싱된 componentContext에서도 stateRef.current로 최신 상태 접근 가능
     latestLocalStateRef.current = extendedDataContext._local;
 
-    // 매 렌더링마다 렌더 환경을 기록 — 셀·슬롯이 호출 시점에 `.current` 를 읽는다(#141)
+    // 매 렌더링마다 렌더 환경을 기록 — 셀·슬롯이 호출 시점에 `.current` 를 읽는다(공개 #141)
     renderEnvRef.current = {
       responsiveWidth,
       translationContext,
@@ -2693,7 +2693,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       setState: handleSetState,
       stateRef: latestLocalStateRef,
       computedRef: latestComputedRef,
-      // 렌더 환경 ref (engine-v1.75.2, #141) — identity 불변이라 deps 에 넣지 않는다
+      // 렌더 환경 ref (engine-v1.75.2, 공개 #141) — identity 불변이라 deps 에 넣지 않는다
       renderEnvRef,
       // 격리된 상태 컨텍스트 (target: "isolated" setState 지원)
       isolatedContext,
@@ -2702,7 +2702,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // iteration 패턴 사용 시 데이터소스(order, active_carriers 등)에 접근 필요.
       // getEffectiveContext()에서 데이터소스 키를 최상위 컨텍스트에 병합함.
       parentDataContext: extendedDataContext,
-      // 이 노드의 편집기 경로(`data-editor-path` 와 같은 문자열, 편집 모드가 아니면 보통 없음) (#141).
+      // 이 노드의 편집기 경로(`data-editor-path` 와 같은 문자열, 편집 모드가 아니면 보통 없음) (공개 #141).
       // children 이 아닌 컴포넌트 배열 prop(Modal 의 `footer`)을 컴포넌트가 직접 그릴 때
       // `${componentPath}.props.footer.${index}` 를 그 렌더러에 넘겨 편집기가 고를 수 있게 한다.
       componentPath,
@@ -2890,7 +2890,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         getParentComponentContext: () => componentContext,
         translationContext: translationContext,
         registrationKey: slotRegistrationKey,
-        // 등록 렌더러의 렌더 환경 — SlotContainer 가 호스트 값 대신 이것으로 슬롯 내용을 그린다(#141)
+        // 등록 렌더러의 렌더 환경 — SlotContainer 가 호스트 값 대신 이것으로 슬롯 내용을 그린다(공개 #141)
         // @since engine-v1.75.2
         getRenderEnv: () => renderEnvRef.current,
         // 슬롯 노드의 원본 편집 경로 — 편집 캔버스에서 슬롯 내용에 편집 마커가 원본 경로로 붙는다

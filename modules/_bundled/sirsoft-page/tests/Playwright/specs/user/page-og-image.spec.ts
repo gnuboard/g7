@@ -4,7 +4,7 @@
  * 페이지는 og:image 를 공급할 경로가 전무했다. 본문에 이미지를 넣어 저장하면
  * 봇 경로(검색엔진 User-Agent)의 서버 렌더 HTML 에 og:image 메타가 절대 URL 로
  * 실리는지, 이미지 없는 페이지는 og:image 가 출력되지 않는지(사이트 기본값 미설정 시)
- * 확인한다. og:description 死키 정렬(#11)도 함께 실측한다.
+ * 확인한다. og:description 死키 정렬(공개 #11)도 함께 실측한다.
  *
  * 단위/통합: PageContentThumbnailTest(saving 추출), PageContentThumbnailResourceTest
  * (Resource 방출)가 담당하고, 이 spec 은 봇 경로 meta 렌더를 담당한다.
@@ -79,7 +79,7 @@ test.describe('페이지 og:image 본문 이미지 공급 (공개 #22)', () => {
         const pub = await api(request, pageManageToken, 'get', `${API}/pages/${slug}`);
         expect(pub.body?.data?.content_thumbnail_url).toBe('/favicon.ico');
 
-        // 봇 경로 서버 렌더 — og:image 절대 URL + og:description 정렬(#11)
+        // 봇 경로 서버 렌더 — og:image 절대 URL + og:description 정렬(공개 #11)
         // 봇 경로는 검색엔진 UA 로만 진입한다(`?_escaped_fragment_=` 는 봇 신호가 아니다)
         const bot = await request.get(`/page/${slug}`, {
             headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' },

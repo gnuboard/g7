@@ -94,7 +94,7 @@
           <responsive on="641-" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"/>
           <button data-ref="refresh_button" type="button" class="ecommerce-btn-icon ecommerce:shrink-0 ecommerce:whitespace-nowrap" aria-label="$t:sirsoft-ecommerce.common.refresh">
             <on type="click">
-              <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75). -->
+              <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (공개 #75). -->
               <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true">
                 <query/>
               </navigate>

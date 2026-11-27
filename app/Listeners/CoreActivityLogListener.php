@@ -87,7 +87,7 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.auth.after_login' => ['method' => 'handleAuthAfterLogin', 'priority' => 20],
             'core.auth.logout' => ['method' => 'handleAuthLogout', 'priority' => 20],
             // AuthService 가 실제로 발화하는 이름. 옛 이름(core.auth.register·forgot_password·reset_password)으로
-            // 구독해 세 사건의 로그가 한 번도 남지 않았다(#138 후속).
+            // 구독해 세 사건의 로그가 한 번도 남지 않았다(공개 #138 후속).
             'core.auth.after_register' => ['method' => 'handleAuthRegister', 'priority' => 20],
             // 두 번째 인자에 재설정 토큰이 든 URL 이 실린다 — 큐로 보내면 토큰이 작업 테이블에 한 부 더 저장되므로 동기 실행
             'core.auth.after_reset_password_request' => ['method' => 'handleAuthForgotPassword', 'priority' => 20, 'sync' => true],
@@ -413,7 +413,7 @@ class CoreActivityLogListener implements HookListenerInterface
     {
         $users = $this->userRepository->findManyByUuidsKeyed($uuids);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($snapshots, $status, $users, $uuids) {
                 foreach ($uuids as $uuid) {
@@ -452,7 +452,7 @@ class CoreActivityLogListener implements HookListenerInterface
     {
         $users = $this->userRepository->findManyByIdsKeyed($userIds);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($changes, $mode, $users) {
                 foreach ($changes as $change) {
@@ -1377,7 +1377,7 @@ class CoreActivityLogListener implements HookListenerInterface
     {
         $schedules = $this->scheduleRepository->findManyByIdsKeyed($ids);
 
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($ids, $isActive, $schedules, $snapshots) {
                 foreach ($ids as $id) {
@@ -1413,7 +1413,7 @@ class CoreActivityLogListener implements HookListenerInterface
      */
     public function handleScheduleAfterBulkDelete(array $ids, int $deletedCount, array $snapshots = []): void
     {
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($ids, $snapshots) {
                 foreach ($ids as $id) {
@@ -1478,7 +1478,7 @@ class CoreActivityLogListener implements HookListenerInterface
      */
     public function handleAttachmentAfterBulkDelete(string $identifier, int $count, array $ids = [], array $snapshots = []): void
     {
-        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (공개 #139)
         try {
             DB::transaction(function () use ($identifier, $ids, $snapshots) {
                 foreach ($ids as $id) {

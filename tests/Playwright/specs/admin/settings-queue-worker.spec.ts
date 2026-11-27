@@ -1,5 +1,5 @@
 /**
- * E2E: 환경설정 > 드라이버 — 「큐 워커」 구역 (#139)
+ * E2E: 환경설정 > 드라이버 — 「큐 워커」 구역 (공개 #139)
  *
  * 시나리오 매니페스트: tests/scenarios/queue-worker-registry.yaml — 마킹은 각 테스트의
  * scenario(k=v 조합)·effects 주석이 담당한다.
@@ -29,7 +29,7 @@ async function chooseDatabaseDriver(page: import('@playwright/test').Page): Prom
 
 // @scenario screen=driver_sync
 // @effects queue_worker_ui_hidden_for_sync, status_endpoint_contract
-test('@smoke #139 - 드라이버 탭에 큐 워커 구역이 마운트되고 상태 API 를 부른다', async ({ page }) => {
+test('@smoke 공개 #139 - 드라이버 탭에 큐 워커 구역이 마운트되고 상태 API 를 부른다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 

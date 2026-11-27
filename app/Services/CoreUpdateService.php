@@ -1669,7 +1669,7 @@ class CoreUpdateService
      *                                              `CoreBackupHelper::computeApplyList()` 산출물. null 이면 증분 불가로 판단해 전체 덮어쓰기.
      * @param  array<int, string>  $skipPaths  이번 업데이트가 배치하지 않는 경로(base 상대, 예 `plugins/_bundled/{id}`).
      *                                         증분·prune·백업 부재 세 모드 모두에서 복사와 orphan 정리를 건너뛴다 —
-     *                                         설치되지 않았고 디스크에도 없는 공식 번들을 새로 깔지 않기 위함(#146).
+     *                                         설치되지 않았고 디스크에도 없는 공식 번들을 새로 깔지 않기 위함(공개 #146).
      * @param  array<string, string>|null  $shippedFiles  이번 배포본의 번들 출하 목록(경로 → md5, `BundledShippedManifest`). 주면 증분 모드에서
      *                                                    사이트의 직전 목록에는 있고 이 목록에는 없는 번들 파일을 지우고(운영자가 고친 파일·확장 클래스
      *                                                    파일은 남김) 이 목록을 기록한다. null 이면 종전 동작.
@@ -1744,7 +1744,7 @@ class CoreUpdateService
 
                 // `public` 타깃 prune 시 `public/storage` symlink 를 orphan 삭제에서 보호한다 —
                 // 릴리즈 소스에는 런타임 symlink 가 없으므로 orphan 으로 판정되어 삭제되면
-                // 업로드 파일이 404 되는 결함(#43). 다른 타깃은 빈 배열이라 영향 없음.
+                // 업로드 파일이 404 되는 결함(공개 #43). 다른 타깃은 빈 배열이라 영향 없음.
                 $preserveLinkPaths = $normalizedTarget === 'public' ? ['storage'] : [];
 
                 // `deploy/**` 는 운영자가 **제자리에서 고쳐 쓰는** 서버 설정 조각이다 (nginx 는

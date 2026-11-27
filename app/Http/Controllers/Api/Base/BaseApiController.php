@@ -1054,7 +1054,7 @@ abstract class BaseApiController extends Controller
         $etag = $this->generateETag($data);
 
         // 환경별 캐싱 정책 — 프로덕션 외 환경은 no-cache 로 파일/데이터 수정 즉시 반영
-        // (`fileResponse`/`cachedJsonResponse` 와 동일 사상, #122 작업 D)
+        // (`fileResponse`/`cachedJsonResponse` 와 동일 사상, 공개 #122 작업 D)
         $cacheControl = app()->environment('production')
             ? "public, max-age={$maxAge}"
             : 'no-cache';

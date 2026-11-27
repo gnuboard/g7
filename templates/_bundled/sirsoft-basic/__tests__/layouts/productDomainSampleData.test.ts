@@ -42,7 +42,7 @@ const SAMPLE_PATH = path.join(
 const sample = JSON.parse(fs.readFileSync(SAMPLE_PATH, 'utf-8'));
 const byId = sample.byDataSourceId as Record<string, any>;
 
-/** 스텁 leaf 검출 — DoD #1 (스텁 0) */
+/** 스텁 leaf 검출 — DoD 1 (스텁 0) */
 function hasStub(node: unknown): boolean {
   if (node === '샘플') return true;
   if (Array.isArray(node)) {
@@ -56,7 +56,7 @@ function hasStub(node: unknown): boolean {
 }
 
 describe('상품 도메인 편집기 샘플 — sirsoft-basic 템플릿', () => {
-  describe('DoD #1 — 스텁 0', () => {
+  describe('DoD 1 — 스텁 0', () => {
     for (const id of [
       'product',
       'products',

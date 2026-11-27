@@ -1,6 +1,6 @@
 /**
  * @file board-form-type-renderer.test.tsx
- * @description 게시글 작성/수정 - _type_renderer 유형별 분기 렌더링 테스트 (이슈 #153)
+ * @description 게시글 작성/수정 - _type_renderer 유형별 분기 렌더링 테스트 (이슈 공개 #153)
  *
  * 검증 항목:
  * 1. basic 유형: 폼 영역 렌더링

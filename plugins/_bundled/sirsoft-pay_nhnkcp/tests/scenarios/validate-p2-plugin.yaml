@@ -6,7 +6,7 @@ feature: nhnkcp_validate_p2_claim_payment_hardening
 description: |
   브랜치 검증이 찾은 결제 플러그인 결함 중 NHN KCP 몫.
 
-  - #8 클라이언트 승인 API 경로(`claim-payments/{no}/approve` → `respondApprove`)는 서버 콜백과 같은
+  - 8 클라이언트 승인 API 경로(`claim-payments/{no}/approve` → `respondApprove`)는 서버 콜백과 같은
     `claim_payment.approve` 필터를 타지만, 승인 뒤 거절의 보상(취소)은 서버 콜백의 클로저에만 있었다.
     리스너가 ① 결제창 금액(good_mny)을 승인 **전에** 청구액과 대조하고(낡은 결제창 거절, PG 호출 없음)
     ② KCP 응답이 금액을 싣고 왔는데 청구액과 다르면 승인분을 취소한 뒤 거절한다 — 어느 경로로

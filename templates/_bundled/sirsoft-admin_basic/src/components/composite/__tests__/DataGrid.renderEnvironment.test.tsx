@@ -1,5 +1,5 @@
 /**
- * DataGrid — 렌더 환경 전달 잠금 (이슈 #141)
+ * DataGrid — 렌더 환경 전달 잠금 (이슈 공개 #141)
  *
  * DataGrid 는 셀 렌더 6경로(셀·서브행·푸터 셀·푸터 텍스트·모바일 카드·확장 행) 모두 `__componentContext`
  * 를 넘긴다. 코어 래퍼가 그 안의 `renderEnvRef.current`(미리보기 폭·언어·dispatcher·레지스트리·편집 모드)를
@@ -11,7 +11,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { DataGrid, DataGridColumn } from '../DataGrid';
 
-describe('DataGrid — 렌더 환경 전달 6경로 잠금 (#141)', () => {
+describe('DataGrid — 렌더 환경 전달 6경로 잠금 (공개 #141)', () => {
   let originalG7Core: any;
   const ctx = { state: {}, setState: vi.fn(), renderEnvRef: { current: { responsiveWidth: 390 } } };
 

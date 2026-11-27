@@ -196,7 +196,7 @@ class TemplateRepository implements TemplateRepositoryInterface
         $templateManager = app(TemplateManagerInterface::class);
 
         // 콘솔 부팅은 템플릿 로딩을 건너뛴다 — 불러오지 않으면 getTemplate() 이 null 이라 역의존성이 비고,
-        // 크론·큐 워커가 템플릿이 쓰는 확장을 그대로 자동 비활성화했다(#145 F4). 이미 불러왔으면 비용 없음.
+        // 크론·큐 워커가 템플릿이 쓰는 확장을 그대로 자동 비활성화했다(공개 #145 F4). 이미 불러왔으면 비용 없음.
         $templateManager->ensureLoaded();
 
         return $activeTemplates->filter(function (Template $template) use ($templateManager, $moduleIdentifier) {
@@ -237,7 +237,7 @@ class TemplateRepository implements TemplateRepositoryInterface
         $templateManager = app(TemplateManagerInterface::class);
 
         // 콘솔 부팅은 템플릿 로딩을 건너뛴다 — 불러오지 않으면 getTemplate() 이 null 이라 역의존성이 비고,
-        // 크론·큐 워커가 템플릿이 쓰는 확장을 그대로 자동 비활성화했다(#145 F4). 이미 불러왔으면 비용 없음.
+        // 크론·큐 워커가 템플릿이 쓰는 확장을 그대로 자동 비활성화했다(공개 #145 F4). 이미 불러왔으면 비용 없음.
         $templateManager->ensureLoaded();
 
         return $activeTemplates->filter(function (Template $template) use ($templateManager, $pluginIdentifier) {
@@ -277,7 +277,7 @@ class TemplateRepository implements TemplateRepositoryInterface
         }
 
         $templateManager = app(TemplateManagerInterface::class);
-        // 콘솔 부팅은 템플릿 로딩을 건너뛴다 — 의존 역조회와 같은 이유로 먼저 불러온다(#145 F4)
+        // 콘솔 부팅은 템플릿 로딩을 건너뛴다 — 의존 역조회와 같은 이유로 먼저 불러온다(공개 #145 F4)
         $templateManager->ensureLoaded();
 
         return $activeTemplates->filter(function (Template $template) use ($templateManager, $pluralType, $identifier) {

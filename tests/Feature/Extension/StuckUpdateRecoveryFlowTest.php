@@ -185,7 +185,7 @@ class StuckUpdateRecoveryFlowTest extends TestCase
     }
 
     /**
-     * 활성화는 작업 잠금을 먼저 잡고, 그 잠금으로 멈춘 업데이트를 판정·정리한다 — 정리 중 다른 프로세스가 끼어들지 못한다(#161 D2).
+     * 활성화는 작업 잠금을 먼저 잡고, 그 잠금으로 멈춘 업데이트를 판정·정리한다 — 정리 중 다른 프로세스가 끼어들지 못한다(공개 #161 D2).
      *
      * @scenario entry_point=activate
      *
@@ -222,7 +222,7 @@ class StuckUpdateRecoveryFlowTest extends TestCase
 
     /**
      * 잠금 저장소가 오류를 내도 확장 목록은 깨지지 않고, 멈춘 업데이트로 보이는 행도 `stuck_update: false` 다 — 판정 불가면 정리 단추를
-     * 보이지 않는다(#161 S1, T10).
+     * 보이지 않는다(공개 #161 S1, T10).
      *
      * @scenario entry_point=listing
      *

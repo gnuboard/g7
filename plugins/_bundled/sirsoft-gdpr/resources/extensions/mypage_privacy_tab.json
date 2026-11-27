@@ -529,7 +529,7 @@
                             ]
                         },
                         {
-                            "comment": "정책 갱신 안내 (#22 옵션 C) — 현재 정책 버전 노출 + 전체 다시 동의 액션. 필수 쿠키는 ePrivacy Art.5(3) 면제로 갱신 대상 아님을 hint 로 명시.",
+                            "comment": "정책 갱신 안내 (22 옵션 C) — 현재 정책 버전 노출 + 전체 다시 동의 액션. 필수 쿠키는 ePrivacy Art.5(3) 면제로 갱신 대상 아님을 hint 로 명시.",
                             "id": "gdpr_needs_renewal_banner",
                             "type": "basic",
                             "name": "Div",
@@ -567,7 +567,7 @@
                                             },
                                             "children": [
                                                 {
-                                                    "comment": "현재 정책 버전을 노출하여 사용자가 어느 버전에 동의하는지 인지 (#23 — informed consent). G7 표준 $t:key|param={{value}} 토큰 사용 — lang 파일의 {version} placeholder 가 치환됨.",
+                                                    "comment": "현재 정책 버전을 노출하여 사용자가 어느 버전에 동의하는지 인지 (23 — informed consent). G7 표준 $t:key|param={{value}} 토큰 사용 — lang 파일의 {version} placeholder 가 치환됨.",
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
@@ -601,7 +601,7 @@
                                     },
                                     "children": [
                                         {
-                                            "comment": "전체 항목 다시 동의 (#19) — 활성 선택형 동의를 새 버전으로 일괄 grant (재동의 의사 표명). isRenewingAll 플래그로 클릭 직후 spinner 노출 + 중복 클릭 차단.",
+                                            "comment": "전체 항목 다시 동의 — 활성 선택형 동의를 새 버전으로 일괄 grant (재동의 의사 표명). isRenewingAll 플래그로 클릭 직후 spinner 노출 + 중복 클릭 차단.",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [

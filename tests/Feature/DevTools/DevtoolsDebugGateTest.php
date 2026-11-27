@@ -23,7 +23,7 @@ use Tests\TestCase;
  *   2. app.debug=false + debug.mode=false → 403 (500 이 아니어야 한다)
  *   3. app.debug=true                     → 200 (환경설정 조회 없이 통과)
  *
- * 게이트 적용 범위 (이슈 #128):
+ * 게이트 적용 범위 (이슈 공개 #128):
  *   게이트는 원래 POST 3종의 **핸들러 안**에만 있었다. GET 4종과 `DELETE clear` 는 게이트가
  *   없었고, 그중 `clear` 는 `File::cleanDirectory(storage/debug-dump)` 를 수행하는 파괴적
  *   엔드포인트다 — production·APP_DEBUG=false 에서도 미인증 요청이 200 으로 통과했다.

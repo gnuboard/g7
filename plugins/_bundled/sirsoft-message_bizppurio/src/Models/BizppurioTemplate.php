@@ -107,7 +107,7 @@ class BizppurioTemplate extends Model
      * 수신자 로케일의 SMS 본문을 반환합니다.
      *
      * sms_body 는 다국어 맵이다. 코어 NotificationContentBehavior::getLocalizedBody() 와
-     * 동일한 해석 규칙을 쓴다 — 해당 로케일이 없거나 비면 사이트 기본 언어 → 영어(#148, `LocalizedValue`),
+     * 동일한 해석 규칙을 쓴다 — 해당 로케일이 없거나 비면 사이트 기본 언어 → 영어(공개 #148, `LocalizedValue`),
      * 그것도 없으면 빈 문자열(그 언어 수신자에게는 보내지 않는다).
      * 알림톡 content 가 단일 언어인 것은 카카오 제약 때문이며 SMS 에는 그 제약이 없다.
      *

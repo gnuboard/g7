@@ -505,7 +505,7 @@ describe('저장된 배송지 카드는 키보드로 고를 수 있는 단추다
 });
 
 // ── 창을 여는 트리거: _shipping.json 의 「배송지 변경」 단추 ──
-// 매니페스트 member-order-change-address.yaml 이 선언한 트리거 효과 둘은 #55 이후 어느 시험도 재지 않았다.
+// 매니페스트 member-order-change-address.yaml 이 선언한 트리거 효과 둘은 이후 어느 시험도 재지 않았다.
 describe('배송지 변경 트리거 (_shipping.json)', () => {
   const shipping: Node = JSON.parse(
     fs.readFileSync(path.resolve(__dirname, '../../layouts/partials/mypage/orders/_shipping.json'), 'utf8')

@@ -1,5 +1,5 @@
 /**
- * renderItemChildren — 렌더 환경 통로 회귀 테스트 (이슈 #141)
+ * renderItemChildren — 렌더 환경 통로 회귀 테스트 (이슈 공개 #141)
  *
  * 셀 렌더 함수는 React 컴포넌트가 아니어서 ResponsiveProvider 의 미리보기 폭을 읽지 못하고
  * 전역 싱글톤(브라우저 창 폭)으로 `responsive` 분기를 골랐다. 같은 원인으로 셀이 직접 푸는

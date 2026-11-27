@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * 큐 관리 FormRequest 검증 규칙 테스트 (#17 — 목록 쿼리 키)
+ * 큐 관리 FormRequest 검증 규칙 테스트 (— 목록 쿼리 키)
  */
 class QueueRequestTest extends TestCase
 {

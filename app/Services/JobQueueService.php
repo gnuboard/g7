@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * 큐 운영 서비스 — 대기·실패·처리 기록 조회, 실패 작업 재시도·삭제, 보관 기간 정리 (#17)
+ * 큐 운영 서비스 — 대기·실패·처리 기록 조회, 실패 작업 재시도·삭제, 보관 기간 정리
  *
  * 재시도는 `Artisan::call('queue:retry')` 를 쓰지 않고 프레임워크 RetryCommand 의 절차를 그대로 옮긴다
  * (failer 조회 → JobRetryRequested → attempts·retryUntil 초기화 → pushRaw → forget). 다른 점 둘:

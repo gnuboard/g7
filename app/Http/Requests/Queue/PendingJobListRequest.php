@@ -9,7 +9,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * 큐 대기 작업 목록 조회 요청 (#17)
+ * 큐 대기 작업 목록 조회 요청
  *
  * 쿼리 키: search_field(all,job,uuid)·search_keyword·queue·connection·per_page·sort_by·sort_order.
  */

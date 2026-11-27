@@ -1,5 +1,5 @@
 /**
- * AuthManager — 로그인 직후 회원 언어가 꺼진 언어일 때 (engine-v1.81.0, #148 D8)
+ * AuthManager — 로그인 직후 회원 언어가 꺼진 언어일 때 (engine-v1.81.0, 공개 #148 D8)
  *
  * 회원 언어(users.language)가 언어팩을 끈 언어(`fil`)면 종전에는 그 값을 그대로 `g7_locale` 에 쓰고
  * `changeLocale('fil')` 을 불러 화면이 영어로 떨어졌다. 지원 목록에 없으면 사이트 기본 언어로 열고,

@@ -10,7 +10,7 @@ use Illuminate\Queue\SerializesModels;
 use RuntimeException;
 
 /**
- * 큐 관리 테스트용 탐침 작업 (#17)
+ * 큐 관리 테스트용 탐침 작업
  *
  * 실제 직렬화·워커 경로를 그대로 타도록 진짜 큐 작업으로 둔다. `$shouldFail` 로 실패를 켜고, `$released` 로
  * 재시도 대기(release)를 켠다. 처리 횟수는 `$handled` 로 센다. 테스트마다 {@see self::reset()} 으로 초기화한다.

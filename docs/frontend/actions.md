@@ -34,7 +34,7 @@
 1. [개요](#개요)
 2. [액션 정의 구조](#액션-정의-구조)
 3. [내장 핸들러 목록](#내장-핸들러-목록)
-4. [이벤트 전파 제어 — 액션 키 `stopPropagation`](#이벤트-전파-제어--액션-키-stoppropagation-engine-v1550)
+4. [이벤트 전파 제어 — 액션 키 `stopPropagation`](#이벤트-전파-제어--액션-키-stoppropagation-engine-v1680)
 5. [Debounce 옵션](#debounce-옵션)
 6. [주의사항](#주의사항)
 
@@ -88,7 +88,7 @@
 | `onError` | array | ❌ | 실패 시 실행할 후속 액션 (단일 또는 배열) |
 | `confirm` | string | ❌ | 실행 전 확인 대화상자 메시지 |
 | `key` | string | ❌ | 키보드 이벤트 필터 (Enter, Escape 등) |
-| `stopPropagation` | boolean | ❌ | 진입점 액션 한정 이벤트 전파 차단 (engine-v1.68.0+). 핸들러가 아니라 **액션 키** — 상세: [이벤트 전파 제어](#이벤트-전파-제어--액션-키-stoppropagation-engine-v1550) |
+| `stopPropagation` | boolean | ❌ | 진입점 액션 한정 이벤트 전파 차단 (engine-v1.68.0+). 핸들러가 아니라 **액션 키** — 상세: [이벤트 전파 제어](#이벤트-전파-제어--액션-키-stoppropagation-engine-v1680) |
 | `preventDefault` | boolean | ❌ | 진입점 액션 한정 기본 동작 차단 방식 (engine-v1.80.1+). 생략 = 자동(실제 주소 링크를 수정키·새 창으로 누르면 막지도 실행하지도 않음) · `true` = 언제나 막고 실행 · `false` = 막지 않고 실행 — 상세: [기본 동작 제어](#기본-동작-제어--액션-키-preventdefault-engine-v1801) |
 | `cases` | object | ❌ | switch 핸들러용 케이스별 액션 정의 |
 | `if` | string | ❌ | 조건부 실행 (`{{expression}}` 형식, truthy일 때만 실행) |

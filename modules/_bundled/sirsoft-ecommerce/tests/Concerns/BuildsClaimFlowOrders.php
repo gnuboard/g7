@@ -255,7 +255,7 @@ trait BuildsClaimFlowOrders
                 'success' => $success,
                 'transaction_id' => $success ? 'TXN-'.$payment->payment_number : null,
                 // 실제 PG 처럼 승인 금액을 돌려준다 — 서버는 금액을 대조할 수 없는 승인을 확정하지
-                // 않는다(validate P2 #11). 불일치를 재는 테스트는 `$overrides` 로 덮는다.
+                // 않는다(validate P2 11). 불일치를 재는 테스트는 `$overrides` 로 덮는다.
                 'paid_amount' => $success
                     ? app(ClaimPaymentService::class)->resolvePaymentCharge($payment)['minor_unit_amount'] ?? null
                     : null,

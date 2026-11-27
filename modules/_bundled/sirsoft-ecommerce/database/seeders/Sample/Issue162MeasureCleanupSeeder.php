@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Services\ContentMediaService;
 
 /**
- * #162 브라우저 실측 이커머스 데이터 정리 시더 (CLI + G7_PLAYWRIGHT_BYPASS=1 전용)
+ * 공개 #162 브라우저 실측 이커머스 데이터 정리 시더 (CLI + G7_PLAYWRIGHT_BYPASS=1 전용)
  *
  * 표지 상품(`Issue162MeasureSeeder::PRODUCT_CODE`)과 그 상품이 든 주문만 지운다. 주문을 지우면 주문 옵션·결제·주소·배송
  * 행이 외래키로 함께 지워지고, 상품을 지우면 옵션·카테고리 연결·장바구니가 함께 지워진다. 그 상품의 본문 미디어(외래키가

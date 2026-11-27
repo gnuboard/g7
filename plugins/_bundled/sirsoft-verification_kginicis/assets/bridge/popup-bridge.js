@@ -6,7 +6,7 @@
  *
  * 서버 값은 직전의 비실행 데이터 블록 `#bridge-data` 에서 읽는다 — {siteOrigin, homeUrl, payload}.
  * 종전에는 페이지 인라인 <script> 였다 — 사이트가 script-src 'self' 를 걸면 실행되지 않아 인증 결과가
- * 전달되지 않고 팝업도 닫히지 않았다(#158). 손작성 ES5, 빌드하지 않는다.
+ * 전달되지 않고 팝업도 닫히지 않았다(공개 #158). 손작성 ES5, 빌드하지 않는다.
  *
  * sessionStorage 키는 코어 `IDENTITY_REDIRECT_STASH_KEY` 상수와 같아야 launcher 가 stash 한 값을 복원한다.
  */

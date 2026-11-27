@@ -443,7 +443,7 @@ class TemplateManager implements TemplateManagerInterface
 
         // 배열인 경우 로케일에 맞는 값 반환
         if (is_array($value)) {
-            // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 번째 값 → 빈 문자열 (#148)
+            // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 번째 값 → 빈 문자열 (공개 #148)
             return LocalizedValue::pick($value, $locale) ?? '';
         }
 
@@ -691,10 +691,10 @@ class TemplateManager implements TemplateManagerInterface
     public function installTemplate(string $templateName, ?\Closure $onProgress = null, bool $force = false): bool
     {
         // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(공개 #161).
         $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'install');
 
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, 공개 #138 후속)
         HookManager::doAction('core.templates.before_install', $templateName);
 
         // identifier 형식 검증 (내부 호출 방어)
@@ -826,7 +826,7 @@ class TemplateManager implements TemplateManagerInterface
             throw $e;
         }
 
-        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). **DB 트랜잭션 밖**에서 발화한다: 언어팩 동기화
+        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(공개 #138). **DB 트랜잭션 밖**에서 발화한다: 언어팩 동기화
         // 구독은 동기 실행이라, 트랜잭션 안이면 커밋 실패 시 언어팩 레코드만 롤백되고 파일 I/O 는 남는다.
         // 설치 롤백 try 밖이기도 해서, 리스너 예외가 방금 끝난 설치를 되돌리지 않는다.
         app(ExtensionIntegrityRecorder::class)->recordInstallSource('template', $templateName, $integritySource);
@@ -848,10 +848,10 @@ class TemplateManager implements TemplateManagerInterface
     public function activateTemplate(string $templateName, bool $force = false): array
     {
         // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(공개 #161).
         $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'activate');
 
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, 공개 #138 후속)
         HookManager::doAction('core.templates.before_activate', $templateName);
 
         $template = $this->getTemplate($templateName);
@@ -874,7 +874,7 @@ class TemplateManager implements TemplateManagerInterface
         StuckUpdateRecovery::assertNotInProgress($templateName, $templateRecord);
 
         // 필터 훅 — 직전 훅 뒤에 돈다(before → filter 순서). 직전 훅과 함께 Manager 로 옮겨 CLI·어드민 UI 공통으로
-        // 한 번 발화한다(#138 후속 — 설계 결정). 결과 값은 종전처럼 쓰지 않는다(활성화 상태는 아래에서 정한다).
+        // 한 번 발화한다(공개 #138 후속 — 설계 결정). 결과 값은 종전처럼 쓰지 않는다(활성화 상태는 아래에서 정한다).
         HookManager::applyFilters('core.templates.filter_activate_data', ['status' => ExtensionStatus::Active->value], $templateRecord);
 
         // 이미 활성화된 템플릿인지 확인
@@ -901,7 +901,7 @@ class TemplateManager implements TemplateManagerInterface
         );
 
         // 의존성 검증: 필요한 모듈/플러그인이 설치·활성이고 요구 버전을 충족하는지 확인한다. 종전 사본은 버전 제약을 버려
-        // 버전 미달 의존 위에서도 활성화가 통과하고, 직후 런타임 미들웨어가 같은 미달로 화면 전체를 503 으로 내렸다(#152).
+        // 버전 미달 의존 위에서도 활성화가 통과하고, 직후 런타임 미들웨어가 같은 미달로 화면 전체를 503 으로 내렸다(공개 #152).
         // 판정은 설치·런타임과 같은 원천(DependencyEnricher)을 쓴다 — 사유: not_installed·inactive·version_mismatch
         $unmet = $this->collectUnmetDependencies($template['dependencies'] ?? []);
         $missingModules = $unmet['modules'];
@@ -983,7 +983,7 @@ class TemplateManager implements TemplateManagerInterface
         // @deprecated 'core.templates.activated' — identifier 1개만 전달하는 구훅. 정규 훅은 after_activate.
         HookManager::doAction('core.templates.activated', $templateName);
 
-        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). 템플릿만 계약이 다르다: 식별자 없이
+        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(공개 #138). 템플릿만 계약이 다르다: 식별자 없이
         // 정보 배열 1개를 넘긴다(구독자 handleTemplateAfterActivate(array)). 정보가 없어도
         // 활동 로그에 템플릿 이름이 남도록 빈 배열 대신 identifier 를 담아 넘긴다.
         HookManager::doAction('core.templates.after_activate', $this->getTemplateInfo($templateName) ?? ['identifier' => $templateName]);
@@ -1028,10 +1028,10 @@ class TemplateManager implements TemplateManagerInterface
         ?string &$failureReason = null,
     ): bool {
         // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(공개 #161).
         $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'deactivate');
 
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, 공개 #138 후속)
         HookManager::doAction('core.templates.before_deactivate', $templateName);
 
         $failureReason = null;
@@ -1069,7 +1069,7 @@ class TemplateManager implements TemplateManagerInterface
         // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
         $this->incrementExtensionCacheVersion();
 
-        // 요구사항 #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
+        // 요구사항 6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
         HookManager::doAction('core.templates.after_deactivate', $templateName);
 
         // 부팅 중 자동 비활성화에서도 불리므로 언어팩 번역 등록 뒤에 남긴다
@@ -1100,10 +1100,10 @@ class TemplateManager implements TemplateManagerInterface
         bool $deleteData = false,
     ): bool {
         // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(공개 #161).
         $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'uninstall');
 
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, 공개 #138 후속)
         HookManager::doAction('core.templates.before_uninstall', $templateName, $deleteData);
 
         $preservedBackups = [];
@@ -1197,7 +1197,7 @@ class TemplateManager implements TemplateManagerInterface
                 }
             }
 
-            // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138)
+            // 정규 훅 — CLI·어드민 UI 공통 단일 발화(공개 #138)
             HookManager::doAction('core.templates.after_uninstall', $templateName, $templateInfo, $deleteData);
         }
 
@@ -1842,7 +1842,7 @@ class TemplateManager implements TemplateManagerInterface
             'template'
         );
 
-        // 활성화·런타임과 같은 판정식(DependencyEnricher) — 목록형·빈 제약은 '*', 꺼진 확장은 미충족(#152)
+        // 활성화·런타임과 같은 판정식(DependencyEnricher) — 목록형·빈 제약은 '*', 꺼진 확장은 미충족(공개 #152)
         $unmet = $this->collectUnmetDependencies($template['dependencies'] ?? []);
         $unmetDependencies = [];
 
@@ -3172,7 +3172,7 @@ class TemplateManager implements TemplateManagerInterface
         }
 
         // 설치·활성화와 같은 판정식(DependencyEnricher). 런타임만 업데이트 중(updating)인 확장을 활성으로 본다 —
-        // 의존 모듈을 업데이트하는 잠깐 동안 사이트 전체가 503 이 되지 않게 한다(#152 D2).
+        // 의존 모듈을 업데이트하는 잠깐 동안 사이트 전체가 503 이 되지 않게 한다(공개 #152 D2).
         $moduleStatuses = [];
         $pluginStatuses = [];
         $allMet = true;
@@ -3808,12 +3808,12 @@ class TemplateManager implements TemplateManagerInterface
     {
         $integrity ??= PackageIntegrityOptions::none();
         // 같은 템플릿의 업데이트는 한 번에 하나만 — 상태 가드(status=updating)가 서기 전 구간에 들어온 두 번째 요청이
-        // 함께 통과해 업데이트가 두 번 수행됐다(#138 실측 ② 버튼 더블클릭). 직전 훅보다 먼저 잠그고, 이 지역 변수가
+        // 함께 통과해 업데이트가 두 번 수행됐다(공개 #138 실측 ② 버튼 더블클릭). 직전 훅보다 먼저 잠그고, 이 지역 변수가
         // 메서드를 빠져나갈 때(정상 반환·예외 모두) 잠금이 풀린다.
         $operationLock = ExtensionOperationLock::acquire('template', $identifier);
 
         // 진행 중 하트비트 — 단계마다(30초 간격) 잠금을 늘리고, `updating` 기록 뒤에는 행 `updated_at` 도 갱신한다. 10분 넘게
-        // 걸리는 업데이트가 잠금 만료·`updated_at` 경과로 「멈춘 업데이트」로 오판돼 활성화·정리가 되돌리는 일을 막는다(#161 D4).
+        // 걸리는 업데이트가 잠금 만료·`updated_at` 경과로 「멈춘 업데이트」로 오판돼 활성화·정리가 되돌리는 일을 막는다(공개 #161 D4).
         $statusUpdating = false;
         $touch = function () use (&$statusUpdating, $identifier): void {
             if ($statusUpdating) {
@@ -3822,7 +3822,7 @@ class TemplateManager implements TemplateManagerInterface
         };
         $onProgress = $operationLock->wrapProgress($onProgress, $touch);
 
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
+        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, 공개 #138 후속)
         HookManager::doAction('core.templates.before_version_update', $identifier);
 
         $record = $this->templateRepository->findByIdentifier($identifier);
@@ -4136,7 +4136,7 @@ class TemplateManager implements TemplateManagerInterface
             $this->clearAllTemplateLanguageCaches();
             $this->clearAllTemplateRoutesCaches();
             // 모듈(`updateModule`)·플러그인(`updatePlugin`)과 동형으로 **무조건** 올린다 —
-            // lang/routes/components/dist 만 바뀐 릴리스도 정적 게시본(#122)을 갱신해야 한다.
+            // lang/routes/components/dist 만 바뀐 릴리스도 정적 게시본(공개 #122)을 갱신해야 한다.
             // 종전에는 활성 템플릿이면 `refreshTemplateLayouts()` 의 조건부 bump(레이아웃
             // 변경 건수 > 0)에 위임했는데, 그 조건은 게시 입력 중 레이아웃 축만 보므로
             // 레이아웃이 그대로인 릴리스는 게시본이 immutable 로 stale 하게 남았다.
@@ -4275,7 +4275,7 @@ class TemplateManager implements TemplateManagerInterface
             );
         }
 
-        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). 업데이트 롤백(백업 복원) try 밖에서 발화해,
+        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(공개 #138). 업데이트 롤백(백업 복원) try 밖에서 발화해,
         // 리스너 예외가 이미 끝난 업데이트를 되돌리는 경로로 들어가지 않게 한다.
         // 이름이 after_version_update 인 이유: after_update 는 템플릿 레코드 수정 훅이다(동명이인 유지).
         HookManager::doAction('core.templates.after_version_update', $identifier, $result, $this->getTemplateInfo($identifier) ?? []);

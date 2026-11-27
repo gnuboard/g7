@@ -67,7 +67,7 @@ async function save(
   return payload;
 }
 
-test.describe('게시판 환경설정 — 삭제 첨부 영구 정리 (#115)', () => {
+test.describe('게시판 환경설정 — 삭제 첨부 영구 정리 (공개 #115)', () => {
   /**
    * @effects board_settings_purge_toggle_default_off
    */

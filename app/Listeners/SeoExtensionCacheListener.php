@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Log;
  * 전체 캐시 클리어로 안전하게 처리합니다.
  *
  * 비활성화·제거도 구독한다 — SeoMiddleware 는 캐시 적중 시 확장 활성 여부를 보지 않으므로, 끈 게시판의
- * 페이지가 캐시에 남으면 검색 봇에게 계속 나간다(#138 후속). 캐시 정리는 즉시 반영돼야 하는 부수효과라
+ * 페이지가 캐시에 남으면 검색 봇에게 계속 나간다(공개 #138 후속). 캐시 정리는 즉시 반영돼야 하는 부수효과라
  * 동기 실행이다 — 큐로 가면 워커가 없는 사이트에서는 영영 비워지지 않는다.
  */
 class SeoExtensionCacheListener implements HookListenerInterface

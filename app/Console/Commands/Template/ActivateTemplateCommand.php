@@ -95,7 +95,7 @@ class ActivateTemplateCommand extends Command
 
                 $this->line('');
                 $this->info(__('templates.commands.activate.force_hint'));
-                // 강제로 켜면 조건을 맞출 때까지 그 템플릿의 화면이 503 이 된다 — 관리자 템플릿이면 이 명령으로만 되돌릴 수 있다(#152)
+                // 강제로 켜면 조건을 맞출 때까지 그 템플릿의 화면이 503 이 된다 — 관리자 템플릿이면 이 명령으로만 되돌릴 수 있다(공개 #152)
                 $this->warn(($result['template_type'] ?? $template->type) === 'admin'
                     ? __('templates.commands.activate.force_503_hint_admin', ['identifier' => $result['current_active_identifier'] ?? $previousActive?->identifier ?? '<identifier>'])
                     : __('templates.commands.activate.force_503_hint_user'));

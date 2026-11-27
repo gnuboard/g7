@@ -128,7 +128,7 @@ class ExtensionInstallPreviewBuilder
             $status = ! $isInstalled ? 'not_installed' : ($isActive ? 'active' : 'inactive');
             $canSelect = $type !== 'template' && $this->authorizer->canSelectDependency($type, $isInstalled);
 
-            // 연동 대상 자신의 필수 의존(#153 D5) — 고르면 함께 먼저 설치·활성화된다. 계획을 세울 수 없거나(없음·버전 미달·순환)
+            // 연동 대상 자신의 필수 의존(공개 #153 D5) — 고르면 함께 먼저 설치·활성화된다. 계획을 세울 수 없거나(없음·버전 미달·순환)
             // 필요한 확장을 설치할 권한이 없으면 이 연동은 고를 수 없다.
             ['requires' => $requires, 'blocked_reason' => $blockedReason, 'blocked_by_permission' => $blockedByPermission]
                 = $canSelect && $status !== 'active'
@@ -237,7 +237,7 @@ class ExtensionInstallPreviewBuilder
             $isInstalled = ! empty($dep['installed_version']);
             $isMet = (bool) ($dep['is_met'] ?? false);
             $canSelect = $this->authorizer->canSelectDependency((string) ($dep['type'] ?? 'module'), $isInstalled);
-            // 설치됐지만 판이 요구에 못 미치면 함께 설치·활성화로 풀 수 없다 — 선택하게 두면 건너뛴 뒤 본 설치가 실패한다(#152).
+            // 설치됐지만 판이 요구에 못 미치면 함께 설치·활성화로 풀 수 없다 — 선택하게 두면 건너뛴 뒤 본 설치가 실패한다(공개 #152).
             // 의존 확장을 먼저 업데이트해야 하므로 고를 수 없게 막고 이유를 싣는다(설치 창이 「버전 불일치」 배지로 보인다)
             $versionBlocked = ! $isMet && $isInstalled
                 && ! DependencyEnricher::checkVersionConstraint((string) $dep['installed_version'], $dep['required_version'] ?? null);

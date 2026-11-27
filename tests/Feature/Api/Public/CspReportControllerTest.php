@@ -9,7 +9,7 @@ use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
- * CSP 위반 보고 수신 `POST /api/csp-report` (#158)
+ * CSP 위반 보고 수신 `POST /api/csp-report` (공개 #158)
  *
  * 응답은 늘 204(16KB 초과만 413) — 보고에 4xx 를 돌려주면 방문자 콘솔에 오류가 쌓인다. 두 본문 형식
  * (report-uri `application/csp-report`, Reporting API `application/reports+json`)을 받고, 기록에는

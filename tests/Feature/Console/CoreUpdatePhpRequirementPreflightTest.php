@@ -13,7 +13,7 @@ use Mockery\MockInterface;
 use Tests\TestCase;
 
 /**
- * core:update 의 PHP 확장 사전점검 Feature 테스트 (#151 D9)
+ * core:update 의 PHP 확장 사전점검 Feature 테스트 (공개 #151 D9)
  *
  * 새 배포본의 코어 SSoT(`app/Support/Requirements/php-extensions.json`)가 요구하는 필수 확장이 서버에 없으면
  * --source·--zip 은 유지보수 모드 전에, GitHub 다운로드는 받은 직후 받은 파일을 지우고 유지보수를 풀고 멈춘다.

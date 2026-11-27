@@ -3,7 +3,7 @@ feature: sirsoft-admin_basic 관리자 사이드바 메뉴
 description: |
   관리자 사이드바(AdminSidebar)의 메뉴 동작. URL 있는 메뉴는 링크(`<a href>`)로 그려 보통 클릭은 SPA 이동(G7Core.dispatch
   navigate), 하위 메뉴가 있는 부모는 펼침·접힘, 접힌(collapsed) 모드는 라벨을 숨긴다. 로케일은 G7Core 를 따르고, 현재
-  주소와 가장 길게 겹치는 메뉴 하나만 활성으로 표시한다(Issue #37). 메뉴 아이콘은 구조형 값(icon_spec)을 MenuIcon 으로 그린다. 링크 동작 자체(수정키·새 탭)는 navigation-links.yaml.
+  주소와 가장 길게 겹치는 메뉴 하나만 활성으로 표시한다. 메뉴 아이콘은 구조형 값(icon_spec)을 MenuIcon 으로 그린다. 링크 동작 자체(수정키·새 탭)는 navigation-links.yaml.
 
 axes:
   surface: [url_parent, toggle_parent, leaf, collapsed, render, locale, active_match]

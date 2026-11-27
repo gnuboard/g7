@@ -56,7 +56,7 @@ class LanguagePackServiceUpdateCheckScopeTest extends TestCase
         $installed = LanguagePack::query()->count();
         $this->assertGreaterThan(0, $installed, '설치된 팩이 없어 순회 범위를 측정할 수 없습니다.');
 
-        // 페이지네이터의 현재 페이지 암묵 해석이 읽는 자리 — #102 재현 조건
+        // 페이지네이터의 현재 페이지 암묵 해석이 읽는 자리 — 공개 #102 재현 조건
         request()->merge(['page' => 2]);
 
         $traversed = app(LanguagePackRepositoryInterface::class)->allForUpdateCheck();
@@ -64,7 +64,7 @@ class LanguagePackServiceUpdateCheckScopeTest extends TestCase
         $this->assertCount(
             $installed,
             $traversed,
-            "page=2 요청 상태에서 순회 대상이 {$traversed->count()} 건이었습니다 (설치 {$installed} 건) — 페이지네이션 암묵 page 해석(#102 동형)입니다."
+            "page=2 요청 상태에서 순회 대상이 {$traversed->count()} 건이었습니다 (설치 {$installed} 건) — 페이지네이션 암묵 page 해석(공개 #102 동형)입니다."
         );
 
         // 서비스 경로도 같은 순회를 타는지 — 종단에서 0건 오답이 재발하지 않음을 고정

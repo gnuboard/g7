@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * 관리자 CRUD 엔드포인트의 예외 → 상태코드 매핑 검증 (#104)
+ * 관리자 CRUD 엔드포인트의 예외 → 상태코드 매핑 검증 (공개 #104)
  *
  * 코어 GenericCatchStatusCodeContractTest 가 소스 전수로 "광역 catch 는 5xx" 계약을 고정한다면,
  * 이 테스트는 그 계약이 실제 HTTP 응답까지 도달하는지를 대표 엔드포인트로 확인한다.

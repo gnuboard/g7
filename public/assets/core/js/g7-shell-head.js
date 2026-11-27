@@ -4,7 +4,7 @@
  * admin·app 블레이드의 `partials/template-externals-head` 가 externals `<link>`·템플릿 CSS
  * `<link>` 보다 **먼저** 이 파일을 정적 `<script src>` 로 싣는다. 종전에는 두 파샬의 인라인
  * `<script>` 였으나 strict CSP(`script-src 'self'`, unsafe-inline 없음)에서 실행되지 않아
- * 이 파일로 옮겼다(#158). 동작은 인라인일 때와 같다.
+ * 이 파일로 옮겼다(공개 #158). 동작은 인라인일 때와 같다.
  *
  * 손작성 ES5 — 빌드하지 않는다. 엔진 번들(es2020)을 못 읽는 구형 브라우저에서도 이 계층은
  * 살아 있어야 한다(화살표 함수·const·let·템플릿 리터럴·옵셔널 체이닝 금지 —
@@ -116,7 +116,7 @@
     //   L5 서버 설정은 건드리지 않는다 (미인증 클라이언트의 전역 설정 변경 금지).
     //   L7 localStorage 캐시는 cache_version 을 키에 포함하고 TTL 을 둔다.
     //
-    // 정적 게시(bake) 역변환 (#122 F15): `/build/ext/{v}/…` 정적 게시본을 참조하는 태그
+    // 정적 게시(bake) 역변환 (공개 #122 F15): `/build/ext/{v}/…` 정적 게시본을 참조하는 태그
     // 자산이 서빙 시점에 404 가 되면(브라우저에 캐시된 구 HTML 이 GC 된 구버전 자산을
     // 참조하는 등) 종전 `/api/…` URL 로 1회 전환한다. `/build/core/**` 는 실물 정적 파일이라
     // 계속 변환 제외. 역변환 규칙은 `resources/js/core/support/assetUrl.ts::staticToLegacy`
@@ -256,7 +256,7 @@
         }
 
         /**
-         * 실패한 정적 게시(bake) URL 을 종전 API URL 로 역변환한다 (#122 F15).
+         * 실패한 정적 게시(bake) URL 을 종전 API URL 로 역변환한다 (공개 #122 F15).
          *
          * `resources/js/core/support/assetUrl.ts::staticToLegacy` 와 **동일 규칙**이어야
          * 한다 — 드리프트는 `assetUrlRecovery.test.ts` 의 대조 케이스가 잡는다.
@@ -380,7 +380,7 @@
 
             var href = link.getAttribute('href') || '';
 
-            // 정적 게시(bake) URL 실패 → 종전 API URL 로 1회 전환 (#122 F15).
+            // 정적 게시(bake) URL 실패 → 종전 API URL 로 1회 전환 (공개 #122 F15).
             // 모드 전환과 무관한 폴백이므로 switchToExtensionless 를 호출하지 않는다.
             var legacy = staticToLegacy(href);
             if (legacy) {
@@ -417,7 +417,7 @@
     })();
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 인라인 onerror 대체 — document 캡처 리스너 (#158)
+    // 인라인 onerror 대체 — document 캡처 리스너 (공개 #158)
     //
     // 서버가 심는 태그에 표식만 남기고 실패 처리는 여기서 한다. 재시도로 새로 만든 요소는
     // 표식이 없으므로(프로퍼티 핸들러로 따로 처리) 이 리스너가 다시 잡지 않는다.

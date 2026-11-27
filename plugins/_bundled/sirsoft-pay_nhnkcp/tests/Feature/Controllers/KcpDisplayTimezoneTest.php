@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
 /**
- * NHN KCP 관리자 결제조회·에스크로 화면 시각의 시간대 테스트 (#160)
+ * NHN KCP 관리자 결제조회·에스크로 화면 시각의 시간대 테스트 (공개 #160)
  *
  * DB 는 UTC 로 저장한다. 결제조회 패널의 취소·환불 시각과 에스크로 배송등록 시각은 보는 사람 시간대 문자열로 낸다.
  */

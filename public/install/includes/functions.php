@@ -78,7 +78,7 @@ if (! function_exists('js_escape')) {
     function js_escape(mixed $value): string
     {
         // 인코딩은 installer_json_encode 가 소유한다 — 인스톨러의 유일한 json_encode 자리이고,
-        // invalid UTF-8 이 섞였을 때 빈 본문(HTTP 200)이 나가는 것을 막는다 (#62).
+        // invalid UTF-8 이 섞였을 때 빈 본문(HTTP 200)이 나가는 것을 막는다 (공개 #62).
         $json = installer_json_encode(
             $value,
             JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE
@@ -149,7 +149,7 @@ function getDatabaseConnection(array $config, bool $isReadDb = false): PDO
  * 데이터베이스 권한 검증
  *
  * `indeterminate=true` 는 「부족」이 아니라 「확인 불가」다 — 게이트는 경고만 하고 진행을
- * 허용한다(제품 결정 §16.26.4 #2). 그때 missing 은 항상 빈 배열이다.
+ * 허용한다(제품 결정 §16.26.4 2). 그때 missing 은 항상 빈 배열이다.
  *
  * @param  PDO  $pdo  PDO 연결 객체
  * @param  string  $database  데이터베이스명
@@ -164,7 +164,7 @@ function checkDatabasePrivileges(PDO $pdo, string $database, bool $isReadDb = fa
         : ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP', 'INDEX'];
 
     try {
-        // 현재 사용자의 권한 조회 — 대상 DB 를 덮는 부여만 센다 (20차 #4).
+        // 현재 사용자의 권한 조회 — 대상 DB 를 덮는 부여만 센다 (20차 4).
         // 종전에는 $database 를 받아만 두고 쓰지 않아, 같은 계정의 **다른 DB** 부여로
         // 검사가 통과했다. 설치는 db_migrate 에서 1142 로 죽고, 운영자는 "권한 정상"
         // 화면을 이미 지나온 뒤다.
@@ -176,7 +176,7 @@ function checkDatabasePrivileges(PDO $pdo, string $database, bool $isReadDb = fa
         $unparseable = $collected['unparseable'];
         $rolesUnexpanded = false;
 
-        // MySQL 8 롤 전개 (20차 #6): SHOW GRANTS 는 USING 없이 롤 권한을 전개하지 않는다.
+        // MySQL 8 롤 전개 (20차 6): SHOW GRANTS 는 USING 없이 롤 권한을 전개하지 않는다.
         // 직접 부여만으로 부족하고 롤이 부여돼 있으면, 그 롤을 활성화한 출력으로 재조회한다.
         // 롤 토큰은 서버 자신의 SHOW GRANTS 출력 원문이므로 그대로 되돌려 보내도 안전하다.
         if (count($foundPrivileges) < count($requiredPrivileges) && $collected['roles'] !== []) {
@@ -204,7 +204,7 @@ function checkDatabasePrivileges(PDO $pdo, string $database, bool $isReadDb = fa
 
         $missingPrivileges = array_values(array_diff($requiredPrivileges, $foundPrivileges));
 
-        // 「부족」과 「확인 불가」의 구분 (제품 결정 §16.26.4 #2 — 확인 불가는 경고 후 진행 허용).
+        // 「부족」과 「확인 불가」의 구분 (제품 결정 §16.26.4 2 — 확인 불가는 경고 후 진행 허용).
         // 전개하지 못한 롤이나 해석하지 못한 행이 **하나라도** 남아 있으면 판정을 단정하지
         // 않는다 — missing 이 비어 있어도 그 행이 REVOKE 변형(권한을 빼는 문장)일 수 있다
         // (종전에는 missing 이 비면 unparseable 을 무시해, 해석 못 한 회수가
@@ -222,7 +222,7 @@ function checkDatabasePrivileges(PDO $pdo, string $database, bool $isReadDb = fa
         ];
     } catch (PDOException $e) {
         // SHOW GRANTS 자체가 거부되는 환경 — 권한이 없다는 뜻이 아니라 모른다는 뜻이다.
-        // 종전에는 missing=전부 로 떨어져 설치가 원리상 불가능했다 (20차 #6 거짓 차단).
+        // 종전에는 missing=전부 로 떨어져 설치가 원리상 불가능했다 (20차 6 거짓 차단).
         logInstallationError(lang('error_privilege_check_failed'), $e);
 
         return [
@@ -238,7 +238,7 @@ function checkDatabasePrivileges(PDO $pdo, string $database, bool $isReadDb = fa
 /**
  * SHOW GRANTS 출력에서 대상 DB 를 덮는 부여의 권한 토큰과 롤 부여를 수집합니다.
  *
- * 권한명은 토큰 단위로 대조한다 — `CREATE TEMPORARY TABLES` 는 CREATE 가 아니다 (20차 #5).
+ * 권한명은 토큰 단위로 대조한다 — `CREATE TEMPORARY TABLES` 는 CREATE 가 아니다 (20차 5).
  * 해석하지 못한 줄은 개수만 세어 돌려준다: 그 줄에 권한이 있을 수도 있으므로, 호출자는
  * 부족 판정을 「확인 불가」로 강등하는 근거로 쓴다.
  *
@@ -451,7 +451,7 @@ function installerGrantTargetCoversDatabase(string $target, string $database): ?
 
     // 객체 부분이 `*` 인 부여만 DB 를 덮는다 — `db`.`tbl`(테이블)·`db`.proc
     // (루틴) 스코프 부여는 새 테이블 생성·다른 테이블 접근을 주지 않으므로, 이것을 DB
-    // 전체로 접으면 #4 가 막으려던 실패(권한 정상 화면 통과 후 db_migrate 1142)가
+    // 전체로 접으면 4 가 막으려던 실패(권한 정상 화면 통과 후 db_migrate 1142)가
     // 다른 부여 형태로 재개방된다. 객체 부분이 없으면 해석 불가다.
     $objectPart = trim(ltrim(trim((string) $objectPart), '.'));
 
@@ -534,7 +534,7 @@ function installerGrantPrivilegeTokens(string $segment, bool $includeColumnScope
 }
 
 /**
- * DB 서버 버전이 요구 하한(MySQL 8.0 / MariaDB 10.3) 미만이면 안내 정보를 돌려줍니다 (20차 #7).
+ * DB 서버 버전이 요구 하한(MySQL 8.0 / MariaDB 10.3) 미만이면 안내 정보를 돌려줍니다 (20차 7).
  *
  * 차단이 아니라 안내다 — 하한 미달 서버에서도 연결은 성공하므로 종전에는 설치 중반
  * `db_migrate` 실패로만 드러났다. 해석 불가 문자열(프록시 배너 등)은 경고하지 않는다:
@@ -946,7 +946,7 @@ function showAlertAndRedirect(string $title, string $message, string $redirectUr
         $translations = loadTranslations(getCurrentLanguage());
     }
 
-    // 네 값 모두 HTML 텍스트·속성 자리에 실린다(인라인 `<script>` 없음, #158) — 그래서 모두
+    // 네 값 모두 HTML 텍스트·속성 자리에 실린다(인라인 `<script>` 없음, 공개 #158) — 그래서 모두
     // htmlspecialchars(ENT_QUOTES)를 지난다. `$redirectUrl` 은 meta refresh 의 content 속성과
     // `<a href>` 두 곳에 실리므로 따옴표까지 닫아야 속성 탈출이 막힌다.
     $lang = htmlspecialchars(getCurrentLanguage());
@@ -962,7 +962,7 @@ function showAlertAndRedirect(string $title, string $message, string $redirectUr
     echo '<title>'.$title.'</title>';
     echo installer_favicon_tags();
     // 스크립트 없이 안내 + 3초 뒤 meta refresh 이동 — 종전 alert + location 인라인 스크립트는 웹서버가
-    // `Content-Security-Policy: script-src 'self'` 를 걸면 실행되지 않아 흰 화면에 머물렀다(#158).
+    // `Content-Security-Policy: script-src 'self'` 를 걸면 실행되지 않아 흰 화면에 머물렀다(공개 #158).
     echo '<meta http-equiv="refresh" content="3;url='.$redirectUrl.'">';
     // 스타일은 파일로 싣는다 — 문서 안 style 요소는 웹서버가 `style-src 'self'` 를 걸면 막힌다.
     echo '<link rel="stylesheet" href="'.htmlspecialchars(installerStandaloneCssUrl()).'">';
@@ -1067,7 +1067,7 @@ function getDatabaseFieldHash(array $config, string $prefix): string
 function installerJsString(string $value): string
 {
     // 인코딩 자체는 installer_json_encode 가 소유한다 — 인스톨러의 유일한 json_encode 자리이고,
-    // 계정명·경로의 invalid UTF-8 이 섞였을 때 빈 본문(HTTP 200)이 나가는 것을 막는다 (#62).
+    // 계정명·경로의 invalid UTF-8 이 섞였을 때 빈 본문(HTTP 200)이 나가는 것을 막는다 (공개 #62).
     // 여기서 더하는 것은 인라인 <script> 전용 HEX 플래그뿐이다.
     return installer_json_encode($value, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
 }
@@ -1772,7 +1772,7 @@ function generateEnvContent(): ?string
         require_once __DIR__.'/installer-runtime.php';
     }
 
-    // 치환은 **키 기준**이다 (20차 #11) — 종전에는 `.env.example` 의 기본값까지 포함한
+    // 치환은 **키 기준**이다 (20차 11) — 종전에는 `.env.example` 의 기본값까지 포함한
     // 리터럴(`'APP_URL=http://localhost'`)을 str_replace 검색어로 써서, 템플릿 기본값이
     // 한 글자만 표류해도 치환이 오류 없이 건너뛰어 운영자 입력이 소실된 채 설치가
     // "성공" 했다. 키 기준 매칭(replaceEnvLine — `^KEY=.*$` + 부재 시 라인 추가)은
@@ -1798,7 +1798,7 @@ function generateEnvContent(): ?string
     } else {
         // Read DB를 사용하지 않는 경우 DB_READ_* 를 빈 값으로 둔다.
         // config/database.php 의 write fallback(Elvis) 이 SELECT 를 write DB 로 넘기므로
-        // .env 에 write 값을 중복 기록하지 않는다 (write 변경 시 read stale 방지). (이슈 #63)
+        // .env 에 write 값을 중복 기록하지 않는다 (write 변경 시 read stale 방지). (이슈 공개 #63)
         $replacements['DB_READ_HOST'] = '';
         $replacements['DB_READ_PORT'] = '';
         $replacements['DB_READ_DATABASE'] = '';
@@ -1814,7 +1814,7 @@ function generateEnvContent(): ?string
     $replacements['APP_URL'] = escapeEnvLineValue((string) ($config['app_url'] ?? 'http://localhost'));
 
     // 언어 설정 — 세션이 아니라 state 에서 정한다(설정 general.language 와 같은 값).
-    // 치환은 키 기준이고(20차 #11), 값은 다른 항목과 같은 헬퍼로 닫는다.
+    // 치환은 키 기준이고(20차 11), 값은 다른 항목과 같은 헬퍼로 닫는다.
     $siteLang = installer_site_language($state);
     $replacements['APP_LOCALE'] = escapeEnvLineValue($siteLang);
     $replacements['APP_FAKER_LOCALE'] = $siteLang === 'ko' ? 'ko_KR' : 'en_US';
@@ -2290,7 +2290,7 @@ function checkExistingTables(PDO $pdo, string $database, string $tablePrefix = '
         'other_tables_count' => max(0, count($tables) - count($g7TablesFound)),
         'all_tables' => $tables,
         // 동의 화면이 그리는 삭제 대상은 **삭제 계산과 동일 산출**이어야 한다 (21차 #21-2 ①,
-        // 제품 결정 §16.27.1 #2) — 다른 목록을 보여주면 동의가 거짓이 된다.
+        // 제품 결정 §16.27.1 2) — 다른 목록을 보여주면 동의가 거짓이 된다.
         'drop_targets' => filterTablesByPrefix($tables, $tablePrefix),
         // 접두 매칭은 더 긴 접두사 이웃(g7_ ⊂ g7_shop_)을 함께 문다 — 그 이웃이 G7 설치로
         // 감지되면 화면이 별도 경고를 띄운다 (21차 #21-2 ②).

@@ -187,7 +187,7 @@ class PublicTemplateControllerTest extends TestCase
     }
 
     /**
-     * `?v` 명시 요청은 조건부 캐시 헤더를 받는다 (#122 작업 D)
+     * `?v` 명시 요청은 조건부 캐시 헤더를 받는다 (공개 #122 작업 D)
      *
      * 버전 키드 URL 은 bump 시 URL 자체가 바뀌므로 1h 공개 캐시가 안전하다.
      *
@@ -220,7 +220,7 @@ class PublicTemplateControllerTest extends TestCase
     }
 
     /**
-     * `?v` 명시 요청의 If-None-Match 일치 시 304 (#122 작업 D)
+     * `?v` 명시 요청의 If-None-Match 일치 시 304 (공개 #122 작업 D)
      *
      * @effects fallback_api_serves_etag_304
      *
@@ -254,7 +254,7 @@ class PublicTemplateControllerTest extends TestCase
     }
 
     /**
-     * 무버전 요청은 종전대로 공개 캐시 헤더가 없다 (#122 작업 D — 핸드셰이크 신선도 보존)
+     * 무버전 요청은 종전대로 공개 캐시 헤더가 없다 (공개 #122 작업 D — 핸드셰이크 신선도 보존)
      *
      * @effects fallback_api_unversioned_routes_skip_public_cache
      *
@@ -282,7 +282,7 @@ class PublicTemplateControllerTest extends TestCase
     }
 
     /**
-     * 개발 환경에서 `?v` 요청도 no-cache (dev 파일 수정 즉시 반영 — #122 작업 D 환경 분기)
+     * 개발 환경에서 `?v` 요청도 no-cache (dev 파일 수정 즉시 반영 — 공개 #122 작업 D 환경 분기)
      *
      * @effects fallback_api_no_cache_in_dev
      *
@@ -311,7 +311,7 @@ class PublicTemplateControllerTest extends TestCase
     }
 
     /**
-     * 열화 라우트 스냅샷은 `?v` 요청이어도 공개 캐시 헤더를 받지 않는다 (대칭, #122 작업 D)
+     * 열화 라우트 스냅샷은 `?v` 요청이어도 공개 캐시 헤더를 받지 않는다 (대칭, 공개 #122 작업 D)
      *
      * 서버측 캐시 회피만으로는 부족하다 — 같은 `?v` URL 에 `public, max-age` 가
      * 붙으면 브라우저/CDN 계층이 열화 응답을 1시간 박제하고, 버전은 이미 올라간 뒤라

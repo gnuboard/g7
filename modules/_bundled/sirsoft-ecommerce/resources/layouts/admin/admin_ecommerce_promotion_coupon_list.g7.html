@@ -205,7 +205,7 @@
         </div>
         <a href="/admin/ecommerce/promotion-coupon-create" :mergeQuery="true" class="ecommerce-button ecommerce-btn ecommerce-btn-primary ecommerce:aria-disabled:opacity-50 ecommerce:aria-disabled:cursor-not-allowed" disabled="{{coupons?.data?.abilities?.can_create !== true}}">
           <on type="click">
-            <!-- 쿠폰 등록 폼 진입 — 폼에서 취소하고 돌아왔을 때 보던 목록으로 복귀하려면 진입 시점에 목록 상태를 넘겨야 한다 (#75). -->
+            <!-- 쿠폰 등록 폼 진입 — 폼에서 취소하고 돌아왔을 때 보던 목록으로 복귀하려면 진입 시점에 목록 상태를 넘겨야 한다 (공개 #75). -->
             <navigate :mergeQuery="true">
               <query/>
             </navigate>

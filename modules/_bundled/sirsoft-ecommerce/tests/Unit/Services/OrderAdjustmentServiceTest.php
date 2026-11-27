@@ -982,7 +982,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     // ================================================================
     // A-4. CONDITIONAL_FREE 부분취소 — 무료↔유료 전환 (8건)
-    // 핵심 시나리오: 이슈 #29 예시 1번의 일반화
+    // 핵심 시나리오: 예시 1번의 일반화
     // ================================================================
 
     /**
@@ -1024,7 +1024,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     /**
      * A-4-2: 무료→유료 전환 (잔여금액 < threshold)
      *
-     * ⭐ 이슈 #29 예시 1: 60,000 주문(무료), 20,000 취소 → 잔여 40,000 < 50,000
+     * ⭐ 예시 1: 60,000 주문(무료), 20,000 취소 → 잔여 40,000 < 50,000
      * → 배송비 3,000 발생 → refund = 20,000 - 3,000 = 17,000
      *
      * @effects partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold
@@ -1263,13 +1263,13 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
     // ================================================================
     // A-9. 주문쿠폰(ORDER_AMOUNT) + 부분취소 (5건)
-    // 핵심: 이슈 #29 예시 2번의 일반화
+    // 핵심: 예시 2번의 일반화
     // ================================================================
 
     /**
      * A-9-1: 주문쿠폰 min_order 미달 → 쿠폰 복원
      *
-     * ⭐ 이슈 #29 예시 2:
+     * ⭐ 예시 2:
      * 40,000 주문, 주문쿠폰 10%(min30,000) → 36,000 결제
      * 20,000 취소 → 잔여 20,000 < 30,000 → 쿠폰 복원
      * 재계산: 20,000 (할인없음)
@@ -1623,7 +1623,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     /**
      * 환불 0원으로 닫힌 상품이 있는 주문의 마지막 상품 취소는 닫힌 상품 값을 다시 돌려주지 않는다 (S3-D18, 2026-10-07 실측)
      *
-     * 부분 경로는 종결 행을 뺀 기준선으로 계산해 이 문제를 막는다(validate P2 #2). 남은 상품을 **모두** 빼는 취소는
+     * 부분 경로는 종결 행을 뺀 기준선으로 계산해 이 문제를 막는다(validate P2 2). 남은 상품을 **모두** 빼는 취소는
      * 재계산 없이 「결제액 − 환불 누계」를 돌려주는 전량 제외 경로를 타는데, 0원으로 닫힌 행은 환불 누계를 늘리지 않아
      * 그 값이 그대로 다시 나갔다. 실측: 주문 20261007-0533380250(A 10,000 + B 30,000 + 배송 2,500) — A 취소 환불을
      * 0원으로 실행한 뒤 B 취소 창의 최종 환불 예정액 **42,500**(B 몫 32,500 + 닫힌 A 10,000).
@@ -5359,7 +5359,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     }
 
     /**
-     * A-4 #29: 무료배송 기준금액 정확히 1원 미달 시 배송비 발생
+     * A-4 29: 무료배송 기준금액 정확히 1원 미달 시 배송비 발생
      *
      * @effects partial_cancel_charges_shipping_when_the_remainder_drops_below_the_threshold, boundary_value_charged_not_free
      *
@@ -5400,7 +5400,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     }
 
     /**
-     * A-8 #69: 상품쿠폰 2개 동시 적용 (combinable) 복합 할인 재계산
+     * A-8 69: 상품쿠폰 2개 동시 적용 (combinable) 복합 할인 재계산
      *
      * @effects partial_cancel_reapplies_the_item_coupon_to_the_remaining_items
      *
@@ -5447,7 +5447,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     }
 
     /**
-     * A-8 #70: 상품쿠폰 대상 상품 취소 시 할인 제거
+     * A-8 70: 상품쿠폰 대상 상품 취소 시 할인 제거
      *
      * @effects cancelling_every_coupon_target_drops_the_item_discount
      *
@@ -5492,7 +5492,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
     }
 
     /**
-     * A-12 #106: 도서산간 추가배송비 + 배송비쿠폰 + 부분취소
+     * A-12 106: 도서산간 추가배송비 + 배송비쿠폰 + 부분취소
      *
      * @effects cancel_recalculates_the_island_extra_fee_with_the_remainder, shipping_coupon_is_reapplied_to_the_recalculated_shipping_fee
      *
@@ -6237,7 +6237,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
      * 50,000×1 + 주문쿠폰(FIXED 5000, minOrder=30000)
      * 전체취소 → 잔여 0 < 30000 → 쿠폰 복원
      *
-     * 재계산 전 쿠폰을 일시적으로 미사용으로 되돌리던 왕복 UPDATE 를 제거한 뒤에도(#108)
+     * 재계산 전 쿠폰을 일시적으로 미사용으로 되돌리던 왕복 UPDATE 를 제거한 뒤에도
      * 이 복원 판정이 그대로여야 한다 — 판정은 스냅샷의 min_order_amount 로만 이뤄지고
      * 쿠폰의 사용 상태(status/used_at)를 읽지 않기 때문이다.
      *

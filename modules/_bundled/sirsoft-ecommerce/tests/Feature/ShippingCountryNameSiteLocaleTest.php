@@ -7,7 +7,7 @@ use Modules\Sirsoft\Ecommerce\Services\ShippingCountryResolver;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 배송 국가 이름의 대체 언어 테스트 (#148 D7).
+ * 배송 국가 이름의 대체 언어 테스트 (공개 #148 D7).
  *
  * 국가 이름에 지금 언어 값이 없으면 요청 언어 → 사이트 기본 언어 → 영어 순으로 대체하고, 그래도 없으면
  * 종전처럼 국가 코드를 보인다(체인 밖 아무 언어 값으로 채우지 않는다 — 알림의 국가 이름과 같은 규칙).

@@ -146,7 +146,7 @@ describe('스케줄관리 named_actions 검증', () => {
         expect(action.params.path).toBe('/admin/schedules');
         expect(action.params.mergeQuery).toBe(true);
         expect(action.params.query.page).toBe(1);
-        // 검색어 키는 쿠폰 규약(search_field + search_keyword)이다 — 옛 `search` 는 서버가 버려 검색이 안 됐다(#17)
+        // 검색어 키는 쿠폰 규약(search_field + search_keyword)이다 — 옛 `search` 는 서버가 버려 검색이 안 됐다
         expect(action.params.query.search_keyword).toBeDefined();
         expect(action.params.query.search_field).toBeDefined();
         expect(action.params.query.search).toBeUndefined();

@@ -128,7 +128,7 @@
                 <field name="roles" value="{{(_global.selectedMenu?.roles ?? []).map(r => r.id)}}"/>
               </field>
             </set-state>
-            <!-- 편집 모드 전환만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75). -->
+            <!-- 편집 모드 전환만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (공개 #75). -->
             <replace-url :mergeQuery="true">
               <query menu="{{_global.selectedMenu?.slug}}" mode="edit"/>
             </replace-url>

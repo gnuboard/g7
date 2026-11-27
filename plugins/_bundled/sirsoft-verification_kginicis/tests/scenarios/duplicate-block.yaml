@@ -126,7 +126,7 @@ effects:
   - off_mode_allows_multiple_records_with_same_di_hash
   - off_mode_self_idv_binding_still_blocks_third_party_hijacking
 
-  # 로그인 회원 본인인증의 동일인 충돌 (#40 R11)
+  # 로그인 회원 본인인증의 동일인 충돌 (R11)
   - verify_fails_when_logged_in_identity_belongs_to_other_user
   - no_record_for_duplicate_logged_in_identity
   - same_user_reverification_passes

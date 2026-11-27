@@ -68,7 +68,7 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
         $this->assertSame(
             'https://account.r2.cloudflarestorage.com',
             config('filesystems.disks.s3.endpoint'),
-            's3_endpoint 는 SDK 요청 대상(endpoint)에 주입되어야 함 — 미주입 시 S3 호환 스토리지 연결 불가 (#99)'
+            's3_endpoint 는 SDK 요청 대상(endpoint)에 주입되어야 함 — 미주입 시 S3 호환 스토리지 연결 불가 (공개 #99)'
         );
     }
 
@@ -237,7 +237,7 @@ class SettingsServiceProviderS3ConfigTest extends TestCase
         Config::set('database.redis.client', 'phpredis');
         $this->assertTrue(
             $method->invoke($provider, false),
-            'REDIS_CLIENT=phpredis 활성 배포 + 확장 부재 = 표준 설치 시나리오 — 폴백 미발동이면 redis 저장 시 전면 다운 (#99 A2)'
+            'REDIS_CLIENT=phpredis 활성 배포 + 확장 부재 = 표준 설치 시나리오 — 폴백 미발동이면 redis 저장 시 전면 다운 (공개 #99 A2)'
         );
 
         // 확장이 있으면 phpredis 경로 유지

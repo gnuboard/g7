@@ -10,7 +10,7 @@ use PHPUnit\Framework\Attributes\Test;
 /**
  * 카테고리 순서 변경 API 테스트
  *
- * Issue #10: 카테고리 순서 변경 불가 오류 수정 검증
+ * 카테고리 순서 변경 불가 오류 수정 검증
  * 원인: ReorderCategoriesRequest에서 exists 검증 테이블명 오류
  *       (product_categories → ecommerce_categories)
  */
@@ -130,7 +130,7 @@ class CategoryReorderTest extends ModuleTestCase
     /**
      * 존재하지 않는 카테고리 ID로 순서 변경 시 검증 실패 테스트
      *
-     * Issue #10의 핵심 수정사항 검증:
+     * 핵심 수정사항 검증:
      * exists 규칙이 ecommerce_categories 테이블을 올바르게 참조하는지 확인
      */
     #[Test]
@@ -152,7 +152,7 @@ class CategoryReorderTest extends ModuleTestCase
     /**
      * 자식 카테고리를 최상위로 이동 시 parent_id가 null로 변경되는지 테스트
      *
-     * Issue #144: isset()이 null에 대해 false를 반환하여
+     * isset()이 null에 대해 false를 반환하여
      * parent_id = null 변경이 무시되던 버그 수정 검증
      */
     #[Test]

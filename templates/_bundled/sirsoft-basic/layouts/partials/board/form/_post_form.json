@@ -79,7 +79,7 @@
             ]
         },
         {
-            "comment": "확장 자리 — 글쓰기 맨 위(검증 오류 상자 아래)에 확장이 입력칸을 붙인다(#149). 이 폼은 게시판 유형 세 갈래에 include 되므로 data-ref 로 지목하면 basic 에만 닿는다 — 이 확장점은 세 갈래 모두에 들어간다. 조각이 _local.form.<키> 에 쓰면 저장 요청 본문에 함께 실린다",
+            "comment": "확장 자리 — 글쓰기 맨 위(검증 오류 상자 아래)에 확장이 입력칸을 붙인다(공개 #149). 이 폼은 게시판 유형 세 갈래에 include 되므로 data-ref 로 지목하면 basic 에만 닿는다 — 이 확장점은 세 갈래 모두에 들어간다. 조각이 _local.form.<키> 에 쓰면 저장 요청 본문에 함께 실린다",
             "id": "ext_board_post_form_top",
             "type": "extension_point",
             "name": "board_post_form_top",
@@ -893,7 +893,7 @@
             ]
         },
         {
-            "comment": "확장 자리 — 글쓰기 맨 아래(취소·저장 단추 바로 위)에 확장이 동의 문구·부가 입력칸을 붙인다(#149). props 는 맨 위 자리와 같다",
+            "comment": "확장 자리 — 글쓰기 맨 아래(취소·저장 단추 바로 위)에 확장이 동의 문구·부가 입력칸을 붙인다(공개 #149). props 는 맨 위 자리와 같다",
             "id": "ext_board_post_form_bottom",
             "type": "extension_point",
             "name": "board_post_form_bottom",

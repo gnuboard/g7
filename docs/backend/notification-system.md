@@ -889,7 +889,7 @@ $helper->cleanupStaleDefinitions('module', $module->getIdentifier(), $definedTyp
 
 | 메서드 | URL | 설명 |
 |--------|-----|------|
-| GET | /api/admin/notification-definitions | 알림 정의 목록 (`category` 로 분류 필터) |
+| GET | /api/admin/notification-definitions | 알림 정의 목록 (`category` 로 분류 필터, `include_hidden=1` 로 숨긴 종류 포함 — 7.2.1) |
 | POST | /api/admin/notification-definitions | 본인인증 정책별 문구 추가 (7.1.0~) |
 | GET | /api/admin/notification-definitions/{id} | 알림 정의 상세 (templates 포함) |
 | PUT | /api/admin/notification-definitions/{id} | 채널/훅 수정 |
@@ -932,6 +932,31 @@ public function contributeDefaultDefinitions(array $definitions, array $context 
 ```
 
 컨텍스트: `['type' => string, 'channel' => string]` — 필요 시 특정 타입/채널만 필터링 가능.
+
+### 목록에서 숨길 알림 종류 (Filter 훅, 7.2.1)
+
+확장이 자기 화면에서만 편집하는 알림 종류(예: 이커머스의 쿠폰별 발급 알림 `coupon_issued.{id}`)는 관리자 알림 정의 목록(`GET /api/admin/notification-definitions`)에서 뺄 수 있습니다. 필터 `core.notification_definition.filter_hidden_type_prefixes` 에 숨길 `type` 접두를 더합니다.
+
+- 인자: `array $prefixes`(지금까지 모인 접두 목록, 처음은 `[]`), `array $filters`(목록 조회 조건)
+- 반환: 접두 문자열 배열. `type` 이 그 접두로 시작하는 정의가 목록에서 빠집니다. 빈 문자열·문자열이 아닌 값은 무시합니다.
+- 목록 조회에 `include_hidden=1` 을 주면 필터를 적용하지 않고 숨긴 종류도 돌려줍니다.
+- 목록에서만 빠집니다 — 숨긴 종류도 단건 조회·수정·미리보기·기본값 복원은 그대로 됩니다.
+
+```php
+// getSubscribedHooks()
+'core.notification_definition.filter_hidden_type_prefixes' => [
+    'method' => 'hideCouponIssuedTypes',
+    'priority' => 20,
+    'type' => 'filter',
+],
+
+public function hideCouponIssuedTypes(array $prefixes = [], array $filters = []): array
+{
+    $prefixes[] = 'coupon_issued.';
+
+    return array_values(array_unique($prefixes));
+}
+```
 
 ---
 

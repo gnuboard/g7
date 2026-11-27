@@ -2,7 +2,7 @@ feature: 방문자 동의 런타임 — 브라우저의 동의 스냅샷 (공개
 
 description: |
   코어가 `/api/consent` 를 들고 `_global.consent` 를 채우며, 다른 확장은 그 상태·`G7Core.consent`·`consent:changed`
-  로 읽는다. #129 요청 7가지(스냅샷 조회·refresh·변경 구독·인증 변경 무효화·stale 응답 차단·최소 스키마·
+  로 읽는다. 공개#129 요청 7가지(스냅샷 조회·refresh·변경 구독·인증 변경 무효화·stale 응답 차단·최소 스키마·
   contractVersion)를 런타임 인스턴스로 잡는다.
 
   엔진 회귀 사례 대조에서 나온 방어(2026-10-05):

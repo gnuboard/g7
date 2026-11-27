@@ -84,7 +84,7 @@ class LifecycleWarningsTest extends TestCase
     }
 
     /**
-     * 경고 사유의 설치 루트 절대경로를 상대경로로 바꾼다 — 구분자가 섞여도(`\` 와 `/`), Windows 에서는 대소문자가 달라도 지운다(#161 S8).
+     * 경고 사유의 설치 루트 절대경로를 상대경로로 바꾼다 — 구분자가 섞여도(`\` 와 `/`), Windows 에서는 대소문자가 달라도 지운다(공개 #161 S8).
      *
      * @scenario surface=collector
      *

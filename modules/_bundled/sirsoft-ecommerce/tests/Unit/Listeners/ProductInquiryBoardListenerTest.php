@@ -151,7 +151,7 @@ class ProductInquiryBoardListenerTest extends ModuleTestCase
     }
 
     /**
-     * 답변 글 삭제 + 잔여 답변 1 → 답변완료 표기가 유지된다 (#106 다중 답변 잔재 대응).
+     * 답변 글 삭제 + 잔여 답변 1 → 답변완료 표기가 유지된다 (공개 #106 다중 답변 잔재 대응).
      *
      * @effects reply_delete_recomputes_answered
      *

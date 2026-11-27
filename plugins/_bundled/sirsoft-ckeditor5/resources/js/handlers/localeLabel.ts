@@ -1,7 +1,7 @@
 /**
  * CKEditor 다국어 탭의 언어 이름
  *
- * 언어팩으로 켠 `fil`·`fil-PH`·`zh-Hant` 탭이 내장 표에 없어 `FIL-PH` 처럼 코드로만 보이던 것(#148)을,
+ * 언어팩으로 켠 `fil`·`fil-PH`·`zh-Hant` 탭이 내장 표에 없어 `FIL-PH` 처럼 코드로만 보이던 것(공개 #148)을,
  * 서버가 주는 언어팩의 언어 이름(`appConfig.localeNames` — manifest 의 `locale_native_name`)으로 먼저 보인다.
  * 그 이름은 언어팩 작성자가 정한 문자열이므로 탭은 `innerHTML` 이 아니라 요소·`textContent` 로만 만든다.
  *

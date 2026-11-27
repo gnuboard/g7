@@ -2,7 +2,7 @@ feature: 템플릿 엔진 데이터 바인딩·표현식·파이프 (DataBinding
 
 description: |
   레이아웃의 `{{…}}` 바인딩이 경로·표현식·번역 토큰·파이프를 어떻게 풀어 값을 만드는지 잠근다.
-  `$localized`·`localized` 파이프는 요청 언어 → 사이트 기본 언어 → 영어 순으로 값을 고른다(engine-v1.81.0, 7.1.1 #148 —
+  `$localized`·`localized` 파이프는 요청 언어 → 사이트 기본 언어 → 영어 순으로 값을 고른다(engine-v1.81.0, 7.1.1 공개#148 —
   그 전에는 요청 언어 다음이 한국어 고정). 그 대체 순서를 바꾸면서 기존 케이스 기대값을 고쳐야 했고, 매핑이 없던
   기존 케이스를 같은 감사 정리에서 describe 묶음 단위로 선언했다. 룩비하인드 제거 회귀 묶음은
   `bootstrap-parse-failure.yaml`(variable_extraction_contract_unchanged)이 함께 소유한다.

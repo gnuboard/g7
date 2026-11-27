@@ -225,7 +225,7 @@ class InstallerServerHardeningContractTest extends TestCase
     }
 
     /**
-     * 19차 G#2 — 모집단을 **소스에서 도출한다**.
+     * 모집단을 **소스에서 도출한다**.
      *
      * 위 provider 는 과거 위반 12개를 손으로 열거한다. 그것들이 되살아나는지는 보지만
      * **새로 추가되는** 영문 문구는 영원히 보지 못한다 — `@effects` 와 §12.0 W3(「진행 기록은
@@ -336,7 +336,7 @@ class InstallerServerHardeningContractTest extends TestCase
     }
 
     /**
-     * 19차 G#3 — 그 키들이 **실제로 배선돼 있는지**도 본다.
+     * 그 키들이 **실제로 배선돼 있는지**도 본다.
      *
      * ko/en 대칭은 `InstallerLanguageParityTest` 가 전수로 이미 덮는다. 그래서 위 검사가
      * 추가로 잡는 것은 「이 10개가 사라졌는가」뿐이고 **그 키를 쓰는 코드**는 보지 않았다 —
@@ -510,7 +510,7 @@ class InstallerServerHardeningContractTest extends TestCase
         $message = (string) ($events[0]['data']['message'] ?? '');
         $displayName = installerTaskDisplayName($task);
 
-        // 19차 G#12 — 부정 부분문자열이 아니라 **동일성**으로 본다.
+        // 부정 부분문자열이 아니라 **동일성**으로 본다.
         //
         // 종전 needle 은 `lang('log_task_skipped_by_user', ['task' => ''])` 였다. 지금 ko 값이
         // `':task — 운영자가 건너뛰었습니다.'` 로 자리표시자가 맨 앞이라 **우연히** 부분문자열

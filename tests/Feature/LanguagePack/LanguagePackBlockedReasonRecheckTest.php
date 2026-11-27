@@ -6,7 +6,7 @@ use App\Services\LanguagePackService;
 use Tests\TestCase;
 
 /**
- * 번들 언어팩 설치 차단 사유 재판정 — `language-pack:provision` 이 그 팩 차례에 부르는 서비스 메서드 (#153 E).
+ * 번들 언어팩 설치 차단 사유 재판정 — `language-pack:provision` 이 그 팩 차례에 부르는 서비스 메서드 (공개 #153 E).
  *
  * 실제 번들 manifest(`lang-packs/_bundled/{id}/language-pack.json`)를 읽어 지금 상태로 차단 사유를 계산한다.
  * 코어 범위 팩은 코어 locale 의존이 없고, 확장 팩은 같은 로케일의 코어 팩이 활성이 아니면 `core_locale_missing` 이다.

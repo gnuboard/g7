@@ -127,7 +127,7 @@ class TemplateLocalizationTest extends TestCase
         $message = __('templates.errors.not_found', ['template' => 'sirsoft-admin']);
         $this->assertStringContainsString('sirsoft-admin', $message);
 
-        // 종류는 현지화한 이름으로 넘긴다 — TemplateManager::checkDependencies() 와 같다(#153, 한국어 문장에 `module` 원문이 섞이던 결함)
+        // 종류는 현지화한 이름으로 넘긴다 — TemplateManager::checkDependencies() 와 같다(공개 #153, 한국어 문장에 `module` 원문이 섞이던 결함)
         $dependencyMessage = __('templates.errors.dependency_not_met', [
             'dependency' => 'sirsoft-ecommerce',
             'type' => __('extensions.dependency_types.module'),

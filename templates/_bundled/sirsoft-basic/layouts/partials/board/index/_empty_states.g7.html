@@ -7,7 +7,7 @@
       <p class="text-gray-600 dark:text-gray-400 mb-2">$t:board.no_posts_on_page</p>
       <a href="/board/{{route.slug}}?page=" :mergeQuery="true" class="inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer mt-4">
         <on type="click">
-          <!-- 페이지만 되돌린다 — 검색어/분류/필터는 그대로 유지 (#75). page: "" 는 파라미터 제거 = 1페이지. -->
+          <!-- 페이지만 되돌린다 — 검색어/분류/필터는 그대로 유지 (공개 #75). page: "" 는 파라미터 제거 = 1페이지. -->
           <navigate :mergeQuery="true">
             <query page=""/>
           </navigate>

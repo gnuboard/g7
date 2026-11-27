@@ -34,7 +34,7 @@ trait SelectsLayoutInstallSource
         $raw = $this->option('layout-source');
 
         // 생략(또는 빈 값)이면 설정(`LAYOUT_INSTALL_SOURCE`)을 그대로 따른다 — 옵션 기본값을 `auto` 로 두면
-        // 운영자가 .env 에 json 을 지정해도 명령마다 auto 로 덮였다(#144).
+        // 운영자가 .env 에 json 을 지정해도 명령마다 auto 로 덮였다(공개 #144).
         if ($raw === null || trim((string) $raw) === '') {
             return true;
         }

@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
 /**
- * 부트스트랩 리소스 정적 게시 상태 점검 커맨드 (#122)
+ * 부트스트랩 리소스 정적 게시 상태 점검 커맨드 (공개 #122)
  *
  * 게시 실패는 사이트를 멈추지 않는다 — API 폴백으로 넘어가 화면은 정상이다. 그래서 정상
  * 운영 환경에서 실패를 확인할 방법이 사실상 없었다(`/dev` 대시보드는 `app.debug` 가 필요한데

@@ -6,7 +6,7 @@
  * - auto_deactivated_banner.data.items.plugins 가 있을 때 배너 표시
  * - 비어있을 때 배너 미표시
  * - 가이드 링크 href = /admin/system/update
- * - 토글·강제 활성 창의 활성화 성공 분기가 배너 데이터 소스를 다시 받는다(#145 F8 — 실제 굽기 산출 레이아웃)
+ * - 토글·강제 활성 창의 활성화 성공 분기가 배너 데이터 소스를 다시 받는다(공개 #145 F8 — 실제 굽기 산출 레이아웃)
  *
  * @scenario-manifest tests/scenarios/admin-extension-banner-refetch.yaml
  */
@@ -163,7 +163,7 @@ function refetchesBanner(call: Json): boolean {
     && n.params?.dataSourceId === 'auto_deactivated_banner').length > 0;
 }
 
-describe('플러그인 목록 - 활성화 성공 뒤 호환성 배너 재조회 (#145 F8)', () => {
+describe('플러그인 목록 - 활성화 성공 뒤 호환성 배너 재조회 (공개 #145 F8)', () => {
   /**
    * @scenario case=plugin_toggle
    * @effects activation_success_refetches_compatibility_banner

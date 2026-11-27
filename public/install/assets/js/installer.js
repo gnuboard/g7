@@ -1375,7 +1375,7 @@
                 // 정보(파랑) — 실패가 아니라 "어떻게 설치되는지" 안내 (W1)
                 html += renderExecutionModeInfoCard(df);
             } else {
-                // 차단(빨강)도 정보(파랑)와 같은 근거 목록을 보여준다 (14차 #12) — 사유가
+                // 차단(빨강)도 정보(파랑)와 같은 근거 목록을 보여준다 (14차 12) — 사유가
                 // 하단 에러 박스에만 있으면 항목 카드와 이유가 떨어져 읽힌다.
                 failedRequirements.push(df.message || lang('error_no_cli_and_no_bundle'));
                 html += renderExecutionModeFailCard(df);
@@ -1930,7 +1930,7 @@
      *
      * 서버는 pass/info/fail 세 갈래 **모두**에 같은 `reasons` 를 싣는다. 그런데 종전에는
      * 정보(파랑) 카드만 그것을 그려서, 「왜 막혔는지」가 가장 절실한 차단(빨강) 화면이
-     * 정보 화면보다 근거를 **덜** 주고 있었다 (14차 #12). 두 카드가 한 함수를 공유하면
+     * 정보 화면보다 근거를 **덜** 주고 있었다 (14차 12). 두 카드가 한 함수를 공유하면
      * 한쪽만 근거를 잃는 상태가 다시 생기지 않는다.
      *
      * @param {object} df disabled_functions 판정 응답
@@ -3567,7 +3567,7 @@
             ? '<div class="extension-card-footer">' + depsBlock + integrationsBlock + '</div>'
             : '';
 
-        // 서버에 없는 PHP 확장(composer.json require/suggest ext-*) — 필수가 없으면 고를 수 없게 끈다(#151)
+        // 서버에 없는 PHP 확장(composer.json require/suggest ext-*) — 필수가 없으면 고를 수 없게 끈다(공개 #151)
         const phpBlock = buildPhpExtensionNoticeHtml(item);
         const blockedByPhp = hasMissingRequiredPhpExtensions(item);
         if (blockedByPhp) {
@@ -3966,7 +3966,7 @@
                 );
                 if (card && card.classList.contains('disabled')) return;
             }
-            // 필수 PHP 확장이 없는 모듈·플러그인은 일괄 선택에서도 뺀다(#151)
+            // 필수 PHP 확장이 없는 모듈·플러그인은 일괄 선택에서도 뺀다(공개 #151)
             if (hasMissingRequiredPhpExtensions(item)) return;
             ids.push(item.identifier);
         });
@@ -4086,7 +4086,7 @@
     window.toggleExtension = function(type, identifier, isSingleSelect, _isAutoSelect) {
         const card = document.querySelector('.extension-card[data-type="' + type + '"][data-identifier="' + identifier + '"]');
         if (!card) return;
-        // 필수 PHP 확장이 없는 확장은 직접 클릭·의존 자동 선택 어느 쪽으로도 고르지 않는다(#151)
+        // 필수 PHP 확장이 없는 확장은 직접 클릭·의존 자동 선택 어느 쪽으로도 고르지 않는다(공개 #151)
         if (card.dataset.phpBlocked === '1' && selectedExtensions[type].indexOf(identifier) === -1) return;
 
         const isCurrentlySelected = selectedExtensions[type].indexOf(identifier) !== -1;
@@ -5331,7 +5331,7 @@
                         // 파일명·명령·사유가 전부 빈 패널이 된다. 사전 점검과 같은 렌더.
                         renderEnvNotWritableSetup(result.base_path || null, result.is_windows || false);
                     } else {
-                        // 사유 문단도 「부재」로 되돌린다 (24차 낮음 #1) — 같은 세션에서 쓰기 불가
+                        // 사유 문단도 「부재」로 되돌린다 (24차 낮음 1) — 같은 세션에서 쓰기 불가
                         // 안내를 그린 뒤 부재로 바뀌면 문단만 옛 사유로 남는다. 사전 점검과 대칭.
                         setEnvSetupReason(lang('file_setup_description'));
                         showFileSetupSection(result.missing_files || [], null, null, result.base_path, result.is_windows || false);
@@ -6338,7 +6338,7 @@
     }
 
     /**
-     * 의존 때문에 앞당겨 설치하는 항목의 「{이름}에 필요」 표시 문구 (#153).
+     * 의존 때문에 앞당겨 설치하는 항목의 「{이름}에 필요」 표시 문구 (공개 #153).
      *
      * 확장 저장 시 해석기가 기록한 `install_pulled_by`(종류 경계를 넘어 앞당겨진 `카테고리:식별자` → 요구한 확장)를
      * 설치 작업(*_install) 행에만 붙인다. 카테고리는 항목의 kind 다 — 화면은 확장 작업을 실행 순서대로 한 묶음
@@ -6617,7 +6617,7 @@
                 // `state.json` 이 디스크에 남고 `INSTALLER_COMPLETED` 가 기록되지 않아
                 // **인스톨러가 계속 열려 있다** — 운영자에게 알리는 문구가 어디에도 없다.
                 //
-                // 같은 파일의 중단 경로는 14차 #2 에서 이미 `res.ok` 판정을 받았다. 한 파일 안에
+                // 같은 파일의 중단 경로는 14차 2 에서 이미 `res.ok` 판정을 받았다. 한 파일 안에
                 // 규칙이 갈려 있던 자리를 맞춘다.
                 //
                 // 서버는 본문을 **먼저** 보내고 그 뒤에 일을 하므로(`finalize-env.php`) 이
@@ -7243,7 +7243,7 @@
                     body: JSON.stringify({})
                 }).then((abortResponse) => {
 
-                    // 서버가 중단을 **수락했는지**를 먼저 본다 (14차 #2).
+                    // 서버가 중단을 **수락했는지**를 먼저 본다 (14차 2).
                     //
                     // 단계별 실행은 상태 변경(run-task·abort·reset·skip_task)에 전부 토큰을
                     // 요구하고, 그 토큰은 설치를 시작한 세션에만 화면으로 나간다
@@ -7353,7 +7353,7 @@
      * @param {Object} state 설치 상태 정보
      */
     /**
-     * 이 창이 조작할 수 없는 「진행 중」 설치 안내 (14차 #2)
+     * 이 창이 조작할 수 없는 「진행 중」 설치 안내 (14차 2)
      *
      * 단계별 실행의 상태 변경은 전부 토큰을 요구하고, 그 토큰은 설치를 시작한 세션에만
      * 화면으로 나간다. 세션 만료·다른 창·다른 기기로 들어오면 이 창은 설치를 이어받을 수도,

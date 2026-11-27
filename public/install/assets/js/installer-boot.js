@@ -1,5 +1,5 @@
 /*
- * 설치 마법사 부트 — <head> 에서 가장 먼저 실행된다 (#158)
+ * 설치 마법사 부트 — <head> 에서 가장 먼저 실행된다 (공개 #158)
  *
  * 종전에는 index.php 의 인라인 <script> 두 개(다크 모드 즉시 적용 · window.INSTALLER_* 전역 대입)와 뷰 곳곳의
  * on* 속성으로 동작했다. 웹서버가 `Content-Security-Policy: script-src 'self'` 를 걸면 그 코드가 실행되지 않아

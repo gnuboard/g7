@@ -1,5 +1,5 @@
 /**
- * 런타임 CSS 규칙 헬퍼 — `<style>` 요소 없이 규칙을 붙인다 (#163, engine-v1.91.0)
+ * 런타임 CSS 규칙 헬퍼 — `<style>` 요소 없이 규칙을 붙인다 (공개 #163, engine-v1.91.0)
  *
  * [case:network-strict-style-csp-inline-style-blocked]
  *

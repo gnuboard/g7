@@ -1991,4 +1991,4 @@ new kakao.Postcode({
 - [액션 핸들러 인덱스](actions-handlers.md)
 - [네비게이션 핸들러](actions-handlers-navigation.md)
 - [상태 핸들러](actions-handlers-state.md)
-- [컴포넌트 이벤트](components.md#컴포넌트-간-이벤트-통신)
+- [컴포넌트 이벤트](components-advanced.md#컴포넌트-간-이벤트-통신-g7corecomponentevent)

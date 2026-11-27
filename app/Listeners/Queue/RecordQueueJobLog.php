@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
 use Throwable;
 
 /**
- * 큐 작업 처리 기록 리스너 (#17)
+ * 큐 작업 처리 기록 리스너
  *
  * 워커가 처리를 마친 작업 1건마다 queue_job_logs 에 1행을 남긴다.
  *

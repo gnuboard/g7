@@ -10,7 +10,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * ExtraFeeTemplateController Feature 테스트
  *
  * 추가배송비 템플릿 관리 API 엔드포인트 테스트
- * Issue #74: exists/unique 검증 규칙이 Model::class 기반으로 올바르게 동작하는지 검증
+ * exists/unique 검증 규칙이 Model::class 기반으로 올바르게 동작하는지 검증
  */
 class ExtraFeeTemplateControllerTest extends ModuleTestCase
 {

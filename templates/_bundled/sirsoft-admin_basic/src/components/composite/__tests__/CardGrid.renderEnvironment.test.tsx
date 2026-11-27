@@ -1,5 +1,5 @@
 /**
- * CardGrid — 셀 렌더 환경 전달 (이슈 #141)
+ * CardGrid — 셀 렌더 환경 전달 (이슈 공개 #141)
  *
  * 셀 렌더 함수는 React Context 를 못 읽어 브라우저 창 폭으로 `responsive` 분기를 골랐다.
  * CardGrid 는 자신이 받은 렌더 환경(`__componentContext.renderEnvRef.current`)에 자기
@@ -11,7 +11,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { CardGrid } from '../CardGrid';
 
-describe('CardGrid — 렌더 환경 전달 (#141)', () => {
+describe('CardGrid — 렌더 환경 전달 (공개 #141)', () => {
   let originalG7Core: any;
   const renderItemChildren = vi.fn(() => null);
 

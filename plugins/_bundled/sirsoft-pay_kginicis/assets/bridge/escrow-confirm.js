@@ -9,7 +9,7 @@
  *   - mobile-submit: 모바일. data-form 폼을 이니시스 모바일 결제 주소로 자동 제출한다
  *
  * 종전에는 각 페이지의 인라인 <script>(window.onload·자동 submit·window.close)였다 — 사이트가
- * script-src 'self' 를 걸면 실행되지 않아 구매결정을 할 수 없었다(#158). 손작성 ES5, 빌드하지 않는다.
+ * script-src 'self' 를 걸면 실행되지 않아 구매결정을 할 수 없었다(공개 #158). 손작성 ES5, 빌드하지 않는다.
  */
 (function () {
     'use strict';

@@ -10,7 +10,7 @@ use App\Support\TrustedStyleHosts;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 코어 CSP 헤더(Content-Security-Policy) 정책 조립 (#158)
+ * 코어 CSP 헤더(Content-Security-Policy) 정책 조립 (공개 #158)
  *
  * 코어 정책은 두 묶음을 다룬다.
  *   - 스크립트 계열: `script-src`·`worker-src`·`object-src`·`base-uri` ({@see build()})

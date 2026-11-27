@@ -1,5 +1,5 @@
 /**
- * E2E: 환경설정 > 드라이버 — S3 리전 자유입력·엔드포인트·path-style (#99)
+ * E2E: 환경설정 > 드라이버 — S3 리전 자유입력·엔드포인트·path-style (공개 #99)
  *
  * 시나리오 매니페스트: tests/scenarios/s3-storage-driver.yaml — 마킹은 각 테스트의
  * scenario(k=v 조합)·effects 주석이 담당하며, 헤더 요약 마킹은 파서 형식이 아니다
@@ -35,7 +35,7 @@ async function gotoDriversTabWithS3(page: import('@playwright/test').Page): Prom
 
 // @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=local_default
 // @effects region_free_input_mounted
-test('@smoke #99 - s3 선택 시 리전이 자유 입력 Input 으로 마운트된다 (Select 아님)', async ({ page }) => {
+test('@smoke 공개 #99 - s3 선택 시 리전이 자유 입력 Input 으로 마운트된다 (Select 아님)', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);
 

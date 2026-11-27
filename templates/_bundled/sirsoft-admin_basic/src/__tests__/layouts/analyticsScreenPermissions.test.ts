@@ -36,7 +36,7 @@ const CROSS_PERMISSION_SOURCES = new Set([
   'analytics_status',
   'analytics_storage',
   'analytics_notification_definitions',
-  // 리포트 탭 — 발송 스케줄의 다음 실행 일시(core.schedules.read, #17). 없으면 안내는 링크만 남는다.
+  // 리포트 탭 — 발송 스케줄의 다음 실행 일시(core.schedules.read,). 없으면 안내는 링크만 남는다.
   'analytics_report_schedules',
 ]);
 

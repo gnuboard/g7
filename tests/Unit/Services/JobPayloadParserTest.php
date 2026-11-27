@@ -9,7 +9,7 @@ use App\Services\JobPayloadParser;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 큐 payload 파서 테스트 (#17 — 예약 작업 Job 의 scheduleId 를 역직렬화 없이 읽는다)
+ * 큐 payload 파서 테스트 (— 예약 작업 Job 의 scheduleId 를 역직렬화 없이 읽는다)
  */
 class JobPayloadParserTest extends TestCase
 {

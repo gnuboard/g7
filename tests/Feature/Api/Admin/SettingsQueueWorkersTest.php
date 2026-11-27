@@ -12,7 +12,7 @@ use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
- * 환경설정 드라이버 탭 「큐 워커」 등록·상태 API 테스트 (#139)
+ * 환경설정 드라이버 탭 「큐 워커」 등록·상태 API 테스트 (공개 #139)
  *
  * 저장 검증 V1~V9, 서버 정규화, 설정 응답의 등록 가능 연결 메타, 큐 워커 상태 API 의 계약 모양과 권한 경계를 잠근다.
  */

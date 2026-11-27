@@ -198,7 +198,7 @@ class OrderReorderTest extends ModuleTestCase
     }
 
     /**
-     * 담지 못한 행의 상품명은 보는 언어 → 사이트 기본 언어(app.site_locale) → 영어 순으로 고른다 — ko·en 고정 순서가 아니다 (#148)
+     * 담지 못한 행의 상품명은 보는 언어 → 사이트 기본 언어(app.site_locale) → 영어 순으로 고른다 — ko·en 고정 순서가 아니다 (공개 #148)
      *
      * @scenario basis_case=skip_name_uses_site_locale
      *

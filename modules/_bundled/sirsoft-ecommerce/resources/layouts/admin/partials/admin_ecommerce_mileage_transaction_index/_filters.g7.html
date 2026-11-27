@@ -140,7 +140,7 @@
         <button data-ref="search_submit_button" type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce:text-sm">
           <responsive on="portable" class-merge="ecommerce:flex-1"/>
           <on type="click">
-            <!-- 검색 실행 — 열거한 검색 조건만 덮어쓰고 나머지 목록 상태는 유지한다 (#75). -->
+            <!-- 검색 실행 — 열거한 검색 조건만 덮어쓰고 나머지 목록 상태는 유지한다 (공개 #75). -->
             <navigate path="/admin/ecommerce/mileage-transactions" :replace="true" :mergeQuery="true" transition_overlay_target="mileage_transactions_datagrid__body">
               <query search_field="{{_local.filter.searchField ?? 'member'}}" search_keyword="{{_local.filter.searchKeyword ?? ''}}" type="{{_local.filter.type ?? ''}}" currency="{{_local.filter.currency ?? ''}}" start_date="{{_local.filter.startDate ?? ''}}" end_date="{{_local.filter.endDate ?? ''}}" sort="{{query.sort ?? 'created_at_desc'}}" per_page="{{query.per_page ?? 20}}" :page="1"/>
             </navigate>

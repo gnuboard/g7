@@ -6,7 +6,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Support\TrustedProxyDiagnostic;
 
 /**
- * 신뢰 프록시 미설정 경고 리스너 (#124)
+ * 신뢰 프록시 미설정 경고 리스너 (공개 #124)
  *
  * 프록시 뒤에서 신뢰 프록시가 설정되지 않은 상태는 HTTPS 종단 구성에서는 화면 백지로 즉시
  * 드러나지만, HTTP 전용 사이트가 프록시 뒤에 있으면 **화면이 완전히 정상이다.** 그 상태에서도
@@ -40,6 +40,7 @@ class TrustedProxyAlertListener implements HookListenerInterface
      * 훅 이벤트 처리 (기본 핸들러).
      *
      * @param  mixed  ...$args  훅에서 전달된 인수들
+     * @return void
      */
     public function handle(...$args): void
     {

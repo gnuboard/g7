@@ -359,7 +359,7 @@ class LanguagePackService
 
     /**
      * 코어와 설치된 확장의 `lang/{ko,en}/` 디렉토리를 스캔하여 가상 보호 LanguagePack
-     * 인스턴스 컬렉션을 반환합니다 (요구사항 #1, #2).
+     * 인스턴스 컬렉션을 반환합니다 (요구사항 1, 2).
      *
      * 스캔 대상 — **런타임이 실제로 로드하는 경로**와 같아야 한다. 어긋나면 관리자 화면이
      * "내장 번역" 으로 보여주는 것과 화면에 나오는 문구의 출처가 달라진다.
@@ -1090,7 +1090,7 @@ class LanguagePackService
 
         $identifier = $manifest['identifier'];
 
-        // 같은 언어팩의 다른 작업과 겹치지 않게 잠근다 — 업데이트(performUpdate)가 부른 설치는 그 잠금에 합류한다(#161)
+        // 같은 언어팩의 다른 작업과 겹치지 않게 잠근다 — 업데이트(performUpdate)가 부른 설치는 그 잠금에 합류한다(공개 #161)
         $operationLock = ExtensionOperationLock::acquire('language_pack', $identifier, 'install');
 
         $existing = $this->repository->findByIdentifier($identifier);
@@ -1192,7 +1192,7 @@ class LanguagePackService
     public function activate(LanguagePack $pack, bool $force = false): LanguagePack
     {
         // 같은 언어팩의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 겹치면 409, 잠금 저장소 오류면
-        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(공개 #161).
         $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'activate');
 
         $this->assertNotInProgress($pack);
@@ -1201,7 +1201,7 @@ class LanguagePackService
             return $pack;
         }
 
-        // 요구사항 #5: activate 시점에도 의존성/버전 호환성 검사 (이전: install 시점만)
+        // 요구사항 5: activate 시점에도 의존성/버전 호환성 검사 (이전: install 시점만)
         $this->assertDependencies($pack->manifest ?? []);
         $this->assertTargetExtensionExists($pack->manifest ?? []);
 
@@ -1239,7 +1239,7 @@ class LanguagePackService
     }
 
     /**
-     * 여러 언어팩을 일괄 활성화합니다 (요구사항 #7 reactivate 모달 → "활성화" 버튼).
+     * 여러 언어팩을 일괄 활성화합니다 (요구사항 7 reactivate 모달 → "활성화" 버튼).
      *
      * 각 ID 에 대해 activate() 를 호출하며, 실패한 항목은 reason 과 함께 응답에 포함합니다.
      * 의존성 검사는 activate() 내부에서 자동 수행됩니다 (§4).
@@ -1282,7 +1282,7 @@ class LanguagePackService
     public function deactivate(LanguagePack $pack, bool $cascadeFromHost = false): LanguagePack
     {
         // 같은 언어팩의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 겹치면 409, 잠금 저장소 오류면
-        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(공개 #161).
         $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'deactivate');
 
         $this->assertNotInProgress($pack);
@@ -1291,13 +1291,13 @@ class LanguagePackService
             return $pack;
         }
 
-        // 요구사항 #6: 호스트 확장 cascade 컨텍스트에서는 protected 가드 우회
+        // 요구사항 6: 호스트 확장 cascade 컨텍스트에서는 protected 가드 우회
         if ($pack->isProtected() && ! $cascadeFromHost) {
             throw new LanguagePackOperationException('language_packs.errors.protected_pack');
         }
 
         DB::transaction(function () use ($pack, $cascadeFromHost) {
-            // 호스트 연쇄면 사유를 남겨 호스트를 다시 켤 때 함께 켤 대상으로 삼는다(#145 — 캐시 대신 DB).
+            // 호스트 연쇄면 사유를 남겨 호스트를 다시 켤 때 함께 켤 대상으로 삼는다(공개 #145 — 캐시 대신 DB).
             // 운영자가 직접 끈 팩은 사유 없이 시각만 남긴다 — 호스트를 켜도 다시 켜지 않는다.
             $this->repository->update($pack, [
                 'status' => LanguagePackStatus::Inactive->value,
@@ -1328,7 +1328,7 @@ class LanguagePackService
         }
 
         // 같은 언어팩의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 겹치면 409, 잠금 저장소 오류면
-        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(공개 #161).
         $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'uninstall');
 
         $this->assertNotInProgress($pack);
@@ -1667,7 +1667,7 @@ class LanguagePackService
     /**
      * 번들 언어팩의 설치 차단 사유를 지금 다시 판정합니다 — 같은 실행에서 앞선 팩(코어 locale 팩)이 설치되면 사유가 사라질 수 있다.
      *
-     * `language-pack:provision` 이 미리 계산된 `install_blocked_reason` 대신 그 팩 차례에 부른다(#153).
+     * `language-pack:provision` 이 미리 계산된 `install_blocked_reason` 대신 그 팩 차례에 부른다(공개 #153).
      *
      * @param  string  $bundledIdentifier  번들 식별자 (`lang-packs/_bundled/{식별자}`)
      * @return string|null 차단 사유 키 또는 null (manifest 를 읽지 못하면 null — 설치 단계가 사유와 함께 실패한다)
@@ -1930,7 +1930,7 @@ class LanguagePackService
      */
     public function checkUpdates(?string $identifier = null): array
     {
-        // 요구사항 #4: 모듈 패턴 — 모든 source_type 점검 (GitHub 1순위, 실패 시 bundled 폴백)
+        // 요구사항 4: 모듈 패턴 — 모든 source_type 점검 (GitHub 1순위, 실패 시 bundled 폴백)
         // 전량 순회는 allForUpdateCheck() — paginate 는 HTTP page 파라미터를 암묵 해석해
         // `?page=2` 요청에서 순회가 0건이 된다 (공개 이슈 #102 동형)
         $packs = $identifier
@@ -2077,7 +2077,7 @@ class LanguagePackService
     }
 
     /**
-     * 번들 manifest 로부터 최신 버전을 조회합니다 (요구사항 #4 폴백 경로).
+     * 번들 manifest 로부터 최신 버전을 조회합니다 (요구사항 4 폴백 경로).
      *
      * @param  LanguagePack  $pack  대상 언어팩
      * @return string|null 최신 버전 문자열 또는 null
@@ -2129,7 +2129,7 @@ class LanguagePackService
         }
 
         // DB 에 설치된 모든 언어팩 (보호 가상 행 제외 — protected 로 필터됨).
-        // 전량 순회는 allForUpdateCheck() — paginate 의 암묵 page 해석 회피 (#102 동형)
+        // 전량 순회는 allForUpdateCheck() — paginate 의 암묵 page 해석 회피 (공개 #102 동형)
         $packs = $this->repository->allForUpdateCheck();
 
         foreach ($packs as $pack) {
@@ -2183,14 +2183,14 @@ class LanguagePackService
      */
     public function performUpdate(LanguagePack $pack, bool $force = false, ?PackageIntegrityOptions $integrity = null): LanguagePack
     {
-        // 요구사항 #4: bundled 도 update 가능. force=true 시 bundled 1순위, 그 외 GitHub 1순위 + bundled 폴백
+        // 요구사항 4: bundled 도 update 가능. force=true 시 bundled 1순위, 그 외 GitHub 1순위 + bundled 폴백
         $githubUrl = $this->resolveGithubUrl($pack);
         if (! $githubUrl && ! $this->hasBundledManifest($pack->identifier)) {
             throw new LanguagePackOperationException('language_packs.errors.update_no_source');
         }
 
         // 같은 언어팩의 업데이트는 한 번에 하나만 — 업데이트 확인(네트워크)과 Updating 기록 사이 구간에 들어온 두 번째 요청이
-        // 함께 통과하던 창(#138 과 같은 창)을 막는다. 안쪽 설치(finalizeInstall)는 이 잠금에 합류한다(#161).
+        // 함께 통과하던 창(공개 #138 과 같은 창)을 막는다. 안쪽 설치(finalizeInstall)는 이 잠금에 합류한다(공개 #161).
         $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'update');
 
         $this->assertNotInProgress($pack);

@@ -6,7 +6,7 @@ feature: tosspayments_validate_p2_claim_payment_hardening
 description: |
   브랜치 검증이 찾은 결제 플러그인 결함 중 토스페이먼츠 몫.
 
-  - #8 클라이언트 승인 API 경로(`claim-payments/{no}/approve` → `respondApprove` → `UserClaimService::approve`)는
+  - 8 클라이언트 승인 API 경로(`claim-payments/{no}/approve` → `respondApprove` → `UserClaimService::approve`)는
     서버 콜백과 같은 `claim_payment.approve` 필터를 타지만, 승인 뒤 거절의 보상(취소)은 서버 콜백의
     `ClaimPaymentCallback` 클로저에만 있었다. 그 경로로 들어온 승인은 모듈이 금액 불일치로 거절해도
     토스에 청구된 채 남는다. 승인 응답(금액·주문번호)을 리스너가 판정하고 어긋나면 리스너가 취소한다 —

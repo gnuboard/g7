@@ -7,7 +7,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 방문 통계 — 브라우저 언어에서 국가를 추정하는 규칙 테스트 (#148).
+ * 방문 통계 — 브라우저 언어에서 국가를 추정하는 규칙 테스트 (공개 #148).
  *
  * 지역 하위 태그(2자 알파)가 있을 때만 국가로 읽는다. 문자 표기가 낀 `zh-Hant-TW` 도 TW 이고,
  * 숫자 지역(`es-419`)과 지역 없는 코드(`fil`)는 추정하지 않는다.

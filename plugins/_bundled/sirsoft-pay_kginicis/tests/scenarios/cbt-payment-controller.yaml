@@ -25,8 +25,8 @@ effects:
   - cbt_failure_hides_upstream_message
   - cbt_hash_data_is_gated_by_order_context
   - cbt_user_cancel_returns_quietly
-  - cbt_cvs_term_reads_japan_time                 # 편의점 결제기한은 일본 시간으로 읽어 만료 판정·(JST) 표기 (#160 D11)
-  - cbt_operation_times_use_viewer_timezone       # 편의점 운영·대사 시각은 보는 사람 시간대 *_formatted (#160)
+  - cbt_cvs_term_reads_japan_time                 # 편의점 결제기한은 일본 시간으로 읽어 만료 판정·(JST) 표기 (공개#160 D11)
+  - cbt_operation_times_use_viewer_timezone       # 편의점 운영·대사 시각은 보는 사람 시간대 *_formatted (공개#160)
   - cbt_reconciliation_record_hides_internal_detail  # 수동 대사 기록의 사유·환불 오류에 내부 예외 원문을 남기지 않음
 
 test_files:

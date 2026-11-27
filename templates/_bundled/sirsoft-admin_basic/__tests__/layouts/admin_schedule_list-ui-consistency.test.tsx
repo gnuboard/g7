@@ -1,6 +1,6 @@
 /**
  * @file admin_schedule_list-ui-consistency.test.tsx
- * @description 스케줄·큐 화면 UI 일관성 정리(#17 후속) — 동작이 바뀌는 네 갈래와 새 구조의 계약
+ * @description 스케줄·큐 화면 UI 일관성 정리(후속) — 동작이 바뀌는 네 갈래와 새 구조의 계약
  *
  * 배경:
  *  - A-4 일괄 상태 변경이 확인 창 없이 바로 PATCH 했다 — 기준 목록 다섯 곳(쿠폰·회원·배송정책…)은 모두 확인 창을 거친다.

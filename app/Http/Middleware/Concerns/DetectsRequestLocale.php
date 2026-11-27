@@ -24,7 +24,7 @@ trait DetectsRequestLocale
     {
         $supportedLocales = config('app.supported_locales', ['ko', 'en']);
 
-        // SetLocale 2단계와 같은 협상(정확일치 → 주 언어 → 같은 주 언어의 다른 지역, #148)
+        // SetLocale 2단계와 같은 협상(정확일치 → 주 언어 → 같은 주 언어의 다른 지역, 공개 #148)
         $acceptLanguage = $request->header('Accept-Language');
         if ($acceptLanguage) {
             $locale = LocaleTag::negotiate($acceptLanguage, (array) $supportedLocales);

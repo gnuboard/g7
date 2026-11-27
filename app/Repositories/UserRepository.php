@@ -879,7 +879,7 @@ class UserRepository implements UserRepositoryInterface
     }
 
     /**
-     * 특정 권한을 가진 역할에 소속된 사용자의 id 만 오름차순으로 조회합니다 (#139).
+     * 특정 권한을 가진 역할에 소속된 사용자의 id 만 오름차순으로 조회합니다 (공개 #139).
      *
      * 회원 행 전체를 싣지 않고 id 열만 커서로 읽는다.
      *
@@ -905,7 +905,7 @@ class UserRepository implements UserRepositoryInterface
     }
 
     /**
-     * UUID 목록에 해당하는 사용자의 id 만 오름차순으로 조회합니다 (#139).
+     * UUID 목록에 해당하는 사용자의 id 만 오름차순으로 조회합니다 (공개 #139).
      *
      * @param  array<int, string>  $uuids  사용자 UUID 목록
      * @return array<int, int> 사용자 id (오름차순)
@@ -925,7 +925,7 @@ class UserRepository implements UserRepositoryInterface
     }
 
     /**
-     * 알림 발송에 쓸 사용자들을 id 순으로 다시 싣습니다 (#139).
+     * 알림 발송에 쓸 사용자들을 id 순으로 다시 싣습니다 (공개 #139).
      *
      * @param  array<int, int>  $ids  사용자 id 목록
      * @return Collection<int, User> id 오름차순 사용자

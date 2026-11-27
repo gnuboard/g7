@@ -50,7 +50,7 @@ function findById(node: any, id: string): any | null {
     return null;
 }
 
-describe('관리자 첨부 안내 — 선언 (#81 L-01)', () => {
+describe('관리자 첨부 안내 — 선언 (공개 #81 L-01)', () => {
     /**
      * @effects admin_attachment_hint_node_passes_board_limit_params
      */
@@ -102,7 +102,7 @@ describe('관리자 첨부 안내 — 선언 (#81 L-01)', () => {
     });
 });
 
-describe('관리자 첨부 안내 — 렌더 결과 (#81 L-01)', () => {
+describe('관리자 첨부 안내 — 렌더 결과 (공개 #81 L-01)', () => {
     afterEach(() => {
         window.history.replaceState({}, '', '/');
     });

@@ -8,7 +8,7 @@ use ReflectionMethod;
 use Tests\TestCase;
 
 /**
- * ApiRouteInventory 문서 도메인 그룹 산출 — 하위 리소스 분리 (#17).
+ * ApiRouteInventory 문서 도메인 그룹 산출 — 하위 리소스 분리.
  *
  * 큐 관리 API 는 스케줄 관리 화면 아래 경로(`/api/admin/schedules/queue/*`, 라우트명
  * `api.admin.schedules.queue.*`)에 있지만 별도 레퍼런스 문서(`queue.md`)로 다룬다.

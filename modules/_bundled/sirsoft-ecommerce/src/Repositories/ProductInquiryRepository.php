@@ -69,7 +69,7 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
             ->orderBy('id', 'desc')
             // audit:allow repository-paginate-column-pruning reason: 상품 1건에 종속된 문의 목록 —
             // where(product_id) 로 이미 좁혀져 OFFSET 이 깊어질 수 없고, 목록이 본문을 그대로 쓴다
-            // page 명시 하달 — HTTP `page` 파라미터 암묵 해석에 기대지 않는다 (#102 동형 예방)
+            // page 명시 하달 — HTTP `page` 파라미터 암묵 해석에 기대지 않는다 (공개 #102 동형 예방)
             ->paginate($perPage, ['*'], 'page', $page);
     }
 
@@ -108,7 +108,7 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
             $query->where(function ($q) use ($keyword, $locales) {
                 foreach ($locales as $locale) {
                     // 하이픈 로케일(fil-PH)은 따옴표 없는 JSON 경로가 무효(MySQL 3143)였다 — 형식을 검증하고
-                    // 빌더의 JSON 경로 문법으로 넘겨 키 인용·DB 별 함수를 문법기에 맡긴다 (#148)
+                    // 빌더의 JSON 경로 문법으로 넘겨 키 인용·DB 별 함수를 문법기에 맡긴다 (공개 #148)
                     if (! LocaleTag::isValid($locale)) {
                         continue;
                     }

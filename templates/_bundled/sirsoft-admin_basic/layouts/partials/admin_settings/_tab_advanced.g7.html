@@ -1,6 +1,6 @@
 <!-- 고급 탭 — 디버그·로그 같은 운영 값과 **캐시 비우기** 버튼이 있다.
   캐시 비우기만 설정값이 아니라 즉시 실행되는 동작이라 확인 창을 거친다.
-  e2e:allow #160 — GeoIP 최근 갱신 표시 바인딩만 서버가 만든 *_formatted(보는 사람 시간대)로 교체했다. 대체 검증: PHPUnit(CoreDisplayTimezoneTest) + Chrome MCP 매트릭스 S22 실측. -->
+  e2e:allow 공개 #160 — GeoIP 최근 갱신 표시 바인딩만 서버가 만든 *_formatted(보는 사람 시간대)로 교체했다. 대체 검증: PHPUnit(CoreDisplayTimezoneTest) + Chrome MCP 매트릭스 S22 실측. -->
 <partial description="환경설정 고급 탭 콘텐츠">
   <div data-ref="tab_content_advanced" data-if="{{(_global.activeSettingsTab || query.tab) === 'advanced'}}" class="card-stack">
     <div data-ref="card_cache_settings" class="card-stack-item">

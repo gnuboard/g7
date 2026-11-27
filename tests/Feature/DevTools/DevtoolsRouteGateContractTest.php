@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route as RouteFacade;
 use Tests\TestCase;
 
 /**
- * DevTools(`_boost`) 라우트의 **게이트 부착 계약** 테스트 (이슈 #128).
+ * DevTools(`_boost`) 라우트의 **게이트 부착 계약** 테스트 (이슈 공개 #128).
  *
  * 왜 행위 테스트만으로 부족한가:
  *   게이트가 빠진 라우트는 예외도 로그도 남기지 않는다 — 그 엔드포인트가 정상 응답하는 것이

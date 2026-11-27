@@ -25,7 +25,7 @@ use Tests\TestCase;
  *
  * 정적 화면은 SEO 선언 수집기(SeoDeclarationCollector)와 토글 판정기(SeoToggleEvaluator)를 목으로 넣고
  * 실제 generate()/generateToWriter() 로 검증한다. 예전에는 운영 로직을 테스트 안에 복사해 우회했기 때문에
- * 정적 호출 오류로 정적 화면이 통째로 빠지는 결함(#155)을 잡지 못했다.
+ * 정적 호출 오류로 정적 화면이 통째로 빠지는 결함(공개 #155)을 잡지 못했다.
  */
 class SitemapGeneratorTest extends TestCase
 {
@@ -180,7 +180,7 @@ class SitemapGeneratorTest extends TestCase
         $this->assertStringContainsString('<priority>0.8</priority>', $xml);
     }
 
-    // ─── 정적 화면 (SEO 선언 기반, #155) ─────────────────────
+    // ─── 정적 화면 (SEO 선언 기반, 공개 #155) ─────────────────────
 
     /**
      * 선언된 정적 화면이 레이아웃의 priority·changefreq 로 실제 generate() 결과에 실린다.
@@ -475,7 +475,7 @@ class SitemapGeneratorTest extends TestCase
     /**
      * 기여자에서 예외 발생 시 다른 기여자의 URL이 정상 수집되고, 실패가 오류로 보고되는지 확인합니다.
      *
-     * 경고 한 줄로 삼키면 운영 로그 수준(error)에서 보이지 않는다(#155) — report() 로 올리고 계속 진행한다.
+     * 경고 한 줄로 삼키면 운영 로그 수준(error)에서 보이지 않는다(공개 #155) — report() 로 올리고 계속 진행한다.
      *
      * @scenario static=contributor_failure
      *
@@ -1058,7 +1058,7 @@ class SitemapGeneratorTest extends TestCase
      * 요청이 없어 `app.url` 을, 웹 요청이 만들면 그 요청의 호스트를 실어 **같은 사이트의
      * 사이트맵이 생성 경로에 따라 다른 오리진**을 가졌다. 페이지의 정본 주소(canonical)와
      * 같은 단일 지점(`ScreenUrl::toAbsolute()` — 「사용자 화면 URL」, 비면 사이트 주소)으로 통일한다.
-     *정적 화면은 SEO 선언 수집기 경로(#155)로 실제 generate() 를 거쳐 잰다.
+     *정적 화면은 SEO 선언 수집기 경로(공개 #155)로 실제 generate() 를 거쳐 잰다.
      *
      * @effects sitemap_loc_origin_follows_configured_site_url
      *

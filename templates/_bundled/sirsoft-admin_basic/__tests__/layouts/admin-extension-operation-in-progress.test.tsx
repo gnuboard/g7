@@ -7,7 +7,7 @@ import templateActivateModal from '../../layouts/partials/admin_template_list/_m
 import languagePackContent from '../../layouts/partials/admin_language_pack_list/_content.json';
 
 /**
- * 확장·언어팩 켜기/끄기와 템플릿 활성화 — 「다른 작업 진행 중」 409 를 의존 경고·칸 충돌 409 와 가른다 (#161 D2·W3)
+ * 확장·언어팩 켜기/끄기와 템플릿 활성화 — 「다른 작업 진행 중」 409 를 의존 경고·칸 충돌 409 와 가른다 (공개 #161 D2·W3)
  *
  * 코어 7.1.5 부터 설치·업데이트·활성화·비활성화·제거가 같은 작업 잠금을 쓴다. 같은 대상에 다른 작업이 진행 중이면 서버가 409 에
  * `errors.operation_in_progress: true` 를 싣는다. 이 화면들의 409 는 원래 「의존 확장이 있음(강제 창)」·「같은 자리에 다른 언어팩
@@ -68,7 +68,7 @@ const cases = [
 const opensModal = (actions: Json[], pattern: RegExp) =>
   actions.some((a) => a.handler === 'openModal' && pattern.test(String(a.target ?? a.params?.target ?? '')));
 
-describe('확장·언어팩 생명주기 409 — 「다른 작업 진행 중」과 의존 경고·칸 충돌을 가른다 (#161)', () => {
+describe('확장·언어팩 생명주기 409 — 「다른 작업 진행 중」과 의존 경고·칸 충돌을 가른다 (공개 #161)', () => {
   /**
    * @scenario case=modal_409_discriminator
    * @effects lifecycle_409_in_progress_shows_info_toast_without_force_modal

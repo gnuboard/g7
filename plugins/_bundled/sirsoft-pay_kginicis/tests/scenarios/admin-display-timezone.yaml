@@ -1,4 +1,4 @@
-feature: KG이니시스 관리자 결제조회·에스크로 화면 값의 시간대 (#160)
+feature: KG이니시스 관리자 결제조회·에스크로 화면 값의 시간대 (공개#160)
 
 description: |
   - 결제조회 패널의 조회 시각(_inquiry_at), 해외 결제 로컬 대체 시각(_auth_date), 가상계좌 기한(_vbank_expire_date)은

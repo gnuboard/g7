@@ -14,7 +14,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
 /**
  * G2 가 신설했으나 어느 테스트도 부르지 않던 인스톨러 헬퍼들의 계약.
  *
- * "테스트 참조 0" 은 §16.11.2 #6 이 회귀 게이트를 세운 근거로 쓴 바로 그 지표다 — 그 배선이
+ * "테스트 참조 0" 은 §16.11.2 6 이 회귀 게이트를 세운 근거로 쓴 바로 그 지표다 — 그 배선이
  * 지워져도 전 스위트가 초록이라는 뜻이고, 실제로 그중 둘(`recordInstallationRunException` ·
  * `installerTaskKeyDisplayName`)에서 결함이 다시 나왔다. 여기서는 나머지
  * 헬퍼들의 계약을 고정한다 — 각각이 **무엇을 약속하는지**만 잡고, 호출 흐름은 이미
@@ -115,7 +115,7 @@ class InstallerUngatedHelperContractTest extends TestCase
 
     /**
      * 실행 모드 어휘는 코어 열거형에서 나온다 — 인스톨러가 자기 목록을 따로 들지 않는다
-     * (§16.9.1 #3). 인스톨러가 목록을 복제하면 코어에 모드가 늘어도 화면·검증이 따라가지 않는다.
+     * (§16.9.1 3). 인스톨러가 목록을 복제하면 코어에 모드가 늘어도 화면·검증이 따라가지 않는다.
      *
      * @scenario execution_mode_choice=auto, execution_mode_choice=subprocess, execution_mode_choice=inprocess
      *
@@ -180,7 +180,7 @@ class InstallerUngatedHelperContractTest extends TestCase
         // 키 존재만 보면 값을 늘 null·빈 배열로 채워도 초록이다.
         $this->assertIsArray($report['blocked_functions']);
         $this->assertIsArray($report['php_probe']);
-        $this->assertArrayHasKey('sapi', $report['php_probe'], 'probe 는 SAPI 를 실어 올린다 (§16.11.1 #5)');
+        $this->assertArrayHasKey('sapi', $report['php_probe'], 'probe 는 SAPI 를 실어 올린다 (§16.11.1 5)');
         $this->assertArrayHasKey('status', $report['php_probe']);
         $this->assertContains(
             $report['php_probe']['status'],
@@ -219,7 +219,7 @@ class InstallerUngatedHelperContractTest extends TestCase
 
     /**
      * best-effort 실패는 한 번만 기록된다 — 중복 누적되면 pending 필터가 같은 태스크를
-     * 반복해 무한 루프가 된다 (§16.8.1 #1 이 닫은 결함).
+     * 반복해 무한 루프가 된다 (§16.8.1 1 이 닫은 결함).
      *
      * @scenario task_outcome=best_effort_failed, task=config_cache
      *
@@ -273,7 +273,7 @@ class InstallerUngatedHelperContractTest extends TestCase
         writeInstallerRuntime(['installer' => ['stepwise_token' => 'tok-1']]);
         $this->assertSame('tok-1', readInstallerRuntime()['installer']['stepwise_token'] ?? null);
 
-        // 19차 G#1 — 종전에는 여기서 검사가 **스스로** `installerInvalidateRuntimeOpcache()` 를
+        // 종전에는 여기서 검사가 **스스로** `installerInvalidateRuntimeOpcache()` 를
         // 부른 뒤 읽었다. 그러면 생산 배선(`installer-runtime.php` 의 두 호출)을 지워도 초록이라
         // 계약을 전혀 보지 않는다. 게다가 PHPUnit CLI 는 opcache 가 꺼져 있어 round-trip 은
         // 무효화와 무관하게 늘 통과한다 — 그 자리가 P0 에서 실측으로 한 번 터진 결함
@@ -287,7 +287,7 @@ class InstallerUngatedHelperContractTest extends TestCase
     }
 
     /**
-     * 19차 G#1 — 쓰기·읽기 **양쪽**이 OPcache 를 무효화한다.
+     * 쓰기·읽기 **양쪽**이 OPcache 를 무효화한다.
      *
      * `runtime.php` 는 PHP 파일이라 OPcache 가 캐시한다. 무효화가 빠지면
      * `opcache.revalidate_freq`(기본 2초) 창 안의 다음 요청이 **이전 내용**을 include 한다 —
@@ -348,7 +348,7 @@ class InstallerUngatedHelperContractTest extends TestCase
      *
      * 여기서 고정하는 것은 그 반대 방향이다: exec 이 있는데도 조기 반환 형태를 돌려주면
      * 판정이 뒤집힌 것이다. 배열 키만 확인하면 두 분기가 구분되지 않아 어느 쪽으로
-     * 뒤집혀도 초록이 된다(§16.11.3 #21 이 형제 테스트에 적용한 기준).
+     * 뒤집혀도 초록이 된다(§16.11.3 21 이 형제 테스트에 적용한 기준).
      *
      * @scenario runner_strategy=subprocess
      *

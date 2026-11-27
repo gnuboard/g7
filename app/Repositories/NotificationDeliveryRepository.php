@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * 알림 수신자별 발송 기록 Repository (#139)
+ * 알림 수신자별 발송 기록 Repository (공개 #139)
  *
  * 선점·넘겨받기·확정·해제는 모두 조건부 단일 문장(INSERT IGNORE / 조건부 UPDATE·DELETE)이라
  * 동시에 도는 두 사본 중 하나만 성공한다.

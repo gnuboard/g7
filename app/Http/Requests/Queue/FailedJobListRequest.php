@@ -9,7 +9,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * 큐 실패 작업 목록 조회 요청 (#17)
+ * 큐 실패 작업 목록 조회 요청
  *
  * 쿼리 키: search_field(all,job,error,uuid)·search_keyword·queue·connection·
  * failed_start_date/failed_end_date·per_page·sort_by·sort_order.

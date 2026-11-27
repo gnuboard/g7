@@ -33,7 +33,7 @@ final class LocalizedText
             return '';
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 나머지 (빈 칸 건너뜀, 코어 LocalizedValue 위임 — #148)
+        // 요청 언어 → 사이트 기본 언어 → 영어 → 나머지 (빈 칸 건너뜀, 코어 LocalizedValue 위임 — 공개 #148)
         return LocalizedValue::pick($value, $locale) ?? '';
     }
 }

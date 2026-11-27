@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 커맨드 원문이 진행 기록이 아니라 「명령 상세」 접기로 간다 (14차 #3 · §12.0 W3).
+ * 커맨드 원문이 진행 기록이 아니라 「명령 상세」 접기로 간다 (14차 3 · §12.0 W3).
  *
  * ## 왜 이 축인가
  *
@@ -139,7 +139,7 @@ class InstallerCommandOutputChannelTest extends TestCase
     public function test_client_routes_marked_lines_into_the_collapsible_detail(): void
     {
         $js = $this->sourceWithoutComments($this->installRoot().'/assets/js/installer.js');
-        // 19차 G#4 — 뷰도 주석을 지운 뒤 대조한다.
+        // 뷰도 주석을 지운 뒤 대조한다.
         //
         // 같은 메서드의 `$js` 는 `stripJsComments()` 를 지나는데 뷰만 원문이었다. 그래서
         // `command-output-*` 블록을 PHP 블록 주석으로 감싸는 것만으로 이 검사가 초록으로

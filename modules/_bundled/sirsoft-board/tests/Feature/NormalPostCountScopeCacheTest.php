@@ -13,7 +13,7 @@ use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 일반 글 수 캐시를 목록 맥락·권한 범위로 나눈다 (#147 같은 결함군)
+ * 일반 글 수 캐시를 목록 맥락·권한 범위로 나눈다 (공개 #147 같은 결함군)
  *
  * 키에 권한 범위가 없어 「본인만」·「소유역할」 회원과 전체 범위 사용자가 같은 건수를 썼다 — 먼저 목록을 연
  * 사람의 건수가 다른 사람에게 보였다. 관리자·사용자 맥락도 같은 키였다.

@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-trusted-proxy-diagnostic.test.tsx
- * @description 환경설정 > 고급 의 리버스 프록시 진단 블록 (#124 W8 ②)
+ * @description 환경설정 > 고급 의 리버스 프록시 진단 블록 (공개 #124 W8 ②)
  *
  * 진단 행은 **읽기 전용**이다. 값 자체는 서버 진단(App\Support\TrustedProxyDiagnostic)이
  * 유일한 판정자이므로 화면은 그것을 표시만 한다 — 화면에서 조건을 다시 쓰면 서버와 다른

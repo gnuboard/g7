@@ -269,7 +269,7 @@ class ExecuteBundledUpdatesCommand extends Command
         $success = $outcome['success'];
         $failed = $outcome['failed'];
         $failedItems = $outcome['failed_items'];
-        // 잠금 저장소 장애로 일괄 업데이트를 멈췄는지와 시도하지 못한(건너뛴) 항목 수(#161 D8)
+        // 잠금 저장소 장애로 일괄 업데이트를 멈췄는지와 시도하지 못한(건너뛴) 항목 수(공개 #161 D8)
         $skipped = $outcome['skipped'];
         $aborted = $outcome['aborted'];
 
@@ -451,7 +451,7 @@ class ExecuteBundledUpdatesCommand extends Command
      *
      * 항목 프로세스의 출력은 그대로 이어 보이고 결과 표식 줄만 받아 집계한다. 결과 줄 없이 끝난 항목 프로세스(메모리
      * 고갈 등)는 그 항목만 실패로 세고 다음 항목으로 간다. 어떤 항목의 프로세스를 띄우지 못하면 그 항목만 이
-     * 프로세스에서 처리한다. 항목 프로세스가 잠금 저장소 장애로 멈췄다고 알리면 남은 항목을 띄우지 않고 건너뛴 수로 센다(#161 D8).
+     * 프로세스에서 처리한다. 항목 프로세스가 잠금 저장소 장애로 멈췄다고 알리면 남은 항목을 띄우지 않고 건너뛴 수로 센다(공개 #161 D8).
      *
      * @param  array<int, array{type: string, identifier: string, strategy: string|null}>  $items  항목 목록
      * @param  bool  $deferStaticPublish  항목 프로세스가 정적 게시를 건너뛰게 할지 (이 프로세스가 끝에서 한 번 예약)
@@ -499,7 +499,7 @@ class ExecuteBundledUpdatesCommand extends Command
             $total['failed'] += $outcome['failed'];
 
             if ($itemAborted) {
-                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8).
+                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(공개 #161 D8).
                 // 멈춘 항목은 중단 안내가 대신하므로 실패 항목 목록에 올리지 않는다(같은 프로세스 경로와 같은 모양).
                 $total['aborted'] = true;
                 $total['skipped'] = count($items) - $index - 1;
@@ -640,7 +640,7 @@ class ExecuteBundledUpdatesCommand extends Command
                 $this->renderDependencyWarnings($result, '  ');
                 $success++;
             } catch (ExtensionOperationLockUnavailableException $e) {
-                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
+                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(공개 #161 D8)
                 $failed++;
                 $aborted = true;
                 Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => $type, 'id' => $id]);
@@ -665,7 +665,7 @@ class ExecuteBundledUpdatesCommand extends Command
                 $this->renderDependencyWarnings($result, '  ');
                 $success++;
             } catch (ExtensionOperationLockUnavailableException $e) {
-                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
+                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(공개 #161 D8)
                 $failed++;
                 $aborted = true;
                 Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => 'template', 'id' => $id]);
@@ -714,7 +714,7 @@ class ExecuteBundledUpdatesCommand extends Command
                 $langPackService->performUpdate($pack, true);
                 $success++;
             } catch (ExtensionOperationLockUnavailableException $e) {
-                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
+                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(공개 #161 D8)
                 $failed++;
                 $aborted = true;
                 Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => 'lang_pack', 'id' => $id]);
@@ -812,7 +812,7 @@ class ExecuteBundledUpdatesCommand extends Command
 
             // audit:allow spawn-after-vendor-swap-clears-package-manifest 이 spawn 은 vendor 를 바꾸지 않고, 부모 core:update 가
             // 이미 패키지 매니페스트를 다시 만든 뒤 띄운 일괄 업데이트 자식 안에서 항목(또는 언어팩 단계)만 떼어 낸다.
-            // env 는 APP_VERSION·업데이트 플래그를 고정해 넘긴다 (#145 F10).
+            // env 는 APP_VERSION·업데이트 플래그를 고정해 넘긴다 (공개 #145 F10).
             $process = proc_open($commandLine, [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, base_path(), UpdateChildEnv::build());
             if (! is_resource($process)) {
                 return null;

@@ -72,7 +72,7 @@ export interface ModalProps {
     parentDataContext?: Record<string, any>;
     /**
      * Modal 노드의 편집기 경로(레이아웃 편집기 미리보기에서만 값이 있다). footer 단추마다
-     * `${componentPath}.props.footer.${index}` 를 넘겨 편집기가 footer 단추를 고르게 한다(#141).
+     * `${componentPath}.props.footer.${index}` 를 넘겨 편집기가 footer 단추를 고르게 한다(공개 #141).
      */
     componentPath?: string;
     [key: string]: any;
@@ -288,7 +288,7 @@ export const Modal: React.FC<ModalProps> = ({
 
     // 렌더 환경(이 Modal 을 그린 렌더러) > 호스트 값. 편집 모드면 액션을 바인딩하지 않는다.
     const env = __componentContext?.renderEnvRef?.current ?? null;
-    // 편집기 경로 — 엔진이 실어 준 Modal 노드 경로 뒤에 `.props.footer.{index}` 를 붙인다(#141).
+    // 편집기 경로 — 엔진이 실어 준 Modal 노드 경로 뒤에 `.props.footer.{index}` 를 붙인다(공개 #141).
     // 편집기는 이 표기를 `props.footer` 배열의 항목으로 읽어 children 과 같게 고르고 고친다.
     // 경로가 없으면(일반 화면) 넘기지 않는다.
     const ownerPath = __componentContext?.componentPath;

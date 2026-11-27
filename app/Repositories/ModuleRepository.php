@@ -287,7 +287,7 @@ class ModuleRepository implements ModuleRepositoryInterface
             }
 
             // 매니페스트 dependencies.modules 는 「식별자 => 버전 제약」 맵이다(목록 모양도 받는다). 종전 판정은
-            // 매니페스트 전체에 in_array 를 쓰거나 존재하지 않는 메서드를 찾아 한 번도 의존을 찾지 못했다(#138 실측 ①).
+            // 매니페스트 전체에 in_array 를 쓰거나 존재하지 않는 메서드를 찾아 한 번도 의존을 찾지 못했다(공개 #138 실측 ①).
             return array_key_exists($moduleIdentifier, ExtensionDependencies::constraints($moduleInstance->getDependencies())['modules']);
         })->values();
     }
@@ -321,7 +321,7 @@ class ModuleRepository implements ModuleRepositoryInterface
             }
 
             // 매니페스트 dependencies.plugins 는 「식별자 => 버전 제약」 맵이다(목록 모양도 받는다). 종전 판정은
-            // 매니페스트 전체에 in_array 를 쓰거나 존재하지 않는 메서드를 찾아 한 번도 의존을 찾지 못했다(#138 실측 ①).
+            // 매니페스트 전체에 in_array 를 쓰거나 존재하지 않는 메서드를 찾아 한 번도 의존을 찾지 못했다(공개 #138 실측 ①).
             return array_key_exists($pluginIdentifier, ExtensionDependencies::constraints($moduleInstance->getDependencies())['plugins']);
         })->values();
     }

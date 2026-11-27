@@ -1597,7 +1597,7 @@ class DormantLifecycleTest extends TestCase
     }
 
     /**
-     * 관리자 로그인 화면은 관리자가 아닌 휴면 회원을 휴면 해제 **전에** 거절한다 (#40 R12).
+     * 관리자 로그인 화면은 관리자가 아닌 휴면 회원을 휴면 해제 **전에** 거절한다 (R12).
      *
      * 종전(R7-B1)에는 비밀번호 확인 뒤 `issueLoginSession()` 이 먼저 휴면을 풀고 활동 로그를 남긴 다음 권한 판정이
      * 403 으로 거절해, 해제 사실을 문구(`auth.admin_required_dormancy_restored`)로 알렸다. 관리자 판정을 세션을

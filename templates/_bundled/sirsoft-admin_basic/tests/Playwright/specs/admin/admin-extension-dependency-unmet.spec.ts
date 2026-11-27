@@ -1,5 +1,5 @@
 /**
- * 확장 목록 카드의 미충족 의존 표시 브라우저 실측 (코어 7.1.4, #152).
+ * 확장 목록 카드의 미충족 의존 표시 브라우저 실측 (코어 7.1.4, 공개 #152).
  *
  * 정적 테스트(`__tests__/components/ExtensionCardGrid.dependency-unmet.test.tsx`·
  * `__tests__/layouts/template-dependency-version-screens.test.ts`)가 잠그는 것은 컴포넌트·매핑식이다.

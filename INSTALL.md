@@ -1175,7 +1175,7 @@ sudo chown -R www-data:www-data storage bootstrap/cache modules plugins template
 외부 접속이 막힌 서버를 위한 경로입니다. 「고급」 안에 있습니다.
 
 1. GitHub 릴리스 페이지에서 해당 버전의 ZIP 을 내려받습니다.
-2. FTP 로 `storage/app/core_pending` 에 그 파일을 올립니다. 같은 릴리스의 서명 파일(`<ZIP 이름>.sig.json`)도 함께 내려받아 **ZIP 옆에** 올립니다. 서명 파일이 없으면 「서명 없는 패키지」 확인을 한 번 더 받고, 환경설정 > 보안의 「미서명 패키지 차단」이 켜져 있으면 거부됩니다([확장 패키지 서명](docs/extension/package-signing.md)).
+2. FTP 로 `storage/app/core_pending` 에 그 파일을 올립니다. 같은 릴리스의 서명 파일(`g7-<버전>.sig.json`, 예: `g7-7.2.1.zip` 옆의 `g7-7.2.1.sig.json`)도 함께 내려받아 **ZIP 옆에** 올립니다. 7.2.1 이상 사이트는 이 이름과 `g7-<버전>.zip.sig.json` 을 모두 찾고, 7.2.0 사이트는 `g7-<버전>.zip.sig.json` 만 찾으므로 이름을 바꿔 올립니다([7.2.0 에서 7.2.1 로 올릴 때](#720-에서-721-로-올릴-때)). 서명 파일이 없으면 「서명 없는 패키지」 확인을 한 번 더 받고, 환경설정 > 보안의 「미서명 패키지 차단」이 켜져 있으면 거부됩니다([확장 패키지 서명](docs/extension/package-signing.md)).
 3. 업데이트 탭의 「고급」 → **직접 올린 ZIP 으로 업데이트** 에서 파일 이름을 고릅니다.
 4. 이후 과정은 자동 내려받기와 완전히 같습니다. 버전 비교도 똑같이 적용됩니다.
 
@@ -1248,11 +1248,11 @@ sudo php artisan core:update --source=/tmp/g7-new
 
 `--source=` 옵션은 다운로드 단계를 건너뛰고 지정 경로의 파일을 신버전으로 간주합니다. 풀어 둔 디렉터리는 배포 패키지가 아니므로 서명 확인 대상이 아닙니다.
 
-압축을 풀지 않고 ZIP 그대로 지정하려면 `--zip=` 을 씁니다. 이때는 서명을 확인하므로 같은 릴리스의 `<ZIP 이름>.sig.json` 을 ZIP 옆에 두거나 `--signature=` 로 경로를 줍니다.
+압축을 풀지 않고 ZIP 그대로 지정하려면 `--zip=` 을 씁니다. 이때는 서명을 확인하므로 같은 릴리스의 서명 파일 `g7-<버전>.sig.json` 을 ZIP 옆에 두거나 `--signature=` 로 경로를 줍니다. 7.2.0 에서 실행하면 ZIP 옆의 `g7-<버전>.zip.sig.json` 만 자동으로 찾으므로 `--signature=` 로 지정합니다.
 
 ```bash
-sudo php artisan core:update --zip=/tmp/g7-<버전>.zip                       # ZIP 옆 g7-<버전>.zip.sig.json 자동 사용
-sudo php artisan core:update --zip=/tmp/g7.zip --signature=/tmp/g7.zip.sig.json
+sudo php artisan core:update --zip=/tmp/g7-<버전>.zip                       # ZIP 옆 g7-<버전>.sig.json(또는 g7-<버전>.zip.sig.json) 자동 사용
+sudo php artisan core:update --zip=/tmp/g7-<버전>.zip --signature=/tmp/g7-<버전>.sig.json
 ```
 
 ### 사용자군별 단계적 업그레이드
@@ -1269,6 +1269,15 @@ sudo php artisan core:update --zip=/tmp/g7.zip --signature=/tmp/g7.zip.sig.json
 특정 베타 버전으로의 단계 업그레이드는 `--source=` 또는 `--zip=` 옵션으로 해당 버전 릴리스 ZIP 을 지정하여 진행합니다.
 
 > 버전별로 업데이트 전후에 확인할 것은 업그레이드 안내 문서에 모아 둡니다 — [7.1.x → 7.2.0](docs/upgrade/7.1.x-to-7.2.0.md) · [7.0.x → 7.1.0](docs/upgrade/7.0.x-to-7.1.0.md). 베타 시절 판의 분기는 [CHANGELOG.md](CHANGELOG.md) 의 해당 버전 "Upgrade Notice" 섹션을 참고하세요.
+
+#### 7.2.0 에서 7.2.1 로 올릴 때
+
+7.2.1 릴리스의 서명 파일 이름은 `g7-7.2.1.sig.json` 입니다(`g7-7.2.1.zip` 옆). 7.2.0 의 업데이터는 이 이름을 찾지 못하므로, 관리자 화면 자동 업데이트에서는 「서명이 없는 패키지입니다」 안내와 「미서명으로 계속」이 한 번 나옵니다. 그대로 눌러 진행하면 됩니다. 7.2.1 부터는 자동 업데이트에서 서명을 확인하므로 다음 업데이트부터는 이 확인이 나오지 않습니다.
+
+서명까지 확인하고 올리려면 `g7-7.2.1.zip` 과 `g7-7.2.1.sig.json` 을 내려받아 다음 중 하나로 진행합니다.
+
+- 관리자 화면 — 서명 파일 이름을 `g7-7.2.1.zip.sig.json` 으로 바꿔 ZIP 과 함께 `storage/app/core_pending` 에 올리고 [올려 둔 ZIP 으로 업데이트](#새-버전을-서버가-내려받을-수-없다면--올려-둔-zip-으로-업데이트)합니다.
+- 명령줄 — `php artisan core:update --zip=g7-7.2.1.zip --signature=g7-7.2.1.sig.json`
 
 #### 개발자 화면 자리(custom)가 있는 사이트
 

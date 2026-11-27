@@ -1,7 +1,7 @@
 /**
  * Layout Editor — 빈 컨테이너 첫 자식 삽입 + 폼 컴포넌트 propControl 편집.
  *
- * 결함#1 (빈 컨테이너 첫 자식 삽입 accepts 오필터):
+ * 결함 1 (빈 컨테이너 첫 자식 삽입 accepts 오필터):
  *  - "+ 요소 추가" 글로벌 팔레트는 선택 노드가 컨테이너이면 그 children 끝에 삽입한다.
  *  - 컨테이너 여부를 children 배열 존재로 판정하면(`Array.isArray(node.children)`) 자식이
  *    아직 없는 빈 컨테이너(Div/Form 등)는 컨테이너로 인식되지 못해 부모 accepts 로 필터된다.
@@ -93,7 +93,7 @@ async function addEmptyDiv(page: Page): Promise<string> {
 
 test.describe('@layout-editor 빈 컨테이너 첫 자식 + 폼 propControl', () => {
   /** @effects empty_container_global_palette_filters_by_own_accepts_not_parent, palette_filters_by_parent_accepts */
-  test('빈 Div 선택 시 팔레트가 그 Div 의 accepts(폼 포함)로 필터된다 (결함#1)', async ({ page }) => {
+  test('빈 Div 선택 시 팔레트가 그 Div 의 accepts(폼 포함)로 필터된다 (결함 1)', async ({ page }) => {
     await gotoEditor(page);
 
     const vdiv = await addEmptyDiv(page);

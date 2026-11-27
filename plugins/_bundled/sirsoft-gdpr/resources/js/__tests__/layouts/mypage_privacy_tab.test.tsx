@@ -509,7 +509,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
     describe('정책 갱신 amber 안내 박스 (마이페이지 카드 내 needs_renewal 안내)', () => {
         // 설계 결정 — 마이페이지 카드 안에 amber 박스 (gdpr_needs_renewal_banner) 유지.
         // 조건: gdprMeConsents.data.needs_renewal === true 일 때만 노출.
-        // 본문: 현 정책 버전 안내 (#23 informed consent) + 필수 쿠키 면제 hint
+        // 본문: 현 정책 버전 안내 (23 informed consent) + 필수 쿠키 면제 hint
         // 액션: 「전체 항목 다시 동의」 (POST /consent/renew-all)
         // 제거된 acknowledge-policy 흐름은 본 박스에 부활하지 않음.
         // @scenario area=renewal_banner
@@ -578,7 +578,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
         });
     });
 
-    // 「최신 정책으로 갱신」 항목별 amber 분기(#21)는 토글 재설계로 제거됨.
+    // 「최신 정책으로 갱신」 항목별 amber 분기는 토글 재설계로 제거됨.
     // 정책 갱신은 카드 상단 amber 박스(gdpr_needs_renewal_banner)의 「전체 항목 다시 동의」로 통합되고,
     // 개별 항목은 단순 on/off 토글로 켜면 최신 정책 버전으로 grant 된다. (grant 는 항상 현재 정책 버전 기록)
 });

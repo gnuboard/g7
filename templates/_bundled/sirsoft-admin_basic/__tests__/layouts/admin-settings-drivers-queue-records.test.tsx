@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-drivers-queue-records.test.tsx
- * @description 드라이버 탭 큐 카드 「처리 기록」 구역 (7.2.0, #17 D7·D8·K9)
+ * @description 드라이버 탭 큐 카드 「처리 기록」 구역 (7.2.0, D7·D8·K9)
  *
  * 처리 기록 켜기(`drivers.queue_job_log_enabled`)와 기록·실패 작업 공통 보관 기간(`drivers.queue_record_retention_days`,
  * 기본 7일, 1~90)을 고친다. 한계값은 설정 응답의 limits 메타(`drivers_queue_record_retention_days_min|max`)가 주고,

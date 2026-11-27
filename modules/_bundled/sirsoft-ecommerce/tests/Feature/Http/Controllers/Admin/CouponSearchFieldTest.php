@@ -68,11 +68,11 @@ class CouponSearchFieldTest extends ModuleTestCase
     }
 
     /**
-     * #1 all: name 단일컬럼 검색에서 제외되는 등록자 키워드도 all 에서는 매칭(union 폭 보존)
+     * 1 all: name 단일컬럼 검색에서 제외되는 등록자 키워드도 all 에서는 매칭(union 폭 보존)
      *
      * name/description FULLTEXT 매칭은 MySQL 토큰화(min token size/한글) 특성상 단위 테스트
      * 환경에서 단어 단위로만 검증 가능하므로, all 분기의 핵심인 "creator union 포함"을 검증한다.
-     * name/description 컬럼 한정(A18① 결함)은 #2/#3 (LIKE) 가 직접 입증한다.
+     * name/description 컬럼 한정(A18① 결함)은 2/#3 (LIKE) 가 직접 입증한다.
      */
     public function test_all_includes_creator_union(): void
     {
@@ -89,7 +89,7 @@ class CouponSearchFieldTest extends ModuleTestCase
     }
 
     /**
-     * #2 name: 이름 단어 매칭, 설명에만 있는 단어는 0건 (핵심)
+     * 2 name: 이름 단어 매칭, 설명에만 있는 단어는 0건 (핵심)
      */
     public function test_name_field_excludes_description_match(): void
     {
@@ -103,7 +103,7 @@ class CouponSearchFieldTest extends ModuleTestCase
     }
 
     /**
-     * #3 description: 설명 단어 매칭, 이름에만 있는 단어는 0건 (핵심)
+     * 3 description: 설명 단어 매칭, 이름에만 있는 단어는 0건 (핵심)
      */
     public function test_description_field_excludes_name_match(): void
     {
@@ -117,7 +117,7 @@ class CouponSearchFieldTest extends ModuleTestCase
     }
 
     /**
-     * #4 created_by: creator 매칭 (name/description 무관)
+     * 4 created_by: creator 매칭 (name/description 무관)
      */
     public function test_created_by_matches_creator(): void
     {

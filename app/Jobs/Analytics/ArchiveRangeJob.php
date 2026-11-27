@@ -48,7 +48,7 @@ class ArchiveRangeJob implements ShouldQueue
      * 진짜 예외는 재시도하지 않는다(maxExceptions = 1) — 집계는 멱등이지만 실패 원인이 대개 데이터·설정이라
      * 자동 재시도로는 풀리지 않는다. 실패를 이력에 남기고 운영자가 다시 누르게 한다.
      *
-     * 1 이 아니라 3 인 이유(#139): 실행이 연결의 retry_after 를 넘기면 다른 워커가 같은 잡을 다시 집는다.
+     * 1 이 아니라 3 인 이유(공개 #139): 실행이 연결의 retry_after 를 넘기면 다른 워커가 같은 잡을 다시 집는다.
      * tries 가 1 이면 그 사본은 handle 에 들어오지도 못하고 MaxAttemptsExceeded 로 실패 처리돼 failed() 가
      * 아직 도는 실행의 이력을 「실패」로 닫았다. 이제 사본은 handle 에 들어와 단일 실행 잠금에 막혀 조용히 끝난다.
      */
@@ -96,7 +96,7 @@ class ArchiveRangeJob implements ShouldQueue
         $this->queuedAt = AnalyticsClock::now()->toDateTimeString();
         $this->dispatchId = (string) Str::uuid();
 
-        // 긴 작업 연결·큐가 등록돼 있으면 그쪽으로 — retry_after 가 최장 실행보다 길어 다시 집히지 않는다 (#139)
+        // 긴 작업 연결·큐가 등록돼 있으면 그쪽으로 — retry_after 가 최장 실행보다 길어 다시 집히지 않는다 (공개 #139)
         if (($placement = app(QueueWorkerRegistry::class)->longPlacement()) !== null) {
             $this->onConnection($placement['connection']);
             $this->onQueue($placement['queue']);
@@ -185,7 +185,7 @@ class ArchiveRangeJob implements ShouldQueue
      */
     public function failed(Throwable $exception): void
     {
-        // 재예약이 거듭돼 시도 횟수가 다 찬 사본은 원본이 아직 도는 중이다 — 도는 실행의 이력을 닫지 않는다(#139).
+        // 재예약이 거듭돼 시도 횟수가 다 찬 사본은 원본이 아직 도는 중이다 — 도는 실행의 이력을 닫지 않는다(공개 #139).
         // 시간 초과는 원본 자신의 실패라(같은 프로세스가 잠금을 쥔 채) 아래로 내려가 닫는다.
         if ($exception instanceof MaxAttemptsExceededException
             && ! $exception instanceof TimeoutExceededException

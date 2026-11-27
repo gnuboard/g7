@@ -196,7 +196,7 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
     }
 
     /**
-     * 운영자 콘솔에 찍는 입금 기한은 사이트 시간대 시각이다 — UTC 원문이면 사이트 화면과 시간대 차이만큼 어긋난다(#160).
+     * 운영자 콘솔에 찍는 입금 기한은 사이트 시간대 시각이다 — UTC 원문이면 사이트 화면과 시간대 차이만큼 어긋난다(공개 #160).
      *
      * @scenario surface=cancel_command_output
      *

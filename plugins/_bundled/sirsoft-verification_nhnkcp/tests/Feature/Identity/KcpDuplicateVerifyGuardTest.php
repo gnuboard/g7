@@ -151,7 +151,7 @@ class KcpDuplicateVerifyGuardTest extends PluginTestCase
     }
 
     /**
-     * 로그인 회원이 다른 회원에 묶인 DI 로 본인인증하면 실패하고 기록을 만들지 않는다 (#40 R11).
+     * 로그인 회원이 다른 회원에 묶인 DI 로 본인인증하면 실패하고 기록을 만들지 않는다 (R11).
      *
      * @scenario gate=verify,basis=di,blocking=enabled,relation=logged_in_other_user
      *

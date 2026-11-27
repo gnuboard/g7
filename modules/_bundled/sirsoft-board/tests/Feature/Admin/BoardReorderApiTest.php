@@ -22,7 +22,7 @@ use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 게시판 표시 순서 저장 API 테스트 (#142)
+ * 게시판 표시 순서 저장 API 테스트 (공개 #142)
  *
  * `PUT admin/boards/order` 는 전체 게시판 id 목록을 새 순서로 받아 1..N 으로 다시 매긴다. 현재 집합과 다르면 422,
  * 게시판 수정 권한의 범위가 제한된 사람은 403 이다. 저장하면 메뉴·게시판 목록·관리자 목록·통합검색 선택칸이 새 순서를 따른다.

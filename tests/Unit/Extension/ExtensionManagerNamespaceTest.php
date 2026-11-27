@@ -97,7 +97,7 @@ class ExtensionManagerNamespaceTest extends TestCase
     }
 
     /**
-     * [회귀 #132] Manager 3개의 convertDirectoryToNamespace()가 언더스코어를 올바르게 처리하는지 검증
+     * [회귀] Manager 3개의 convertDirectoryToNamespace()가 언더스코어를 올바르게 처리하는지 검증
      *
      * @scenario subject=manager_delegation
      *
@@ -132,7 +132,7 @@ class ExtensionManagerNamespaceTest extends TestCase
     }
 
     /**
-     * [회귀 #132] ServiceProvider 4개가 디렉토리명의 언더스코어를 올바르게 처리하는지 검증
+     * [회귀] ServiceProvider 4개가 디렉토리명의 언더스코어를 올바르게 처리하는지 검증
      * (확장 프로바이더 등록기 2종은 resolveProviderClass(), 라우트 프로바이더 2종은 convertDirectoryToNamespace())
      *
      * @scenario subject=provider_delegation
@@ -242,7 +242,7 @@ class ExtensionManagerNamespaceTest extends TestCase
     }
 
     /**
-     * [회귀 #132] 실제 설치된 sirsoft-daum_postcode 플러그인의 네임스페이스 해석 검증
+     * [회귀] 실제 설치된 sirsoft-daum_postcode 플러그인의 네임스페이스 해석 검증
      *
      * PluginManager가 loadPlugins()로 플러그인을 로드할 때 생성하는 클래스 경로가
      * 실제 plugin.php의 네임스페이스 선언과 일치하는지 end-to-end 검증

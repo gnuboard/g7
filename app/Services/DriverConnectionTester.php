@@ -121,7 +121,7 @@ class DriverConnectionTester
 
             // Flysystem S3 어댑터 존재 선검사 — 테스트는 SDK 직접 경로지만 실제 파일 I/O 는
             // Storage::disk('s3') → 어댑터를 경유하므로, 어댑터가 없으면 테스트가 성공해도
-            // 실경로가 즉사한다 (#99 의 결함 은폐 구조). sdk_missing 검사와 대칭.
+            // 실경로가 즉사한다 (공개 #99 의 결함 은폐 구조). sdk_missing 검사와 대칭.
             if (! class_exists(AwsS3V3Adapter::class)) {
                 return [
                     'success' => false,

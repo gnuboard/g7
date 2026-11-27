@@ -1,7 +1,7 @@
 feature: strict_csp_kcp_frame
 
 description: |
-  PC 결제창 프레임의 인라인 실행 코드 제거 (#158 strict CSP).
+  PC 결제창 프레임의 인라인 실행 코드 제거 (공개#158 strict CSP).
 
   종전에는 주문 화면이 빈 iframe 에 document.write 로 KCP SDK 와 인라인 `<script>` 를 써 넣었다.
   사이트가 `script-src 'self'` 를 걸면 그 인라인 코드가 실행되지 않아 PC 결제가 15초 뒤 시간 초과로 끝났다.

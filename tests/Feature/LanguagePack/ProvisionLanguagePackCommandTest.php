@@ -504,7 +504,7 @@ class ProvisionLanguagePackCommandTest extends TestCase
 
     /**
      * 코어 범위 팩을 이름·조회 순서와 관계없이 먼저 설치하고, 그 뒤 확장 팩의 `core_locale_missing` 을 다시 판정해
-     * 한 번 실행으로 함께 설치한다(#153). 대상 확장 미설치처럼 다시 판정해도 막히는 팩은 건너뛴다.
+     * 한 번 실행으로 함께 설치한다(공개 #153). 대상 확장 미설치처럼 다시 판정해도 막히는 팩은 건너뛴다.
      *
      * @scenario target_locale_source=explicit_locale_option, locale_membership=non_base_declared, pack_state=uninstalled, scope=extension
      *

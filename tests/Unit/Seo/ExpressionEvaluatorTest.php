@@ -360,7 +360,7 @@ class ExpressionEvaluatorTest extends TestCase
     }
 
     /**
-     * 다국어 객체에서 현재 로케일이 없으면 사이트 기본 언어 값을 반환합니다 (#148 D7).
+     * 다국어 객체에서 현재 로케일이 없으면 사이트 기본 언어 값을 반환합니다 (공개 #148 D7).
      *
      * 대체 언어는 env 고정 `app.fallback_locale` 이 아니라 환경설정 「기본 언어」(`app.site_locale`)다.
      *
@@ -4258,7 +4258,7 @@ class ExpressionEvaluatorTest extends TestCase
     }
 
     /**
-     * $localized(): 현재 로케일이 없으면 사이트 기본 언어(ko)로 대체합니다 (#148 D7).
+     * $localized(): 현재 로케일이 없으면 사이트 기본 언어(ko)로 대체합니다 (공개 #148 D7).
      *
      * @scenario entry_point=evaluate, expression_form=single_binding
      *
@@ -4278,7 +4278,7 @@ class ExpressionEvaluatorTest extends TestCase
     }
 
     /**
-     * $localized(): 사이트 기본 언어가 영어면 한국어 값이 있어도 영어로 대체합니다 (#148 D7 — 종전 ko 고정).
+     * $localized(): 사이트 기본 언어가 영어면 한국어 값이 있어도 영어로 대체합니다 (공개 #148 D7 — 종전 ko 고정).
      *
      * @scenario entry_point=evaluate, expression_form=single_binding
      *

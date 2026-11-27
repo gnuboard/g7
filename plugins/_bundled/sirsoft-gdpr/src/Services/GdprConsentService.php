@@ -410,7 +410,7 @@ class GdprConsentService
     /**
      * 회원의 *활성 선택형 동의* 의 policy_version 만 현재 버전으로 일괄 bump.
      *
-     * "전체 항목 다시 동의" (#19) 버튼에 사용. 의사 변경은 없고 정책 버전만 갱신:
+     * "전체 항목 다시 동의" 버튼에 사용. 의사 변경은 없고 정책 버전만 갱신:
      *  - 필수 쿠키 (ePrivacy Art.5(3) 면제) 제외
      *  - 비활성 (철회 상태) 제외 — 사용자 의사 왜곡 방지 (revoked → granted 자동 전환 금지)
      *  - 활성 + 옛 버전 → policy_version = current, last_source = 'mypage_renew_all'

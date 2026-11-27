@@ -217,7 +217,7 @@ describe('template-engine — 운영 화면 편집 진입 단추', () => {
     expect(button.tagName).toBe('BUTTON');
     expect(button.style.right).toBe('16px');
     expect(button.style.left).toBe('');
-    // 규칙은 JSX <style> 자식이 아니라 런타임 시트(RuntimeStyleSheet)로 붙는다 — 엄격한 스타일 정책에서 <style> 이 막힌다(#163)
+    // 규칙은 JSX <style> 자식이 아니라 런타임 시트(RuntimeStyleSheet)로 붙는다 — 엄격한 스타일 정책에서 <style> 이 막힌다(공개 #163)
     expect(document.querySelector('style[data-g7le-edit-entry-fab-style]')).toBeNull();
     const style = getCssText(EDIT_ENTRY_FAB_STYLE_KEY) ?? '';
     expect(style).toContain('@media print');

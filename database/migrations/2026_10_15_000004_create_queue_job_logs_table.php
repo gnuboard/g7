@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 큐 작업 처리 기록 표를 만듭니다 (#17).
+ * 큐 작업 처리 기록 표를 만듭니다.
  *
  * 워커가 처리를 마친 작업(성공·실패)을 한 행씩 남긴다. 대기(jobs)·실패(failed_jobs) 표는 처리가 끝나면
  * 행이 사라지거나 실패만 남으므로 「성공했다」는 사실을 볼 곳이 없다. 재시도 대기(release)는 처리가 끝난 것이

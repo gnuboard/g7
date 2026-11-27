@@ -170,11 +170,11 @@ test.describe('@layout-editor drag-drop reorder', () => {
     // 활성 신호 = 슬롯 렌더(vacuous pass 방지)
     await page.waitForSelector('[data-dnd-slot-id]', { timeout: 5_000 });
 
-    // #3 — 고스트가 실제 컴포넌트 복제 (단순 <Div> 텍스트 배지가 아님)
+    // 3 — 고스트가 실제 컴포넌트 복제 (단순 <Div> 텍스트 배지가 아님)
     const ghost = page.getByTestId('g7le-dnd-drag-ghost');
     await expect(ghost).toBeVisible({ timeout: 3_000 });
 
-    // #2 — 고스트가 document.body 직속 포털(transform:scale 조상 밖) + 커서 근처
+    // 2 — 고스트가 document.body 직속 포털(transform:scale 조상 밖) + 커서 근처
     const ghostInfo = await page.evaluate((cursor) => {
       const g = document.querySelector('[data-testid="g7le-dnd-drag-ghost"]') as HTMLElement | null;
       if (!g) return null;
@@ -194,13 +194,13 @@ test.describe('@layout-editor drag-drop reorder', () => {
     }, to);
 
     expect(ghostInfo, '고스트 정보를 읽을 수 있어야 함').not.toBeNull();
-    expect(ghostInfo!.underScaledWrapper, '고스트는 scale 조상(g7le-preview-frame-wrapper) 밖이어야 함(#2)').toBe(false);
-    expect(ghostInfo!.isRealClone, '고스트는 실제 컴포넌트 복제여야 함(#3)').toBe(true);
-    expect(ghostInfo!.nearCursor, '고스트가 커서 근처에 위치해야 함(#2 정합)').toBe(true);
+    expect(ghostInfo!.underScaledWrapper, '고스트는 scale 조상(g7le-preview-frame-wrapper) 밖이어야 함').toBe(false);
+    expect(ghostInfo!.isRealClone, '고스트는 실제 컴포넌트 복제여야 함').toBe(true);
+    expect(ghostInfo!.nearCursor, '고스트가 커서 근처에 위치해야 함(2 정합)').toBe(true);
 
-    // #1 드롭 위치 표시 — 드래그 중 슬롯 렌더(라이브 프리뷰는 폐기, 위치만 표시)
+    // 1 드롭 위치 표시 — 드래그 중 슬롯 렌더(라이브 프리뷰는 폐기, 위치만 표시)
     const slotCount = await page.evaluate(() => document.querySelectorAll('[data-dnd-slot-id]').length);
-    expect(slotCount, '드래그 중 드롭 슬롯이 렌더되어야 함(#1 드롭 위치 표시)').toBeGreaterThan(0);
+    expect(slotCount, '드래그 중 드롭 슬롯이 렌더되어야 함(1 드롭 위치 표시)').toBeGreaterThan(0);
 
     // 드래그 종료 → 슬롯 해제
     await page.mouse.up();

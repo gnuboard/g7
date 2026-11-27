@@ -92,7 +92,7 @@ describe(' — admin 편집기 위젯 등록 (ActionDispatcher 무관)', () => {
     expect(() => registerSirsoftAdminBasicEditorWidgets()).not.toThrow();
   });
 
-  // 결함#3 핵심 회귀 가드: 등록 호출은 모듈 최상위(initTemplate/registerHandlers 바깥)에 있어야 한다.
+  // 결함 3 핵심 회귀 가드: 등록 호출은 모듈 최상위(initTemplate/registerHandlers 바깥)에 있어야 한다.
   // window.load + ActionDispatcher 재시도 게이트 안에 있으면 편집기 직접 하드로드 시 등록이 늦어 누락된다.
   it('index.ts 가 registerSirsoftAdminBasicEditorWidgets 를 모듈 최상위에서 호출한다(핸들러 게이트 밖)', () => {
     const src = readFileSync(INDEX_TS, 'utf8');

@@ -22,10 +22,10 @@ use Tests\TestCase;
 
 /**
  * `module:activate`·`plugin:activate`·`template:activate` 가 호스트를 끌 때 함께 꺼진 언어팩을 다시 켜는지 검증합니다
- * (#145 F7, D5).
+ * (공개 #145 F7, D5).
  *
  * 관리자 화면은 「언어팩 다시 켜기」 창으로 묻지만 CLI 는 아무것도 하지 않아, CLI 로 복구한 사이트(템플릿이 꺼져 관리자
- * 화면에 들어갈 수 없던 #137 경로)에 언어팩이 꺼진 채 남았다. CLI 는 기본으로 함께 켜고 `--without-language-packs` 로 생략한다.
+ * 화면에 들어갈 수 없던 공개 #137 경로)에 언어팩이 꺼진 채 남았다. CLI 는 기본으로 함께 켜고 `--without-language-packs` 로 생략한다.
  * 매니저는 대역으로 바꿔 활성화 성공만 돌려준다 — 이 테스트의 관심사는 그 뒤의 언어팩 복구다.
  */
 class ActivateRestoresLanguagePacksTest extends TestCase
@@ -168,7 +168,7 @@ class ActivateRestoresLanguagePacksTest extends TestCase
     }
 
     /**
-     * 템플릿 활성화도 언어팩을 함께 켠다 (#137 복구 경로).
+     * 템플릿 활성화도 언어팩을 함께 켠다 (공개 #137 복구 경로).
      *
      * @scenario case=template_default
      *

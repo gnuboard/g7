@@ -1,7 +1,7 @@
 /**
  * @file adminEcommerceSettingsSchedulesTab.test.tsx
  * e2e:allow 화면 축(설정 > 스케줄 탭 토글 왕복)은 라이브 매트릭스 M20 이 덮는다 — 이 파일은 레이아웃 구조·문구 단언이다.
- * @description 쇼핑몰 설정 > 스케줄 탭(7.2.0, #17 D15) — 이 모듈이 선언한 예약 작업 목록·켜고 끄기·스케줄 관리 링크
+ * @description 쇼핑몰 설정 > 스케줄 탭(7.2.0, D15) — 이 모듈이 선언한 예약 작업 목록·켜고 끄기·스케줄 관리 링크
  *
  * 계약:
  *  - 목록은 코어 목록 API 를 소유 필터로 재사용한다(`/api/admin/schedules?extension_type=module&extension_identifier=sirsoft-ecommerce`) —
@@ -94,7 +94,7 @@ describe('쇼핑몰 설정 스케줄 탭', () => {
     });
 
     /**
-     * 「스케줄 관리에서 변경」 안내는 설정 화면 전체가 같은 모양이다 — 파란 안내 상자 + 정보 아이콘 + 한 문장 + 링크(#17 UI 정리 H-42).
+     * 「스케줄 관리에서 변경」 안내는 설정 화면 전체가 같은 모양이다 — 파란 안내 상자 + 정보 아이콘 + 한 문장 + 링크(UI 정리 H-42).
      * @scenario case=link
      * @effects extension_tab_links_core_screen_with_owner_query
      */
@@ -144,7 +144,7 @@ describe('쇼핑몰 설정 스케줄 탭', () => {
     });
 
     /**
-     * 용어는 스케줄 관리 화면과 같다(#17 UI 정리 용어 계약 — 미실행·최근 실행 결과·다음 실행·상태, 「~ 변경되었습니다」).
+     * 용어는 스케줄 관리 화면과 같다(UI 정리 용어 계약 — 미실행·최근 실행 결과·다음 실행·상태, 「~ 변경되었습니다」).
      * @scenario case=i18n
      * @effects extension_tab_i18n_keys
      */

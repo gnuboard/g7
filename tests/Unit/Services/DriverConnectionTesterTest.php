@@ -53,7 +53,7 @@ class DriverConnectionTesterTest extends TestCase
      *
      * 도달 불가한 로컬 endpoint 로 시도 → 연결 실패의 error 문자열에 해당 endpoint
      * 호스트가 나타나야 한다 (AWS 리전 도메인이 아니라). 이것이 endpoint 미반영
-     * 결함(#99 ③ — s3_url 만 있고 SDK 요청 대상은 amazonaws.com 고정)의 회귀 가드다.
+     * 결함(공개 #99 ③ — s3_url 만 있고 SDK 요청 대상은 amazonaws.com 고정)의 회귀 가드다.
      *
      * @scenario region_shape=custom_minio,endpoint=path_style,driver_usability=adapter_present,attachment_disk=local_default
      *
@@ -143,7 +143,7 @@ class DriverConnectionTesterTest extends TestCase
     {
         $this->assertTrue(
             class_exists(AwsS3V3Adapter::class),
-            '어댑터는 코어 필수 의존성 (#99 A1)'
+            '어댑터는 코어 필수 의존성 (공개 #99 A1)'
         );
 
         $source = file_get_contents(app_path('Services/DriverConnectionTester.php'));

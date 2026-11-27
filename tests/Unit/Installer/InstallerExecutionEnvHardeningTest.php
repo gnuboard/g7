@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
- * 무CLI 환경에서 실행기가 조용히 죽지 않는다는 계약 (#3·#12·#25 · E3 · 보안#12).
+ * 무CLI 환경에서 실행기가 조용히 죽지 않는다는 계약 (3· 12· 25 · E3 · 보안 12).
  *
  * 고정하는 계약:
  *
@@ -172,7 +172,7 @@ class InstallerExecutionEnvHardeningTest extends TestCase
     }
 
     /**
-     * 환경#3 — 주입은 `$_ENV`/`$_SERVER` 를 항상 채운다.
+     * 환경 3 — 주입은 `$_ENV`/`$_SERVER` 를 항상 채운다.
      *
      * @scenario runner_strategy=inprocess
      *
@@ -194,7 +194,7 @@ class InstallerExecutionEnvHardeningTest extends TestCase
     }
 
     /**
-     * 환경#2·#3 — `putenv` 직접 호출은 단일 지점(installerPutEnv) 밖에 없다.
+     * 환경 2· 3 — `putenv` 직접 호출은 단일 지점(installerPutEnv) 밖에 없다.
      *
      * `disable_functions=putenv` 환경에서 무가드 호출은 `Error` 이고, `@` 로도 막히지 않는다.
      *
@@ -235,7 +235,7 @@ class InstallerExecutionEnvHardeningTest extends TestCase
     }
 
     /**
-     * 환경#25 — 시그널 종료는 사유가 붙는다 (cgroup OOM-kill 은 exit 137).
+     * 환경 25 — 시그널 종료는 사유가 붙는다 (cgroup OOM-kill 은 exit 137).
      *
      * @scenario runner_strategy=subprocess
      *
@@ -261,7 +261,7 @@ class InstallerExecutionEnvHardeningTest extends TestCase
     }
 
     /**
-     * 환경#12 — 출력 파일을 예약하지 못하면 그 사실을 명시한다.
+     * 환경 12 — 출력 파일을 예약하지 못하면 그 사실을 명시한다.
      *
      * @scenario runner_strategy=subprocess
      *
@@ -325,7 +325,7 @@ class InstallerExecutionEnvHardeningTest extends TestCase
     }
 
     /**
-     * 보안#12 — 시딩이 **실패해도** 관리자 비밀번호는 ENV 에서 사라진다.
+     * 보안 12 — 시딩이 **실패해도** 관리자 비밀번호는 ENV 에서 사라진다.
      *
      * in-process 는 putenv 가 FPM 워커 수명 동안 유지되므로, 실패 경로에서 남으면 이후 다른
      * 요청의 자식 프로세스가 평문을 상속한다.
@@ -356,7 +356,7 @@ class InstallerExecutionEnvHardeningTest extends TestCase
     }
 
     /**
-     * 환경#3 — 시딩 직전 주입은 `$_ENV` 로도 도달한다 (putenv 만으로는 부족하다).
+     * 환경 3 — 시딩 직전 주입은 `$_ENV` 로도 도달한다 (putenv 만으로는 부족하다).
      *
      * @scenario installation_mode=stepwise, task=db_seed, task_outcome=done
      *

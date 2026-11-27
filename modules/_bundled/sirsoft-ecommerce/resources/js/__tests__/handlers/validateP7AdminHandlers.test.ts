@@ -255,7 +255,7 @@ describe('10-#1 「환불까지 한 번에 처리」 — 모달을 다시 열면
     });
 });
 
-describe('10-#1 · #5 · #6 취소 성공 뒤 — 초기화·재조회·권한별 이동', () => {
+describe('10-#1 · 5 · 6 취소 성공 뒤 — 초기화·재조회·권한별 이동', () => {
     /**
      * @scenario surface=order_detail_cancel, defect=auto_advance_sticks
      * @effects order_cancel_auto_advance_resets_after_success

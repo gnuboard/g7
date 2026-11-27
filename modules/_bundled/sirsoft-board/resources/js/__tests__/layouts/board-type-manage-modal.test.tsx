@@ -267,7 +267,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
       const nameCell = findByIdPrefix(modal, 'bt_td_name');
       expect(nameCell.text).toContain('btItem.name');
 
-      // 엔진의 `$localized()` 가 현재 로케일($locale) → 사이트 기본 언어 → 영어 순으로 고른다(#148).
+      // 엔진의 `$localized()` 가 현재 로케일($locale) → 사이트 기본 언어 → 영어 순으로 고른다(공개 #148).
       // `_global.locale` 은 심는 곳이 없어 항상 undefined 라 쓰면 **모든 언어에서 한국어**가 나간다.
       expect(nameCell.text).toContain('$localized(btItem.name)');
       expect(nameCell.text).not.toContain('_global.locale');

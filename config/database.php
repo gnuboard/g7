@@ -47,7 +47,7 @@ return [
             'driver' => 'mysql',
             // Read 커넥션 — DB_READ_* 가 비어 있으면(미설정/빈 값/주석) 대응하는
             // DB_WRITE_* 로 fallback 한다. Read DB 미사용 환경에서도 SELECT 가 write DB 로
-            // 정확히 향하도록 보장한다. (이슈 #63)
+            // 정확히 향하도록 보장한다. (이슈 공개 #63)
             // 중첩 env(A, env(B)) 대신 Elvis(?:) 를 쓰는 이유: env('DB_READ_HOST') 가
             // 빈 문자열('')을 반환하면 두 번째 인자(default)가 적용되지 않아 fallback 이
             // 무력화된다. ?: 는 빈 문자열까지 falsy 로 흡수하여 write 로 넘긴다.

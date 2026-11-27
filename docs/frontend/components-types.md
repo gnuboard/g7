@@ -9,8 +9,8 @@
 
 1. [핵심 원칙](#핵심-원칙)
 2. [기본 컴포넌트 (Basic Component)](#1-기본-컴포넌트-basic-component)
-3. [집합 컴포넌트 (Composite Component)](#2-집합-컴포넌트-composite-component)
-4. [집합 컴포넌트 재사용 가이드라인](#3-집합-컴포넌트-재사용-가이드라인)
+3. [집합 컴포넌트 (Composite Component)](#2-집합-컴포넌트-composite-component--핵심)
+4. [집합 컴포넌트 재사용 가이드라인](#3-집합-컴포넌트-재사용-가이드라인--매우-중요)
 5. [레이아웃 컴포넌트 (Layout Component)](#4-레이아웃-컴포넌트-layout-component)
 
 ---

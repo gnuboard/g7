@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
- * 설정 JSON 저장 실패 판정 테스트 (#161 F5)
+ * 설정 JSON 저장 실패 판정 테스트 (공개 #161 F5)
  *
  * 7.1.4 까지 `saveCategory()` 는 잠금을 못 잡아 쓰지 않았어도, 쓰기가 잘렸어도 성공(true)을 돌려 화면이 「저장됨」을 보였는데
  * 값은 그대로였다. JSON 변환이 실패하면 파일을 열고 비운 뒤 `false` 를 써 설정 파일이 빈 채로 남았다. 이제 세 경우 모두

@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 /**
  * 소멸 예고 명령(notify-expiring-mileage) 이 알림 훅에 넘기는 소멸일 테스트
  *
- * 소멸일은 알림 변수(`expires_date`)로 그대로 쓰인다 — 사이트 시간대 날짜여야 한다(#160 D1).
+ * 소멸일은 알림 변수(`expires_date`)로 그대로 쓰인다 — 사이트 시간대 날짜여야 한다(공개 #160 D1).
  */
 class NotifyExpiringMileageCommandTest extends ModuleTestCase
 {

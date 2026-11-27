@@ -6,7 +6,7 @@
  * 브라우저 수준(빈 채 저장 시 오류 노출 / 첨부 미사용 게시판은 빈 값 허용 / 안내 문구 갱신 노출)은
  * 이 spec 이 담당한다.
  *
- * 정책 정정 (#78): "빈 값 금지" 는 첨부를 **사용하는** 게시판/기본값에만 적용된다.
+ * 정책 정정 (공개 #78): "빈 값 금지" 는 첨부를 **사용하는** 게시판/기본값에만 적용된다.
  * 첨부 미사용이면 확장자는 검증 자체에서 배제된다 — 그러지 않으면 첨부를 쓰지 않는
  * 게시판을 무변경 저장하는 것조차 422 로 막힌다.
  *
@@ -38,7 +38,7 @@ async function clearAllowedExtensionChips(page: import('@playwright/test').Page)
   }
 }
 
-test.describe.skip('게시판 허용 확장자 빈 값 저장 차단 (#78)', () => {
+test.describe.skip('게시판 허용 확장자 빈 값 저장 차단 (공개 #78)', () => {
   // @scenario surface=settings_attachment, use_file_upload=true
   // @effects empty_extensions_blocked_on_settings_save_when_upload_enabled
   test('환경설정에서 첨부 사용 ON + 허용 확장자를 비우고 저장하면 오류가 노출된다', async ({
@@ -66,7 +66,7 @@ test.describe.skip('게시판 허용 확장자 빈 값 저장 차단 (#78)', () 
 
   // @scenario surface=settings_attachment, use_file_upload=false
   // @effects empty_extensions_allowed_on_settings_save_when_upload_disabled
-  test('환경설정에서 첨부 미사용이면 허용 확장자를 비워도 저장된다 (#78)', async ({
+  test('환경설정에서 첨부 미사용이면 허용 확장자를 비워도 저장된다 (공개 #78)', async ({
     page,
     boardManageToken,
   }) => {

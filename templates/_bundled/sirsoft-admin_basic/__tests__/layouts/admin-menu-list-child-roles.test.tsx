@@ -27,7 +27,7 @@ const PARTIAL_PATH = path.resolve(
   '../../layouts/partials/admin_menu_list/_panel_menu_list.json',
 );
 
-/** 목록 응답 — 하위 메뉴에는 roles 키가 없다 (#76 프루닝) */
+/** 목록 응답 — 하위 메뉴에는 roles 키가 없다 (공개 #76 프루닝) */
 const MENU_ROWS = [
   {
     id: 10,
@@ -164,7 +164,7 @@ function buildLayoutFromPartial(): any {
   };
 }
 
-describe('메뉴 관리 — 하위 메뉴 선택 시 역할 보강 (#76)', () => {
+describe('메뉴 관리 — 하위 메뉴 선택 시 역할 보강 (공개 #76)', () => {
   let testUtils: ReturnType<typeof createLayoutTest>;
 
   beforeEach(() => {

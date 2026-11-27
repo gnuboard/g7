@@ -1545,7 +1545,7 @@ class OrderCancellationServiceTest extends ModuleTestCase
     }
 
     /**
-     * C-1-6: 부분취소 미리보기가 쿠폰 발급 행을 일절 변이하지 않는지 검증 (#108)
+     * C-1-6: 부분취소 미리보기가 쿠폰 발급 행을 일절 변이하지 않는지 검증
      *
      * C-1-5 는 단일 옵션 전량 취소라 buildFullCancelResult 조기 반환 경로를 타서
      * 재계산 자체가 일어나지 않는다. 잔여 옵션이 남는 부분취소여야 재계산 경로에

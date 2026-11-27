@@ -140,7 +140,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', $localeTimezoneMiddleware);
         $middleware->appendToGroup('api', $localeTimezoneMiddleware);
 
-        // 코어 CSP 헤더 (#158) — 관리자 환경설정 > 보안의 모드가 끔이 아니면 web HTML 응답에 붙인다.
+        // 코어 CSP 헤더 (공개 #158) — 관리자 환경설정 > 보안의 모드가 끔이 아니면 web HTML 응답에 붙인다.
         // web 그룹이라 플러그인 웹 라우트(결제·본인인증 브리지)도 함께 덮는다. 제외 조건은 미들웨어 주석 참조.
         $middleware->appendToGroup('web', ContentSecurityPolicy::class);
 
@@ -428,7 +428,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        // 확장·언어팩·코어 작업 잠금 거절 → 409(같은 대상 진행 중) / 503(잠금 저장소 오류) (#161)
+        // 확장·언어팩·코어 작업 잠금 거절 → 409(같은 대상 진행 중) / 503(잠금 저장소 오류) (공개 #161)
         // 컨트롤러가 잡지 않는 진입점(멈춘 업데이트 정리 등)의 안전망 — APP_DEBUG 에서도 trace·서버 경로를 싣지 않는다.
         $exceptions->render(function (ExtensionOperationLockException $e, Request $request) {
             if ($request->expectsJson() || $request->is('api/*')) {
@@ -522,7 +522,7 @@ if (is_string($g7PublicPath) && trim($g7PublicPath) !== '') {
 | Core Update: APP_VERSION 정합 — 같은 조건 안에서 프로세스 env 의 APP_VERSION 을 디스크 `.env` 값으로 올린다
 | (bootstrap/g7-update-env.php). 7.0.0~7.0.10 부모는 `.env` 만 바꾸고 자기 env 는 옛 버전으로 두므로, 그 env 를
 | 물려받은 새 코드 자식과 부모 안의 config:cache 일회용 앱이 옛 버전을 config/hooks 캐시에 구워 업데이트 뒤 첫
-| 프로세스가 확장을 자동 비활성화했다(#145, #137). 옛 부모 코드는 고칠 수 없지만 config:cache 는 어느 프로세스에서
+| 프로세스가 확장을 자동 비활성화했다(공개 #145, 공개 #137). 옛 부모 코드는 고칠 수 없지만 config:cache 는 어느 프로세스에서
 | 돌든 이 파일을 디스크에서 새로 require 하므로, 여기가 옛 부모 안과 모든 자식을 한 번에 덮는 유일한 지점이다.
 */
 $g7UpdateFlag = $_ENV['G7_UPDATE_IN_PROGRESS'] ?? $_SERVER['G7_UPDATE_IN_PROGRESS']

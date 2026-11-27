@@ -11,7 +11,7 @@ use Modules\Sirsoft\Board\Services\ReportService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 블라인드·복원 뒤 목록 캐시 무효화 (#147 같은 결함군)
+ * 블라인드·복원 뒤 목록 캐시 무효화 (공개 #147 같은 결함군)
  *
  * 삭제만 게시글 캐시를 비우고 블라인드·복원은 비우지 않아, 홈 최근·인기 게시글과 이웃 글의 이전/다음이
  * 캐시 TTL 동안 예전 상태로 남았다. 상태 변경 공통 지점에서 비우므로 단건·일괄·신고 처리·자동 숨김이 함께 덮인다.

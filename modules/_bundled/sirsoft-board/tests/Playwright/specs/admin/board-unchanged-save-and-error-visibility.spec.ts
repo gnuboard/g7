@@ -1,5 +1,5 @@
 /**
- * 게시판 무변경 저장 + 저장 실패 노출 (#78).
+ * 게시판 무변경 저장 + 저장 실패 노출 (공개 #78).
  *
  * 관리자 폼은 조회 응답 전체를 _local.form 에 통째로 담아 그대로 PUT 한다. 따라서 요청에는
  * 항상 모든 키가 존재하고, 토글이 꺼진 상태의 종속 필드까지 검증을 타면 아무것도 바꾸지 않은
@@ -47,7 +47,7 @@ async function saveUnchanged(page: import('@playwright/test').Page): Promise<num
   return response.status();
 }
 
-test.describe.skip('게시판 무변경 저장 및 저장 실패 노출 (#78)', () => {
+test.describe.skip('게시판 무변경 저장 및 저장 실패 노출 (공개 #78)', () => {
   // @scenario case=upload_disabled_extensions_empty
   // @effects unchanged_save_succeeds_for_upload_disabled_board
   test('첨부 미사용 게시판(notice)을 아무것도 바꾸지 않고 저장하면 성공한다', async ({

@@ -1,6 +1,6 @@
 /**
  * @file board-extension-slots.test.ts
- * @description 글·댓글·글쓰기 확장점 5종이 글이 보이는 모든 화면에 열려 있는지 정적 검증 (#149)
+ * @description 글·댓글·글쓰기 확장점 5종이 글이 보이는 모든 화면에 열려 있는지 정적 검증 (공개 #149)
  *
  * 배경(제보 — 확장 모듈로 글마다 「언어 배지」, 글쓰기에 「글 언어」 입력을 붙이려는 외부 개발자):
  *   target-id 로 지목하는 overlay 는 트리에서 첫 일치 노드 하나에만 주입된다. 게시판 글쓰기·상세는 같은 파일을
@@ -146,7 +146,7 @@ const CASES: FileCase[] = [
   { surface: 'board_form', file: 'partials/board/form/_post_form.json', name: 'board_post_form_bottom', count: 1, inIteration: false, props: FORM_PROPS },
 ];
 
-describe('게시판 확장점 — 파일별 자리 (#149 §6.1)', () => {
+describe('게시판 확장점 — 파일별 자리 (공개 #149 §6.1)', () => {
   /**
    * @scenario surface=board_list_basic, locale=ko, site_name=empty
    * @effects every_post_list_row_has_board_post_row_badges

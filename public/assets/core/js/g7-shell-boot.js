@@ -5,7 +5,7 @@
  * 이 파일을 정적 `<script src>` 로 싣는다. 종전에는 블레이드의 「G7 설정 전역 변수」 인라인
  * `<script>` 와 부트스트랩 인라인 `<script>`, 번들 태그의 `onload`/`onerror` 속성이었으나
  * strict CSP(`script-src 'self'`, unsafe-inline 없음)에서 전부 실행되지 않아 전 화면이 백지가
- * 됐다(#158). 동작은 인라인일 때와 같다.
+ * 됐다(공개 #158). 동작은 인라인일 때와 같다.
  *
  * 손작성 ES5 — 빌드하지 않는다. 엔진 번들을 못 읽는 구형 브라우저에서도 "비호환" 안내를
  * 띄워야 하기 때문이다(`BootstrapFallbackDiagnosisTest` 가 문법을 잠근다).
@@ -32,7 +32,7 @@
     // 셸 JS 가 도착했다는 표식 — 셸 JS 자체를 못 받은 경우의 CSS 지연 안내문(#g7-shell-stall)을 끈다.
     document.documentElement.className += ' g7-shell-ok';
     // 숨김 규칙은 정적 CSS(g7-core.css)에 있다. 그 파일을 못 받았더라도 안내문이 정상 화면 아래에
-    // 상시 노출되지 않게 DOM 속성으로도 숨긴다(스타일 정책과 무관하게 동작, #163).
+    // 상시 노출되지 않게 DOM 속성으로도 숨긴다(스타일 정책과 무관하게 동작, 공개 #163).
     var stallNotice = document.getElementById('g7-shell-stall');
     if (stallNotice) stallNotice.hidden = true;
 
@@ -130,7 +130,7 @@
         /** 모드 전환을 이미 시도했는지 (L1 — 페이지 수명당 1회) */
         modeSwitched: false,
 
-        /** 정적 게시 URL → API URL 전환을 이미 시도했는지 (#122 F15 — 페이지 수명당 1회) */
+        /** 정적 게시 URL → API URL 전환을 이미 시도했는지 (공개 #122 F15 — 페이지 수명당 1회) */
         staticRecovered: false,
 
         /**
@@ -153,7 +153,7 @@
 
                 // HTTPS 페이지가 http:// 자산을 요청하면 브라우저가 요청을 발신조차 하지 않고
                 // 차단한다(Mixed Content). 회선은 멀쩡하고 새로고침으로도 낫지 않으므로
-                // 'network' 안내는 두 겹의 거짓 안내가 된다 (#124).
+                // 'network' 안내는 두 겹의 거짓 안내가 된다 (공개 #124).
                 var blocked = location.protocol === 'https:' && absoluteUrl(src).indexOf('http://') === 0;
 
                 if (blocked) {
@@ -172,7 +172,7 @@
                 return;
             }
 
-            // 정적 게시(bake) URL 실패 → 종전 API URL 로 즉시 1회 전환 (#122 F15).
+            // 정적 게시(bake) URL 실패 → 종전 API URL 로 즉시 1회 전환 (공개 #122 F15).
             // GC 된 구버전 자산을 참조하는 캐시된 HTML 등 서빙 시점 404 를 복구한다.
             // 기존 예산(attempt)을 그대로 소비한다 (L2).
             var legacy = (bootstrap.staticRecovered || !assetUrl || !assetUrl.staticToLegacy)
@@ -258,9 +258,9 @@
          * 사유별로 문구가 갈린다 — 새로고침이 도움이 되는 실패와 그렇지 않은 실패를
          * 같은 문구로 안내하면 사용자가 자기 회선을 탓하며 영원히 새로고침하게 된다.
          *
-         * 새로고침 버튼은 인라인 onclick 없이 삽입 직후 리스너로 묶는다(#158).
+         * 새로고침 버튼은 인라인 onclick 없이 삽입 직후 리스너로 묶는다(공개 #158).
          * 모양은 클래스(`g7-boot-fallback*`, g7-core.css)로 준다 — 문자열 안 style 속성은 엄격한
-         * 스타일 정책에서 막혀 무스타일 화면이 된다(#163).
+         * 스타일 정책에서 막혀 무스타일 화면이 된다(공개 #163).
          *
          * @param reason 'network'(다운로드 실패) | 'blocked'(HTTPS 페이지가 http 자산 요청 →
          *               브라우저 차단, 사이트 설정 문제) | 'incompatible'(브라우저가 실행 못 함)
@@ -356,7 +356,7 @@
         }
     }, true);
 
-    // 정적 번들 <script data-g7-boot-bundle> 의 load/error — 인라인 onload/onerror 대체(#158).
+    // 정적 번들 <script data-g7-boot-bundle> 의 load/error — 인라인 onload/onerror 대체(공개 #158).
     // 재시도로 만든 스크립트는 표식이 없고 프로퍼티 핸들러로 따로 처리되므로 여기서 다시 잡지 않는다.
     function isBootBundle(el) {
         return !!(el && el.tagName === 'SCRIPT' && el.getAttribute && el.hasAttribute('data-g7-boot-bundle'));

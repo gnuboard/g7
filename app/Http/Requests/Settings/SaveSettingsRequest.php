@@ -96,7 +96,7 @@ class SaveSettingsRequest extends FormRequest
     private const IP_LIST_MAX = 100;
 
     /**
-     * CSP 추가 허용 호스트 최대 개수 (#158).
+     * CSP 추가 허용 호스트 최대 개수 (공개 #158).
      */
     private const CSP_HOST_LIST_MAX = 50;
 
@@ -479,7 +479,7 @@ class SaveSettingsRequest extends FormRequest
     }
 
     /**
-     * CSP 추가 허용 호스트 목록을 정리합니다 (#158).
+     * CSP 추가 허용 호스트 목록을 정리합니다 (공개 #158).
      *
      * 앞뒤 공백 제거·소문자화·빈 항목 제거·중복 제거(순서 유지). 형식 판정은 규칙
      * ({@see CspSourceHost})이 맡는다 — 여기서는 같은 호스트가 대소문자만 달라 두 번 저장되지 않게 한다.
@@ -920,7 +920,7 @@ class SaveSettingsRequest extends FormRequest
             'seo.sitemap_cache_ttl' => ['nullable', 'integer', 'min:'.config('core.settings_limits.seo_sitemap_cache_ttl_min', 3600), 'max:'.config('core.settings_limits.seo_sitemap_cache_ttl_max', 604800)],
             // 분할 기준. 상한 50000 은 sitemaps.org 프로토콜 제한이며 SitemapWriter 가 동일 값으로 클램프합니다.
             'seo.sitemap_urls_per_file' => ['nullable', 'integer', 'min:'.config('core.settings_limits.seo_sitemap_urls_per_file_min', 1000), 'max:'.config('core.settings_limits.seo_sitemap_urls_per_file_max', 50000)],
-            // zlib(gzencode) 없이 gzip 을 켜면 사이트맵 생성이 매번 실패한다 — 저장 시점에 막는다(#151)
+            // zlib(gzencode) 없이 gzip 을 켜면 사이트맵 생성이 매번 실패한다 — 저장 시점에 막는다(공개 #151)
             'seo.sitemap_gzip' => ['nullable', 'boolean', $this->sitemapGzipRequiresZlibRule()],
             'seo.sitemap_serve_stale_on_miss' => ['nullable', 'boolean'],
             'seo.sitemap_max_urls_per_contributor' => ['nullable', 'integer', 'min:0'],
@@ -991,7 +991,7 @@ class SaveSettingsRequest extends FormRequest
             'security.ip_restriction_rules.*.ips.*' => [new IpOrCidr],
             'security.ip_restriction_rules.*.memo' => ['nullable', 'string', 'max:'.self::IP_RULE_TEXT_MAX],
             'security.ip_restriction_rules.*.enabled' => ['nullable', 'boolean'],
-            // 콘텐츠 보안 정책(CSP) 헤더 (#158). 미전송(기존 클라이언트)은 기본값 off 유지.
+            // 콘텐츠 보안 정책(CSP) 헤더 (공개 #158). 미전송(기존 클라이언트)은 기본값 off 유지.
             // `.env G7_CSP_MODE` 탈출구는 저장값을 바꾸지 않고 적용 시점에만 우선한다(CspPolicyBuilder).
             'security.csp_mode' => ['nullable', 'string', Rule::in(CspPolicyBuilder::MODES)],
             'security.csp_extra_script_hosts' => ['nullable', 'array', 'max:'.self::CSP_HOST_LIST_MAX],
@@ -1066,14 +1066,14 @@ class SaveSettingsRequest extends FormRequest
             'drivers.session_driver' => $this->getTabRules($tab, 'drivers', [$this->getDriverCatalogRule('session', 'validation.settings.session_driver_invalid', self::SUPPORTED_SESSION_DRIVERS), $this->getDriverUsabilityRule('session')]),
             'drivers.session_lifetime' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_session_lifetime_min', 1), 'max:'.config('core.settings_limits.drivers_session_lifetime_max', 43200)], // 1분 ~ 30일
             'drivers.queue_driver' => $this->getTabRules($tab, 'drivers', [$this->getDriverCatalogRule('queue', 'validation.settings.queue_driver_invalid', self::SUPPORTED_QUEUE_DRIVERS), $this->getDriverUsabilityRule('queue')]),
-            // 큐 워커 등록 (#139) — 연결 중복(V2)·현재 드라이버 연결 누락(V3)·큐 목록 연결(V4)·빈 큐 목록(V5)·
+            // 큐 워커 등록 (공개 #139) — 연결 중복(V2)·현재 드라이버 연결 누락(V3)·큐 목록 연결(V4)·빈 큐 목록(V5)·
             // 연결 안 큐 중복(V9)은 연결 이름을 문구에 넣어야 해서 withValidator 의 after 콜백이 판정한다.
             'drivers.queue_connections' => ['nullable', 'array'],
             'drivers.queue_connections.*' => ['string', Rule::in(app(QueueWorkerRegistry::class)->registrableConnectionNames())],
             'drivers.queue_names' => ['nullable', 'array'],
             'drivers.queue_names.*' => ['array', 'max:20'],
             'drivers.queue_names.*.*' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9][A-Za-z0-9_.-]*$/'],
-            // 큐 작업 처리 기록 (#17) — 기록 켜기·처리 기록과 실패 작업 공통 보관 기간(일)
+            // 큐 작업 처리 기록 — 기록 켜기·처리 기록과 실패 작업 공통 보관 기간(일)
             'drivers.queue_job_log_enabled' => ['nullable', 'boolean'],
             'drivers.queue_record_retention_days' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_queue_record_retention_days_min', 1), 'max:'.config('core.settings_limits.drivers_queue_record_retention_days_max', 90)],
             'drivers.websocket_enabled' => ['nullable', 'boolean'],
@@ -1626,7 +1626,7 @@ class SaveSettingsRequest extends FormRequest
     }
 
     /**
-     * 큐 워커 등록(연결·연결별 큐)의 교차 규칙을 검사합니다 (#139 V2·V3·V4·V5·V9).
+     * 큐 워커 등록(연결·연결별 큐)의 교차 규칙을 검사합니다 (공개 #139 V2·V3·V4·V5·V9).
      *
      * - V2 같은 연결이 두 번 — 두 번째 칸에 오류
      * - V3 현재 큐 드라이버(sync 가 아닌) 연결을 목록에서 뺐다 — 목록이 비면 「현재 드라이버 연결 하나」라 통과

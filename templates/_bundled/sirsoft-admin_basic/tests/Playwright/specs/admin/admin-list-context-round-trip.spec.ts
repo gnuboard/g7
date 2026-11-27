@@ -28,7 +28,7 @@ function queryOf(url: string): URLSearchParams {
   return new URL(url).searchParams;
 }
 
-test.describe('@sirsoft-admin_basic 관리자 목록 컨텍스트 왕복 (#75)', () => {
+test.describe('@sirsoft-admin_basic 관리자 목록 컨텍스트 왕복 (공개 #75)', () => {
   // @scenario leg=enter
   // @effects list_return_preserves_query
   test('회원 목록에서 등록 폼으로 들어가도 목록 상태가 URL 에 남는다', async ({ page, userManageToken }) => {

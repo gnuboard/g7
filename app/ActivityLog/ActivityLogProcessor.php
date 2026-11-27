@@ -15,7 +15,7 @@ use Monolog\Processor\ProcessorInterface;
  * 리스너에서 명시적으로 전달하지 않은 경우에만 주입됩니다.
  *
  * CLI(Artisan 커맨드·스케줄러)에서 시작된 작업이면 properties.via = 'cli' 를 남겨, 행위자가 없는
- * 로그를 관리자 화면이 "시스템(CLI)" 로 구분할 수 있게 한다(#138). 웹 요청은 표기하지 않는다 —
+ * 로그를 관리자 화면이 "시스템(CLI)" 로 구분할 수 있게 한다(공개 #138). 웹 요청은 표기하지 않는다 —
  * 표기 부재가 곧 웹이며, 모든 웹 로그의 properties 계약을 바꾸지 않기 위함이다.
  */
 class ActivityLogProcessor implements ProcessorInterface

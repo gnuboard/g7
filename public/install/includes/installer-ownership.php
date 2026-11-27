@@ -448,7 +448,7 @@ if (! function_exists('installer_step3_db_connections')) {
     /**
      * Step 3 제출 폼에서 지문 대상 연결설정을 꺼낸다.
      *
-     * use_read_db 가 꺼져 있으면 read 연결은 null — 폼에 남은 read 값은 무시한다(이슈 #63).
+     * use_read_db 가 꺼져 있으면 read 연결은 null — 폼에 남은 read 값은 무시한다(이슈 공개 #63).
      *
      * @param  array<string, mixed>  $formData  Step 3 폼 데이터
      * @return array{write: array<string, mixed>, read: array<string, mixed>|null}

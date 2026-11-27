@@ -11,7 +11,7 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * 의존 미충족 문구가 의존 대상의 실제 종류를 현지화해 부르는지 검증 (#153 D4).
+ * 의존 미충족 문구가 의존 대상의 실제 종류를 현지화해 부르는지 검증 (공개 #153 D4).
  *
  * 종전 `modules.dependency_not_active` 는 종류와 무관하게 「모듈」이라 적어, 모듈이 플러그인(sirsoft-ckeditor5)에 의존해 막히면
  * 「의존하는 "sirsoft-ckeditor5" 모듈이 설치되지 않았거나…」로 안내했다.

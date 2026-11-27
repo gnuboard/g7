@@ -1,6 +1,6 @@
 /**
  * @file welcome-badge-site-fallback.test.ts
- * @description 홈 환영 배지와 사이트 이름 폴백이 화면 언어로 나오는지 렌더 검증 (#149)
+ * @description 홈 환영 배지와 사이트 이름 폴백이 화면 언어로 나오는지 렌더 검증 (공개 #149)
  *
  * 결함(제보): 홈 환영 카드의 배지 「Welcome」 이 ko·en·ja 모든 화면에서 영어로 나왔다. 같은 결함군으로
  *   사이트 이름을 비워 둔 사이트의 헤더 로고 자리·푸터·환영 카드 제목이 언어와 무관하게 「Site」(저작권 문구는
@@ -89,7 +89,7 @@ async function renderWelcome(general: Record<string, unknown>) {
   return current;
 }
 
-describe('홈 환영 카드 — 배지·사이트 이름 폴백 번역 (#149)', () => {
+describe('홈 환영 카드 — 배지·사이트 이름 폴백 번역 (공개 #149)', () => {
   afterEach(() => {
     current?.cleanup();
     current = null;

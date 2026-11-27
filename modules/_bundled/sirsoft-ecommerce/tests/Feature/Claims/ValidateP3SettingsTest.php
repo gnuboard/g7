@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 환경설정 저장 조립·서버 전용 이력·미지 키 결함 수정 검증 (validate P3 HTTP #7)
+ * 환경설정 저장 조립·서버 전용 이력·미지 키 결함 수정 검증 (validate P3 HTTP 7)
  *
  * 검증 축:
  * - 단건 저장(updateSetting)도 환불 자동 승인 결제수단의 결정 이력(P17)을 남긴다.

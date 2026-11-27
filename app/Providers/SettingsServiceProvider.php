@@ -289,7 +289,7 @@ class SettingsServiceProvider extends ServiceProvider
         }
 
         if (is_array($value)) {
-            // 사이트 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148 — SEO resolveLocalizedValue 와 같은 SSoT)
+            // 사이트 언어 → 사이트 기본 언어 → 영어 → 첫 값 (공개 #148 — SEO resolveLocalizedValue 와 같은 SSoT)
             return LocalizedValue::pick($value, (string) config('app.locale', 'ko')) ?? '';
         }
 
@@ -684,7 +684,7 @@ class SettingsServiceProvider extends ServiceProvider
      *
      * 설정된 클라이언트(config — env 시점 값이 config:cache 에도 박제됨)가 phpredis 를
      * 가리키는데 확장이 로드되어 있지 않고 predis 가 존재하면 참. phpredis 명시 설정이라도
-     * 확장이 없으면 어차피 동작 불가이므로 predis 전환이 유일한 동작 경로다 (#99 A2).
+     * 확장이 없으면 어차피 동작 불가이므로 predis 전환이 유일한 동작 경로다 (공개 #99 A2).
      * 확장 로드 여부는 인자로 받는다 — 확장 설치 머신에서 부재 상태를 재현할 수 없어
      * 판정 자체를 단위 검증 가능하게 분리한 것 (테스트가 양 분기를 주입 검증).
      *

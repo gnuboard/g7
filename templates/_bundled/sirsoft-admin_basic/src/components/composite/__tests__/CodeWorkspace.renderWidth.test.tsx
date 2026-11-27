@@ -1,5 +1,5 @@
 /**
- * CodeWorkspace — 기기 기본값은 렌더 폭을 따른다 (이슈 #141 D5)
+ * CodeWorkspace — 기기 기본값은 렌더 폭을 따른다 (이슈 공개 #141 D5)
  *
  * 기기 기본값(글자 크기 13/14·기본 줄바꿈)은 브라우저 창 폭이 아니라 **렌더 폭**(`G7Core.useResponsive()`)
  * 으로 정한다. 레이아웃 편집기 미리보기는 같은 문서의 div 라서, 창 1440 · 모바일 미리보기 390 에서
@@ -19,7 +19,7 @@ vi.mock('@monaco-editor/react', () => ({
   loader: { init: () => Promise.resolve({}), config: vi.fn() },
 }));
 
-describe('CodeWorkspace — 기기 기본값은 렌더 폭을 따른다 (#141)', () => {
+describe('CodeWorkspace — 기기 기본값은 렌더 폭을 따른다 (공개 #141)', () => {
   let originalG7Core: any;
   let originalWidth: number;
 

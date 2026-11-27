@@ -176,7 +176,7 @@ class CascadeInstallOrchestrator
                     ? $this->moduleService->activateModule($identifier)
                     : $this->pluginService->activatePlugin($identifier);
             } catch (\Throwable $e) {
-                // 의존 확장에 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503)면 감싸지 않고 올린다 — 응답 상태·표지를 지킨다(#161)
+                // 의존 확장에 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503)면 감싸지 않고 올린다 — 응답 상태·표지를 지킨다(공개 #161)
                 if ($e instanceof ExtensionOperationLockException) {
                     throw $e;
                 }
@@ -353,7 +353,7 @@ class CascadeInstallOrchestrator
     {
         $missing = array_merge($activation['missing_modules'] ?? [], $activation['missing_plugins'] ?? []);
         if ($missing !== []) {
-            // 사유 원문(version_mismatch 등)을 내보내지 않고 사람이 읽는 문장으로 — 복구 실패·CLI 와 같은 포맷터(#152 D5)
+            // 사유 원문(version_mismatch 등)을 내보내지 않고 사람이 읽는 문장으로 — 복구 실패·CLI 와 같은 포맷터(공개 #152 D5)
             return __('extensions.errors.cascade_dependency_unmet_list', [
                 'list' => DependencyEnricher::describeUnmet($missing),
             ]);

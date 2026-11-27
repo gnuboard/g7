@@ -1,4 +1,4 @@
-# audit:allow scenario-scale-axis-required reason: SendMessageJob 은 알림 1건당 1 dispatch(payload 1건·refkey 1건)로 볼륨 무관 상수 메모리다. 루프/chunk/대량 적재가 없어 #79 형 붕괴 구조가 아니므로 scale 축이 무의미하다.
+# audit:allow scenario-scale-axis-required reason: SendMessageJob 은 알림 1건당 1 dispatch(payload 1건·refkey 1건)로 볼륨 무관 상수 메모리다. 루프/chunk/대량 적재가 없어 공개#79 형 붕괴 구조가 아니므로 scale 축이 무의미하다.
 # audit:allow test-scenario-coverage reason: issue:#597 |
 #   발송 결과 기록·webhook 수신·결과코드 해석의 axes cross product 는 PHPUnit
 #   (BizppurioWebhookTest·ResultCodeResolverTest·SmsChannelDriverTest·SendMessageJobTest·

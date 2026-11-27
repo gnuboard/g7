@@ -12,7 +12,7 @@ use ReflectionProperty;
 use Tests\TestCase;
 
 /**
- * 설치 전 확인용 정보 조회는 미설치 확장의 PHP 진입 파일을 실행하지 않고 manifest(JSON)만 읽는지 검증 (#159)
+ * 설치 전 확인용 정보 조회는 미설치 확장의 PHP 진입 파일을 실행하지 않고 manifest(JSON)만 읽는지 검증 (공개 #159)
  *
  * ## 무엇을 막는가
  *

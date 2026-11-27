@@ -3,7 +3,7 @@
 // audit:allow job-generator-needs-scale-test 이 잡은 데이터를 적재하지 않고 기록 1건의 대상 러너에 위임한다 — 대량 처리는
 // 기존 보유기간 핸들러·휴면 서비스의 chunkById 순회(자동 배치와 같은 코드)가 담당하고, 규모 초과로 시간이 넘으면
 // failOnTimeout 이 기록을 실패로 닫으며 처리가 멱등이라 재실행이 이어서 처리한다. 잡이 도입한 규모 의존 경로 없음.
-// #139 에서 더한 것은 큐 배치(긴 작업 큐)·단일 실행 가드뿐이다 — 처리 규모 경로 무변경.
+// 공개 #139 에서 더한 것은 큐 배치(긴 작업 큐)·단일 실행 가드뿐이다 — 처리 규모 경로 무변경.
 
 namespace App\Jobs;
 
@@ -30,7 +30,7 @@ use Illuminate\Support\Str;
  * 재시도 마감({@see retryUntil()})이 지나면 실패로 기록된다.
  *
  * 다른 워커가 같은 잡을 다시 집으면(실행이 retry_after 를 넘긴 경우) 그 사본은 단일 실행 잠금에 막혀
- * 서비스를 부르지 않고 조용히 끝난다(#139). 긴 작업 연결·큐가 등록돼 있으면 그쪽으로 보낸다.
+ * 서비스를 부르지 않고 조용히 끝난다(공개 #139). 긴 작업 연결·큐가 등록돼 있으면 그쪽으로 보낸다.
  */
 class RunPrivacyManualActionJob implements ShouldQueue
 {
@@ -58,7 +58,7 @@ class RunPrivacyManualActionJob implements ShouldQueue
     public const RETRY_UNTIL_MINUTES = 120;
 
     /**
-     * @var int 긴 작업 큐에서의 재시도 마감 (분) — 긴 작업 뒤에서 기다리는 시간까지 넉넉히 둔다(#139).
+     * @var int 긴 작업 큐에서의 재시도 마감 (분) — 긴 작업 뒤에서 기다리는 시간까지 넉넉히 둔다(공개 #139).
      *          버려진 기록 판정({@see PrivacyManualRunService::STALE_AFTER_MINUTES} = 360)보다 짧아야 한다.
      */
     public const LONG_QUEUE_RETRY_UNTIL_MINUTES = 240;
@@ -143,7 +143,7 @@ class RunPrivacyManualActionJob implements ShouldQueue
     /**
      * 잡이 끝내 실패했을 때(시간 초과·재시도 마감) 기록을 실패로 닫습니다.
      *
-     * 재예약이 거듭돼 시도가 다 찬 사본은 원본이 아직 도는 중이라 닫지 않는다(#139).
+     * 재예약이 거듭돼 시도가 다 찬 사본은 원본이 아직 도는 중이라 닫지 않는다(공개 #139).
      *
      * @param  \Throwable  $exception  실패 원인
      * @return void

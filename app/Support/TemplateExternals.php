@@ -220,7 +220,7 @@ class TemplateExternals
      * 원인을 특정할 수 없다. 태그의 error 이벤트가 그 유일한 신호다.
      *
      * 종전에는 인라인 `onerror` 속성을 냈으나 strict CSP(`script-src 'self'`)에서 실행되지
-     * 않아(#158) 표식만 남긴다. 실패 처리는 셸 `<head>` 스크립트(`g7-shell-head.js`)가
+     * 않아(공개 #158) 표식만 남긴다. 실패 처리는 셸 `<head>` 스크립트(`g7-shell-head.js`)가
      * document 캡처 리스너로 받아 대기열(`__g7ExternalAssetFailed`)에 넣는다.
      *
      * @param  array<string, string|bool>  $attributes  태그 속성 (참조로 갱신)
@@ -554,7 +554,7 @@ class TemplateExternals
     /**
      * 정규화된 externals 중 외부(https) script 항목의 호스트를 모읍니다.
      *
-     * CSP `script-src` 자동 합산용(#158) — 같은 출처 자산(`asset`·`/` 경로)은 `'self'` 가 덮으므로 뺀다.
+     * CSP `script-src` 자동 합산용(공개 #158) — 같은 출처 자산(`asset`·`/` 경로)은 `'self'` 가 덮으므로 뺀다.
      *
      * @param  array<int, array<string, mixed>>  $externals  정규화된 externals
      * @return array<int, string> 호스트 목록 (소문자, 중복 제거, 포트 포함)

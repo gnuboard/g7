@@ -516,7 +516,7 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
     }
 
     /**
-     * public/storage 자체가 부재 (prune 삭제 또는 storage:link 미실행) → 재생성 (#43).
+     * public/storage 자체가 부재 (prune 삭제 또는 storage:link 미실행) → 재생성 (공개 #43).
      *
      * `StorageLinkHelper` 위임 이후 동작이 상위호환으로 확장됐다 — 기존 스텝은 "부재" 를
      * skip 했지만, 헬퍼는 Laravel storage:link source 가 존재하면 symlink 를 신규 생성한다.
@@ -543,7 +543,7 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
 
         $this->invokeRecoverPublicStorageSymlink();
 
-        $this->assertTrue(is_link($fakeBase.'/public/storage'), 'source 존재 시 부재 public/storage 를 symlink 로 재생성해야 한다 (#43)');
+        $this->assertTrue(is_link($fakeBase.'/public/storage'), 'source 존재 시 부재 public/storage 를 symlink 로 재생성해야 한다 (공개 #43)');
         $this->assertSame($fakeBase.'/storage/app/public', readlink($fakeBase.'/public/storage'));
     }
 

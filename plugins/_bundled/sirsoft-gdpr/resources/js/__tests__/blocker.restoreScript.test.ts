@@ -1,6 +1,6 @@
 // e2e:allow 차단 엔진 복원 분기 단위. 실제 동의 후 추적 스크립트 실행은 브라우저 실측(이력 §8 「T7 B2」 행)이 덮는다.
 /**
- * 동의 후 복원하는 <script> 는 실행 가능한 새 요소여야 한다 (#158 부수 결함 B2)
+ * 동의 후 복원하는 <script> 는 실행 가능한 새 요소여야 한다 (공개 #158 부수 결함 B2)
  *
  * innerHTML 로 되살린 <script> 는 문서에 붙여도 실행되지 않는다 — 동의를 받아도 MutationObserver 경로로 막혔던
  * 추적 스크립트가 돌지 않았다. 새 script 요소를 만들어 허용 속성(src·type·async·defer·crossorigin·integrity·
@@ -30,7 +30,7 @@ async function flush(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-describe('blocker 복원 — script 재생성 (#158 B2)', () => {
+describe('blocker 복원 — script 재생성 (공개 #158 B2)', () => {
     /**
      * @scenario restore=script_with_src
      * @effects blocker_restores_script_as_fresh_element

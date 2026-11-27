@@ -1828,7 +1828,7 @@ return ['version' => '7.2.0'];",
      * 증분 모드(applyList 지정): 코어가 변경하지 않은 파일(applyList 미포함)은
      * 스킵되어 사용자가 수정한 현재 디스크 내용이 보존됩니다.
      *
-     * 이슈 #64 핵심 회귀 가드 — `.htaccess` 커스텀 블록 소실 방지.
+     * 이슈 공개 #64 핵심 회귀 가드 — `.htaccess` 커스텀 블록 소실 방지.
      *
      * @scenario apply_mode=incremental
      *
@@ -2031,7 +2031,7 @@ return ['version' => '7.2.0'];",
 
     /**
      * `applyUpdate(prune:true)` 가 `public` 타깃을 정리할 때 정적 게시본
-     * (`public/build/ext`)을 orphan 으로 삭제하지 않고 보존합니다 (#122).
+     * (`public/build/ext`)을 orphan 으로 삭제하지 않고 보존합니다 (공개 #122).
      *
      * 게시본은 릴리즈 소스에 없는 로컬 파생물이라 excludes(`build/ext`) 미등록 시
      * prune 이 삭제해, 업데이트 완료까지 정적 fast path 가 불필요하게 끊긴다.
@@ -2078,7 +2078,7 @@ return ['version' => '7.2.0'];",
     }
 
     /**
-     * end-to-end 회귀 (#43): `applyUpdate(prune:true)` 가 `public` 타깃을 정리할 때
+     * end-to-end 회귀 (공개 #43): `applyUpdate(prune:true)` 가 `public` 타깃을 정리할 때
      * `public/storage` symlink 를 orphan 으로 삭제하지 않고 보존합니다.
      *
      * 릴리즈 소스(`public/`)에는 런타임 symlink 가 없으므로 prune 이 orphan 으로 판정하여
@@ -2120,11 +2120,11 @@ return ['version' => '7.2.0'];",
 
             // symlink/junction 이 orphan 삭제되지 않고 보존되어야 함. Windows junction 은
             // is_dir()/is_link() 이 stat 캐시에 따라 불안정하므로, 링크 존재는 readlink 로,
-            // 접근성은 업로드 파일 존재로 검증한다 (#43 — 404 회귀의 실측 지표).
+            // 접근성은 업로드 파일 존재로 검증한다 (공개 #43 — 404 회귀의 실측 지표).
             clearstatcache(true, $linkPath);
             $this->assertNotFalse(
                 @readlink($linkPath),
-                'public/storage 링크는 prune 후에도 보존되어야 한다 (#43)',
+                'public/storage 링크는 prune 후에도 보존되어야 한다 (공개 #43)',
             );
             $this->assertFileExists(
                 $linkPath.DIRECTORY_SEPARATOR.'uploaded.txt',
@@ -3252,7 +3252,7 @@ return ['version' => '7.2.0'];",
      *
      * 회귀 시나리오: targets 의 `{domain}/_bundled` 를 source 기준으로 sync 할 때,
      * source(신버전 코어 배포본)에 없는 사용자 디렉토리(`_bundled/my-project`) 가
-     * orphan 으로 판정되어 삭제되던 결함 (공개 gnuboard/g7 #43 제보).
+     * orphan 으로 판정되어 삭제되던 결함 (공개 gnuboard/g7 공개 #43 제보).
      *
      * @effects test_apply_update_preserves_user_added_bundled_subdir_all_domains
      *

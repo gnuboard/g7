@@ -1,6 +1,6 @@
 // e2e:allow 오류 화면 DOM 단위. 브라우저 계층(strict CSP 실제 차단)은 strict-csp.spec.ts 가 커버한다.
 /**
- * ErrorDisplay — 새로고침 버튼에 인라인 on* 핸들러가 없다 (#158, engine-v1.84.1)
+ * ErrorDisplay — 새로고침 버튼에 인라인 on* 핸들러가 없다 (공개 #158, engine-v1.84.1)
  *
  * strict CSP(`script-src 'self'`)에서는 `onclick`·`onmouseover`·`onmouseout` 속성이 실행되지 않아
  * 오류 화면의 유일한 탈출구(새로고침)가 무반응이었다. 리스너로 묶는다.
@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ErrorDisplay } from '../ErrorDisplay';
 
-describe('ErrorDisplay 인라인 핸들러 제거 (#158)', () => {
+describe('ErrorDisplay 인라인 핸들러 제거 (공개 #158)', () => {
   const originalLocation = window.location;
   let reload: ReturnType<typeof vi.fn>;
 

@@ -20,7 +20,7 @@
   <transition-overlay>
     <wait-for>reports</wait-for>
   </transition-overlay>
-  <!-- 검색 실행 — 열거한 검색 조건만 덮어쓰고 페이지당 개수 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다 (#75). -->
+  <!-- 검색 실행 — 열거한 검색 조건만 덮어쓰고 페이지당 개수 등 나머지 목록 상태는 유지한다. page 는 새 검색이므로 1페이지로 되돌린다 (공개 #75). -->
   <action name="searchBoardReports">
     <navigate path="/admin/boards/reports" :mergeQuery="true">
       <query page="" filters[0][field]="{{_local.searchField || 'all'}}" filters[0][value]="{{_local.searchQuery || ''}}" filters[0][operator]="like" status="{{((_global.statusFilter ?? query['status[]'] ?? []) || []).length > 0 ? (_global.statusFilter ?? query['status[]']) : null}}" type="{{((_global.typeFilter ?? query['type[]'] ?? []) || []).length > 0 ? (_global.typeFilter ?? query['type[]']) : null}}" target_status="{{((_global.targetStatusFilter ?? query['target_status[]'] ?? []) || []).length > 0 ? (_global.targetStatusFilter ?? query['target_status[]']) : null}}" reported_at_from="{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reported_at_from || '')}}" reported_at_to="{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}"/>
@@ -40,7 +40,7 @@
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.reports.page_title" description="$t:sirsoft-board.admin.reports.page_description">
         <button type="button" aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="refresh_button" class="board-btn-icon">
           <on type="click">
-            <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (#75). -->
+            <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 (공개 #75). -->
             <navigate path="/admin/boards/reports" :mergeQuery="true">
               <query/>
             </navigate>

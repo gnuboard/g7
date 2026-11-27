@@ -251,7 +251,7 @@ class JsonConfigRepository implements ConfigRepositoryInterface
         $path = $this->getCategoryPath($category);
         $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
-        // 변환 실패(잘못된 UTF-8 등)면 파일을 열지 않는다 — 열고 비운 뒤 false 를 쓰면 설정 파일이 빈 채로 남았다(#161 F5)
+        // 변환 실패(잘못된 UTF-8 등)면 파일을 열지 않는다 — 열고 비운 뒤 false 를 쓰면 설정 파일이 빈 채로 남았다(공개 #161 F5)
         if ($json === false) {
             Log::error("설정 JSON 변환 실패 — 파일을 바꾸지 않습니다: {$category}", ['error' => json_last_error_msg()]);
 
@@ -272,7 +272,7 @@ class JsonConfigRepository implements ConfigRepositoryInterface
             }
 
             // 잠금을 못 잡거나 다 쓰지 못하면 실패로 답한다 — 7.1.4 까지는 잠금 실패 시 쓰지 않고도, 쓰기가 잘려도 성공(true)을
-            // 돌려 화면이 「저장됨」을 보였는데 값은 그대로였다(#161 F5)
+            // 돌려 화면이 「저장됨」을 보였는데 값은 그대로였다(공개 #161 F5)
             if (! $this->lockForWrite($handle)) {
                 fclose($handle);
                 Log::error("설정 파일 잠금 실패 — 저장하지 않았습니다: {$category}");
@@ -442,7 +442,7 @@ class JsonConfigRepository implements ConfigRepositoryInterface
     }
 
     /**
-     * 백업·복원이 쓰는 zip 확장이 있는지 확인합니다. (#151 — 없으면 `ZipArchive` 미정의로 500 이 났다)
+     * 백업·복원이 쓰는 zip 확장이 있는지 확인합니다. (공개 #151 — 없으면 `ZipArchive` 미정의로 500 이 났다)
      *
      * 이 저장소는 컨테이너 바인딩 이전에 `new` 로 만들어지므로 조회기는 호출 시점에 컨테이너에서 받는다.
      *

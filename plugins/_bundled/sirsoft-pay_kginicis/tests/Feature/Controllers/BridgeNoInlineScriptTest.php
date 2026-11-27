@@ -11,7 +11,7 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 /**
- * 결제창 닫기·에스크로 구매결정 페이지에 실행형 인라인 코드가 없다 (#158 strict CSP)
+ * 결제창 닫기·에스크로 구매결정 페이지에 실행형 인라인 코드가 없다 (공개 #158 strict CSP)
  *
  * 이 플러그인이 직접 내는 독립 HTML(결제창 닫기 closeUrl · 에스크로 확인창·결과·닫기)은 종전에 인라인
  * `<script>` 로 동작했다. 사이트가 `script-src 'self'` 를 걸면 실행되지 않아 결제창을 닫아도 주문 화면이

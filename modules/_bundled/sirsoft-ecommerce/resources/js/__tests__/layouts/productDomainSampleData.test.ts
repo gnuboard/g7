@@ -49,7 +49,7 @@ function hasStub(node: unknown): boolean {
 }
 
 describe('상품 도메인 편집기 샘플 — sirsoft-ecommerce admin', () => {
-  describe('DoD #1 — 스텁 0', () => {
+  describe('DoD 1 — 스텁 0', () => {
     for (const id of [
       'product',
       'products',

@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * 알림 수신자별 발송 기록 정리 명령 테스트 (#139)
+ * 알림 수신자별 발송 기록 정리 명령 테스트 (공개 #139)
  */
 class PruneNotificationDeliveriesCommandTest extends TestCase
 {

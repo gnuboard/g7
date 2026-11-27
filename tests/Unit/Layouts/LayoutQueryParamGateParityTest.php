@@ -6,7 +6,7 @@ use Tests\Support\Concerns\AssertsLayoutQueryParamGateParity;
 use Tests\TestCase;
 
 /**
- * 화면 조회 조건 ↔ 서버 게이트 키 회귀 가드 — 코어/템플릿/플러그인 (#17).
+ * 화면 조회 조건 ↔ 서버 게이트 키 회귀 가드 — 코어/템플릿/플러그인.
  *
  * 목록 화면의 검색·필터 키가 navigate query → data_source params → FormRequest rules() 중
  * 한 단계에서 어긋나면 그 조건은 조용히 버려진다. 요청은 200 으로 끝나고 목록은 조건 없이

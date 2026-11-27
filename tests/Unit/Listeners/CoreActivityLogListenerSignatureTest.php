@@ -14,7 +14,7 @@ use Tests\TestCase;
  * 자동 비활성화 경로(부팅 시 validateAndDeactivateIncompatible*) 가
  * 트리거될 때 다음 TypeError 가 발생하던 회귀 차단:
  *
- *   handleTemplateAfterDeactivate(): Argument #1 ($templateInfo) must be of type
+ *   handleTemplateAfterDeactivate(): Argument 1 ($templateInfo) must be of type
  *   array, string given
  *
  * 매니저 측 호출:
@@ -84,7 +84,7 @@ class CoreActivityLogListenerSignatureTest extends TestCase
     }
 
     /**
-     * 정규 생명주기 훅 12건 — Manager 가 발화하는 인자 계약(#138).
+     * 정규 생명주기 훅 12건 — Manager 가 발화하는 인자 계약(공개 #138).
      *
      * 값: [훅, 리스너 메서드, Manager 가 넘기는 인자 예시]. 인자 개수·순서·타입은
      * ExtensionLifecycleHookContractTest 가 발화 쪽에서 잠그고, 여기서는 받는 쪽을 잠근다.

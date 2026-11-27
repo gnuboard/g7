@@ -464,7 +464,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
     protected function registerRateLimiters(): void
     {
         $limits = [
-            // 비회원 주문 조회 인증 — 무차별 대입 방어선 (#55)
+            // 비회원 주문 조회 인증 — 무차별 대입 방어선
             'sirsoft-ecommerce.guest-order-verify' => 20,
             // 비회원 클레임 블록 전체 — 신청·미리보기·목록·상세·수정·철회·첨부 삭제·추가결제
             'sirsoft-ecommerce.guest-claims' => 120,

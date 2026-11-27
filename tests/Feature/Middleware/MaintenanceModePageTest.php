@@ -272,7 +272,7 @@ class MaintenanceModePageTest extends TestCase
         // 외부 script 가 없어야 함
         $this->assertStringNotContainsString('<script src=', $content);
 
-        // 스타일은 코어 정적 파일(같은 출처) 하나만 — 엄격한 스타일 정책에서 뷰 안 `<style>` 블록이 막혀 정적 파일로 옮겼다(#163).
+        // 스타일은 코어 정적 파일(같은 출처) 하나만 — 엄격한 스타일 정책에서 뷰 안 `<style>` 블록이 막혀 정적 파일로 옮겼다(공개 #163).
         // 외부 CDN 스타일시트는 없어야 한다.
         $this->assertStringNotContainsString('<style>', $content);
         $this->assertSame(1, preg_match_all('/<link rel="stylesheet" href="([^"]+)"/', $content, $links));

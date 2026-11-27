@@ -721,7 +721,7 @@ class ScheduleControllerRegistryTest extends TestCase
         $this->assertStringContainsString($this->marker.' 작업 core', $copy->label['ko']);
     }
 
-    // ── 검증 문구·입력 정규화 (#17) ─────────────────────
+    // ── 검증 문구·입력 정규화 ─────────────────────
 
     /**
      * 작업명이 모든 언어에서 비면 작업명 오류만 낸다 — 식별자는 작업명으로 채우는 규칙이라 식별자 필수 오류를 겹쳐 내지 않는다.

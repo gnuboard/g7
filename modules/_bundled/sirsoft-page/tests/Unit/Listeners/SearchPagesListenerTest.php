@@ -64,7 +64,7 @@ class SearchPagesListenerTest extends ModuleTestCase
     }
 
     /**
-     * 검색 실패가 "결과 0건" 으로 위장되지 않고 failed 페이로드로 표면화되는지 확인 (#103)
+     * 검색 실패가 "결과 0건" 으로 위장되지 않고 failed 페이로드로 표면화되는지 확인 (공개 #103)
      *
      * @effects failed_flag_in_response, exception_stack_logged
      *
@@ -495,7 +495,7 @@ class SearchPagesListenerTest extends ModuleTestCase
     /**
      * PageService 예외 발생 시 다른 카테고리는 보존하고 pages 는 failed 로 표면화하는지 확인
      *
-     * 종전에는 키 미설정으로 삼켜 화면이 "검색 결과 없음" 을 그렸다 (#103).
+     * 종전에는 키 미설정으로 삼켜 화면이 "검색 결과 없음" 을 그렸다 (공개 #103).
      *
      * @scenario category=pages, scope=all_tab, failure=single
      *

@@ -151,7 +151,7 @@ class BoardListApiTest extends ModuleTestCase
     /**
      * 전체 게시판 목록 API가 관리자가 정한 표시 순서를 따르는지 테스트
      *
-     * 순서를 정하지 않았으면(모두 0) 만든 순서(오래된 순)다 — 종전의 최신 순에서 바뀌었다(#142, 메뉴와 같은 순서).
+     * 순서를 정하지 않았으면(모두 0) 만든 순서(오래된 순)다 — 종전의 최신 순에서 바뀌었다(공개 #142, 메뉴와 같은 순서).
      *
      * @scenario case=public_list_follows_order
      *

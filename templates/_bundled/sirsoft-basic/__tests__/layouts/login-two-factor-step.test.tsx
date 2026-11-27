@@ -144,7 +144,7 @@ describe('sirsoft-basic 로그인 2단계 인증 단계', () => {
    */
   it('login 의 성공 후속 액션이 challenge 응답에서는 실행되지 않는다', () => {
     const login = allActions.find((a) => a.handler === 'login');
-    // 성공 분기는 로그인 화면의 명명 액션 `applyLoginResult` 에 있다 — 로그인 인계 교환과 공유한다(#40).
+    // 성공 분기는 로그인 화면의 명명 액션 `applyLoginResult` 에 있다 — 로그인 인계 교환과 공유한다.
     const ref = asArray<any>(login?.onSuccess)[0];
     expect(ref?.actionRef).toBe('applyLoginResult');
     const onSuccess = asArray<Action>((loginPage as any).named_actions?.applyLoginResult?.actions);

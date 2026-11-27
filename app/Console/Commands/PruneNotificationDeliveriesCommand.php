@@ -8,7 +8,7 @@ use App\Services\NotificationDeliveryGuard;
 use Illuminate\Console\Command;
 
 /**
- * 오래된 알림 수신자별 발송 기록(중복 방지 행)을 정리하는 커맨드 (#139)
+ * 오래된 알림 수신자별 발송 기록(중복 방지 행)을 정리하는 커맨드 (공개 #139)
  *
  * 발송 기록은 재시도·재예약 창 동안만 쓸모가 있다 — 그보다 오래된 행은 지워도 중복 방지가 풀리지 않는다.
  */

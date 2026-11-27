@@ -349,7 +349,7 @@ class BaseApiResource extends JsonResource
 
         // 배열(다국어)이면 현재 로케일에 맞는 값 반환
         if (is_array($value)) {
-            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (공개 #148)
             return LocalizedValue::pick($value, App::getLocale());
         }
 

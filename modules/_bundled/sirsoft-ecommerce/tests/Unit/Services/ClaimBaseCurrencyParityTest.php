@@ -145,7 +145,7 @@ class ClaimBaseCurrencyParityTest extends ModuleTestCase
         $service = $reflection->newInstanceWithoutConstructor();
 
         $reflection->getProperty('settingsService')->setValue($service, app(EcommerceSettingsService::class));
-        // 서비스 사본은 판정을 공용 헬퍼(`CurrencyConversionService::resolveOrderBaseCurrency`)에 위임한다(#14) —
+        // 서비스 사본은 판정을 공용 헬퍼(`CurrencyConversionService::resolveOrderBaseCurrency`)에 위임한다 —
         // 그 의존을 주입하지 않으면 판정 전에 초기화되지 않은 속성 오류로 끝난다.
         $reflection->getProperty('currencyService')->setValue($service, app(CurrencyConversionService::class));
 

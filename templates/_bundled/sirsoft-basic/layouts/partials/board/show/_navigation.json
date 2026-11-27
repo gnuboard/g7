@@ -52,7 +52,7 @@
             ]
         },
         {
-            "comment": "게시판 이름 (가운데). 공백 없는 긴 이름도 한 줄 … 로 자른다(#143).",
+            "comment": "게시판 이름 (가운데). 공백 없는 긴 이름도 한 줄 … 로 자른다(공개 #143).",
             "type": "basic",
             "name": "Span",
             "responsive": {
@@ -75,7 +75,7 @@
             },
             "children": [
                 {
-                    "comment": "이전글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75).",
+                    "comment": "이전글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (공개 #75).",
                     "type": "basic",
                     "name": "A",
                     "if": "{{navigation?.data?.prev?.id}}",
@@ -135,7 +135,7 @@
                     ]
                 },
                 {
-                    "comment": "다음글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75).",
+                    "comment": "다음글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (공개 #75).",
                     "type": "basic",
                     "name": "A",
                     "if": "{{navigation?.data?.next?.id}}",

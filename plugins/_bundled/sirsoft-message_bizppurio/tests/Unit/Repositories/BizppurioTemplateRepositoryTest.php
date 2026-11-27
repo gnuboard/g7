@@ -8,7 +8,7 @@ use Plugins\Sirsoft\MessageBizppurio\Repositories\BizppurioTemplateRepository;
 use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
 /**
- * BizppurioTemplateRepository — 다국어 표시명 검색의 JSON 경로 테스트 (#148).
+ * BizppurioTemplateRepository — 다국어 표시명 검색의 JSON 경로 테스트 (공개 #148).
  *
  * 번역 언어에 하이픈이 든 코드(`fil-PH`)가 켜지면 `'$.fil-PH'` 가 잘못된 JSON 경로라
  * MySQL 이 3143 으로 목록 검색 전체를 500 으로 실패시켰다. 키를 따옴표로 감싼다(`'$."fil-PH"'`).

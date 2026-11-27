@@ -245,7 +245,7 @@ class PostCooldownTest extends BoardTestCase
     }
 
     // ==========================================
-    // 원자적 선점 (#161 F7)
+    // 원자적 선점 (공개 #161 F7)
     // ==========================================
 
     /**
@@ -336,7 +336,7 @@ class PostCooldownTest extends BoardTestCase
     }
 
     /**
-     * 댓글 쿨다운도 같은 원자적 선점을 쓴다 — 동시 두 댓글 요청 중 두 번째 검증은 실패하고, 글 쿨다운과 키가 달라 서로 막지 않는다(#161 F7).
+     * 댓글 쿨다운도 같은 원자적 선점을 쓴다 — 동시 두 댓글 요청 중 두 번째 검증은 실패하고, 글 쿨다운과 키가 달라 서로 막지 않는다(공개 #161 F7).
      *
      * @scenario concern=write_cooldown, condition=cooldown_active
      *

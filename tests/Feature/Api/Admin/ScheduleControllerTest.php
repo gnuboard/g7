@@ -20,7 +20,7 @@ use Tests\TestCase;
  * ScheduleController 일괄 작업 Feature 테스트
  *
  * 스케줄 일괄 상태 변경 및 일괄 삭제 API 엔드포인트 테스트
- * Issue #74: exists 검증 규칙이 Rule::exists(Schedule::class, 'id')로 올바르게 동작하는지 검증
+ * exists 검증 규칙이 Rule::exists(Schedule::class, 'id')로 올바르게 동작하는지 검증
  */
 class ScheduleControllerTest extends TestCase
 {
@@ -414,7 +414,7 @@ class ScheduleControllerTest extends TestCase
     }
 
     // ────────────────────────────────────────────────────────
-    // 지금 실행 — 「중복 실행 방지」 실행 잠금 (#161 F4)
+    // 지금 실행 — 「중복 실행 방지」 실행 잠금 (공개 #161 F4)
     // ────────────────────────────────────────────────────────
 
     /**

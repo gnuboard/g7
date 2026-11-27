@@ -82,7 +82,7 @@ class CouponIssueCancelTest extends ModuleTestCase
     }
 
     /**
-     * #1 미사용(available) 발급 건 취소 → cancelled 전환 + issued_count -1 + 활동로그 1건
+     * 1 미사용(available) 발급 건 취소 → cancelled 전환 + issued_count -1 + 활동로그 1건
      */
     public function test_cancel_available_issue_marks_cancelled_and_decrements_count(): void
     {
@@ -109,7 +109,7 @@ class CouponIssueCancelTest extends ModuleTestCase
     }
 
     /**
-     * #2 사용완료(used) 건 취소 시도 → 400 차단, 상태 불변, issued_count 불변
+     * 2 사용완료(used) 건 취소 시도 → 400 차단, 상태 불변, issued_count 불변
      */
     public function test_cancel_used_issue_is_rejected(): void
     {
@@ -126,7 +126,7 @@ class CouponIssueCancelTest extends ModuleTestCase
     }
 
     /**
-     * #3 이미 취소(cancelled)된 건 재취소 시도 → 400 차단 (중복 차감 방지)
+     * 3 이미 취소(cancelled)된 건 재취소 시도 → 400 차단 (중복 차감 방지)
      */
     public function test_cancel_already_cancelled_issue_is_rejected(): void
     {
@@ -142,7 +142,7 @@ class CouponIssueCancelTest extends ModuleTestCase
     }
 
     /**
-     * #4 만료(expired) 건 취소 시도 → 400 차단 (available 외 전부 차단)
+     * 4 만료(expired) 건 취소 시도 → 400 차단 (available 외 전부 차단)
      */
     public function test_cancel_expired_issue_is_rejected(): void
     {
@@ -158,7 +158,7 @@ class CouponIssueCancelTest extends ModuleTestCase
     }
 
     /**
-     * #5 쿠폰ID 불일치 (다른 쿠폰의 발급 ID) → 400 차단 (URL 정합성 검증)
+     * 5 쿠폰ID 불일치 (다른 쿠폰의 발급 ID) → 400 차단 (URL 정합성 검증)
      */
     public function test_cancel_issue_with_mismatched_coupon_id_is_rejected(): void
     {
@@ -176,7 +176,7 @@ class CouponIssueCancelTest extends ModuleTestCase
     }
 
     /**
-     * #6 권한 없는 사용자(update 권한 없음) → 403
+     * 6 권한 없는 사용자(update 권한 없음) → 403
      */
     public function test_cancel_issue_requires_update_permission(): void
     {

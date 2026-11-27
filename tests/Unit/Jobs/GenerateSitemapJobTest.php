@@ -122,7 +122,7 @@ class GenerateSitemapJobTest extends TestCase
     }
 
     /**
-     * 중복 방지 잠금이 재시도 전체 기간을 덮는지 확인합니다 (#139).
+     * 중복 방지 잠금이 재시도 전체 기간을 덮는지 확인합니다 (공개 #139).
      *
      * timeout × tries + backoff × (tries − 1) + 큐 대기 여유 = 1800×3 + 120×2 + 1800 = 7440초.
      * 짧으면 첫 시도가 도는 중에 잠금이 풀려 같은 생성이 또 큐에 들어간다(종전 900초 < timeout 1800초).
@@ -148,7 +148,7 @@ class GenerateSitemapJobTest extends TestCase
     }
 
     /**
-     * retryUntil 이 없어 tries 가 살아 있고, 큐 대기 시간 때문에 실행 없이 실패하지 않는지 확인합니다 (#139).
+     * retryUntil 이 없어 tries 가 살아 있고, 큐 대기 시간 때문에 실행 없이 실패하지 않는지 확인합니다 (공개 #139).
      *
      * 라라벨은 retryUntil 이 있으면 tries 를 무시한다. 종전 마감 30분은 timeout 30분과 같아 시간 초과 뒤 재시도할
      * 수 없었고, 큐에서 30분 넘게 기다리면 한 번도 돌지 못하고 실패로 끝났다.

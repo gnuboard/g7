@@ -1,4 +1,4 @@
-feature: sirsoft-basic 긴 텍스트 넘침 방지 (#143)
+feature: sirsoft-basic 긴 텍스트 넘침 방지 (공개#143)
 
 description: |
   운영자·사용자가 입력하는 텍스트(사이트 이름, 게시판·상품·회원 이름, 글 제목·본문·댓글, 알림)가 공백 없이 길거나

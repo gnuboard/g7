@@ -1,7 +1,7 @@
 feature: board_read_result_hooks
 
 description: |
-  게시판 사용자 조회 19곳에 조회 전(before_*)·결과(filter_*_result)·조회 후(after_*) 훅을 둔다(#142).
+  게시판 사용자 조회 19곳에 조회 전(before_*)·결과(filter_*_result)·조회 후(after_*) 훅을 둔다(공개#142).
   훅은 Service 계층에서, 캐시를 읽은 뒤·사용자별 권한 후처리 뒤에 발행한다 — 리스너가 결과를 바꿔도
   공용 캐시는 그대로다. 리스너는 같은 타입의 새 값을 돌려주고, after 는 필터가 돌려준 값을 받는다.
   관리자 경로와 공유하는 Service 메서드는 사용자 맥락에서만 발행한다(관리자 조회 동작 무변경).

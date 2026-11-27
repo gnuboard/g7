@@ -10,7 +10,7 @@ use Tests\TestCase;
 /**
  * 코어 Attachment URL 조립 단일 지점(urlForHash/download_url) 회귀 테스트
  *
- * URL 중복 조립 정리(#100) 후에도 응답 문자열이 기존과 동일함을 고정합니다.
+ * URL 중복 조립 정리(공개 #100) 후에도 응답 문자열이 기존과 동일함을 고정합니다.
  *
  * 왜 앱을 부팅하는가:
  *   이 클래스는 종전에 `PHPUnit\Framework\TestCase` 를 그대로 상속해 앱 없이 돌았다.

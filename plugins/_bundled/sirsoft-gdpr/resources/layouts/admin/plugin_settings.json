@@ -605,7 +605,7 @@
                                                                 }
                                                             },
                                                             {
-                                                                "comment": "필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택).",
+                                                                "comment": "필드별 422 검증 에러 메시지 (검토 10 옵션 X — 코어 admin _tab_general 패턴 채택).",
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "if": "{{_local.errors?.['legal_entity_name']}}",
@@ -685,7 +685,7 @@
                                                                 }
                                                             },
                                                             {
-                                                                "comment": "필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택).",
+                                                                "comment": "필드별 422 검증 에러 메시지 (검토 10 옵션 X — 코어 admin _tab_general 패턴 채택).",
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "if": "{{_local.errors?.['data_storage_location']}}",
@@ -764,7 +764,7 @@
                                                                 }
                                                             },
                                                             {
-                                                                "comment": "필드별 422 검증 에러 메시지 (검토 #10 옵션 X — 코어 admin _tab_general 패턴 채택).",
+                                                                "comment": "필드별 422 검증 에러 메시지 (검토 10 옵션 X — 코어 admin _tab_general 패턴 채택).",
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "if": "{{_local.errors?.['privacy_policy_url']}}",

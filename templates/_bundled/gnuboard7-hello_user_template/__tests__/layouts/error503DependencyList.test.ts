@@ -2,7 +2,7 @@
  * Hello 사용자 템플릿 — 503 화면의 미충족 의존 목록.
  *
  * 이 템플릿은 의존을 선언할 수 있는데 503 화면이 서버가 넘긴 미충족 목록(`_global.errorData.modules/plugins`)을 그리지 않아,
- * 방문자·운영자가 왜 화면이 멈췄는지 알 수 없었다(코어 7.1.4, #152). sirsoft-basic 과 같은 목록·사유 블록을 둔다.
+ * 방문자·운영자가 왜 화면이 멈췄는지 알 수 없었다(코어 7.1.4, 공개 #152). sirsoft-basic 과 같은 목록·사유 블록을 둔다.
  *
  * @scenario-manifest tests/scenarios/error-503-dependency-list.yaml
  */

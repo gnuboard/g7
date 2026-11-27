@@ -9,7 +9,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 /**
- * PC 결제창 프레임 요청 (#158)
+ * PC 결제창 프레임 요청 (공개 #158)
  *
  * `sdk` 는 KCP SDK 주소 두 개(테스트·운영) 중 하나와 **정확히 같아야** 한다 — 프레임 페이지가 그 주소를
  * `<script src>` 로 그대로 싣기 때문이다(다른 주소를 넣으면 임의 스크립트를 이 출처에서 실행하는 통로가 된다).

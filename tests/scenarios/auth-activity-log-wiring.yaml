@@ -3,7 +3,7 @@ feature: 가입·비밀번호 활동 로그와 마케팅 동의의 가입 훅 �
 description: |
   활동 로그 리스너와 마케팅 동의 리스너가 AuthService 가 발화하지 않는 옛 이름
   (core.auth.register·forgot_password·reset_password)을 구독해, 회원가입·비밀번호 찾기 요청·비밀번호 변경
-  로그와 가입 시 마케팅 동의가 한 번도 기록되지 않았다(#138 후속 전수 점검 1·3번).
+  로그와 가입 시 마케팅 동의가 한 번도 기록되지 않았다(공개#138 후속 전수 점검 1·3번).
 
   핵심 동작:
     - 구독은 발화 이름(after_register·after_reset_password_request·password_change_recorded)을 쓴다.

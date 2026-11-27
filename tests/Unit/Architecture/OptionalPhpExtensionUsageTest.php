@@ -8,7 +8,7 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
 /**
- * 코어가 「선택」 PHP 확장 심볼을 가드 없이 쓰지 않는지 잠근다 (#151).
+ * 코어가 「선택」 PHP 확장 심볼을 가드 없이 쓰지 않는지 잠근다 (공개 #151).
  *
  * bcmath·zip·iconv·zlib·phar 를 가드 없이 부른 자리가 그 확장이 없는 서버에서 500 이 됐다.
  * 심볼 표는 코어 SSoT `app/Support/Requirements/php-extensions.json` 의 `symbols` 이고, 사용이 든 함수 본문에

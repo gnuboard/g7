@@ -1051,7 +1051,7 @@ class CartServiceTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 테스트 #86: 동일 상품 다른 옵션 담기
+     * 테스트 86: 동일 상품 다른 옵션 담기
      *
      * 입력: 상품A-옵션1 존재, 상품A-옵션2 담기
      * 기대: 별도 Cart 레코드 생성 (총 2개)
@@ -1121,11 +1121,11 @@ class CartServiceTest extends ModuleTestCase
     }
 
     // ========================================
-    // 옵션 변경 테스트 (#92, #93, #94)
+    // 옵션 변경 테스트 (92, 93, 94)
     // ========================================
 
     /**
-     * 테스트 #92: 옵션만 변경
+     * 테스트 92: 옵션만 변경
      *
      * 입력: PUT /cart/{id}, product_option_id: 새옵션, quantity: 기존
      * 기대: 옵션 ID 업데이트
@@ -1190,7 +1190,7 @@ class CartServiceTest extends ModuleTestCase
     }
 
     /**
-     * 테스트 #93: 옵션+수량 동시 변경
+     * 테스트 93: 옵션+수량 동시 변경
      *
      * 입력: PUT /cart/{id}, product_option_id: 새옵션, quantity: 3
      * 기대: 옵션+수량 모두 업데이트
@@ -1256,7 +1256,7 @@ class CartServiceTest extends ModuleTestCase
     }
 
     /**
-     * 테스트 #94: 옵션 변경 시 기존 동일옵션 존재 - 합산
+     * 테스트 94: 옵션 변경 시 기존 동일옵션 존재 - 합산
      *
      * 입력: 기존: 옵션A(2개), 옵션B(3개) → 옵션A를 옵션B로 변경
      * 기대: 옵션B: 5개, 옵션A 레코드 삭제
@@ -1350,7 +1350,7 @@ class CartServiceTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 테스트 #106: 비회원→회원 병합 (혼합)
+     * 테스트 106: 비회원→회원 병합 (혼합)
      *
      * 입력: 비회원: 옵션A 2개, 옵션B 1개 / 회원: 옵션A 3개, 옵션C 2개
      * 기대: 옵션A 5개, 옵션B 1개, 옵션C 2개
@@ -1458,11 +1458,11 @@ class CartServiceTest extends ModuleTestCase
     }
 
     // ========================================
-    // #108 cart_key 없이 로그인 병합 테스트
+    // 108 cart_key 없이 로그인 병합 테스트
     // ========================================
 
     /**
-     * #108 빈 cart_key로 병합 시도 시 병합을 스킵하고 0을 반환합니다.
+     * 108 빈 cart_key로 병합 시도 시 병합을 스킵하고 0을 반환합니다.
      *
      * 빈 cart_key (빈 문자열)로 mergeGuestCartToUser 호출 시
      * 비회원 장바구니가 없으므로 병합 없이 0을 반환해야 합니다.
@@ -1493,7 +1493,7 @@ class CartServiceTest extends ModuleTestCase
     }
 
     /**
-     * #108 존재하지 않는 cart_key로 병합 시도 시 병합을 스킵합니다.
+     * 108 존재하지 않는 cart_key로 병합 시도 시 병합을 스킵합니다.
      *
      * 존재하지 않는 cart_key로 mergeGuestCartToUser 호출 시
      * 비회원 장바구니가 없으므로 병합 없이 0을 반환해야 합니다.
@@ -1528,7 +1528,7 @@ class CartServiceTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 테스트 #83: 재고 초과 수량 담기 시도 → 예외
+     * 테스트 83: 재고 초과 수량 담기 시도 → 예외
      *
      * 재고가 5개인 옵션에 10개를 담으려 하면 stock_exceeded 예외 발생
      *
@@ -1580,7 +1580,7 @@ class CartServiceTest extends ModuleTestCase
     }
 
     /**
-     * 테스트 #87: 합산 후 재고 초과 → 예외
+     * 테스트 87: 합산 후 재고 초과 → 예외
      *
      * 이미 장바구니에 3개 있고, 재고가 5개인 상태에서 5개 추가 시도 → 예외
      * (3 + 5 = 8 > 5)
@@ -1637,7 +1637,7 @@ class CartServiceTest extends ModuleTestCase
     }
 
     /**
-     * 테스트 #88: 품절 상품 담기 시도 → 예외
+     * 테스트 88: 품절 상품 담기 시도 → 예외
      *
      * 재고가 0인 옵션을 담으려 하면 out_of_stock 예외 발생
      *
@@ -1688,7 +1688,7 @@ class CartServiceTest extends ModuleTestCase
     }
 
     /**
-     * 테스트 #91: 재고 초과 수량 변경 시도 → 예외
+     * 테스트 91: 재고 초과 수량 변경 시도 → 예외
      *
      * 재고 5개인 옵션의 수량을 10개로 변경 시도 → 예외
      *
@@ -1738,7 +1738,7 @@ class CartServiceTest extends ModuleTestCase
     }
 
     /**
-     * 테스트 #95: 옵션 변경 후 재고 초과 → 예외
+     * 테스트 95: 옵션 변경 후 재고 초과 → 예외
      *
      * 새 옵션의 재고가 5개인데 기존 수량이 7개 → 예외
      *
@@ -1797,7 +1797,7 @@ class CartServiceTest extends ModuleTestCase
     }
 
     /**
-     * 테스트 #96: 다른 상품 옵션으로 변경 시도 → 예외
+     * 테스트 96: 다른 상품 옵션으로 변경 시도 → 예외
      *
      * 상품A의 옵션을 상품B의 옵션으로 변경 시도 → 예외
      *
@@ -1848,7 +1848,7 @@ class CartServiceTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 테스트 #107: 병합 시 재고 초과 처리
+     * 테스트 107: 병합 시 재고 초과 처리
      *
      * 비회원 장바구니 3개 + 회원 장바구니 4개 = 7개
      * 재고가 5개면 회원 장바구니 수량을 5개로 제한

@@ -1,4 +1,4 @@
-feature: 반복 렌더 컨텍스트(DataGrid cellChildren 등)의 파이프 표현식이 배포 번들에서 포맷된 값으로 그려진다 (#87)
+feature: 반복 렌더 컨텍스트(DataGrid cellChildren 등)의 파이프 표현식이 배포 번들에서 포맷된 값으로 그려진다 (공개#87)
 
 description: |
   `renderItemChildren` 이 단일 바인딩을 해석할 때 `|` 를 복잡 표현식 문자로 분류해 JS 비트 OR 로 평가했다.

@@ -26,7 +26,7 @@ import {
 } from '../assetUrl';
 
 /**
- * 셸 head 스크립트(public/assets/core/js/g7-shell-head.js — 종전 blade 인라인, #158)의 `toExtensionless` 를 추출해 실행 가능한 함수로 만든다.
+ * 셸 head 스크립트(public/assets/core/js/g7-shell-head.js — 종전 blade 인라인, 공개 #158)의 `toExtensionless` 를 추출해 실행 가능한 함수로 만든다.
  *
  * 부트스트랩은 코어 번들 로드 전에 동작해야 해서 import 를 쓸 수 없고, 그래서 변환 규칙이
  * 셸 head 스크립트에 한 벌 더 존재한다. 두 구현이 갈라지면 서버가 만든 URL 과
@@ -326,9 +326,9 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
         });
     });
 
-    describe('정적 게시 역변환 — 셸 head 복구기와 TS 구현 동등성 (#122 F15)', () => {
+    describe('정적 게시 역변환 — 셸 head 복구기와 TS 구현 동등성 (공개 #122 F15)', () => {
         /**
-         * 셸 head 스크립트(public/assets/core/js/g7-shell-head.js — 종전 blade 인라인, #158)의 `staticToLegacy` 를 추출해 TS `staticToLegacy` 와 대조한다.
+         * 셸 head 스크립트(public/assets/core/js/g7-shell-head.js — 종전 blade 인라인, 공개 #158)의 `staticToLegacy` 를 추출해 TS `staticToLegacy` 와 대조한다.
          * 역변환 규칙은 서버측 `AssetUrl` 의 정적 게시 트리 규약과 1:1 이어야 하며,
          * 두 사본이 갈라지면 태그 계층의 서빙 시점 404 복구가 그 자산만 조용히 죽는다.
          *
@@ -471,7 +471,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
         });
     });
 
-    describe('정적 게시 역변환 × 자산 URL 모드 (#122 F15 — 확장자 404 서버)', () => {
+    describe('정적 게시 역변환 × 자산 URL 모드 (공개 #122 F15 — 확장자 404 서버)', () => {
         /**
          * 확장자 형태를 404 로 돌려주는 서버(이 복구의 대상)에서는 역변환 결과인
          * `/api/…/style.css` 가 **다시** 404 다. `recoverStylesheet` 는 링크당 1회만
@@ -482,7 +482,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
          * @effects static_asset_tag_recovers_to_api_url
          */
         function loadPartialApi(): any {
-            // 셸 head 스크립트(종전 blade 인라인 — #158)를 그대로 실행한다. 서버 값
+            // 셸 head 스크립트(종전 blade 인라인 — 공개 #158)를 그대로 실행한다. 서버 값
             // (`#g7-shell-head-data`)이 없으면 cacheVersion 0, 마운트 접두사는 빈 문자열(루트 배치)로
             // 동작한다 — 아래 케이스들의 URL 이 모두 접두사 없는 형태라 그 전제와 맞는다.
             const shellPath = resolve(__dirname, '../../../../../public/assets/core/js/g7-shell-head.js');

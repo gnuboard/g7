@@ -457,7 +457,7 @@ class ClaimPaymentService
             throw OrderClaimException::paymentFailed((string) ($result['error_code'] ?? 'unknown'));
         }
 
-        // 승인 금액을 대조할 수 없으면(`paid_amount` 미반환) **불일치로 처리한다**(validate P2 #11).
+        // 승인 금액을 대조할 수 없으면(`paid_amount` 미반환) **불일치로 처리한다**(validate P2 11).
         // 종전에는 키가 없으면 대조를 건너뛰어, 금액을 돌려주지 않는 연동은 얼마가 승인됐든 확정됐다
         // — 결제창 금액을 조작한 요청이 그대로 결제 완료가 된다.
         $paidAmountReported = isset($result['paid_amount']) && is_numeric($result['paid_amount']);
@@ -1475,7 +1475,7 @@ class ClaimPaymentService
     /**
      * 이번 환급액(기준통화)을 PG 에 보낼 결제 통화 금액으로 환산합니다.
      *
-     * **누적 차분**으로 구한다(validate P2 #9): `결제통화(환급 후 누적) − 결제통화(환급 전 누적)`.
+     * **누적 차분**으로 구한다(validate P2 9): `결제통화(환급 후 누적) − 결제통화(환급 전 누적)`.
      * 회차마다 따로 반올림하면 0 자리 통화에서 334 + 334 + 334 = 1,002 처럼 합이 결제 총액(1,001)을
      * 넘고, 종전처럼 소수 2자리로 두면 엔화에 333.63 같은 금액을 보내 PG 가 거절한다. 누적 차분은
      * 매 회차 결제 통화 자릿수를 지키면서 마지막 회차가 정확히 잔액이 되게 한다.

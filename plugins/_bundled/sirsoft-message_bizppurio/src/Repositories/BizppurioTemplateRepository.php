@@ -111,7 +111,7 @@ class BizppurioTemplateRepository implements BizppurioTemplateRepositoryInterfac
                 $q->where($templates.'.notification_type', 'like', $term);
                 foreach ($locales as $locale) {
                     // 하이픈 로케일(fil-PH)은 따옴표 없는 JSON 경로가 무효(MySQL 3143)였다 — 형식을 검증하고
-                    // 빌더의 JSON 경로 문법으로 넘겨 키 인용·조인 별칭 프리픽스·DB 별 함수를 문법기에 맡긴다 (#148)
+                    // 빌더의 JSON 경로 문법으로 넘겨 키 인용·조인 별칭 프리픽스·DB 별 함수를 문법기에 맡긴다 (공개 #148)
                     if (! LocaleTag::isValid($locale)) {
                         continue;
                     }

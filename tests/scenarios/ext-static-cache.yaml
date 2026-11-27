@@ -30,7 +30,7 @@ axes:
   # 산출물 무결성 축 — 200 인데 본문이 온전하지 않은 상태를 축으로 세운다.
   # File::put 은 디스크 풀/quota 에서 짧은 int 를 돌려주며 성공한 것처럼 보이고,
   # 절단된 JSON 은 웹서버가 정상 200 으로 서빙한다 — response.ok 만 보는 프론트가
-  # 폴백하지 못한 채 부팅 전체가 실패하던 유일한 사각이다 (#122 A1).
+  # 폴백하지 못한 채 부팅 전체가 실패하던 유일한 사각이다 (공개#122 A1).
   artifact_integrity: [intact, truncated, absent]
   # 쓰기 가능성 축 — 제보 본건. CLI 계정과 웹 계정이 다르면 게시 트리 소유권이
   # 최초 게시자에게 고정되어 이후 재게시가 영구 실패한다 (P1/P2).
@@ -141,7 +141,7 @@ effects:
   - status_command_warns_root_and_hints_web_account
   - publish_command_warns_root_but_continues
   - status_command_consumes_service_report
-  # #148 — 언어팩 설치 규칙(BCP 47)의 세 글자·문자 표기 로케일(fil·zh-Hant)도 lang 게시 대상이다
+  # 공개#148 — 언어팩 설치 규칙(BCP 47)의 세 글자·문자 표기 로케일(fil·zh-Hant)도 lang 게시 대상이다
   - published_lang_covers_bcp47_pack_locales
   # 아래는 테스트가 이미 재고 있으나 선언이 빠져 있던 이름이다 (원장 축소).
   - cleanup_excludes_failed_deletions_from_count
@@ -166,7 +166,7 @@ effects:
   - published_tree_is_group_writable
   - rename_failure_restores_previous_published_version
   - vite_configs_declare_empty_outdir_false
-  # #158 — 태그 계층 복구기가 셸 head 스크립트(public/assets/core/js/g7-shell-head.js)로 옮겨진 뒤에도
+  # 공개#158 — 태그 계층 복구기가 셸 head 스크립트(public/assets/core/js/g7-shell-head.js)로 옮겨진 뒤에도
   # 자산 URL 모드 불변식·변환 규칙 동등성이 유지된다
   - asset_url_mode_switch_one_way
   - asset_url_mode_client_never_writes_settings

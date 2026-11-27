@@ -495,7 +495,7 @@ fault_type}` 목록, 판매자 귀책 사유 포함) · `charge_methods`(`{value
 | sort_order | string | 아니오 | 정렬 (`asc` / `desc` — 기본 `desc`) |
 
 **응답**: `200` — 코어 `ActivityLogResource` 컬렉션(페이지네이션 동반). 항목 구조는
-[활동 로그 시스템](../../../../docs/backend/activity-log.md) 과 같습니다 / `404` 부재 /
+[활동 로그 시스템](../../../../../docs/backend/activity-log.md) 과 같습니다 / `404` 부재 /
 `422` 어휘 밖 정렬.
 
 첨부 삭제 로그는 그 첨부 행이 이미 지워졌으므로 이 목록에 실리지 않습니다 — 로그 자체는

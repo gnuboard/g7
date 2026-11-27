@@ -141,7 +141,7 @@ class IntegrationReverseIndex
         $templates = $this->active(app(TemplateRepositoryInterface::class)->getAll());
         if ($templates->isNotEmpty()) {
             $manager = app(TemplateManagerInterface::class);
-            // 콘솔 부팅은 템플릿 로딩을 건너뛴다 — 의존 역조회와 같은 이유로 먼저 불러온다(#145 F4)
+            // 콘솔 부팅은 템플릿 로딩을 건너뛴다 — 의존 역조회와 같은 이유로 먼저 불러온다(공개 #145 F4)
             $manager->ensureLoaded();
             foreach ($templates as $record) {
                 $data = $manager->getTemplate($record->identifier);

@@ -123,7 +123,7 @@ describe('_modal_download_history.json — selectedItem 표시 가드', () => {
 
         // 개수를 고정한다 — `> 0` 만 두면 표시식이 삭제돼도 남은 것들이 폴백을 갖는 한 통과한다.
         // 현재 6건: file_content / category_name / created_date / expire_date / download_count /
-        // download_history.length (마지막 1건은 원래부터 가드가 있어 #92 수정 대상 5건에 포함되지 않는다)
+        // download_history.length (마지막 1건은 원래부터 가드가 있어 공개 #92 수정 대상 5건에 포함되지 않는다)
         expect(textRefs.length, `selectedItem 표시식 개수 변동: ${textRefs.join(' | ')}`).toBe(6);
         for (const t of textRefs) {
             expect(t, `폴백 없는 표시식: ${t}`).toMatch(/\?\?\s*('{2}|0)/);

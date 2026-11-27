@@ -1,4 +1,4 @@
-// e2e:allow편집기 passthrough 결함#2 수정(data-editor-*/id 를 숨겨진 input 대신 시각적 루트 div 로 라우팅). 라이브 검증은 Chrome MCP T1~T7 매트릭스(에디터 추가/선택/저장 200/reload/게스트 사용자화면), 단위 회귀는 FileInput.test.tsx passthrough describe.
+// e2e:allow편집기 passthrough 결함 2 수정(data-editor-*/id 를 숨겨진 input 대신 시각적 루트 div 로 라우팅). 라이브 검증은 Chrome MCP T1~T7 매트릭스(에디터 추가/선택/저장 200/reload/게스트 사용자화면), 단위 회귀는 FileInput.test.tsx passthrough describe.
 import React, { forwardRef, useRef, useCallback, useState } from 'react';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.

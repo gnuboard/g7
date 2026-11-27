@@ -7,7 +7,7 @@ description: |
     - 응답 형태(version·layout_name·components 배열) 검증 실패는 LayoutLoaderError
     - 캐시 버전은 요청 URL `?v=` 와 메모리 캐시 키를 함께 바꾼다
     - 토큰이 있을 때만 Bearer 헤더, 401 이면 토큰을 지우고 한 번만 무토큰 재시도
-    - 오류 화면의 새로고침 버튼은 인라인 on* 없이 리스너(#158 strict CSP)
+    - 오류 화면의 새로고침 버튼은 인라인 on* 없이 리스너(공개#158 strict CSP)
 
 axes:
   phase: [load, render, error, utility, cache, auth, unauthorized]
@@ -25,6 +25,6 @@ test_files:
   - resources/js/core/template-engine/__tests__/LayoutLoader.test.ts
 
 notes: |
-  #158 에서 「새로고침 버튼을 포함한다」 단언을 인라인 onclick 에서 표식(`data-g7-error-reload`)으로
+  공개#158 에서 「새로고침 버튼을 포함한다」 단언을 인라인 onclick 에서 표식(`data-g7-error-reload`)으로
   바꾸면서 매니페스트가 없던 이 시험 파일에 소유 매니페스트를 붙였다. 오류 화면 리스너 동작
   (click → reload)은 strict-csp-compat 의 `LayoutLoader.noInlineHandler.test.ts` 가 잠근다.

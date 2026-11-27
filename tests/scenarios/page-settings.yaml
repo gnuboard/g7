@@ -288,7 +288,7 @@ notes: |
   매트릭스(별도 세션)로 라이브 실측. 백엔드 __computedSource 'route-override' 3값 구분은
   LayoutServiceMergeComputedTest, extensions 키는 PageSettingsEditorEndpointsTest 가 SSoT.
 
-  S10-1 잔여 #1 — 표현식 분해 트리를 SEO 값 전용 칸으로 확대(④#5). 값 칸
+  S10-1 잔여 1 — 표현식 분해 트리를 SEO 값 전용 칸으로 확대(④ 5). 값 칸
   (og.image/tw.image/og.image_alt)은 DataChipValueInput(키화 0, 데이터연결·설정참조는 칩 시각화,
   단일 조건식→ConditionalValueEditor, 다조각→SegmentedValueEditor, leaf 는 DataChipValueInput 재귀
   주입으로 키화 없이 분해). 텍스트 칸(검색 제목/설명·og/tw 제목·설명)은 I18nTextField 유지(평문→$t:custom

@@ -13,7 +13,7 @@ use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 목록 쿼리 확장 조건 묶음(PostQueryExtensions) 단위 시험 (#147)
+ * 목록 쿼리 확장 조건 묶음(PostQueryExtensions) 단위 시험 (공개 #147)
  *
  * 축 case 의 케이스 표시는 테스트 메서드마다 단다.
  */

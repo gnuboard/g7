@@ -24,7 +24,7 @@ use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 /**
- * 코어 PHP 확장 요구 표시·선택 확장 부재 대체 동작 Feature 테스트 (#151 W1-a·W1-d·W4~W7)
+ * 코어 PHP 확장 요구 표시·선택 확장 부재 대체 동작 Feature 테스트 (공개 #151 W1-a·W1-d·W4~W7)
  *
  * - 관리자 정보 탭(system-info): 필수 16(bcmath 없음)·선택(bcmath 포함)·확장이 요구한 확장(requested_by)
  * - 모듈·플러그인 리소스: php_extensions 4필드

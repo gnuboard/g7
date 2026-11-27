@@ -32,7 +32,7 @@ class PolicyAlignmentTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * 요구사항 #1, #2: base locale 판정 헬퍼가 ko·en 만 기본 로케일로 인정하는지 검증합니다.
+     * 요구사항 1, 2: base locale 판정 헬퍼가 ko·en 만 기본 로케일로 인정하는지 검증합니다.
      *
      * @effects base_locale_helper_recognizes_ko_en_only
      *
@@ -48,7 +48,7 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * 요구사항 #1: DB 가 비어 있을 때 코어 lang/ko·lang/en 에 대해 가상 보호 행이 합성되는지 검증합니다.
+     * 요구사항 1: DB 가 비어 있을 때 코어 lang/ko·lang/en 에 대해 가상 보호 행이 합성되는지 검증합니다.
      *
      * @scenario row_origin=core_virtual
      *
@@ -77,7 +77,7 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * 요구사항 #1: 같은 슬롯에 DB 행이 있으면 가상 행은 목록에서 빠지고 DB 행이 우선하는지 검증합니다.
+     * 요구사항 1: 같은 슬롯에 DB 행이 있으면 가상 행은 목록에서 빠지고 DB 행이 우선하는지 검증합니다.
      *
      * @scenario row_origin=db_row
      *
@@ -119,7 +119,7 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * 요구사항 #5: 활성화 시 호스트 확장이 없으면 실패하는지 검증합니다.
+     * 요구사항 5: 활성화 시 호스트 확장이 없으면 실패하는지 검증합니다.
      *
      * @effects activation_requires_installed_host_extension
      *
@@ -155,7 +155,7 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * 요구사항 #3: 언어팩 번들 패키지(lang-packs/_bundled)는 비보호 행으로 표현되는지 검증합니다.
+     * 요구사항 3: 언어팩 번들 패키지(lang-packs/_bundled)는 비보호 행으로 표현되는지 검증합니다.
      *
      * 실제 설치는 ZIP 추출이 필요하므로 가상 행 합성 결과를 직접 검증한다.
      *
@@ -167,7 +167,7 @@ class PolicyAlignmentTest extends TestCase
      */
     public function test_install_flow_produces_unprotected_packs(): void
     {
-        // 가상 행도 비보호 (요구사항 #3): 미설치 가상 행은 lang-packs/_bundled/ 의 ja 패키지 표현
+        // 가상 행도 비보호 (요구사항 3): 미설치 가상 행은 lang-packs/_bundled/ 의 ja 패키지 표현
         $repo = app(LanguagePackRepositoryInterface::class);
         $manifest = [
             'identifier' => 'g7-module-test-ja',
@@ -182,7 +182,7 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * 요구사항 #6: 호스트 확장 비활성화 연쇄의 재활성화 대기 목록이 한 번만 읽히는지 검증합니다.
+     * 요구사항 6: 호스트 확장 비활성화 연쇄의 재활성화 대기 목록이 한 번만 읽히는지 검증합니다.
      *
      * @effects reactivation_stash_is_read_once
      *
@@ -216,7 +216,7 @@ class PolicyAlignmentTest extends TestCase
         $this->assertSame($pack->id, $pending[0]['id']);
         $this->assertSame('日本語', $pending[0]['locale_native_name']);
 
-        // 두 번 호출하면 cache 가 비워져 빈 배열 반환 (요구사항 #8: 모달 표시 안 함)
+        // 두 번 호출하면 cache 가 비워져 빈 배열 반환 (요구사항 8: 모달 표시 안 함)
         $second = $registrar->getPendingForReactivation('module', 'stash-module');
         $this->assertEmpty($second);
     }

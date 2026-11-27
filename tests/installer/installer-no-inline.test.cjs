@@ -1,6 +1,6 @@
 'use strict';
 /**
- * 설치 마법사·미설치 첫 화면에 실행형 인라인 코드가 없다 (#158 strict CSP)
+ * 설치 마법사·미설치 첫 화면에 실행형 인라인 코드가 없다 (공개 #158 strict CSP)
  *
  * 실행: node --test tests/installer/installer-no-inline.test.cjs
  *
@@ -8,7 +8,7 @@
  * 그대로 영향을 받는다. 종전에는 뷰 인라인 `<script>`·on* 속성·`javascript:` 링크·alert 리다이렉트가 있어
  * 단계 로직과 버튼이 멈췄다. 모집단은 파일시스템에서 파생한다(새 뷰·스크립트도 자동 포함).
  *
- * 스타일도 같다(#163). `style-src 'self'; style-src-attr 'none'` 에서는 `<style>` 요소·마크업의 style 속성·
+ * 스타일도 같다(공개 #163). `style-src 'self'; style-src-attr 'none'` 에서는 `<style>` 요소·마크업의 style 속성·
  * `setAttribute('style', …)` 가 막혀 숨겨 둔 영역이 드러나고 배치가 무너진다.
  *
  * 마킹은 각 test 바로 앞에 있다(파일 머리말의 마킹은 어느 시험이 재는지 가리키지 않는다).
@@ -86,7 +86,7 @@ test('on* 인라인 핸들러·javascript: 링크가 없다 (서버 HTML·JS 문
     assert.deepEqual(offenders, []);
 });
 
-// ── 인라인 스타일 (#163 strict style CSP) ──────────────────────────────
+// ── 인라인 스타일 (공개 #163 strict style CSP) ──────────────────────────────
 // 웹서버가 `style-src 'self'; style-src-attr 'none'` 을 걸면 막히는 것은 세 가지다:
 // <style> 요소 / HTML 문자열(서버 HTML·innerHTML)의 style 속성 / setAttribute('style', …).
 // `el.style.x = …` 같은 CSSOM 대입은 막히지 않으므로 검사하지 않는다.

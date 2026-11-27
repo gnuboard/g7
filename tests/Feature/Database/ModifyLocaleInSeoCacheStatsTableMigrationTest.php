@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
- * `seo_cache_stats.locale` 확장 마이그레이션(5 → 20자) 테스트 (#148).
+ * `seo_cache_stats.locale` 확장 마이그레이션(5 → 20자) 테스트 (공개 #148).
  *
  * 다섯 글자보다 긴 언어(`zh-Hant-TW`)의 검색엔진 캐시 통계는 기록이 엄격 모드에서 실패하고
  * 서비스가 예외를 삼켜 조용히 빠졌다.

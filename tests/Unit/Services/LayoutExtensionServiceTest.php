@@ -974,7 +974,7 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * 사용자 게시판은 글쓰기·상세 화면이 같은 조각을 basic·gallery·card 갈래에 세 번 넣고, 목록은 세 유형 파일을
      * 한 레이아웃에 함께 둔다. overlay(target_id)는 첫 일치 노드 하나에만 들어가 basic 에만 닿으므로 템플릿이 확장점을
-     * 연다(#149). 확장점은 갈래·행마다 채워져야 하고, 각 자리의 props 가 그 자리의 주입 조각 `extensionPointProps` 로
+     * 연다(공개 #149). 확장점은 갈래·행마다 채워져야 하고, 각 자리의 props 가 그 자리의 주입 조각 `extensionPointProps` 로
      * 복사되어(행 문맥 표현식 그대로) 조각이 행마다 그 행의 글을 읽는다. 조각의 데이터 소스는 자리 수와 무관하게
      * 레이아웃에 한 번만 병합된다.
      *

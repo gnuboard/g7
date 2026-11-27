@@ -420,7 +420,7 @@ class ClaimStatusNotificationTest extends ModuleTestCase
         }, 1);
 
         // 서울 기준으로는 이미 다음 날인 UTC 저녁 — 안내 날짜가 UTC 날짜로 새면 하루 어긋난다(Chrome 실측 A-4).
-        // 안내 날짜는 사이트 시간대(#160 D1) — 처리한 관리자의 시간대가 UTC 여도 서울 날짜가 나와야 한다.
+        // 안내 날짜는 사이트 시간대(공개 #160 D1) — 처리한 관리자의 시간대가 UTC 여도 서울 날짜가 나와야 한다.
         config(['app.default_user_timezone' => 'Asia/Seoul']);
         app()->instance('user_timezone', 'UTC');
         Carbon::setTestNow(Carbon::parse('2026-09-24 20:00:00', 'UTC'));

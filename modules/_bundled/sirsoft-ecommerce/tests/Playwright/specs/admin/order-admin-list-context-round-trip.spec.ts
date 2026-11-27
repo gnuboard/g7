@@ -30,7 +30,7 @@ function queryOf(url: string): URLSearchParams {
   return new URL(url).searchParams;
 }
 
-test.describe('관리자 주문 목록 컨텍스트 왕복 (#75)', () => {
+test.describe('관리자 주문 목록 컨텍스트 왕복 (공개 #75)', () => {
   // @scenario leg=back
   // @effects list_return_preserves_query
   test('주문 상세에서 목록으로 돌아오면 페이지와 표시 개수가 복원된다', async ({ page, ordersReadToken }) => {

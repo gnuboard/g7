@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * 코어 CSP 헤더 부착 미들웨어 (#158)
+ * 코어 CSP 헤더 부착 미들웨어 (공개 #158)
  *
  * 관리자 환경설정 > 보안 > 「콘텐츠 보안 정책」의 스크립트 정책·스타일 정책 모드 중 끔이 아닌 것이 있으면
  * `web` 그룹의 HTML 응답에 `Content-Security-Policy`(강제)·`Content-Security-Policy-Report-Only`(점검만)를

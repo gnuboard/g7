@@ -383,7 +383,7 @@ export function DndCanvasLayer(props: DndCanvasLayerProps): React.ReactElement |
   const activePath = dnd.activeDragPath;
 
   // 드래그 중인 요소의 실제 DOM 복제(반투명 고스트) + 크기 — 드래그 시작 시 1회 캡처.
-  // 고스트는 실제 컴포넌트 모양 그대로(#3), 점선 박스는 그 크기만큼(#1).
+  // 고스트는 실제 컴포넌트 모양 그대로, 점선 박스는 그 크기만큼.
   //
   // 보안: innerHTML 주입(dangerouslySetInnerHTML) 대신 `cloneNode(true)` 로 노드를
   // 복제해 ghostHostRef 에 append — 문자열 파싱 경로가 없어 XSS 표면이 없다.
@@ -522,7 +522,7 @@ export function DndCanvasLayer(props: DndCanvasLayerProps): React.ReactElement |
           <SlotDroppable key={slot.id} slot={slot} active={slot.id === activeSlotId} />
         ))}
 
-      {/* DragOverlay 고스트 — document.body 포털로 transform:scale() 조상을 탈출(#2).
+      {/* DragOverlay 고스트 — document.body 포털로 transform:scale() 조상을 탈출.
           dnd-kit DragOverlay 는 position:fixed 라 scale 조상 안에서 좌표가 왜곡되므로,
           포털로 body 직속에 렌더해 커서와 정합. createPortal 은 React context(DndContext)
           를 보존하므로 DragOverlay 가 드래그 상태를 정상 수신한다. */}

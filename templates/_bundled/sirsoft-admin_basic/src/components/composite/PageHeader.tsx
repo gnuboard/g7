@@ -136,7 +136,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 장」, 7.1.0 실측). */}
       <Div className="flex-between flex-wrap gap-3 mb-lg">
         <Div className="min-w-0">
-          {/* 제목·설명은 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 들어간 제목도 화면을 넘지 않는다(#143). */}
+          {/* 제목·설명은 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 들어간 제목도 화면을 넘지 않는다(공개 #143). */}
           <H1 className={titleClass}>{title}</H1>
           {description && (
             <P className="page-description break-words">{description}</P>

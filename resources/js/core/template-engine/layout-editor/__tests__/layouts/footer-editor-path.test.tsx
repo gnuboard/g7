@@ -1,6 +1,6 @@
 /**
  * footer-editor-path — 실물 DynamicRenderer 로 그린 Modal `footer` 단추가 편집기 경로를 받고, 그 경로로
- * 편집기가 footer 노드를 고르는지 잠근다 (#141).
+ * 편집기가 footer 노드를 고르는지 잠근다 (공개 #141).
  *
  * 결함: 확인 창 단추를 `props.footer` 로 옮긴 뒤 편집기 캔버스에서 단추를 고를 수 없었다. footer 를 그리는
  * 컴포넌트(템플릿 Modal)가 componentPath 를 넘기지 않아 `data-editor-path` 가 붙지 않았고, 엔진이 노드 경로를

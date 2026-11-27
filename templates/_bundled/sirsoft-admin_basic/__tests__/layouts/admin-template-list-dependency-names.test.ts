@@ -95,7 +95,7 @@ describe.each([
       },
     }) as Json[];
 
-    // unmet — 충족 여부(is_met)가 없는 항목(옛 문자열 목록 포함)은 충족으로 그린다(#152)
+    // unmet — 충족 여부(is_met)가 없는 항목(옛 문자열 목록 포함)은 충족으로 그린다(공개 #152)
     expect(items[0].dependencies).toEqual([
       { type: 'module', name: '게시판', unmet: false },
       { type: 'plugin', name: 'sirsoft-daum_postcode', unmet: false },

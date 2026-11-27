@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Tests\TestCase;
 
 /**
- * 템플릿 목록·상세 응답의 의존 충족 표시 — 카드 미충족 표시와 dependencies_met 가 활성화 판정과 같다 (#152 F10·F3)
+ * 템플릿 목록·상세 응답의 의존 충족 표시 — 카드 미충족 표시와 dependencies_met 가 활성화 판정과 같다 (공개 #152 F10·F3)
  *
  * 회귀: 목록 응답의 의존 항목이 `{identifier, name, type}` 뿐이라 카드가 충족·미충족을 구분하지 못했고, 응답의 충족 판정은
  * 활성화 경로와 다른 사본이라 빈 제약에서 서로 엇갈렸다.

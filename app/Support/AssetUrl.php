@@ -140,7 +140,7 @@ class AssetUrl
     }
 
     /**
-     * 정적 게시(bake) 베이스 경로를 반환합니다 (#122).
+     * 정적 게시(bake) 베이스 경로를 반환합니다 (공개 #122).
      *
      * 게이트 3조건 — ① 프로덕션 ② `core.static_cache.enabled` ③ 현재 버전 게시
      * 완료(manifest 존재) — 을 전부 통과할 때만 `/build/ext/{v}` 를 반환한다.
@@ -629,7 +629,7 @@ class AssetUrl
      */
     public static function templateAsset(string $identifier, string $path, int|string|null $version = null, bool $allowStatic = true): string
     {
-        // 정적 게시본(bake) 우선 (#122) — 버전 디렉토리 경로라 `?v` 쿼리가 불필요하다.
+        // 정적 게시본(bake) 우선 (공개 #122) — 버전 디렉토리 경로라 `?v` 쿼리가 불필요하다.
         // 게이트(프로덕션·kill-switch·게시 완료·개별 파일 존재) 미통과 시 종전 URL 그대로.
         // `$version` 이 현재 게시 버전과 다르면 정적 분기를 건너뛴다 — 정적 경로는 항상
         // 현재 게시본이므로, 다른 버전을 명시한 호출에 현재본을 주면 "요청 버전이 URL 에
@@ -755,7 +755,7 @@ class AssetUrl
      */
     public static function extensionBundle(string $type, string $kind, int|string|null $version = null, bool $allowStatic = true): string
     {
-        // 정적 게시본(bake) 우선 (#122) — `bundles/{modules|plugins}.{js|css}` 사본.
+        // 정적 게시본(bake) 우선 (공개 #122) — `bundles/{modules|plugins}.{js|css}` 사본.
         // `$version` 명시 호출이 현재 게시 버전과 다르면 건너뛴다 (templateAsset 과 동일 계약)
         $base = $allowStatic ? self::staticExtBase() : null;
         $static = $base !== null && ($version === null || $base === '/build/ext/'.$version)

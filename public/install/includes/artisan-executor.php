@@ -363,7 +363,7 @@ if (! function_exists('installerBootLaravelForInProcess')) {
         // in-process 부팅이 그 자리에서 치명 종료하고, in-process 는 무CLI 환경의 **유일한**
         // 실행 경로라 대안이 없다. 못 읽으면 상향을 건너뛴다 (현재 한도로 진행).
         //
-        // 상향은 재조회로 실적용을 확인하고 미달이면 진행 기록에 남긴다 (20차 #1) —
+        // 상향은 재조회로 실적용을 확인하고 미달이면 진행 기록에 남긴다 (20차 1) —
         // installerIniSet 은 void 라 종전에는 ini_set 차단 호스트에서 상향 실패가 어디에도
         // 남지 않았고, 이후 OOM 은 사유 없는 중단으로만 보였다. 시간 예산(실적용치 반환·
         // 선언)과 같은 규칙이다. 해석 불가 값(null)은 상향을 시도하지 않는다 — 판단 근거가
@@ -429,7 +429,7 @@ if (! function_exists('installerIniBytes')) {
     /**
      * php.ini 크기 표기(128M, 1G …)를 바이트로 바꾼다.
      *
-     * 해석은 `installerParseByteSize()`(execution-mode.php) 단일 지점에 위임한다 (20차 #3) —
+     * 해석은 `installerParseByteSize()`(execution-mode.php) 단일 지점에 위임한다 (20차 3) —
      * 종전에는 두 파서가 공존했고 규칙이 달랐다: 이쪽은 알 수 없는 단위를 `(int)` 로 조용히
      * 접었고(`'1x'` → 1바이트), 소수 표기(`1.5G`)도 잘랐다. 갈라진 파서는 같은 ini 값에
      * 다른 판정을 낳는다. 해석 불가는 null 로 구분한다 — 호출자는 근거 없는 값으로 상향

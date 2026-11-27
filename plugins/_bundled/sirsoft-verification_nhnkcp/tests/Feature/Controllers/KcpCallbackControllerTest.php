@@ -145,7 +145,7 @@ class KcpCallbackControllerTest extends PluginTestCase
         $html = $response->getContent();
         $this->assertStringContainsString('tok-123', (string) $html);
         $this->assertStringNotContainsString('window.location.origin', (string) $html);
-        // 전달 동작은 정적 브리지 파일이 한다(#158 strict CSP). 부모창 전달은 사이트 origin 으로 제한되어야 한다.
+        // 전달 동작은 정적 브리지 파일이 한다(공개 #158 strict CSP). 부모창 전달은 사이트 origin 으로 제한되어야 한다.
         $bridge = (string) file_get_contents(dirname(__DIR__, 3).'/assets/bridge/kcp-bridge.js');
         $this->assertStringContainsString('identity_result', $bridge);
         $this->assertStringContainsString('}, SITE_ORIGIN);', $bridge);

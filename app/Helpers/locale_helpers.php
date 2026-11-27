@@ -93,7 +93,7 @@ if (! function_exists('localized_label')) {
             }
         }
 
-        // 4. value 의 사이트 기본 언어 → 영어 → 첫 키 (#148 — LocalizedValue 와 같은 순서)
+        // 4. value 의 사이트 기본 언어 → 영어 → 첫 키 (공개 #148 — LocalizedValue 와 같은 순서)
         if ($value !== null) {
             if ($hasLaravelApp()) {
                 try {

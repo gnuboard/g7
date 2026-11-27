@@ -1,4 +1,4 @@
-// e2e:allow편집기 위젯(icon-picker) 등록을 module-load 시점으로 이동(결함#3, 직접 하드로드 시 위젯 누락 해소). 라이브 검증은 Chrome MCP(편집기 직접 하드로드 후 icon-picker grid 1391셀 렌더 + 글리프 교체)로 수행, 단위 회귀는 registerEditorWidgets.test.ts(module-load 등록 + index.ts 최상위 호출 정적 가드).
+// e2e:allow편집기 위젯(icon-picker) 등록을 module-load 시점으로 이동(결함 3, 직접 하드로드 시 위젯 누락 해소). 라이브 검증은 Chrome MCP(편집기 직접 하드로드 후 icon-picker grid 1391셀 렌더 + 글리프 교체)로 수행, 단위 회귀는 registerEditorWidgets.test.ts(module-load 등록 + index.ts 최상위 호출 정적 가드).
 /**
  * Sirsoft Admin Basic Template
  *

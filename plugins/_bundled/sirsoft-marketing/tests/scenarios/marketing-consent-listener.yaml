@@ -30,7 +30,7 @@ effects:
   - legacy_agree_rules_follow_declared_fields  # 옛 키 규칙은 정식 키의 규칙이 있을 때만
   - consent_deleted_before_user_delete
   - consent_merged_into_user_resource
-  - consent_history_time_uses_viewer_timezone  # 동의 이력 시각은 보는 사람 시간대(#160)
+  - consent_history_time_uses_viewer_timezone  # 동의 이력 시각은 보는 사람 시간대(공개#160)
 
 test_files:
   - plugins/_bundled/sirsoft-marketing/tests/Unit/Listeners/MarketingConsentListenerTest.php

@@ -6,7 +6,7 @@
 1. LanguagePackService 가 install/activate/deactivate/uninstall 도메인 로직 단일 진입점 — 컨트롤러는 Service 만 주입
 2. 슬롯(scope, target_identifier, locale) 당 active 1개는 application-level 트랜잭션이 보장 (functional unique index 미사용)
 3. ZIP/GitHub/URL 3가지 설치 소스 — 모두 finalizeInstall() 로 합류 (manifest 검증 → 보안 검사 → 의존성 → 디렉토리 이동 → DB 등록)
-4. 활성/비활성 시 HookManager::doAction('core.language_packs.after_activate' / 'after_deactivate', $pack) 발행 — Listener 가 DB JSON 컬럼 동기화
+4. 활성/비활성 시 HookManager::doAction('core.language_packs.activated' / 'deactivated', $pack) 발행 — Listener 가 DB JSON 컬럼 동기화
 5. 보안: backend/ 외 PHP 차단 + eval/include/exec 정적 분석 거부 + 다운그레이드 차단 + 체크섬 검증 (URL 설치)
 ```
 
@@ -89,7 +89,7 @@ DB::transaction:
   ↓
 LanguagePackRegistry::invalidate()
   ↓
-HookManager::doAction('core.language_packs.after_activate', $pack)  (active 진입한 경우만)
+HookManager::doAction('core.language_packs.activated', $pack)  (active 진입한 경우만)
 ```
 
 ## 프로비저닝 커맨드 (`language-pack:provision`)
@@ -132,14 +132,14 @@ DB::transaction(function () use ($pack) {
 
     if ($current && $current->id !== $pack->id) {
         repository->update($current, ['status' => 'inactive']);
-        HookManager::doAction('core.language_packs.after_deactivate', $current);
+        HookManager::doAction('core.language_packs.deactivated', $current);
     }
 
     repository->update($pack, ['status' => 'active', 'activated_at' => now()]);
 });
 
 registry->invalidate();
-HookManager::doAction('core.language_packs.after_activate', $pack);
+HookManager::doAction('core.language_packs.activated', $pack);
 ```
 
 **deactivate**: 비활성화 후 슬롯에 다른 후보(`inactive`/`installed`)가 있으면 자동 active 로 승격(`promoteSlotSuccessor`). 보호된 팩(번들 ko/en 등 `is_protected=true`)은 비활성화 거부.
@@ -165,10 +165,13 @@ HookManager::doAction('core.language_packs.after_activate', $pack);
 
 | 액션 이름 | 페이로드 | 발행 시점 |
 |---|---|---|
-| `core.language_packs.after_activate` | `LanguagePack $pack` | 활성 진입 직후 (install + activate) |
-| `core.language_packs.after_deactivate` | `LanguagePack $pack` | 비활성 진입 직후 (deactivate + 슬롯 스위칭 시 강등) |
+| `core.language_packs.installed` | `LanguagePack $pack` | 새 팩 설치 기록 직후 (활성화 전) |
+| `core.language_packs.updated` | `LanguagePack $pack` | 이미 있던 팩을 다시 설치(업데이트)한 기록 직후 (활성화 전) |
+| `core.language_packs.activated` | `LanguagePack $pack` | 활성 진입 직후 (activate, 설치 시 자동 활성 포함) |
+| `core.language_packs.deactivated` | `LanguagePack $pack` | 비활성 진입 직후 (deactivate + 슬롯 스위칭 시 강등) |
+| `core.language_packs.uninstalled` | `LanguagePack $pack` | 제거 직후 |
 
-확장은 `HookManager::addAction('core.language_packs.after_activate', fn ($pack) => ...)` 로 자유롭게 구독 가능.
+확장은 `HookManager::addAction('core.language_packs.activated', fn ($pack) => ...)` 로 자유롭게 구독 가능.
 
 ## 가상 등록 (LanguagePackBundledRegistrar)
 

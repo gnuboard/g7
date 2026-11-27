@@ -168,7 +168,7 @@ class InstallerEnvValueInjectionTest extends TestCase
     }
 
     // ========================================================================
-    // 보안#1 — generateEnvContent() 의 전 키가 escape 를 거친다
+    // 보안 1 — generateEnvContent() 의 전 키가 escape 를 거친다
     // ========================================================================
 
     /**
@@ -241,7 +241,7 @@ class InstallerEnvValueInjectionTest extends TestCase
     }
 
     // ========================================================================
-    // 보안#2 — replaceEnvLine() 이 치환문자열 메타문자를 해석하지 않는다
+    // 보안 2 — replaceEnvLine() 이 치환문자열 메타문자를 해석하지 않는다
     // ========================================================================
 
     /**
@@ -314,7 +314,7 @@ class InstallerEnvValueInjectionTest extends TestCase
     }
 
     /**
-     * 백슬래시 escape 가 붕괴하지 않는다 — 붕괴하면 보안#1 의 escape 자체가 무력화된다.
+     * 백슬래시 escape 가 붕괴하지 않는다 — 붕괴하면 보안 1 의 escape 자체가 무력화된다.
      *
      * @scenario task=env
      *

@@ -264,7 +264,7 @@ define('G7_EXTENSION_AUTOLOAD_REGISTERED', true);
 | 실행 순서 (확장마다):
 | 1. _bundled PSR-4 addPsr4(prepend=true) → 우선 검색 (+ composer files)
 | 2. _bundled classmap (module.php/plugin.php) require_once → 선점
-|    진입 클래스가 자기 소스 클래스를 상속할 수 있으므로 PSR-4 등록 뒤에 읽는다 (#159)
+|    진입 클래스가 자기 소스 클래스를 상속할 수 있으므로 PSR-4 등록 뒤에 읽는다 (공개 #159)
 | 3. autoload-extensions.php → 활성 디렉토리는 후순위
 |
 */
@@ -315,7 +315,7 @@ if (is_dir($bundledModulesDir)) {
         }
 
         // Classmap 선점 (module.php) — PSR-4 등록 뒤에 읽는다: 진입 클래스가 자기 소스 클래스를 상속하면
-        // 그 전에는 부모를 못 찾아 부트스트랩이 죽는다 (#159)
+        // 그 전에는 부모를 못 찾아 부트스트랩이 죽는다 (공개 #159)
         // class_exists 가드: artisan 초기 부팅에서 활성 디렉토리 버전이 로드되었을 수 있음
         $modulePhp = $modulePath.'/module.php';
         if (file_exists($modulePhp)) {
@@ -373,7 +373,7 @@ if (is_dir($bundledPluginsDir)) {
         }
 
         // Classmap 선점 (plugin.php) — PSR-4 등록 뒤에 읽는다: 진입 클래스가 자기 소스 클래스를 상속하면
-        // 그 전에는 부모를 못 찾아 부트스트랩이 죽는다 (#159)
+        // 그 전에는 부모를 못 찾아 부트스트랩이 죽는다 (공개 #159)
         // class_exists 가드: artisan 초기 부팅에서 활성 디렉토리 버전이 로드되었을 수 있음
         $pluginPhp = $pluginPath.'/plugin.php';
         if (file_exists($pluginPhp)) {

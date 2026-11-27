@@ -5,7 +5,7 @@ feature: 로그인 인계 (외부 인증 → 로그인 화면)
 
 description: |
   외부 인증 확장이 본인 확인을 마친 회원에 대해 `LoginHandoffService::issue()` 로 일회용 코드를 받아 `/login?login_handoff={code}` 로
-  보내면, 로그인 화면이 엔진 `loginHandoff` 액션(`AuthManager.loginWithHandoff()`)으로 `POST /api/auth/login/handoff` 를 호출한다(#40 K2·E1·E2).
+  보내면, 로그인 화면이 엔진 `loginHandoff` 액션(`AuthManager.loginWithHandoff()`)으로 `POST /api/auth/login/handoff` 를 호출한다(K2·E1·E2).
     - 응답은 비밀번호 로그인과 같은 세 형태(인증 완료 · 2단계 인증 · 비밀번호 변경)이고, 엔진 액션의 반환도 `login` 과 키 단위로 같다.
     - 코드는 32바이트 난수, 120초, 한 번만. 없음·만료·재사용·관리자 경로·사라진 회원은 같은 422.
     - `/api/auth/*` globalHeaders(장바구니 키)가 실려 로그인 완료 훅(장바구니 병합)까지 닿는다.

@@ -2,7 +2,7 @@
  * @file admin_template_list.banner.test.tsx
  * @description 템플릿 목록의 활성화 성공 뒤 자동 비활성화(호환성) 배너 재조회 테스트
  *
- * 템플릿을 켜도 같은 화면의 호환성 배너가 새로 고치기 전까지 남았다(#145 F8). 활성 확인 창·강제 활성 창의 성공 분기가
+ * 템플릿을 켜도 같은 화면의 호환성 배너가 새로 고치기 전까지 남았다(공개 #145 F8). 활성 확인 창·강제 활성 창의 성공 분기가
  * 배너 데이터 소스를 다시 받는지 실제 굽기 산출 레이아웃으로 확인한다.
  *
  * @scenario-manifest tests/scenarios/admin-extension-banner-refetch.yaml
@@ -45,7 +45,7 @@ function refetchesBanner(call: Json): boolean {
     && n.params?.dataSourceId === 'auto_deactivated_banner').length > 0;
 }
 
-describe('템플릿 목록 - 활성화 성공 뒤 호환성 배너 재조회 (#145 F8)', () => {
+describe('템플릿 목록 - 활성화 성공 뒤 호환성 배너 재조회 (공개 #145 F8)', () => {
   /**
    * @scenario case=template_activate
    * @effects activation_success_refetches_compatibility_banner

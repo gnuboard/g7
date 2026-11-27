@@ -13,7 +13,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * 코어 CSP 정책 조립 (#158)
+ * 코어 CSP 정책 조립 (공개 #158)
  *
  * 허용 호스트는 활성 확장 선언(`trusted_script_hosts` + 필터 훅) · 활성 템플릿 externals 의 외부 script ·
  * 운영자 추가 입력의 합이다. 정책 문자열에 그대로 이어 붙이므로 형식이 어긋난 호스트는 빠져야 하고

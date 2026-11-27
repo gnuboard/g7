@@ -1,6 +1,6 @@
 /**
  * @file error-503-dependency-reasons.test.ts
- * @description 사용자 503 화면이 미충족 의존 항목마다 사유를 보인다 (코어 7.1.4, #152)
+ * @description 사용자 503 화면이 미충족 의존 항목마다 사유를 보인다 (코어 7.1.4, 공개 #152)
  *
  * 활성 템플릿이 요구하는 모듈·플러그인이 조건에 맞지 않으면 코어가 사용자 화면 전체를 503 으로 돌리고
  * `_global.errorData.modules/plugins` 에 항목별 `status`(not_installed·inactive·version_mismatch)와 설치·요구 버전을 싣는다.

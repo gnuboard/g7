@@ -8,7 +8,7 @@ description: |
 
   기존 회귀:
     - 슬랙·페이스북 미리보기 이미지 미표시 (og:image:width / og:site_name / twitter:card 누락)
-    - og:title 선두 dash ("- 무선 마우스 #99") — 모듈 템플릿 변수 빈 값 시 separator 잔존
+    - og:title 선두 dash ("- 무선 마우스 공개#99") — 모듈 템플릿 변수 빈 값 시 separator 잔존
 
   해결 축:
     - 코어 설정 + 모듈 declaration + 레이아웃 override + hook 4-단계 캐스케이드

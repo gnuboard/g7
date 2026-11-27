@@ -6,7 +6,7 @@ description: |
   배포되는 표현식 (extensions/cookie_banner.g7.html):
     $localized(category?.label) || category?.key || ''
 
-  `$localized` 는 접속 언어 → 사이트 기본 언어 → 영어 순으로 비어 있지 않은 값을 고른다(엔진 v1.81.0, 7.1.1 #148).
+  `$localized` 는 접속 언어 → 사이트 기본 언어 → 영어 순으로 비어 있지 않은 값을 고른다(엔진 v1.81.0, 7.1.1 공개#148).
   그 전 표현식은 `category?.label?.[$locale] ?? category?.label?.ko ?? category?.label?.en ?? category?.key` 로
   접속 언어 다음이 한국어 고정이었다.
 

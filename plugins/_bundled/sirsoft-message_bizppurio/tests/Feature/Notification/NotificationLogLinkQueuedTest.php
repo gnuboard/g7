@@ -60,7 +60,7 @@ class NotificationLogLinkQueuedTest extends PluginTestCase
     }
 
     /**
-     * 실제 SMS 드라이버를 만듭니다 (템플릿·설정만 대역, refkey 표식은 드라이버가 발송마다 컨테이너에서 꺼낸다 — #139).
+     * 실제 SMS 드라이버를 만듭니다 (템플릿·설정만 대역, refkey 표식은 드라이버가 발송마다 컨테이너에서 꺼낸다 — 공개 #139).
      *
      * @return SmsChannelDriver 드라이버
      */

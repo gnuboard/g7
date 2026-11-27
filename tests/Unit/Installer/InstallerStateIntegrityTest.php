@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
- * 상태 파일·로그·워커 판정이 조용히 데이터를 잃지 않는다는 계약 (환경#11·#16·#19).
+ * 상태 파일·로그·워커 판정이 조용히 데이터를 잃지 않는다는 계약 (환경 11· 16· 19).
  *
  * 고정하는 계약:
  *
@@ -419,7 +419,7 @@ class InstallerStateIntegrityTest extends TestCase
     }
 
     /**
-     * 환경#11 — 로그 인코딩 방어는 단건·배치가 같은 함수를 쓴다.
+     * 환경 11 — 로그 인코딩 방어는 단건·배치가 같은 함수를 쓴다.
      *
      * @scenario log_path=batch, text_encoding=invalid_utf8
      *
@@ -456,7 +456,7 @@ class InstallerStateIntegrityTest extends TestCase
     }
 
     /**
-     * 환경#16 — Windows 판정은 `isWindows()` 하나다.
+     * 환경 16 — Windows 판정은 `isWindows()` 하나다.
      *
      * @effects windows_detection_is_single_source
      *
@@ -477,7 +477,7 @@ class InstallerStateIntegrityTest extends TestCase
     }
 
     /**
-     * 환경#19 — 시계가 뒤로 가도 stale 판정이 무력화되지 않는다.
+     * 환경 19 — 시계가 뒤로 가도 stale 판정이 무력화되지 않는다.
      *
      * @scenario clock_direction=backward
      *

@@ -117,7 +117,7 @@ class SearchIndexNoticeReachesClientTest extends TestCase
         ] as $path) {
             $source = file_get_contents($path);
 
-            // 성공 문구 키는 「업데이트할 내용 없음」 분기와 함께 $messageKey 로 고르고(#138), 치환 파라미터는
+            // 성공 문구 키는 「업데이트할 내용 없음」 분기와 함께 $messageKey 로 고르고(공개 #138), 치환 파라미터는
             // $messageParams 로 모아 응답에 넘긴다 — 키 선택·파라미터 구성·응답 전달 세 자리를 모두 고정한다.
             $this->assertMatchesRegularExpression(
                 "/\\\$messageKey\s*=.*update_success'/",

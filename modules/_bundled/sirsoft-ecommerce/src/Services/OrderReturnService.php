@@ -848,7 +848,7 @@ class OrderReturnService
 
         // 신청서 행을 잠그고 **잠금 안에서** 상품 행을 다시 읽어 판정한다. 헤더 동기화도 같은
         // 트랜잭션 안에서 한다 — 상품 전이를 커밋한 뒤 잠금 없이 헤더를 옮기면 그 사이에 들어온
-        // 다른 전이와 헤더 판정이 겹친다(validate P2 #19). 훅은 커밋 뒤에 나간다(#7).
+        // 다른 전이와 헤더 판정이 겹친다(validate P2 19). 훅은 커밋 뒤에 나간다.
         $fresh = DB::transaction(function () use ($return, $itemIds, $quantities, $target, $processedBy, $rejectReason, $context, &$succeeded, &$skipped, &$changes, &$split, &$headerBefore, &$headerAfter) {
             $locked = $this->returnRepository->findForUpdate((int) $return->getKey()) ?? $return;
             $headerBefore = $locked->return_status;
@@ -1527,7 +1527,7 @@ class OrderReturnService
             $order->load(['options', 'shippings', 'payment']);
 
             // 대상 필터·직전 상태·접수 여부를 **잠금 안에서 다시 읽은 값**으로 판정한다
-            // (validate P2 #3). 호출부가 들고 온 모델로 거르면, 두 처리자가 각자 완료 전
+            // (validate P2 3). 호출부가 들고 온 모델로 거르면, 두 처리자가 각자 완료 전
             // 상태를 읽은 뒤 차례로 들어올 때 둘 다 같은 상품을 대상으로 잡아 재고 복구·쿠폰
             // 복원·완료 훅이 두 번 돈다(재고 복구에는 멱등 가드가 없다). 주문 행 잠금이 두 완료를
             // 줄 세우므로, 뒤선 요청은 여기서 이미 끝난 상품을 보고 대상에서 뺀다.
@@ -1570,7 +1570,7 @@ class OrderReturnService
                 if ($orderOption) {
                     // 재고 플래그·적립 회수는 **실제로 반품완료가 된 행**에 적용한다. 부분 수량이면
                     // 완료분이 새 행으로 갈라져 나가고 원 행은 코스에 남으므로, 원 행에 적으면 아직
-                    // 재고를 점유한 행이 "복구됨" 으로 보인다(validate P2 #4).
+                    // 재고를 점유한 행이 "복구됨" 으로 보인다(validate P2 4).
                     $returnedOption = $this->markOrderOptionReturned($orderOption, (int) $item->return_quantity);
 
                     if ($options->shouldRestoreStock($item->id)) {
@@ -2190,7 +2190,7 @@ class OrderReturnService
      *
      * 판정은 클레임 서비스 공용 헬퍼(`CurrencyConversionService::resolveOrderBaseCurrency()`)가
      * 소유한다 — 스냅샷 → 설정 기본 통화. 예전의 `orders.currency` 폴백은 **결제 통화**라 기본
-     * 통화와 다른 주문에서 신청서 통화가 틀렸다(validate P2 #14).
+     * 통화와 다른 주문에서 신청서 통화가 틀렸다(validate P2 14).
      *
      * @param  Order  $order  주문
      * @return string 기준통화 코드
@@ -2557,7 +2557,7 @@ class OrderReturnService
      *
      * 부분 수량이면 `changeStatusWithQuantity()` 가 완료분을 **새 행(split)** 으로 갈라 반품완료로
      * 옮기고 원 행은 잔여로 코스에 남긴다. 호출부는 재고 플래그·적립 회수를 그 새 행에 적용해야
-     * 한다(validate P2 #4).
+     * 한다(validate P2 4).
      *
      * @param  OrderOption  $orderOption  원 주문옵션
      * @param  int  $quantity  완료 수량
@@ -3238,7 +3238,7 @@ class OrderReturnService
         return DB::transaction(function () use ($return, $payload, $operator) {
             $locked = $this->returnRepository->findForUpdate($return->id) ?? $return;
 
-            // 수정 가능 여부는 **잠금 안에서 다시 읽은 상태**로 판정한다(validate P2 #8).
+            // 수정 가능 여부는 **잠금 안에서 다시 읽은 상태**로 판정한다(validate P2 8).
             // 호출부 모델로 판정하면 그 사이 승인된 신청서의 사유·청구가 수정된다.
             if (! $locked->return_status->isWithdrawable()) {
                 throw OrderClaimException::notEditable();

@@ -77,7 +77,7 @@ class CouponCategoryApplicabilityTest extends ModuleTestCase
     }
 
     /**
-     * #1 categories scope, 상품 카테고리가 include 와 교집합 → true
+     * 1 categories scope, 상품 카테고리가 include 와 교집합 → true
      */
     public function test_applicable_when_category_in_include(): void
     {
@@ -88,7 +88,7 @@ class CouponCategoryApplicabilityTest extends ModuleTestCase
     }
 
     /**
-     * #2 categories scope, 상품 카테고리가 include 와 교집합 없음 → false (수정 전 true=버그)
+     * 2 categories scope, 상품 카테고리가 include 와 교집합 없음 → false (수정 전 true=버그)
      */
     public function test_not_applicable_when_category_not_in_include(): void
     {
@@ -100,7 +100,7 @@ class CouponCategoryApplicabilityTest extends ModuleTestCase
     }
 
     /**
-     * #3 categories scope, exclude 교집합 → false
+     * 3 categories scope, exclude 교집합 → false
      */
     public function test_not_applicable_when_category_in_exclude(): void
     {
@@ -114,7 +114,7 @@ class CouponCategoryApplicabilityTest extends ModuleTestCase
     }
 
     /**
-     * #4 categories scope, 상품 카테고리 없음 → false
+     * 4 categories scope, 상품 카테고리 없음 → false
      */
     public function test_not_applicable_when_product_has_no_categories(): void
     {
@@ -125,7 +125,7 @@ class CouponCategoryApplicabilityTest extends ModuleTestCase
     }
 
     /**
-     * #5 all scope → 항상 true (회귀 보존)
+     * 5 all scope → 항상 true (회귀 보존)
      */
     public function test_scope_all_always_applicable(): void
     {

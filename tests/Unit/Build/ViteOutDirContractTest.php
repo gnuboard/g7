@@ -5,7 +5,7 @@ namespace Tests\Unit\Build;
 use Tests\TestCase;
 
 /**
- * 빌드 산출물 디렉토리 계약 테스트 (#122 B1).
+ * 빌드 산출물 디렉토리 계약 테스트 (공개 #122 B1).
  *
  * vite 의 `build.emptyOutDir` 기본값은 `true` 다 — 산출물 디렉토리를 통째로 비운다.
  * 그런데 그 디렉토리에는 vite 가 만들지 않는 **서빙 자산**이 함께 산다:

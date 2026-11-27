@@ -1,6 +1,6 @@
 /**
  * @file ProductCard.list-context.test.tsx
- * @description 상품 카드 클릭이 목록 컨텍스트를 상세 URL 로 나르는지 회귀 (#75)
+ * @description 상품 카드 클릭이 목록 컨텍스트를 상세 URL 로 나르는지 회귀 (공개 #75)
  *
  * 결함: 상품 목록(`/shop/products?page=2&sort=price_asc`) 에서 카드를 클릭하면
  *   `ProductCard` 가 `G7Core.dispatch({ handler: 'navigate', params: { path } })` 만 호출해

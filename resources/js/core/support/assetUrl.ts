@@ -377,7 +377,7 @@ export function layoutPreviewUrl(token: string): string {
 }
 
 /**
- * 정적 게시(bake) 베이스 경로를 반환합니다 (#122).
+ * 정적 게시(bake) 베이스 경로를 반환합니다 (공개 #122).
  *
  * blade 가 게이트(프로덕션 + kill-switch + 게시 완료) 통과 시에만
  * `window.G7Config.staticBase` (`/build/ext/{v}`) 를 주입한다. 부재 시 null —
@@ -408,7 +408,7 @@ export function extStaticVersion(): number | null {
 }
 
 /**
- * 정적 게시본 내 파일의 URL 을 생성합니다 (#122).
+ * 정적 게시본 내 파일의 URL 을 생성합니다 (공개 #122).
  *
  * `forVersion` 을 주면 그 버전 디렉토리를 조합한다 — 핸드셰이크 재로드처럼
  * 페이지 렌더 시점과 다른 버전을 요구하는 경우다. 그 버전이 아직 미게시면
@@ -441,7 +441,7 @@ export function extStaticUrl(path: string, forVersion?: number): string | null {
 }
 
 /**
- * 실패한 정적 게시 URL 을 종전 API URL 로 역변환합니다 (#122 F15).
+ * 실패한 정적 게시 URL 을 종전 API URL 로 역변환합니다 (공개 #122 F15).
  *
  * 셸 head 복구기(`public/assets/core/js/g7-shell-head.js` 의 `staticToLegacy`)와
  * **동일 규칙**이어야 한다 — 드리프트는 `assetUrlRecovery.test.ts` 의 대조 케이스가 잡는다.

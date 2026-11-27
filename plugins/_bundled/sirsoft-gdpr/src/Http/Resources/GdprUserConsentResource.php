@@ -17,7 +17,7 @@ use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
  * 마이페이지 「내 동의 현황」 에서 raw key (cookie_analytics) 대신 사람 친화 표기를 노출하기 위함.
  *
  * `needs_renewal_this_item` 은 *선택형 항목 중 정책 버전이 옛 버전인* 행에서 true — 마이페이지
- * 액션 컬럼이 "다시 동의" 대신 "최신 정책으로 갱신" 분기를 표시할 때 사용 (#21).
+ * 액션 컬럼이 "다시 동의" 대신 "최신 정책으로 갱신" 분기를 표시할 때 사용.
  */
 // audit:allow api-doc-coverage reason: 이번 변경은 toArray() 주석 문구 정정 1건뿐이다. 응답 필드 구성·값 산출 로직이 그대로라 docs/api/ 의 응답 필드 표에 갱신할 내용이 없다.
 class GdprUserConsentResource extends BaseApiResource

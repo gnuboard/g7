@@ -14,7 +14,7 @@ use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 목록 캐시 확장 축 훅 sirsoft-board.post.filter_list_cache_variant (#147)
+ * 목록 캐시 확장 축 훅 sirsoft-board.post.filter_list_cache_variant (공개 #147)
  *
  * 캐시 7개마다 (1) 리스너가 없으면 키가 지금과 같고 (2) 변형 a·b 값이 서로 덮이지 않으며 (3) 태그 비우기로
  * 모든 변형이 비워지는지 본다. 변형마다 다른 결과가 나오도록 목록 쿼리 확장 훅이 변형 a 는 EN, b 는 KO 만 남긴다.

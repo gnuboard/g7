@@ -54,7 +54,7 @@ class ScheduleService
         try {
             return $this->dispatcher->dispatch($schedule, ScheduleTriggerType::Manual, $userId);
         } catch (ScheduleExecutionException $e) {
-            // 「지금 실행」이 앞선 실행과 겹치면 409 로 거절한다(#161 F4). 실행기는 틱·큐 경로와 같은 사유 코드로 알리고,
+            // 「지금 실행」이 앞선 실행과 겹치면 409 로 거절한다(공개 #161 F4). 실행기는 틱·큐 경로와 같은 사유 코드로 알리고,
             // 잠금을 이력 생성보다 먼저 잡으므로 거절된 요청은 이력·last_result 를 남기지 않는다.
             if ($e->reasonCode === 'already_running') {
                 throw new ScheduleAlreadyRunningException((int) $schedule->id);

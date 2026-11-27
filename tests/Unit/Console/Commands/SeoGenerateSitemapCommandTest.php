@@ -182,7 +182,7 @@ class SeoGenerateSitemapCommandTest extends TestCase
     }
 
     /**
-     * 동기 실행은 큐 잡과 같은 중복 방지 잠금을 잡은 채 잡을 돌리고, 끝나면 그 잠금을 푼다(#161 F2) — 잠금 없이 돌면 큐에서
+     * 동기 실행은 큐 잡과 같은 중복 방지 잠금을 잡은 채 잡을 돌리고, 끝나면 그 잠금을 푼다(공개 #161 F2) — 잠금 없이 돌면 큐에서
      * 생성 중인 잡과 겹쳐 돌았다.
      *
      * @effects sitemap_sync_run_holds_job_unique_lock

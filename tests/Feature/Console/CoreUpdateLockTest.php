@@ -16,7 +16,7 @@ use Tests\Concerns\SimulatesOperationLockStore;
 use Tests\TestCase;
 
 /**
- * `core:update` 동시 실행 차단 (#161 S5·D3)
+ * `core:update` 동시 실행 차단 (공개 #161 S5·D3)
  *
  * 두 곳에서 동시에 돌리면 먼저 끝난 쪽이 유지보수 모드를 풀어 교체 중인 사이트가 열리고 스텝이 두 번 돌았다. 이제 시작하자마자
  * 코어 잠금을 잡고, 다른 코어 업데이트가 진행 중이거나 잠금 저장소가 오류를 내면 유지보수 모드에 들어가기 전에 실패로 끝낸다.
@@ -142,7 +142,7 @@ class CoreUpdateLockTest extends TestCase
 
     /**
      * 자식 프로세스를 띄울 수 없어 같은 프로세스에서 번들 일괄 업데이트를 돌 때도, 잠금 저장소 장애를 만나면 첫 항목에서 멈추고
-     * 남은 항목 수를 한 번만 알린다 — 자식 명령 경로(core:execute-bundled-updates)와 같은 규칙(#161 D8).
+     * 남은 항목 수를 한 번만 알린다 — 자식 명령 경로(core:execute-bundled-updates)와 같은 규칙(공개 #161 D8).
      *
      * @scenario case=bulk_abort
      *

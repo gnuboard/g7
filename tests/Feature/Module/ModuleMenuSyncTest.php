@@ -21,7 +21,7 @@ use Tests\TestCase;
  * ExtensionMenuSyncHelper를 통한 실제 DB 기반 메뉴 동기화를 검증합니다:
  * - 설치 시 메뉴 생성 (user_overrides 없음)
  * - 업데이트 시 user_overrides 기반 사용자 커스터마이징 보존
- * - 동적 메뉴/권한 보존 (#135: cleanup 자동 호출 폐기)
+ * - 동적 메뉴/권한 보존 (cleanup 자동 호출 폐기)
  * - 새 메뉴 추가
  */
 class ModuleMenuSyncTest extends TestCase

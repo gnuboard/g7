@@ -70,7 +70,7 @@ async function mockSearchResponse(page: Page, data: Record<string, unknown>): Pr
   });
 }
 
-test.describe('통합검색 카테고리 실패 표면화 (#103)', () => {
+test.describe('통합검색 카테고리 실패 표면화 (공개 #103)', () => {
   test('posts 만 실패한 전체 탭 — posts 섹션은 오류 안내, 다른 카테고리는 정상 렌더', async ({ page }) => {
     await mockSearchResponse(page, searchData({
       total: 1,

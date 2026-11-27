@@ -161,7 +161,7 @@ class FilePermissionHelperSymlinkTest extends TestCase
      * 보호 화이트리스트(`preserveLinkPaths`)에 매칭되는 orphan symlink 는 삭제하지 않고 보존.
      *
      * 코어 업데이트 prune 모드에서 `public/storage` symlink 가 릴리즈 소스에 없다는 이유로
-     * orphan 삭제되어 업로드 파일이 404 되던 결함(#43) 회귀 가드.
+     * orphan 삭제되어 업로드 파일이 404 되던 결함(공개 #43) 회귀 가드.
      *
      * @scenario update_mode=prune
      *
@@ -391,7 +391,7 @@ class FilePermissionHelperSymlinkTest extends TestCase
      * `is_dir`·`file_exists` 둘 다 true」다. 그런데 `FilePermissionHelper` 의 판정은 한때
      * 그 반대(`is_dir` 이면 junction 아님)를 전제로 조기 반환해, **모든 정상 junction 을
      * 일반 디렉토리로 오판**했다. 그러면 `removeOrphanItems` 가 링크만 지우는 분기를 놓치고
-     * `File::deleteDirectory` 로 내려가 **target 안의 파일을 전부 지운다**(#43 이 막으려던 사고).
+     * `File::deleteDirectory` 로 내려가 **target 안의 파일을 전부 지운다**(공개 #43 이 막으려던 사고).
      *
      * @effects junction_detection_matches_storage_link_helper_ssot
      *

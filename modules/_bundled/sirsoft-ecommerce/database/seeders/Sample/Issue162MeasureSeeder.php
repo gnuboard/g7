@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Services\ContentMediaService;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 
 /**
- * #162 브라우저 실측용 이커머스 데이터 시더 (CLI + G7_PLAYWRIGHT_BYPASS=1 전용)
+ * 공개 #162 브라우저 실측용 이커머스 데이터 시더 (CLI + G7_PLAYWRIGHT_BYPASS=1 전용)
  *
  * 비회원이 실제 주문 흐름(담기 → 주문서 → 결제 수단 → 결제하기)을 밟을 표지 상품 하나를 만든다. 비회원 조회 토큰은
  * 주문 생성 응답에서만 발급되므로(`GuestOrderAuthService::issueForOrder`) 주문은 시더가 아니라 실측 중 화면에서 만든다.

@@ -13,7 +13,7 @@
         <!-- 템플릿 외부 리소스 (template.json의 externals) -->
         @include('partials.template-externals-head')
 
-        {{-- 코어 런타임 스타일 — 템플릿 CSS 앞에 싣는다(뷰 안 스타일 블록 없이, #163) --}}
+        {{-- 코어 런타임 스타일 — 템플릿 CSS 앞에 싣는다(뷰 안 스타일 블록 없이, 공개 #163) --}}
         @include('partials.core-styles', ['sheet' => 'core'])
 
         <!-- Fallback UI 스타일 -->
@@ -28,7 +28,7 @@
         @if(!empty($activeUserTemplate))
         {{-- 로드 실패 시 정적 최적화 서버에서 확장자 붙은 CSS 가 가로채였다고 보고 확장자 없는
              형태로 1회 교체한다(무스타일 화면 방지). 링크당 1회. 실패는 인라인 onerror 가 아니라
-             g7-shell-head.js 의 캡처 리스너가 `data-g7-template-css` 표식으로 받는다(#158). --}}
+             g7-shell-head.js 의 캡처 리스너가 `data-g7-template-css` 표식으로 받는다(공개 #158). --}}
         {{-- 템플릿이 선언하고(template.json assets.css) 산출물이 있는 CSS 만 링크한다(Composer 가 고름).
              CSS 를 선언하지 않은 템플릿에 없는 파일 링크를 넣으면 화면마다 요청 실패가 남는다. --}}
         @foreach($templateStylesheets ?? [] as $templateStylesheet)
@@ -41,7 +41,7 @@
         {{-- 확장 CSS 의미 클래스 칸 — 템플릿 CSS 링크 **뒤**에 선언한다. 템플릿의 층 규칙(예: Tailwind 초기화)보다
              위, 층 없는 규칙(확장 유틸리티·템플릿 층 없는 CSS·템플릿 확장 CSS 덮기 파일)보다 아래에 놓인다.
              앞에 두면 템플릿 초기화(`*{margin:0}` 등)가 확장 의미 클래스를 이긴다.
-             순서 선언은 코어 정적 파일(g7-layers.css)로 싣는다 — 인라인 `<style>` 은 엄격한 스타일 정책에서 막힌다(#163). --}}
+             순서 선언은 코어 정적 파일(g7-layers.css)로 싣는다 — 인라인 `<style>` 은 엄격한 스타일 정책에서 막힌다(공개 #163). --}}
         @include('partials.core-styles', ['sheet' => 'layers'])
     </head>
     <body>
@@ -55,7 +55,7 @@
 
         @if(!empty($activeUserTemplate))
         {{-- G7 설정 — 비실행 JSON 데이터 블록. window.G7Config / window.G7Error 대입은
-             g7-shell-boot.js 가 한다(#158 — strict CSP 에서 인라인 대입 <script> 가 실행되지 않아
+             g7-shell-boot.js 가 한다(공개 #158 — strict CSP 에서 인라인 대입 <script> 가 실행되지 않아
              전 화면이 백지가 됐다). 키 이름·값은 종전 인라인 대입과 같다(엔진·확장 계약). --}}
         @php
             $g7EditorBundle = public_path('build/core/layout-editor.min.js');
@@ -110,7 +110,7 @@
                 'cache_version' => (int) ($extensionCacheVersion ?? 0),
             ];
             // 정적 게시(bake) 베이스 — 게이트(프로덕션·kill-switch·게시 완료) 통과 시에만
-            // 주입된다. 프론트 로더가 routes/lang/components 를 이 경로에서 우선 수신 (#122).
+            // 주입된다. 프론트 로더가 routes/lang/components 를 이 경로에서 우선 수신 (공개 #122).
             if (($staticExtBase = \App\Support\AssetUrl::staticExtBase()) !== null) {
                 $g7Config['staticBase'] = $staticExtBase;
             }

@@ -6,7 +6,7 @@ feature: nicepayments_validate_p2_claim_payment_hardening
 description: |
   브랜치 검증이 찾은 결제 플러그인 결함 중 나이스페이먼츠 몫.
 
-  - #8 클라이언트 승인 API 경로(`claim-payments/{no}/approve` → `respondApprove`)는 서버 콜백과 같은
+  - 8 클라이언트 승인 API 경로(`claim-payments/{no}/approve` → `respondApprove`)는 서버 콜백과 같은
     `claim_payment.approve` 필터를 타지만, 승인 뒤 거절의 보상(망취소)은 서버 콜백의 클로저에만 있었다.
     리스너가 ① 서명 금액(Amt)을 승인 **전에** 청구액과 대조하고(낡은 결제창 거절, PG 호출 없음)
     ② 콜백·응답의 주문번호(Moid)가 이 결제 건인지 확인하며 ③ 응답 금액이 서명 금액과 다르면

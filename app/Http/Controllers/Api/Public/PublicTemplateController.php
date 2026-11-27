@@ -122,7 +122,7 @@ class PublicTemplateController extends PublicBaseController
         }
 
         // 버전 키드 URL(`?v` 명시)은 bump 시 URL 자체가 바뀌므로 조건부 공개 캐시가 안전하다.
-        // 무버전 요청(핸드셰이크 폴백 등)은 종전대로 캐시 헤더 없이 신선 응답 (#122 작업 D).
+        // 무버전 요청(핸드셰이크 폴백 등)은 종전대로 캐시 헤더 없이 신선 응답 (공개 #122 작업 D).
         // 열화 스냅샷은 공개 캐시 금지 — 서버측 캐시 회피와 동일 규율로, 같은 `?v`
         // URL 에 public max-age 가 붙으면 브라우저/CDN 이 열화 응답을 1시간 박제한다
         // (버전은 이미 올라간 뒤라 스스로 회복되지 않음. 정적 게시의 열화 제외와 대칭).
@@ -294,7 +294,7 @@ class PublicTemplateController extends PublicBaseController
                 'template_not_found' => $this->notFound(
                     __('templates.errors.not_found', ['template' => $identifier])
                 ),
-                // 형식 위반(invalid_locale)도 "지원하지 않는 언어" 로 404 — 500 이 아니다 (#148)
+                // 형식 위반(invalid_locale)도 "지원하지 않는 언어" 로 404 — 500 이 아니다 (공개 #148)
                 'locale_not_supported', 'invalid_locale' => $this->notFound(
                     __('templates.errors.locale_not_supported', [
                         'template' => $identifier,
@@ -416,7 +416,7 @@ class PublicTemplateController extends PublicBaseController
 
         // 캐싱 헤더와 함께 응답 (레이아웃 캐시 TTL, 기본 24시간).
         // PublicAttachmentController 의 이미지 서빙과 동일한 streamedFileResponse(ETag/Cache-Control) 사용
-        // — 행 disk 를 따르는 스토리지 스트림이라 S3 등 원격 디스크 행에서도 성립한다 (#99).
+        // — 행 disk 를 따르는 스토리지 스트림이라 S3 등 원격 디스크 행에서도 성립한다 (공개 #99).
         //
         // 수정 시각을 함께 넘긴다 — ETag 를 쓰지 않고 `If-Modified-Since` 로만 재검증하는
         // 프록시는 `Last-Modified` 가 없으면 매 요청 전문을 받아 간다. 값은 ETag 소스와

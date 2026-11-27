@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 /**
- * 요청 언어 협상 — 지역·문자 표기 언어팩 (#148)
+ * 요청 언어 협상 — 지역·문자 표기 언어팩 (공개 #148)
  *
  * 종전에는 Accept-Language 각 항목을 주 언어(`fil`)로 잘라 비교해, `fil-PH` 만 켠 사이트에 `fil-PH` 로
  * 접속해도 기본 언어(ko)로 응답했다. 정확일치 → 주 언어 → 같은 주 언어의 다른 지역 순으로 고른다.

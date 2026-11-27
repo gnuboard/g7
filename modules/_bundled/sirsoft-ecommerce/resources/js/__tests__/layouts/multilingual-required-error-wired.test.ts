@@ -1,6 +1,6 @@
 /**
  * @file multilingual-required-error-wired.test.ts
- * @description 이커머스 이름 칸 — 탭형 필수 다국어 칸은 서버 오류를 컴포넌트 error 로 받는다 (#17 P10-a, M1 2차 재측정)
+ * @description 이커머스 이름 칸 — 탭형 필수 다국어 칸은 서버 오류를 컴포넌트 error 로 받는다 (P10-a, M1 2차 재측정)
  *
  * MultilingualInput 은 error 가 새로 오고 필수 언어 칸이 비어 있으면 그 언어 탭을 연다(P10). 오류를 컴포넌트 밖의
  * 별도 문구 줄로만 그리면 컴포넌트가 오류를 몰라 다른 언어 탭에 머문다 — 게시판 기본 탭·배송정책에서 PUT 422 토스트만

@@ -772,7 +772,7 @@
                                                                 }
                                                             },
                                                             {
-                                                                "comment": "이 주문자의 주문만 보기 — 앞선 setState 가 검색어를 비우므로 URL 의 검색 조건도 함께 비운다. 비우지 않으면 화면 입력창은 빈 채로 이전 검색어가 계속 적용된다 (#75).",
+                                                                "comment": "이 주문자의 주문만 보기 — 앞선 setState 가 검색어를 비우므로 URL 의 검색 조건도 함께 비운다. 비우지 않으면 화면 입력창은 빈 채로 이전 검색어가 계속 적용된다 (공개 #75).",
                                                                 "handler": "navigate",
                                                                 "params": {
                                                                     "path": "/admin/ecommerce/orders",
@@ -802,7 +802,7 @@
                                                                 }
                                                             },
                                                             {
-                                                                "comment": "비회원 주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75).",
+                                                                "comment": "비회원 주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (공개 #75).",
                                                                 "handler": "navigate",
                                                                 "params": {
                                                                     "path": "/admin/ecommerce/orders",

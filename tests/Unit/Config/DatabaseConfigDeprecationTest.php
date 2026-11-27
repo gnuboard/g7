@@ -86,7 +86,7 @@ class DatabaseConfigDeprecationTest extends TestCase
     }
 
     /**
-     * 이슈 #63 회귀 — Read 커넥션은 DB_READ_* 가 비어 있으면 DB_WRITE_* 로 fallback 한다.
+     * 이슈 공개 #63 회귀 — Read 커넥션은 DB_READ_* 가 비어 있으면 DB_WRITE_* 로 fallback 한다.
      *
      * 미설정(null) / 빈 문자열('') / 명시값 세 케이스를 모두 검증한다. 특히 빈 문자열
      * 케이스는 config 가 `env('DB_READ_HOST', default)` (중첩 env) 로 되돌아가면
@@ -157,7 +157,7 @@ class DatabaseConfigDeprecationTest extends TestCase
             "/env\('DB_READ_HOST'\)\s*\?:\s*env\('DB_WRITE_HOST'/",
             $file,
             'config/database.php 의 read.host 가 Elvis(?:) write fallback 을 사용해야 한다 '
-                .'(이슈 #63 — 빈 문자열 DB_READ_HOST 시 write 로 fallback).'
+                .'(이슈 공개 #63 — 빈 문자열 DB_READ_HOST 시 write 로 fallback).'
         );
     }
 

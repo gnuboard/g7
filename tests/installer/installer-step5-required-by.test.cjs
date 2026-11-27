@@ -1,6 +1,6 @@
 'use strict';
 /**
- * 웹 설치 마법사 Step 5 — 「…에 필요」 배지(D9)·사전 검증 실패 화면 버튼(D7)·실패 제목(작업 키) 단위 시험 (#153).
+ * 웹 설치 마법사 Step 5 — 「…에 필요」 배지(D9)·사전 검증 실패 화면 버튼(D7)·실패 제목(작업 키) 단위 시험 (공개 #153).
  *
  * 실행: node --test tests/installer/installer-step5-required-by.test.cjs
  *

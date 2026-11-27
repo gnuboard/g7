@@ -802,7 +802,7 @@ class CartService
         foreach ($topLevelOptions as $orderOption) {
             $rawName = $orderOption->product_name;
             if (is_array($rawName)) {
-                // 보는 언어 → 사이트 기본 언어 → 영어 → 남은 아무 언어 순 (#148)
+                // 보는 언어 → 사이트 기본 언어 → 영어 → 남은 아무 언어 순 (공개 #148)
                 $productName = (string) (LocalizedValue::pick($rawName, $locale) ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
             } else {
                 $productName = (string) ($rawName ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));

@@ -262,7 +262,7 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
     error: assetsError,
   } = useEditorTemplateAssets(state.templateIdentifier, state.locale);
 
-  // 편집 대상 템플릿 CSS 가 들어오거나 기기 폭이 바뀌면 CSS 매체 격리가 새 시트를 다시 훑게 한다(#141).
+  // 편집 대상 템플릿 CSS 가 들어오거나 기기 폭이 바뀌면 CSS 매체 격리가 새 시트를 다시 훑게 한다(공개 #141).
   // 이미 처리한 규칙은 건너뛰므로 반복 호출해도 결과가 같다.
   useEffect(() => {
     rescanPreviewMediaIsolation();
@@ -1299,7 +1299,7 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
             background: '#fff',
             // 테두리는 border 가 아니라 box-shadow 로 그린다. 전역 `*{box-sizing:border-box}` 아래서
             // border 는 내용 폭을 기기 폭보다 좁게 만든다(실측 390 → 389). CSS 매체 격리의 컨테이너
-            // 조건이 내용 폭으로 판정되므로, JS responsive 판정(기기 폭)과 경계에서 1~2px 어긋났다(#141).
+            // 조건이 내용 폭으로 판정되므로, JS responsive 판정(기기 폭)과 경계에서 1~2px 어긋났다(공개 #141).
             boxShadow: '0 0 0 1px #cbd5e1, 0 1px 3px rgba(0,0,0,0.05)',
             // 프레임 폭/100 — 미리보기 안 `vw` 를 이 값으로 바꿔 판정한다(usePreviewMediaIsolation)
             [PREVIEW_VW_VAR as string]: `${deviceWidth / 100}px`,

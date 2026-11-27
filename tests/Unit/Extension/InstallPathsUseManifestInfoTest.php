@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 설치·의존 판정 경로는 진입 파일을 실행하는 상세 조회(getPluginInfo·getModuleInfo)를 쓰지 않는다 (#159).
+ * 설치·의존 판정 경로는 진입 파일을 실행하는 상세 조회(getPluginInfo·getModuleInfo)를 쓰지 않는다 (공개 #159).
  *
  * 미설치 확장의 상세 조회는 `_bundled` 진입 파일을 PHP 로 실행한다. 같은 프로세스(명령줄 설치·웹 ZIP/GitHub 설치)에서
  * 이어서 설치하면, 진입 클래스가 상속하는 자기 소스 클래스의 조회 실패가 Composer 음성 캐시로 남아 설치가

@@ -5,7 +5,7 @@ namespace Plugins\Sirsoft\VerificationKginicis\Tests\Feature\Controllers;
 use Plugins\Sirsoft\VerificationKginicis\Tests\PluginTestCase;
 
 /**
- * 본인인증 결과 전달 브리지 페이지에 실행형 인라인 코드가 없다 (#158 strict CSP)
+ * 본인인증 결과 전달 브리지 페이지에 실행형 인라인 코드가 없다 (공개 #158 strict CSP)
  *
  * 종전에는 페이지 인라인 `<script>` 가 부모창 postMessage·창 닫기·모바일 복귀를 했다. 사이트가
  * `script-src 'self'` 를 걸면 실행되지 않아 인증 결과가 전달되지 않고 팝업도 닫히지 않았다. 이제 서버 값은

@@ -1,4 +1,4 @@
-// e2e:allow편집기 passthrough 결함#2 수정(admin 동기, data-editor-*/id 를 시각적 루트 Div 로 라우팅). 단위 회귀는 FileInput.test.tsx passthrough describe.
+// e2e:allow편집기 passthrough 결함 2 수정(admin 동기, data-editor-*/id 를 시각적 루트 Div 로 라우팅). 단위 회귀는 FileInput.test.tsx passthrough describe.
 import React, { forwardRef, useRef, useCallback, useState } from 'react';
 import { Div } from './Div';
 import { Span } from './Span';

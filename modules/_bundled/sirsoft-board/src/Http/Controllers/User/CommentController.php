@@ -100,7 +100,7 @@ class CommentController extends PublicBaseController
 
             // 상세 화면 댓글과 같은 규칙으로 부른다 — 맥락을 빼면 기본값 'admin' 이 돼 댓글 범위 권한을
             // 관리자용 admin.comments.read 로 판정했고(「본인만」 회원에게 남의 댓글이 나감), 매니저에게는
-            // del_cmt 없이도 삭제 댓글이 나갔다(#142).
+            // del_cmt 없이도 삭제 댓글이 나갔다(공개 #142).
             $canViewDeleted = $this->checkBoardPermission($slug, 'manager', PermissionType::User);
             $comments = $this->commentService->getCommentsByPostId(
                 $slug,

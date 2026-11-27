@@ -21,7 +21,7 @@ import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 /** 첨부 기능이 켜진 게시판의 관리자 글쓰기 화면 */
 const WRITE_URL = '/admin/board/free/write';
 
-test.describe.skip('관리자 게시글 폼 — 첨부 안내 (#81 L-01)', () => {
+test.describe.skip('관리자 게시글 폼 — 첨부 안내 (공개 #81 L-01)', () => {
   // @scenario case=hint_renders_limits
   // @effects admin_attachment_hint_renders_board_limits
   test('첨부 안내가 게시판 설정의 개수·용량으로 렌더된다', async ({ page, settingsToken }) => {

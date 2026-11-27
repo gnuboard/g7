@@ -390,7 +390,7 @@ describe('LayoutLoader', () => {
       const button = container.querySelector('button');
       expect(button).not.toBeNull();
       expect(button?.textContent).toContain('페이지 새로고침');
-      // 인라인 onclick 대신 표식 + 리스너 (#158 strict CSP)
+      // 인라인 onclick 대신 표식 + 리스너 (공개 #158 strict CSP)
       expect(button?.getAttribute('onclick')).toBeNull();
       expect(button?.getAttribute('data-g7-error-reload')).toBe('1');
     });

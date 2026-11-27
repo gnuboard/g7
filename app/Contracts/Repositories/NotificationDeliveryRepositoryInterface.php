@@ -7,7 +7,7 @@ use App\Models\NotificationDelivery;
 use Illuminate\Support\Carbon;
 
 /**
- * 알림 수신자별 발송 기록 Repository 인터페이스 (#139)
+ * 알림 수신자별 발송 기록 Repository 인터페이스 (공개 #139)
  *
  * 발송 잡이 수신자를 선점(리스)하고, 보낸 뒤 확정하고, 실패하면 풀어 주는 데 쓴다. 판정 규칙은
  * NotificationDeliveryGuard 가 소유하고 이 인터페이스는 원자적 쓰기만 제공한다.

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * 알림 수신자별 중복 발송 방지 (#139)
+ * 알림 수신자별 중복 발송 방지 (공개 #139)
  *
  * 기준은 **누락 방지 우선(at-least-once)** 이다.
  *

@@ -9,7 +9,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 인기 게시물 아바타 URL 호출측 회귀 테스트 (#100 URL 조립 단일화)
+ * 인기 게시물 아바타 URL 호출측 회귀 테스트 (공개 #100 URL 조립 단일화)
  *
  * urlForHash() 헬퍼 자체가 아니라 **호출측**(BoardRepository getPopularPosts)이
  * 조인으로 얻은 hash 를 코어 단일 지점에 위임해 응답 문자열이 기존과 동일하게

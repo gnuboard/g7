@@ -152,7 +152,7 @@ export interface CardGridProps {
    *
    * `renderEnvRef.current` 는 이 CardGrid 를 그린 렌더러의 렌더 환경(폭·언어·dispatcher·레지스트리·
    * 편집 모드)이다. 셀을 그릴 때 이 값을 넘겨, 레이아웃 편집기 미리보기에서 셀이 브라우저 창 폭·
-   * 호스트 언어가 아니라 미리보기 값을 따르게 한다(#141).
+   * 호스트 언어가 아니라 미리보기 값을 따르게 한다(공개 #141).
    *
    * @internal 템플릿 엔진 내부 사용
    */
@@ -300,7 +300,7 @@ const processActionMenuActions = (
  *
  * `renderEnv` 는 렌더 환경(폭·언어·dispatcher·레지스트리·편집 모드)이다. `componentContext` 를
  * 넘기지 않는 이유: 넘기면 셀의 `_local` 이 CardGrid 렌더러의 상태로 병합되고 setState 대상도
- * 바뀐다 — 렌더 환경만 필요하므로 상태를 병합하지 않는 `renderEnv` 통로를 쓴다(#141).
+ * 바뀐다 — 렌더 환경만 필요하므로 상태를 병합하지 않는 `renderEnv` 통로를 쓴다(공개 #141).
  */
 const renderCellChildren = (
   cellChildren: CardGridCellChild[],
@@ -508,14 +508,14 @@ export const CardGrid: React.FC<CardGridProps> = ({
 
   // 반응형 상태 구독 - cellChildren 내 responsive 속성 지원을 위해 필요
   // 화면 크기 변경 시 CardGrid가 리렌더링되어 renderItemChildren이 새로운 너비로 재실행됨.
-  // 반환 폭은 Provider 폭(편집기 미리보기에서는 기기 폭)이라 셀의 responsive 분기 폭으로 넘긴다(#141).
+  // 반환 폭은 Provider 폭(편집기 미리보기에서는 기기 폭)이라 셀의 responsive 분기 폭으로 넘긴다(공개 #141).
   const G7Core = (window as any).G7Core;
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const responsive = G7Core?.useResponsive?.();
   // 열 수를 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭), 훅이 없으면 창 폭 + resize
   const renderWidth = useRenderWidth();
 
-  // 셀 렌더 환경 — 이 CardGrid 를 그린 렌더러의 환경에 자기 Provider 폭을 얹는다(#141)
+  // 셀 렌더 환경 — 이 CardGrid 를 그린 렌더러의 환경에 자기 Provider 폭을 얹는다(공개 #141)
   const renderEnv = {
     ...(__componentContext?.renderEnvRef?.current ?? {}),
     ...(typeof responsive?.width === 'number' ? { responsiveWidth: responsive.width } : {}),

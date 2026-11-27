@@ -19,7 +19,7 @@ use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 use ReflectionMethod;
 
 /**
- * KG이니시스 관리자 결제조회·에스크로 화면 값의 시간대 테스트 (#160)
+ * KG이니시스 관리자 결제조회·에스크로 화면 값의 시간대 테스트 (공개 #160)
  *
  * - 화면 값(조회 시각·로컬 대체 시각·가상계좌 기한·에스크로 등록/확인 시각)은 보는 사람 시간대
  * - 일본 편의점 결제기한은 일본 시각 그대로 + (JST)

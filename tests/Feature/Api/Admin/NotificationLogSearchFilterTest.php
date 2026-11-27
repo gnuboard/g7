@@ -12,7 +12,7 @@ use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
- * 알림 발송 로그 검색대상·다중 필터 검증 (#17).
+ * 알림 발송 로그 검색대상·다중 필터 검증.
  *
  * 화면은 검색대상(전체/수신자/제목)과 상태·확장 유형 다중 선택을 보내지만, 서버 게이트가
  * `search_type` 을 선언하지 않아 validated() 가 버렸고, 상태·확장 유형은 스칼라만 받아 화면이

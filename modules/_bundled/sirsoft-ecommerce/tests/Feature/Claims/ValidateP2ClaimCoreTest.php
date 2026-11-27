@@ -28,13 +28,13 @@ use RuntimeException;
  * 클레임 핵심 서비스 결함 수정 검증 — 전이 게이트·종결 정산·원자성·입력 방어 (A)
  *
  * 검증 축:
- * - 상품 단위 승인이 헤더 승인과 같은 미수납 게이트를 거친다(#1).
- * - 상품 단위 전량 반려로 헤더가 종결되면 대기 결제를 닫는다(#2).
- * - 일괄 전이가 건별 예외를 skip 으로 보고한다(#11).
- * - 금액 수정과 청구 정산이 한 트랜잭션이다(#12).
- * - 이미 낸 청구를 환불금 차감으로 바꾸지 못한다(#13).
- * - 알 수 없는 청구 방식·환불 우선순위가 500 이 아니라 도메인 예외다(#10).
- * - 기준 통화 해석이 한 규칙(스냅샷 → 설정 기본 통화)이다(#14).
+ * - 상품 단위 승인이 헤더 승인과 같은 미수납 게이트를 거친다.
+ * - 상품 단위 전량 반려로 헤더가 종결되면 대기 결제를 닫는다.
+ * - 일괄 전이가 건별 예외를 skip 으로 보고한다(공개 #11).
+ * - 금액 수정과 청구 정산이 한 트랜잭션이다(공개 #12).
+ * - 이미 낸 청구를 환불금 차감으로 바꾸지 못한다.
+ * - 알 수 없는 청구 방식·환불 우선순위가 500 이 아니라 도메인 예외다.
+ * - 기준 통화 해석이 한 규칙(스냅샷 → 설정 기본 통화)이다.
  */
 class ValidateP2ClaimCoreTest extends ModuleTestCase
 {
@@ -123,7 +123,7 @@ class ValidateP2ClaimCoreTest extends ModuleTestCase
         return [$return->fresh(['returnOptions']), $payment];
     }
 
-    // ── #1 상품 단위 승인의 미수납 게이트 ──
+    // ── 1 상품 단위 승인의 미수납 게이트 ──
 
     /**
      * 신청 시점 결제의 미수납 반품을 상품 단위로 승인하면 헤더 승인과 같이 거절하는지 검증합니다.
@@ -191,7 +191,7 @@ class ValidateP2ClaimCoreTest extends ModuleTestCase
         }
     }
 
-    // ── #2 상품 단위 전량 반려의 종결 정산 ──
+    // ── 2 상품 단위 전량 반려의 종결 정산 ──
 
     /**
      * 상품 단위 전량 반려로 헤더가 반려되면 대기 결제행을 취소하는지 검증합니다.
@@ -213,7 +213,7 @@ class ValidateP2ClaimCoreTest extends ModuleTestCase
         $this->assertSame(ClaimPaymentStatusEnum::CANCELLED, $payment->fresh()->payment_status);
     }
 
-    // ── #11 일괄 전이의 건별 예외 ──
+    // ── 공개 #11 일괄 전이의 건별 예외 ──
 
     /**
      * 일괄 반려 중 한 건의 예기치 못한 예외가 전체를 끊지 않고 skip 으로 보고되는지 검증합니다.
@@ -246,7 +246,7 @@ class ValidateP2ClaimCoreTest extends ModuleTestCase
         $this->assertSame([(int) $first->id], array_map('intval', array_column($result['skipped'], 'id')));
     }
 
-    // ── #12 금액 수정과 정산의 원자성 ──
+    // ── 공개 #12 금액 수정과 정산의 원자성 ──
 
     /**
      * 청구 정산이 실패하면 금액 수정도 함께 되돌아가는지 검증합니다.
@@ -280,7 +280,7 @@ class ValidateP2ClaimCoreTest extends ModuleTestCase
         $this->assertNull($fresh->charge_method);
     }
 
-    // ── #13 기납부 청구의 차감 전환 ──
+    // ── 13 기납부 청구의 차감 전환 ──
 
     /**
      * 이미 결제한 청구를 운영자가 환불금 차감으로 바꾸지 못하는지 검증합니다. (이중 징수)
@@ -346,7 +346,7 @@ class ValidateP2ClaimCoreTest extends ModuleTestCase
         return $fresh;
     }
 
-    // ── #10 알 수 없는 입력 ──
+    // ── 알 수 없는 입력 ──
 
     /**
      * 알 수 없는 청구 방식·환불 우선순위가 도메인 예외(4xx)로 거절되는지 검증합니다.
@@ -379,7 +379,7 @@ class ValidateP2ClaimCoreTest extends ModuleTestCase
         ));
     }
 
-    // ── #14 기준 통화 해석 ──
+    // ── 14 기준 통화 해석 ──
 
     /**
      * 스냅샷에 기준 통화가 없으면 교환·반품이 결제 통화가 아니라 설정 기본 통화로 떨어지는지 검증합니다.

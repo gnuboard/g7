@@ -164,7 +164,7 @@ export function resolveSampleData(
 
   // 4. 마지막 — 도메인-중립 빈 응답.
   //  코어 키워드 프리셋(coreSamplePresets)은 단계적 폐기에 따라 제거됨
-  //  (번들 sampleData 전수 커버 완료 — #2).
+  //  (번들 sampleData 전수 커버 완료 — 2).
   //    미매칭 데이터소스는 도메인 결정을 코어가 갖지 않도록 빈 응답으로 디그레이드한다
   //    (원칙 4.4). 제3자 템플릿은 자기 editor-spec.json.sampleData 작성으로 채운다.
   return {

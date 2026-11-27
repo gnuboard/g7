@@ -7,7 +7,7 @@ use App\Support\Query\BoundedPage;
 use Carbon\CarbonInterface;
 
 /**
- * 큐 작업 처리 기록(queue_job_logs) Repository 인터페이스 (#17)
+ * 큐 작업 처리 기록(queue_job_logs) Repository 인터페이스
  */
 interface QueueJobLogRepositoryInterface
 {

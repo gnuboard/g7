@@ -8,7 +8,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * 경로 정리·포함 판정 헬퍼가 OS 와 무관하게 같은 결과를 내는지 봉인한다 (#144).
+ * 경로 정리·포함 판정 헬퍼가 OS 와 무관하게 같은 결과를 내는지 봉인한다 (공개 #144).
  *
  * 입력은 전부 문자열이라 Windows 개발 PC 에서도 리눅스 절대경로(`/srv/…`)·UNC 경로 결과를 그대로 잰다 —
  * 수동 정규화가 리눅스에서만 선행 `/` 를 잃던 결함은 Windows 에서 돌던 기존 테스트로는 보이지 않았다.

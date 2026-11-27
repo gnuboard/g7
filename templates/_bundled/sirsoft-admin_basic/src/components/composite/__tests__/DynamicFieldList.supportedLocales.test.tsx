@@ -1,5 +1,5 @@
 /**
- * DynamicFieldList — 새 행의 다국어 칸은 켜진 언어 전부 (#148 F4)
+ * DynamicFieldList — 새 행의 다국어 칸은 켜진 언어 전부 (공개 #148 F4)
  *
  * 종전에는 없는 API(`G7Core.locale.all`)를 불러 늘 ko·en 두 칸만 만들었다. 실제 API 는 `locale.supported()` 다.
  */
@@ -28,7 +28,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('DynamicFieldList 새 행 다국어 칸 (#148)', () => {
+describe('DynamicFieldList 새 행 다국어 칸 (공개 #148)', () => {
   // @scenario shape=three_letter
   // @effects dynamic_field_row_has_every_supported_locale
   it('다국어 칸이 있는 행을 추가하면 켜진 언어마다 칸이 생긴다 (종전 ko·en 만)', async () => {

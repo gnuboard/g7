@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 /**
  * ProductInquiryRepository 단위 테스트
  *
- * SoftDeletes 도입(#107 후속)에 따른 신규 메서드와 answered_at 보존 계약을 검증합니다.
+ * SoftDeletes 도입(공개 #107 후속)에 따른 신규 메서드와 answered_at 보존 계약을 검증합니다.
  * - markAsAnswered: 최초 답변 시각 보존 (재마킹이 시각을 덮어쓰면 안 됨)
  * - restoreByInquirable: 소프트 삭제 피벗 복원 (게시판 질문 글 복원 대칭)
  * - forceDeleteByProductId: 상품 삭제 경로 — trashed 포함 영구 삭제

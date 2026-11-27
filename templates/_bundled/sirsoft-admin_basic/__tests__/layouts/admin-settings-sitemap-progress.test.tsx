@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-sitemap-progress.test.tsx
- * @description 환경설정 > SEO > Sitemap 재생성 진행상황 UI 회귀 가드 (이슈 #79 / S5)
+ * @description 환경설정 > SEO > Sitemap 재생성 진행상황 UI 회귀 가드 (이슈 공개 #79 / S5)
  *
  * 검증 포인트:
  * - admin_settings.json: sitemap_status(api) + sitemap_progress_ws(websocket) 데이터소스 배선
@@ -90,7 +90,7 @@ describe('admin_settings — sitemap 진행상황 데이터소스', () => {
     expect(stop!.if).not.toContain('sitemap_status?.data?.progress?.status');
     expect(stop!.params.id).toBe('sitemap_progress_poll');
 
-    // 조건식을 실제로 평가한다 — 완료·실패뿐 아니라 상태 캐시가 만료돼 진행상황이 비어도(null) 멈춰야 한다(#155).
+    // 조건식을 실제로 평가한다 — 완료·실패뿐 아니라 상태 캐시가 만료돼 진행상황이 비어도(null) 멈춰야 한다(공개 #155).
     // 「completed/failed 일 때만 멈춤」이면 null 에서 3초 폴링이 화면을 떠날 때까지 계속된다.
     const expr = String(stop!.if).replace(/^\{\{|\}\}$/g, '');
     const shouldStop = (status: string | null) =>

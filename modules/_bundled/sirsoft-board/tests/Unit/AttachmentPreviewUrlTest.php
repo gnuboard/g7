@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\Test;
 /**
  * 게시판 첨부 미리보기 URL 조립 단일 지점(previewUrlForSlug) 회귀 테스트
  *
- * URL 중복 조립 정리(#100) 후에도 응답 문자열이 기존과 동일함을 고정합니다.
+ * URL 중복 조립 정리(공개 #100) 후에도 응답 문자열이 기존과 동일함을 고정합니다.
  * board 는 직접 URL 배선 대상이 아니므로 문자열 회귀 0 이 계약입니다.
  */
 class AttachmentPreviewUrlTest extends ModuleTestCase

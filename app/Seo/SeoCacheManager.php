@@ -338,7 +338,7 @@ class SeoCacheManager implements SeoCacheManagerInterface
         $key = $this->buildKey($url, $locale);
 
         // 인덱스 읽기 → 판정 → 페이지·인덱스 쓰기를 한 잠금 안에서 한다. 동시 저장 두 건이 같은 인덱스를 읽고 각자 덮어쓰면
-        // 한쪽 항목이 사라져, 그 페이지는 무효화(글 수정 등)에서 빠지고 TTL 동안 낡은 화면이 남았다(#161 F1).
+        // 한쪽 항목이 사라져, 그 페이지는 무효화(글 수정 등)에서 빠지고 TTL 동안 낡은 화면이 남았다(공개 #161 F1).
         // 잠금을 잡지 못하면(대기 초과·저장소 오류) 저장하지 않는다 — 성능 캐시라 쓰지 않는 쪽이 안전하다.
         $this->withIndexLock(fn () => $this->storePageLocked($key, $url, $locale, $html, $layoutName), fn () => null);
     }

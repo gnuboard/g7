@@ -1388,7 +1388,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * UpdateBoardRequest - 첨부 미사용 게시판의 빈 확장자는 통과 (케이스 3 · GH #78)
+     * UpdateBoardRequest - 첨부 미사용 게시판의 빈 확장자는 통과 (케이스 3 · GH 공개 #78)
      *
      * @return void 반환값 없음
      *
@@ -1582,7 +1582,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     // ==========================================
-    // 조건부 검증 매트릭스 (이슈 #78)
+    // 조건부 검증 매트릭스 (이슈 공개 #78)
     //
     // 관리자 폼은 GET 응답 전체를 그대로 PUT 하므로 요청에는 항상 모든 키가 존재한다.
     // 따라서 sometimes 는 아무 보호도 하지 못하며, 토글 OFF 상태의 종속 필드는
@@ -1633,7 +1633,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * UpdateBoardRequest - 첨부 미사용 게시판은 빈 배열 확장자도 통과해야 함 (이슈 #78)
+     * UpdateBoardRequest - 첨부 미사용 게시판은 빈 배열 확장자도 통과해야 함 (이슈 공개 #78)
      *
      * 첨부를 쓰지 않는 게시판을 무변경 저장할 때 422 로 막히던 결함의 회귀 테스트.
      *
@@ -1659,7 +1659,7 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
-     * UpdateBoardRequest - 첨부 미사용 게시판은 확장자 null 도 통과해야 함 (이슈 #78)
+     * UpdateBoardRequest - 첨부 미사용 게시판은 확장자 null 도 통과해야 함 (이슈 공개 #78)
      *
      * allowed_extensions 컬럼이 NULL 인 레거시 게시판(notice 등) 재현 케이스.
      *

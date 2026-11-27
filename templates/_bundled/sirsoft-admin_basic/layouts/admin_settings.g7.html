@@ -38,7 +38,7 @@
       </field>
     </fallback>
   </data-source>
-  <!-- 코어 배포본에 있지만 이 프로젝트에 배치하지 않은 공식 번들 안내(#146). 모듈·플러그인·템플릿 화면과
+  <!-- 코어 배포본에 있지만 이 프로젝트에 배치하지 않은 공식 번들 안내(공개 #146). 모듈·플러그인·템플릿 화면과
        **같은 API** 를 부르고 여기서는 응답의 `language_packs` 만 읽는다. 숨김 샘플·설치·디스크·닫은 관리자는 서버가 거른다. -->
   <data-source id="unplaced_bundled_notice" label_key="$t:editor.data_source.unplaced_bundled_notice" type="api" endpoint="/api/admin/extensions/unplaced-bundled" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'language_packs'}}" :auto_fetch="true" :auth_required="true">
     <error-handling>
@@ -197,7 +197,7 @@
       </field>
     </fallback>
   </data-source>
-  <!-- 큐 워커 상태 (#139) — 드라이버 탭에서만 받는다. 저장된 큐 드라이버 기준으로 등록 연결·큐마다 대기 건수·마지막 워커 신호·
+  <!-- 큐 워커 상태 (공개 #139) — 드라이버 탭에서만 받는다. 저장된 큐 드라이버 기준으로 등록 연결·큐마다 대기 건수·마지막 워커 신호·
        경고, 긴 작업 전용 워커 등록 단계, Supervisor 실행 명령을 서버가 판정해 돌려준다. progressive 로 받고 탭 전환 덮개는
        다른 progressive 소스와 같이 이 응답을 기다린다. 실패하면 구역에 실패 안내를 띄운다(응답이 없을 때 「신호 없음」으로
        오해하지 않게) — 실패 표식은 _global 에 둔다: 데이터소스 핸들러가 세운 _local 키는 이후 입력 변경의 setState 에

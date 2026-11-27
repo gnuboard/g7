@@ -272,7 +272,7 @@ describe('AdminSidebar', () => {
     });
   });
 
-  describe('URL 접두사 충돌 시 활성 메뉴 판별 (Issue #37)', () => {
+  describe('URL 접두사 충돌 시 활성 메뉴 판별', () => {
     const prefixConflictMenu: MenuItem[] = [
       { id: 1, name: { ko: '대시보드', en: 'Dashboard' }, slug: 'dashboard', url: '/admin', icon: 'fas fa-home' },
       {

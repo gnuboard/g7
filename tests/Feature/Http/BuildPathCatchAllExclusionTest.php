@@ -8,7 +8,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Tests\TestCase;
 
 /**
- * 정적 게시본 미스(`.json`)는 SPA catch-all 에 매칭되지 않는다 (#122 / 공개 #47 상호작용).
+ * 정적 게시본 미스(`.json`)는 SPA catch-all 에 매칭되지 않는다 (공개 #122 / 공개 #47 상호작용).
  *
  * catch-all 의 확장자 제외 lookahead(`(?!.*\.(js|css|…))`)는 끝 앵커가 없어 부분일치로
  * 동작한다 — `.json` 은 `.js` 를 부분 문자열로 포함하므로 함께 제외된다. 덕분에 정적

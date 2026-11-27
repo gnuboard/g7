@@ -420,9 +420,9 @@ class UserReceiptControllerTest extends PluginTestCase
             ->assertJsonFragment(['label' => '편의점 코드', 'value' => '00007'])
             ->assertJsonFragment(['label' => '편의점 확인번호', 'value' => '999999999999999999'])
             ->assertJsonFragment(['label' => '편의점 접수번호', 'value' => '1779433713966'])
-            // 일본 PG 가 준 일본 시각 그대로 두고 시간대를 밝힌다(#160 D11)
+            // 일본 PG 가 준 일본 시각 그대로 두고 시간대를 밝힌다(공개 #160 D11)
             ->assertJsonFragment(['label' => '입금 마감일시', 'value' => '2026-05-27 23:59:59 (JST)'])
-            // 편의점 승인 시각도 일본 PG 의 일본 시각이다 — 같은 방식으로 시간대를 밝힌다(#160 D11)
+            // 편의점 승인 시각도 일본 PG 의 일본 시각이다 — 같은 방식으로 시간대를 밝힌다(공개 #160 D11)
             ->assertJsonFragment(['label' => '승인일시', 'value' => '2026-05-22 16:08:34 (JST)'])
             ->assertJsonMissing(['label' => 'CBT MID', 'value' => 'CBTTEST001'])
             ->assertJsonMissing(['label' => 'SID', 'value' => 'CBTTEST00120260522M280RzeXo']);

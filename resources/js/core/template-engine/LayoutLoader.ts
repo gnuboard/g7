@@ -1063,7 +1063,7 @@ export class LayoutLoader {
       </div>
     `;
 
-    // 인라인 onclick 대신 리스너 — strict CSP 에서 인라인 핸들러는 실행되지 않는다(#158).
+    // 인라인 onclick 대신 리스너 — strict CSP 에서 인라인 핸들러는 실행되지 않는다(공개 #158).
     container
       .querySelector('[data-g7-error-reload]')
       ?.addEventListener('click', () => window.location.reload());

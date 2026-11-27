@@ -370,9 +370,6 @@ G7은 크로스 플랫폼 호환을 위해 Artisan 빌드 명령어를 제공합
 # 코어 템플릿 엔진 빌드 (기본)
 php artisan core:build
 
-# 코어 전체 빌드 (npm run build)
-php artisan core:build --full
-
 # 코어 파일 감시 모드
 php artisan core:build --watch
 
@@ -391,7 +388,6 @@ php artisan template:build sirsoft-admin_basic --watch
 | 명령어 | 설명 | 결과물 |
 |--------|------|--------|
 | `php artisan core:build` | 코어 템플릿 엔진 빌드 | `/public/build/core/template-engine.min.js` |
-| `php artisan core:build --full` | 코어 전체 빌드 | `/public/build/` |
 | `php artisan template:build [id]` | 템플릿 빌드 | `/templates/[id]/dist/components.js` |
 | `php artisan module:build [id]` | 모듈 빌드 | `/modules/[id]/dist/` |
 

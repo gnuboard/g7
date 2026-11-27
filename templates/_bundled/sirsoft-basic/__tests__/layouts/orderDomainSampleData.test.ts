@@ -50,7 +50,7 @@ function get(obj: any, dotted: string): any {
 }
 
 describe('주문 도메인 편집기 샘플 — sirsoft-basic 템플릿', () => {
-  describe('DoD #1 — 스텁 0', () => {
+  describe('DoD 1 — 스텁 0', () => {
     for (const id of ['cartItems', 'orderData', 'order', 'orders']) {
       it(`${id} 하위에 "샘플" stub 이 없다`, () => {
         expect(byId[id]).toBeTruthy();
@@ -61,11 +61,11 @@ describe('주문 도메인 편집기 샘플 — sirsoft-basic 템플릿', () => 
 
   describe('cartItems — 장바구니 (CartItemResource + calculation)', () => {
     const c = byId.cartItems.data;
-    it('복수 아이템 ≥3 (DoD #2)', () => {
+    it('복수 아이템 ≥3 (DoD 2)', () => {
       expect(c.items.length).toBeGreaterThanOrEqual(3);
       expect(c.item_count).toBe(c.items.length);
     });
-    it('분기 양면 — 재고있음 + 품절 공존 (DoD #3)', () => {
+    it('분기 양면 — 재고있음 + 품절 공존 (DoD 3)', () => {
       const statuses = c.items.map((i: any) => i.product.sales_status);
       expect(statuses).toContain('on_sale');
       expect(statuses).toContain('discontinued');
@@ -82,7 +82,7 @@ describe('주문 도메인 편집기 샘플 — sirsoft-basic 템플릿', () => 
         expect(it.multi_currency_subtotal.KRW.formatted).toMatch(/원/);
       }
     });
-    it('calculation.summary 전 경로 채움 (DoD #4)', () => {
+    it('calculation.summary 전 경로 채움 (DoD 4)', () => {
       const s = c.calculation.summary;
       for (const k of [
         'subtotal_formatted',
@@ -185,7 +185,7 @@ describe('주문 도메인 편집기 샘플 — sirsoft-basic 템플릿', () => 
 
   describe('orders — 유저 주문내역 (UserOrderCollection)', () => {
     const d = byId.orders.data;
-    it('주문 행 ≥3 + 상태 다양 (DoD #2/#3)', () => {
+    it('주문 행 ≥3 + 상태 다양 (DoD 2/#3)', () => {
       expect(d.data.length).toBeGreaterThanOrEqual(3);
       const statuses = new Set(d.data.map((o: any) => o.status));
       expect(statuses.size).toBeGreaterThanOrEqual(3);
@@ -199,7 +199,7 @@ describe('주문 도메인 편집기 샘플 — sirsoft-basic 템플릿', () => 
         expect(o.items[0].product_name).toBeTruthy();
       }
     });
-    it('statistics 전 상태 경로 채움 (DoD #4)', () => {
+    it('statistics 전 상태 경로 채움 (DoD 4)', () => {
       const s = d.statistics;
       for (const k of ['pending_payment', 'payment_complete', 'preparing', 'shipping', 'delivered', 'confirmed']) {
         expect(typeof s[k], `statistics.${k}`).toBe('number');

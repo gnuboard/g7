@@ -598,7 +598,7 @@
                                     ]
                                 },
                                 {
-                                    "comment": "이 확장이 composer.json 으로 요구한 PHP 확장 (#151) — require(필수: 없으면 설치·활성화 불가)·suggest(권장: 경고만).\n            서버에 없는 것만 배지로 알린다. 이미 켜진 확장도 자동으로 끄지 않고 여기서만 알린다. 선언이 없으면 절을 그리지 않는다.",
+                                    "comment": "이 확장이 composer.json 으로 요구한 PHP 확장 (공개 #151) — require(필수: 없으면 설치·활성화 불가)·suggest(권장: 경고만).\n            서버에 없는 것만 배지로 알린다. 이미 켜진 확장도 자동으로 끄지 않고 여기서만 알린다. 선언이 없으면 절을 그리지 않는다.",
                                     "id": "php_extensions_section",
                                     "type": "basic",
                                     "name": "Div",

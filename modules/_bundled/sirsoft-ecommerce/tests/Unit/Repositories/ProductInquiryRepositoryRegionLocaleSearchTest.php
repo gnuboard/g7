@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductInquiryRepositoryInt
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 내 상품문의 상품명 검색 — 하이픈 로케일 JSON 경로 (#148)
+ * 내 상품문의 상품명 검색 — 하이픈 로케일 JSON 경로 (공개 #148)
  *
  * `'$.fil-PH'` 는 잘못된 JSON 경로라 MySQL 3143 으로 검색 전체가 500 이었다 — 키를 따옴표로 감싼다.
  */

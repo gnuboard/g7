@@ -112,7 +112,7 @@ class LayoutInstallSourceOptionTest extends TestCase
     }
 
     /**
-     * 옵션을 생략하면 설정(`LAYOUT_INSTALL_SOURCE`)을 그대로 따른다 — 종전에는 기본값 `auto` 가 설정을 덮었다 (#144).
+     * 옵션을 생략하면 설정(`LAYOUT_INSTALL_SOURCE`)을 그대로 따른다 — 종전에는 기본값 `auto` 가 설정을 덮었다 (공개 #144).
      *
      * @scenario compile_unit=install,source_health=valid
      *

@@ -970,7 +970,7 @@ class OrderRefundRequestService
      * @param  bool  $operator  운영자 수정 여부 (S15 — 출처와 무관하게 수정, 판매자 귀책 사유 허용)
      * @return OrderRefund 수정된 환불신청서
      *
-     * 수정 가능 여부는 **신청서 행 잠금 안에서 다시 읽은 상태**로 판정한다(validate P2 #8) —
+     * 수정 가능 여부는 **신청서 행 잠금 안에서 다시 읽은 상태**로 판정한다(validate P2 8) —
      * 호출부 모델로 판정하면 그 사이 승인된 신청서의 사유·계좌가 수정된다. 교환·반품의
      * `updateRequest()` 와 같은 규율이다.
      *
@@ -1017,7 +1017,7 @@ class OrderRefundRequestService
             // 저장이 기록된 계좌를 지우지 않는다. 실제 송금 대상(주문 결제행)은 여기서 바꾸지
             // 않는다 — 그 갱신은 환불을 실행하는 시점의 책임이다. 컬럼 조립과 3필드 짝 검증은
             // 교환·반품과 같은 공용 규칙(`AppliesRefundBankAccount::refundBankColumns()`)이 한다 —
-            // 예전에는 빠진 키를 직접 인덱싱해 500 이 났다(validate P2 #9).
+            // 예전에는 빠진 키를 직접 인덱싱해 500 이 났다(validate P2 9).
             $bank = $payload['refund_bank'] ?? null;
             $updates += $this->refundBankColumns(is_array($bank) ? $bank : null);
 
@@ -2385,7 +2385,7 @@ class OrderRefundRequestService
         $split = [];
 
         // 신청서 행을 잠그고 **잠금 안에서** 상품 행을 다시 읽어 판정한다. 헤더 동기화도 같은
-        // 트랜잭션 안에서 한다(validate P2 #19 — 교환·반품과 같은 규율). 훅은 커밋 뒤다(#7).
+        // 트랜잭션 안에서 한다(validate P2 19 — 교환·반품과 같은 규율). 훅은 커밋 뒤다.
         DB::transaction(function () use ($refund, $itemIds, $quantities, $target, $processedBy, $rejectReason, &$succeeded, &$skipped, &$changes, &$split) {
             $locked = $this->refundRepository->findForUpdate((int) $refund->getKey()) ?? $refund;
             $rows = $this->resolveItems($locked, $itemIds);

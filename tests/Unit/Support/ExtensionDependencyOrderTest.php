@@ -6,7 +6,7 @@ use App\Support\ExtensionDependencyOrder;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 여러 확장을 한 번에 처리하는 코어 경로의 공용 정렬(종류 횡단 안정 위상 정렬) 검증 (#153).
+ * 여러 확장을 한 번에 처리하는 코어 경로의 공용 정렬(종류 횡단 안정 위상 정렬) 검증 (공개 #153).
  */
 class ExtensionDependencyOrderTest extends TestCase
 {

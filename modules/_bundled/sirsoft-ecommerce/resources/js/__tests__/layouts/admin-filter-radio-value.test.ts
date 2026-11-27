@@ -1,6 +1,6 @@
 /**
  * @file admin-filter-radio-value.test.ts
- * @description 이커머스 목록 필터 — 이름 있는 라디오의 value 가 폼 자동 바인딩으로 덮이지 않는다 (#17 P9, 트러블슈팅 form 사례 4)
+ * @description 이커머스 목록 필터 — 이름 있는 라디오의 value 가 폼 자동 바인딩으로 덮이지 않는다 (P9, 트러블슈팅 form 사례 4)
  *
  * 카드에 `data-key` 가 있으면 엔진은 그 아래 `name` 있는 입력을 자동 바인딩한다. 상태값이 boolean 이 아닌 라디오는
  * value 가 **현재 상태값으로 덮여** 같은 이름의 라디오 전부가 같은 value 를 갖는다(스케줄 필터 D3 실측 — 5개 모두 "all").

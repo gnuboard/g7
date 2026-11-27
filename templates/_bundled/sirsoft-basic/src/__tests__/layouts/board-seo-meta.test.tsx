@@ -1,6 +1,6 @@
 /**
  * @file board-seo-meta.test.tsx
- * @description 게시판 레이아웃 SEO meta 설정 구조 검증 (이슈 #78)
+ * @description 게시판 레이아웃 SEO meta 설정 구조 검증 (이슈 공개 #78)
  *
  * 검증 항목:
  * 1. boards.json: meta.seo.extensions, page_type, toggle_setting, vars

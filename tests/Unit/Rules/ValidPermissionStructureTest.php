@@ -46,7 +46,7 @@ class ValidPermissionStructureTest extends TestCase
     // ================================================================
 
     /**
-     * #1 빈 배열
+     * 1 빈 배열
      *
      * @scenario checker=structure_rule, permission_shape=empty, held_permissions=not_applicable
      *
@@ -60,7 +60,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #2 단일 식별자
+     * 2 단일 식별자
      *
      * @scenario checker=structure_rule, permission_shape=flat, held_permissions=not_applicable
      *
@@ -74,7 +74,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #3 복수 식별자
+     * 3 복수 식별자
      *
      * @scenario checker=structure_rule, permission_shape=flat, held_permissions=not_applicable
      *
@@ -88,7 +88,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #4 OR 구조
+     * 4 OR 구조
      *
      * @scenario checker=structure_rule, permission_shape=or_group, held_permissions=not_applicable
      *
@@ -102,7 +102,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #5 AND 구조
+     * 5 AND 구조
      *
      * @scenario checker=structure_rule, permission_shape=and_group, held_permissions=not_applicable
      *
@@ -116,7 +116,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #6 AND>OR 중첩
+     * 6 AND>OR 중첩
      *
      * @scenario checker=structure_rule, permission_shape=nested_depth2, held_permissions=not_applicable
      *
@@ -130,7 +130,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #7 OR>[AND,AND] 중첩
+     * 7 OR>[AND,AND] 중첩
      *
      * @scenario checker=structure_rule, permission_shape=nested_depth2, held_permissions=not_applicable
      *
@@ -149,7 +149,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #8 3단계 중첩
+     * 8 3단계 중첩
      *
      * @scenario checker=structure_rule, permission_shape=nested_depth3, held_permissions=not_applicable
      *
@@ -169,7 +169,7 @@ class ValidPermissionStructureTest extends TestCase
     // ================================================================
 
     /**
-     * #9 invalid 연산자
+     * 9 invalid 연산자
      *
      * @scenario checker=structure_rule, permission_shape=invalid_operator, held_permissions=not_applicable
      *
@@ -183,7 +183,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #10 대문자 OR
+     * 대문자 OR
      *
      * @scenario checker=structure_rule, permission_shape=invalid_operator, held_permissions=not_applicable
      *
@@ -197,7 +197,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #11 not 연산자
+     * 공개 #11 not 연산자
      *
      * @scenario checker=structure_rule, permission_shape=invalid_operator, held_permissions=not_applicable
      *
@@ -211,7 +211,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #12 xor 연산자
+     * 공개 #12 xor 연산자
      *
      * @scenario checker=structure_rule, permission_shape=invalid_operator, held_permissions=not_applicable
      *
@@ -225,7 +225,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #13 복수 키 (or + and)
+     * 13 복수 키 (or + and)
      *
      * @scenario checker=structure_rule, permission_shape=invalid_operator, held_permissions=not_applicable
      *
@@ -243,7 +243,7 @@ class ValidPermissionStructureTest extends TestCase
     // ================================================================
 
     /**
-     * #14 or: 1개
+     * 14 or: 1개
      *
      * @scenario checker=structure_rule, permission_shape=degenerate_group, held_permissions=not_applicable
      *
@@ -257,7 +257,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #15 and: 1개
+     * 15 and: 1개
      *
      * @scenario checker=structure_rule, permission_shape=degenerate_group, held_permissions=not_applicable
      *
@@ -271,7 +271,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #16 or: 0개
+     * 16 or: 0개
      *
      * @scenario checker=structure_rule, permission_shape=degenerate_group, held_permissions=not_applicable
      *
@@ -289,7 +289,7 @@ class ValidPermissionStructureTest extends TestCase
     // ================================================================
 
     /**
-     * #17 4단계 중첩
+     * 4단계 중첩
      *
      * @scenario checker=structure_rule, permission_shape=nested_too_deep, held_permissions=not_applicable
      *
@@ -305,7 +305,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #18 5단계 중첩
+     * 18 5단계 중첩
      *
      * @scenario checker=structure_rule, permission_shape=nested_too_deep, held_permissions=not_applicable
      *
@@ -325,7 +325,7 @@ class ValidPermissionStructureTest extends TestCase
     // ================================================================
 
     /**
-     * #19 공백 포함 식별자
+     * 19 공백 포함 식별자
      *
      * @scenario checker=structure_rule, permission_shape=invalid_identifier, held_permissions=not_applicable
      *
@@ -339,7 +339,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #20 빈 문자열
+     * 20 빈 문자열
      *
      * @scenario checker=structure_rule, permission_shape=invalid_identifier, held_permissions=not_applicable
      *
@@ -353,7 +353,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #21 정수
+     * 정수
      *
      * @scenario checker=structure_rule, permission_shape=invalid_identifier, held_permissions=not_applicable
      *
@@ -367,7 +367,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #22 null 항목
+     * 22 null 항목
      *
      * @scenario checker=structure_rule, permission_shape=invalid_identifier, held_permissions=not_applicable
      *
@@ -381,7 +381,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #23 or 내 정수
+     * 23 or 내 정수
      *
      * @scenario checker=structure_rule, permission_shape=invalid_identifier, held_permissions=not_applicable
      *
@@ -395,7 +395,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #24 or 내 null
+     * 24 or 내 null
      *
      * @scenario checker=structure_rule, permission_shape=invalid_identifier, held_permissions=not_applicable
      *
@@ -413,7 +413,7 @@ class ValidPermissionStructureTest extends TestCase
     // ================================================================
 
     /**
-     * #25 문자열 입력
+     * 25 문자열 입력
      *
      * @scenario checker=structure_rule, permission_shape=non_array_input, held_permissions=not_applicable
      *
@@ -427,7 +427,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #26 정수 입력
+     * 26 정수 입력
      *
      * @scenario checker=structure_rule, permission_shape=non_array_input, held_permissions=not_applicable
      *
@@ -441,7 +441,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #27 null 입력 (ValidPermissionStructure에서는 통과 - nullable은 외부 규칙)
+     * 27 null 입력 (ValidPermissionStructure에서는 통과 - nullable은 외부 규칙)
      *
      * @scenario checker=structure_rule, permission_shape=non_array_input, held_permissions=not_applicable
      *
@@ -456,7 +456,7 @@ class ValidPermissionStructureTest extends TestCase
     }
 
     /**
-     * #28 or 값이 배열이 아닌 문자열
+     * or 값이 배열이 아닌 문자열
      *
      * @scenario checker=structure_rule, permission_shape=non_array_input, held_permissions=not_applicable
      *

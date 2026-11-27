@@ -494,7 +494,7 @@ class IdentityVerificationController extends PublicBaseController
     private function resolvePurposeText($value): string
     {
         if (is_array($value)) {
-            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (공개 #148)
             return LocalizedValue::pick($value) ?? '';
         }
 

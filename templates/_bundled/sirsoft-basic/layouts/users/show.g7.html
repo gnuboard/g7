@@ -64,7 +64,7 @@
               <!-- 기본 정보 (일반 사용자) -->
               <div data-if="{{profile.data?.status !== 'withdrawn'}}" class="flex-1 min-w-0 space-y-3">
                 <responsive on="portable" class="w-full min-w-0 space-y-3 text-center"/>
-                <!-- 이름 (배지 제거). 칸이 줄어들 수 있고(min-w-0) 이름·소개는 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 카드를 넘쳤다(#143). -->
+                <!-- 이름 (배지 제거). 칸이 줄어들 수 있고(min-w-0) 이름·소개는 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 카드를 넘쳤다(공개 #143). -->
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white break-words">
                   <responsive on="portable" class-merge="text-xl"/>
                   {{profile.data?.name ?? '-'}}
@@ -135,7 +135,7 @@
                     <div class="flex-1 min-w-0 flex items-center gap-1">
                       <!-- 제목 -->
                       <span class="truncate text-sm font-medium text-gray-900 dark:text-white">{{post.title}}</span>
-                      <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다 -->
+                      <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(공개 #149). 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다 -->
                       <extension-point name="board_post_row_badges" data-ref="ext_board_post_row_badges_{{post.id}}" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post.id}}" boardSlug="{{post.board_slug}}" context="user_profile_recent"/>
                       <!-- 댓글 수 -->
                       <span data-if="{{post.comment_count > 0}}" class="flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium">[{{post.comment_count}}]</span>

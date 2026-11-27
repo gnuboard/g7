@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * 가입·비밀번호 활동 로그 — 실제 발화 이름으로 발화했을 때 로그 행이 남는다 (#138 후속 전수 점검 3번)
+ * 가입·비밀번호 활동 로그 — 실제 발화 이름으로 발화했을 때 로그 행이 남는다 (공개 #138 후속 전수 점검 3번)
  *
  * 활동 로그 리스너가 `core.auth.register`·`forgot_password`·`reset_password` 를 구독했지만 AuthService 는
  * `after_register`·`after_reset_password_request`·`after_password_changed` 로 발화해, 세 사건의 로그가

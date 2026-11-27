@@ -7,7 +7,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
- * 다국어 값 대체 순서 테스트 (#148 D7).
+ * 다국어 값 대체 순서 테스트 (공개 #148 D7).
  *
  * 지금 보는 언어 → 사이트 기본 언어(`app.site_locale`) → 영어 → (선택) 아무 언어의 첫 값.
  * 화면 짝 `pickLocalized`(`resources/js/core/support/__tests__/localeTag.test.ts`)와 같은 표다.

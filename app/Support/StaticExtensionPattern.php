@@ -7,7 +7,7 @@ use App\Rules\AllowedPluginFileType;
 use App\Rules\AllowedTemplateFileType;
 
 /**
- * SPA catch-all 라우트의 정적 확장자 제외 패턴 (#122).
+ * SPA catch-all 라우트의 정적 확장자 제외 패턴 (공개 #122).
  *
  * catch-all 은 등록되지 않은 경로에 SPA 셸 HTML 을 돌려준다. 그런데 **정적 자산 요청**이
  * 거기 걸리면 존재하지 않는 `.mjs` 가 `Content-Type: text/html` 인 200 을 받고, 브라우저는

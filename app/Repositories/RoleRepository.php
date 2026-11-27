@@ -155,7 +155,7 @@ class RoleRepository implements RoleRepositoryInterface
     }
 
     /**
-     * 여러 역할 식별자에 속한 사용자의 id 만 오름차순으로 조회합니다. (중복 제거, #139)
+     * 여러 역할 식별자에 속한 사용자의 id 만 오름차순으로 조회합니다. (중복 제거, 공개 #139)
      *
      * 피벗(user_roles)과 역할 표만 조인한다 — 회원 행·권한 행을 읽지 않는다. 커서로 읽어 id 배열만 쌓는다.
      *

@@ -226,7 +226,7 @@ class SearchPostsListenerTest extends ModuleTestCase
     }
 
     /**
-     * 검색 실패가 "결과 0건" 으로 위장되지 않고 failed 페이로드로 표면화되는지 확인 (#103)
+     * 검색 실패가 "결과 0건" 으로 위장되지 않고 failed 페이로드로 표면화되는지 확인 (공개 #103)
      *
      * 수정 전에는 catch 가 로그만 남기고 카테고리 키를 설정하지 않아, 화면이
      * "검색 결과가 없습니다" 를 그렸다.

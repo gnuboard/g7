@@ -482,7 +482,7 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
     }
 
     /**
-     * 마커를 단 인스톨러 테스트는 **어느 매니페스트엔가 등재**돼 있다 (네 번째 방향 — 14차 #6).
+     * 마커를 단 인스톨러 테스트는 **어느 매니페스트엔가 등재**돼 있다 (네 번째 방향 — 14차 6).
      *
      * 앞의 세 방향은 전부 `declaredTestFiles($manifest)` 를 기점으로 돈다 — 즉 **매니페스트가
      * 아는 파일**만 본다. 그래서 반대 방향이 통째로 사각이었다: 존재하는 테스트가 `@effects`

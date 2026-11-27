@@ -3697,7 +3697,7 @@ of the component, floating–point numbers have been used which, for the default
 		animation-delay: 500ms;
 		animation-fill-mode: forwards;
 
-		/* While reset is not providing proper box-sizing for pseudoelements, we need to handle it. */
+		/* #1095. While reset is not providing proper box-sizing for pseudoelements, we need to handle it. */
 		box-sizing: border-box;
 	}
 @media (prefers-reduced-motion: reduce) {
@@ -9035,7 +9035,7 @@ a.ck.ck-button {
  */
 
 .ck.ck-sticky-panel .ck-sticky-panel__content_sticky {
-		z-index: var(--ck-z-panel); /**/
+		z-index: var(--ck-z-panel); /* #315 */
 		position: fixed;
 		top: 0;
 	}

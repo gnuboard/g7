@@ -348,7 +348,7 @@ class TwoFactorAuthTest extends TestCase
     /**
      * 관리자가 아닌 사용자가 관리자 2단계 인증을 완료하면 403 이고 토큰이 남지 않는다.
      *
-     * 관리자 로그인은 비관리자에게 challenge 자체를 내주지 않으므로(#40 R12 — 인증번호도 보내지 않는다), 사용자
+     * 관리자 로그인은 비관리자에게 challenge 자체를 내주지 않으므로(R12 — 인증번호도 보내지 않는다), 사용자
      * 로그인에서 받은 challenge 를 관리자 완료 경로에 들고 오는 경우를 잰다.
      *
      * @scenario two_factor=on, controller=admin, actor=non_admin, code=valid
@@ -586,7 +586,7 @@ class TwoFactorAuthTest extends TestCase
     {
         $this->setTwoFactor(true);
 
-        // 관리자 로그인은 비관리자에게 challenge 를 내주지 않는다(#40 R12) — 사용자 로그인 challenge 로 잰다.
+        // 관리자 로그인은 비관리자에게 challenge 를 내주지 않는다(R12) — 사용자 로그인 challenge 로 잰다.
         $challengeId = $this->login()->json('data.challenge_id');
 
         // 메일 재발송은 60초 대기를 지킨다(7.1.6) — 대기 경과 뒤의 재발송 동작을 본다

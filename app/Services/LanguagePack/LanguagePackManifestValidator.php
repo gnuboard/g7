@@ -40,7 +40,7 @@ class LanguagePackManifestValidator
      *
      * 대상 확장 식별자가 언더스코어를 가질 수 있어(sirsoft-daum_postcode) 세그먼트
      * 패턴(KEBAB_IDENTIFIER_PATTERN)보다 넓다. 경로 구분자·상위 탈출은 막는다. 대문자는
-     * 끝의 locale 꼬리(`…-fil-PH`·`…-zh-Hant`)에서만 받는다 — `G7-Core-JA` 는 계속 거부(#148).
+     * 끝의 locale 꼬리(`…-fil-PH`·`…-zh-Hant`)에서만 받는다 — `G7-Core-JA` 는 계속 거부(공개 #148).
      */
     public const PACK_IDENTIFIER_PATTERN = '/^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*-'.LocaleTag::PATTERN_BODY.'$/';
 

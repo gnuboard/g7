@@ -101,7 +101,7 @@ class NotificationRecipientResolver
     }
 
     /**
-     * recipients 규칙 배열을 해석하여 수신자 **참조** 목록을 반환합니다 (#139).
+     * recipients 규칙 배열을 해석하여 수신자 **참조** 목록을 반환합니다 (공개 #139).
      *
      * resolve() 와 같은 규칙·같은 중복 제거 키를 쓰되, 회원은 모델 대신 id 만 뽑는다 — 역할이 전 회원이면
      * 모델과 권한을 한꺼번에 메모리에 올리지 않고 id 만 들고 묶음(기본 100명)으로 나눌 수 있다. 모델은
@@ -174,7 +174,7 @@ class NotificationRecipientResolver
     }
 
     /**
-     * 수신자 객체 목록을 참조 목록으로 바꿉니다 (#139).
+     * 수신자 객체 목록을 참조 목록으로 바꿉니다 (공개 #139).
      *
      * 레거시 경로(extract_data 의 notifiables)도 큐 분할을 타게 하려고 쓴다. User·GuestNotifiable 만 바꿀 수 있다.
      *

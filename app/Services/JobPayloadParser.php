@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Jobs\RunScheduledTaskJob;
 
 /**
- * 큐 작업 payload(jobs·failed_jobs.payload JSON) 파서 (#17)
+ * 큐 작업 payload(jobs·failed_jobs.payload JSON) 파서
  *
  * 화면 표시와 처리 기록에 쓰는 메타데이터(표시 이름·작업 클래스·UUID·시도 횟수·예약 작업 ID)만
  * 꺼낸다. 직렬화된 작업 객체는 **역직렬화하지 않는다** — 목록 한 페이지마다 수십 개의 객체를

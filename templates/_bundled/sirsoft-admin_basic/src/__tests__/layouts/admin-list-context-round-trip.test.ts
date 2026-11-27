@@ -1,6 +1,6 @@
 /**
  * @file admin-list-context-round-trip.test.ts
- * @description 관리자 코어 목록(회원/역할/로그/확장) 컨텍스트 왕복 시 URL 목록 상태 보존 회귀 (#75)
+ * @description 관리자 코어 목록(회원/역할/로그/확장) 컨텍스트 왕복 시 URL 목록 상태 보존 회귀 (공개 #75)
  *
  * 결함: 회원·역할·활동이력·알림로그·모듈/플러그인 목록에서 상세·폼으로 들어갔다 돌아오면
  *   navigate 가 `mergeQuery` 없이 실행되어 page/검색/필터가 URL 에서 사라졌다.
@@ -61,7 +61,7 @@ const CLUSTER_FILES = [
     'partials/admin_notification_log_list/_partial_filter.json',
     'partials/admin_schedule_list/_tab_schedules.json',
     // 템플릿 목록은 LIST_ROUTES 에 있으면서 클러스터 파일 목록에서 빠져 있었다.
-    // 그 탓에 검색 submit 이 표시 개수를 떨구는 회귀가 검사망을 그대로 통과했다 (#75).
+    // 그 탓에 검색 submit 이 표시 개수를 떨구는 회귀가 검사망을 그대로 통과했다 (공개 #75).
     'admin_template_list.json',
     'partials/admin_template_list/_tab_admin.json',
     'partials/admin_template_list/_tab_user.json',
@@ -261,7 +261,7 @@ describe('#75 회원/역할 목록 컨텍스트 왕복 — 실행 결과 URL', (
 
     // 검색은 조건을 바꾸는 액션이므로 page 를 되돌린다. mergeQuery 가 현재 페이지까지 나르기 때문에
     // 되돌리지 않으면 3페이지를 보던 중 검색했을 때 결과의 3페이지로 이동해 빈 화면이 열린다.
-    // 표시 개수(per_page)·정렬은 사용자가 고른 값이므로 그대로 유지한다 (#75).
+    // 표시 개수(per_page)·정렬은 사용자가 고른 값이므로 그대로 유지한다 (공개 #75).
     /**
      * @scenario leg=search
      * @effects list_return_preserves_query
@@ -299,7 +299,7 @@ describe('#75 회원/역할 목록 컨텍스트 왕복 — 실행 결과 URL', (
 
     // 검색은 조건을 "바꾸는" 액션이지 리셋이 아니다. 검색어와 페이지만 새로 정하고
     // 사용자가 고른 표시 개수(per_page)·정렬은 그대로 둔다. 같은 파일의 페이지네이션은
-    // 이미 병합하고 있어서, 검색만 비병합이면 한 화면 안에서 규약이 엇갈린다 (#75).
+    // 이미 병합하고 있어서, 검색만 비병합이면 한 화면 안에서 규약이 엇갈린다 (공개 #75).
     /**
      * @scenario leg=search
      * @effects list_return_preserves_query
@@ -349,7 +349,7 @@ describe('#75 회원/역할 목록 컨텍스트 왕복 — 실행 결과 URL', (
 //
 // 템플릿 목록은 탭마다 라우트가 갈리고(`/admin/templates/user` ↔ `/admin/templates/admin`)
 // 각 탭이 자기 검색어·페이지를 갖는 별개의 목록이다. 여기에 병합을 붙이면 다른 탭의
-// 검색 결과로 걸러진 페이지가 열린다 (#75 수정 중 실제로 한 번 들어갔던 회귀).
+// 검색 결과로 걸러진 페이지가 열린다 (공개 #75 수정 중 실제로 한 번 들어갔던 회귀).
 // ---------------------------------------------------------------------------
 
 describe('#75 탭 전환은 이전 탭의 목록 상태를 물려받지 않는다', () => {

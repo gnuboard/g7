@@ -844,7 +844,7 @@ return [
             'challenge_invalid' => 'Verification request is not valid.',
             'code_required' => 'Enter the verification code.',
         ],
-        // 로그인 인계 (#40)
+        // 로그인 인계
         'login_handoff' => [
             'code_required' => 'The sign-in handoff code is missing. Please sign in again.',
         ],
@@ -1271,7 +1271,7 @@ return [
         'log_days_integer' => 'Log retention days must be an integer.',
         'log_days_min' => 'Log retention days must be at least 1.',
         'log_days_max' => 'Log retention days may not be greater than 365.',
-        // Queue job records (#17)
+        // Queue job records
         'queue_job_log_enabled_boolean' => 'Job record logging must be on or off.',
         'queue_record_retention_days_integer' => 'Job record retention must be a whole number of days.',
         'queue_record_retention_days_min' => 'Job record retention must be at least :min days.',

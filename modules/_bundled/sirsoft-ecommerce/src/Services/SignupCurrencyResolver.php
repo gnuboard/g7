@@ -35,7 +35,7 @@ class SignupCurrencyResolver
         $currencies = is_array($lc['currencies'] ?? null) ? $lc['currencies'] : [];
         $defaultCurrency = $lc['default_currency'] ?? 'KRW';
 
-        // locale 정규화 — 소문자 + '_'→'-' (zh_TW → zh-tw). 화면 짝 initPreferredCurrency.ts 와 같은 규칙 (#148)
+        // locale 정규화 — 소문자 + '_'→'-' (zh_TW → zh-tw). 화면 짝 initPreferredCurrency.ts 와 같은 규칙 (공개 #148)
         $normalize = static fn ($value): string => str_replace('_', '-', strtolower((string) $value));
         $primaryOf = static fn (string $value): string => explode('-', $value)[0];
         $normalized = $locale ? $normalize($locale) : null;

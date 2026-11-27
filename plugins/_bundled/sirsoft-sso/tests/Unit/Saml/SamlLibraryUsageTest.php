@@ -72,7 +72,7 @@ class SamlLibraryUsageTest extends PluginTestCase
 
     /**
      * POST 바인딩 자동 제출 페이지는 인라인 실행 코드 없이 정적 파일로 폼을 제출한다 — strict CSP(script-src 'self')에서도
-     * IdP·SP 로 넘어간다(#158). 종전에는 `<body onload>` 라 CSP 를 건 사이트에서 이 페이지에 멈췄다.
+     * IdP·SP 로 넘어간다(공개 #158). 종전에는 `<body onload>` 라 CSP 를 건 사이트에서 이 페이지에 멈췄다.
      *
      * @scenario binding=post
      *

@@ -6,7 +6,7 @@
         <title>{{ config('app.name', '그누보드7') }} - {{ __('database_credential.title') }}</title>
         {{-- 파비콘 — 번들 계층만(DB·API 를 보지 않는다) --}}
         {!! g7_favicon_tags_static() !!}
-        {{-- 스타일은 정적 파일(g7-standalone.css)에 있다 — 엄격한 스타일 정책에서 뷰 안 스타일 블록이 막힌다(#163) --}}
+        {{-- 스타일은 정적 파일(g7-standalone.css)에 있다 — 엄격한 스타일 정책에서 뷰 안 스타일 블록이 막힌다(공개 #163) --}}
         @include('partials.core-styles', ['sheet' => 'standalone'])
     </head>
     <body>

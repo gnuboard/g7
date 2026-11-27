@@ -45,7 +45,7 @@ export function DevicePreviewToolbar(): React.ReactElement {
   // 캔버스 토글/스타일 세부탭 공유 디바이스 목록(프리셋 + 레이아웃 동적 커스텀 키) —
   const deviceKeys = useDeviceList();
 
-  // 묶음 압착 차단 규칙 — 런타임 시트로 붙이고 언마운트 때 뗀다(#163, 종전 JSX <style> 자식은 엄격한 스타일 정책에서 막힌다)
+  // 묶음 압착 차단 규칙 — 런타임 시트로 붙이고 언마운트 때 뗀다(공개 #163, 종전 JSX <style> 자식은 엄격한 스타일 정책에서 막힌다)
   useEffect(() => {
     applyEditorStyle(DEVICE_TOOLBAR_STYLE_KEY, DEVICE_TOOLBAR_STYLE_CSS);
     return () => removeEditorStyle(DEVICE_TOOLBAR_STYLE_KEY);

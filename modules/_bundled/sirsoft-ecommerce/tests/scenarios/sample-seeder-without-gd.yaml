@@ -1,4 +1,4 @@
-feature: gd 확장 없는 서버의 상품 샘플 시더 (#151 W8)
+feature: gd 확장 없는 서버의 상품 샘플 시더 (공개#151 W8)
 
 description: |
   gd 는 코어 기준 「선택」 확장이다. ProductSeeder::applyColorFilter() 가 imagecreatefromstring() 을 @ 로만 감싸

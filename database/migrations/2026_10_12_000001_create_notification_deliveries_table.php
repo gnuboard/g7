@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 알림 수신자별 발송 기록 표를 만듭니다 (#139).
+ * 알림 수신자별 발송 기록 표를 만듭니다 (공개 #139).
  *
  * 알림 발송 잡이 재시도·재예약으로 다시 돌 때 이미 보낸 수신자를 건너뛰기 위한 중복 방지 저장소다.
  * 보내기 전에 행을 선점(리스)하고 보낸 뒤 「보냈음」으로 표시한다. 발송 이력(notification_logs)을 쓰지 않는

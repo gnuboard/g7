@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 편집기 트리의 모달 조각 해석이 layouts 폴더 경계를 지키는지 봉인한다 (#144 같은 계열).
+ * 편집기 트리의 모달 조각 해석이 layouts 폴더 경계를 지키는지 봉인한다 (공개 #144 같은 계열).
  *
  * 종전 판정은 문자열 접두라 `…/layouts` 기준에 이름이 비슷한 형제 `…/layouts-x` 의 파일이 통과해, 편집기 트리에
  * layouts 밖 파일의 모달이 실렸다.

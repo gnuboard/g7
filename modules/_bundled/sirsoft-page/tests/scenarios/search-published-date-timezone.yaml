@@ -1,4 +1,4 @@
-feature: 통합 검색 페이지 결과의 발행일 — 보는 사람 시간대 날짜 (#160)
+feature: 통합 검색 페이지 결과의 발행일 — 보는 사람 시간대 날짜 (공개#160)
 
 description: |
   SearchPagesListener 가 published_at 을 UTC 날짜 그대로 내보내, 한국 시간 새벽 0~9시에 발행한 페이지가

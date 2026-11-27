@@ -1,6 +1,6 @@
 /**
- * Smoke: strict CSP(`script-src 'self'`, unsafe-inline·unsafe-eval 없음)에서 셸이 동작한다 (#158)
- *        + 엄격한 스타일 정책(`style-src-elem` / `style-src` + `style-src-attr 'none'`)에서도 화면이 그대로다 (#163)
+ * Smoke: strict CSP(`script-src 'self'`, unsafe-inline·unsafe-eval 없음)에서 셸이 동작한다 (공개 #158)
+ *        + 엄격한 스타일 정책(`style-src-elem` / `style-src` + `style-src-attr 'none'`)에서도 화면이 그대로다 (공개 #163)
  *
  * 운영자가 웹서버에 `Content-Security-Policy: script-src 'self'` 를 걸면 인라인 `<script>` 와
  * on* 속성이 실행되지 않는다. 종전에는 G7Config 대입·부트스트랩·번들 `<script onload>` 가
@@ -167,7 +167,7 @@ async function stallDisplay(page: Page): Promise<string> {
   });
 }
 
-test.describe('strict CSP 셸 호환 (#158)', () => {
+test.describe('strict CSP 셸 호환 (공개 #158)', () => {
   for (const url of ['/admin/login', '/', '/login']) {
     /**
      * @scenario surface=admin_shell, csp=webserver_strict, failure=none
@@ -242,7 +242,7 @@ test.describe('strict CSP 셸 호환 (#158)', () => {
   });
 });
 
-test.describe('엄격한 스타일 CSP 호환 (#163)', () => {
+test.describe('엄격한 스타일 CSP 호환 (공개 #163)', () => {
   for (const level of STYLE_LEVELS) {
     const policy = withStylePolicy(level.directives);
 

@@ -25,7 +25,7 @@ use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
- * 확장 생명주기 정규 훅 발화 계약 (#138)
+ * 확장 생명주기 정규 훅 발화 계약 (공개 #138)
  *
  * 잠그는 명제: **CLI 진입점(Manager 직접 호출)과 어드민 UI 진입점(Service 경유) 모두에서,
  * 각 정규 훅이 정확히 1회, 규정된 인자 개수·타입으로 발화한다.**
@@ -89,7 +89,7 @@ class ExtensionLifecycleHookContractTest extends TestCase
 
     /**
      * 완료 훅 → 짝이 되는 직전 훅. 직전 훅도 Manager 가 발화해 CLI·어드민 UI 공통으로 1회여야 한다
-     * (예전에는 Service 에서만 발화해 CLI 로 설치하면 직전 훅 구독자가 불리지 않았다 — #138 후속 10번).
+     * (예전에는 Service 에서만 발화해 CLI 로 설치하면 직전 훅 구독자가 불리지 않았다 — 공개 #138 후속 10번).
      */
     private const BEFORE_OF = [
         'core.modules.after_install' => 'core.modules.before_install',
@@ -552,7 +552,7 @@ class ExtensionLifecycleHookContractTest extends TestCase
     /**
      * 켜진 확장이 의존하는 모듈은 제거되지 않는다 — 강제 비활성화 뒤라도 제거는 거부한다.
      *
-     * 실측(#138 ①): 의존 플러그인이 켜진 채로 모듈을 강제로 끈 뒤 제거하면 막히지 않아, 플러그인이 필요한 모듈
+     * 실측(공개 #138 ①): 의존 플러그인이 켜진 채로 모듈을 강제로 끈 뒤 제거하면 막히지 않아, 플러그인이 필요한 모듈
      * 없이 켜진 채로 남았다. 비활성화는 경고 뒤 강제 진행이 가능하지만, 제거는 되돌릴 수 없으므로 막는다.
      *
      * @scenario extension_type=module, lifecycle_event=uninstall, entry_point=cli_manager

@@ -531,11 +531,11 @@ class OrderCalculationServiceMultiCurrencyComplexTest extends ModuleTestCase
     }
 
     // ========================================
-    // 7.17.3 다통화 + 복합 시나리오 테스트 (#137, #139, #140)
+    // 7.17.3 다통화 + 복합 시나리오 테스트 (137, 139, 140)
     // ========================================
 
     /**
-     * 테스트 #137: 배송비 + 다통화 변환
+     * 테스트 137: 배송비 + 다통화 변환
      *
      * 입력: 상품 50,000원 + 배송비 3,000원
      * 기대: USD: subtotal=42.5, shipping=2.55
@@ -585,7 +585,7 @@ class OrderCalculationServiceMultiCurrencyComplexTest extends ModuleTestCase
     }
 
     /**
-     * 테스트 #139: 마일리지 사용 + 다통화
+     * 테스트 139: 마일리지 사용 + 다통화
      *
      * 입력: 상품 100,000원 + 마일리지 10,000원 사용
      * 기대: 마일리지는 기본통화 기준 유지, 다통화 변환에 반영되지 않음
@@ -624,7 +624,7 @@ class OrderCalculationServiceMultiCurrencyComplexTest extends ModuleTestCase
     }
 
     /**
-     * 테스트 #140: 전체 복합 (쿠폰+배송+마일리지)
+     * 테스트 140: 전체 복합 (쿠폰+배송+마일리지)
      *
      * 복합 시나리오: 상품 100,000원 + 배송비 5,000원 + 마일리지 10,000원 사용
      * 검증: 모든 필드가 정확히 다통화 변환됨
@@ -682,7 +682,7 @@ class OrderCalculationServiceMultiCurrencyComplexTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 테스트 #138: 다통화 + 추가배송비 (도서산간)
+     * 테스트 138: 다통화 + 추가배송비 (도서산간)
      *
      * 입력: 상품 50,000원 + 기본 배송비 3,000원 + 도서산간 추가배송비 3,000원
      * 기대:

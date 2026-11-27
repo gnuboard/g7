@@ -71,7 +71,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // ================================================================
 
     /**
-     * #1 빈 배열은 권한 불필요
+     * 1 빈 배열은 권한 불필요
      *
      * @scenario checker=grant_logic, permission_shape=empty, held_permissions=satisfying
      *
@@ -87,7 +87,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #2 단일 권한 보유 시 통과
+     * 2 단일 권한 보유 시 통과
      *
      * @scenario checker=grant_logic, permission_shape=flat, held_permissions=satisfying
      *
@@ -104,7 +104,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #3 단일 권한 미보유 시 실패
+     * 3 단일 권한 미보유 시 실패
      *
      * @scenario checker=grant_logic, permission_shape=flat, held_permissions=not_satisfying
      *
@@ -120,7 +120,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #4 복수 AND 모두 보유 시 통과
+     * 4 복수 AND 모두 보유 시 통과
      *
      * @scenario checker=grant_logic, permission_shape=flat, held_permissions=satisfying
      *
@@ -137,7 +137,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #5 복수 AND 일부만 보유 시 실패
+     * 5 복수 AND 일부만 보유 시 실패
      *
      * @scenario checker=grant_logic, permission_shape=flat, held_permissions=not_satisfying
      *
@@ -154,7 +154,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #6 복수 AND 없음 시 실패
+     * 6 복수 AND 없음 시 실패
      *
      * @scenario checker=grant_logic, permission_shape=flat, held_permissions=not_satisfying
      *
@@ -174,7 +174,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // ================================================================
 
     /**
-     * #7 OR: 첫 번째만 보유
+     * 7 OR: 첫 번째만 보유
      *
      * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
      *
@@ -191,7 +191,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #8 OR: 두 번째만 보유
+     * 8 OR: 두 번째만 보유
      *
      * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
      *
@@ -208,7 +208,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #9 OR: 모두 보유
+     * 9 OR: 모두 보유
      *
      * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
      *
@@ -225,7 +225,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #10 OR: 없음
+     * OR: 없음
      *
      * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=not_satisfying
      *
@@ -241,7 +241,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #11 OR: 3개 중 1개 보유
+     * 공개 #11 OR: 3개 중 1개 보유
      *
      * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
      *
@@ -258,7 +258,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #12 OR: 3개 중 0개
+     * 공개 #12 OR: 3개 중 0개
      *
      * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=not_satisfying
      *
@@ -278,7 +278,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // ================================================================
 
     /**
-     * #13 명시적 AND: 모두 보유
+     * 13 명시적 AND: 모두 보유
      *
      * @scenario checker=grant_logic, permission_shape=and_group, held_permissions=satisfying
      *
@@ -295,7 +295,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #14 명시적 AND: 일부만
+     * 14 명시적 AND: 일부만
      *
      * @scenario checker=grant_logic, permission_shape=and_group, held_permissions=not_satisfying
      *
@@ -312,7 +312,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #15 명시적 AND: 3개 중 2개
+     * 15 명시적 AND: 3개 중 2개
      *
      * @scenario checker=grant_logic, permission_shape=and_group, held_permissions=not_satisfying
      *
@@ -333,7 +333,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // ================================================================
 
     /**
-     * #16 AND>OR: a + b 보유
+     * 16 AND>OR: a + b 보유
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
      *
@@ -353,7 +353,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #17 AND>OR: a + c 보유
+     * AND>OR: a + c 보유
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
      *
@@ -373,7 +373,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #18 AND>OR: a만 보유 (or 미충족)
+     * 18 AND>OR: a만 보유 (or 미충족)
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
      *
@@ -393,7 +393,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #19 AND>OR: b만 보유 (a 미충족)
+     * 19 AND>OR: b만 보유 (a 미충족)
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
      *
@@ -413,7 +413,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #20 OR>AND: 첫 AND 통과 (a,b)
+     * 20 OR>AND: 첫 AND 통과 (a,b)
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
      *
@@ -433,7 +433,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #21 OR>AND: 둘째 AND 통과 (c,d)
+     * OR>AND: 둘째 AND 통과 (c,d)
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
      *
@@ -453,7 +453,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #22 OR>AND: 어느 AND도 미통과 (a,c)
+     * 22 OR>AND: 어느 AND도 미통과 (a,c)
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
      *
@@ -473,7 +473,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #23 OR>AND: 없음
+     * 23 OR>AND: 없음
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
      *
@@ -496,7 +496,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // ================================================================
 
     /**
-     * #24 3단계: a + or의 b 통과
+     * 24 3단계: a + or의 b 통과
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth3, held_permissions=satisfying
      *
@@ -516,7 +516,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #25 3단계: a + or의 and(c,d) 통과
+     * 25 3단계: a + or의 and(c,d) 통과
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth3, held_permissions=satisfying
      *
@@ -536,7 +536,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #26 3단계: a + c만 (and 미통과)
+     * 26 3단계: a + c만 (and 미통과)
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth3, held_permissions=not_satisfying
      *
@@ -556,7 +556,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #27 3단계: c,d만 (a 없음)
+     * 27 3단계: c,d만 (a 없음)
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth3, held_permissions=not_satisfying
      *
@@ -580,7 +580,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // ================================================================
 
     /**
-     * #28 4단계 중첩 초과 → false + Log::warning
+     * 4단계 중첩 초과 → false + Log::warning
      *
      * @scenario checker=grant_logic, permission_shape=nested_too_deep, held_permissions=not_satisfying
      *
@@ -612,7 +612,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // ================================================================
 
     /**
-     * #29 AND[OR,OR]: or1+or2 모두 통과 (a,c)
+     * AND[OR,OR]: or1+or2 모두 통과 (a,c)
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
      *
@@ -634,7 +634,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     /**
      * AND 안의 두 OR 묶음에서 b 와 d 를 가진 경우를 판정한다.
      *
-     * #30 AND[OR,OR]: (b,d)
+     * 30 AND[OR,OR]: (b,d)
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
      *
@@ -656,7 +656,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     /**
      * AND 안의 두 OR 묶음에서 a 와 d 를 가진 경우를 판정한다.
      *
-     * #31 AND[OR,OR]: (a,d)
+     * 31 AND[OR,OR]: (a,d)
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
      *
@@ -676,7 +676,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #32 AND[OR,OR]: a만 (or2 미통과)
+     * 32 AND[OR,OR]: a만 (or2 미통과)
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
      *
@@ -696,7 +696,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #33 AND[OR,OR]: c만 (or1 미통과)
+     * 33 AND[OR,OR]: c만 (or1 미통과)
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
      *
@@ -716,7 +716,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #34 OR[OR,OR]: a만 (or1 통과)
+     * 34 OR[OR,OR]: a만 (or1 통과)
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
      *
@@ -736,7 +736,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #35 OR[OR,OR]: d만 (or2 통과)
+     * OR[OR,OR]: d만 (or2 통과)
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
      *
@@ -756,7 +756,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #36 OR[OR,OR]: 없음
+     * 36 OR[OR,OR]: 없음
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
      *
@@ -779,7 +779,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // ================================================================
 
     /**
-     * #37 admin: OR 구조 통과 (admin은 시더에서 모든 권한 할당)
+     * admin: OR 구조 통과 (admin은 시더에서 모든 권한 할당)
      *
      * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
      *
@@ -808,7 +808,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #38 admin: AND>OR 중첩 통과
+     * 38 admin: AND>OR 중첩 통과
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
      *
@@ -839,7 +839,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #39 admin: 3단계 복잡 구조 통과
+     * 39 admin: 3단계 복잡 구조 통과
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth3, held_permissions=satisfying
      *
@@ -874,7 +874,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // ================================================================
 
     /**
-     * #40 Guest: flat 권한 보유
+     * Guest: flat 권한 보유
      *
      * @scenario checker=grant_logic, permission_shape=flat, held_permissions=satisfying
      *
@@ -899,7 +899,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #41 Guest: OR 구조에서 보유한 권한 있음
+     * 41 Guest: OR 구조에서 보유한 권한 있음
      *
      * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
      *
@@ -924,7 +924,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #42 Guest: OR 구조에서 미보유
+     * 42 Guest: OR 구조에서 미보유
      *
      * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=not_satisfying
      *
@@ -947,7 +947,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     // ================================================================
 
     /**
-     * #43 user_form: create만 보유 → 통과
+     * 공개 #43 user_form: create만 보유 → 통과
      *
      * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
      *
@@ -967,7 +967,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #44 user_form: update만 보유 → 통과
+     * user_form: update만 보유 → 통과
      *
      * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=satisfying
      *
@@ -987,7 +987,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #45 user_form: read만 보유 → 실패
+     * 45 user_form: read만 보유 → 실패
      *
      * @scenario checker=grant_logic, permission_shape=or_group, held_permissions=not_satisfying
      *
@@ -1007,7 +1007,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #46 menu_form: read+create → 통과
+     * 46 menu_form: read+create → 통과
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=satisfying
      *
@@ -1027,7 +1027,7 @@ class AuthServiceProviderPermissionLogicTest extends TestCase
     }
 
     /**
-     * #47 menu_form: read만 → 실패
+     * 공개 #47 menu_form: read만 → 실패
      *
      * @scenario checker=grant_logic, permission_shape=nested_depth2, held_permissions=not_satisfying
      *

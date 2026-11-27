@@ -6,7 +6,7 @@ namespace App\Console\Commands\Traits;
  * 활성화 경고의 미충족 의존 항목 상태 라벨 — 미설치·비활성·버전 미달 (template|module|plugin:activate 공통)
  *
  * 종전 분기는 `not_installed` 가 아니면 모두 「비활성」으로 출력해, 켜져 있지만 요구 버전에 못 미치는 의존도
- * 「비활성」으로 보였다(#152).
+ * 「비활성」으로 보였다(공개 #152).
  */
 trait LabelsMissingDependencies
 {

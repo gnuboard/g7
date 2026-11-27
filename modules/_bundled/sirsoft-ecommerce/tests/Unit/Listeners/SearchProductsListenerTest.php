@@ -68,7 +68,7 @@ class SearchProductsListenerTest extends ModuleTestCase
     }
 
     /**
-     * 검색 실패가 "결과 0건" 으로 위장되지 않고 failed 페이로드로 표면화되는지 확인 (#103)
+     * 검색 실패가 "결과 0건" 으로 위장되지 않고 failed 페이로드로 표면화되는지 확인 (공개 #103)
      *
      * @effects failed_flag_in_response, exception_stack_logged
      * @return void 반환값 없음

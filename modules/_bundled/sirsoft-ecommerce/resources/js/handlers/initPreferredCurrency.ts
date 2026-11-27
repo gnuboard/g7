@@ -97,7 +97,7 @@ function resolveCurrencyByLocale(locale: string | null): string | null {
   if (!locale) {
     return null;
   }
-  // locale 정규화 — 소문자 + '_'→'-' (zh_TW → zh-tw). 정확일치가 먼저, 없으면 주 언어(fil-PH → fil)로 비교 (#148)
+  // locale 정규화 — 소문자 + '_'→'-' (zh_TW → zh-tw). 정확일치가 먼저, 없으면 주 언어(fil-PH → fil)로 비교 (공개 #148)
   const normalize = (value: unknown): string => String(value).toLowerCase().replace(/_/g, '-');
   const primaryOf = (value: string): string => value.split('-')[0];
   const normalized = normalize(locale);

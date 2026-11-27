@@ -80,7 +80,7 @@ effects:
   - preview_render_env_exposed_via_component_context             # DynamicRenderer 가 __componentContext.renderEnvRef 로 노출
   - preview_render_env_ref_identity_stable_across_width_change   # 폭이 바뀌어도 __componentContext identity 불변(재계산 폭주 방지)
   - preview_slot_registration_carries_render_env_and_path        # 슬롯 등록에 getRenderEnv·componentPath
-  - preview_cell_render_follows_preview_width                    # 셀 responsive 분기가 미리보기 폭을 따른다 (#141 본 증상)
+  - preview_cell_render_follows_preview_width                    # 셀 responsive 분기가 미리보기 폭을 따른다 (공개#141 본 증상)
   - preview_cell_defer_translation_follows_content_locale        # 셀 $t:defer: 가 콘텐츠 언어로 번역
   - preview_cell_actions_bind_to_preview_dispatcher              # 셀 액션이 미리보기 격리 dispatcher 에 묶임
   - preview_cell_actions_not_bound_in_edit_mode                  # 편집 모드 셀 액션 미바인딩(DynamicRenderer 규약과 동일)

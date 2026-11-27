@@ -6,7 +6,7 @@
  * 항상 선택 항목을 items(type:partial)로 전송하는지 검증한다.
  * 전체취소 승격은 백엔드 shouldConvertToFullCancel 이 담당하므로, 프론트는 선택 항목만
  * 그대로 보낸다. 종전 라인수+수량 휴리스틱은 단일 항목 주문을 항상 full 로 처리해
- * 수량 축소를 무시하던 결함(MP03 §9 발견#2)이 있었고 유저 핸들러와 판정 기준이 어긋났다.
+ * 수량 축소를 무시하던 결함(MP03 §9 발견 2)이 있었고 유저 핸들러와 판정 기준이 어긋났다.
  *
  * @vitest-environment jsdom
  */
@@ -71,7 +71,7 @@ describe('executeCancelOrderHandler — 항상 items 전송 (백엔드 FULL 승�
     });
 
     // @effects frontend_always_sends_items_admin
-    it('단일 항목 주문 — 수량 축소 시 type:partial + items 전송 (결함 #2 회귀)', async () => {
+    it('단일 항목 주문 — 수량 축소 시 type:partial + items 전송 (결함 2 회귀)', async () => {
         mockOrderDataSource = {
             data: { options: [{ id: 100, quantity: 9, option_status: 'payment_complete' }] },
         };

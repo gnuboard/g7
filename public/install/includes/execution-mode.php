@@ -977,7 +977,7 @@ if (! function_exists('installerTransferStepwiseOwnership')) {
 
 if (! function_exists('installerProbeRateLimitExceeded')) {
     /**
-     * 무인증 probe 엔드포인트의 호출 횟수 상한 (보안#7).
+     * 무인증 probe 엔드포인트의 호출 횟수 상한 (보안 7).
      *
      * 설치 창에는 인증이 없다. 그 사이 `?action=test-db` 는 임의 host:port 로 나가는 접속
      * 프록시이고 `?action=test-php-binary` 는 임의 절대경로를 `--version` 으로 실행한다 —
@@ -1277,7 +1277,7 @@ if (! function_exists('installerProbeRateLimitStatePath')) {
 
 if (! function_exists('installerIniSet')) {
     /**
-     * `ini_set()` 을 가용할 때만 호출한다 (환경#18).
+     * `ini_set()` 을 가용할 때만 호출한다 (환경 18).
      *
      * `ini_set` 은 cPanel/CloudLinux 계열 호스팅의 표준 차단 목록에 있고, 인스톨러는
      * 세션 설정·출력 버퍼·오류 표시를 이 함수로 조정한다 — 그 호출들은 대부분 응답 봉투가

@@ -71,7 +71,7 @@ class EcommerceSettingsServiceApplyExchangeRatesTest extends ModuleTestCase
         $this->assertSame(['fixture'], $calls);
         $this->assertNull(collect($after['currencies'])->firstWhere('code', 'USD')['exchange_rate']);
         // 0 이하·비수치 환율은 적용하지 않고 기존 값을 유지한다 — 환율 0 은 그 통화를 사용자 셀렉터에서
-        // 사라지게 하고 회원 선호 통화 저장을 422 로 만든다(계획 §7.2 「0 이하 invalid」·부수의무 #1).
+        // 사라지게 하고 회원 선호 통화 저장을 422 로 만든다(계획 §7.2 「0 이하 invalid」·부수의무 1).
         $this->assertContains('EUR', $result['skipped']);
         $this->assertNotContains('EUR', $result['applied']);
         $this->assertSame(

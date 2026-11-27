@@ -268,7 +268,7 @@ describe('Exchange rate history controls', () => {
     expect(container.querySelector('#koreaexim_schedule_missing')?.textContent).toBe(ko.schedule.missing);
   });
   /** 갱신 일정 블록은 2열 격자의 한 칸이 아니라 한 줄 전체를 쓰고, 「스케줄 관리에서 변경」 안내는 설정 화면 공통 모양
-   * (파란 안내 상자 + 정보 아이콘 + 한 문장 + 링크)이다. 11:00 권장 안내는 한 번만 보인다(#17).
+   * (파란 안내 상자 + 정보 아이콘 + 한 문장 + 링크)이다. 11:00 권장 안내는 한 번만 보인다.
    * @scenario flow=validation
    * @effects admin_ui_contract */
   it('갱신 일정 블록이 전체 폭이고 공통 안내 상자에 실행 요일·시각의 분담과 스케줄 관리 링크를 담는다', () => {

@@ -6,7 +6,7 @@
  * 이 파일이 order_info 폼을 채워 KCP_Pay_Execute 를 부른다.
  *
  * 종전에는 부모가 빈 iframe 에 document.write 로 SDK 와 인라인 <script> 를 써 넣었다 — 사이트가
- * script-src 'self' 를 걸면 그 인라인 코드가 실행되지 않아 PC 결제가 15초 뒤 시간 초과로 끝났다(#158).
+ * script-src 'self' 를 걸면 그 인라인 코드가 실행되지 않아 PC 결제가 15초 뒤 시간 초과로 끝났다(공개 #158).
  *
  * 부모와는 같은 출처의 `window.parent.__g7KcpFrame` 객체로만 주고받는다(결과 폼은 DOM 이라
  * postMessage 로 넘길 수 없다). 객체가 없으면(다른 출처·직접 열기) 아무 것도 하지 않는다.

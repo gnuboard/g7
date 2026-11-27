@@ -21,7 +21,7 @@
 
 1. [기본 규칙](#기본-규칙)
 2. [권한 메타 표준화 (is_owner + abilities)](#권한-메타-표준화-is_owner--abilities)
-3. [$this->when() 사용 주의사항](#thiswhen-사용-주의사항)
+3. [$this->when() 사용 주의사항](#this-when-사용-주의사항)
 4. [패턴 예시](#패턴-예시)
 
 ---

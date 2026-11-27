@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /**
- * 정적 게시 실패의 운영자 도달 통로 테스트 (#122 O3).
+ * 정적 게시 실패의 운영자 도달 통로 테스트 (공개 #122 O3).
  *
  * 게시 실패는 사이트를 멈추지 않는다 — API 폴백으로 넘어가 화면은 정상이고 서버 로그에만
  * warning 이 쌓인다. 그래서 쓰기 불가 환경에서 정적 fast path 가 영구히 꺼진 채 운영되는

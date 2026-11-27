@@ -180,7 +180,7 @@ const RENDER_OPTIONS = (queryParams: Record<string, string>, data: Record<string
 
 // ========== 테스트 케이스 ==========
 
-describe('통합검색 실패 표면화 렌더링 (#103)', () => {
+describe('통합검색 실패 표면화 렌더링 (공개 #103)', () => {
   beforeEach(() => {
     setupTestRegistry();
   });

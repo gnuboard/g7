@@ -1,4 +1,4 @@
-feature: 비회원 상품 조회 접근 (Issue #21)
+feature: 비회원 상품 조회 접근
 
 description: |
   비회원이 상품 목록과 상세를 열면 current_user 가 401 을 돌려준다. 이 401 때문에 권한 없음 배너를 띄우거나 상품을

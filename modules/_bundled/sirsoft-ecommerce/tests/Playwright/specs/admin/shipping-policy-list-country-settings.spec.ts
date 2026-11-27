@@ -60,7 +60,7 @@ async function createFixturePolicy(page: any): Promise<any | null> {
   return created?.data ?? null;
 }
 
-test.describe('배송정책 목록 국가 요약 (#76)', () => {
+test.describe('배송정책 목록 국가 요약 (공개 #76)', () => {
   // @scenario endpoint=admin_list, opt_in=default
   // @effects list_keeps_fields_the_screen_draws
   test('목록 요청이 무거운 opt-in 을 켜지 않고도 국가별 설정을 받아온다', async ({

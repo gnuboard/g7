@@ -54,7 +54,7 @@ export interface ModalProps {
      * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트 (내부 사용)
      *
      * `renderEnvRef.current` 의 레지스트리·엔진·dispatcher·편집 모드로 titlePrefix/titleSuffix/footer 를
-     * 그린다 — 레이아웃 편집기 미리보기에서 호스트 값 대신 미리보기 값을 따른다(#141).
+     * 그린다 — 레이아웃 편집기 미리보기에서 호스트 값 대신 미리보기 값을 따른다(공개 #141).
      */
     __componentContext?: {
         renderEnvRef?: {
@@ -70,7 +70,7 @@ export interface ModalProps {
         parentDataContext?: Record<string, any>;
         /**
          * Modal 노드의 편집기 경로(레이아웃 편집기 미리보기에서만 값이 있다). footer 단추마다
-         * `${componentPath}.props.footer.${index}` 를 넘겨 편집기가 footer 단추를 고르게 한다(#141).
+         * `${componentPath}.props.footer.${index}` 를 넘겨 편집기가 footer 단추를 고르게 한다(공개 #141).
          */
         componentPath?: string;
         [key: string]: any;

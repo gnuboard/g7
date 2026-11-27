@@ -576,7 +576,7 @@ class InstallerExecutionModeHelperTest extends TestCase
      * 같은 파일이 「치환값은 키를 정한 곳이 함께 돌려준다」를 규약으로 선언해 두고 있으므로,
      * 그 계약을 **값까지** 고정한다. 종전에는 `assertArrayHasKey` 하나여서 값이 `[]` 로 비어도
      * 초록이었고, 그 상태의 결과는 운영자 화면에 `:status` 가 원문으로 나가는 것이다
-     * (`error_stepwise_not_running` 은 자리표시자를 가진 키다). 7차 #1·8차 #16 이 두 번 닫은
+     * (`error_stepwise_not_running` 은 자리표시자를 가진 키다). 7차 1·8차 16 이 두 번 닫은
      * 결함군의 세 번째 재현 통로였다.
      *
      * @scenario installation_mode=stepwise

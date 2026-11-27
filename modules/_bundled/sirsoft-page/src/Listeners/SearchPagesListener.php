@@ -160,7 +160,7 @@ class SearchPagesListener implements HookListenerInterface
             $results['pages'] = SearchCategoryPayload::fromBounded($searchPage, $format($searchPage->items()));
         } catch (\Exception $e) {
             // 실패를 카테고리 키 미설정으로 삼키면 화면이 "검색 결과 없음" 을 그린다 —
-            // failed 페이로드로 표면화하고, 원인 추적을 위해 스택을 함께 남긴다 (#103).
+            // failed 페이로드로 표면화하고, 원인 추적을 위해 스택을 함께 남긴다 (공개 #103).
             Log::error('Search pages error', ['message' => $e->getMessage(), 'q' => $q, 'exception' => $e]);
             $results['pages'] = SearchCategoryPayload::failed();
         }

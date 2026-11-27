@@ -9,7 +9,7 @@ use ReflectionProperty;
 use Tests\TestCase;
 
 /**
- * 설치 직전 소스 classmap 등록이 같은 프로세스의 앞선 실패 조회가 남긴 Composer 음성 캐시를 우회하는지 검증 (#159)
+ * 설치 직전 소스 classmap 등록이 같은 프로세스의 앞선 실패 조회가 남긴 Composer 음성 캐시를 우회하는지 검증 (공개 #159)
  *
  * ## 무엇을 막는가
  *

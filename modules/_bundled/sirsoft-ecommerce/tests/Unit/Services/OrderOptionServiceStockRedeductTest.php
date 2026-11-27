@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 관리자 주문 상세의 옵션 단위 상태 에디터(OrderOptionService::bulkChangeStatusWithQuantity /
  * changeStatusWithQuantity) 경로에서 취소된 옵션을 판매 상태로 되돌릴 때 재고 재차감이
- * 수행되는지 검증한다. (검수 발견 갭 #3 — 목록 일괄변경/단건 update 와 달리 per-line 경로는
+ * 수행되는지 검증한다. (검수 발견 갭 3 — 목록 일괄변경/단건 update 와 달리 per-line 경로는
  * rededuct 미호출이던 결함의 회귀 가드)
  */
 class OrderOptionServiceStockRedeductTest extends ModuleTestCase

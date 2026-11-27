@@ -341,7 +341,7 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
     }
 
     /**
-     * 화면 목록은 저장소 쿼리 레벨 페이지네이션을 써야 한다 (#102 동형 결함 해소).
+     * 화면 목록은 저장소 쿼리 레벨 페이지네이션을 써야 한다 (공개 #102 동형 결함 해소).
      *
      * 종전에는 전량 get() 후 PHP forPage() 잘라내기라, 문의가 늘수록 한 페이지를 여는
      * 것만으로 전 행이 적재됐다. 페이지 경계 정확성과 LIMIT 사용을 함께 고정한다.
@@ -407,7 +407,7 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
         );
         $this->assertNotEmpty(
             $limitedPivotSelects,
-            '문의 피벗 조회에 LIMIT 이 없습니다 — 전량 적재 후 PHP 잘라내기(#102 동형)입니다.'
+            '문의 피벗 조회에 LIMIT 이 없습니다 — 전량 적재 후 PHP 잘라내기(공개 #102 동형)입니다.'
         );
     }
 

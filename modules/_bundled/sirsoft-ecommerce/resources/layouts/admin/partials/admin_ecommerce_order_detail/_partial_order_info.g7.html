@@ -306,7 +306,7 @@
                   <!-- 주문자 이름 메뉴 — 회원 상세는 **새 창**으로(보던 주문을 잃지 않게), 그 회원 주문만 보기는 같은 창에서 주문 목록으로 넘어간다. -->
                   <switch>
                     <case when="search_by_orderer">
-                      <!-- 주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75). -->
+                      <!-- 주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (공개 #75). -->
                       <navigate path="/admin/ecommerce/orders" :mergeQuery="true" :replace="true" transition_overlay_target="order_product_datagrid__body">
                         <query search_field="orderer_name" search_keyword="{{order.data?.orderer_name}}" orderer_uuid="" :page="1"/>
                       </navigate>

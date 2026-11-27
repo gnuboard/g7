@@ -360,7 +360,7 @@ describe('B3 — 주소록 칩 선택 시 해외 주소 intl_* 매핑', () => {
   });
 
   /** @effects intl_address_persisted_on_order */
-  it('체크아웃 해외 주소 입력 필드명 = 백엔드 표준(address_line_1/2) — 전이↔입력↔백엔드 일치(defect #4)', () => {
+  it('체크아웃 해외 주소 입력 필드명 = 백엔드 표준(address_line_1/2) — 전이↔입력↔백엔드 일치(defect 4)', () => {
     // 입력 필드명이 address_line_1/2 여야 전이 핸들러(addr.address_line_1)·백엔드(CreateOrderRequest) 와 일치
     const line1 = walk(json, (n) => n.name === 'Input' && n.props?.name === 'address_line_1');
     const line2 = walk(json, (n) => n.name === 'Input' && n.props?.name === 'address_line_2');
@@ -489,7 +489,7 @@ describe('D-admin — 관리자 회원폼 저장은 코어 회원 저장 한 번
   });
 });
 
-describe('D10 (defect #3) — 마이페이지 주소록 모달 국가 Select + 국내/해외 분기', () => {
+describe('D10 (defect 3) — 마이페이지 주소록 모달 국가 Select + 국내/해외 분기', () => {
   const json = read('layouts/partials/mypage/addresses/_modal_address.json', templateRoot);
   const raw = serialize('layouts/partials/mypage/addresses/_modal_address.json', templateRoot);
 
@@ -695,7 +695,7 @@ describe('배송국가 추가 폼 다국어 입력 ($locales 순회)', () => {
   });
 });
 
-describe('D7 (defect #5) — 관리자 주문상세 국내/해외 분기 폼', () => {
+describe('D7 (defect 5) — 관리자 주문상세 국내/해외 분기 폼', () => {
   const json = read('resources/layouts/admin/partials/admin_ecommerce_order_detail/_partial_order_info.json');
   const raw = serialize('resources/layouts/admin/partials/admin_ecommerce_order_detail/_partial_order_info.json');
   const detailRaw = serialize('resources/layouts/admin/admin_ecommerce_order_detail.json');

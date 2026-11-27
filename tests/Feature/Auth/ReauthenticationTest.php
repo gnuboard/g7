@@ -17,7 +17,7 @@ use Tests\Support\Identity\TestIdentityProvider;
 use Tests\TestCase;
 
 /**
- * 비밀번호 확인 관문의 이메일 인증번호 대체 (#40 K9 · R9)
+ * 비밀번호 확인 관문의 이메일 인증번호 대체 (K9 · R9)
  *
  * 비밀번호가 없는 회원(외부 인증 전용)은 비밀번호 확인 관문 3곳(마이페이지 정보 수정 진입 · 앱 키 재생성 · 관리자 본인
  * 정보 수정)을 이메일 인증번호로 통과한다 — 코어 본인인증(목적 `sensitive_action`)으로 받은 `verification_token` 을

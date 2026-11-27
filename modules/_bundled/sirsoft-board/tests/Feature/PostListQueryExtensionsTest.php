@@ -19,7 +19,7 @@ use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 게시글 목록 쿼리 확장 훅 sirsoft-board.post.list_query_extensions (#147)
+ * 게시글 목록 쿼리 확장 훅 sirsoft-board.post.list_query_extensions (공개 #147)
  *
  * 확장이 돌려준 조건 함수가 목록 구분값 15개 경로에서 게시판 조건 뒤에 붙어 결과를 좁히는지 본다.
  * 시험 리스너는 이 게시판 글만 분류 EN 으로 좁히고 다른 게시판 글은 그대로 둔다(컬럼은 qualifyColumn 으로 한정).

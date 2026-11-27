@@ -25,7 +25,7 @@ use Tests\Support\Identity\TestIdentityProvider;
 use Tests\TestCase;
 
 /**
- * 외부 인증 로그인 공개 API `AuthService::loginVerifiedUser()` (#40 K1 · K1-b · R2 · R3 · R7 · R10)
+ * 외부 인증 로그인 공개 API `AuthService::loginVerifiedUser()` (K1 · K1-b · R2 · R3 · R7 · R10)
  *
  * 비밀번호 대신 다른 수단으로 본인이 확인된 회원이 비밀번호 로그인과 같은 관문(잠금 → 상태 → 관리자 경로 → 2단계 인증 →
  * 비밀번호 변경 → 휴면 해제 + 토큰)을 같은 응답 모양으로 지나는지 잠근다. 로그인 수단 이름은 단계(2단계 인증·비밀번호 변경)를

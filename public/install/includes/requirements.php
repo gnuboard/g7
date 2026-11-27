@@ -152,7 +152,7 @@ if (! function_exists('installer_requirement_disk_space')) {
         // disk_free_space() 실패 시 — 「확인 불가」는 위의 차단 갈래(함수 부재)와 **같은 판정**
         // 이어야 한다 (21차 #21-6). NFS/CIFS 마운트·일부 컨테이너 볼륨은 함수가 있어도 false
         // 를 돌려주는데, 종전에는 이 갈래만 passed=false 라 화면이 빨강+차단으로 증폭했다 —
-        // 디스크는 넉넉한데 설치가 원리상 진행 불가가 되는 거짓 차단(20차 #6 과 같은 형태).
+        // 디스크는 넉넉한데 설치가 원리상 진행 불가가 되는 거짓 차단(20차 6 과 같은 형태).
         if ($freeSpaceBytes === false) {
             return [
                 'required' => true,
@@ -168,7 +168,7 @@ if (! function_exists('installer_requirement_disk_space')) {
         $passed = $freeSpaceMb >= $minSpaceMb;
 
         // 차단 기준(500MB)과 실사용(약 700MB — docs/requirements.md §9)의 간극 안내
-        // (21차 #21-7, 제품 결정 §16.27.1 #3 — 차단 기준은 유지하고 경고만 덧붙인다).
+        // (21차 #21-7, 제품 결정 §16.27.1 3 — 차단 기준은 유지하고 경고만 덧붙인다).
         // 종전에는 여유 600MB 서버가 초록으로 통과하고 설치 중반에 디스크가 차서
         // 엉뚱한 오류(composer 쓰기 실패·PDO 예외)로 죽었다.
         $recommendedMb = RECOMMENDED_DISK_SPACE_MB;
@@ -382,7 +382,7 @@ if (! function_exists('installer_requirement_required_files')) {
 
 if (! function_exists('installer_forwarded_headers')) {
     /**
-     * 수신 중인 X-Forwarded-* 계열 헤더 이름 목록 (#124).
+     * 수신 중인 X-Forwarded-* 계열 헤더 이름 목록 (공개 #124).
      *
      * 목록은 App\Support\TrustedProxyDiagnostic::FORWARDED_HEADERS 와 같은 집합을 유지한다.
      *
@@ -416,7 +416,7 @@ if (! function_exists('installer_requirement_https')) {
     /**
      * HTTPS 사용 여부 (선택 항목 — 설치를 차단하지 않는다). 터미널에서는 판정하지 않는다(웹 전용).
      *
-     * 프록시 헤더가 감지되면 신뢰 프록시 설정이 필요하다는 안내를 덧붙인다 (#124).
+     * 프록시 헤더가 감지되면 신뢰 프록시 설정이 필요하다는 안내를 덧붙인다 (공개 #124).
      *
      * @return array<string, mixed> 판정 결과
      */
@@ -491,7 +491,7 @@ if (! function_exists('installer_requirement_php_limits')) {
      */
     function installer_requirement_php_limits(): array
     {
-        // 실행 경로의 실제 요구와 같은 값이어야 한다 (20차 #1, 제품 결정 §16.26.4 #3) —
+        // 실행 경로의 실제 요구와 같은 값이어야 한다 (20차 1, 제품 결정 §16.26.4 3) —
         // subprocess 는 `-d memory_limit=512M`, in-process 는 512M 상향을 시도한다.
         // 종전 256M 은 그보다 낮아, 256~512M 호스트가 화면을 초록으로 지나고 설치 중반
         // OOM 을 만났다. 세 선언의 등치는 InstallerMemoryBudgetTest 가 잠근다.
@@ -512,7 +512,7 @@ if (! function_exists('installer_requirement_php_limits')) {
         $memoryLimit = trim((string) ini_get('memory_limit'));
         $maxExecutionTime = trim((string) ini_get('max_execution_time'));
         $memoryBytes = installerParseByteSize($memoryLimit);
-        // open_basedir 상태 노출 (20차 #10) — 이 제한은 detect-php·경로 검사·시스템 temp 접근의
+        // open_basedir 상태 노출 (20차 10) — 이 제한은 detect-php·경로 검사·시스템 temp 접근의
         // 실패 원인이 되는데 종전에는 서버가 읽지도 화면이 보여주지도 않아 원인 단서가 없었다.
         $openBasedir = trim((string) ini_get('open_basedir'));
 
@@ -1089,7 +1089,7 @@ if (! function_exists('installer_detect_php_binaries')) {
             $checkedPaths[] = $path;
             // 후보는 문서루트 **밖** 시스템 경로다 — open_basedir 환경에서 이 stat 은
             // warning 을 내며 false 를 돌려준다. 판정(건너뜀)은 그대로 옳으므로 진단만
-            // 억제한다 (20차 #8). 억제하지 않으면 그 텍스트가 JSON 본문을 오염시킨다.
+            // 억제한다 (20차 8). 억제하지 않으면 그 텍스트가 JSON 본문을 오염시킨다.
             if (! @file_exists($path)) {
                 continue;
             }
@@ -1161,7 +1161,7 @@ if (! function_exists('installer_check_core_pending_path')) {
         $resolved = installerHasFunction('realpath') ? @realpath($candidatePath) : $candidatePath;
 
         // 운영자가 임의 절대경로를 입력하는 칸이라 open_basedir 밖 입력이 정상 시나리오다 —
-        // stat 의 판정(false)은 옳고 warning 만 억제한다 (20차 #9, 위 realpath 와 같은 규칙).
+        // stat 의 판정(false)은 옳고 warning 만 억제한다 (20차 9, 위 realpath 와 같은 규칙).
         if ($resolved === false || ! @is_dir($resolved)) {
             return ['success' => false, 'message' => lang('error_core_pending_path_invalid')];
         }

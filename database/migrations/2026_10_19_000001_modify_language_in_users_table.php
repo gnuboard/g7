@@ -11,7 +11,7 @@ return new class extends Migration
      * 회원 언어 칸을 언어팩 언어 코드 길이(20자)에 맞춥니다.
      *
      * 언어팩으로 켤 수 있는 `fil-PH`·`zh-Hant-TW` 같은 BCP 47 코드는 다섯 글자를 넘어, 회원 가입·
-     * 프로필 저장·관리자 회원 수정이 엄격 모드에서 실패했다(#148). 20 은 `language_packs.locale` 폭이다.
+     * 프로필 저장·관리자 회원 수정이 엄격 모드에서 실패했다(공개 #148). 20 은 `language_packs.locale` 폭이다.
      *
      * @return void 반환값 없음
      */

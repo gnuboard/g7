@@ -269,7 +269,7 @@ const Footer: React.FC<FooterProps> = ({
         >
           {/* 사이트 정보 — 데스크톱(5열)에서만 2칸 차지 */}
           <Div style={isDesktop ? { gridColumn: 'span 2 / span 2' } : undefined}>
-            {/* 이름·설명은 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름도 칸을 넘지 않는다(#143). */}
+            {/* 이름·설명은 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름도 칸을 넘지 않는다(공개 #143). */}
             <H3 className="text-lg font-bold text-gray-900 dark:text-white break-words">{siteName}</H3>
             {siteDescription && (
               <P className="mt-2 text-sm text-gray-600 dark:text-gray-400 break-words">{siteDescription}</P>
@@ -339,7 +339,7 @@ const Footer: React.FC<FooterProps> = ({
           className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800 flex justify-between items-center gap-4"
           style={{ flexDirection: isMobile ? 'column' : 'row' }}
         >
-          {/* 저작권 줄은 「Powered by」 와 같은 flex 줄이라 줄어들 수 있게 하고 아무 데서나 줄을 바꾼다(#143). */}
+          {/* 저작권 줄은 「Powered by」 와 같은 flex 줄이라 줄어들 수 있게 하고 아무 데서나 줄을 바꾼다(공개 #143). */}
           <P className="text-sm text-muted min-w-0 wrap-anywhere">
             {copyrightText || defaultCopyrightText || `© ${currentYear} ${siteName}. All rights reserved.`}
           </P>

@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * 알림 수신자 발송 선점 결과 (#139)
+ * 알림 수신자 발송 선점 결과 (공개 #139)
  *
  * NotificationDeliveryGuard::claim() 의 반환값.
  */

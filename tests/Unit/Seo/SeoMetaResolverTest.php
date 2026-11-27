@@ -1858,7 +1858,7 @@ class SeoMetaResolverTest extends TestCase
      * 회귀: 모듈 템플릿 "{commerce_name} - {product_name}" 에서
      * commerce_name 이 빈 값일 때 선두 "- " 가 남는 회귀를 방지합니다.
      *
-     * og:title="- 무선 마우스 #99" 슬랙/페이스북 미리보기 제목 깨짐
+     * og:title="- 무선 마우스 공개 #99" 슬랙/페이스북 미리보기 제목 깨짐
      *
      * @scenario field=title, source=extension_template
      *

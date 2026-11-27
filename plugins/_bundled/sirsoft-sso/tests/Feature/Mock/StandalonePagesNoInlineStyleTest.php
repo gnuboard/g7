@@ -13,7 +13,7 @@ use Plugins\Sirsoft\Sso\Tests\PluginTestCase;
 /**
  * 이 플러그인이 직접 내는 독립 HTML 은 인라인 스타일을 쓰지 않는다 — 스타일 보안 정책 호환
  *
- * 사이트가 `style-src 'self'; style-src-attr 'none'` 을 걸면 `<style>` 요소와 `style="…"` 속성이 막힌다(코어 #163, 7.1.6).
+ * 사이트가 `style-src 'self'; style-src-attr 'none'` 을 걸면 `<style>` 요소와 `style="…"` 속성이 막힌다(코어 공개 #163, 7.1.6).
  * SAML 자동 제출 화면·연결 테스트 결과 화면·모의 IdP 승인 화면(OIDC·SAML)은 모양을 `<style>` 블록으로 실어 그 정책에서
  * 무스타일로 떴다. 규칙은 같은 출처 정적 파일(`assets/bridge/*.css`)로 옮기고 `<head>` 에는 `<link>` 하나만 둔다.
  *

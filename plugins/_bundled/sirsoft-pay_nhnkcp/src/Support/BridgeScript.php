@@ -8,7 +8,7 @@ use App\Extension\PluginManager;
 use App\Support\AssetUrl;
 
 /**
- * 독립 HTML 응답(결제·본인인증 브리지)의 스크립트 태그 조립 (#158 strict CSP)
+ * 독립 HTML 응답(결제·본인인증 브리지)의 스크립트 태그 조립 (공개 #158 strict CSP)
  *
  * 이 플러그인이 직접 내는 HTML 페이지(팝업·iframe 이 여는 브리지·확인창)는 엔진 셸 밖이라, 종전에는
  * 동작을 인라인 `<script>` 로 넣었다. 사이트가 `Content-Security-Policy: script-src 'self'` 를 걸면

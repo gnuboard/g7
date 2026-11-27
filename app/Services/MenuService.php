@@ -158,7 +158,7 @@ class MenuService
         $menus = $this->menuRepository->getFilteredTopLevelMenus($filters, $activeModuleIdentifiers, $activePluginIdentifiers, $user);
 
         // 목록 행마다 부여된 역할을 보이도록 역할 ID 만 붙인다 — 하위 메뉴의 역할 객체(이름·피벗)는
-        // 목록에 싣지 않는 #76 정리를 유지하고, 이름은 화면이 활성 역할 목록에서 찾는다. 쿼리 1회.
+        // 목록에 싣지 않는 공개 #76 정리를 유지하고, 이름은 화면이 활성 역할 목록에서 찾는다. 쿼리 1회.
         $menuIds = $menus->flatMap(fn (Menu $menu) => [$menu->id, ...$menu->children->pluck('id')->all()])->all();
         $roleIdsByMenu = $this->menuRepository->getRoleIdsByMenuIds($menuIds);
         foreach ($menus as $menu) {
@@ -354,7 +354,7 @@ class MenuService
 
         // 훅: 메뉴 순서 변경 후 — after_update_order 는 계층 경로(updateMenuOrderWithHierarchy)에서 계층 배열을
         // 싣는데 여기서는 ID 목록을 실어 모양이 달랐다. 서드파티 호환을 위해 기존 발화는 그대로 두고(이 자리의
-        // 발화는 deprecated), ID 목록 모양을 이름에 드러낸 after_update_order_flat 을 나란히 발화한다(#138 후속).
+        // 발화는 deprecated), ID 목록 모양을 이름에 드러낸 after_update_order_flat 을 나란히 발화한다(공개 #138 후속).
         HookManager::doAction('core.menu.after_update_order', $menuOrders);
         HookManager::doAction('core.menu.after_update_order_flat', array_values($menuOrders));
 

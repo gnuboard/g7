@@ -10,7 +10,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Symfony\Component\Process\Process;
 
 /**
- * 금액 비교기(소수 4자리) 단위 테스트 — bcmath 없이 같은 판정 (#151)
+ * 금액 비교기(소수 4자리) 단위 테스트 — bcmath 없이 같은 판정 (공개 #151)
  *
  * 환불·취소 판정이 `bccomp()` 를 가드 없이 불러 bcmath 가 없는 서버에서 주문 상세가 500 이 됐다.
  * 이 비교기가 종전 `bccomp(number_format(v,4,'.',''), …, 4)` 와 같은 결과를 내는지 표로 잠근다.

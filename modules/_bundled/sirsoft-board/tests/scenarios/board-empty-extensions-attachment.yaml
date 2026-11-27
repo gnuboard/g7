@@ -3,7 +3,7 @@
 feature: 허용 확장자 미지정 게시판의 첨부 선택 — 사용자 글쓰기 accept 기본 확장자 폴백 (브라우저)
 
 description: |
-  이슈 #78 R3 — 백엔드는 빈 확장자를 기본 확장자로 폴백하도록 이미 고쳐졌지만, 프런트에 같은
+  이슈 공개#78 R3 — 백엔드는 빈 확장자를 기본 확장자로 폴백하도록 이미 고쳐졌지만, 프런트에 같은
   `[]`-truthiness 쌍둥이가 남아 사용자는 파일 선택 단계에서 막혔다. 요청 자체가 나가지 않으므로 서버측
   회귀 테스트(board-conditional-validation 의 AttachmentAllowedExtensionsFallbackTest)로는 잡히지 않는다.
 

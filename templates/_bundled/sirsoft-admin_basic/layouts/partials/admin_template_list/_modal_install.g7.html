@@ -74,7 +74,7 @@
         <!-- 고를 수 없는 사유 — 연동 대상의 필수 의존을 설치할 권한이 없거나, 그 의존 계획을 세울 수 없음(없음·버전 미달·순환) -->
         <span data-if="{{item.blocked_by_permission === true}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.extension_integrations.requires_no_permission</span>
         <span data-if="{{item.blocked_reason}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">{{item.blocked_reason}}</span>
-        <!-- 연동 대상 자신의 필수 의존(#153 D5) — 이 연동을 고르면 먼저 함께 설치된다. 체크 해제·선택 불가면 흐리게 -->
+        <!-- 연동 대상 자신의 필수 의존(공개 #153 D5) — 이 연동을 고르면 먼저 함께 설치된다. 체크 해제·선택 불가면 흐리게 -->
         <span data-if="{{(item.requires ?? []).length &gt; 0}}" class="w-full flex-start gap-1 ml-6 mt-1 px-2 py-1 text-xs rounded border {{item.can_select === true &amp;&amp; ((_global.installSelectedIntegrations ?? []).includes(item.type + ':' + item.identifier) || ((_global.installSelectedIntegrations === undefined || _global.installSelectedIntegrations === null) &amp;&amp; item.default_selected)) ? 'text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800' : 'text-muted bg-gray-50 dark:bg-gray-800 border-dashed border-gray-300 dark:border-gray-600'}}">
           <icon name="arrow-right" class="text-xs mt-0.5" aria-hidden="true"/>
           <span class="font-semibold">$t:admin.extension_integrations.requires_label</span>
@@ -108,7 +108,7 @@
         <span data-if="{{lp.blocked_reason === 'target_version_too_old'}}" class="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded">$t:admin.language_packs.modals.install_blocked_target_version_too_old|scope={{lp.scope}}|target={{lp.target_identifier}}</span>
       </label>
     </div>
-    <!-- 고급 설정 — 레이아웃 설치 소스(#144). 평소에는 자동(.g7.html 우선)이고, 새 형식 처리에 문제가 있을 때만
+    <!-- 고급 설정 — 레이아웃 설치 소스(공개 #144). 평소에는 자동(.g7.html 우선)이고, 새 형식 처리에 문제가 있을 때만
          원본 JSON 우선을 고른다. 값은 요청 본문 layout_source 로 보내고 서버는 그 요청 동안만 적용한다.
          창을 열 때마다 자동·접힘으로 되돌린다(여는 쪽이 전역값을 초기화한다). -->
     <div data-ref="template_install_layout_source_section" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">

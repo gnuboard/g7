@@ -516,7 +516,7 @@ class MileageTransactionControllerTest extends ModuleTestCase
         $response->assertOk();
         $fresh = $lot->fresh();
         $this->assertSame('사유 정정', $fresh->memo);
-        // 날짜 입력 = 사이트 기준 그날 23:59:59 (#160 D5) — 서울이면 UTC 같은 날 14:59:59
+        // 날짜 입력 = 사이트 기준 그날 23:59:59 (공개 #160 D5) — 서울이면 UTC 같은 날 14:59:59
         $this->assertSame($newExpiry.' 14:59:59', $fresh->expires_at->utc()->format('Y-m-d H:i:s'));
     }
 

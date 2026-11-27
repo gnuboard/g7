@@ -7,7 +7,7 @@ description: |
   핵심 동작:
     - 알림톡 게이트: 행 존재 + alimtalk_enabled + is_active + sms_only 아님 + status=approved +
       approved_content 존재. 불충족 시 NotificationSendSkippedException(이력 "실패" 기록 —
-      이슈 #28 계약 유지). 발송 시점 카카오 조회 없음.
+      계약 유지). 발송 시점 카카오 조회 없음.
     - 본문 변환: 스냅샷(등록 페이로드 필드명) → 발송 규격(AlimtalkPayloadMapper —
       buttons[].linkMo→button[].url_mobile 등 대응표 고정) + #{var} 치환.
     - 대체 SMS: fallback_sms_enabled + sms_body 있을 때만 resend/recontent 병합

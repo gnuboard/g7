@@ -8,7 +8,7 @@
  *          settings_cleanup_toggle_default_off, admin_destroy_removes_file_and_record,
  *          admin_bulk_delete_removes_selected, settings_cleanup_retention_round_trip
  *
- * 배경: 에디터로 올렸지만 쓰이지 않는 이미지가 무기한 누적되던 결함(#115)의 회수 화면.
+ * 배경: 에디터로 올렸지만 쓰이지 않는 이미지가 무기한 누적되던 결함(공개 #115)의 회수 화면.
  * 사용자 파일을 실제로 파기하는 화면이라, 브라우저에서 실제로 확인해야 하는 것은
  * "목록이 뜬다" 가 아니라 아래 여섯 가지다.
  *

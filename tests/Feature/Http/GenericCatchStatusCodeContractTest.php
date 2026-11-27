@@ -5,7 +5,7 @@ namespace Tests\Feature\Http;
 use Tests\TestCase;
 
 /**
- * generic catch 의 상태코드 · 예외 원문 노출 전수 계약 (#104)
+ * generic catch 의 상태코드 · 예외 원문 노출 전수 계약 (공개 #104)
  *
  * `catch (\Exception)` / `catch (\Throwable)` 는 도메인 예외가 아닌 것을 잡는 자리다.
  * 여기서 4xx 를 돌려주면 인프라 장애·코드 결함이 "입력 오류" 로 위장되어 장애 인지가 늦어진다.

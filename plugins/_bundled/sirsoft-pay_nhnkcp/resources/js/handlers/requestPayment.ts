@@ -141,7 +141,7 @@ export function isSupportedKcpCurrency(currency?: string): boolean {
 
 /**
  * SDK 스크립트를 로드할 수 있는 호스트 (plugin.json `trusted_script_hosts` 의 부분집합 —
- * manifest 는 SDK 가 이어서 싣는 npay·spay 계열 호스트까지 선언한다, #158).
+ * manifest 는 SDK 가 이어서 싣는 npay·spay 계열 호스트까지 선언한다, 공개 #158).
  *
  * NHN KCP 결제창은 라이브러리가 아니라 그 회사 서버와 통신하는 서비스 SDK 라
  * 자체 호스팅할 수 없다. 대신 **주입 직전에** 호스트를 확인해, 설정·응답이 어떤
@@ -610,7 +610,7 @@ async function handleMobilePayment(
  * PC 결제 흐름
  *
  * 같은 출처 프레임 페이지(payment.kcp-frame)가 SDK 를 정적 <script src> 로 동기 로드한 뒤
- * 브리지(assets/bridge/kcp-frame.js)가 KCP_Pay_Execute() 를 호출한다(#158 — 인라인 스크립트 0).
+ * 브리지(assets/bridge/kcp-frame.js)가 KCP_Pay_Execute() 를 호출한다(공개 #158 — 인라인 스크립트 0).
  */
 async function handlePcPayment(
     config: ClientConfig,
@@ -683,7 +683,7 @@ async function handlePcPayment(
         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:99998;';
         document.body.appendChild(overlay);
 
-        // 투명 iframe - KCP 결제창이 내부에 렌더링됨. 같은 출처 프레임 페이지를 연다(#158) —
+        // 투명 iframe - KCP 결제창이 내부에 렌더링됨. 같은 출처 프레임 페이지를 연다(공개 #158) —
         // 종전에는 빈 iframe 에 document.write 로 SDK 와 인라인 스크립트를 써 넣었는데, 사이트가
         // script-src 'self' 를 걸면 그 인라인 코드가 실행되지 않아 15초 뒤 시간 초과로 끝났다.
         const iframe = document.createElement('iframe');

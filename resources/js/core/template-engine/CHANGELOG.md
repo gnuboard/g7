@@ -15,13 +15,13 @@
 
 ### Fixed
 
-- (engine-v1.99.1) 레이아웃 편집기 스타일 탭에서 공통(기본)이 정렬 박스(flex)인 노드를 태블릿·모바일 같은 화면 폭 탭으로 보면 늘 「정렬 박스로 만들기」 단추만 보였고, 눌러도 아무것도 기록되지 않아 그 폭에서만 정렬 박스를 끌 방법이 없었습니다. 화면 폭 탭의 켜짐 판정(`isNodeFlexEnabled`)이 구간에 명시 설정이 있어야만 켜짐으로 봤는데(D8), engine-v1.98.0 의 classMerge 가 기본과 같은 토큰을 구간에 쓰지 않기 때문입니다. 이제 구간에 className 이 있으면(통째 교체 값 또는 기본 + classMerge 실효값) 그 값으로, 없으면 그 폭이 이어받는 기본값으로 판정합니다. 해제는 종전대로 명시 해제 토큰(`block`)을 그 폭에 기록해 기본 상속을 끊습니다. 발생 시점: engine-v1.98.0(classMerge 도입). 회귀 잠금: `flexModel.test.ts`(상속 true, 구간 off 토큰 false, 기본 비flex false), `s7-property-controls.test.tsx`(상속된 flex 해제 시 모바일 실효값 block). 수정 전 코드에서 2건 실패 확인. E2E `property-editor-scope.spec.ts` T14 (flexModel.ts)
+- (engine-v1.99.1) 레이아웃 편집기 스타일 탭에서 공통(기본)이 정렬 박스(flex)인 노드를 태블릿·모바일 같은 화면 폭 탭으로 보면 늘 「정렬 박스로 만들기」 단추만 보였고, 눌러도 아무것도 기록되지 않아 그 폭에서만 정렬 박스를 끌 방법이 없었습니다. 화면 폭 탭의 켜짐 판정(`isNodeFlexEnabled`)이 구간에 명시 설정이 있어야만 켜짐으로 봤는데, engine-v1.98.0 의 classMerge 가 기본과 같은 토큰을 구간에 쓰지 않기 때문입니다. 이제 구간에 className 이 있으면(통째 교체 값 또는 기본 + classMerge 실효값) 그 값으로, 없으면 그 폭이 이어받는 기본값으로 판정합니다. 해제는 종전대로 명시 해제 토큰(`block`)을 그 폭에 기록해 기본 상속을 끊습니다. 발생 시점: engine-v1.98.0(classMerge 도입). 회귀 잠금: `flexModel.test.ts`(상속 true, 구간 off 토큰 false, 기본 비flex false), `s7-property-controls.test.tsx`(상속된 flex 해제 시 모바일 실효값 block). 수정 전 코드에서 2건 실패 확인. E2E `property-editor-scope.spec.ts` T14 (flexModel.ts)
 
 ## [engine-v1.99.0] - 2026-11-23
 
 ### Added
 
-- (engine-v1.99.0) 디버그 모드(`G7Config.debug`)에서 같은 DOM id 가 화면에 여러 개 생기면 콘솔에 `[G7] 같은 DOM id 가 화면에 여러 개 있습니다` 경고를 냅니다(`{id, count, pathname}`). 문서 body 의 DOM 변화를 지켜보다 변화가 멈추고 1초 뒤 한 번 세고, 같은 경로·같은 id 는 한 번만 알리며 경로가 바뀌면 다시 셉니다. 디버그 모드가 꺼져 있으면 감시 자체를 만들지 않습니다. 정적 감사와 전 화면 크롤이 모달·시트 열림 같은 상호작용 상태를 다 보지 못해서 넣었습니다. 회귀 잠금: `devDuplicateIdMonitor.test.ts`(6건) (devDuplicateIdMonitor.ts, template-engine.ts)
+- (engine-v1.99.0) 디버그 모드(`G7Config.debug`)에서 같은 DOM id 가 화면에 여러 개 생기면 콘솔에 `[G7] 같은 DOM id 가 화면에 여러 개 있습니다` 경고를 냅니다(`{id, count, pathname}`). 문서 body 의 DOM 변화를 지켜보다 변화가 멈추고 1초 뒤 한 번 세고, 같은 경로·같은 id 는 한 번만 알리며 경로가 바뀌면 다시 셉니다. 디버그 모드가 꺼져 있으면 감시 자체를 만들지 않습니다. 모달·시트를 연 상태처럼 화면을 조작해야 생기는 중복도 이 경고로 드러납니다. 회귀 잠금: `devDuplicateIdMonitor.test.ts`(6건) (devDuplicateIdMonitor.ts, template-engine.ts)
 
 ### Fixed
 

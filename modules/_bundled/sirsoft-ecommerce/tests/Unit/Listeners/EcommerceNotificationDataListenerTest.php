@@ -477,7 +477,7 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
     /**
      * 입금 기한은 사이트 시간대로 찍는다 — 요청자(user_timezone) 시간대가 UTC 여도 같다.
      *
-     * 회귀(#160): UTC Carbon 을 그대로 format 해 주문 상세(사이트 시각)와 9시간 어긋났다.
+     * 회귀(공개 #160): UTC Carbon 을 그대로 format 해 주문 상세(사이트 시각)와 9시간 어긋났다.
      *
      * @scenario surface=deposit_due_at
      *

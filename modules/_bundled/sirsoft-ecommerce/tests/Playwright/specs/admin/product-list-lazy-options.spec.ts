@@ -127,7 +127,7 @@ async function createFixtureProduct(page: any): Promise<any | null> {
   return created?.data ?? null;
 }
 
-test.describe('관리자 상품목록 옵션 지연 로딩 (#76)', () => {
+test.describe('관리자 상품목록 옵션 지연 로딩 (공개 #76)', () => {
   // @scenario row_state=collapsed,option_profile=mixed
   // @effects list_response_omits_options, options_total_count_matches_all
   test('목록 응답에 옵션 배열이 없고 집계 필드만 실린다', async ({ page, productManageToken }) => {

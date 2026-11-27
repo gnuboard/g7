@@ -11,7 +11,7 @@ use Tests\Fixtures\Queue\QueueProbeJob;
 use Tests\TestCase;
 
 /**
- * 스케줄 보안 정책 서버 덮어쓰기 해석기 테스트 (#17)
+ * 스케줄 보안 정책 서버 덮어쓰기 해석기 테스트
  *
  * 덮어쓰기 파일은 테스트마다 임시 경로에 만들고 `schedule_security.override_file` 로 가리킨다 —
  * 개발 서버의 실제 `storage/app/schedule_security.json` 을 건드리지 않는다.

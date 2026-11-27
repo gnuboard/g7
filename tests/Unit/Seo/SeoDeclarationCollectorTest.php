@@ -684,7 +684,7 @@ class SeoDeclarationCollectorTest extends TestCase
         $this->assertEquals('home', $result[0]['layoutName']);
         $this->assertEquals('about', $result[1]['layoutName']);
 
-        // 경고 한 줄로 삼키지 않고 레이아웃 이름과 원인 예외를 담아 오류로 보고한다 (#155)
+        // 경고 한 줄로 삼키지 않고 레이아웃 이름과 원인 예외를 담아 오류로 보고한다 (공개 #155)
         Exceptions::assertReported(fn (\RuntimeException $e): bool => str_contains($e->getMessage(), 'broken')
             && $e->getPrevious()?->getMessage() === '레이아웃 파일을 찾을 수 없습니다');
     }

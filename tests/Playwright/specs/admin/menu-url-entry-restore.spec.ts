@@ -6,7 +6,7 @@
  *   그래서 이 핸들러는 3초를 대기하다 조용히 종료했고, `?menu=...&mode=edit` 로 들어와도 패널이
  *   열리지 않았다. 예외도 콘솔 경고도 없어 화면만 비어 있었다.
  *
- * 하위 메뉴는 목록 응답이 역할을 싣지 않으므로(#76 프루닝), 이 경로가 죽어 있으면 URL 로 들어와
+ * 하위 메뉴는 목록 응답이 역할을 싣지 않으므로(공개 #76 프루닝), 이 경로가 죽어 있으면 URL 로 들어와
  * 저장할 때 역할이 통째로 해제될 수 있다 — 그래서 브라우저에서 고정한다.
  *
  * 효과 요약(마커 아님 — 평문): 주소 직접 진입 시 선택 복원, 역할의 폼 시드, 역할 칩 렌더. 마킹은 각 test 위에 있다.
@@ -15,7 +15,7 @@ import { test, expect, authenticatePage, issueToken } from '../../fixtures/auth'
 
 const MENU_API = '/api/admin/menus';
 
-test.describe('메뉴 관리 URL 직접 진입 복원 (#76)', () => {
+test.describe('메뉴 관리 URL 직접 진입 복원 (공개 #76)', () => {
   /**
    * @scenario resource=menu,endpoint=detail,observation=consumer_screen
    *

@@ -1,7 +1,7 @@
 /**
  * E2E: 검색 봇에게 전달되는 화면(SEO 렌더링)에 본문이 포함되는지
  *
- * 회귀 (#86): 위지윅 편집기 플러그인이 본문 영역을 확장으로 교체하는데, 봇용 화면을
+ * 회귀 (공개 #86): 위지윅 편집기 플러그인이 본문 영역을 확장으로 교체하는데, 봇용 화면을
  * 만드는 서버 렌더러가 그 교체 규칙(호스트 props 전달)을 몰라 본문을 빈 요소로
  * 내보냈다. 메타 태그에는 본문이 들어가지만 화면 본문 영역은 `<div></div>` 였다.
  *
@@ -266,7 +266,7 @@ test.describe('봇 렌더링 본문 노출', () => {
     expect(first.cache, '첫 요청에 X-SEO-Cache 헤더가 없습니다').toBeDefined();
     expect(second.cache, '두 번째 요청이 캐시에 적중하지 않았습니다').toBe('HIT');
 
-    // 캐시된 응답도 본문이 비어 있으면 안 된다 (#86 은 빈 본문이 캐시에 굳는 결함이었다)
+    // 캐시된 응답도 본문이 비어 있으면 안 된다 (공개 #86 은 빈 본문이 캐시에 굳는 결함이었다)
     expect(bodyOf(second.html)).not.toContain(EMPTY_INJECTED_BODY);
     expect(bodyOf(second.html)).toBe(bodyOf(first.html));
   });
@@ -426,12 +426,12 @@ test.describe('봇 렌더링 본문 노출', () => {
 });
 
 /**
- * 모듈이 소유한 사용자 화면(라우트 layout 이 `{모듈}.{레이아웃}`)과 봇 홈 제목 (#154).
+ * 모듈이 소유한 사용자 화면(라우트 layout 이 `{모듈}.{레이아웃}`)과 봇 홈 제목 (공개 #154).
  *
  * 봇 렌더가 모듈 레이아웃을 접두사를 뗀 이름으로 찾아 SPA 껍데기가 나갔고, 제목 접미사가 빈 기본 설치는
  * 봇 홈 제목이 비어 나갔다. hello 모듈 `/memos` 가 모듈 화면 SEO 예시다.
  */
-test.describe('모듈 소유 화면 봇 렌더 (#154)', () => {
+test.describe('모듈 소유 화면 봇 렌더 (공개 #154)', () => {
   /**
    * @scenario surface=bot_e2e
    * @effects module_screen_served_to_bot_with_cache_hit

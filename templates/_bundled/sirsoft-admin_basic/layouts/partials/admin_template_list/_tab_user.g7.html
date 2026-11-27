@@ -78,7 +78,7 @@
               <set-state searchQuery="{{$event.target.value}}"/>
             </on>
             <on type="submit">
-              <!-- 검색은 조건을 바꾸는 액션이지 리셋이 아니다 — 검색어와 페이지만 새로 정하고 사용자가 고른 표시 개수는 그대로 둔다 (#75). -->
+              <!-- 검색은 조건을 바꾸는 액션이지 리셋이 아니다 — 검색어와 페이지만 새로 정하고 사용자가 고른 표시 개수는 그대로 둔다 (공개 #75). -->
               <navigate path="/admin/templates/user" :mergeQuery="true">
                 <query search="{{_local.searchQuery || undefined}}" page=""/>
               </navigate>

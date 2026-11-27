@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
 /**
- * 큐 대기 작업(jobs 행) 리소스 (#17)
+ * 큐 대기 작업(jobs 행) 리소스
  *
  * jobs 표의 시각 컬럼은 unix 초다. 상태는 reserved_at(워커가 집음)·available_at(지연)으로 판정한다.
  */

@@ -1,6 +1,6 @@
 /**
  * @file admin-passwordless-member.test.ts
- * @description 비밀번호 없는 회원(외부 인증 전용)의 관리자 화면 회귀 테스트 (sirsoft-admin_basic, #40)
+ * @description 비밀번호 없는 회원(외부 인증 전용)의 관리자 화면 회귀 테스트 (sirsoft-admin_basic,)
  *
  * - 회원 상세 기본 정보에 「비밀번호」 배지(설정됨·미설정)가 있고, 비밀번호가 없으면 비밀번호 정보 영역은 만료 정책 대상이
  *   아니라는 안내 한 줄로 바뀐다(A1).
@@ -74,7 +74,7 @@ function langAt(lang: Json, path: string): unknown {
   return path.split('.').reduce<any>((acc, key) => (acc == null ? acc : acc[key]), lang);
 }
 
-describe('sirsoft-admin_basic 비밀번호 없는 회원 (#40)', () => {
+describe('sirsoft-admin_basic 비밀번호 없는 회원', () => {
   const detailNodes = flatten(userDetailLayout);
 
   /**

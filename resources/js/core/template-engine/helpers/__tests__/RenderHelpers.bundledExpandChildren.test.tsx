@@ -1,5 +1,5 @@
 /**
- * 실제 번들 레이아웃으로 잠그는 셀 경로 반응형 분기 (이슈 #141, §7 V4 대체)
+ * 실제 번들 레이아웃으로 잠그는 셀 경로 반응형 분기 (이슈 공개 #141, §7 V4 대체)
  *
  * 이커머스 상품 관리 목록의 확장 행(`expandChildren`)은 `responsive.portable` 에서 옵션을
  * 카드(`option-row-*`)로, 기본(데스크톱)에서 표(`ecommerce:overflow-x-auto > table`)로 그린다.

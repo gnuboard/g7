@@ -515,7 +515,7 @@ CAUTION: if와 conditions 동시 사용 시 if 우선
 
 ### 에러 핸들링 설정 (engine-v1.6.0+)
 
-> **관련 문서**: [액션 핸들러 - 에러 핸들링 시스템](actions-handlers.md#에러-핸들링-시스템-errorhandling)
+> **관련 문서**: [액션 핸들러 - 에러 핸들링 시스템](actions-handlers-state.md#에러-핸들링-시스템-errorhandling)
 
 데이터 소스에서도 액션과 동일한 방식으로 `errorHandling`과 `onError`를 설정할 수 있습니다.
 

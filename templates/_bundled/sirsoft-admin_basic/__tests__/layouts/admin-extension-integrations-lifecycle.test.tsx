@@ -222,7 +222,7 @@ describe('설치 창 — 함께 쓰면 연동되는 확장(선택)', () => {
   });
 
   /**
-   * 연동 대상 자신의 필수 의존(#153 D5) — 「함께 설치: 이름 (식별자)」 줄과 체크 상태별 안내, 고를 수 없는 사유 배지.
+   * 연동 대상 자신의 필수 의존(공개 #153 D5) — 「함께 설치: 이름 (식별자)」 줄과 체크 상태별 안내, 고를 수 없는 사유 배지.
    *
    * @scenario extension_type=template,core_version=with_integration_fields
    * @effects install_modal_shows_integration_required_dependencies

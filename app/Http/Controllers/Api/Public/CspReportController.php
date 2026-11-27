@@ -8,7 +8,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 코어 CSP 위반 보고 수신 API (#158)
+ * 코어 CSP 위반 보고 수신 API (공개 #158)
  *
  * 관리자 환경설정 > 보안의 CSP 모드가 '점검만'·'강제'이면 정책의 `report-uri /api/csp-report` 로
  * 브라우저가 위반을 보낸다. 받은 위반은 로그 채널 `csp`(일 단위 `storage/logs/csp-YYYY-MM-DD.log`)에 한 줄씩 남긴다.

@@ -845,7 +845,7 @@ return [
             'challenge_invalid' => '인증 요청 정보가 올바르지 않습니다.',
             'code_required' => '인증번호를 입력해주세요.',
         ],
-        // 로그인 인계 (#40)
+        // 로그인 인계
         'login_handoff' => [
             'code_required' => '로그인 인계 코드가 없습니다. 다시 로그인해 주세요.',
         ],
@@ -1249,7 +1249,7 @@ return [
         'log_days_integer' => '로그 보관 일수는 정수여야 합니다.',
         'log_days_min' => '로그 보관 일수는 1 이상이어야 합니다.',
         'log_days_max' => '로그 보관 일수는 365를 초과할 수 없습니다.',
-        // 큐 작업 처리 기록 (#17)
+        // 큐 작업 처리 기록
         'queue_job_log_enabled_boolean' => '처리 기록 사용 여부는 켜기/끄기 값이어야 합니다.',
         'queue_record_retention_days_integer' => '처리 기록 보관 기간은 정수(일)여야 합니다.',
         'queue_record_retention_days_min' => '처리 기록 보관 기간은 :min일 이상이어야 합니다.',

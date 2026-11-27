@@ -1050,7 +1050,7 @@ class SettingsService
                 );
             }
 
-            // 큐 워커 등록(#139) — 빈 연결 목록은 현재 드라이버 연결 하나로, 큐 목록이 없는 연결은 기본 큐로 채우고,
+            // 큐 워커 등록(공개 #139) — 빈 연결 목록은 현재 드라이버 연결 하나로, 큐 목록이 없는 연결은 기본 큐로 채우고,
             // 등록하지 않은 연결의 큐 목록은 버린다. 검증(V1~V9)은 FormRequest 가 이미 끝냈다.
             if ($tab === 'drivers') {
                 $tabSettings = app(QueueWorkerRegistry::class)->normalizeForSave($tabSettings);

@@ -1,5 +1,5 @@
 /**
- * 컴포넌트 배열 prop(`props.footer`) 안 노드 편집 — 경로 문법·선택·속성·이동·삭제·저장 회귀 (#141)
+ * 컴포넌트 배열 prop(`props.footer`) 안 노드 편집 — 경로 문법·선택·속성·이동·삭제·저장 회귀 (공개 #141)
  *
  * 배경: 관리자 확인 창(Modal)의 하단 단추 220여 개가 본문 children 에서 `props.footer` 배열로 옮겨졌다.
  * 편집기 경로 문법은 `children`·`iteration`·`responsive` 만 알아서 footer 안 단추를 고르거나 고칠 수

@@ -47,7 +47,7 @@ export interface SlotContainerProps {
     /**
      * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트
      *
-     * 등록 항목에 렌더 환경이 없을 때 이 SlotContainer 를 그린 렌더러의 렌더 환경을 쓴다(#141).
+     * 등록 항목에 렌더 환경이 없을 때 이 SlotContainer 를 그린 렌더러의 렌더 환경을 쓴다(공개 #141).
      * @internal 템플릿 엔진 내부 사용
      */
     __componentContext?: {

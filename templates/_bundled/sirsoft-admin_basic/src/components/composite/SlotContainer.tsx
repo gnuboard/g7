@@ -106,7 +106,7 @@ export interface SlotContainerProps {
   /**
    * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트
    *
-   * 등록 항목에 렌더 환경이 없을 때 이 SlotContainer 를 그린 렌더러의 렌더 환경을 쓴다(#141).
+   * 등록 항목에 렌더 환경이 없을 때 이 SlotContainer 를 그린 렌더러의 렌더 환경을 쓴다(공개 #141).
    * @internal 템플릿 엔진 내부 사용
    */
   __componentContext?: { renderEnvRef?: { current: SlotRenderEnvironment | null } };
@@ -270,7 +270,7 @@ export const SlotContainer: React.FC<SlotContainerProps> = ({
 
         // 렌더 환경: 등록 렌더러의 환경 > 이 SlotContainer 를 그린 렌더러의 환경 > 호스트 값.
         // 레이아웃 편집기 미리보기에서 슬롯 내용이 미리보기 레지스트리·dispatcher·편집 모드를 따르고,
-        // 편집 마커(data-editor-path)가 원본 노드 경로로 붙는다. 편집기 밖에서는 환경이 곧 호스트 값이다(#141).
+        // 편집 마커(data-editor-path)가 원본 노드 경로로 붙는다. 편집기 밖에서는 환경이 곧 호스트 값이다(공개 #141).
         const env = getRenderEnv?.() ?? __componentContext?.renderEnvRef?.current ?? null;
 
         // 같은 슬롯 컴포넌트가 여러 SlotContainer(헤더 데스크톱/모바일)에서 렌더될 때

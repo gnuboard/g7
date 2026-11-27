@@ -82,7 +82,7 @@ export interface ErrorDisplayOptions {
  *
  * 주의: 이 컴포넌트는 템플릿 엔진 초기화 실패 시에도 사용되므로 템플릿 CSS(Tailwind 클래스)에 기대지 않는다.
  * 모양은 셸이 항상 싣는 코어 정적 CSS(`public/assets/core/css/g7-core.css`)의 `g7-error*` 클래스로 준다.
- * HTML 문자열의 style 속성은 엄격한 스타일 정책에서 막혀 무스타일 화면이 된다(#163, engine-v1.91.0).
+ * HTML 문자열의 style 속성은 엄격한 스타일 정책에서 막혀 무스타일 화면이 된다(공개 #163, engine-v1.91.0).
  * 다크 모드는 CSS 미디어 쿼리(`prefers-color-scheme`)가 맡는다.
  */
 export class ErrorDisplay {
@@ -197,7 +197,7 @@ export class ErrorDisplay {
         `;
 
         // 새로고침 버튼은 인라인 on* 속성 없이 리스너로 묶는다 — strict CSP(`script-src 'self'`)
-        // 에서는 인라인 핸들러가 실행되지 않아 오류 화면의 유일한 탈출구가 무반응이 된다(#158).
+        // 에서는 인라인 핸들러가 실행되지 않아 오류 화면의 유일한 탈출구가 무반응이 된다(공개 #158).
         const reloadButton = container.querySelector<HTMLButtonElement>('[data-g7-error-reload]');
         if (reloadButton) {
             reloadButton.addEventListener('click', () => window.location.reload());

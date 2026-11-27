@@ -1,7 +1,7 @@
 /**
  * E2E: 반복 렌더 컨텍스트(DataGrid cellChildren 등)의 파이프 표현식 해석
  *
- * 회귀(#87): `renderItemChildren` 이 단일 바인딩을 해석할 때 `|` 를 복잡 표현식
+ * 회귀(공개 #87): `renderItemChildren` 이 단일 바인딩을 해석할 때 `|` 를 복잡 표현식
  * 문자로 분류해 `evaluateExpression`(JS 비트 OR)으로 보냈다. 그 결과
  * `{{row.created_at | datetime('YYYY-MM-DD HH:mm')}}` 는 예외로 값이 사라져 셀이
  * 비었고, `{{row.code | uppercase}}` 는 `0` 이라는 조용한 오답이 되었다. 같은

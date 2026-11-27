@@ -1,6 +1,6 @@
 <?php
 
-// audit:allow api-doc-coverage reason: 요청/응답 계약 불변 — 설치 판정 조회만 manifest 전용(get*ManifestInfo)으로 바꿈, 읽는 필드(status·is_installed·name·version·dependencies) 동일 (#159)
+// audit:allow api-doc-coverage reason: 요청/응답 계약 불변 — 설치 판정 조회만 manifest 전용(get*ManifestInfo)으로 바꿈, 읽는 필드(status·is_installed·name·version·dependencies) 동일 (공개 #159)
 
 namespace App\Http\Controllers\Concerns;
 
@@ -136,7 +136,7 @@ trait OrchestratesCascadeInstall
      * 상태별 처리는 {@see installSelectedDependencies()} 와 같고(미설치 → 설치+활성화, 비활성 → 활성화, 활성 → 건너뜀),
      * 실패는 예외를 던지지 않고 식별자별 사유로 돌려준다 — 연동은 「없어도 동작」이므로 본체 설치를 막지 않는다.
      *
-     * 연동 대상 자신의 필수 의존(#153 D5)은 관리자 연쇄 설치와 같은 계획으로 먼저 설치·활성화한다 — 연동끼리 같은 의존은
+     * 연동 대상 자신의 필수 의존(공개 #153 D5)은 관리자 연쇄 설치와 같은 계획으로 먼저 설치·활성화한다 — 연동끼리 같은 의존은
      * 한 번만, 연동끼리의 순서도 서로의 의존 순서로 맞춘다. 계획을 세울 수 없거나 필요한 확장을 설치할 권한이 없거나 그 설치가
      * 실패하면 그 연동만 사유와 함께 건너뛴다(설치 창이 같은 판정으로 선택을 막는다 — 요청을 직접 만든 경우의 방어).
      *

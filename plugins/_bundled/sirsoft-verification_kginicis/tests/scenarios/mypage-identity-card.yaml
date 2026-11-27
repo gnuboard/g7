@@ -2,7 +2,7 @@ feature: KG이니시스 마이페이지 본인인증 카드 API
 
 description: |
   GET /api/plugins/sirsoft-verification_kginicis/me/identity/inicis — 인증한 회원에게 가린 PII 만 돌려주고,
-  DI·CI·평문은 응답에 싣지 않는다. 인증 시각(verified_at)은 재인증 시각이 우선하며 보는 사람 시간대 문자열이다(#160).
+  DI·CI·평문은 응답에 싣지 않는다. 인증 시각(verified_at)은 재인증 시각이 우선하며 보는 사람 시간대 문자열이다(공개#160).
 
 axes:
   case: [unauthenticated, no_record, masked_pii, re_verified_precedence, no_raw_leak]

@@ -1324,7 +1324,7 @@ class LanguagePackServiceTest extends TestCase
     }
 
     /**
-     * 같은 언어팩에 다른 작업이 진행 중이면 업데이트는 업데이트 확인(네트워크)·Updating 기록 전에 409 로 거절한다(#161 S4).
+     * 같은 언어팩에 다른 작업이 진행 중이면 업데이트는 업데이트 확인(네트워크)·Updating 기록 전에 409 로 거절한다(공개 #161 S4).
      *
      * @scenario case=perform_update_locked
      *

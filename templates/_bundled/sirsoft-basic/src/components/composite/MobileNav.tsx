@@ -153,7 +153,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
       >
         {/* 헤더 */}
         <Div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-          {/* 이름이 길면 이 칸이 줄어들고 이름은 한 줄 … — 닫기 단추는 제자리를 지킨다(#143). */}
+          {/* 이름이 길면 이 칸이 줄어들고 이름은 한 줄 … — 닫기 단추는 제자리를 지킨다(공개 #143). */}
           <LinkButton href={'/'} onNavigate={() => { onClose(); navigate('/'); }} className="justify-start flex items-center gap-2 min-w-0 flex-1 cursor-pointer">
             {logo ? (
               <Img src={logo} alt={siteName} className="h-8 max-w-full object-contain object-left" thumbPreset="md" loading="eager" />

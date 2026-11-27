@@ -301,7 +301,7 @@ class HookListenerRegistrarTest extends TestCase
     }
 
     /**
-     * 큐 옵션을 선언하지 않은 리스너의 잡은 종전 기본값 그대로다 (#139).
+     * 큐 옵션을 선언하지 않은 리스너의 잡은 종전 기본값 그대로다 (공개 #139).
      *
      * @scenario declaration=none
      *
@@ -331,7 +331,7 @@ class HookListenerRegistrarTest extends TestCase
     }
 
     /**
-     * 선언한 10개 옵션이 모두 잡에 적용된다 (#139).
+     * 선언한 10개 옵션이 모두 잡에 적용된다 (공개 #139).
      *
      * @scenario declaration=all_keys
      *
@@ -363,7 +363,7 @@ class HookListenerRegistrarTest extends TestCase
     }
 
     /**
-     * 등록하지 않은 큐를 가리키면 그 연결의 기본 큐로 보내고 경고한다 (#139).
+     * 등록하지 않은 큐를 가리키면 그 연결의 기본 큐로 보내고 경고한다 (공개 #139).
      *
      * @scenario placement=queue_unregistered
      *
@@ -385,7 +385,7 @@ class HookListenerRegistrarTest extends TestCase
     }
 
     /**
-     * 등록하지 않은 연결을 가리키면 기본 연결로 보내고 경고한다 (#139).
+     * 등록하지 않은 연결을 가리키면 기본 연결로 보내고 경고한다 (공개 #139).
      *
      * @scenario placement=connection_unregistered
      *
@@ -407,7 +407,7 @@ class HookListenerRegistrarTest extends TestCase
     }
 
     /**
-     * 등록된 연결·큐는 그대로 쓴다 (#139).
+     * 등록된 연결·큐는 그대로 쓴다 (공개 #139).
      *
      * @scenario placement=registered
      *
@@ -427,7 +427,7 @@ class HookListenerRegistrarTest extends TestCase
     }
 
     /**
-     * timeout 이 연결의 retry_after 이상이면 retry_after − 10 으로 줄이고 횟수를 센다 (#139).
+     * timeout 이 연결의 retry_after 이상이면 retry_after − 10 으로 줄이고 횟수를 센다 (공개 #139).
      *
      * @scenario timeout=at_retry_after
      *
@@ -452,7 +452,7 @@ class HookListenerRegistrarTest extends TestCase
     }
 
     /**
-     * sync 구독에 큐 옵션을 적으면 경고하고 종전처럼 바로 실행한다 (#139).
+     * sync 구독에 큐 옵션을 적으면 경고하고 종전처럼 바로 실행한다 (공개 #139).
      *
      * @scenario declaration=with_sync
      *
@@ -475,7 +475,7 @@ class HookListenerRegistrarTest extends TestCase
     }
 
     /**
-     * Filter 구독에 큐 옵션을 적으면 경고하고 필터로 동작한다 (#139).
+     * Filter 구독에 큐 옵션을 적으면 경고하고 필터로 동작한다 (공개 #139).
      *
      * @scenario declaration=with_filter
      *
@@ -497,7 +497,7 @@ class HookListenerRegistrarTest extends TestCase
     }
 
     /**
-     * 동적 구독은 마지막 인자로 큐 옵션을 받는다 — 기존 호출은 그대로 동작한다 (#139).
+     * 동적 구독은 마지막 인자로 큐 옵션을 받는다 — 기존 호출은 그대로 동작한다 (공개 #139).
      *
      * @scenario declaration=dynamic
      *
@@ -520,7 +520,7 @@ class HookListenerRegistrarTest extends TestCase
     }
 
     /**
-     * retry_until 은 디스패치 시점 기준으로 계산된다 (#139).
+     * retry_until 은 디스패치 시점 기준으로 계산된다 (공개 #139).
      *
      * @scenario declaration=retry_until
      *
@@ -543,7 +543,7 @@ class HookListenerRegistrarTest extends TestCase
     }
 
     /**
-     * 같은 폴백 경고는 키마다 한 번만 남는다 (#139).
+     * 같은 폴백 경고는 키마다 한 번만 남는다 (공개 #139).
      *
      * @scenario placement=queue_unregistered
      *
@@ -586,7 +586,7 @@ class HookListenerRegistrarTest extends TestCase
 }
 
 /**
- * 10개 큐 옵션을 모두 선언한 스텁 리스너 (#139)
+ * 10개 큐 옵션을 모두 선언한 스텁 리스너 (공개 #139)
  */
 class StubQueueOptionsListener implements HookListenerInterface
 {
@@ -626,7 +626,7 @@ class StubQueueOptionsListener implements HookListenerInterface
 }
 
 /**
- * sync 와 큐 옵션을 함께 선언한 스텁 리스너 (#139)
+ * sync 와 큐 옵션을 함께 선언한 스텁 리스너 (공개 #139)
  */
 class StubSyncQueueOptionsListener implements HookListenerInterface
 {
@@ -665,7 +665,7 @@ class StubSyncQueueOptionsListener implements HookListenerInterface
 }
 
 /**
- * filter 와 큐 옵션을 함께 선언한 스텁 리스너 (#139)
+ * filter 와 큐 옵션을 함께 선언한 스텁 리스너 (공개 #139)
  */
 class StubFilterQueueOptionsListener implements HookListenerInterface
 {
@@ -702,7 +702,7 @@ class StubFilterQueueOptionsListener implements HookListenerInterface
 }
 
 /**
- * 동적 구독용 스텁 리스너 (#139)
+ * 동적 구독용 스텁 리스너 (공개 #139)
  */
 class StubDynamicListener implements HookListenerInterface
 {

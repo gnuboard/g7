@@ -427,7 +427,7 @@ class InstallerTaskFlowContractTest extends TestCase
     {
         $source = $this->strippedSource('public/install/includes/task-runner.php');
 
-        // 19차 G#10 — 본문은 중괄호로 자르고, 대조는 리터럴이 아니라 정규식으로 한다.
+        // 본문은 중괄호로 자르고, 대조는 리터럴이 아니라 정규식으로 한다.
         //
         // 종전에는 고정 창 3,000자 + **정확 문자열** 부재였다. 따옴표만 바꾸거나
         // (`$_SESSION["installer_current_step"]`) 값을 변수로 빼면(`= $step;`) 그대로 초록이다.

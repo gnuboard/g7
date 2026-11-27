@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 설치 작업 목록 조립 — 해석기 설치 순서(종류 횡단 의존 반영)를 그대로 작업 순서로 쓰는지 잠근다(#153).
+ * 설치 작업 목록 조립 — 해석기 설치 순서(종류 횡단 의존 반영)를 그대로 작업 순서로 쓰는지 잠근다(공개 #153).
  *
  * 종전 runInstallationTasks() 는 종류별 고정 foreach(관리자 템플릿 → 모듈 → 플러그인 → 사용자 템플릿)로 작업을 만들어
  * 모듈이 플러그인에 의존하면 사전 검증을 통과한 뒤 모듈 설치에서 멈췄다.
@@ -225,7 +225,7 @@ class InstallerTaskListOrderTest extends TestCase
     {
         $root = dirname(__DIR__, 3);
         $view = $this->sourceWithoutComments($root.'/public/install/views/4-extension-selection.php');
-        // 선택 상태는 비실행 JSON 데이터 블록으로 넘기고 단계 스크립트가 같은 전역에 옮긴다(#158 strict CSP)
+        // 선택 상태는 비실행 JSON 데이터 블록으로 넘기고 단계 스크립트가 같은 전역에 옮긴다(공개 #158 strict CSP)
         $this->assertStringContainsString("'selected_extensions' => (object) (\$state['selected_extensions'] ?? []),", $view);
         $stepScript = $this->sourceWithoutComments($root.'/public/install/assets/js/step-4-extension-selection.js');
         $this->assertStringContainsString('window.INSTALLER_SELECTED_EXTENSIONS = data.selected_extensions || {};', $stepScript);

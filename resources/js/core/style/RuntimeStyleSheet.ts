@@ -1,6 +1,6 @@
 // audit:allow no-inline-style-in-html-output reason: 구형 브라우저·jsdom 폴백 한 곳(adoptedStyleSheets 미지원 환경)만 <style> 요소를 만든다
 /**
- * 런타임 CSS 규칙 헬퍼 — `<style>` 요소 없이 동적 규칙을 문서에 붙인다 (#163).
+ * 런타임 CSS 규칙 헬퍼 — `<style>` 요소 없이 동적 규칙을 문서에 붙인다 (공개 #163).
  *
  * 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`, 또는 `style-src-elem 'self'`)에서는
  * 스크립트가 만든 `<style>` 요소가 적용되지 않는다. 생성형 스타일시트(`new CSSStyleSheet()` +

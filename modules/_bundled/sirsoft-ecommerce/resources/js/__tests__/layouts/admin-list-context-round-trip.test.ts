@@ -1,6 +1,6 @@
 /**
  * @file admin-list-context-round-trip.test.ts
- * @description 관리자 이커머스 목록 컨텍스트 왕복 시 URL 목록 상태 보존 회귀 (#75)
+ * @description 관리자 이커머스 목록 컨텍스트 왕복 시 URL 목록 상태 보존 회귀 (공개 #75)
  *
  * 결함: 주문/상품/쿠폰/배송정책/리뷰/마일리지 목록에서 상세·폼으로 들어갔다 돌아오면
  *   navigate 가 `mergeQuery` 없이 실행되어 page 와 필터 20여 종이 URL 에서 사라졌다.

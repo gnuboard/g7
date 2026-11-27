@@ -730,7 +730,7 @@ describe('G7CoreGlobals - locale API', () => {
 
   // @scenario surface=ui
   // @effects locale_api_reads_supported_and_changes_locale
-  it('locale.site()가 사이트 기본 언어를, locale.pick()이 대체 순서대로 값을 고른다 (engine-v1.81.0, #148)', () => {
+  it('locale.site()가 사이트 기본 언어를, locale.pick()이 대체 순서대로 값을 고른다 (engine-v1.81.0, 공개 #148)', () => {
     mockTemplateApp.getLocale = vi.fn(() => 'fil');
     mockTemplateApp.globalState = { appConfig: { siteLocale: 'ja' } };
 

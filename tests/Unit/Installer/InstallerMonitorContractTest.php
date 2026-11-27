@@ -56,7 +56,7 @@ class InstallerMonitorContractTest extends TestCase
      * 실 소스가 준수 상태라 위 단언들은 늘 통과한다 — 원문 대조로 되돌려도 red 가 없다.
      * 「주석으로 감싼 배선」을 합성 입력으로 만들어 구분되는지 본다.
      *
-     * 19차 G#9 — **이 메서드가 잠그는 것은 인스톨러 코드가 아니라 스트리퍼**다.
+     * **이 메서드가 잠그는 것은 인스톨러 코드가 아니라 스트리퍼**다.
      * `public/install/**` 를 한 줄도 참조하지 않으므로 그쪽을 어떻게 바꿔도 red 가 되지 않는다.
      * 그 축의 소유자는 `tests/Unit/Concerns/ScansPhpSourceFunctionsTest.php` 이고, 여기 남은
      * 것은 **이 클래스의 다른 단언들이 기대는 전제**를 같은 파일 안에서 눈에 띄게 두기 위한
@@ -139,7 +139,7 @@ class InstallerMonitorContractTest extends TestCase
     }
 
     /**
-     * 상태 스냅샷을 받는 모니터는 전부 `onState` 를 발화한다 (14차 #10).
+     * 상태 스냅샷을 받는 모니터는 전부 `onState` 를 발화한다 (14차 10).
      *
      * `onState` 는 세 모드 중 둘에만 있었다. 지금의 소비자는 이벤트로도 같은 일을 하므로
      * 무해하지만, 폴링 쪽 주석이 스스로 적어 둔 위험 — 「계약이 한쪽에만 있으면 소비자가
@@ -345,7 +345,7 @@ class InstallerMonitorContractTest extends TestCase
                 .'마지막 하나만 빠져 있어도 그 창의 [중단] 뒤에 모니터가 살아 남는다 (10차)'
         );
 
-        // 19차 G#8 — 이 docblock 이 선언한 계약은 **순서**다(「재진입 가드를 내리기 전에」).
+        // 이 docblock 이 선언한 계약은 **순서**다(「재진입 가드를 내리기 전에」).
         // 그런데 종전 단언은 함수 본문 `$body` 가 아니라 **파일 전체 `$source`** 를 봤다 —
         // 순서도, 위치도 보지 않는다. `continueInstallation()` 안의 두 호출을 지우고 아무 데도
         // 불리지 않는 헬퍼에 옮겨 적어도 초록이었다. 바로 위 형제 단언은 `$body` 를 쓰므로
@@ -380,7 +380,7 @@ class InstallerMonitorContractTest extends TestCase
     {
         $source = $this->installerSource();
 
-        // 19차 G#7 — 함수 본문은 **중괄호로** 자른다.
+        // 함수 본문은 **중괄호로** 자른다.
         //
         // 종전에는 `substr($source, $start, 3000)` 이었다. 부정 단언을 임의 고정 창으로
         // 좁히면 두 가지로 무력화된다 — ① 함수 앞에 코드·주석을 3,000자 넘게 넣어 문제 줄을

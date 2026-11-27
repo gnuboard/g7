@@ -7,11 +7,11 @@
 
 ## 목차
 
-1. [$localized() 헬퍼 함수 (engine-v1.4.0+)](#localized-헬퍼-함수-v140)
+1. [$localized() 헬퍼 함수 (engine-v1.4.0+)](#localized-헬퍼-함수-engine-v140)
 2. [다국어 처리 기본](#다국어-처리-기본)
-3. [지연 번역 ($t:defer:)](#지연-번역-tdefer---반복-컨텍스트용-v130)
+3. [지연 번역 ($t:defer:)](#지연-번역-tdefer---반복-컨텍스트용-engine-v130)
 4. [모듈/플러그인 다국어 병합](#모듈플러그인-다국어-병합)
-5. [다국어 파일 분할 ($partial)](#다국어-파일-분할-partial-v150)
+5. [다국어 파일 분할 ($partial)](#다국어-파일-분할-partial-engine-v150)
 6. [컴포넌트 다국어 처리](#컴포넌트-다국어-처리)
 7. [JavaScript에서 G7Core.t() 사용](#javascript에서-g7coret-사용)
 8. [정본 화면을 복제할 때의 라벨 키](#정본-화면을-복제할-때의-라벨-키)
@@ -1067,7 +1067,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
 컴포넌트 코드에서 프로그래밍 방식으로 번역 함수를 사용할 수 있습니다.
 
-> 전체 API 레퍼런스: [g7core-api.md](g7core-api.md#다국어-g7corelocale-g7coret)
+> 전체 API 레퍼런스: [g7core-api.md](g7core-api-advanced.md#다국어-g7corelocale-g7coret)
 
 ### 컴포넌트에서 t 함수 선언
 

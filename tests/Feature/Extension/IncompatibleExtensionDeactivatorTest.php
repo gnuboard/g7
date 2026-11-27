@@ -21,7 +21,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * 부팅 시 코어 버전 비호환 확장 자동 비활성화 서비스 테스트 (#145 W3·W4·W6).
+ * 부팅 시 코어 버전 비호환 확장 자동 비활성화 서비스 테스트 (공개 #145 W3·W4·W6).
  *
  * - 안전망(W3): 현재 코어 버전이 디스크 코드 버전보다 낮으면(옛 부모가 구운 config 캐시, 옛 env 를 문 상주 프로세스)
  *   아무것도 끄지 않고 config 캐시를 비운다. 다음 요청이 `.env` 로 부팅해 올바른 버전으로 다시 판정한다.
@@ -325,7 +325,7 @@ class IncompatibleExtensionDeactivatorTest extends TestCase
 
     /**
      * 의존 확장 때문에 막힌 후보는 뒤 단계에서 의존 확장이 꺼지면 같은 부팅의 재시도로 꺼지고, 같은 알림 묶음·판정 캐시에 들어간다.
-     * 끝내 막힌 후보는 종전과 같이 판정 캐시를 남기지 않는다 (#153).
+     * 끝내 막힌 후보는 종전과 같이 판정 캐시를 남기지 않는다 (공개 #153).
      *
      * @scenario case=retry_after_dependents
      *

@@ -217,7 +217,7 @@ export function SeoOgForm({
     [twVals, onChangeTwitter, onPatchTwitter],
   );
 
-  /** 잠김(🔒) 표시 — 칸 아래 별도 줄(편집 불가 안내라 칸 안에 못 녹임). 출처 배지는 #4 로 칸 안 이관. */
+  /** 잠김(🔒) 표시 — 칸 아래 별도 줄(편집 불가 안내라 칸 안에 못 녹임). 출처 배지는 4 로 칸 안 이관. */
   const renderMeta = (prefix: string, key: string, row: SeoPreviewRow | undefined): React.ReactNode => {
     if (!row || !defaultsAvailable) return null;
     if (!row.lockedByFilter) return null;
@@ -228,7 +228,7 @@ export function SeoOgForm({
     );
   };
 
-  /** 출처 칩 라벨(칸 안 — #4). 이 화면이 직접 덮지 않았을 때(코어/모듈/상속) + 출처 있을 때만. 잠김/직접입력 시 미표시. */
+  /** 출처 칩 라벨(칸 안 — 4). 이 화면이 직접 덮지 않았을 때(코어/모듈/상속) + 출처 있을 때만. 잠김/직접입력 시 미표시. */
   const sourceChipLabel = (row: SeoPreviewRow | undefined): React.ReactNode => {
     if (!row || !defaultsAvailable || row.lockedByFilter || row.overriddenByLayout) return undefined;
     const labelKey = sourceLabelKey(row.source);

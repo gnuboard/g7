@@ -1,6 +1,6 @@
 /**
  * @file shop-guest-checkout-entry.test.tsx
- * @description 비회원 주문 진입 분기 구조 검증 (Issue #55)
+ * @description 비회원 주문 진입 분기 구조 검증
  *
  * 상품상세(_purchase_card) / 장바구니(_cart_summary) 의 "바로구매"·"주문하기" 는
  * 임시주문(cart → checkout) 생성 후 다음으로 분기한다:
@@ -68,7 +68,7 @@ function findCheckoutConditions(layout: any): any {
 describe.each([
   ['상품상세 _purchase_card', purchaseCardJson],
   ['장바구니 _cart_summary', cartSummaryJson],
-])('비회원 주문 진입 분기 - %s (Issue #55)', (_label, layout) => {
+])('비회원 주문 진입 분기 - %s', (_label, layout) => {
   // @scenario actor=logged_in_member, entry_point=product_detail_buy_now
   // @effects currentUser_uuid_login_check_not_auth_isLoggedIn
   // @scenario actor=logged_in_member, entry_point=cart_order_button
@@ -103,7 +103,7 @@ describe.each([
   });
 });
 
-describe('로그인 화면 - 비회원 주문하기 버튼 (Issue #55)', () => {
+describe('로그인 화면 - 비회원 주문하기 버튼', () => {
   /**
    * 비회원 주문 버튼은 Form 바깥(auth/login.json) 에 두어야 폼 submit 으로 가로채지지 않는다.
    * _login_form.json (Form) 안에 두면 type=button 명시에도 불구하고 클릭이 동작하지 않는 회귀가 있었다.
@@ -175,7 +175,7 @@ describe('로그인 화면 - 비회원 주문하기 버튼 (Issue #55)', () => {
   });
 });
 
-describe('결제하기 엔드포인트 분기 - _checkout_summary (Issue #55)', () => {
+describe('결제하기 엔드포인트 분기 - _checkout_summary', () => {
   /** 결제하기 버튼 안의 orders apiCall 노드를 찾는다 */
   const ordersApiCall = findNode(
     checkoutSummaryJson,
@@ -230,7 +230,7 @@ describe('결제하기 엔드포인트 분기 - _checkout_summary (Issue #55)', 
   });
 });
 
-describe('비회원 조회 비밀번호 입력 섹션 - _checkout_orderer (Issue #55)', () => {
+describe('비회원 조회 비밀번호 입력 섹션 - _checkout_orderer', () => {
   /**
    * 비회원 조회 비밀번호 섹션 컨테이너.
    *
@@ -312,7 +312,7 @@ describe('비회원 조회 비밀번호 입력 섹션 - _checkout_orderer (Issue
   });
 });
 
-describe('주문자 이메일 필수 표시 - _checkout_orderer (Issue #55)', () => {
+describe('주문자 이메일 필수 표시 - _checkout_orderer', () => {
   /** 이메일 입력란 */
   const emailInput = findNode(
     checkoutOrdererJson,

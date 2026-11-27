@@ -449,7 +449,7 @@ class PostSampleSeeder extends Seeder
     {
         $this->command->info('  - '.__('sirsoft-board::messages.seeders.post_sample.images_creating'));
 
-        // gd 는 코어 기준 「선택」 확장이다 — 없으면 이미지 없이 진행한다(#151, ClaimSeeder·PageSampleSeeder 와 같은 가드)
+        // gd 는 코어 기준 「선택」 확장이다 — 없으면 이미지 없이 진행한다(공개 #151, ClaimSeeder·PageSampleSeeder 와 같은 가드)
         if (! $this->gdAvailable()) {
             $this->command->warn('  - '.__('sirsoft-board::messages.seeders.post_sample.images_skipped_no_gd'));
 

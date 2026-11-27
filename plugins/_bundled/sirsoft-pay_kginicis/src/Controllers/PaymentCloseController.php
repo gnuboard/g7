@@ -41,7 +41,7 @@ class PaymentCloseController extends Controller
             : self::CLOSE_JS_URL_LIVE;
 
         // 주문 화면에 닫힘을 알리는 동작은 정적 브리지 파일이 한다 — 인라인 <script> 는 strict CSP 에서
-        // 실행되지 않아 주문 화면이 '결제 중' 에 머문다(#158). 알림이 이니시스 닫기 스크립트보다 먼저다.
+        // 실행되지 않아 주문 화면이 '결제 중' 에 머문다(공개 #158). 알림이 이니시스 닫기 스크립트보다 먼저다.
         $bridgeScript = BridgeScript::tag('payment-close.js');
 
         $html = <<<HTML

@@ -33,7 +33,7 @@ class DriverRegistryServiceUsabilityTest extends TestCase
     /**
      * s3 드라이버 가용성이 Flysystem 어댑터 존재와 일치하는지 테스트합니다.
      *
-     * 어댑터는 composer require 로 코어에 포함되므로(#99 A1) 항상 true 여야 합니다.
+     * 어댑터는 composer require 로 코어에 포함되므로(공개 #99 A1) 항상 true 여야 합니다.
      *
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=local_default
      *
@@ -48,7 +48,7 @@ class DriverRegistryServiceUsabilityTest extends TestCase
         $this->assertSame($expected, $this->service->isDriverUsable('storage', 's3'));
         $this->assertTrue(
             $expected,
-            'league/flysystem-aws-s3-v3 는 코어 필수 의존성 — 부재 시 S3 선택이 즉사한다 (#99 A1)'
+            'league/flysystem-aws-s3-v3 는 코어 필수 의존성 — 부재 시 S3 선택이 즉사한다 (공개 #99 A1)'
         );
         $this->assertNull($this->service->usabilityFailureReason('storage', 's3'));
     }
@@ -56,7 +56,7 @@ class DriverRegistryServiceUsabilityTest extends TestCase
     /**
      * redis 드라이버 가용성이 phpredis 확장 또는 predis 존재와 일치하는지 테스트합니다.
      *
-     * predis 는 composer require 로 코어에 포함되므로(#99 A2) 항상 true 여야 합니다.
+     * predis 는 composer require 로 코어에 포함되므로(공개 #99 A2) 항상 true 여야 합니다.
      *
      * @scenario surface=driver_catalog
      *
@@ -71,7 +71,7 @@ class DriverRegistryServiceUsabilityTest extends TestCase
         $this->assertSame($expected, $this->service->isDriverUsable('cache', 'redis'));
         $this->assertTrue(
             $expected,
-            'predis/predis 는 코어 필수 의존성 — 확장 없는 서버에서 redis 선택 시 전면 다운 방어 (#99 A2)'
+            'predis/predis 는 코어 필수 의존성 — 확장 없는 서버에서 redis 선택 시 전면 다운 방어 (공개 #99 A2)'
         );
 
         // predis 명시 설정 분기 — 판정은 설정 클라이언트 기준 (predis 는 코어 의존성이라 참)

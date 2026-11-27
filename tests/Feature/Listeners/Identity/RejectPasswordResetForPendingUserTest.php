@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * PR#3 — Mode C 에서 pending_verification 계정의 비밀번호 재설정 거부 Listener 테스트.
+ * PR 3 — Mode C 에서 pending_verification 계정의 비밀번호 재설정 거부 Listener 테스트.
  *
  * 계획서 요구: "Mode C 에서 pending 상태 계정의 비밀번호 재설정 요청이 들어오면:
  * '먼저 가입 인증을 완료하세요' 로 안내 (password_reset purpose 허용 금지)."

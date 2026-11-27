@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 
 /**
- * 큐 작업 처리 기록 목록 컬렉션 (#17)
+ * 큐 작업 처리 기록 목록 컬렉션
  */
 class QueueJobLogCollection extends BaseApiCollection
 {

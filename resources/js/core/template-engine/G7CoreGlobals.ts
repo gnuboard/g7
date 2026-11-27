@@ -1304,7 +1304,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
    * 셀 렌더 래퍼가 쓸 렌더 환경을 고른다 — `renderEnv` 우선, 없으면 `componentContext.renderEnvRef.current`.
    *
    * 레이아웃 편집기 미리보기에서는 이 값이 미리보기 폭·콘텐츠 언어·격리 dispatcher·편집 대상 템플릿
-   * 레지스트리·편집 모드를 담는다. 편집기 밖에서는 루트 렌더러의 값(=호스트 값)이다(#141).
+   * 레지스트리·편집 모드를 담는다. 편집기 밖에서는 루트 렌더러의 값(=호스트 값)이다(공개 #141).
    *
    * @param renderEnv 호출자가 명시한 렌더 환경
    * @param componentContext 호출자가 넘긴 부모 컴포넌트 컨텍스트
@@ -1348,7 +1348,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
   // 전역 상태(_global, _local, _computed)도 컨텍스트에 자동 병합하여 cellChildren에서 접근 가능
   //
   // 값 우선순위: 명시 options > 렌더 환경(options.renderEnv 또는 options.componentContext.renderEnvRef.current)
-  // > 호스트 state. 렌더 환경에 레지스트리가 있으면 컴포넌트 맵도 그것을 우선한다. @since engine-v1.75.2 (#141)
+  // > 호스트 state. 렌더 환경에 레지스트리가 있으면 컴포넌트 맵도 그것을 우선한다. @since engine-v1.75.2 (공개 #141)
   G7Core.renderItemChildren = (
     children: any[],
     itemContext: Record<string, any>,
@@ -1452,7 +1452,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
    * @param itemContext 항목별 컨텍스트 (예: { item: option, index: 0, isSelected: true })
    * @param keyPrefix React key prefix
    * @param options 선택. 렌더 환경과 명시 값 — 우선순위는 명시 값 > `renderEnv` >
-   *   `componentContext.renderEnvRef.current` > 호스트 값 (@since engine-v1.75.2, #141)
+   *   `componentContext.renderEnvRef.current` > 호스트 값 (@since engine-v1.75.2, 공개 #141)
    * @returns React 요소 배열
    *
    * @example
@@ -1544,7 +1544,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
    * @param config.componentMap 컴포넌트 맵 (선택, 없으면 자동 조회)
    * @param config.keyPrefix React key prefix
    * @param config.renderEnv 렌더 환경 (선택). 없으면 `componentContext.renderEnvRef.current` 를 쓴다.
-   *   폭·번역·엔진·dispatcher·레지스트리·편집 모드가 호스트 값보다 우선한다 (@since engine-v1.75.2, #141)
+   *   폭·번역·엔진·dispatcher·레지스트리·편집 모드가 호스트 값보다 우선한다 (@since engine-v1.75.2, 공개 #141)
    * @param config.responsiveWidth responsive 분기 폭 명시값 (선택, @since engine-v1.75.2)
    * @returns React 요소 배열
    *
@@ -1591,7 +1591,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       return null;
     }
 
-    // 렌더 환경 (미리보기 값) — 명시 renderEnv > componentContext.renderEnvRef.current > 호스트 (#141)
+    // 렌더 환경 (미리보기 값) — 명시 renderEnv > componentContext.renderEnvRef.current > 호스트 (공개 #141)
     const env = pickRenderEnv(config.renderEnv, componentContext);
 
     // 컴포넌트 맵 조회 (없으면 자동)
@@ -3404,7 +3404,7 @@ function initStyleAPI(G7Core: any): void {
 }
 
 /**
- * 본문 서식 지연 장치 초기화 — `G7Core.inlineStyle` (engine-v1.91.0, #163)
+ * 본문 서식 지연 장치 초기화 — `G7Core.inlineStyle` (engine-v1.91.0, 공개 #163)
  *
  * 엄격한 스타일 정책에서는 HTML 문자열의 `style` 속성이 적용되지 않는다(문자열 파싱만으로 위반 보고).
  * 본문 HTML 을 꽂는 컴포넌트는 정화할 때 `style` 을 `data-g7-style` 로 옮기고, DOM 에 붙인 뒤 `apply(root)` 로

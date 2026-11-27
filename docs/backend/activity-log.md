@@ -694,8 +694,8 @@ class Module extends AbstractModule
 }
 ```
 
-AbstractModule이 `boot()` 시점에 `HookManager::registerListener()` 를 자동 호출합니다.
-별도의 `HookManager::registerListener()` 직접 호출은 불필요합니다.
+코어가 활성 확장의 `getHookListeners()` 반환값을 순회해 각 리스너의 구독 목록을 자동으로 등록합니다(`HookCacheManager` 가 훅 캐시를 만들 때 수집).
+리스너를 직접 등록하는 별도 호출은 필요 없습니다.
 
 ---
 
@@ -860,7 +860,7 @@ try {
 }
 ```
 
-- 리스너는 DB 파사드를 직접 쓰지 않는 것이 원칙이지만 `DB::transaction` 은 허용된다(하네스 `listener-direct-db-facade`).
+- 리스너는 DB 파사드를 직접 쓰지 않는 것이 원칙이지만 `DB::transaction` 은 허용된다(정적 검사도 이를 허용한다).
 - `'sync' => true` 구독은 재실행 경로가 없어 대상이 아니다. 기록이 한 줄인 핸들러(루프는 변경 목록만 만드는 경우)도 대상이 아니다.
 - 확장이 코어 신버전에 의존하지 않도록 헬퍼를 두지 않고 각 리스너에 이 패턴을 직접 쓴다.
 

@@ -1426,7 +1426,7 @@ class LayoutServingTest extends TestCase
     }
 
     /**
-     * 프로덕션에서 레이아웃 응답은 공개 캐시 헤더를 유지한다 (#122 작업 D — successWithCache 환경 분기 동반 효과)
+     * 프로덕션에서 레이아웃 응답은 공개 캐시 헤더를 유지한다 (공개 #122 작업 D — successWithCache 환경 분기 동반 효과)
      *
      * @scenario environment=production
      *
@@ -1464,7 +1464,7 @@ class LayoutServingTest extends TestCase
     }
 
     /**
-     * 개발 환경에서 레이아웃 응답은 no-cache (dev 레이아웃 반영성 — #122 작업 D 환경 분기)
+     * 개발 환경에서 레이아웃 응답은 no-cache (dev 레이아웃 반영성 — 공개 #122 작업 D 환경 분기)
      *
      * @scenario environment=dev
      *

@@ -230,7 +230,7 @@ describe('couponFormLayouts', () => {
         // @scenario section=main_layout
         // @effects coupon_form_edit_mapping_not_clobbered
         it('init_actions 가 폼 매핑(initLocal 키)을 덮어쓰지 않는다 — 매핑은 initLocal map 에서만', () => {
-            // 원래 위험(#16): init_actions 가 데이터 도착 전 _local.form 으로 form.products·form.categories·
+            // 원래 위험: init_actions 가 데이터 도착 전 _local.form 으로 form.products·form.categories·
             // issue_*_type·reissue_type 을 다시 계산해 initLocal 이 채운 값을 덮어써 수정 모드에서 카테고리·상품이 사라졌다.
             // 매핑은 coupon 데이터소스의 initLocal map 에서만 한다. init_actions 는 그 키들을 쓰지 않는 한 허용한다
             // — 이탈 확인(meta.leave_guard)용 hasChanges=false 초기화(7.1.1)가 그 예다.

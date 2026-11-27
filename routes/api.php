@@ -127,7 +127,7 @@ Route::group([], function () use ($publicDataThrottle) {
         ->middleware(['throttle:120,1,analytics_collect', 'optional.sanctum', 'allow.pending_required_fields'])
         ->name('api.public.analytics.collect');
 
-    // 코어 CSP 위반 보고 (#158) — 관리자 환경설정 > 보안의 CSP 모드가 '점검만'·'강제'일 때 정책의
+    // 코어 CSP 위반 보고 (공개 #158) — 관리자 환경설정 > 보안의 CSP 모드가 '점검만'·'강제'일 때 정책의
     // `report-uri` 가 이 경로를 가리킨다. 비콘과 같이 잘못된 본문도 204(기록만 생략), 16KB 초과 413.
     Route::post('csp-report', [CspReportController::class, 'store'])
         ->middleware(['throttle:60,1,csp_report', 'allow.pending_required_fields'])
@@ -181,7 +181,7 @@ Route::group([], function () use ($publicDataThrottle) {
 
         // 다국어 파일 서빙
         Route::dualSuffix('{identifier}/lang/{locale}', 'json', [PublicTemplateController::class, 'serveLanguage'])
-            // 언어팩 설치 규칙(BCP 47)과 같은 형식 — fil·fil-PH·zh-Hant·es-419 (#148)
+            // 언어팩 설치 규칙(BCP 47)과 같은 형식 — fil·fil-PH·zh-Hant·es-419 (공개 #148)
             ->where('locale', LocaleTag::PATTERN_BODY)
             ->middleware($publicDataThrottle)
             ->name('api.public.templates.language');
@@ -712,7 +712,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('install-from-bundled', [AdminLanguagePackController::class, 'installFromBundled'])
             ->middleware('permission:admin,core.language_packs.install')
             ->middleware('deny.stage')->name('api.admin.language-packs.install-from-bundled');
-        // 요구사항 #7: 호스트 확장 재활성화 시 cascade 비활성화됐던 언어팩 일괄 활성화
+        // 요구사항 7: 호스트 확장 재활성화 시 cascade 비활성화됐던 언어팩 일괄 활성화
         Route::post('bulk-activate', [AdminLanguagePackController::class, 'bulkActivate'])
             ->middleware('permission:admin,core.language_packs.manage')
             ->middleware('deny.stage')->name('api.admin.language-packs.bulk-activate');
@@ -805,7 +805,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('auto-deactivated', [AdminExtensionRecoveryController::class, 'autoDeactivated'])
             ->middleware('permission:admin,core.plugins.activate|core.modules.activate|core.templates.activate,false')
             ->name('api.admin.extensions.auto-deactivated');
-        // 미배치 공식 번들 안내(#146) — 조회는 네 종류 중 하나의 조회 권한이면 열리고, 컨트롤러가 권한 없는 종류를 비운다.
+        // 미배치 공식 번들 안내(공개 #146) — 조회는 네 종류 중 하나의 조회 권한이면 열리고, 컨트롤러가 권한 없는 종류를 비운다.
         Route::get('unplaced-bundled', [AdminUnplacedBundledNoticeController::class, 'index'])
             ->middleware('permission:admin,core.modules.read|core.plugins.read|core.templates.read|core.language_packs.read,false')
             ->name('api.admin.extensions.unplaced-bundled');
@@ -911,7 +911,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('/', [AdminSettingsController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.index');
         Route::post('/', [AdminSettingsController::class, 'store'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.store');
         Route::get('system-info', [AdminSettingsController::class, 'systemInfo'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.system-info');
-        // 읽기 전용 진단 (#124). 값 편집 엔드포인트는 두지 않는다 — 편집은 .env 전용.
+        // 읽기 전용 진단 (공개 #124). 값 편집 엔드포인트는 두지 않는다 — 편집은 .env 전용.
         // `{key}` 와일드카드보다 먼저 등록해야 그 라우트에 흡수되지 않는다.
         Route::get('trusted-proxy', [AdminSettingsController::class, 'trustedProxy'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.trusted-proxy');
         // 웹서버 파일 위임 실제 전송 확인 — 저장된 위임 설정으로 작은 JSON 파일을 내보내고, 화면이 본문 수신 여부로 판정한다.
@@ -920,7 +920,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 초기 화면 정적 파일(정적 게시) 상태 + 관리자 수동 복구. 상태는 `{key}` 와일드카드보다 먼저.
         Route::get('static-cache', [AdminSettingsController::class, 'staticCacheStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.static-cache');
         Route::post('static-cache/republish', [AdminSettingsController::class, 'republishStaticCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.static-cache.republish');
-        // 큐 워커 상태(연결·큐별 대기·워커 신호, #139) — 읽기 전용. `{key}` 와일드카드보다 먼저.
+        // 큐 워커 상태(연결·큐별 대기·워커 신호, 공개 #139) — 읽기 전용. `{key}` 와일드카드보다 먼저.
         Route::get('queue-status', [AdminSettingsController::class, 'queueStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.queue-status');
         // 개인정보 보유기간·휴면 dry-run 건수 — 읽기 전용이라 settings.read 로 충분하다.
         Route::get('privacy-preview', [AdminSettingsController::class, 'privacyPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.privacy-preview');
@@ -1093,13 +1093,13 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('statistics', [AdminScheduleController::class, 'statistics'])->middleware('permission:admin,core.schedules.read')->name('api.admin.schedules.statistics');
         Route::patch('bulk-status', [AdminScheduleController::class, 'bulkUpdateStatus'])->middleware('permission:admin,core.schedules.update')->name('api.admin.schedules.bulk-status');
         Route::delete('bulk', [AdminScheduleController::class, 'bulkDelete'])->middleware('permission:admin,core.schedules.delete')->name('api.admin.schedules.bulk-delete');
-        // 소유 필터 옵션·하트비트/큐 요약 — {schedule} 와일드카드보다 위에 둔다 (#17)
+        // 소유 필터 옵션·하트비트/큐 요약 — {schedule} 와일드카드보다 위에 둔다
         Route::get('owners', [AdminScheduleController::class, 'owners'])->middleware('permission:admin,core.schedules.read')->name('api.admin.schedules.owners');
         Route::get('status', [AdminScheduleController::class, 'status'])->middleware('permission:admin,core.schedules.read')->name('api.admin.schedules.status');
-        // 실행 보안 유효 정책(읽기 전용) — 코어 config + 서버 관리자 덮어쓰기 파일 (#17)
+        // 실행 보안 유효 정책(읽기 전용) — 코어 config + 서버 관리자 덮어쓰기 파일
         Route::get('security', [AdminScheduleController::class, 'security'])->middleware('permission:admin,core.schedules.read')->name('api.admin.schedules.security');
 
-        // 큐 관리 (대기·실패·처리 기록) — {schedule} 와일드카드보다 위에 둔다 (#17)
+        // 큐 관리 (대기·실패·처리 기록) — {schedule} 와일드카드보다 위에 둔다
         Route::prefix('queue')->group(function () {
             Route::get('status', [AdminJobQueueController::class, 'status'])->middleware('permission:admin,core.queue_jobs.read')->name('api.admin.schedules.queue.status');
             Route::get('pending', [AdminJobQueueController::class, 'pending'])->middleware('permission:admin,core.queue_jobs.read')->name('api.admin.schedules.queue.pending');

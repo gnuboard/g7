@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Log;
  *
  * 병합 결과물(다국어·컴포넌트 정의·라우트·확장 번들·템플릿 dist 에셋)을
  * 캐시 버전 디렉토리(`public/build/ext/{v}/`)에 실파일로 게시해 웹서버가
- * rewrite 전에 직접 서빙하게 한다 (#122). 병합 로직은 새로 만들지 않고
+ * rewrite 전에 직접 서빙하게 한다 (공개 #122). 병합 로직은 새로 만들지 않고
  * 전부 기존 SSoT(TemplateService/ExtensionBundleService)를 호출한다.
  *
  * 원자성: `{v}.tmp/` 에 전부 쓴 뒤 디렉토리 rename → `{v}/`, manifest.json 은
@@ -1337,7 +1337,7 @@ class ExtensionStaticCacheService
      * (언어팩이 추가한 로케일 포함).
      *
      * 경로 세그먼트 화이트리스트는 언어팩 설치 규칙(BCP 47, `LocaleTag`)과 같다 — `fil`·`zh-Hant`
-     * 도 게시한다(#148). `_` 는 manifest 검증상 활성 로케일에 올 수 없어 받지 않는다.
+     * 도 게시한다(공개 #148). `_` 는 manifest 검증상 활성 로케일에 올 수 없어 받지 않는다.
      *
      * @return array<string> 로케일 목록 (패턴 검증 통과분)
      */

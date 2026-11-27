@@ -33,7 +33,7 @@ class ShellExecGuardCoverageTest extends TestCase
      * 스폰 계열 프리미티브 전수.
      *
      * 종전에는 어휘가 `shell_exec` 하나뿐이라, 같은 파일에 `exec(`·`proc_open(`·`popen(`
-     * 이 무가드로 생겨도 초록이었다. 8차 #23 이 스폰 룰의 어휘를 6종으로 넓힌 것과 같은 사각이다.
+     * 이 무가드로 생겨도 초록이었다. 8차 23 이 스폰 룰의 어휘를 6종으로 넓힌 것과 같은 사각이다.
      */
     private const SPAWN_PRIMITIVES = ['shell_exec', 'exec', 'proc_open', 'passthru', 'system', 'popen'];
 

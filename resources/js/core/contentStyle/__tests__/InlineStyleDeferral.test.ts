@@ -1,5 +1,5 @@
 /**
- * 본문 서식 지연 장치 — style 속성을 data-g7-style 로 옮겼다가 CSSOM 대입으로 입힌다 (#163, engine-v1.91.0)
+ * 본문 서식 지연 장치 — style 속성을 data-g7-style 로 옮겼다가 CSSOM 대입으로 입힌다 (공개 #163, engine-v1.91.0)
  *
  * [case:network-strict-style-csp-inline-style-blocked]
  *

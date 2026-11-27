@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * schedules 테이블을 DB 스케줄 등록부로 확장합니다 (#17, 7.2.0).
+ * schedules 테이블을 DB 스케줄 등록부로 확장합니다 (17, 7.2.0).
  *
  * - type enum 에 job, frequency enum 에 everyThirtySeconds 추가
  * - without_overlapping 을 boolean 에서 "잠금 유지 분(0=끔)" 정수로 변경 (기존 1 → 1440)

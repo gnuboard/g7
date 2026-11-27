@@ -17,7 +17,7 @@ use Monolog\LogRecord;
 use Tests\TestCase;
 
 /**
- * 활동 로그 "시스템(CLI)" 행위자 표기 (#138)
+ * 활동 로그 "시스템(CLI)" 행위자 표기 (공개 #138)
  *
  * CLI(Artisan 커맨드·스케줄러)에서 남은 로그는 properties.via = 'cli' 로 표시하고, 관리자 화면은
  * 회원이 없는 로그를 "시스템(CLI)" 로 보여 준다. 활동 로그 리스너는 기본이 큐 실행이라 실제 기록은

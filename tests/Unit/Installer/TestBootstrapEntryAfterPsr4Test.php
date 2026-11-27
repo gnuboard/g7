@@ -6,7 +6,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 테스트 부트스트랩은 `_bundled` 확장의 PSR-4 를 등록한 뒤에 진입 파일(module.php·plugin.php)을 읽는다 (#159).
+ * 테스트 부트스트랩은 `_bundled` 확장의 PSR-4 를 등록한 뒤에 진입 파일(module.php·plugin.php)을 읽는다 (공개 #159).
  *
  * 진입 클래스가 자기 PSR-4 네임스페이스의 클래스를 상속하는 확장은, PSR-4 등록 전에 진입 파일을 읽으면 부모를 못 찾아
  * 부트스트랩이 치명 오류로 죽는다(테스트 스위트 전체가 요약 줄 없이 중단). 설치 흐름과 같은 순서를 지킨다.

@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 use Symfony\Component\Process\Process;
 
 /**
- * 의존성 취약점 전수 점검 커맨드 (#126)
+ * 의존성 취약점 전수 점검 커맨드 (공개 #126)
  *
  * 이 저장소는 잠금파일이 60개 가까이 흩어져 있다 — 코어 하나와 확장 수십 개가 각자
  * `package-lock.json` / `composer.lock` 을 갖는다. 루트만 감사하면 확장 전부가 사각이

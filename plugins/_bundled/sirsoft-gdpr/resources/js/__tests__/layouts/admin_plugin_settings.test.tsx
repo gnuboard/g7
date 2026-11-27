@@ -627,7 +627,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
          */
-        it('안내 박스가 3 항목 (외부 폰트 분류 / 정책 버전 bump / 도메인 형식 FQDN 흡수) + 다크모드 가독 가능한 톤 + 좌측 색 띠 + 타이틀 강조 (검토 #8)', () => {
+        it('안내 박스가 3 항목 (외부 폰트 분류 / 정책 버전 bump / 도메인 형식 FQDN 흡수) + 다크모드 가독 가능한 톤 + 좌측 색 띠 + 타이틀 강조 (검토 8)', () => {
             const box = findById(root, 'blocked_domains_warnings_box');
             expect(box).toBeTruthy();
             const serialized = JSON.stringify(box);
@@ -742,7 +742,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
          */
-        it('카탈로그 도메인 일괄 추가 링크 미존재 — 신규 설치 시 카탈로그가 이미 기본값으로 채워져 있고, 카탈로그 갱신 빈도 낮음. 운영자가 의도적으로 제외한 도메인이 재추가되는 위험 회피 (검토 #9)', () => {
+        it('카탈로그 도메인 일괄 추가 링크 미존재 — 신규 설치 시 카탈로그가 이미 기본값으로 채워져 있고, 카탈로그 갱신 빈도 낮음. 운영자가 의도적으로 제외한 도메인이 재추가되는 위험 회피 (검토 9)', () => {
             const wrapper = findByIdPrefix(root, 'blocked_domains_taginputs');
             const serialized = JSON.stringify(wrapper);
             // 일괄 추가 링크 라벨/툴팁 키 사용 금지 (lang 키 자체 제거됨)
@@ -759,7 +759,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
          */
-        it('FQDN 형식 안내가 안내 박스 안 3번째 항목(warning_domain_format)으로 흡수되고 외부 P 노드는 제거되었다 (검토 #8 옵션 B-원안)', () => {
+        it('FQDN 형식 안내가 안내 박스 안 3번째 항목(warning_domain_format)으로 흡수되고 외부 P 노드는 제거되었다 (검토 8 옵션 B-원안)', () => {
             const sub = findById(root, 'subsection_blocked_domains');
             const serialized = JSON.stringify(sub);
             // FQDN 안내가 박스 안 단일 항목으로 흡수됨
@@ -778,7 +778,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
          */
-        it('422 검증 에러 시 카테고리 카드 외곽이 빨간 테두리로 강조 + 카드 내부에 첫 잘못된 도메인 에러 메시지 Span 노출 (검토 #10 옵션 B — 카테고리 내 어느 인덱스든 매칭)', () => {
+        it('422 검증 에러 시 카테고리 카드 외곽이 빨간 테두리로 강조 + 카드 내부에 첫 잘못된 도메인 에러 메시지 Span 노출 (검토 10 옵션 B — 카테고리 내 어느 인덱스든 매칭)', () => {
             const wrapper = findByIdPrefix(root, 'blocked_domains_taginputs');
             const serialized = JSON.stringify(wrapper);
             // 카드 외곽 동적 className — 카테고리 내 *어느 인덱스든* 에러 키가 있으면 true (some)
@@ -799,7 +799,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
          */
-        it('footer_save_button onError 토스트가 422 응답의 첫 번째 검증 에러 메시지를 노출 + fallback 일반화 메시지 유지 (검토 #10 옵션 A 기반)', () => {
+        it('footer_save_button onError 토스트가 422 응답의 첫 번째 검증 에러 메시지를 노출 + fallback 일반화 메시지 유지 (검토 10 옵션 A 기반)', () => {
             const saveBtn = findById(root, 'footer_save_button');
             const serialized = JSON.stringify(saveBtn);
             // 첫 번째 검증 에러 메시지 추출 표현식
@@ -820,7 +820,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             ['field_legal_entity_name', 'legal_entity_name'],
             ['field_data_storage_location', 'data_storage_location'],
             ['field_privacy_policy_url', 'privacy_policy_url'],
-        ])('단일 Input 필드 %s — 422 검증 에러 시 빨간 테두리 + 필드 아래 에러 메시지 (검토 #10 옵션 X — 코어 _tab_general 단순 패턴)', (fieldId, formField) => {
+        ])('단일 Input 필드 %s — 422 검증 에러 시 빨간 테두리 + 필드 아래 에러 메시지 (검토 10 옵션 X — 코어 _tab_general 단순 패턴)', (fieldId, formField) => {
             const wrapper = findById(root, fieldId);
             expect(wrapper).not.toBeNull();
             const serialized = JSON.stringify(wrapper);
@@ -1072,7 +1072,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
         });
     });
 
-    describe('necessary 안내 P 노드 제거 (검토 #7)', () => {
+    describe('necessary 안내 P 노드 제거 (검토 7)', () => {
         /**
          * 회귀 가드: 카테고리 카드 묶음 아래 별도 P 노드 (category_edit.required_locked_hint) 가
          * 섹션 desc (cookie_categories.description) 와 중복되어 제거됨.
@@ -1092,7 +1092,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
         });
     });
 
-    describe('카테고리 라벨/설명 — locale 자동 반영 (#30 옵션 C)', () => {
+    describe('카테고리 라벨/설명 — locale 자동 반영 (30 옵션 C)', () => {
         /**
          * 회귀 가드: 카테고리 라벨/설명이 `?.ko` / `?.en` 고정 키 참조가 아니라
          * `$localized()` 헬퍼로 현재 locale 을 자동 반영해야 한다.

@@ -1,5 +1,5 @@
 /**
- * 정적 우선 fetch 폴백 테스트 (#122 S3).
+ * 정적 우선 fetch 폴백 테스트 (공개 #122 S3).
  *
  * 정적 게시본 miss(404/네트워크 실패)가 legacy API 폴백으로 즉시 수렴하고,
  * 폴백이 warn 로그로 관측 가능함을 잠근다 (조용한 폴백 금지 — 자가 치유
@@ -43,7 +43,7 @@ function notFound(): Response {
     return { ok: false, status: 404 } as unknown as Response;
 }
 
-describe('fetchStaticFirst (#122)', () => {
+describe('fetchStaticFirst (공개 #122)', () => {
     let fetchMock: ReturnType<typeof vi.fn>;
     let warnSpy: ReturnType<typeof vi.spyOn>;
 
@@ -69,7 +69,7 @@ describe('fetchStaticFirst (#122)', () => {
         expect(String(fetchMock.mock.calls[0][0])).toContain('/build/ext/7/');
     });
 
-    it('정적 200 이어도 본문이 손상 JSON 이면 legacy 로 폴백한다 (#122 A1)', async () => {
+    it('정적 200 이어도 본문이 손상 JSON 이면 legacy 로 폴백한다 (공개 #122 A1)', async () => {
         // 디스크 풀/quota 로 절단된 게시본은 웹서버가 **정상 200** 으로 서빙한다.
         // `response.ok` 만 보고 돌려주면 호출부의 `.json()` 이 던지는데 그 지점에는
         // 폴백이 없어 부팅 전체가 실패한다 — 3층 폴백이 개입 못 하던 유일한 경로.
@@ -146,7 +146,7 @@ describe('fetchStaticFirst (#122)', () => {
     });
 });
 
-describe('extStaticUrl / extStaticVersion (#122)', () => {
+describe('extStaticUrl / extStaticVersion (공개 #122)', () => {
     afterEach(() => {
         delete (globalThis as any).G7Config;
     });
@@ -172,7 +172,7 @@ describe('extStaticUrl / extStaticVersion (#122)', () => {
     });
 });
 
-describe('staticToLegacy (#122 F15 — 역변환 규칙)', () => {
+describe('staticToLegacy (공개 #122 F15 — 역변환 규칙)', () => {
     it('템플릿 dist 에셋 → 종전 자산 API', () => {
         expect(staticToLegacy('/build/ext/1234/templates/sirsoft-basic/assets/css/components.css')).toBe(
             '/api/templates/assets/sirsoft-basic/css/components.css?v=1234'

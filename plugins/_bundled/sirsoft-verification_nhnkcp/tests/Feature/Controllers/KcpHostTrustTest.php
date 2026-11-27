@@ -188,7 +188,7 @@ class KcpHostTrustTest extends PluginTestCase
         $response->assertHeader('Referrer-Policy', 'no-referrer');
         $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
 
-        // 서버 값은 비실행 데이터 블록으로, 동작은 정적 브리지 파일로 나뉜다(#158 strict CSP).
+        // 서버 값은 비실행 데이터 블록으로, 동작은 정적 브리지 파일로 나뉜다(공개 #158 strict CSP).
         $html = (string) $response->getContent();
         $this->assertStringContainsString('<script type="application/json" id="bridge-data">{"siteOrigin":"https:\/\/shop.example.test",', $html);
         $this->assertStringContainsString('assets/bridge/kcp-bridge.js', $html);
@@ -216,7 +216,7 @@ class KcpHostTrustTest extends PluginTestCase
 
         $bridge = (string) file_get_contents(dirname(__DIR__, 3).'/assets/bridge/kcp-bridge.js');
         $this->assertStringContainsString('function toSafeReturnPath(', $bridge);
-        // 복귀 주소가 없으면 화면 주소 키 home(기본 '/')으로 간다 — 값은 데이터 블록의 homeUrl, 동작은 정적 브리지 파일(#158)
+        // 복귀 주소가 없으면 화면 주소 키 home(기본 '/')으로 간다 — 값은 데이터 블록의 homeUrl, 동작은 정적 브리지 파일(공개 #158)
         $this->assertStringContainsString('"homeUrl":"\/"', $html);
         $this->assertStringContainsString("var HOME_URL = data.homeUrl || '/';", $bridge);
         $this->assertStringContainsString("var dest = (stash && toSafeReturnPath(stash.return_url)) || HOME_URL;", $bridge);

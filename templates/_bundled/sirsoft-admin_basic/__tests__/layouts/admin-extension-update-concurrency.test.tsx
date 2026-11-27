@@ -4,7 +4,7 @@ import pluginUpdateModal from '../../layouts/partials/admin_plugin_list/_modal_u
 import templateUpdateModal from '../../layouts/partials/admin_template_list/_modal_update.json';
 
 /**
- * 확장 업데이트 모달 — 동시 업데이트 거절(409)과 「업데이트할 것 없음」 문구 (#138 실측 ②·④)
+ * 확장 업데이트 모달 — 동시 업데이트 거절(409)과 「업데이트할 것 없음」 문구 (공개 #138 실측 ②·④)
  *
  * ② 확인 버튼을 두 번 누르면 업데이트가 두 번 수행됐다. 서버가 같은 확장의 두 번째 요청을 409 로 거절하므로,
  *    화면은 409 를 실패(오류 상자)로 보이지 않고 안내 토스트만 띄운다. 버튼은 풀어 둔다 — CLI 가 업데이트 중일 때
@@ -114,7 +114,7 @@ describe('확장 업데이트 모달 — 동시 업데이트 409 · 업데이트
    * @scenario case=modal_409_and_message
    * @effects update_modal_shows_503_lock_unavailable_as_error
    */
-  it.each(cases)('$name: 잠금 저장소 오류 503 은 오류 갈래(빨간 상자 + 오류 토스트)로 보인다 — 코어 7.1.5, #161', ({ modal, flag, errorKey }) => {
+  it.each(cases)('$name: 잠금 저장소 오류 503 은 오류 갈래(빨간 상자 + 오류 토스트)로 보인다 — 코어 7.1.5, 공개 #161', ({ modal, flag, errorKey }) => {
     const call = findUpdateApiCall(modal);
     const onError = call!.onError as Json[];
     const error = { status: 503, message: '작업 잠금 저장소(캐시)를 쓸 수 없어 "x" 작업을 시작하지 않았습니다.', errors: { operation_lock_unavailable: true } };

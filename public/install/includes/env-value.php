@@ -60,7 +60,7 @@ if (! function_exists('serializeEnvValue')) {
         // 흘러드는 것을 막지 못한다. `\$` 는 phpdotenv 가 리터럴 `$` 로 해석하는 escape
         // sequence 라(EntryParser::ESCAPE_SEQUENCE_STATE) 값 자체는 그대로 복원된다.
         // 보간 문법은 `${` 뿐이므로 그 조합만 이스케이프한다 — 비밀번호에 흔한 단독 `$`
-        // 는 원문 그대로 남는다. (20차 #12)
+        // 는 원문 그대로 남는다. (20차 12)
         $escaped = str_replace('${', '\\${', $escaped);
 
         return '"'.$escaped.'"';

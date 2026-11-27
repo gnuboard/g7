@@ -55,7 +55,7 @@ final class LocalizedText
             return $fallback;
         }
 
-        // 지정 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+        // 지정 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (공개 #148)
         return LocalizedValue::pick($map, $locale) ?? $fallback;
     }
 }

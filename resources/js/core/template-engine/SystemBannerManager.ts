@@ -147,7 +147,7 @@ export class SystemBannerManager {
         const locale = this.detectLocale();
 
         // 배너 항목 렌더링 — 고정 모양은 코어 정적 CSS 의 `g7-system-banner` 클래스, 배너마다 다른 배경·글자색은
-        // CSSOM 대입으로 준다. HTML 문자열의 style 속성은 엄격한 스타일 정책에서 막혀 배너가 무스타일이 된다(#163).
+        // CSSOM 대입으로 준다. HTML 문자열의 style 속성은 엄격한 스타일 정책에서 막혀 배너가 무스타일이 된다(공개 #163).
         // 메시지는 종전 계약대로 HTML 문자열을 허용한다(innerHTML).
         container.replaceChildren(...sortedBanners.map(banner => {
             const item = document.createElement('div');

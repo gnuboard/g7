@@ -193,7 +193,7 @@ if (! headers_sent()) {
     <link rel="stylesheet" href="<?= e(INSTALLER_BASE_URL) ?>/assets/vendor/font-awesome/6.5.1/css/all.inlined.css">
     <link rel="stylesheet" href="<?= e(INSTALLER_BASE_URL) ?>/assets/css/installer.css?v=<?= time() ?>">
 
-    <!-- 서버 값 — 비실행 JSON 데이터 블록. 인라인 실행 코드는 두지 않는다(#158 — 웹서버가
+    <!-- 서버 값 — 비실행 JSON 데이터 블록. 인라인 실행 코드는 두지 않는다(공개 #158 — 웹서버가
          `Content-Security-Policy: script-src 'self'` 를 걸면 인라인 스크립트·on* 이 실행되지 않는다).
          installer-boot.js 가 이 값을 종전과 같은 이름의 window.INSTALLER_* 전역으로 옮기고,
          다크 모드를 즉시 적용(FOUC 방지)하며, data-action 위임 리스너를 건다. -->

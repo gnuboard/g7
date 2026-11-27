@@ -324,7 +324,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
 
         /** @effects banner_position_variants_render_as_popup_box */
         it('centered_modal 분기는 다른 팝업과 동일한 박스 형태 — 중앙 정렬만 다름', () => {
-            // 누적 검토 #12: 이전 구현은 외곽 Div 에 inset-0 + bg-black/40 (전체 화면 dim) +
+            // 누적 검토 12: 이전 구현은 외곽 Div 에 inset-0 + bg-black/40 (전체 화면 dim) +
             // 자식 Div 에 별도 bg-white 박스. 외곽 className 이 'fixed ... bg-white' 와 'bg-black/40'
             // 두 배경을 동시에 가져 Tailwind 빌드 후 뒤에 오는 bg-white 가 이김 → 화면 전체가 흰 박스.
             // 수정 후 다른 3종 팝업과 동일한 max-w-md 박스 + top-1/2 -translate-y-1/2 + inset-x-4 mx-auto
@@ -596,7 +596,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         it('카테고리 라벨·설명은 현재 로케일($locale)을 먼저 본다', () => {
             const text = serializeForSearch(panel);
 
-            // 엔진의 $localized() 가 현재 로케일($locale) → 사이트 기본 언어 → 영어 순으로 고른다(#148).
+            // 엔진의 $localized() 가 현재 로케일($locale) → 사이트 기본 언어 → 영어 순으로 고른다(공개 #148).
             // _global.locale 은 심는 곳이 없어 항상 undefined 이고, 그러면 **모든 언어에서 한국어**가 나간다.
             expect(text).toContain('$localized(category?.label)');
             expect(text).toContain('$localized(category?.description)');
@@ -641,7 +641,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         });
     });
 
-    describe('환경설정 펼침 — 카테고리 정보 영역 (#14 사용자 친화 표현)', () => {
+    describe('환경설정 펼침 — 카테고리 정보 영역 (14 사용자 친화 표현)', () => {
         const banner = findById(root, 'gdpr_cookie_banner');
         const panel = findById(banner ?? null, 'gdpr_preferences_panel');
         const text = serializeForSearch(panel);
@@ -652,7 +652,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
          * @effects banner_category_info_user_friendly
          */
         it('운영자용 info.{key}.{scope|tools|legal_basis} 키를 직접 참조하지 않는다', () => {
-            // 누적 검토 #14: 사용자(게스트) 측은 운영자 측과 동일한 info.* 키를 그대로 노출하던 회귀.
+            // 누적 검토 14: 사용자(게스트) 측은 운영자 측과 동일한 info.* 키를 그대로 노출하던 회귀.
             // 운영자 측 info 는 분류 결정에 필요한 기술/법규 상세 (자동 차단 대상, GDPR Art.6(1)(a) 등)
             // 가 포함되어 사용자 입장에서는 과도/난해.
             expect(text).not.toContain('cookie_categories.info.necessary.scope');
@@ -702,7 +702,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         });
     });
 
-    describe('카테고리 카드 — 임의값 회귀 가드 (#14 글씨 키우기)', () => {
+    describe('카테고리 카드 — 임의값 회귀 가드 (14 글씨 키우기)', () => {
         // 설계 결정: 카테고리 카드 자체의 보조 텍스트 (필수 배지, 카테고리 설명) 도 너무 작아
         // 가독성 저하. 임의값 text-[10px] 11건을 모두 표준 text-xs 로 통일.
         /** @effects banner_layout_uses_safelisted_classes */

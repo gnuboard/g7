@@ -1,6 +1,6 @@
 /**
  * @file admin-dashboard-alert-severity.test.tsx
- * @description 대시보드 시스템 알림의 심각도별 배치·색상 회귀 테스트 (#124 W10)
+ * @description 대시보드 시스템 알림의 심각도별 배치·색상 회귀 테스트 (공개 #124 W10)
  *
  * 배경:
  * - 알림 카드의 색상 분기가 `alert.subtype` 리터럴 2개(`incompatible_core`,

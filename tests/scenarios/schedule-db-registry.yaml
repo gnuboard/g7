@@ -1,6 +1,6 @@
 # audit:allow test-scenario-coverage[cross_product] reason: issue:#609 축이 서로 독립인 실행 경로 단계(등록·투입·실행·마감)라 각 테스트는 자기가 바꾸는 축만 @scenario 로 고정한다 — 전 축 곱(3×2×4×2×2×2×2×3×3)은 의미 없는 조합이 대부분이다. effects·test_files 는 그대로 검사한다.
 
-feature: DB 스케줄 등록·실행 경로 (#17)
+feature: DB 스케줄 등록·실행 경로
 
 description: |
   모든 예약 작업이 DB `schedules` 행을 거쳐 같은 실행기로 돈다.

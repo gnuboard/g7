@@ -1,7 +1,7 @@
 feature: board_display_order
 
 description: |
-  관리자가 게시판 표시 순서를 정한다(#142, D4·D6·D10·D13·D14). 정렬은 `display_order ASC, created_at ASC, id ASC`
+  관리자가 게시판 표시 순서를 정한다(공개#142, D4·D6·D10·D13·D14). 정렬은 `display_order ASC, created_at ASC, id ASC`
   라 순서를 한 번도 정하지 않은 사이트(모두 0)는 지금 메뉴 순서(오래된 순, 동점은 id)와 같다.
   순서는 사용자 메뉴·게시판 목록 화면·관리자 게시판 목록 기본 정렬·통합검색 게시판 선택칸에 적용되고,
   인기 게시판은 자체 기준(글 수)을 유지한다. 새로 만들거나 복사한 게시판은 맨 끝에 붙는다.

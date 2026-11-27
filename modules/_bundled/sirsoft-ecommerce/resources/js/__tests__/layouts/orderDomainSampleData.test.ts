@@ -48,7 +48,7 @@ function hasStub(node: unknown): boolean {
 }
 
 describe('주문 도메인 편집기 샘플 — sirsoft-ecommerce admin', () => {
-  describe('DoD #1 — 스텁 0 (소비 데이터소스)', () => {
+  describe('DoD 1 — 스텁 0 (소비 데이터소스)', () => {
     for (const id of ['order', 'orders', 'order_logs', 'extra_fee_templates']) {
       it(`${id} 하위에 "샘플" stub 이 없다`, () => {
         expect(byId[id]).toBeTruthy();
@@ -154,7 +154,7 @@ describe('주문 도메인 편집기 샘플 — sirsoft-ecommerce admin', () => 
       const countries = new Set(d.data.map((r: any) => r.address.recipient_country_code));
       expect(countries.has('KR')).toBe(true);
     });
-    it('statistics 전 경로 + pagination 채움 (DoD #4)', () => {
+    it('statistics 전 경로 + pagination 채움 (DoD 4)', () => {
       const s = d.statistics;
       for (const k of ['pending_payment', 'payment_complete', 'preparing', 'shipping', 'delivered', 'confirmed']) {
         expect(typeof s[k], `statistics.${k}`).toBe('number');

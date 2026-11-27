@@ -218,7 +218,7 @@
                                                         },
                                                         "children": [
                                                             {
-                                                                "comment": "이름 (배지 제거). 칸이 줄어들 수 있고(min-w-0) 이름·소개는 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 카드를 넘쳤다(#143).",
+                                                                "comment": "이름 (배지 제거). 칸이 줄어들 수 있고(min-w-0) 이름·소개는 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 카드를 넘쳤다(공개 #143).",
                                                                 "type": "basic",
                                                                 "name": "H2",
                                                                 "responsive": {
@@ -541,7 +541,7 @@
                                                                                         "text": "{{post.title}}"
                                                                                     },
                                                                                     {
-                                                                                        "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다",
+                                                                                        "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(공개 #149). 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다",
                                                                                         "id": "ext_board_post_row_badges_{{post.id}}",
                                                                                         "type": "extension_point",
                                                                                         "name": "board_post_row_badges",

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 /**
- * 확장이 요구하는 PHP 확장 게이트 Feature 테스트 (#151 D3·D8)
+ * 확장이 요구하는 PHP 확장 게이트 Feature 테스트 (공개 #151 D3·D8)
  *
  * composer.json `require.ext-*` 미충족은 설치·활성화를 422 로 막고, 업데이트(번들 일괄 포함)·강제 활성화·코어 업데이트
  * 중 활성화는 생명주기 경고만 남긴다. `suggest.ext-*` 는 어느 경로도 막거나 경고하지 않는다(관리자 배지로만 알린다).

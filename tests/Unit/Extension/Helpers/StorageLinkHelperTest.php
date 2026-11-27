@@ -11,7 +11,7 @@ use Tests\TestCase;
  * `StorageLinkHelper::ensurePublicStorageLink` 멱등 복구 동작 회귀 가드.
  *
  * 코어 업데이트 `--prune` 이후 `public/storage` symlink 가 부재/손상 상태로 남아 업로드
- * 파일이 404 되던 결함(#43)의 종료 시점 방어 복구를 검증한다. `app()->setBasePath()` 로
+ * 파일이 404 되던 결함(공개 #43)의 종료 시점 방어 복구를 검증한다. `app()->setBasePath()` 로
  * 격리된 fake base 를 구성하여 `public_path()`/`storage_path()` 가 임시 트리를 가리키게 한다.
  *
  * Windows: PHP `symlink()` 는 `SeCreateSymbolicLink` 권한 필요. 권한 부족 환경에서는
@@ -236,7 +236,7 @@ class StorageLinkHelperTest extends TestCase
     }
 
     /**
-     * 재생성된 링크의 소유자/그룹이 부모 public/ 디렉토리를 상속합니다 (#43 sudo 후속).
+     * 재생성된 링크의 소유자/그룹이 부모 public/ 디렉토리를 상속합니다 (공개 #43 sudo 후속).
      *
      * sudo 로 실행된 종료 시점 복구가 `symlink()` 로 링크를 만들면 링크 소유자가 root:root 로
      * 남아, 원래 앱 실행 유저 소유였던 링크의 소유권이 바뀌던 문제. 링크 생성 직후 부모
@@ -286,7 +286,7 @@ class StorageLinkHelperTest extends TestCase
         $this->assertSame(
             $targetGid,
             $linkStat['gid'],
-            '재생성된 링크의 그룹은 부모 public/ 의 그룹을 상속해야 한다 (sudo 후 root 소유 잔존 차단, #43)',
+            '재생성된 링크의 그룹은 부모 public/ 의 그룹을 상속해야 한다 (sudo 후 root 소유 잔존 차단, 공개 #43)',
         );
     }
 

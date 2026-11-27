@@ -4,7 +4,7 @@
 #   나눈다(조합을 곱하면 같은 판정을 반복할 뿐이다). 화면 축(e2e)은 S6 의 Playwright spec 이 덮는다. effects·test_files 는
 #   계속 검사한다.
 
-feature: 큐 관리 — 대기·실패·처리 기록 조회, 실패 작업 재시도·삭제, 처리 기록·보관 기간 (#17)
+feature: 큐 관리 — 대기·실패·처리 기록 조회, 실패 작업 재시도·삭제, 처리 기록·보관 기간
 
 description: |
   스케줄 관리 화면의 큐 탭이 쓰는 백엔드. `/api/admin/schedules/queue/*` 로 워커 상태 요약·대기 작업(database
@@ -86,7 +86,7 @@ effects:
   - settings_keys_have_defaults
   - retention_setting_bounds_enforced
   - retention_days_clamped_to_default
-  # 목록 정렬 기준은 목록마다 정한 열만, 정렬 순서는 asc·desc 만 받는다(#17 K-U3)
+  # 목록 정렬 기준은 목록마다 정한 열만, 정렬 순서는 asc·desc 만 받는다(K-U3)
   - list_sort_whitelist
   # 대기·실패·처리 기록 목록이 sort_by·sort_order 로 정렬되고(동점은 id), 지정이 없으면 기존 최근순이다
   - list_sort_orders_rows

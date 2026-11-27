@@ -13,7 +13,7 @@ use Tests\Concerns\SimulatesOperationLockStore;
 use Tests\TestCase;
 
 /**
- * 확장 작업 잠금 — 저장소 오류 시 거절(fail-closed), 재진입 합류, 진행 중 연장, cache:clear 보존 (#161)
+ * 확장 작업 잠금 — 저장소 오류 시 거절(fail-closed), 재진입 합류, 진행 중 연장, cache:clear 보존 (공개 #161)
  *
  * 7.1.4 까지 잠금 저장소가 오류를 내면 잠금 없이 진행해(fail-open) 같은 확장의 업데이트가 동시에 여러 번 돌았다. 이제 503 으로
  * 거절하고 원본 오류는 error 로그에만 남긴다. 같은 프로세스가 같은 대상을 다시 잡으면 합류하고, 오래 걸리는 작업은 단계마다

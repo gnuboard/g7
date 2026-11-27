@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Services\OrderOptionService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 관리자 주문옵션 구매확정(CONFIRMED) 전이 대칭성 테스트 (이슈 #61)
+ * 관리자 주문옵션 구매확정(CONFIRMED) 전이 대칭성 테스트 (이슈 공개 #61)
  *
  * 관리자 상태변경 경로(changeStatusWithQuantity / bulkChangeStatusWithQuantity)로
  * CONFIRMED 전이 시, 유저 셀프 확정(OrderService::confirmOption)과 동일하게

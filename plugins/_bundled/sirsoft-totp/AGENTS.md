@@ -118,7 +118,7 @@
 (확정에 쓴 코드를 곧바로 로그인에 재사용하지 못하게 한다) 백업 코드 10개를 만들어
 bcrypt 해시로 저장 → 평문 백업 코드를 응답에 **1회** 노출. 코드가 틀리면 422.
 
-**로그인 2단계 인증**: 코어 `AuthService::attemptLogin()` →
+**로그인 2단계 인증**: 코어 `AuthService::login()` →
 `resolveTwoFactorProviderId()` → `resolveTwoFactorProvider()` 가 login purpose 의
 프로바이더를 해석하고 `canProviderChallengeUser()` 를 통해
 `TotpIdentityProvider::canChallengeUser()`(→ `TotpCredentialRepository::hasConfirmed()`)

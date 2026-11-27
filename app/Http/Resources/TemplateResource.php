@@ -260,7 +260,7 @@ class TemplateResource extends BaseApiResource
     /**
      * 의존성 요약 정보를 반환합니다 (목록용).
      *
-     * 카드가 미충족 의존을 빨간 글자·경고 아이콘·툴팁으로 그리도록 항목마다 충족 여부와 사유·버전을 싣습니다(#152).
+     * 카드가 미충족 의존을 빨간 글자·경고 아이콘·툴팁으로 그리도록 항목마다 충족 여부와 사유·버전을 싣습니다(공개 #152).
      * 판정은 활성화·런타임 503 과 같은 원천(DependencyEnricher)입니다.
      *
      * @return array{modules: array<int, array<string, mixed>>, plugins: array<int, array<string, mixed>>} 의존성 목록

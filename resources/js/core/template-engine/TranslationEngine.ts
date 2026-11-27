@@ -371,7 +371,7 @@ export class TranslationEngine {
         extraParams.length > 0 ? extraParams.join('&') : undefined,
       );
 
-      // 정적 게시본(bake) 우선 (#122) — bustCache 재로드는 목적상 정적 캐시를
+      // 정적 게시본(bake) 우선 (공개 #122) — bustCache 재로드는 목적상 정적 캐시를
       // 우회해야 하므로 legacy 직행. miss 는 fetchStaticFirst 가 legacy 로 폴백.
       const staticUrl = ! bustCache && this.cacheVersion > 0
         ? extStaticUrl(`templates/${templateId}/lang/${locale}.json`, this.cacheVersion)

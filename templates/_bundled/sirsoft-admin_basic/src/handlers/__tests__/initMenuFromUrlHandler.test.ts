@@ -33,7 +33,7 @@ const PARENT_MENU = {
       order: 1,
       is_active: true,
       parent_id: 10,
-      // 목록 응답에는 하위 메뉴의 roles 키 자체가 없다 (#76 프루닝)
+      // 목록 응답에는 하위 메뉴의 roles 키 자체가 없다 (공개 #76 프루닝)
     },
   ],
 };

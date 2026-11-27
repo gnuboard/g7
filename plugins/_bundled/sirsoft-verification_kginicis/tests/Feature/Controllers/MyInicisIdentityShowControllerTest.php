@@ -127,7 +127,7 @@ class MyInicisIdentityShowControllerTest extends PluginTestCase
         ]);
 
         $data = $this->withHeader('X-Timezone', 'Asia/Seoul')->getJson(self::ENDPOINT)->json('data');
-        // 재인증 시각이 우선하고, 보는 사람 시간대로 표시된다(#160)
+        // 재인증 시각이 우선하고, 보는 사람 시간대로 표시된다(공개 #160)
         $this->assertSame('2026-11-04 01:00:00', $data['verified_at']);
     }
 

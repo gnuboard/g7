@@ -389,7 +389,7 @@ if (! function_exists('mergeRuntimeIntoEnv')) {
         // Read DB — runtime 에 read 키가 있을 때(use_read_db=true)만 명시 기록한다.
         // 미지정 시 DB_READ_* 를 빈 값으로 남겨 config/database.php 의 write fallback(Elvis)
         // 에 위임 → .env 에 write 값이 중복 기록되지 않고, write 변경 시 read stale 위험 제거.
-        // (이슈 #63)
+        // (이슈 공개 #63)
         $read = $runtime['db']['read'] ?? null;
         if (is_array($read)) {
             $envContent = replaceEnvLine($envContent, 'DB_READ_HOST', escapeEnvLineValue((string) ($read['host'] ?? '')));
@@ -576,7 +576,7 @@ if (! function_exists('buildInstallerRuntimeFromState')) {
         // Read 커넥션은 use_read_db 플래그가 켜진 경우에만 포함한다 (판정 SSoT).
         // 플래그가 꺼져 있으면 db_read_host 에 잔존 값이 있어도 무시 → runtime 에 read 키
         // 미생성 → 하류(mergeRuntimeIntoEnv / InstallerRuntimeServiceProvider)가 write 로
-        // 자동 동기화. (이슈 #63: use_read_db=false 인데 db_read_host 를 참조하던 회귀 차단)
+        // 자동 동기화. (이슈 공개 #63: use_read_db=false 인데 db_read_host 를 참조하던 회귀 차단)
         if (! empty($stateConfig['use_read_db'])
             && ! empty($stateConfig['db_read_host'])
             && $stateConfig['db_read_host'] !== ($stateConfig['db_write_host'] ?? null)) {

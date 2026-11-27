@@ -293,7 +293,7 @@ if (! function_exists('installer_validate_config')) {
                     ? $corePendingPath
                     : BASE_PATH.'/'.$corePendingPath;
 
-                // 운영자 임의 경로라 open_basedir 밖이 정상 시나리오 — 판정은 옳고 진단만 억제 (20차 #9 규칙)
+                // 운영자 임의 경로라 open_basedir 밖이 정상 시나리오 — 판정은 옳고 진단만 억제 (20차 9 규칙)
                 if (@file_exists($absolutePath) && ! @is_dir($absolutePath)) {
                     $errors['core_update_pending_path'] = lang('error_core_pending_not_directory');
                 }

@@ -12,7 +12,7 @@ use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
- * PR#3 — 비밀번호 찾기 플로우가 IDV 인프라를 경유하는지 확인.
+ * PR 3 — 비밀번호 찾기 플로우가 IDV 인프라를 경유하는지 확인.
  *
  * 계획서 요구:
  * - 기존 /api/auth/forgot-password 엔드포인트 시그니처는 변경 없음 (사용자 체감 동일)

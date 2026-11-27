@@ -190,7 +190,7 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
     // 고칠 그릇은 어느 경로든 비활성 문서의 요소다. 규칙 경로는 문자열을 돌려준다 — 이미 정화된 결과이므로 다시 정화하지 않고
     // (플레이어 iframe 이 지워진다) 비활성 문서(DOMParser)로 읽은 body 를 쓴다. 규칙이 없으면 DOMPurify 조각을 그 조각과 같은
     // 문서의 요소에 담는다.
-    // 규칙이 없고 서식 지연 장치만 있으면(#163) 지연 정화 문자열을 같은 방식으로 읽는다.
+    // 규칙이 없고 서식 지연 장치만 있으면(공개 #163) 지연 정화 문자열을 같은 방식으로 읽는다.
     const preSanitized = typeof policySanitized === 'string' ? policySanitized : sanitizeDeferred(actualContent, inertConfig);
     let holder: HTMLElement;
     if (typeof preSanitized === 'string') {
@@ -315,7 +315,7 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
 
   // isHtml=false: 일반 텍스트 렌더링
   if (!isHtml) {
-    // wrap-anywhere: 본문·검색 하이라이트의 공백 없는 긴 URL 이 칸을 넘지 않게 아무 데서나 줄을 바꾼다(#143).
+    // wrap-anywhere: 본문·검색 하이라이트의 공백 없는 긴 URL 이 칸을 넘지 않게 아무 데서나 줄을 바꾼다(공개 #143).
     const textClasses = `
       whitespace-pre-wrap
       wrap-anywhere

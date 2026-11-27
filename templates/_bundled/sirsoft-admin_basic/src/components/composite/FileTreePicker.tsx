@@ -75,7 +75,7 @@ const TREE_WIDTH_MAX = 480;
  * 렌더 폭으로 표시 형태를 고릅니다.
  *
  * 폭은 Provider 폭(`G7Core.useResponsive().width`)이 우선이다 — 레이아웃 편집기 미리보기는 같은
- * 문서의 div 라서 창 폭이 미리보기 기기 폭과 다르다(#141). 훅이 없을 때만 `window.innerWidth`
+ * 문서의 div 라서 창 폭이 미리보기 기기 폭과 다르다(공개 #141). 훅이 없을 때만 `window.innerWidth`
  * 로 폴백한다. `matchMedia` 를 쓰지 않는 이유는 저장소 문서(`docs/frontend/responsive-layout.md`)에
  * 적힌 실측 때문이다 — devicePixelRatio 가 정수가 아닌 환경에서 경계 1px 이 어긋나 1023/1024 에서
  * 형태가 뒤집힌다.

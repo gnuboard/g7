@@ -175,7 +175,7 @@ class InstallerStateSecretsTest extends TestCase
     }
 
     /**
-     * 이슈 #63 기존 동작 보존 — use_read_db=false 이면 read 접속 필드 잔존값 제거.
+     * 이슈 공개 #63 기존 동작 보존 — use_read_db=false 이면 read 접속 필드 잔존값 제거.
      *
      * @effects sanitize_config_for_state_drops_read_connection_fields_when_use_read_db_false
      *

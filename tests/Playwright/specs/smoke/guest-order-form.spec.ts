@@ -1,5 +1,5 @@
 /**
- * Smoke: 비회원 주문 조회 폼 진입 검증 (Issue #55 단계 5 그룹 C+D)
+ * Smoke: 비회원 주문 조회 폼 진입 검증 (단계 5 그룹 C+D)
  *
  * @scenario actor=guest, entry_point=login_screen_lookup_link
  * @effects guest_order_form_accepts_order_number_phone_password_three_fields

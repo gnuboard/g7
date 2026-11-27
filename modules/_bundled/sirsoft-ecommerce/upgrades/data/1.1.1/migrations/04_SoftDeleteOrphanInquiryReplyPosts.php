@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * 과거 문의 삭제로 홀로 남은 답변 글(고아 답변)을 소프트 삭제합니다.
  *
- * 종전 결함(#107): 문의 삭제 시 질문 글만 소프트 삭제되고 답변 글은 published 로
+ * 종전 결함(공개 #107): 문의 삭제 시 질문 글만 소프트 삭제되고 답변 글은 published 로
  * 잔존해, 직접 URL 로 비회원도 열람 가능한 고아 답변이 쌓였다. 대상은 문의 게시판의
  * `parent_id NOT NULL AND deleted_at IS NULL` 이면서 부모가 없거나(하드 삭제) 부모가
  * 삭제된 답변 글이다.

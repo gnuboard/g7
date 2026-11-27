@@ -7,7 +7,7 @@ use App\Support\TrustedProxyDiagnostic;
 use Illuminate\Console\Command;
 
 /**
- * 신뢰 프록시 설정 상태 점검 커맨드 (#124)
+ * 신뢰 프록시 설정 상태 점검 커맨드 (공개 #124)
  *
  * 프록시 뒤에서 신뢰 프록시가 설정되지 않으면 관리자 화면 자체가 뜨지 않을 수 있다. 화면으로
  * 확인할 수 없는 바로 그 상태에서 쓰는 통로가 이 커맨드다.

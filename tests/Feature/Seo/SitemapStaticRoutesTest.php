@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 사이트맵 정적 화면 — 번들 sirsoft-basic 실물 라우트·레이아웃으로 실제 SitemapGenerator 결과를 잰다 (#155)
+ * 사이트맵 정적 화면 — 번들 sirsoft-basic 실물 라우트·레이아웃으로 실제 SitemapGenerator 결과를 잰다 (공개 #155)
  *
  * 사이트맵 정적 화면은 봇 화면과 같은 기준을 쓴다 — 병합 레이아웃 `meta.seo.enabled` 가 참이고 `toggle_setting` 이
  * 켜진, 고정 경로의 공개 화면만 싣는다. 번들 `routes.json` 은 테스트 전용 템플릿 디렉터리에 복사하고(설치본
@@ -324,7 +324,7 @@ class SitemapStaticRoutesTest extends TestCase
     /**
      * 모듈 소유 화면(hello_module `*\/memos`)은 고정값이 아니라 「그 라우트 병합 레이아웃의 meta.seo.enabled」 를 따른다.
      *
-     * #154 가 이 레이아웃의 SEO 를 켜면 포함되는 것이 맞다. 어느 쪽이 먼저 들어가도 깨지지 않도록 레이아웃 값으로 단언한다.
+     * 공개 #154 가 이 레이아웃의 SEO 를 켜면 포함되는 것이 맞다. 어느 쪽이 먼저 들어가도 깨지지 않도록 레이아웃 값으로 단언한다.
      * 모듈 라우트 로더는 설치본 디렉터리(저장소 밖)를 읽으므로, 같은 모양의 라우트를 공개 확장점
      * `core.routes.filter_merged` 로 넣는다.
      *

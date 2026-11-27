@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * 알림 템플릿 수신자 칩의 역할 이름이 사이트 기본 언어로 대체되는지 테스트 (#148 D7).
+ * 알림 템플릿 수신자 칩의 역할 이름이 사이트 기본 언어로 대체되는지 테스트 (공개 #148 D7).
  *
  * 관리자 알림 템플릿 화면의 수신자 칩(`display_name(s)`)은 역할 이름에 지금 언어 값이 없으면
  * 한국어로 고정 대체했다. 이제 요청 언어 → 사이트 기본 언어 → 영어 순이고, 그래도 없으면

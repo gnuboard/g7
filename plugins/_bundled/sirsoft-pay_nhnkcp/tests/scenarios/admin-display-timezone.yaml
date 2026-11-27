@@ -1,4 +1,4 @@
-feature: NHN KCP 관리자 결제조회·에스크로 화면 시각의 시간대 (#160)
+feature: NHN KCP 관리자 결제조회·에스크로 화면 시각의 시간대 (공개#160)
 
 description: |
   결제조회 패널의 취소 시각(cancelled_at)·환불 시각(refunded_at)이 DB UTC 원문 그대로라 주문 상세의 다른 시각과

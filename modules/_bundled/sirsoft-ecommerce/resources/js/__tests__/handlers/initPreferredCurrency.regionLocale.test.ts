@@ -1,5 +1,5 @@
 /**
- * initPreferredCurrency — 지역·세 글자 화면 언어의 통화 추정 (#148)
+ * initPreferredCurrency — 지역·세 글자 화면 언어의 통화 추정 (공개 #148)
  *
  * @description
  * 백엔드 SignupCurrencyResolver 와 같은 순서로 고른다 — 통화 사용 언어의 정확일치(zh-TW → TWD)가 먼저이고,
@@ -56,7 +56,7 @@ afterEach(() => {
     vi.restoreAllMocks();
 });
 
-describe('initPreferredCurrency — 지역·세 글자 화면 언어 (#148)', () => {
+describe('initPreferredCurrency — 지역·세 글자 화면 언어 (공개 #148)', () => {
     // @scenario shape=region_tagged
     // @effects signup_currency_matches_region_then_primary
     it('지역 붙은 화면 언어(zh-TW)는 통화 사용 언어의 정확일치가 먼저다', () => {

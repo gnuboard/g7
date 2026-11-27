@@ -1,6 +1,6 @@
 /**
  * @file mypage-passwordless.test.tsx
- * @description 비밀번호 없는 회원의 마이페이지 화면 회귀 테스트 (sirsoft-basic, #40)
+ * @description 비밀번호 없는 회원의 마이페이지 화면 회귀 테스트 (sirsoft-basic,)
  *
  * 소셜 로그인 같은 외부 인증으로만 가입한 회원은 비밀번호가 없다(`has_password === false`).
  * - 비밀번호 변경 화면은 현재 비밀번호 칸 없이 「처음 설정」 안내와 새 비밀번호 칸만 보이고, 요청에 현재 비밀번호 키를 싣지 않는다.
@@ -88,7 +88,7 @@ const changePasswordLayout = {
   components: asArray<any>((changePassword as any).slots?.content),
 };
 
-describe('sirsoft-basic 비밀번호 없는 회원 마이페이지 (#40)', () => {
+describe('sirsoft-basic 비밀번호 없는 회원 마이페이지', () => {
   beforeEach(() => {
     setupRegistry();
   });

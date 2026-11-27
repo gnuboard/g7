@@ -8,7 +8,7 @@ use Plugins\Sirsoft\SocialLogin\Tests\PluginTestCase;
 /**
  * 단독 HTML 페이지(테스트 결과·데이터 삭제 상태·모의 동의 화면)가 인라인 스타일을 쓰지 않는다 — 스타일 보안 정책 호환.
  *
- * 사이트가 `style-src 'self'; style-src-attr 'none'` 을 걸면 `<style>` 요소와 `style="…"` 속성이 막힌다(코어 #163, 7.1.6).
+ * 사이트가 `style-src 'self'; style-src-attr 'none'` 을 걸면 `<style>` 요소와 `style="…"` 속성이 막힌다(코어 공개 #163, 7.1.6).
  * 종전 `HtmlPage::render()` 는 모양을 `<style>` 블록으로 실어 그 정책에서 화면이 무스타일로 떴다. 규칙은 같은 출처 정적
  * 파일(`assets/pages/html-page.css`)로 옮기고 `<head>` 에는 `<link rel="stylesheet">` 하나만 둔다.
  *

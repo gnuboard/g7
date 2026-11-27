@@ -2525,7 +2525,7 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleModuleAfterUpdate('sirsoft-ecommerce', [
             'success' => true,
             'layout_strategy' => 'keep',
-            // 관리자 창 '고급 설정'에서 고른 설치 소스 — 매니저가 실행 당시 값을 결과에 싣는다(#144 D10).
+            // 관리자 창 '고급 설정'에서 고른 설치 소스 — 매니저가 실행 당시 값을 결과에 싣는다(공개 #144 D10).
             'layout_source' => 'json',
             'layout_sync' => [
                 'strategy' => 'keep', 'applied_count' => 2, 'conflict_count' => 1, 'kept_no_base_count' => 0,

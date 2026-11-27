@@ -97,7 +97,7 @@ class NamespaceMergeRegressionTest extends TestCase
     }
 
     /**
-     * #1 회귀: MergeFrontendLanguage 가 module 팩 데이터를 target_identifier 로 wrap 한다.
+     * 1 회귀: MergeFrontendLanguage 가 module 팩 데이터를 target_identifier 로 wrap 한다.
      *
      * wrap 누락 시 활성 ja 팩의 admin 키가 root 에 평탄 병합되어 sirsoft-ecommerce.admin
      * 경로 하위가 ko 데이터만 보유하게 됨. wrap 적용 시 sirsoft-ecommerce 키 하위에
@@ -120,7 +120,7 @@ class NamespaceMergeRegressionTest extends TestCase
     }
 
     /**
-     * #2 회귀: 모듈 자체 ko/en namespace 등록을 덮어쓰지 않는다.
+     * 2 회귀: 모듈 자체 ko/en namespace 등록을 덮어쓰지 않는다.
      *
      * loadTranslationsFrom() 직접 호출 시 FileLoader hint 가 덮어써져 ko 가 raw key 로
      * 떨어지지만, addNamespaceFallbackPath 사용 시 ko/en 정상 + ja 보완 모두 동작해야 한다.

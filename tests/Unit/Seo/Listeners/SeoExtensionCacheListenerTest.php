@@ -55,7 +55,7 @@ class SeoExtensionCacheListenerTest extends TestCase
      * 정규 생명주기 훅 15개(설치·활성화·비활성화·업데이트·제거 × 3종)가 동기 실행으로 등록되어 있는지 확인합니다.
      *
      * 옛 이름(installed·activated·updated)은 deprecated 라 구독하지 않는다 — 비활성화·제거가 빠져 있어
-     * 끈 확장의 페이지가 SEO 캐시에 남았다(#138 후속).
+     * 끈 확장의 페이지가 SEO 캐시에 남았다(공개 #138 후속).
      *
      * @scenario lifecycle=subscription_contract
      *

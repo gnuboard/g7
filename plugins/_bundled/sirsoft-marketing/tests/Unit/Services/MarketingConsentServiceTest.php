@@ -287,7 +287,7 @@ class MarketingConsentServiceTest extends PluginTestCase
     /**
      * 일괄 저장 전에 동의 데이터가 `sirsoft-marketing.filter_consent_data` 필터를 거친다.
      *
-     * 선언만 있고 발화처가 없어 이 필터를 구독한 확장이 한 번도 불리지 않았다(#138 후속 — 문서에만 있는 훅은
+     * 선언만 있고 발화처가 없어 이 필터를 구독한 확장이 한 번도 불리지 않았다(공개 #138 후속 — 문서에만 있는 훅은
      * 발화를 만든다). 인자는 (동의 데이터, 회원 ID, 변경 경로)다.
      *
      * @scenario case=update_bulk

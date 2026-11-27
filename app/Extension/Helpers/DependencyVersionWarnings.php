@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Log;
  *
  * 역방향({@see forDependents()}): 의존 **대상**의 판이 내려가거나 꺼지는 경로(강제 업데이트·`install --force`·멈춘
  * 업데이트 정리·강제 비활성화)는 그 확장을 요구하던 활성 템플릿·모듈·플러그인을 다시 보지 않아, 의존자가 조용히 깨졌다
- * (템플릿이면 화면 전체 503). 작업은 막지 않고 깨지는 의존자를 안내(notice)로 알린다(#152).
+ * (템플릿이면 화면 전체 503). 작업은 막지 않고 깨지는 의존자를 안내(notice)로 알린다(공개 #152).
  */
 final class DependencyVersionWarnings
 {

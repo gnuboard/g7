@@ -2,7 +2,7 @@
  * @file multilingual-input-textarea-prop.test.ts
  * @description 다국어 입력(MultilingualInput)의 여러 줄 입력은 inputType="textarea" 로만 켠다 — 없는 prop `multiline` 금지
  *
- * 배경 (#17):
+ * 배경:
  *  MultilingualInput 은 `inputType: 'text' | 'textarea'` 로만 textarea 를 그리고 `multiline` prop 을 모른다.
  *  `multiline: true` 를 주면 조용히 한 줄 입력으로 떨어지고 `rows` 도 무시된다 — 스케줄 편집 창 설명(7.2.0 전에는
  *  textarea), 역할 설명, 쇼핑몰 카테고리 설명이 그렇게 한 줄 입력이 됐다.

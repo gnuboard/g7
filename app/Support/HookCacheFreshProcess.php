@@ -12,7 +12,7 @@ use App\Extension\Support\LifecycleWarnings;
  * 흐름 중간의 캐시 재생성이 이전 구독(예: sync 없는 큐 재시작 리스너)으로 구워질 수 있다. 번들 확장
  * 일괄 업데이트도 같은 프로세스에서 확장마다 캐시를 다시 구우므로 같은 문제를 되살린다. 새 프로세스는
  * 디스크의 새 코드로 부팅하므로 이 상태를 확정적으로 없앤다 — 코어 업데이트는 정상 종료·일괄 업데이트 뒤·
- * 핸드오프 종료에서 이 헬퍼를 부른다(#138 후속 — 설계 결정).
+ * 핸드오프 종료에서 이 헬퍼를 부른다(공개 #138 후속 — 설계 결정).
  *
  * 실패해도 업데이트를 되돌리지 않는다 — 이미 새 코드가 안착했으므로 운영자에게 수동 명령을 안내한다.
  */
@@ -33,7 +33,7 @@ class HookCacheFreshProcess
         $command = [config('process.php_binary', PHP_BINARY), base_path('artisan'), ...$arguments];
         $commandLine = implode(' ', array_map('escapeshellarg', $command)).' 2>&1';
 
-        // 업데이트 트리 안이면 APP_VERSION·업데이트 플래그를 고정해 넘긴다 (#145 F10 — 훅 캐시의 core_version 표지).
+        // 업데이트 트리 안이면 APP_VERSION·업데이트 플래그를 고정해 넘긴다 (공개 #145 F10 — 훅 캐시의 core_version 표지).
         // audit:allow web-artisan-spawn-requires-runner 이 헬퍼의 계약은 「새 코드로 부팅한 별도 프로세스」와 업데이트 자식 환경(UpdateChildEnv — APP_VERSION 고정)이다. 실행 모드 러너는 in-process 로 떨어질 수 있고 자식 환경을 고정하지 않아 둘 다 잃는다. proc_open 이 막힌 무CLI 호스팅은 위 판정에서 실패로 돌려주고 호출부가 수동 명령을 안내한다.
         $process = proc_open($commandLine, [0 => ['pipe', 'r'], 1 => ['pipe', 'w']], $pipes, base_path(), UpdateChildEnv::build());
         if (! is_resource($process)) {

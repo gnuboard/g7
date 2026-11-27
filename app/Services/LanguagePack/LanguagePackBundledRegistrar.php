@@ -135,11 +135,11 @@ class LanguagePackBundledRegistrar
     }
 
     /**
-     * 호스트 확장 비활성화 시 해당 확장에 종속된 언어팩을 cascade 비활성화합니다 (요구사항 #6).
+     * 호스트 확장 비활성화 시 해당 확장에 종속된 언어팩을 cascade 비활성화합니다 (요구사항 6).
      *
      * 꺼진 팩은 `LanguagePackService::deactivate(cascadeFromHost: true)` 가 `deactivated_reason=host_deactivated` 로
      * 표시한다. 재활성화 시 §6 모달과 CLI activate 가 그 표시로 다시 켤 후보를 찾는다. 예전에는 후보 목록을 캐시에만
-     * 두어 `cache:clear` 로 사라졌다(#145 F7).
+     * 두어 `cache:clear` 로 사라졌다(공개 #145 F7).
      *
      * @param  string  $scope  스코프 (module/plugin/template)
      * @param  string  $targetIdentifier  대상 확장 식별자
@@ -243,12 +243,12 @@ class LanguagePackBundledRegistrar
     }
 
     /**
-     * 호스트 확장 재활성화 시 모달에 표시할 pending 언어팩 목록을 반환합니다 (요구사항 #7).
+     * 호스트 확장 재활성화 시 모달에 표시할 pending 언어팩 목록을 반환합니다 (요구사항 7).
      *
      * 대상 확장의 팩 중 `status=inactive` 이고 `deactivated_reason=host_deactivated` 인 팩(호스트를 끌 때 함께 꺼진 팩)과,
      * 7.1.0 이하가 캐시에 남긴 레거시 목록 중 지금도 inactive 인 팩을 합쳐 ID 순으로 돌려준다. 레거시 목록은 읽은 뒤 지운다.
      * DB 표시는 팩을 켤 때 지워지므로, 운영자가 창을 닫으면 다음 활성화 때 다시 묻는다.
-     * 빈 배열을 반환하면 프론트엔드는 모달을 띄우지 않습니다 (요구사항 #8).
+     * 빈 배열을 반환하면 프론트엔드는 모달을 띄우지 않습니다 (요구사항 8).
      *
      * @param  string  $scope  스코프
      * @param  string  $targetIdentifier  대상 확장 식별자

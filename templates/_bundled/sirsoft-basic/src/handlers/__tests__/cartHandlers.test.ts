@@ -2,11 +2,11 @@
  * @file cartHandlers.test.ts
  * @description 장바구니 핸들러 테스트
  *
- * 테스트 케이스 (#129~#140, 12개)
- * - toggleCartItemSelection: #129~#131 (3개)
- * - toggleAllCartItems: #132~#133 (2개)
- * - recalculateCart: #134~#136 (3개)
- * - updateCartItem: #137~#140 (4개)
+ * 테스트 케이스 (129~140, 12개)
+ * - toggleCartItemSelection: 129~131 (3개)
+ * - toggleAllCartItems: 132~133 (2개)
+ * - recalculateCart: 134~136 (3개)
+ * - updateCartItem: 137~140 (4개)
  *
  * 핸들러는 ActionDispatcher의 (action, context) 시그니처를 따릅니다.
  * - action.params에서 파라미터를 읽음
@@ -63,7 +63,7 @@ describe('cartHandlers', () => {
   });
 
   describe('toggleCartItemSelectionHandler', () => {
-    // #129: 선택된 아이템 해제
+    // 129: 선택된 아이템 해제
     it('#129 선택된 아이템을 해제한다', () => {
       // Given
       mockG7Core.state.get.mockReturnValue({
@@ -90,7 +90,7 @@ describe('cartHandlers', () => {
       }));
     });
 
-    // #130: 미선택 아이템 선택
+    // 130: 미선택 아이템 선택
     it('#130 미선택 아이템을 선택한다', () => {
       // Given
       mockG7Core.state.get.mockReturnValue({
@@ -118,7 +118,7 @@ describe('cartHandlers', () => {
     });
 
     /**
-     * #131: 선택 개수는 selectedItems 파생 — 별도 카운터를 기록하지 않는다 (공개 이슈 #92).
+     * 131: 선택 개수는 selectedItems 파생 — 별도 카운터를 기록하지 않는다 (공개 이슈 92).
      * 화면 카운터가 파생해 쓰는 SSoT 를 핸들러가 실제로 갱신하는지 고정한다.
      *
      * @scenario mount_path=initial_load, selection=partial
@@ -148,14 +148,14 @@ describe('cartHandlers', () => {
         selectedItems: [2],
         allSelected: false,
       });
-      // 파생 가능한 값을 별도 키로 중복 저장하면 최초 마운트 구간에서 비어 보인다 (#92)
+      // 파생 가능한 값을 별도 키로 중복 저장하면 최초 마운트 구간에서 비어 보인다 (92)
       const payload = mockG7Core.state.setLocal.mock.calls[0][0];
       expect(payload).not.toHaveProperty('selectedCount');
     });
   });
 
   describe('selectAllCartItemsHandler (toggleAllCartItems)', () => {
-    // #132: 전체 선택 상태에서 해제
+    // 132: 전체 선택 상태에서 해제
     it('#132 전체 선택 상태에서 해제한다', () => {
       // Given
       const action = {
@@ -175,7 +175,7 @@ describe('cartHandlers', () => {
       });
     });
 
-    // #133: 전체 미선택 상태에서 선택
+    // 133: 전체 미선택 상태에서 선택
     it('#133 전체 미선택 상태에서 선택한다', () => {
       // Given
       const action = {
@@ -197,7 +197,7 @@ describe('cartHandlers', () => {
   });
 
   describe('recalculateCartHandler', () => {
-    // #134: 선택 아이템 있을 때 계산 요청
+    // 134: 선택 아이템 있을 때 계산 요청
     it('#134 선택 아이템이 있으면 isCalculating을 true로 설정한다', () => {
       // Given
       const action = {
@@ -213,7 +213,7 @@ describe('cartHandlers', () => {
       expect(mockG7Core.state.setLocal).toHaveBeenCalledWith({ isCalculating: true });
     });
 
-    // #135: 선택 아이템 없을 때
+    // 135: 선택 아이템 없을 때
     it('#135 선택 아이템이 없으면 isCalculating을 false로 설정한다', () => {
       // Given
       const action = {
@@ -229,7 +229,7 @@ describe('cartHandlers', () => {
       expect(mockG7Core.state.setLocal).toHaveBeenCalledWith({ isCalculating: false });
     });
 
-    // #136: selectedItems가 null/undefined인 경우
+    // 136: selectedItems가 null/undefined인 경우
     it('#136 selectedItems가 없으면 isCalculating을 false로 설정한다', () => {
       // Given
       const action = {
@@ -247,7 +247,7 @@ describe('cartHandlers', () => {
   });
 
   describe('setCartOptionHandler (updateCartItem 옵션 설정)', () => {
-    // #137: 옵션 값 설정
+    // 137: 옵션 값 설정
     it('#137 옵션 값을 설정한다', () => {
       // Given
       mockG7Core.state.getLocal.mockReturnValue({ selectedOptions: { color: 'red' } });
@@ -270,7 +270,7 @@ describe('cartHandlers', () => {
       });
     });
 
-    // #138: 기존 옵션 덮어쓰기
+    // 138: 기존 옵션 덮어쓰기
     it('#138 기존 옵션을 덮어쓴다', () => {
       // Given
       mockG7Core.state.getLocal.mockReturnValue({ selectedOptions: { color: 'red', size: 'M' } });
@@ -295,7 +295,7 @@ describe('cartHandlers', () => {
   });
 
   describe('openCartDeleteModalHandler', () => {
-    // #139: 삭제 확인 모달 열기
+    // 139: 삭제 확인 모달 열기
     it('#139 삭제 확인 모달을 연다', () => {
       // Given
       const action = {
@@ -316,7 +316,7 @@ describe('cartHandlers', () => {
       });
     });
 
-    // #140: 빈 targetIds일 때 경고 토스트
+    // 140: 빈 targetIds일 때 경고 토스트
     it('#140 targetIds가 비어있으면 경고 토스트를 표시한다', () => {
       // Given
       const action = {

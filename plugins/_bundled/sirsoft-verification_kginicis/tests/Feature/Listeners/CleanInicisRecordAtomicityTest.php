@@ -19,7 +19,7 @@ use Plugins\Sirsoft\VerificationKginicis\Tests\PluginTestCase;
 use RuntimeException;
 
 /**
- * 본인확인 정리 원자성 + 연쇄 삭제 테스트 (공개이슈 #112 / #110)
+ * 본인확인 정리 원자성 + 연쇄 삭제 테스트 (공개이슈 #112 / 110)
  *
  * record 파기와 로그 익명화는 함께 성공해야 한다 — 한쪽만 끝나면 파기된 것으로 보이는데
  * 이력에 식별자가 남거나, 그 반대가 된다.

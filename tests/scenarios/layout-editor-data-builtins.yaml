@@ -17,7 +17,7 @@ description: |
    6. CardGrid.cardColumns — nodeEditor:array-cell-tree(컬럼 층 추가/삭제/정렬+id +
       셀 트리 층 cellChildren 을 ChildrenListControl 재사용). "셀 트리 전체" 결정 2026-06-08.
 
-  검토군 판정(8-a (E) #6): ChipCheckbox.value 는 propControl ccValue(propValue→value)로 이미
+  검토군 판정(8-a (E) 6): ChipCheckbox.value 는 propControl ccValue(propValue→value)로 이미
   커버 → 데이터 편집 비대상. MultilingualTagInput/Toggle/Checkbox.value 는 런타임 scalar →
   데이터 편집 비대상. ImageGallery/FilterGroup 은 dataProps 바인딩전용 디그레이드 유지.
 

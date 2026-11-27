@@ -1,5 +1,5 @@
 /**
- * SlotContainer — 등록 렌더러의 렌더 환경으로 슬롯 내용을 그린다 (이슈 #141 D8)
+ * SlotContainer — 등록 렌더러의 렌더 환경으로 슬롯 내용을 그린다 (이슈 공개 #141 D8)
  *
  * 슬롯 내용은 소비 위치(SlotContainer)에서 DynamicRenderer 로 다시 그려진다. 종전에는 호스트
  * 레지스트리·엔진·dispatcher 를 쓰고 `isEditMode`·편집 경로를 넘기지 않아, 레이아웃 편집기
@@ -13,7 +13,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { SlotContainer } from '../SlotContainer';
 
-describe('SlotContainer — 렌더 환경 (#141)', () => {
+describe('SlotContainer — 렌더 환경 (공개 #141)', () => {
   const host = { id: 'host' };
   let received: any[];
   let originalG7Core: any;

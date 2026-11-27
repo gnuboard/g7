@@ -713,7 +713,7 @@ class ExtensionDocScaffolder
         $rows[] = ['그누보드7 코어', $this->code($ctx['deps']['coreVersion'] ?? '(제약 없음)')];
         $rows[] = ['PHP', $this->code($this->composerPhp($ctx) ?? '^8.2')];
 
-        // composer.json require/suggest ext-* — 필수는 설치·활성화를 막고, 권장은 경고만 한다(#151)
+        // composer.json require/suggest ext-* — 필수는 설치·활성화를 막고, 권장은 경고만 한다(공개 #151)
         $phpExtensions = app(ExtensionManager::class)->getPhpExtensionRequirementsAt($ctx['record']['path']);
         if ($phpExtensions['required'] !== []) {
             $rows[] = ['PHP 확장(필수)', implode(', ', array_map(fn ($e) => $this->code($e), $phpExtensions['required']))];

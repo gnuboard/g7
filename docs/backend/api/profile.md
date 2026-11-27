@@ -386,7 +386,7 @@ _단건 응답: `data` 객체에 `activities` 배열과 `pagination` 이 담긴�
 
 **설명**
 
-현재 사용자의 활동 로그를 쪽 단위로 조회한다(`permission:core.profile.read` 필요). 회원 본인 활동(`log_type=user`)만 담기고 관리자가 그 회원에게 한 작업 기록은 빠진다. 7.2.1 부터 `page`·`per_page`(최대 50)·`date_from`·`date_to`(사이트 날짜) 로 고르고 `data.pagination` 을 함께 준다. `data.activities` 의 로그는 최신순이며, 각 항목은 `id`·`action`·`action_label`·`description`(로케일 반영)·`ip_address`·`created_at`(ISO 8601) 필드를 가진다. `ip_address` 는 항상 `null` 이다 — 접속 IP 는 관리자 전용 값이라 관리자 활동 로그 API(`/api/admin/activity-logs`)에서만 제공한다. 실측 예시가 비어 있는 것은 문서 생성 시 샘플 사용자가 권한을 갖지 못해 403 이 반환되었기 때문이다.
+현재 사용자의 활동 로그를 쪽 단위로 조회한다(`permission:core.profile.read` 필요). 회원 본인 활동(`log_type=user`)만 담기고 관리자가 그 회원에게 한 작업 기록은 빠진다. 7.2.1 부터 `page`·`per_page`(최대 50)·`date_from`·`date_to`(사이트 날짜) 로 고르고 `data.pagination` 을 함께 준다. `data.activities` 의 로그는 최신순이며, 각 항목은 `id`·`action`·`action_label`·`description`(로케일 반영)·`ip_address`·`created_at`(ISO 8601) 필드를 가진다. `ip_address` 는 항상 `null` 이다 — 접속 IP 는 관리자 전용 값이라 관리자 활동 로그 API(`/api/admin/activity-logs`)에서만 제공한다.
 
 
 ### POST /api/user/profile/update-language

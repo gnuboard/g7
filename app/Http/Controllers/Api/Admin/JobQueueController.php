@@ -17,7 +17,7 @@ use App\Services\JobQueueService;
 use Illuminate\Http\JsonResponse;
 
 /**
- * 관리자 큐 관리 컨트롤러 — 대기·실패·처리 기록 (#17)
+ * 관리자 큐 관리 컨트롤러 — 대기·실패·처리 기록
  *
  * 경로는 `/api/admin/schedules/queue/*`(스케줄 관리 화면의 큐 탭). 권한은 라우트 미들웨어
  * `core.queue_jobs.read|retry|delete` 가 건다.

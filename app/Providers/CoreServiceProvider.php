@@ -418,7 +418,7 @@ class CoreServiceProvider extends ServiceProvider
         }
 
         // 진입점과 같은 등록 함수에 맡긴다 — PSR-4·소스 classmap·진입 파일·files 에 더해 확장 vendor(제3자 패키지)와
-        // 그 중복 선언 가드까지 같은 경로를 탄다. 직접 등록하던 사본은 vendor_autoloads 를 빠뜨렸다 (#159).
+        // 그 중복 선언 가드까지 같은 경로를 탄다. 직접 등록하던 사본은 vendor_autoloads 를 빠뜨렸다 (공개 #159).
         ExtensionManager::registerExtensionAutoload(require base_path('vendor/autoload.php'), $extensionAutoloadFile);
     }
 
@@ -453,7 +453,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(RoleRepositoryInterface::class, RoleRepository::class);
         $this->app->bind(ScheduleHistoryRepositoryInterface::class, ScheduleHistoryRepository::class);
         $this->app->bind(ScheduleRepositoryInterface::class, ScheduleRepository::class);
-        // 큐 운영(대기·실패·처리 기록) — #17
+        // 큐 운영(대기·실패·처리 기록)
         $this->app->bind(JobQueueRepositoryInterface::class, JobQueueRepository::class);
         $this->app->bind(QueueJobLogRepositoryInterface::class, QueueJobLogRepository::class);
         $this->app->bind(SystemConfigRepositoryInterface::class, SystemConfigRepository::class);
@@ -466,7 +466,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(UserSearchHistoryRepositoryInterface::class, UserSearchHistoryRepository::class);
         $this->app->bind(NotificationDefinitionRepositoryInterface::class, NotificationDefinitionRepository::class);
         $this->app->bind(NotificationLogRepositoryInterface::class, NotificationLogRepository::class);
-        // 알림 수신자별 발송 기록 — 재시도·재예약 시 이미 보낸 수신자 건너뛰기 (#139)
+        // 알림 수신자별 발송 기록 — 재시도·재예약 시 이미 보낸 수신자 건너뛰기 (공개 #139)
         $this->app->bind(NotificationDeliveryRepositoryInterface::class, NotificationDeliveryRepository::class);
         $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
         // 회원 알림함(관리자 전 회원 조회)은 사용자 스코프 저장소와 목적이 달라 별도 계약이다
@@ -537,7 +537,7 @@ class CoreServiceProvider extends ServiceProvider
         // 외부 자격 증명 검증자 레지스트리 — 확장은 `core.auth.registered_credential_verifiers` 필터로 검증자를 등록한다 (7.2.0)
         $this->app->singleton(CredentialVerifierManager::class);
 
-        // 스케줄 보안 유효 정책 해석기 — 저장 검증·실행기·조회 API 가 같은 인스턴스(파일 해석 메모)를 쓴다 (#17)
+        // 스케줄 보안 유효 정책 해석기 — 저장 검증·실행기·조회 API 가 같은 인스턴스(파일 해석 메모)를 쓴다
         $this->app->singleton(ScheduleSecurityPolicy::class);
 
         // UniqueIdService 바인딩
@@ -785,7 +785,7 @@ class CoreServiceProvider extends ServiceProvider
             $this->detectRecoveredExtensions('templates');
         }
 
-        // 종류별 처리에서 의존 확장 때문에 막혔던 비호환 확장을 같은 부팅에서 다시 끈다(#153 — 예: 이커머스와 결제 플러그인이
+        // 종류별 처리에서 의존 확장 때문에 막혔던 비호환 확장을 같은 부팅에서 다시 끈다(공개 #153 — 예: 이커머스와 결제 플러그인이
         // 함께 비호환이면 이커머스는 플러그인을 끈 뒤에야 끌 수 있다). 부팅 순서는 그대로 둔다.
         $this->retryBlockedIncompatibleExtensions();
 
@@ -882,7 +882,7 @@ class CoreServiceProvider extends ServiceProvider
     /**
      * 호환되지 않는 확장(모듈/플러그인)을 자동 비활성화합니다.
      *
-     * 판정·비활성화·결과 처리는 `IncompatibleExtensionDeactivator` 가 소유한다(#145 — 디스크보다 낮은 현재 버전 안전망,
+     * 판정·비활성화·결과 처리는 `IncompatibleExtensionDeactivator` 가 소유한다(공개 #145 — 디스크보다 낮은 현재 버전 안전망,
      * 끄지 못한 확장의 알림 제외, 캐시 재생성 묶기). 이 메서드는 업데이트 트리 가드 뒤 위임만 한다.
      *
      * @param  ModuleManager|PluginManager  $manager  확장 매니저

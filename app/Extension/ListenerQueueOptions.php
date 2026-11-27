@@ -7,7 +7,7 @@ use App\Services\Queue\QueueWorkerRegistry;
 use App\Support\Queue\ThrottledQueueWarning;
 
 /**
- * 훅 리스너의 큐 실행 옵션 (#139)
+ * 훅 리스너의 큐 실행 옵션 (공개 #139)
  *
  * `getSubscribedHooks()` 의 `'queue' => [...]` 덩어리에 라라벨 큐 리스너와 같은 10개 옵션을 적을 수 있다.
  * 옵션이 없으면 종전 동작(재시도 3·제한시간 없음·커밋 후·기본 연결/큐) 그대로다.

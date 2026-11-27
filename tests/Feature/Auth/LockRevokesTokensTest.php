@@ -105,7 +105,7 @@ class LockRevokesTokensTest extends TestCase
     }
 
     /**
-     * 비밀번호 없는 회원은 잠기지 않고 토큰도 남는다 (#40 회귀).
+     * 비밀번호 없는 회원은 잠기지 않고 토큰도 남는다 (회귀).
      *
      * @scenario password=none
      *

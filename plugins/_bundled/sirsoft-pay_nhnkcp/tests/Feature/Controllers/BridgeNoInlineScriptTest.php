@@ -6,7 +6,7 @@ use Plugins\Sirsoft\PayNhnkcp\Http\Requests\KcpFrameRequest;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
 /**
- * PC 결제창 프레임 페이지에 실행형 인라인 코드가 없다 (#158 strict CSP)
+ * PC 결제창 프레임 페이지에 실행형 인라인 코드가 없다 (공개 #158 strict CSP)
  *
  * 종전에는 주문 화면이 빈 iframe 에 `document.write` 로 KCP SDK 와 인라인 `<script>` 를 써 넣었다. 사이트가
  * `script-src 'self'` 를 걸면 그 인라인 코드가 실행되지 않아 PC 결제가 15초 뒤 시간 초과로 끝났다. 이제 iframe 은

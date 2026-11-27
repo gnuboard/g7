@@ -473,7 +473,7 @@ class InstallerEntryGateWiringTest extends TestCase
     }
 
     /**
-     * 무인증 probe 엔드포인트의 호출 횟수 상한 (보안#7).
+     * 무인증 probe 엔드포인트의 호출 횟수 상한 (보안 7).
      *
      * @scenario endpoint_guard=general
      *
@@ -489,7 +489,7 @@ class InstallerEntryGateWiringTest extends TestCase
             '무인증 probe 에 상한이 없다'
         );
 
-        // 연결 실패 응답에서 드라이버 원문을 걷었는가 (보안#6). 판정 범위는 PDO 예외 분기로
+        // 연결 실패 응답에서 드라이버 원문을 걷었는가 (보안 6). 판정 범위는 PDO 예외 분기로
         // 좁힌다 — 형제 분기(`catch (Exception)`)가 돌려주는 것은 이 파일이 스스로 던진
         // **이미 번역된** 검증 문구라서 같은 규칙의 대상이 아니다.
         //
@@ -555,7 +555,7 @@ class InstallerEntryGateWiringTest extends TestCase
     }
 
     /**
-     * 판정이 두 벌이면 한쪽만 프록시를 고려하게 된다 (환경#21·D10).
+     * 판정이 두 벌이면 한쪽만 프록시를 고려하게 된다 (환경 21·D10).
      *
      * @scenario request_scheme=forwarded_https
      *

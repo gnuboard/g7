@@ -629,7 +629,7 @@ class AdminTemplateAssetControllerTest extends TestCase
         $this->assertSame('@property --tw-x{syntax:"*";inherits:false}@layer g7-preview{*{border:0 solid}}@layer g7-preview{.p-4{padding:1rem}.q{top:0}}.own{color:red}', $out);
 
         // 순서 선언은 인라인 `<style>` 이 아니라 코어 정적 파일(g7-layers-admin.css) 링크다 — 엄격한 스타일 정책에서
-        // `<style>` 이 막히면 선언이 사라져 프리뷰 템플릿 초기화가 다시 확장 의미 칸을 이긴다(#163)
+        // `<style>` 이 막히면 선언이 사라져 프리뷰 템플릿 초기화가 다시 확장 의미 칸을 이긴다(공개 #163)
         $blade = (string) file_get_contents(resource_path('views/admin.blade.php'));
         $links = strpos($blade, '@foreach($templateStylesheets');
         $order = strpos($blade, "@include('partials.core-styles', ['sheet' => 'layers-admin'])");

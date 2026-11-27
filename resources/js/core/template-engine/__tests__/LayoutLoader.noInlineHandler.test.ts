@@ -1,13 +1,13 @@
 // e2e:allow 레이아웃 로드 실패 화면 DOM 단위(운영 호출부 없음 — 동형 결함 정리). 브라우저 계층은 strict-csp.spec.ts.
 /**
- * LayoutLoader.renderErrorState — 새로고침 버튼에 인라인 onclick 이 없다 (#158, engine-v1.84.1)
+ * LayoutLoader.renderErrorState — 새로고침 버튼에 인라인 onclick 이 없다 (공개 #158, engine-v1.84.1)
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { LayoutLoader } from '../LayoutLoader';
 import type { ComponentRegistry } from '../ComponentRegistry';
 
-describe('LayoutLoader 오류 화면 인라인 핸들러 제거 (#158)', () => {
+describe('LayoutLoader 오류 화면 인라인 핸들러 제거 (공개 #158)', () => {
   const originalLocation = window.location;
   let reload: ReturnType<typeof vi.fn>;
 

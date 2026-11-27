@@ -1,5 +1,5 @@
 /*
- * 설치 마법사 5 (설치) 단계 스크립트 — 종전 뷰(views/5-installation.php)의 인라인 <script> 를 옮겼다(#158).
+ * 설치 마법사 5 (설치) 단계 스크립트 — 종전 뷰(views/5-installation.php)의 인라인 <script> 를 옮겼다(공개 #158).
  *
  * 웹서버가 `Content-Security-Policy: script-src 'self'` 를 걸면 인라인 스크립트·on* 속성이 실행되지 않아
  * 단계 로직·버튼이 멈췄다. 서버 값은 `#installer-step-data` JSON 블록(installerStepData())과
@@ -25,7 +25,7 @@
     window.INSTALLER_CONFIG = data.config || {};
     window.INSTALLER_SELECTED_EXTENSIONS = data.selected_extensions || {};
     window.INSTALLER_EXTENSION_NAMES = data.extension_names || {};
-    // 의존 때문에 종류 경계를 넘어 앞당겨 설치하는 항목 → 요구한 확장 (작업 행의 「…에 필요」 표시, #153)
+    // 의존 때문에 종류 경계를 넘어 앞당겨 설치하는 항목 → 요구한 확장 (작업 행의 「…에 필요」 표시, 공개 #153)
     window.INSTALLER_PULLED_BY = data.pulled_by || {};
     // 유효 실행 모드 (subprocess|inprocess) — JS 소비처는 없고 무CLI 실측에서 콘솔로 확인하기 위한 진단용 노출
     window.INSTALLER_EXECUTION_MODE = data.execution_mode === undefined ? null : data.execution_mode;
