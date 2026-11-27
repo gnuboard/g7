@@ -160,7 +160,7 @@ HookManager::doAction('core.language_packs.activated', $pack);
 | protected 팩 비활성화/제거 | `RuntimeException` |
 | 슬롯당 active 2개 이상 | application 트랜잭션이 자동으로 기존 active 강등 |
 | 같은 팩에 다른 작업 진행 중 (7.1.5+) | 설치·업데이트·활성화·비활성화·제거가 같은 작업 잠금(`extension-update:language_pack:{identifier}`)을 쓴다 — 겹치면 409(`operation_in_progress`), 잠금 저장소 오류면 503(`operation_lock_unavailable`). 업데이트가 부르는 설치는 그 잠금에 합류한다 |
-| 업데이트 소스 고정 (7.2.1) | `performUpdate($pack, $force, $integrity, $source)` 의 `$source` 가 `bundled` 면 번들만, `github` 이면 GitHub 만 쓴다 — 그 소스가 없으면 다른 소스로 넘어가지 않고 `update_no_source`. null·`auto` 는 종전 판정(force·확인 결과로 번들/GitHub). 터미널 `language-pack:update --source`·관리자 업데이트 요청 `source` 가 이 인자로 닿는다 |
+| 업데이트 소스 고정 (7.2.1) | `performUpdate($pack, $force, $integrity, $source)` 의 `$source` 가 `bundled` 면 번들만, `github` 이면 GitHub 만 쓴다 — 그 소스가 없으면 다른 소스로 넘어가지 않고 멈춘다(`update_source_bundled_unavailable`·`update_source_github_unavailable` — 어느 소스가 없는지 알린다. 둘 다 없으면 `update_no_source`). null·`auto` 는 종전 판정(force·확인 결과로 번들/GitHub). 터미널 `language-pack:update --source`·관리자 업데이트 요청 `source` 가 이 인자로 닿는다 |
 
 ## 이벤트 (HookManager 액션 훅)
 

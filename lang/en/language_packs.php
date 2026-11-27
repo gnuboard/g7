@@ -40,6 +40,8 @@ return [
         'download_url_not_public' => 'Language packs cannot be downloaded from internal network addresses (private IPs, localhost, etc.). Use a publicly reachable https address.',
         'checksum_mismatch' => 'Checksum mismatch.',
         'update_no_source' => 'No update source available (only GitHub-sourced packs can be updated).',
+        'update_source_bundled_unavailable' => 'This language pack has no copy bundled on this server, so it cannot be updated with "Only the copy bundled on the server". Change the source to "Automatic" or "GitHub" and try again.',
+        'update_source_github_unavailable' => 'This language pack has no GitHub address, so it cannot be updated from "GitHub". Change the source to "Automatic" or "Only the copy bundled on the server" and try again.',
         'update_already_latest' => 'Already on the latest version.',
         'preview_invalid_manifest' => 'Manifest preview failed: invalid manifest file.',
         'operation_in_progress' => 'Another operation is in progress for language pack (:identifier). Please try again after it completes.',

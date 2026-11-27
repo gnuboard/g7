@@ -2192,8 +2192,12 @@ class LanguagePackService
             throw new LanguagePackOperationException('language_packs.errors.update_no_source');
         }
         // 소스를 고정했는데 그 소스가 없으면 다른 소스로 넘어가지 않는다 — 종전에는 --source=github 이 force 와 함께 번들을 썼다(7.2.1 출시 전)
-        if (($source === 'github' && ! $githubUrl) || ($source === 'bundled' && ! $this->hasBundledManifest($pack->identifier))) {
-            throw new LanguagePackOperationException('language_packs.errors.update_no_source');
+        // 고른 소스별로 사유를 나눠 알린다 — 둘 다 없을 때의 update_no_source 문구로는 「번들」을 고른 운영자가 원인을 알 수 없다
+        if ($source === 'github' && ! $githubUrl) {
+            throw new LanguagePackOperationException('language_packs.errors.update_source_github_unavailable');
+        }
+        if ($source === 'bundled' && ! $this->hasBundledManifest($pack->identifier)) {
+            throw new LanguagePackOperationException('language_packs.errors.update_source_bundled_unavailable');
         }
 
         // 같은 언어팩의 업데이트는 한 번에 하나만 — 업데이트 확인(네트워크)과 Updating 기록 사이 구간에 들어온 두 번째 요청이
