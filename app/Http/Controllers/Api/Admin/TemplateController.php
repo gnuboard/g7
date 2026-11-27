@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\HandlesExtensionUpdatePreview;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
 use App\Http\Controllers\Concerns\OrchestratesCascadeInstall;
+use App\Http\Controllers\Concerns\RespondsWithExtensionUpdateReport;
 use App\Http\Controllers\Concerns\RespondsWithIntegrationNotices;
 use App\Http\Requests\Extension\ChangelogRequest;
 use App\Http\Requests\Template\ActivateTemplateRequest;
@@ -50,6 +51,7 @@ class TemplateController extends AdminBaseController
     use HandlesExtensionUpdatePreview;
     use InjectsExtensionLanguagePacks;
     use OrchestratesCascadeInstall;
+    use RespondsWithExtensionUpdateReport;
     use RespondsWithIntegrationNotices;
 
     /**
@@ -196,7 +198,8 @@ class TemplateController extends AdminBaseController
                 // cascade 1.5단계: 고른 선택 연동 확장을 의존 다음·본체 이전에 설치·활성화 (실패해도 본체는 계속, 7.1.4 D9)
                 $integrationFailures = $this->installSelectedIntegrations($validated['integrations'] ?? []);
 
-                return $this->templateService->installTemplate($templateName);
+                // 불완전 설치 복구 재설치(force) — 터미널 install --force 와 같다. 지정했을 때만 넘긴다(생략하면 지금 동작)
+                return $this->templateService->installTemplate($templateName, ...(($validated['force'] ?? false) ? ['force' => true] : []));
             });
 
             if ($template) {
@@ -616,6 +619,16 @@ class TemplateController extends AdminBaseController
     }
 
     /**
+     * 수동 ZIP 대기 폴더에 올라온 업데이트 ZIP 목록을 조회합니다 (업데이트 창 「고급」의 ZIP 선택지, 7.2.1 출시 전).
+     *
+     * @return JsonResponse ZIP 파일 목록 (name·size·modified_at)
+     */
+    public function manualZipSources(): JsonResponse
+    {
+        return $this->manualZipSourcesResponse();
+    }
+
+    /**
      * 특정 템플릿을 업데이트합니다.
      *
      * layout_strategy 파라미터로 레이아웃 처리 방식을 결정합니다:
@@ -632,10 +645,12 @@ class TemplateController extends AdminBaseController
             $validated = $request->validated();
             $layoutStrategy = $validated['layout_strategy'] ?? 'overwrite';
             $force = (bool) ($validated['force'] ?? false);
+            // 업데이트 소스(auto|bundled|github)·수동 ZIP(대기 폴더의 파일 이름) — 터미널 --source·--zip 과 같은 자리(7.2.1 출시 전)
+            $sourceArgs = $this->extensionUpdateSourceArgs($validated);
             // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
             $result = LayoutInstallSourceScope::run(
                 $validated['layout_source'] ?? null,
-                fn () => $this->withUpdatePreviewContext($validated, fn () => $this->templateService->performVersionUpdate($templateName, $layoutStrategy, $force, $request->packageIntegrityOptions()))
+                fn () => $this->withUpdatePreviewContext($validated, fn () => $this->templateService->performVersionUpdate($templateName, $layoutStrategy, $force, $request->packageIntegrityOptions(), ...$sourceArgs))
             );
 
             $templateInfo = $result['template_info'] ?? null;
@@ -663,18 +678,18 @@ class TemplateController extends AdminBaseController
                 $data['layout_warnings'] = $result['layout_warnings'] ?? [];
 
                 // 새 판 manifest 기준 연동 안내도 싣는다 — 매니저 결과에만 있고 화면에 닿지 않았다
-                return $this->withIntegrationNotices($this->successWithResource(
+                return $this->withExtensionUpdateReport($this->withIntegrationNotices($this->successWithResource(
                     $messageKey,
                     new JsonResource($data),
                     200,
                     $messageParams
-                ), $result['integration_notices'] ?? []);
+                ), $result['integration_notices'] ?? []), $result);
             }
 
-            return $this->withIntegrationNotices(
+            return $this->withExtensionUpdateReport($this->withIntegrationNotices(
                 $this->success($messageKey, $result, 200, $messageParams),
                 $result['integration_notices'] ?? []
-            );
+            ), $result);
         } catch (PackageIntegrityException $e) {
             // 미서명 확인 필요(409, 「미서명으로 계속」 가능 여부 포함)·서명 불일치·미신뢰 키(422) — 7.2.0
             return $this->packageIntegrityError($e);
@@ -682,12 +697,8 @@ class TemplateController extends AdminBaseController
             // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — 공개 #161
             return $this->operationLockError($e);
         } catch (ValidationException $e) {
-            // Service/Manager에서 이미 번역된 메시지를 errors에 포함하므로
-            // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
-            $firstError = collect($e->errors())->flatten()->first()
-                ?? __('templates.errors.update_failed', ['template' => $templateName, 'error' => '']);
-
-            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
+            // 실패 뒤 상태(outcome)·경고·재실행 명령을 data 에 싣는다 — 422 오류 모양은 그대로(7.2.1 출시 전)
+            return $this->extensionUpdateFailure($e, __('templates.errors.update_failed', ['template' => $templateName, 'error' => '']));
         } catch (\Exception $e) {
             return $this->error('templates.errors.update_failed', 500, $e->getMessage(), [
                 'template' => $templateName,

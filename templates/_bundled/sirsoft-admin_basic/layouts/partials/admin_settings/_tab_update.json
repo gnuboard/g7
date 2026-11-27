@@ -204,6 +204,253 @@
                     ]
                 },
                 {
+                    "comment": "개발자 custom 자리 사전 검사 — 직전 시도가 이 검사로 시작 전에 멈췄으면(같은 새 버전 한정, 확인 응답 custom_preflight) 정보 탭 결과 창과 같은 충돌 표를 이 탭에서도 보인다.",
+                    "id": "core_update_custom_preflight",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!_computed.coreUpdateRun && !!_local.coreUpdateInfo?.custom_preflight}}",
+                    "props": {
+                        "className": "space-y-3 mb-4",
+                        "role": "alert"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "alert-warning space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "$t:admin.settings.info.custom_preflight_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length > 0}}",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:admin.settings.info.custom_preflight_desc|count={{(_local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length}}|version={{_local.coreUpdateInfo?.custom_preflight?.to_version ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length > 0}}",
+                            "props": {
+                                "className": "overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Table",
+                                    "props": {
+                                        "className": "min-w-full text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Thead",
+                                            "props": {
+                                                "className": "bg-gray-50 dark:bg-gray-700/50"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.settings.info.custom_conflict_package"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.settings.info.custom_conflict_reason"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.settings.info.custom_conflict_core"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Tbody",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "iteration": {
+                                                        "source": "_local.coreUpdateInfo?.custom_preflight?.conflicts ?? []",
+                                                        "item_var": "customConflict"
+                                                    },
+                                                    "props": {
+                                                        "className": "border-t border-gray-200 dark:border-gray-700 align-top"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "block font-mono text-gray-900 dark:text-white"
+                                                                    },
+                                                                    "text": "{{customConflict.package}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "block text-xs text-muted"
+                                                                    },
+                                                                    "text": "$t:admin.settings.info.custom_conflict_installed|version={{customConflict.installed}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{customConflict.type === 'duplicate'}}",
+                                                                    "text": "$t:admin.settings.info.custom_conflict_duplicate"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{customConflict.type !== 'duplicate'}}",
+                                                                    "text": "$t:admin.settings.info.custom_conflict_constraint|requires={{customConflict.requires}}|constraint={{customConflict.constraint}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2 font-mono text-xs text-amber-700 dark:text-amber-400"
+                                                            },
+                                                            "text": "{{(customConflict.core_package ?? '') + ' ' + (customConflict.core_version ?? '')}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_local.coreUpdateInfo?.custom_preflight?.reserved_files ?? []).length > 0}}",
+                            "props": {
+                                "className": "space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:admin.settings.info.custom_reserved_files"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "props": {
+                                        "className": "text-xs font-mono text-gray-600 dark:text-gray-400 list-disc pl-5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "_local.coreUpdateInfo?.custom_preflight?.reserved_files ?? []",
+                                                "item_var": "customReservedFile"
+                                            },
+                                            "text": "{{customReservedFile}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-1 text-sm text-gray-700 dark:text-gray-300"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "font-semibold"
+                                    },
+                                    "text": "$t:admin.settings.info.custom_fix_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ol",
+                                    "props": {
+                                        "className": "list-decimal pl-5 space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "text": "$t:admin.settings.info.custom_fix_step1"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "text": "$t:admin.settings.info.custom_fix_step2"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "text": "$t:admin.settings.info.custom_fix_step3"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
                     "id": "core_update_idle_actions",
                     "type": "basic",
                     "name": "Div",
@@ -290,7 +537,7 @@
                             ]
                         },
                         {
-                            "comment": "진행 표시는 정보 탭의 같은 조회 버튼(`_tab_info.json`)과 같은 `loadingChangelog` 플래그를 쓴다 — 두 버튼은 서로 다른 탭에 있어 동시에 그려지지 않는다.",
+                            "comment": "확인 결과 창의 같은 버튼처럼 지금 판 → 새 판 범위를 넘겨 그 사이 이력만 받는다. 진행 표시는 정보 탭의 같은 조회 버튼(`_tab_info.json`)과 같은 `loadingChangelog` 플래그를 쓴다 — 두 버튼은 서로 다른 탭에 있어 동시에 그려지지 않는다.",
                             "id": "core_update_changelog_button",
                             "type": "basic",
                             "name": "Button",
@@ -312,7 +559,11 @@
                                             "target": "/api/admin/core-update/changelog",
                                             "auth_required": true,
                                             "params": {
-                                                "method": "GET"
+                                                "method": "GET",
+                                                "query": {
+                                                    "from_version": "{{_local.coreUpdateInfo?.current_version ?? _computed.coreUpdateStatus?.current_version ?? ''}}",
+                                                    "to_version": "{{_local.coreUpdateInfo?.latest_version ?? ''}}"
+                                                }
                                             },
                                             "onSuccess": [
                                                 {
@@ -442,9 +693,11 @@
                             ]
                         },
                         {
+                            "comment": "검색 색인 재구성 줄은 엔진이 점검 기능을 제공할 때만 보인다(서버 `search_index_rebuild_available` — 터미널이 묻는 조건과 같다). 값이 없는 옛 서버 응답이면 종전처럼 보인다.",
                             "id": "core_update_rebuild_index_row",
                             "type": "basic",
                             "name": "Label",
+                            "if": "{{_computed.coreUpdateStatus != null && _computed.coreUpdateStatus?.search_index_rebuild_available !== false}}",
                             "props": {
                                 "className": "flex items-start gap-2 cursor-pointer"
                             },
@@ -637,10 +890,98 @@
                     },
                     "children": [
                         {
+                            "comment": "실행자 — 다른 관리자가 시작한 실행이면 그 이름을 알린다(판정은 계산값 coreUpdateStartedByOther). 서버가 started_by 를 싣지 않는 옛 판이면 그리지 않는다.",
+                            "id": "core_update_started_by",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_computed.coreUpdateStartedByOther === true && (_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back')}}",
+                            "props": {
+                                "className": "flex items-center gap-2 text-info-soft text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "circle-info",
+                                        "className": "text-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.settings.core_update.live.started_by_other|name={{_computed.coreUpdateRun?.started_by?.name ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "응답이 끊겨 서버 확인을 기다리는 동안 — 핸들러가 `_global.coreUpdateReconnecting` 을 세우고 내린다. 그동안 막대가 멈춰 보여도 멈춘 것이 아니라는 것을 알린다.",
+                            "id": "core_update_reconnecting",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.coreUpdateReconnecting === true && (_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back')}}",
+                            "props": {
+                                "role": "status",
+                                "className": "flex items-center gap-2 text-warning-soft text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "text-sm animate-spin"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.settings.core_update.live.reconnecting"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "자동 이어 가기가 멈춘 뒤 — 연달아 실패했거나 상한에 닿으면 핸들러가 `_global.coreUpdateAutoStopped` 를 세운다. 몰고 있는 동안·선택을 기다리는 동안은 보이지 않는다.",
+                            "id": "core_update_auto_stopped",
+                            "type": "composite",
+                            "name": "Alert",
+                            "if": "{{_global.coreUpdateAutoStopped === true && _global.coreUpdateBusy !== true && (_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back') && !_computed.coreUpdateRun?.awaiting?.kind}}",
+                            "props": {
+                                "type": "warning",
+                                "message": "$t:admin.settings.core_update.live.auto_stopped"
+                            }
+                        },
+                        {
+                            "comment": "되돌리는 중 — 실패 뒤 서버가 바꾼 것을 되돌리는 동안에도 진행 머리말·단계 목록·최근 기록을 함께 보이고, 이 줄로 지금 무엇을 하는지 알린다.",
+                            "id": "core_update_rolling_back",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_computed.coreUpdateRun?.status === 'rolling_back'}}",
+                            "props": {
+                                "role": "status",
+                                "className": "flex items-center gap-2 text-secondary text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "text-sm text-blue-600 dark:text-blue-400 animate-spin"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.settings.core_update.rolling_back_desc"
+                                }
+                            ]
+                        },
+                        {
                             "id": "core_update_progress_header",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{_computed.coreUpdateRun?.status === 'running'}}",
+                            "if": "{{(_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back')}}",
                             "props": {
                                 "className": "flex items-center justify-between"
                             },
@@ -651,7 +992,7 @@
                                     "props": {
                                         "className": "text-heading"
                                     },
-                                    "text": "$t:admin.settings.core_update.progress_title"
+                                    "text": "{{_computed.coreUpdateRun?.status === 'rolling_back' ? $t('admin.settings.core_update.rolling_back_title') : $t('admin.settings.core_update.progress_title')}}"
                                 },
                                 {
                                     "id": "core_update_progress_count",
@@ -668,7 +1009,7 @@
                             "id": "core_update_progress_track",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{_computed.coreUpdateRun?.status === 'running'}}",
+                            "if": "{{(_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back')}}",
                             "props": {
                                 "className": "h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"
                             },
@@ -687,10 +1028,11 @@
                             ]
                         },
                         {
+                            "comment": "단계 목록 — 지금 단계 줄 아래에 그 단계 안의 진행을 붙인다. 서버가 싣는 step_progress(단계 key·끝낸 양·전체 양·단위)가 지금 단계와 같으면 얇은 막대(폭 done/total)와 줄 오른쪽 「n / m 파일」 같은 수치를 보여 준다. 전체 양을 모르면(total=null) 막대 없이 「n개 확인」만 쓴다. 번들 단계는 current_item(다음 요청이 처리할 항목)으로 「번들 n / m」·종류·이름(식별자)·이전 → 새 판을 함께 보여 주고, 막대 폭은 step_progress 를 따르되 없으면 current_item 으로 잡는다. 선택을 기다리는 동안은 처리 중인 것이 없으므로 붙이지 않는다.",
                             "id": "core_update_step_list",
                             "type": "basic",
                             "name": "Ul",
-                            "if": "{{_computed.coreUpdateRun?.status === 'running'}}",
+                            "if": "{{(_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back')}}",
                             "props": {
                                 "className": "space-y-1"
                             },
@@ -704,24 +1046,133 @@
                                         "index_var": "stepIndex"
                                     },
                                     "props": {
-                                        "className": "flex items-center gap-2 text-sm"
+                                        "className": "text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Icon",
+                                            "name": "Div",
                                             "props": {
-                                                "name": "{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) ? 'circle-check' : (_computed.coreUpdateRun?.current_step === step.key ? 'spinner' : 'circle')}}",
-                                                "className": "{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) ? 'text-sm text-green-600 dark:text-green-400' : (_computed.coreUpdateRun?.current_step === step.key ? 'text-sm text-blue-600 dark:text-blue-400 animate-spin' : 'text-sm text-gray-300 dark:text-gray-600')}}"
-                                            }
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) ? 'circle-check' : (_computed.coreUpdateRun?.current_step === step.key ? 'spinner' : 'circle')}}",
+                                                        "className": "{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) ? 'text-sm text-green-600 dark:text-green-400' : (_computed.coreUpdateRun?.current_step === step.key ? 'text-sm text-blue-600 dark:text-blue-400 animate-spin' : 'text-sm text-gray-300 dark:text-gray-600')}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) || _computed.coreUpdateRun?.current_step === step.key ? 'text-heading' : 'text-secondary'}}"
+                                                    },
+                                                    "text": "{{step.label}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_computed.coreUpdateRun?.current_step === step.key && !!_computed.coreUpdateRun?.current_item && !_computed.coreUpdateRun?.awaiting?.kind}}",
+                                                    "props": {
+                                                        "className": "ml-auto text-secondary text-xs whitespace-nowrap"
+                                                    },
+                                                    "text": "$t:admin.settings.core_update.current_item_position|position={{_computed.coreUpdateRun?.current_item?.position ?? 0}}|total={{_computed.coreUpdateRun?.current_item?.total ?? 0}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_computed.coreUpdateRun?.current_step === step.key && _computed.coreUpdateRun?.step_progress?.step === step.key && !_computed.coreUpdateRun?.current_item && !_computed.coreUpdateRun?.awaiting?.kind}}",
+                                                    "props": {
+                                                        "className": "ml-auto text-secondary text-xs whitespace-nowrap"
+                                                    },
+                                                    "text": "{{_computed.coreUpdateRun?.step_progress?.total == null ? $t('admin.settings.core_update.step_progress.checked', Object.fromEntries([['done', _computed.coreUpdateRun?.step_progress?.done ?? 0]])) : $t('admin.settings.core_update.step_progress.' + (['files', 'entries', 'items', 'tasks'].includes(_computed.coreUpdateRun?.step_progress?.unit) ? _computed.coreUpdateRun?.step_progress?.unit : 'items'), Object.fromEntries([['done', _computed.coreUpdateRun?.step_progress?.done ?? 0], ['total', _computed.coreUpdateRun?.step_progress?.total ?? 0]]))}}"
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Span",
+                                            "name": "Div",
+                                            "if": "{{_computed.coreUpdateRun?.current_step === step.key && !_computed.coreUpdateRun?.awaiting?.kind && (!!_computed.coreUpdateRun?.current_item || (_computed.coreUpdateRun?.step_progress?.step === step.key && _computed.coreUpdateRun?.step_progress?.total != null))}}",
                                             "props": {
-                                                "className": "{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) || _computed.coreUpdateRun?.current_step === step.key ? 'text-heading' : 'text-secondary'}}"
+                                                "className": "ml-6 mt-1.5 mb-1 space-y-1.5"
                                             },
-                                            "text": "{{step.label}}"
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 transition-all",
+                                                                "style": {
+                                                                    "width": "{{Math.min(Math.round(((_computed.coreUpdateRun?.step_progress?.step === step.key && _computed.coreUpdateRun?.step_progress?.total != null) ? Math.max(_computed.coreUpdateRun?.step_progress?.done ?? 0, 0) / Math.max(_computed.coreUpdateRun?.step_progress?.total ?? 1, 1) : Math.max((_computed.coreUpdateRun?.current_item?.position ?? 1) - 1, 0) / Math.max(_computed.coreUpdateRun?.current_item?.total ?? 1, 1)) * 100), 100) + '%'}}"
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{_computed.coreUpdateRun?.current_step === step.key && !!_computed.coreUpdateRun?.current_item && !_computed.coreUpdateRun?.awaiting?.kind}}",
+                                                    "props": {
+                                                        "className": "flex flex-wrap items-center gap-2 text-xs"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-secondary"
+                                                            },
+                                                            "text": "$t:admin.settings.core_update.now_processing"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!_computed.coreUpdateRun?.current_item?.type}}",
+                                                            "props": {
+                                                                "className": "badge badge-gray"
+                                                            },
+                                                            "text": "{{$t('admin.settings.core_update.selection.types.' + (_computed.coreUpdateRun?.current_item?.type ?? ''))}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!_computed.coreUpdateRun?.current_item?.name}}",
+                                                            "props": {
+                                                                "className": "text-heading"
+                                                            },
+                                                            "text": "{{_computed.coreUpdateRun?.current_item?.name ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-mono text-secondary break-all"
+                                                            },
+                                                            "text": "{{_computed.coreUpdateRun?.current_item?.identifier ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!_computed.coreUpdateRun?.current_item?.from_version || !!_computed.coreUpdateRun?.current_item?.to_version}}",
+                                                            "props": {
+                                                                "className": "text-secondary"
+                                                            },
+                                                            "text": "{{(_computed.coreUpdateRun?.current_item?.from_version ?? '-') + ' → ' + (_computed.coreUpdateRun?.current_item?.to_version ?? '-')}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
                                         }
                                     ]
                                 }
@@ -1024,14 +1475,321 @@
                             ]
                         },
                         {
+                            "comment": "완료 — 번들 실패가 있으면 초록 「성공」 대신 노랑 안내를 보인다(터미널 결과 요약과 같은 판정). bundled_result 가 없는 옛 서버 응답은 실패 0 으로 보고 종전처럼 초록이다.",
+                            "id": "core_update_completed_partial",
+                            "type": "composite",
+                            "name": "Alert",
+                            "if": "{{_computed.coreUpdateRun?.status === 'completed' && (_computed.coreUpdateBundledResult?.failed ?? 0) > 0}}",
+                            "props": {
+                                "type": "warning",
+                                "message": "$t:admin.settings.core_update.result.completed_with_failures|count={{_computed.coreUpdateBundledResult?.failed ?? 0}}"
+                            }
+                        },
+                        {
                             "id": "core_update_completed",
                             "type": "composite",
                             "name": "Alert",
-                            "if": "{{_computed.coreUpdateRun?.status === 'completed'}}",
+                            "if": "{{_computed.coreUpdateRun?.status === 'completed' && (_computed.coreUpdateBundledResult?.failed ?? 0) === 0}}",
                             "props": {
                                 "type": "success",
                                 "message": "$t:admin.settings.core_update.completed_desc|version={{_computed.coreUpdateRun?.to_version ?? ''}}"
                             }
+                        },
+                        {
+                            "comment": "결과 요약 — 이전 판 → 새 판, 소요 시간(시작~마지막 갱신), 번들 성공·실패·건너뜀 수, 검색 인덱스 결과, 실행 기록 파일 위치. 값이 없는 칸(옛 서버)은 그리지 않는다.",
+                            "id": "core_update_result_summary",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_computed.coreUpdateRun?.status === 'completed'}}",
+                            "props": {
+                                "className": "kv-list gap-y-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "kv-row"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.core_update.result.versions_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{(_computed.coreUpdateRun?.from_version ?? '-') + ' → ' + (_computed.coreUpdateRun?.to_version ?? '-')}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_computed.coreUpdateDurationSeconds != null}}",
+                                    "props": {
+                                        "className": "kv-row"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.core_update.result.duration_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{$t('admin.settings.core_update.result.duration', Object.fromEntries([['minutes', Math.floor((_computed.coreUpdateDurationSeconds ?? 0) / 60)], ['seconds', (_computed.coreUpdateDurationSeconds ?? 0) % 60]]))}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!_computed.coreUpdateBundledResult}}",
+                                    "props": {
+                                        "className": "kv-row"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.core_update.result.bundled_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.core_update.result.bundled_counts|success={{_computed.coreUpdateBundledResult?.success ?? 0}}|failed={{_computed.coreUpdateBundledResult?.failed ?? 0}}|skipped={{_computed.coreUpdateBundledResult?.skipped ?? 0}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!_computed.coreUpdateBundledResult?.search_index?.status}}",
+                                    "props": {
+                                        "className": "kv-row"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.core_update.result.search_index_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{_computed.coreUpdateBundledResult?.search_index?.status === 'failed' ? 'text-warning-soft' : 'text-heading'}}"
+                                            },
+                                            "text": "{{$t('admin.settings.core_update.result.search_index.' + (['rebuilt', 'failed', 'unsupported', 'skipped'].includes(_computed.coreUpdateBundledResult?.search_index?.status) ? _computed.coreUpdateBundledResult?.search_index?.status : 'skipped')) + (_computed.coreUpdateBundledResult?.search_index?.message ? ' — ' + _computed.coreUpdateBundledResult?.search_index?.message : '')}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!_computed.coreUpdateRun?.log_file}}",
+                                    "props": {
+                                        "className": "kv-row"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.core_update.result.log_file_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-mono text-xs text-secondary break-all select-all"
+                                            },
+                                            "text": "{{_computed.coreUpdateRun?.log_file ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "실패한 번들 항목 — 종류·식별자·사유·다시 시도 명령(고정폭, 한 번에 골라 복사하기 쉽게). 번들 단계가 끝난 뒤라면 완료·실패 모두 보인다.",
+                            "id": "core_update_bundled_failures",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{['completed', 'rolled_back', 'rollback_failed'].includes(_computed.coreUpdateRun?.status) && (_computed.coreUpdateBundledResult?.failed_items ?? []).length > 0}}",
+                            "props": {
+                                "className": "space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-heading text-sm"
+                                    },
+                                    "text": "$t:admin.settings.core_update.result.failures_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "overflow-x-auto border border-amber-200 dark:border-amber-800 rounded-lg"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Table",
+                                            "props": {
+                                                "className": "min-w-full text-sm"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Thead",
+                                                    "props": {
+                                                        "className": "bg-amber-50 dark:bg-amber-900/20"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Tr",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300"
+                                                                    },
+                                                                    "text": "$t:admin.settings.core_update.result.col_type"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300"
+                                                                    },
+                                                                    "text": "$t:admin.settings.core_update.result.col_identifier"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300"
+                                                                    },
+                                                                    "text": "$t:admin.settings.core_update.result.col_reason"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300"
+                                                                    },
+                                                                    "text": "$t:admin.settings.core_update.result.col_retry"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tbody",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Tr",
+                                                            "iteration": {
+                                                                "source": "_computed.coreUpdateBundledResult?.failed_items ?? []",
+                                                                "item_var": "failedItem"
+                                                            },
+                                                            "props": {
+                                                                "className": "border-t border-gray-200 dark:border-gray-700 align-top"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "props": {
+                                                                        "className": "px-3 py-2"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "badge badge-gray"
+                                                                            },
+                                                                            "text": "{{$t('admin.settings.core_update.selection.types.' + (failedItem.type ?? 'module'))}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "props": {
+                                                                        "className": "px-3 py-2 font-mono text-xs text-gray-900 dark:text-white break-all"
+                                                                    },
+                                                                    "text": "{{failedItem.identifier ?? ''}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "props": {
+                                                                        "className": "px-3 py-2 text-xs text-gray-700 dark:text-gray-300 break-words"
+                                                                    },
+                                                                    "text": "{{failedItem.reason ?? '-'}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "props": {
+                                                                        "className": "px-3 py-2"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "if": "{{!!failedItem.retry_command}}",
+                                                                            "props": {
+                                                                                "className": "block font-mono text-xs rounded bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 px-2 py-1 whitespace-pre-wrap break-all select-all"
+                                                                            },
+                                                                            "text": "{{failedItem.retry_command ?? ''}}"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
                         },
                         {
                             "id": "core_update_failed",
@@ -1049,6 +1807,17 @@
                                     "props": {
                                         "type": "error",
                                         "message": "$t:admin.settings.core_update.failed_title|step={{_computed.coreUpdateRun?.error?.step_label ?? ''}}|detail={{_computed.coreUpdateRun?.error?.message ?? ''}}"
+                                    }
+                                },
+                                {
+                                    "comment": "되돌리기가 점검 모드를 풀지 못했으면(서버 maintenance_left_on) 사이트가 아직 닫혀 있다는 것과 해제 방법을 먼저 알린다.",
+                                    "id": "core_update_maintenance_left_on",
+                                    "type": "composite",
+                                    "name": "Alert",
+                                    "if": "{{_computed.coreUpdateRun?.maintenance_left_on === true}}",
+                                    "props": {
+                                        "type": "warning",
+                                        "message": "$t:admin.settings.core_update.maintenance_left_on"
                                     }
                                 },
                                 {
@@ -1100,6 +1869,162 @@
                                         "className": "text-secondary text-xs break-all"
                                     },
                                     "text": "{{$t('admin.settings.core_update.backup_path') + ': ' + (_computed.coreUpdateRun?.rollback?.backup_path ?? '')}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "복구 안내 — 실패 화면의 「조치 방법 보기」가 펼친다. 되돌리기까지 실패했거나 점검 모드가 남았으면 처음부터 펼친다. 순서는 터미널의 수동 복구 안내와 같다: 백업에서 파일 되돌리기 → Composer 재설치 → 점검 해제.",
+                            "id": "core_update_recovery_guide",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed') && (_local.coreUpdateRecoveryOpen ?? (_computed.coreUpdateRun?.status === 'rollback_failed' || _computed.coreUpdateRun?.maintenance_left_on === true)) === true}}",
+                            "props": {
+                                "className": "rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-heading text-sm"
+                                    },
+                                    "text": "$t:admin.settings.core_update.recovery.title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_computed.coreUpdateRun?.rollback?.restored === true}}",
+                                    "props": {
+                                        "className": "text-secondary text-xs"
+                                    },
+                                    "text": "$t:admin.settings.core_update.recovery.restored_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!_computed.coreUpdateRun?.error?.report_path}}",
+                                    "props": {
+                                        "className": "space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label-subtle text-xs"
+                                            },
+                                            "text": "$t:admin.settings.core_update.report_path"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "block font-mono text-xs text-secondary break-all select-all"
+                                            },
+                                            "text": "{{_computed.coreUpdateRun?.error?.report_path ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!_computed.coreUpdateRun?.rollback?.backup_path}}",
+                                    "props": {
+                                        "className": "space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label-subtle text-xs"
+                                            },
+                                            "text": "$t:admin.settings.core_update.backup_path"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "block font-mono text-xs text-secondary break-all select-all"
+                                            },
+                                            "text": "{{_computed.coreUpdateRun?.rollback?.backup_path ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-secondary text-xs"
+                                    },
+                                    "text": "$t:admin.settings.core_update.recovery.manual_desc"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ol",
+                                    "props": {
+                                        "className": "list-decimal pl-5 space-y-2 text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.core_update.recovery.step_restore"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!!_computed.coreUpdateRun?.rollback?.backup_path}}",
+                                                    "props": {
+                                                        "className": "block mt-1 rounded bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 font-mono text-xs p-2 whitespace-pre-wrap break-all select-all"
+                                                    },
+                                                    "text": "{{'cp -r ' + (_computed.coreUpdateRun?.rollback?.backup_path ?? '') + '/* ./'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.core_update.recovery.step_composer"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "block mt-1 rounded bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 font-mono text-xs p-2 whitespace-pre-wrap break-all select-all"
+                                                    },
+                                                    "text": "composer install --no-dev --optimize-autoloader"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.core_update.recovery.step_maintenance"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "block mt-1 rounded bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 font-mono text-xs p-2 whitespace-pre-wrap break-all select-all"
+                                                    },
+                                                    "text": "php artisan up"
+                                                }
+                                            ]
+                                        }
+                                    ]
                                 }
                             ]
                         },
@@ -1250,6 +2175,7 @@
                                     ]
                                 },
                                 {
+                                    "comment": "「조치 방법 보기」 — 실패 뒤에는 터미널 업데이트 안내 창이 아니라 이 화면의 복구 안내(백업 위치·리포트 경로·수동 복구 순서)를 펼치고 접는다. 터미널 업데이트 안내 창은 고급 접기의 명령어 안내 버튼이 그대로 연다.",
                                     "id": "core_update_guide_button",
                                     "type": "basic",
                                     "name": "Button",
@@ -1257,15 +2183,20 @@
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "openModal",
-                                            "target": "core_update_guide_modal"
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "coreUpdateRecoveryOpen": "{{!((_local.coreUpdateRecoveryOpen ?? (_computed.coreUpdateRun?.status === 'rollback_failed' || _computed.coreUpdateRun?.maintenance_left_on === true)) === true)}}"
+                                            }
                                         }
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn btn-secondary"
+                                        "className": "btn btn-secondary",
+                                        "aria-expanded": "{{(_local.coreUpdateRecoveryOpen ?? (_computed.coreUpdateRun?.status === 'rollback_failed' || _computed.coreUpdateRun?.maintenance_left_on === true)) === true}}",
+                                        "aria-controls": "core_update_recovery_guide"
                                     },
-                                    "text": "$t:admin.settings.core_update.view_guide"
+                                    "text": "{{((_local.coreUpdateRecoveryOpen ?? (_computed.coreUpdateRun?.status === 'rollback_failed' || _computed.coreUpdateRun?.maintenance_left_on === true)) === true) ? $t('admin.settings.core_update.recovery.hide') : $t('admin.settings.core_update.view_guide')}}"
                                 },
                                 {
                                     "comment": "형제들과 달리 `dismissCoreUpdate` 는 전역 진행 플래그를 싣지 않는다(기록 정리는 업데이트 진행이 아니다). 그래서 진행 표시는 이 버튼의 지역 플래그로 잡고, 커스텀 핸들러도 `onSuccess`/`onError` 를 지원하므로 되돌리는 자리가 있다.",
@@ -1331,14 +2262,36 @@
                             ]
                         },
                         {
-                            "id": "core_update_log",
+                            "comment": "최근 기록 — 진행 중(되돌리는 중 포함)에는 기록을 접어 두어도 마지막 5줄을 늘 보여 준다(어느 항목을 처리했는지 눌러 보지 않아도 알 수 있게). 전체 기록은 「기록 보기」로 연다.",
+                            "id": "core_update_log_tail",
                             "type": "basic",
                             "name": "Pre",
+                            "if": "{{!(_local.coreUpdateLogOpen ?? false) && (_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back') && (_computed.coreUpdateRun?.logs ?? []).length > 0}}",
+                            "props": {
+                                "className": "rounded-lg bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 text-xs p-3 whitespace-pre-wrap"
+                            },
+                            "text": "{{(_computed.coreUpdateRun?.logs ?? []).slice(-5).join('\\n')}}"
+                        },
+                        {
+                            "comment": "전체 기록 — 상자를 세로 역방향 flex 로 두면 브라우저가 스크롤 기준을 맨 아래에 둔다. 그래서 새 줄이 와도 맨 아래를 따라가고, 운영자가 위로 올려 읽는 중이면 그 자리를 지킨다(스크립트 없이 CSS 만으로).",
+                            "id": "core_update_log",
+                            "type": "basic",
+                            "name": "Div",
                             "if": "{{(_local.coreUpdateLogOpen ?? false)}}",
                             "props": {
-                                "className": "max-h-72 overflow-auto rounded-lg bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 text-xs p-3 whitespace-pre-wrap"
+                                "className": "max-h-72 overflow-auto flex flex-col-reverse rounded-lg bg-gray-900 dark:bg-gray-950"
                             },
-                            "text": "{{(_computed.coreUpdateRun?.logs ?? []).join('\n')}}"
+                            "children": [
+                                {
+                                    "id": "core_update_log_body",
+                                    "type": "basic",
+                                    "name": "Pre",
+                                    "props": {
+                                        "className": "text-gray-100 dark:text-gray-200 text-xs p-3 whitespace-pre-wrap"
+                                    },
+                                    "text": "{{(_computed.coreUpdateRun?.logs ?? []).join('\n')}}"
+                                }
+                            ]
                         }
                     ]
                 }

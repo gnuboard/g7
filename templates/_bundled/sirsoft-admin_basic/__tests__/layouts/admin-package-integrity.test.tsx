@@ -669,8 +669,9 @@ describe('언어팩 업데이트 창 무결성', () => {
 
     expect(calls[0].url).toContain('/api/admin/language-packs/7/update');
     // 서명 확인을 아는 화면의 표식 — 첫 요청부터 늘 싣는다
-    expect(bodyOf(calls[0].init)).toEqual({ allow_unsigned: null, integrity_aware: '1' });
-    expect(bodyOf(calls[1].init)).toEqual({ allow_unsigned: 1, integrity_aware: '1' });
+    // 7.2.1 — 고급 영역의 강제·소스도 함께 싣는다(기본은 강제 꺼짐·auto)
+    expect(bodyOf(calls[0].init)).toEqual({ force: false, source: 'auto', allow_unsigned: null, integrity_aware: '1' });
+    expect(bodyOf(calls[1].init)).toEqual({ force: false, source: 'auto', allow_unsigned: 1, integrity_aware: '1' });
   });
 });
 

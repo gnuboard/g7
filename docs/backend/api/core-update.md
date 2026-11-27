@@ -233,9 +233,15 @@ Accept: application/json
 | run.completed_count | int | 완료 단계 수 (진행률 계산용) |
 | run.current_step | string\|null | 다음에 수행할 단계 키 (`next_step` 과 같은 값 — 화면이 단계 목록에서 현재 위치를 찾을 때 쓴다) |
 | run.current_step_label | string\|null | 다음 단계의 표시 이름 (활성 로케일) |
+| run.current_item | object\|null | 번들 단계가 다음 `advance` 에서 처리할 항목 (7.2.1). `step`(`bundled`)·`type`(`module`·`plugin`·`template`·`lang_pack`)·`identifier`·`name`(표시 이름, 현재 로케일, 없으면 `null`)·`from_version`·`to_version`(모르면 `null`)·`position`(1부터)·`total`. 번들 단계가 진행 중이고 남은 항목이 있을 때만 값이 있고 그 밖에는 `null` |
+| run.step_progress | object\|null | 지금 단계가 여러 요청에 걸칠 때 어디까지 갔는지 (7.2.1). `step`(단계 키 — `current_step` 과 같을 때만 싣는다, 되돌리는 중이면 `rollback`)·`done`(끝낸 양)·`total`(전체 양, 모르면 `null`)·`unit`(`files`·`entries`·`items`·`tasks`). 압축 풀기 = 푼 항목 / 전체 항목(`entries`), 파일 비교 = 확인한 파일 수(`files`, 새 파일 목록·적용 대상·출하 목록 구간을 넘어 누적한다 — 출하 목록 구간은 전체 수도 싣는다), 번들 = 끝낸 항목 / 항목 수(`items`, `current_item` 과 같은 근거), 마무리·되돌리기 = 끝낸 구간 / 구간 수(`tasks`, 마무리 4구간·되돌리기 4구간). 백업은 셀 수 없어 싣지 않는다. 단계가 끝나거나 바뀌면 `null` — 화면 표시용이며 동작에는 쓰지 않는다 |
 | run.logs | string[] | 진행 기록 (최근 500줄) |
-| run.warnings | string[] | 운영자가 확인해야 할 사항 (권한 복원 실패·루트 보호 파일 등) |
-| run.notices | string[] | 실행을 막지는 않지만 알려야 할 사실 (배포 설정 조각 갱신 안내 등) |
+| run.warnings | string[] | 운영자가 확인해야 할 사항 (권한 복원 실패 — 실패 경로 앞 5개와 복구 명령 예시 포함(7.2.1)·루트 보호 파일·문서 루트 노출(`[DOCROOT_EXPOSURE]`, 7.2.1)·번들 확장의 PHP 확장 부족(7.2.1) 등) |
+| run.notices | string[] | 실행을 막지는 않지만 알려야 할 사실 (배포 설정 조각 갱신 안내, 공식 번들 배치 요약·파일 적용 방식 한 줄(7.2.1) 등) |
+| run.bundled_result | object\|null | 번들 단계 결과 (7.2.1, 단계가 끝난 뒤 — 성공·실패 모두). `success`·`failed`·`skipped`(int)·`failed_items`(항목마다 `type`·`identifier`·`reason`·`retry_command` — 그 항목 하나를 다시 갱신하는 명령)·`search_index`(재생성을 고르지 않았으면 `null`, 고르면 `status`(`rebuilt`·`failed`·`unsupported`·`skipped`)·`message`). 번들 단계를 건너뛰었거나 아직이면 `null` |
+| run.maintenance_left_on | bool | 점검 모드가 켜진 채 남았는지 (7.2.1) — 되돌리기 실패, 또는 끝난 실행의 점검 해제 실패 |
+| run.started_by | object\|null | 업데이트를 시작한 관리자 `{id, name}` (7.2.1). 기록이 없거나 찾지 못하면 `null` |
+| run.log_file | string\|null | 실행이 끝날 때(완료·되돌림 끝) 실행 기록 전체를 남긴 업데이트 보고서 파일의 사이트 루트 기준 상대 경로 (7.2.1, `storage/logs/core_update_{success\|failed}_{시각}.log` — 터미널과 같은 위치·형식). [기록 정리] 뒤에도 파일은 남는다 |
 | run.started_at | string\|null | 착수 시각 (ISO 8601) |
 | run.updated_at | string\|null | 마지막 갱신 시각 (ISO 8601) |
 | run.error | object\|null | 실패 단계·사유·실패 기록 경로 |
@@ -250,6 +256,7 @@ Accept: application/json
 | preflight.checked | int | 검사한 경로 수 |
 | preflight.disk | object | 여유 공간 (`measurable`·`free_bytes`·`required_bytes`·`ok`) |
 | preflight.errors | string[] | 운영자에게 보여 줄 사유 (화면이 그대로 그린다) |
+| search_index_rebuild_available | bool | 검색 엔진이 인덱스 다시 만들기(점검)를 제공하는지 — 화면은 `false` 면 「검색 인덱스 다시 만들기」 선택지를 숨긴다(터미널이 묻는 조건과 같다). 진행 중에는 생략 |
 
 > **진단의 깊이** — 이 응답의 `preflight` 는 **얕은** 판정이다(각 대상 경로의 쓰기 비트 + 여유 공간).
 > 하위 전수 순회와 트리 크기 추정은 착수 1단계(`preflight` 단계)가 수행한다 — 그 순회는 저장소
@@ -269,7 +276,8 @@ Accept: application/json
         ],
         "total_steps": 12,
         "manual_sources": [],
-        "modified_layouts": { "has_modified": false, "count": 0, "extensions": [] }
+        "modified_layouts": { "has_modified": false, "count": 0, "extensions": [] },
+        "search_index_rebuild_available": true
     }
 }
 ```

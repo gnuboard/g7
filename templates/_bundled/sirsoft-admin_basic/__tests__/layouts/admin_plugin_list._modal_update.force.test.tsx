@@ -388,7 +388,8 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
     expect(apiCall.params.method).toBe('POST');
     expect(apiCall.params.body).toHaveProperty('force');
     expect(apiCall.params.body.force).toBe(
-      '{{_global.pluginForceUpdate === true}}',
+      // 비호환 강행 체크·고급 설정의 강제·다시 설치·끝나지 않은 업데이트 다시 실행(7.2.1) — 하나라도 참이면 강제
+      '{{_global.pluginForceUpdate === true || _global.extUpdateForce === true || _global.extUpdateReinstall === true || _global.extUpdateRetry === true}}',
     );
   });
 

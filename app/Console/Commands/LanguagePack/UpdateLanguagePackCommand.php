@@ -76,11 +76,12 @@ class UpdateLanguagePackCommand extends Command
 
         try {
             $fromVersion = $pack->version;
-            // source=bundled 는 force 와 동등 (bundled 1순위 강제). source=github 는 force 무시.
+            // source=bundled 는 force 와 동등 (bundled 1순위 강제). source 는 서비스로 넘겨 그 소스만 쓰게 한다 —
+            // 종전에는 넘기지 않아 --source=github 이 실제 효과가 없었다(--force 와 함께면 번들을 썼다, 7.2.1 출시 전).
             $effectiveForce = $force || $source === 'bundled';
             // 패키지 서명 검증 — 미서명이면 대화형은 묻고, 답할 수 없는 실행은 --allow-unsigned 없이는 실패(7.2.0)
             $updated = $this->runWithIntegrityConsent(
-                fn (PackageIntegrityOptions $integrity) => $this->service->performUpdate($pack, $effectiveForce, $integrity),
+                fn (PackageIntegrityOptions $integrity) => $this->service->performUpdate($pack, $effectiveForce, $integrity, $source),
                 new PackageIntegrityOptions((bool) $this->option('allow-unsigned'))
             );
 

@@ -1677,6 +1677,8 @@ HTTP/1.1 200
 | id | path | string | 예 | — | 대상 리소스의 식별자 |
 | allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
 | integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
+| force | body | boolean | 아니오 | — | 같은 판 재적용 (7.2.1) — 번들 원본을 다시 적용한다(터미널 `language-pack:update --force` 와 같다). 생략하면 false |
+| source | body | string | 아니오 | `auto`, `bundled`, `github` | 업데이트 소스 (7.2.1) — 터미널 `--source` 와 같다. bundled 는 번들만(강제 재적용과 같은 뜻), github 은 GitHub 만. 고른 소스가 없으면 422 `update_no_source`. 생략하면 auto(지금 동작) |
 
 **요청 예시**
 
@@ -1703,6 +1705,12 @@ _단건 응답: `data` 객체의 필드 (업데이트된 언어팩 = `LanguagePa
 | locale_native_name | string | `Español` | 원어 언어명 |
 | text_direction | string | `ltr` | 텍스트 방향 (ltr/rtl) |
 | version | string | `1.1.0` | 업데이트 후 적용된 버전 |
+| from_version | string | `1.0.0` | 업데이트 전 판 (7.2.1) |
+| to_version | string | `1.1.0` | 업데이트 후 판 (7.2.1) |
+| dependency_warnings | array | `[]` | 확장과 같은 모양을 맞춘 칸 — 언어팩은 늘 빈 배열 (7.2.1) |
+| recovered | null | `null` | 확장과 같은 모양을 맞춘 칸 — 언어팩은 늘 null (7.2.1) |
+| no_update | boolean | `false` | 성공 응답은 늘 false. 「이미 최신」은 422 `language_packs.errors.update_already_latest` 이고 그 응답 `data.no_update` 가 true 다 (7.2.1) |
+| unfinished_update | null | `null` | 확장 행과 같은 모양을 맞춘 칸 — 언어팩 업데이트는 진행 기록을 남기지 않아 늘 null (7.2.1) |
 | latest_version | string\|null | `1.1.0` | 감지된 최신 배포 버전 |
 | target_version_constraint | string\|null | `null` | 대상 확장 버전 제약 (semver) |
 | target_version_mismatch | boolean | `false` | 대상 버전 불일치 경고 플래그 |

@@ -15,6 +15,7 @@ import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './dete
 import { copyToClipboardHandler } from './copyToClipboardHandler';
 import { startCoreUpdateHandler, resumeCoreUpdateHandler, autoResumeCoreUpdateHandler, dismissCoreUpdateHandler, refreshCoreUpdateStatusHandler, submitCoreUpdateSelectionHandler } from './coreUpdateHandler';
 import { rememberIdentityClaimHandler } from './identityLauncher';
+import { startExtensionUpdateClockHandler, stopExtensionUpdateClockHandler, reconcileExtensionUpdateHandler, captureExtensionUpdateFailureHandler } from './extensionUpdateHandler';
 /**
  * 핸들러 맵
  *
@@ -33,6 +34,10 @@ export declare const handlerMap: {
     readonly dismissCoreUpdate: typeof dismissCoreUpdateHandler;
     readonly refreshCoreUpdateStatus: typeof refreshCoreUpdateStatusHandler;
     readonly submitCoreUpdateSelection: typeof submitCoreUpdateSelectionHandler;
+    readonly startExtensionUpdateClock: typeof startExtensionUpdateClockHandler;
+    readonly stopExtensionUpdateClock: typeof stopExtensionUpdateClockHandler;
+    readonly reconcileExtensionUpdate: typeof reconcileExtensionUpdateHandler;
+    readonly captureExtensionUpdateFailure: typeof captureExtensionUpdateFailureHandler;
     readonly setTheme: typeof setThemeHandler;
     readonly initTheme: typeof initThemeHandler;
     readonly scrollToSection: typeof scrollToSectionHandler;

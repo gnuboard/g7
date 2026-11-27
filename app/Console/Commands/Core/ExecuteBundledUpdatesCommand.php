@@ -15,6 +15,7 @@ use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
 use App\Listeners\ExtensionUpdateQueueListener;
+use App\Search\DTO\SearchIndexRepairReport;
 use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\ExtensionStaticCacheService;
@@ -273,6 +274,9 @@ class ExecuteBundledUpdatesCommand extends Command
         $skipped = $outcome['skipped'];
         $aborted = $outcome['aborted'];
 
+        // 검색 인덱스 재생성 결과 — 부모(웹 업데이트)가 결과 표식으로 받아 완료 화면에 보인다. 재생성을 고르지 않았으면 싣지 않는다.
+        $searchIndex = null;
+
         if (! $isItemProcess) {
             $this->newLine();
             $this->info(__('extensions.commands.bundled_update.completed', ['success' => $success, 'failed' => $failed]));
@@ -286,6 +290,7 @@ class ExecuteBundledUpdatesCommand extends Command
             // 잠금 저장소 장애로 멈췄으면 재생성하지 않는다 — 확장 갱신이 끝나지 않았다
             if ($rebuildSearchIndex && ! $aborted) {
                 $report = app(SearchIndexMaintenanceManager::class)->repairStale();
+                $searchIndex = self::searchIndexOutcome($report);
                 $this->newLine();
                 $this->info(__('extensions.commands.bundled_update.search_index_result', ['summary' => $report->summary()]));
 
@@ -297,6 +302,9 @@ class ExecuteBundledUpdatesCommand extends Command
                 foreach ($report->adviceLines() as $line) {
                     $this->warn('  '.$line);
                 }
+            }
+            if ($rebuildSearchIndex && $aborted) {
+                $searchIndex = ['status' => 'skipped', 'message' => null];
             }
 
             // 이전 버전 부모가 남긴 빈 격리 디렉토리(core_{ts}/extracted 껍데기) 청소 —
@@ -319,11 +327,31 @@ class ExecuteBundledUpdatesCommand extends Command
         if ($failedItems !== []) {
             $payload['failed_items'] = $failedItems;
         }
+        if ($searchIndex !== null) {
+            $payload['search_index'] = $searchIndex;
+        }
         $this->line(self::RESULT_PREFIX.json_encode($payload, JSON_UNESCAPED_UNICODE));
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
 
+    /**
+     * 검색 인덱스 재생성 보고를 결과 표식에 실을 모양으로 줄입니다.
+     *
+     * @param  SearchIndexRepairReport  $report  재생성 보고
+     * @return array{status: string, message: string} 상태(`rebuilt`|`failed`|`unsupported`|`skipped`)와 요약 문구
+     */
+    public static function searchIndexOutcome(SearchIndexRepairReport $report): array
+    {
+        $status = match (true) {
+            ! $report->available => 'unsupported',
+            $report->failed !== [] => 'failed',
+            $report->didRebuild() => 'rebuilt',
+            default => 'skipped',
+        };
+
+        return ['status' => $status, 'message' => $report->summary()];
+    }
     /**
      * 이 서버에서 새 PHP 프로세스를 띄울 수 있는지 답합니다.
      *

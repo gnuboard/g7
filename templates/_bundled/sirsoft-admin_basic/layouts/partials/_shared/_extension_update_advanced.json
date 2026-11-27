@@ -1,0 +1,635 @@
+{
+    "comment": "확장 업데이트 창 공용 고급 선택지 카드(7.2.1) — 터미널 업데이트 명령의 선택지를 화면에서도 고른다.\n  모듈·플러그인·템플릿·언어팩 업데이트 창이 **자기 「고급 설정」 접이식 안에** 넣는다(접이식은 창마다 하나다 — 이 조각은 접이식을 따로 만들지 않는다).\n  카드 모양은 같은 접이식 안의 「레이아웃 설치 소스」 카드와 같다(제목 + 설명 + 라디오 카드 / 체크박스 카드).\n  여는 쪽이 `_global.extUpdateKind`(module|plugin|template|lang_pack)와 기본값(vendor 방식·소스 auto, ZIP 없음, 강제 꺼짐)을 담아 준다.\n  - PHP 라이브러리(vendor) 설치 방식: 모듈·플러그인만(템플릿·언어팩은 vendor 가 없다) — `--vendor-mode`\n  - 새 판을 가져올 곳: auto|bundled|github — `--source`\n  - 직접 올린 ZIP: 서버의 정해진 대기 폴더에 FTP 로 올린 파일 이름만 고른다(임의 경로를 받지 않는다) — 언어팩 제외 — `--zip`\n    후보는 「고급 설정」을 펼칠 때 여는 창이 `GET /api/admin/{modules|plugins|templates}/update-sources/manual-zip`(data.sources[{name,size,modified_at}])로\n    받아 `_global.extUpdateManualSources` 에 담는다. 후보가 없으면(옛 서버 포함) 「사용 안 함」 하나와 안내만 보인다.\n  - 강제: 같은 판 재설치·멈춘 업데이트 정리 — `--force`. 다시 설치(`extUpdateReinstall`)·끝나지 않은 업데이트 다시 실행(`extUpdateRetry`)에서는\n    늘 강제라 켜진 채 잠근다(실행 버튼도 force=true 로 보낸다).\n  고른 값은 요청 본문 vendor_mode·source·zip_file·force 로 보낸다(실행 버튼이 읽는다).",
+    "meta": {
+        "is_partial": true,
+        "description": "확장 업데이트 고급 선택지 카드(vendor 방식·소스·ZIP·강제)"
+    },
+    "id": "ext_update_advanced",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "mt-3 space-y-3"
+    },
+    "children": [
+        {
+            "id": "ext_update_vendor_mode",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.extUpdateKind === 'module' || _global.extUpdateKind === 'plugin'}}",
+            "props": {
+                "className": "p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    },
+                    "text": "$t:admin.extension_update.vendor_mode_label"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-tertiary mb-2"
+                    },
+                    "text": "$t:admin.extension_update.vendor_mode_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extUpdateVendorMode": "auto"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "ext_update_vendor_mode",
+                                        "value": "auto",
+                                        "checked": "{{(_global.extUpdateVendorMode ?? 'auto') === 'auto'}}",
+                                        "className": "radio mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:admin.extension_update.vendor_mode_auto"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "$t:admin.extension_update.vendor_mode_auto_desc"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extUpdateVendorMode": "composer"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "ext_update_vendor_mode",
+                                        "value": "composer",
+                                        "checked": "{{_global.extUpdateVendorMode === 'composer'}}",
+                                        "className": "radio mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:admin.extension_update.vendor_mode_composer"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "$t:admin.extension_update.vendor_mode_composer_desc"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extUpdateVendorMode": "bundled"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "ext_update_vendor_mode",
+                                        "value": "bundled",
+                                        "checked": "{{_global.extUpdateVendorMode === 'bundled'}}",
+                                        "className": "radio mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:admin.extension_update.vendor_mode_bundled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "$t:admin.extension_update.vendor_mode_bundled_desc"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ext_update_source",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    },
+                    "text": "$t:admin.extension_update.source_label"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-tertiary mb-2"
+                    },
+                    "text": "$t:admin.extension_update.source_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extUpdateSource": "auto"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "ext_update_source",
+                                        "value": "auto",
+                                        "checked": "{{(_global.extUpdateSource ?? 'auto') === 'auto'}}",
+                                        "className": "radio mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:admin.extension_update.source_auto"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "$t:admin.extension_update.source_auto_desc"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extUpdateSource": "bundled"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "ext_update_source",
+                                        "value": "bundled",
+                                        "checked": "{{_global.extUpdateSource === 'bundled'}}",
+                                        "className": "radio mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:admin.extension_update.source_bundled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "$t:admin.extension_update.source_bundled_desc"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extUpdateSource": "github"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "ext_update_source",
+                                        "value": "github",
+                                        "checked": "{{_global.extUpdateSource === 'github'}}",
+                                        "className": "radio mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:admin.extension_update.source_github"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "$t:admin.extension_update.source_github_desc"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ext_update_zip",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.extUpdateKind !== 'lang_pack'}}",
+            "props": {
+                "className": "p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    },
+                    "text": "$t:admin.extension_update.zip_label"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-tertiary mb-2"
+                    },
+                    "text": "$t:admin.extension_update.zip_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "comment": "사용 안 함(기본) — 빈 값이면 실행 버튼이 zip_file 을 싣지 않는다",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extUpdateZipFile": ""
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "ext_update_zip",
+                                        "value": "",
+                                        "checked": "{{(_global.extUpdateZipFile ?? '') === ''}}",
+                                        "className": "radio mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:admin.extension_update.zip_auto"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "$t:admin.extension_update.zip_auto_desc"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "대기 폴더의 후보 — 반복 안에는 data-ref 를 두지 않는다",
+                            "type": "basic",
+                            "name": "Label",
+                            "iteration": {
+                                "source": "_global.extUpdateManualSources ?? []",
+                                "item_var": "zipSource"
+                            },
+                            "props": {
+                                "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extUpdateZipFile": "{{zipSource.name}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "ext_update_zip",
+                                        "value": "{{zipSource.name}}",
+                                        "checked": "{{_global.extUpdateZipFile === zipSource.name}}",
+                                        "className": "radio mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 font-mono break-all"
+                                            },
+                                            "text": "{{zipSource.name}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{zipSource.modified_at}}",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "{{zipSource.modified_at}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "ext_update_zip_empty",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{(_global.extUpdateManualSources ?? []).length === 0}}",
+                    "props": {
+                        "className": "text-tertiary mt-2"
+                    },
+                    "text": "$t:admin.extension_update.zip_none"
+                }
+            ]
+        },
+        {
+            "id": "ext_update_force",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    },
+                    "text": "$t:admin.extension_update.force_title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "flex items-start gap-2 cursor-pointer select-none"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "체크 상태가 아니라 현재 값을 뒤집어 담는다(잠긴 때는 바뀌지 않는다)",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "extUpdateForce": "{{_global.extUpdateForce !== true}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "checkbox",
+                                "checked": "{{_global.extUpdateForce === true || _global.extUpdateReinstall === true || _global.extUpdateRetry === true}}",
+                                "disabled": "{{_global.extUpdateReinstall === true || _global.extUpdateRetry === true}}",
+                                "className": "w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-60"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:admin.extension_update.force_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-xs text-muted mt-0.5"
+                                    },
+                                    "text": "$t:admin.extension_update.force_desc"
+                                },
+                                {
+                                    "id": "ext_update_force_locked",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.extUpdateReinstall === true || _global.extUpdateRetry === true}}",
+                                    "props": {
+                                        "className": "text-xs text-muted mt-1"
+                                    },
+                                    "text": "{{_global.extUpdateReinstall === true ? '$t:admin.extension_update.force_locked_reinstall' : '$t:admin.extension_update.force_locked_retry'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

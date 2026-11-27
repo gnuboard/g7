@@ -1570,6 +1570,46 @@
       ]
     },
     {
+      "comment": "확장 업데이트 결과 창(_modal_extension_update_result) 이 읽는 전역 상태(extUpdateResult) — 업데이트 창의 성공 갈래가 응답을 담아 여는 값이라, 편집기에서는 이 상태로 담아야 판·화면 처리 결과·검색 인덱스 절이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "extension_update_result_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "extUpdateResult": {
+                "kind": "module",
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스",
+                "message": "모듈을 업데이트했습니다.",
+                "from_version": "1.3.0",
+                "to_version": "1.3.1",
+                "current_version": "1.3.1",
+                "no_update": false,
+                "disconnected": false,
+                "reconcile": null,
+                "layout_sync": {
+                  "entries": [
+                    { "template": "sirsoft-admin_basic", "name": "admin_ecommerce_product_index", "verdict": "updated" },
+                    { "template": "sirsoft-admin_basic", "name": "admin_ecommerce_order_index", "verdict": "kept" }
+                  ]
+                },
+                "layout_warnings": [],
+                "dependency_warnings": [],
+                "search_index": { "rebuilt": true, "inspected": 12, "repaired": 1, "failed": 0, "stale_count": 0 },
+                "recovered": []
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "comment": "모달 본문이 읽는 전역 상태(coreLicenseContent) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",

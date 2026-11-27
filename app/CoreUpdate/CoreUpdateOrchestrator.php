@@ -30,11 +30,14 @@ use App\Extension\Support\ExtensionBatchUpdateContext;
 use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
 use App\Listeners\ExtensionUpdateQueueListener;
+use App\Models\User;
 use App\Services\Core\BundledPlacementPlan;
 use App\Services\Core\BundledSourcePlanner;
+use App\Services\Core\PhpRequirementPreflight;
 use App\Services\CoreUpdateService;
 use App\Services\ExtensionStaticCacheService;
 use App\Services\LanguagePackService;
+use App\Support\ComposerInstallInfo;
 use App\Support\ConfigCacheHelper;
 use App\Support\ExecutionEnvironment;
 use App\Support\RouteCacheHelper;
@@ -96,6 +99,12 @@ class CoreUpdateOrchestrator
 
     /** 점유에 기록하는 되돌리기 구간 이름 (단계 값과 겹치지 않는다). */
     public const PHASE_ROLLBACK = 'rollback';
+
+    /** 마무리 단계의 구간 순서 — 화면 진행량(`step_progress`)의 구간 수로만 쓴다. */
+    private const FINALIZE_PHASES = ['prepare', 'cleanup', 'ownership', 'link'];
+
+    /** 되돌리기의 구간 순서 — 화면 진행량(`step_progress`)의 구간 수로만 쓴다. */
+    private const ROLLBACK_PHASES = ['vendor', 'restore', 'ownership', 'cleanup'];
 
     /** 진행 중 선택 종류 — 새로 들어온 미배치 공식 번들 배치 (7.2.1, 명령줄 `--bundled-sources` 와 같은 질문). */
     public const SELECTION_BUNDLED_SOURCES = 'bundled_sources';
@@ -182,6 +191,7 @@ class CoreUpdateOrchestrator
 
         $completed = $this->state->completedSteps();
         $next = $this->state->nextStep();
+        $currentItem = $this->bundledCurrentItem($raw, $next);
 
         return [
             'run' => [
@@ -203,11 +213,23 @@ class CoreUpdateOrchestrator
                 'rollback' => $raw['rollback'] ?? null,
                 'started_at' => $raw['started_at'] ?? null,
                 'updated_at' => $raw['updated_at'] ?? null,
+                // 번들 단계 결과(7.2.1) — 성공·실패·건너뜀 수, 실패 항목과 다시 시도할 명령, 검색 인덱스 결과. 번들 단계 전이면 null
+                'bundled_result' => $this->bundledResultFor($raw),
+                // 점검 모드가 켜진 채 남았는지(7.2.1) — 되돌리기 실패·점검 해제 실패
+                'maintenance_left_on' => $this->maintenanceLeftOn($raw),
+                // 업데이트를 시작한 관리자(7.2.1) — 다른 관리자가 진행 중인지 화면이 알린다
+                'started_by' => $this->startedByFor($raw),
+                // 실행이 끝날 때 남긴 실행 기록 파일(7.2.1, 사이트 루트 기준 상대 경로) — [기록 정리] 뒤에도 남는다
+                'log_file' => is_string($raw['log_file'] ?? null) ? $raw['log_file'] : null,
                 // 서버가 아직 어떤 단계를 돌리는 중인지 — 화면은 응답이 끊겨도 이 값으로 점유가
                 // 풀릴 때까지 기다렸다가 스스로 다시 부른다.
                 'claim' => $this->state->claimSummary(),
                 // 운영자의 선택을 기다리는 중이면 그 내용(7.2.1) — 화면은 다음 단계를 부르지 않고 선택 창을 그린다.
                 'awaiting' => $this->state->context('awaiting'),
+                // 번들 단계가 다음에 처리할 항목(7.2.1) — 그 밖에는 null
+                'current_item' => $currentItem,
+                // 지금 단계가 여러 요청에 걸쳐 어디까지 갔는지(7.2.1) — 그 밖에는 null
+                'step_progress' => $this->stepProgressFor($raw, $next, $currentItem),
             ],
             'steps' => $steps,
             'total_steps' => count($steps),
@@ -821,6 +843,11 @@ class CoreUpdateOrchestrator
                 return;
             }
 
+            // 단계가 끝났다 — 그 단계의 진행량은 더 쓰지 않는다
+            if ($this->state->context('step_progress') !== null) {
+                $this->state->mergeContext(['step_progress' => null]);
+            }
+
             $completed = $this->state->completedSteps();
             $completed[] = $step->value;
 
@@ -983,6 +1010,7 @@ class CoreUpdateOrchestrator
         if (! $chunk['done']) {
             $progress['from'] = $chunk['next'];
             $this->state->mergeContext(['download_progress' => $progress]);
+            $this->noteStepProgress(CoreUpdateStep::Download->value, (int) $chunk['next'], (int) $chunk['total'], 'entries');
             $this->state->appendLog((string) __('settings.core_update.web.log_extract_continues', [
                 'done' => (string) $chunk['next'],
                 'total' => (string) $chunk['total'],
@@ -993,10 +1021,14 @@ class CoreUpdateOrchestrator
         }
 
         $pendingPath = (string) $chunk['source_path'];
+        $this->state->appendLog((string) __('settings.core_update.web.log_extract_done', [
+            'total' => (string) $chunk['total'],
+        ]));
 
         // 다 풀었다 — 서명된 버전과 푼 배포본의 config/app.php 버전을 대조한다(7.2.0). 불일치면 이 단계가 실패해 되돌린다.
         if (is_array($progress['integrity'] ?? null)) {
             $this->service->confirmCoreIntegrity(PackageVerification::fromArray($progress['integrity']), $pendingPath, $options->integrityOptions());
+            $this->state->appendLog($this->describeArchiveIntegrity($progress['integrity']));
         }
 
         if (($progress['manual'] ?? false) !== true && is_file((string) $progress['archive'])) {
@@ -1004,6 +1036,9 @@ class CoreUpdateOrchestrator
         }
 
         $this->state->mergeContext(['pending_path' => $pendingPath, 'download_progress' => null]);
+
+        // 새 코어에 필요한 PHP 확장이 서버에 있는지 — 터미널 업데이트의 시작 전 점검과 같은 판정·문구. 파일을 바꾸기 전에 멈춘다.
+        $this->guardPhpRequirements($pendingPath);
 
         if (($progress['manual'] ?? false) === true) {
             $toVersion = $this->readSourceVersion($pendingPath);
@@ -1112,14 +1147,17 @@ class CoreUpdateOrchestrator
 
         $plan = $planner->plan($inventory);
 
-        if ($plan->unplaced === []) {
+        // 확장 언어팩은 대상 확장을 따라가므로 묻지 않는다(대상을 배치하면 함께 배치된다) — 터미널과 같은 판정
+        $candidates = $plan->askableUnplaced();
+
+        if ($candidates === []) {
             return $plan;
         }
 
         $locale = app()->getLocale();
         $items = [];
 
-        foreach ($plan->unplaced as $key => $entry) {
+        foreach ($candidates as $key => $entry) {
             $name = $entry['name'] ?? ($entry['identifier'] ?? $key);
             $items[] = [
                 'key' => (string) $key,
@@ -1133,6 +1171,35 @@ class CoreUpdateOrchestrator
         $this->awaitSelection(self::SELECTION_BUNDLED_SOURCES, $items);
 
         return null;
+    }
+
+    /**
+     * 운영자가 고른 번들의 의존 번들이 함께 배치되면 실행 기록에 알립니다 — 터미널 `dependency_added` 안내와 같은 계산.
+     *
+     * 운영자가 배치할 번들을 고른 경우에만 남깁니다(고르지 않았으면 함께 배치될 것도 없다).
+     *
+     * @param  string  $pendingPath  받은 배포본 경로
+     * @param  BundledPlacementPlan  $plan  운영자 선택을 반영한 판정
+     * @return void 반환값 없음
+     */
+    private function logBundledDependencyAdditions(string $pendingPath, BundledPlacementPlan $plan): void
+    {
+        if ($this->selection(self::SELECTION_BUNDLED_SOURCES) === null || $plan->placedBy('dependency') === []) {
+            return;
+        }
+
+        $planner = app(BundledSourcePlanner::class);
+        $base = $planner->plan($planner->readInventoryFromDirectory($pendingPath));
+        $added = array_map(
+            static fn (array $row): string => $row['entry']['type'].':'.$row['entry']['identifier'],
+            $plan->addedByDependencySince($base),
+        );
+
+        if ($added !== []) {
+            $this->state->appendLog((string) __('settings.bundled_sources.dependency_added', [
+                'items' => implode(', ', array_values($added)),
+            ]));
+        }
     }
 
     /**
@@ -1279,10 +1346,14 @@ class CoreUpdateOrchestrator
             }
 
             $progress = ['phase' => 'manifest', 'skip_paths' => $bundledPlan->skipPaths(), 'manifest' => [], 'apply' => []];
-            $this->state->appendLog((string) __('settings.core_update.web.log_bundled_placement', [
+            $placementLine = (string) __('settings.core_update.web.log_bundled_placement', [
                 'placed' => (string) count($bundledPlan->placed),
                 'unplaced' => (string) count($bundledPlan->unplaced),
-            ]));
+            ]);
+            $this->state->appendLog($placementLine);
+            // 기록에만 있던 요약을 알림에도 싣는다 — 완료 화면이 「어떻게 배치했는지」를 보인다(7.2.1)
+            $this->state->appendNotices([$placementLine]);
+            $this->logBundledDependencyAdditions($pendingPath, $bundledPlan);
         }
 
         $progress['slices'] = $slices;
@@ -1332,6 +1403,9 @@ class CoreUpdateOrchestrator
 
             $progress['phase'] = 'apply';
             $progress['manifest'] = [];
+            // 화면의 「n개 확인」이 구간마다 0 으로 돌아가지 않게 끝낸 구간의 확인 수를 쌓아 둔다(표시용)
+            $progress['checked_base'] = (int) ($progress['checked_base'] ?? 0) + (int) (isset($chunk) ? ($chunk['visited'] ?? 0) : 0);
+            unset($chunk);
 
             if ($shouldPause()) {
                 $this->pausePlan($progress, 0);
@@ -1383,6 +1457,8 @@ class CoreUpdateOrchestrator
 
             $progress['phase'] = 'shipped';
             $progress['apply'] = [];
+            $progress['checked_base'] = (int) ($progress['checked_base'] ?? 0) + (int) (isset($chunk) ? ($chunk['visited'] ?? 0) : 0);
+            unset($chunk);
 
             if ($shouldPause()) {
                 $this->pausePlan($progress, 0);
@@ -1398,7 +1474,7 @@ class CoreUpdateOrchestrator
 
             if (! $shipped['done']) {
                 $progress['shipped'] = $shipped;
-                $this->pausePlan($progress, (int) $shipped['index']);
+                $this->pausePlan($progress, (int) $shipped['index'], count((array) ($shipped['paths'] ?? [])));
 
                 return;
             }
@@ -1413,17 +1489,206 @@ class CoreUpdateOrchestrator
     }
 
     /**
+     * 내려받은 배포본의 무결성 검증 결과를 실행 기록 한 줄로 만듭니다.
+     *
+     * @param  array<string, mixed>  $integrity  PackageVerification::toArray() 결과
+     * @return string 기록 줄
+     */
+    private function describeArchiveIntegrity(array $integrity): string
+    {
+        $status = (string) ($integrity['status'] ?? '');
+
+        if ($status === 'verified') {
+            return (string) __('settings.core_update.web.log_integrity_verified', [
+                'key' => (string) ($integrity['key_id'] ?? '-'),
+                'signer' => (string) ($integrity['signer_label'] ?? '-'),
+            ]);
+        }
+
+        if ($status === 'unsigned' || $status === 'unverifiable') {
+            return (string) __('settings.core_update.web.log_integrity_unsigned', [
+                'reason' => (string) ($integrity['message'] ?? $status),
+            ]);
+        }
+
+        return (string) __('settings.core_update.web.log_integrity_other', ['status' => $status]);
+    }
+
+    /**
+     * 코어 파일 적용 완료 줄을 적용 대상 통계와 함께 만듭니다.
+     *
+     * @param  mixed  $stats  apply_stats 문맥 값 (산출 실패로 전체 덮어쓰기면 null)
+     * @return string 기록 줄
+     */
+    private function describeApplied(mixed $stats): string
+    {
+        if (! is_array($stats) || ! isset($stats['total'])) {
+            return (string) __('settings.core_update.web.log_applied_full');
+        }
+
+        return (string) __('settings.core_update.web.log_applied_detail', [
+            'total' => (string) ((int) $stats['total']),
+            'added' => (string) ((int) ($stats['added_count'] ?? 0)),
+            'changed' => (string) ((int) ($stats['changed_count'] ?? 0)),
+        ]);
+    }
+
+    /**
+     * 운영 vendor 에 개발용 패키지가 섞여 있으면 터미널과 같은 문구로 알립니다.
+     *
+     * composer 변경이 없어 vendor 를 그대로 두면 경고로, 새 vendor 로 바꿔 끼우면 실행 기록으로 남긴다.
+     * 판정 실패는 업데이트를 막지 않는다.
+     *
+     * @param  bool  $composerSkipped  의존성 변경이 없어 vendor 를 그대로 두는지
+     * @return void 반환값 없음
+     */
+    private function noteDevPackages(bool $composerSkipped): void
+    {
+        try {
+            $devPackages = ComposerInstallInfo::devPackageNames(base_path('vendor'));
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        if ($devPackages === []) {
+            return;
+        }
+
+        $count = (string) count($devPackages);
+
+        if ($composerSkipped) {
+            $message = (string) __('settings.core_update.console.dev_packages_kept', ['count' => $count]);
+            $this->state->appendWarnings([$message]);
+            $this->state->appendLog($message);
+
+            return;
+        }
+
+        $this->state->appendLog((string) __('settings.core_update.console.dev_packages_replaced', ['count' => $count]));
+    }
+
+    /**
+     * 마이그레이션 저장소에 기록된 실행 완료 마이그레이션 이름을 돌려줍니다 (읽기 전용).
+     *
+     * @return array<int, string>|null 이름 목록 (저장소가 아직 없으면 빈 배열, 조회 실패면 null)
+     */
+    private function ranMigrationNames(): ?array
+    {
+        try {
+            $repository = app('migrator')->getRepository();
+
+            if (! $repository->repositoryExists()) {
+                return [];
+            }
+
+            return array_values(array_map('strval', $repository->getRan()));
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * 이번에 실행된 마이그레이션을 실행 기록 한 줄로 만듭니다.
+     *
+     * @param  array<int, string>  $names  이번에 실행된 마이그레이션 이름
+     * @return string 기록 줄
+     */
+    private function describeMigrations(array $names): string
+    {
+        if ($names === []) {
+            return (string) __('settings.core_update.web.log_migrations_none');
+        }
+
+        return (string) __('settings.core_update.web.log_migrations_ran', [
+            'count' => (string) count($names),
+            'names' => $this->summarizeNames($names),
+        ]);
+    }
+
+    /**
+     * 업그레이드 스텝 결과를 터미널과 같은 정보(실행·건너뜀 버전)로 기록 줄들로 만듭니다.
+     *
+     * @param  array<string, mixed>|null  $executed  `[STEPS_EXECUTED]` 페이로드
+     * @param  string  $fromVersion  시작 버전
+     * @param  string  $toVersion  대상 버전
+     * @return array<int, string> 기록 줄
+     */
+    private function describeUpgradeSteps(?array $executed, string $fromVersion, string $toVersion): array
+    {
+        $count = (int) ($executed['count'] ?? 0);
+        $versions = array_values(array_filter((array) ($executed['versions'] ?? []), 'is_string'));
+        $skippedVersions = array_values(array_filter((array) ($executed['skippedVersions'] ?? []), 'is_string'));
+        $skipped = (int) ($executed['skipped'] ?? count($skippedVersions));
+
+        // 버전 목록을 싣지 않는 실행(구버전 명령)이면 종전 줄 하나만 남긴다
+        if (! is_array($executed) || ! array_key_exists('versions', $executed)) {
+            return [(string) __('settings.core_update.web.log_upgrade_steps', ['count' => (string) $count])];
+        }
+
+        $lines = [];
+
+        if ($count > 0) {
+            $lines[] = (string) __('settings.core_update.web.log_upgrade_steps_ran', [
+                'count' => (string) $count,
+                'versions' => $this->summarizeNames($versions),
+            ]);
+        }
+
+        if ($skipped > 0) {
+            $lines[] = (string) __('settings.core_update.web.log_upgrade_steps_already', [
+                'count' => (string) $skipped,
+                'versions' => $this->summarizeNames($skippedVersions),
+            ]);
+        }
+
+        if ($lines === []) {
+            $lines[] = (string) __('settings.core_update.web.log_upgrade_steps_none', [
+                'from' => $fromVersion,
+                'to' => $toVersion,
+            ]);
+        }
+
+        return $lines;
+    }
+
+    /**
+     * 이름 목록을 기록 줄에 넣을 만큼 줄여 이어 붙입니다 (앞 10개 + 「외 n개」).
+     *
+     * @param  array<int, string>  $names  이름 목록
+     * @return string 쉼표로 이은 문자열 (비면 「-」)
+     */
+    private function summarizeNames(array $names): string
+    {
+        if ($names === []) {
+            return '-';
+        }
+
+        $limit = 10;
+        $text = implode(', ', array_slice($names, 0, $limit));
+
+        if (count($names) > $limit) {
+            $text .= ' '.__('settings.core_update.web.log_list_more', ['count' => (string) (count($names) - $limit)]);
+        }
+
+        return $text;
+    }
+
+    /**
      * 적용 대상 산출을 멈추고 다음 요청에서 이어 가게 합니다.
      *
      * @param  array<string, mixed>  $progress  커서와 중간 결과
      * @param  int  $visited  지금까지 확인한 항목 수
+     * @param  int|null  $total  이 구간의 전체 항목 수 (모르면 null)
      * @return void 반환값 없음
      */
-    private function pausePlan(array $progress, int $visited): void
+    private function pausePlan(array $progress, int $visited, ?int $total = null): void
     {
         $this->state->storePlanProgress($progress);
+        // 앞 구간(새 파일 목록·적용 대상·출하 목록)에서 확인한 수를 더한다 — 화면 수치가 줄어 보이지 않게(표시값만)
+        $base = max(0, (int) ($progress['checked_base'] ?? 0));
+        $this->noteStepProgress(CoreUpdateStep::Plan->value, $base + $visited, $total !== null ? $base + $total : null, 'files');
         $this->state->appendLog((string) __('settings.core_update.web.log_plan_continues', [
-            'checked' => (string) $visited,
+            'checked' => (string) ($base + $visited),
         ]));
 
         // 같은 단계를 다음 요청에서 다시 — 완료로 표시하지 않는다.
@@ -1463,7 +1728,10 @@ class CoreUpdateOrchestrator
 
         $this->appendApplyWarnings((array) ($result['root_file_warnings'] ?? []));
         $this->reportBundledPrune((array) ($result['bundled_prune'] ?? []));
-        $this->state->appendLog((string) __('settings.core_update.web.log_applied'));
+        $appliedLine = $this->describeApplied($this->state->context('apply_stats'));
+        $this->state->appendLog($appliedLine);
+        // 기록에만 있던 적용 방식 요약을 알림에도 싣는다(7.2.1)
+        $this->state->appendNotices([$appliedLine]);
 
         // 미배치 공식 번들 기록 — 관리자 목록 안내와 `core:bundled-sources` 의 근거. 되돌리기는 이전 기록으로 돌려놓는다.
         $planner = app(BundledSourcePlanner::class);
@@ -1488,6 +1756,9 @@ class CoreUpdateOrchestrator
      */
     private function stepVendorCopy(): void
     {
+        // 터미널과 같은 판정 — 교체 전 운영 vendor 에 개발용 패키지가 섞여 있으면 알린다(동작은 바꾸지 않는다)
+        $this->noteDevPackages($this->state->context('composer_skipped') === true);
+
         if ($this->state->context('composer_skipped') === true) {
             $this->state->appendLog((string) __('settings.core_update.web.log_vendor_copy_skipped'));
 
@@ -1507,7 +1778,7 @@ class CoreUpdateOrchestrator
 
         if ($this->service->swapVendorFromPending($pendingPath, $parking)) {
             $this->state->mergeContext(['vendor_swap' => ['previous' => $parking]]);
-            $this->state->appendLog((string) __('settings.core_update.web.log_vendor_copied'));
+            $this->state->appendLog((string) __('settings.core_update.web.log_vendor_swapped'));
 
             return;
         }
@@ -1532,7 +1803,7 @@ class CoreUpdateOrchestrator
 
         $this->service->copyVendorFromPending($pendingPath);
         $this->state->mergeContext(['vendor_copied' => true]);
-        $this->state->appendLog((string) __('settings.core_update.web.log_vendor_copied'));
+        $this->state->appendLog((string) __('settings.core_update.web.log_vendor_copied_files'));
     }
 
     /**
@@ -1557,7 +1828,14 @@ class CoreUpdateOrchestrator
      */
     private function stepMigrate(): void
     {
+        // 실행 전후의 「실행된 마이그레이션」 목록 차이로 이번에 돈 것을 기록한다(읽기만 한다)
+        $ranBefore = $this->ranMigrationNames();
         $this->service->runMigrations();
+        $ranAfter = $this->ranMigrationNames();
+
+        if ($ranBefore !== null && $ranAfter !== null) {
+            $this->state->appendLog($this->describeMigrations(array_values(array_diff($ranAfter, $ranBefore))));
+        }
 
         // `syncCoreRolesAndPermissions`/`syncCoreMenus` 를 직접 부르지 않는다 — 부팅 시점에
         // 캐시된 구버전 config 로 sync 가 돌면 신규 권한·메뉴가 누락된다.
@@ -1585,7 +1863,11 @@ class CoreUpdateOrchestrator
             '--from' => $fromVersion,
             '--to' => $toVersion,
             '--steps-only' => true,
+            // 문서 루트 노출 통보를 표식 줄로 받는다(7.2.1) — 터미널은 콘솔에 바로 보이지만 웹은 출력을 화면에 보이지 않는다
+            '--markers' => true,
         ]);
+
+        $this->appendDocrootExposureWarnings($result->output);
 
         $handoff = $this->parseLineProtocol($result->output, '[HANDOFF] ');
 
@@ -1604,9 +1886,10 @@ class CoreUpdateOrchestrator
         $executed = $this->parseLineProtocol($result->output, '[STEPS_EXECUTED] ');
 
         $this->state->mergeContext(['upgrade_resume_from' => null]);
-        $this->state->appendLog((string) __('settings.core_update.web.log_upgrade_steps', [
-            'count' => (string) ((int) ($executed['count'] ?? 0)),
-        ]));
+
+        foreach ($this->describeUpgradeSteps($executed, $fromVersion, $toVersion) as $line) {
+            $this->state->appendLog($line);
+        }
     }
 
     /**
@@ -1672,6 +1955,8 @@ class CoreUpdateOrchestrator
                 $manifest['templates'],
                 $manifest['lang_packs'],
             );
+            $items = self::withBundledItemVersions($items, $manifest);
+            $this->logBundledTargets($items);
 
             // 몇 개짜리 묶음인지 항목마다 싣는다 — 2개 이상이면 항목 자식이 정적 게시·시작 재굽기·확장마다의 큐 워커 재시작을
             // 건너뛰고, 이 단계 끝(재시작)과 마무리 단계(게시)가 한 번 한다. 1개짜리는 종전과 같다.
@@ -1707,6 +1992,7 @@ class CoreUpdateOrchestrator
                 'parent_pid' => ExecutionEnvironment::hasFunction('getmypid') ? (int) getmypid() : null,
             ];
             $this->state->mergeContext(['bundled_child' => $childContext]);
+            $itemStartedAt = microtime(true);
 
             try {
                 $result = $this->runArtisan('core:execute-bundled-updates', [
@@ -1719,6 +2005,12 @@ class CoreUpdateOrchestrator
                 $progress['failed'] += isset($summary['failed'])
                     ? (int) $summary['failed']
                     : ($result->successful() ? 0 : 1);
+                // 완료 화면용 결과(7.2.1) — 건너뜀 수, 실패 항목(사유·다시 시도할 명령), 검색 인덱스 결과(마지막 항목 자식이 싣는다)
+                $progress['skipped'] = (int) ($progress['skipped'] ?? 0) + (int) ($summary['skipped'] ?? 0);
+                $progress['failed_items'] = [...(array) ($progress['failed_items'] ?? []), ...self::bundledFailedItems($item, $summary, $result->exitCode, $result->successful())];
+                if (is_array($summary['search_index'] ?? null)) {
+                    $progress['search_index'] = $summary['search_index'];
+                }
             } finally {
                 if (is_file($manifestPath)) {
                     @unlink($manifestPath);
@@ -1737,15 +2029,14 @@ class CoreUpdateOrchestrator
                 $this->state->mergeContext(['bundled_child' => null]);
             }
 
+            // 항목마다 한 줄 — 무엇을 몇 판에서 몇 판으로 올렸는지, 실패면 사유와 다시 시도할 명령(명령줄 화면과 같은 정보)
+            $this->state->appendLog(self::bundledItemLogLine($item, $index + 1, $total, $summary, $result->exitCode, microtime(true) - $itemStartedAt));
+
             $progress['index'] = ++$index;
         }
 
         if ($index < $total) {
             $this->state->mergeContext(['bundled_progress' => $progress]);
-            $this->state->appendLog((string) __('settings.core_update.web.log_bundled_progress', [
-                'done' => (string) $index,
-                'total' => (string) $total,
-            ]));
             $this->repeatCurrentStep = true;
 
             return;
@@ -1767,6 +2058,9 @@ class CoreUpdateOrchestrator
                 'failed' => (int) $progress['failed'],
                 'unconfirmed' => count($unconfirmed),
                 'planned' => (int) $progress['planned'],
+                'skipped' => (int) ($progress['skipped'] ?? 0),
+                'failed_items' => array_values((array) ($progress['failed_items'] ?? [])),
+                'search_index' => is_array($progress['search_index'] ?? null) ? $progress['search_index'] : null,
             ],
         ]);
 
@@ -2070,6 +2364,277 @@ class CoreUpdateOrchestrator
     }
 
     /**
+     * 처리 순서로 편 번들 항목에 매니페스트의 이전 판·새 판을 붙입니다 (실행 기록·화면의 「지금 처리 중」용).
+     *
+     * `flattenItems()` 는 처리에 쓰는 키(type·identifier·strategy)만 남기므로 판은 여기서 다시 붙인다. 판을 모르는 항목은 null 이다.
+     *
+     * @param  array<int, array<string, mixed>>  $items  `ExecuteBundledUpdatesCommand::flattenItems()` 결과
+     * @param  array<string, mixed>  $manifest  {@see buildBundledManifest()} 결과 (선택 반영 후)
+     * @return array<int, array<string, mixed>> 판을 붙인 항목 목록 (순서는 그대로)
+     */
+    public static function withBundledItemVersions(array $items, array $manifest): array
+    {
+        $versions = [];
+
+        foreach (['modules' => 'module', 'plugins' => 'plugin', 'templates' => 'template', 'lang_packs' => 'lang_pack'] as $group => $type) {
+            foreach ((array) ($manifest[$group] ?? []) as $entry) {
+                if (is_array($entry)) {
+                    $versions[$type.':'.(string) ($entry['identifier'] ?? '')] = $entry;
+                }
+            }
+        }
+
+        return array_map(static function (array $item) use ($versions): array {
+            $entry = $versions[(string) ($item['type'] ?? '').':'.(string) ($item['identifier'] ?? '')] ?? [];
+            $from = (string) ($entry['from_version'] ?? '');
+            $to = (string) ($entry['to_version'] ?? '');
+
+            return $item + ['from_version' => $from !== '' ? $from : null, 'to_version' => $to !== '' ? $to : null];
+        }, array_values($items));
+    }
+
+    /**
+     * 번들 단계를 시작할 때 업데이트 대상 수를 종류별로 한 줄 남깁니다 (명령줄의 「감지 목록」에 해당 — 항목별 줄은 길어 수만).
+     *
+     * @param  array<int, array<string, mixed>>  $items  처리 순서의 항목 목록
+     * @return void 반환값 없음
+     */
+    private function logBundledTargets(array $items): void
+    {
+        $counts = [];
+
+        foreach ($items as $item) {
+            $type = (string) ($item['type'] ?? '');
+            $counts[$type] = ($counts[$type] ?? 0) + 1;
+        }
+
+        $parts = [];
+
+        foreach (['module', 'plugin', 'template', 'lang_pack'] as $type) {
+            if (($counts[$type] ?? 0) > 0) {
+                $parts[] = (string) __('settings.core_update.web.log_bundled_targets_part', [
+                    'type' => self::bundledTypeLabel($type),
+                    'count' => (string) $counts[$type],
+                ]);
+            }
+        }
+
+        $this->state->appendLog((string) __('settings.core_update.web.log_bundled_targets', [
+            'total' => (string) count($items),
+            'summary' => implode(', ', $parts),
+        ]));
+    }
+
+    /**
+     * 번들 항목 종류의 사람이 읽는 이름 (모듈·플러그인·템플릿·언어팩, 현재 로케일).
+     *
+     * @param  string  $type  항목 종류 (module|plugin|template|lang_pack)
+     * @return string 종류 이름 (모르는 종류면 그대로)
+     */
+    private static function bundledTypeLabel(string $type): string
+    {
+        $key = 'settings.bundled_sources.types.'.($type === 'lang_pack' ? 'language_pack' : $type);
+        $label = (string) __($key);
+
+        return $label === $key ? $type : $label;
+    }
+
+    /**
+     * 번들 항목 하나를 처리한 결과를 실행 기록 한 줄로 만듭니다 — 성공(판·소요)·실패(사유·다시 시도 명령)·중단·건너뜀.
+     *
+     * 판정은 진행분 집계와 같다: 결과 줄의 `failed` 가 있으면 그 수, 없으면 종료 코드. 결과 줄 없이 끝났으면 사유는 종료 코드다.
+     *
+     * @param  array<string, mixed>  $item  항목 (type·identifier·strategy, 있으면 from_version·to_version)
+     * @param  int  $position  이 항목의 차례 (1부터)
+     * @param  int  $total  전체 항목 수
+     * @param  array<string, mixed>  $summary  자식의 `[BUNDLED-RESULT]` 페이로드 (없으면 빈 배열)
+     * @param  int  $exitCode  자식 종료 코드
+     * @param  float  $elapsed  걸린 초
+     * @return string 기록 줄
+     */
+    public static function bundledItemLogLine(array $item, int $position, int $total, array $summary, int $exitCode, float $elapsed): string
+    {
+        $base = [
+            'position' => (string) $position,
+            'total' => (string) $total,
+            'type' => self::bundledTypeLabel((string) ($item['type'] ?? '')),
+            'identifier' => (string) ($item['identifier'] ?? '?'),
+        ];
+        $seconds = (string) max(0, (int) round($elapsed));
+        $failed = isset($summary['failed']) ? (int) $summary['failed'] : ($exitCode === 0 ? 0 : 1);
+        $command = ExecuteBundledUpdatesCommand::retryCommand($item);
+
+        if (($summary['aborted'] ?? false) === true) {
+            return (string) __('settings.core_update.web.log_bundled_item_aborted', $base + [
+                'skipped' => (string) ((int) ($summary['skipped'] ?? 0)),
+                'command' => $command,
+            ]);
+        }
+
+        if ($failed > 0) {
+            $first = is_array($summary['failed_items'] ?? null) ? ($summary['failed_items'][0] ?? null) : null;
+            $reason = is_array($first) ? trim((string) ($first['reason'] ?? '')) : '';
+
+            if ($reason === '') {
+                $reason = $summary === []
+                    ? (string) __('extensions.commands.bundled_update.item_process_aborted', ['code' => $exitCode])
+                    : (string) __('settings.core_update.web.log_bundled_item_reason_unknown');
+            }
+
+            return (string) __('settings.core_update.web.log_bundled_item_failed', $base + [
+                'reason' => $reason,
+                'command' => $command,
+            ]);
+        }
+
+        if ((int) ($summary['success'] ?? 0) <= 0) {
+            return (string) __('settings.core_update.web.log_bundled_item_skipped', $base + ['seconds' => $seconds]);
+        }
+
+        $from = (string) ($item['from_version'] ?? '');
+        $to = (string) ($item['to_version'] ?? '');
+
+        if ($from === '' || $to === '') {
+            return (string) __('settings.core_update.web.log_bundled_item_done_unversioned', $base + ['seconds' => $seconds]);
+        }
+
+        return (string) __('settings.core_update.web.log_bundled_item_done', $base + [
+            'from' => $from,
+            'to' => $to,
+            'seconds' => $seconds,
+        ]);
+    }
+
+    /**
+     * 번들 단계가 다음에 처리할 항목 (응답의 `run.current_item`).
+     *
+     * 번들 단계가 진행 중이고 남은 항목이 있을 때만 값이 있다 — 그 밖(다른 단계·끝남·되돌리는 중·항목 목록 전)에는 null.
+     *
+     * @param  array<string, mixed>  $raw  상태 원본
+     * @param  CoreUpdateStep|null  $next  다음 단계
+     * @return array{step: string, type: string, identifier: string, name: string|null, from_version: string|null, to_version: string|null, position: int, total: int}|null 항목
+     */
+    private function bundledCurrentItem(array $raw, ?CoreUpdateStep $next): ?array
+    {
+        if ($next !== CoreUpdateStep::Bundled || ($raw['status'] ?? null) !== CoreUpdateRunState::STATUS_RUNNING) {
+            return null;
+        }
+
+        $progress = $this->state->context('bundled_progress');
+
+        if (! is_array($progress)) {
+            return null;
+        }
+
+        $items = array_values((array) ($progress['items'] ?? []));
+        $index = (int) ($progress['index'] ?? 0);
+        $item = $items[$index] ?? null;
+
+        if (! is_array($item)) {
+            return null;
+        }
+
+        $from = (string) ($item['from_version'] ?? '');
+        $to = (string) ($item['to_version'] ?? '');
+
+        return [
+            'step' => CoreUpdateStep::Bundled->value,
+            'type' => (string) ($item['type'] ?? ''),
+            'identifier' => (string) ($item['identifier'] ?? ''),
+            'name' => is_string($item['name'] ?? null) && $item['name'] !== '' ? $item['name'] : null,
+            'from_version' => $from !== '' ? $from : null,
+            'to_version' => $to !== '' ? $to : null,
+            'position' => $index + 1,
+            'total' => count($items),
+        ];
+    }
+
+    /**
+     * 지금 단계가 어디까지 갔는지 (응답의 `run.step_progress`).
+     *
+     * 번들 단계는 다음 항목 정보로 셈한다(끝낸 항목 수 = 순번 - 1). 그 밖의 단계는 이어 갈 때 적어 둔 값을 쓰되,
+     * 적어 둔 단계가 지금 단계와 같을 때만 싣는다 — 되돌리는 중이면 `rollback` 으로 적어 둔 값만 싣는다.
+     *
+     * @param  array<string, mixed>  $raw  상태 원본
+     * @param  CoreUpdateStep|null  $next  다음 단계
+     * @param  array<string, mixed>|null  $currentItem  번들 단계의 다음 항목 (`bundledCurrentItem()`)
+     * @return array{step: string, done: int, total: int|null, unit: string}|null 진행량
+     */
+    private function stepProgressFor(array $raw, ?CoreUpdateStep $next, ?array $currentItem): ?array
+    {
+        if ($currentItem !== null) {
+            return [
+                'step' => CoreUpdateStep::Bundled->value,
+                'done' => max(0, (int) $currentItem['position'] - 1),
+                'total' => (int) $currentItem['total'],
+                'unit' => 'items',
+            ];
+        }
+
+        $stored = $this->state->context('step_progress');
+
+        if (! is_array($stored) || ! is_string($stored['step'] ?? null)) {
+            return null;
+        }
+
+        $status = $raw['status'] ?? null;
+        $expected = match ($status) {
+            CoreUpdateRunState::STATUS_RUNNING => $next?->value,
+            CoreUpdateRunState::STATUS_ROLLING_BACK => self::PHASE_ROLLBACK,
+            default => null,
+        };
+
+        if ($expected === null || $stored['step'] !== $expected) {
+            return null;
+        }
+
+        return [
+            'step' => $stored['step'],
+            'done' => (int) ($stored['done'] ?? 0),
+            'total' => isset($stored['total']) ? (int) $stored['total'] : null,
+            'unit' => (string) ($stored['unit'] ?? 'files'),
+        ];
+    }
+
+    /**
+     * 단계가 다음 요청으로 이어 갈 때 어디까지 갔는지 적어 둡니다 (화면 진행 막대용 — 동작에는 쓰지 않는다).
+     *
+     * @param  string  $step  단계 값 (되돌리기면 `rollback`)
+     * @param  int  $done  끝낸 양
+     * @param  int|null  $total  전체 양 (모르면 null)
+     * @param  string  $unit  세는 단위 (`files`|`entries`|`items`|`tasks`)
+     * @return void 반환값 없음
+     */
+    private function noteStepProgress(string $step, int $done, ?int $total, string $unit): void
+    {
+        $this->state->mergeContext(['step_progress' => [
+            'step' => $step,
+            'done' => max(0, $done),
+            'total' => $total !== null ? max(0, $total) : null,
+            'unit' => $unit,
+        ]]);
+    }
+
+    /**
+     * 정해진 구간 순서 안에서 지금 구간 앞까지 끝낸 구간 수를 적어 둡니다 (마무리·되돌리기).
+     *
+     * @param  string  $step  단계 값 (`finalize`|`rollback`)
+     * @param  array<int, string>  $phases  구간 순서
+     * @param  string  $phase  지금 구간
+     * @return void 반환값 없음
+     */
+    private function notePhaseProgress(string $step, array $phases, string $phase): void
+    {
+        $index = array_search($phase, $phases, true);
+
+        if ($index === false) {
+            return;
+        }
+
+        $this->noteStepProgress($step, (int) $index, count($phases), 'tasks');
+    }
+
+    /**
      * 번들 확장 항목 하나를 담은 매니페스트 파일을 씁니다.
      *
      * @param  array<string, mixed>  $item  `ExecuteBundledUpdatesCommand::flattenItems()` 항목
@@ -2131,6 +2696,23 @@ class CoreUpdateOrchestrator
             // 결과를 되돌리지 않는다(서비스가 경고만 남긴다). 무CLI 호스팅처럼 워커가 없는
             // 사이트에서는 캐시 키 하나를 쓰고 끝난다.
             $this->service->signalQueueRestart();
+            $this->state->appendLog((string) __('settings.core_update.web.log_finalize_prepared'));
+
+            // 확장 오토로드·훅 캐시는 위 캐시 초기화가 새 판 코드로 다시 굽는다(이 요청은 파일 적용 뒤 새로 부팅했다).
+            // 굽기에 실패하면 터미널처럼 운영자가 직접 실행할 명령을 남긴다 — 업데이트 결과는 되돌리지 않는다.
+            $autoloadFailed = false;
+            try {
+                $autoloadFailed = $this->service->autoloadRefreshFailed();
+            } catch (\Throwable) {
+                $autoloadFailed = false;
+            }
+            if ($autoloadFailed) {
+                $message = (string) __('settings.core_update.web.log_finalize_autoload_failed');
+                $this->state->appendLog($message);
+                $this->state->appendWarnings([$message]);
+            } else {
+                $this->state->appendLog((string) __('settings.core_update.web.log_finalize_autoload_rebuilt'));
+            }
 
             $phase = 'cleanup';
             $this->state->mergeContext(['finalize_progress' => ['phase' => $phase]]);
@@ -2146,11 +2728,14 @@ class CoreUpdateOrchestrator
             // 격리 디렉토리(전개본 · 옮겨 둔 옛 vendor)와 백업은 수만 파일이다 — 지우기도 요청 몫 안에서 나눈다.
             // 소유권 복원보다 **먼저** 지운다 — 복원이 훑는 대상(저장소의 백업·전개본 폴더)이 줄어든다.
             if (! $this->cleanupRunArtifacts(includeBackup: true, shouldPause: $shouldPause)) {
+                $this->notePhaseProgress(CoreUpdateStep::Finalize->value, self::FINALIZE_PHASES, $phase);
                 $this->state->appendLog((string) __('settings.core_update.web.log_cleanup_continues'));
                 $this->repeatCurrentStep = true;
 
                 return;
             }
+
+            $this->state->appendLog((string) __('settings.core_update.web.log_finalize_cleaned'));
 
             $phase = 'ownership';
             $this->state->mergeContext(['finalize_progress' => ['phase' => $phase]]);
@@ -2165,11 +2750,14 @@ class CoreUpdateOrchestrator
         if ($phase === 'ownership') {
             // 소유권·그룹 쓰기 권한 복원은 vendor·확장 트리를 다 훑는다(큰 사이트에서는 수 분 — 마무리에서 가장 긴 구간).
             if (! $this->restoreOwnershipSnapshot($shouldPause)) {
+                $this->notePhaseProgress(CoreUpdateStep::Finalize->value, self::FINALIZE_PHASES, $phase);
                 $this->state->appendLog((string) __('settings.core_update.web.log_ownership_continues'));
                 $this->repeatCurrentStep = true;
 
                 return;
             }
+
+            $this->state->appendLog((string) __('settings.core_update.web.log_finalize_ownership'));
 
             $phase = 'link';
             $this->state->mergeContext(['finalize_progress' => ['phase' => $phase]]);
@@ -2196,6 +2784,9 @@ class CoreUpdateOrchestrator
         // 번들 항목 프로세스는 정적 게시를 건너뛰었다 — 모든 확장이 안착한 지금 한 번만 예약한다(이 요청이 끝날 때 게시).
         // 운영 환경·웹 계정일 때만 예약되고, 그 밖에는 다음 웹 렌더의 자가 치유가 같은 일을 한다.
         ExtensionStaticCacheService::schedulePublishOnTerminate();
+        $this->state->appendLog((string) __($phase !== 'finish'
+            ? 'settings.core_update.web.log_finalize_link_cache'
+            : 'settings.core_update.web.log_finalize_cache'));
 
         $this->state->mergeContext(['finalize_progress' => null]);
         $this->state->appendLog((string) __('settings.core_update.web.log_finalized', ['version' => $toVersion]));
@@ -2334,6 +2925,9 @@ class CoreUpdateOrchestrator
         // 이 경고 버퍼를 비우므로 그 뒤에만 읽으면 사라진다.
         $this->appendApplyWarnings($this->service->getLastRootFileWarnings());
 
+        // 실패한 단계의 진행량은 더 쓰지 않는다 — 되돌리기가 자기 진행량을 새로 적는다
+        $this->state->mergeContext(['step_progress' => null]);
+
         $this->state->patch([
             'status' => CoreUpdateRunState::STATUS_ROLLING_BACK,
             'error' => [
@@ -2465,6 +3059,7 @@ class CoreUpdateOrchestrator
 
                 if (! $result['done']) {
                     $save('restore', ['restore' => $result]);
+                    $this->notePhaseProgress(self::PHASE_ROLLBACK, self::ROLLBACK_PHASES, 'restore');
                     $this->state->appendLog((string) __('settings.core_update.web.log_rollback_continues'));
 
                     return;
@@ -2521,6 +3116,7 @@ class CoreUpdateOrchestrator
             // php-fpm 계정이 `storage`·`bootstrap/cache` 에 쓰지 못해 되돌린 사이트가
             // 500 으로 뜬다. 성공 경로(`stepFinalize`)와 같은 강도로 적용한다 — 같은 이유로 나눠 한다.
             if (! $this->restoreOwnershipSnapshot($shouldPause)) {
+                $this->notePhaseProgress(self::PHASE_ROLLBACK, self::ROLLBACK_PHASES, 'ownership');
                 $this->state->appendLog((string) __('settings.core_update.web.log_ownership_continues'));
 
                 return;
@@ -2543,6 +3139,7 @@ class CoreUpdateOrchestrator
 
             try {
                 if (! $this->cleanupPartialBackup($shouldPause) || ! $this->cleanupRunArtifacts(includeBackup: false, shouldPause: $shouldPause)) {
+                    $this->notePhaseProgress(self::PHASE_ROLLBACK, self::ROLLBACK_PHASES, 'cleanup');
                     $this->state->appendLog((string) __('settings.core_update.web.log_cleanup_continues'));
 
                     return;
@@ -2556,7 +3153,7 @@ class CoreUpdateOrchestrator
             $this->disableMaintenanceIfEnabled();
         }
 
-        $this->state->mergeContext(['rollback_progress' => null]);
+        $this->state->mergeContext(['rollback_progress' => null, 'step_progress' => null]);
         $this->finishRollback($restored, $failedTargets);
     }
 
@@ -2672,6 +3269,7 @@ class CoreUpdateOrchestrator
                 'maintenance_left_on' => ! $restored && $this->state->context('maintenance_enabled') === true,
             ],
         ]);
+        $this->recordRunLogFile(false);
 
         $raw = $this->state->all();
 
@@ -2726,6 +3324,7 @@ class CoreUpdateOrchestrator
         }
 
         $this->state->patch(['status' => CoreUpdateRunState::STATUS_COMPLETED, 'next_step' => null]);
+        $this->recordRunLogFile(true);
 
         $raw = $this->state->all();
 
@@ -2858,16 +3457,23 @@ class CoreUpdateOrchestrator
 
         foreach (['modules', 'plugins', 'templates'] as $type) {
             foreach ((array) ($updates[$type] ?? []) as $entry) {
+                // 이전 판·새 판은 실행 기록용이다 — 명령 쪽(flattenItems·manifestForItem)은 모르는 키를 무시한다
                 $manifest[$type][] = [
                     'identifier' => (string) ($entry['identifier'] ?? ''),
                     'strategy' => $options->layoutStrategy,
+                    'from_version' => (string) ($entry['current_version'] ?? ''),
+                    'to_version' => (string) ($entry['latest_version'] ?? ''),
                 ];
                 $planned++;
             }
         }
 
         foreach ((array) ($updates['lang_packs'] ?? []) as $entry) {
-            $manifest['lang_packs'][] = ['identifier' => (string) ($entry['identifier'] ?? '')];
+            $manifest['lang_packs'][] = [
+                'identifier' => (string) ($entry['identifier'] ?? ''),
+                'from_version' => (string) ($entry['current_version'] ?? ''),
+                'to_version' => (string) ($entry['latest_version'] ?? ''),
+            ];
             $planned++;
         }
 
@@ -2931,7 +3537,7 @@ class CoreUpdateOrchestrator
             $this->state->appendWarnings([(string) __('settings.core_update.web.permission_warning', [
                 'target' => (string) ($warning['target'] ?? '?'),
                 'failed' => (string) ((int) ($warning['failed'] ?? 0)),
-            ])]);
+            ]).' '.self::permissionWarningDetail((array) $warning)]);
         }
 
         return true;
@@ -3119,6 +3725,245 @@ class CoreUpdateOrchestrator
         if (ExecutionEnvironment::hasFunction('opcache_reset')) {
             @opcache_reset();
         }
+    }
+
+    /**
+     * 응답에 실을 번들 단계 결과를 만듭니다 (완료 화면의 성공·실패·건너뜀 수와 실패 항목 표).
+     *
+     * @param  array<string, mixed>  $raw  상태 원본
+     * @return array{success: int, failed: int, skipped: int, failed_items: list<array{type: string, identifier: string, reason: string, retry_command: string}>, search_index: array{status: string, message: string|null}|null}|null 결과 (번들 단계가 끝나지 않았으면 null)
+     */
+    private function bundledResultFor(array $raw): ?array
+    {
+        $result = $raw['context']['bundled_result'] ?? null;
+
+        if (! is_array($result)) {
+            return null;
+        }
+
+        $searchIndex = is_array($result['search_index'] ?? null) ? $result['search_index'] : null;
+
+        return [
+            'success' => (int) ($result['success'] ?? 0),
+            'failed' => (int) ($result['failed'] ?? 0),
+            'skipped' => (int) ($result['skipped'] ?? 0),
+            'failed_items' => array_values(array_map(static fn (array $item): array => [
+                'type' => (string) ($item['type'] ?? ''),
+                'identifier' => (string) ($item['identifier'] ?? ''),
+                'reason' => (string) ($item['reason'] ?? ''),
+                'retry_command' => (string) ($item['retry_command'] ?? ExecuteBundledUpdatesCommand::retryCommand($item)),
+            ], array_filter((array) ($result['failed_items'] ?? []), 'is_array'))),
+            'search_index' => $searchIndex === null ? null : [
+                'status' => (string) ($searchIndex['status'] ?? 'skipped'),
+                'message' => isset($searchIndex['message']) ? (string) $searchIndex['message'] : null,
+            ],
+        ];
+    }
+
+    /**
+     * 번들 항목 하나의 결과에서 실패 항목 목록을 만듭니다 (다시 시도할 명령은 명령줄과 같은 함수로 만든다).
+     *
+     * @param  array<string, mixed>  $item  처리한 항목 (`type`·`identifier`·`strategy`)
+     * @param  array<string, mixed>  $summary  자식의 `[BUNDLED-RESULT]` 페이로드 (없으면 빈 배열)
+     * @param  int  $exitCode  자식 종료 코드
+     * @param  bool  $successful  자식이 성공으로 끝났는지
+     * @return list<array{type: string, identifier: string, reason: string, retry_command: string}> 실패 항목 (실패가 없으면 빈 배열)
+     */
+    public static function bundledFailedItems(array $item, array $summary, int $exitCode, bool $successful): array
+    {
+        $failed = array_values(array_filter((array) ($summary['failed_items'] ?? []), 'is_array'));
+
+        // 결과 줄 없이 실패로 끝났으면(자식이 죽음) 그 항목 하나를 실패로 적는다 — 명령줄의 「프로세스 중단」과 같은 사유
+        if ($failed === [] && ((int) ($summary['failed'] ?? 0) > 0 || (! isset($summary['failed']) && ! $successful))) {
+            $failed = [$item + ['reason' => (string) __('extensions.commands.bundled_update.item_process_aborted', ['code' => $exitCode])]];
+        }
+
+        return array_map(static fn (array $entry): array => [
+            'type' => (string) ($entry['type'] ?? ($item['type'] ?? '')),
+            'identifier' => (string) ($entry['identifier'] ?? ($item['identifier'] ?? '')),
+            'reason' => (string) ($entry['reason'] ?? ''),
+            'retry_command' => ExecuteBundledUpdatesCommand::retryCommand($entry + $item),
+        ], $failed);
+    }
+
+    /**
+     * 점검 모드가 켜진 채 남았는지 답합니다 (되돌리기 실패, 끝난 실행의 점검 해제 실패).
+     *
+     * @param  array<string, mixed>  $raw  상태 원본
+     * @return bool 남았으면 true
+     */
+    private function maintenanceLeftOn(array $raw): bool
+    {
+        if (($raw['rollback']['maintenance_left_on'] ?? false) === true) {
+            return true;
+        }
+
+        $finished = in_array($raw['status'] ?? null, [
+            CoreUpdateRunState::STATUS_COMPLETED,
+            CoreUpdateRunState::STATUS_ROLLED_BACK,
+            CoreUpdateRunState::STATUS_ROLLBACK_FAILED,
+        ], true);
+
+        return $finished && ($raw['context']['maintenance_enabled'] ?? false) === true;
+    }
+
+    /**
+     * 업데이트를 시작한 관리자를 찾습니다.
+     *
+     * @param  array<string, mixed>  $raw  상태 원본
+     * @return array{id: int, name: string}|null 관리자 (기록이 없거나 찾지 못하면 null)
+     */
+    private function startedByFor(array $raw): ?array
+    {
+        $id = $raw['started_by'] ?? null;
+
+        if (! is_int($id) && ! (is_string($id) && ctype_digit($id))) {
+            return null;
+        }
+
+        try {
+            $user = User::query()->find((int) $id, ['id', 'name']);
+        } catch (\Throwable) {
+            // 업데이트 도중(마이그레이션 전후) 사용자 표를 읽지 못해도 상태 응답은 내보낸다
+            return null;
+        }
+
+        return $user === null ? null : ['id' => (int) $user->id, 'name' => (string) $user->name];
+    }
+
+    /**
+     * 받은 배포본이 요구하는 PHP 확장이 서버에 있는지 점검합니다 (터미널 `core:update` 의 시작 전 점검과 같은 판정·문구).
+     *
+     * 확장(모듈·플러그인)이 요구하는 PHP 확장이 없으면 경고만 남기고, 코어가 요구하는 확장이 없으면 이 단계에서 멈춘다.
+     * 아직 파일을 바꾸지 않았으므로 되돌리기는 받은 배포본 정리와 점검 모드 해제뿐이다.
+     *
+     * @param  string  $pendingPath  받은 배포본 경로
+     * @return void 반환값 없음
+     *
+     * @throws CoreUpdateOperationException 코어가 요구하는 PHP 확장이 없을 때
+     */
+    private function guardPhpRequirements(string $pendingPath): void
+    {
+        $result = app(PhpRequirementPreflight::class)->inspectDirectory($pendingPath);
+
+        foreach ((array) ($result['extension_missing'] ?? []) as $extension => $missing) {
+            $this->state->appendWarnings([(string) __('settings.core_update.console.php_extension_extension_warning', [
+                'extension' => (string) $extension,
+                'extensions' => implode(', ', (array) $missing),
+            ])]);
+        }
+
+        if (($result['core_checked'] ?? false) !== true || ($result['core_missing'] ?? []) === []) {
+            return;
+        }
+
+        throw new CoreUpdateOperationException('settings.core_update.console.php_extension_core_missing', [
+            'extensions' => implode(', ', (array) $result['core_missing']),
+        ]);
+    }
+
+    /**
+     * 업그레이드 스텝 출력의 `[DOCROOT_EXPOSURE]` 표식을 읽어 경고로 옮깁니다 (터미널과 같은 머리말·항목).
+     *
+     * @param  string  $output  업그레이드 스텝 명령 출력
+     * @return void 반환값 없음
+     */
+    private function appendDocrootExposureWarnings(string $output): void
+    {
+        $payload = $this->parseLineProtocol($output, '[DOCROOT_EXPOSURE] ');
+        $items = array_values(array_filter(array_map('strval', (array) ($payload['warnings'] ?? [])), static fn (string $line): bool => $line !== ''));
+
+        if ($items === []) {
+            return;
+        }
+
+        $this->state->appendWarnings([
+            (string) __('settings.core_update.console.docroot_exposure_header')."\n- ".implode("\n- ", $items),
+        ]);
+    }
+
+    /**
+     * 권한 정상화 실패 경고에 덧붙일 실패 경로(앞 5개)와 복구 명령 예시를 만듭니다 (터미널 안내와 같은 정보).
+     *
+     * @param  array<string, mixed>  $warning  `restoreOwnershipChunk()` 경고 항목 (`target`·`kind`·`failed`·`failed_paths`)
+     * @return string 덧붙일 문구
+     */
+    public static function permissionWarningDetail(array $warning): string
+    {
+        $target = (string) ($warning['target'] ?? '<path>');
+        $paths = array_values(array_map('strval', (array) ($warning['failed_paths'] ?? [])));
+        $failed = max((int) ($warning['failed'] ?? 0), count($paths));
+        $shown = array_slice($paths, 0, 5);
+        $listed = $shown === [] ? $target : implode(', ', $shown);
+
+        if ($failed > count($shown) && $shown !== []) {
+            $listed .= ' '.__('settings.core_update.web.permission_warning_more', ['count' => (string) ($failed - count($shown))]);
+        }
+
+        $command = ($warning['kind'] ?? 'chown') === 'chown'
+            ? "sudo chown -R <owner>:<group> {$target}"
+            : "sudo chmod -R g+w {$target}";
+
+        return (string) __('settings.core_update.web.permission_warning_detail', ['paths' => $listed, 'command' => $command]);
+    }
+
+    /**
+     * 끝난 실행의 기록 전체를 업데이트 보고서 파일로 남기고 그 경로를 상태에 적습니다.
+     *
+     * 실행 상태는 [기록 정리]로 지워지지만 이 파일은 남는다. 실패해도 업데이트 결과는 바꾸지 않는다.
+     *
+     * @param  bool  $success  업데이트가 성공했는지
+     * @return void 반환값 없음
+     */
+    private function recordRunLogFile(bool $success): void
+    {
+        try {
+            $raw = $this->state->all();
+            $path = self::writeUpdateReport(
+                $this->state->logs(),
+                (string) ($raw['from_version'] ?? ''),
+                (string) ($raw['to_version'] ?? ''),
+                $success,
+            );
+            $base = rtrim(str_replace('\\', '/', base_path()), '/').'/';
+            $normalized = str_replace('\\', '/', $path);
+            $this->state->patch(['log_file' => str_starts_with($normalized, $base) ? substr($normalized, strlen($base)) : $normalized]);
+        } catch (\Throwable $e) {
+            Log::warning('웹 코어 업데이트: 실행 기록 파일 저장 실패', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 업데이트 보고서 파일을 씁니다 (터미널 `core:update` 의 업데이트 로그와 같은 위치·형식).
+     *
+     * @param  array<int, string>  $entries  기록 줄
+     * @param  string  $fromVersion  시작 버전
+     * @param  string  $toVersion  대상 버전
+     * @param  bool  $success  성공 여부
+     * @return string 쓴 파일의 절대 경로
+     */
+    public static function writeUpdateReport(array $entries, string $fromVersion, string $toVersion, bool $success): string
+    {
+        // 이름은 생산자 단일 지점이 만든다 — 정리 주체가 같은 규칙으로 이 파일을 회수한다.
+        $logPath = CoreUpdateService::updateReportPath($success ? 'success' : 'failed');
+
+        $header = implode("\n", [
+            '=== 그누보드7 코어 업데이트 로그 ===',
+            '상태: '.($success ? '성공' : '실패'),
+            // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
+            '날짜: '.date('Y-m-d H:i:s'),
+            "시작 버전: {$fromVersion}",
+            "대상 버전: {$toVersion}",
+            '',
+            '=== 실행 로그 ===',
+        ]);
+
+        File::ensureDirectoryExists(dirname($logPath));
+        file_put_contents($logPath, $header."\n".implode("\n", $entries)."\n");
+        // 웹 요청이 만든 파일도 부모(storage/logs) 소유권을 물려받는다(멱등, 권한 없으면 조용히 건너뜀)
+        FilePermissionHelper::inheritOwnershipFromParent($logPath);
+
+        return $logPath;
     }
 
     /**

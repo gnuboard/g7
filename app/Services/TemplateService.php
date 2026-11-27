@@ -14,6 +14,8 @@ use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\ExtensionUpdateRequestFailedException;
+use App\Extension\Support\ExtensionUpdateReport;
 use App\Exceptions\PackageIntegrityException;
 use App\Exceptions\TemplateNotFoundException;
 use App\Exceptions\TemplateOperationException;
@@ -2902,18 +2904,20 @@ class TemplateService
      * @param  string  $layoutStrategy  레이아웃 전략 ('overwrite' 또는 'keep')
      * @param  bool  $force  코어 버전 비호환 강제 우회 (위험 — 사용자 명시 필요)
      * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
+     * @param  string|null  $sourceOverride  업데이트 소스 (bundled|github — null 이면 자동, 터미널 --source 와 같다)
+     * @param  string|null  $zipPath  수동 ZIP 절대 경로 (대기 폴더 안 — 터미널 --zip 과 같다)
      * @return array 업데이트 결과 (identifier, from_version, to_version 등)
      *
-     * @throws ValidationException 업데이트 실패 시
+     * @throws ValidationException 업데이트 실패 시 ({@see ExtensionUpdateRequestFailedException} — 실패 뒤 상태·경고·재실행 명령 포함)
      * @throws PackageIntegrityException 받은 패키지의 서명 검증이 업데이트를 멈췄을 때
      */
-    public function performVersionUpdate(string $templateName, string $layoutStrategy = 'overwrite', bool $force = false, ?PackageIntegrityOptions $integrity = null): array
+    public function performVersionUpdate(string $templateName, string $layoutStrategy = 'overwrite', bool $force = false, ?PackageIntegrityOptions $integrity = null, ?string $sourceOverride = null, ?string $zipPath = null): array
     {
         // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(공개 #138 후속, Service 중복 발화 제거)
 
         try {
             $this->templateManager->loadTemplates();
-            $result = $this->templateManager->updateTemplate($templateName, $force, null, $layoutStrategy, integrity: $integrity);
+            $result = $this->templateManager->updateTemplate($templateName, $force, null, $layoutStrategy, $sourceOverride, $zipPath, $integrity);
 
             $templateInfo = $this->templateManager->getTemplateInfo($templateName);
 
@@ -2935,9 +2939,12 @@ class TemplateService
             // getPrevious()로 원본 에러를 추출하여 이중 래핑 방지
             $rawError = SafeExceptionMessage::for(SafeExceptionMessage::isInternal($e) ? $e : ($e->getPrevious() ?? $e));
 
-            throw ValidationException::withMessages([
-                'template_name' => [__('templates.errors.update_failed', ['template' => $templateName, 'error' => $rawError])],
-            ]);
+            // 실패 뒤 상태(outcome)·경고·재실행 명령을 함께 싣는다 — 같은 422 검증 오류라 기존 응답 모양은 그대로다(7.2.1 출시 전)
+            throw ExtensionUpdateRequestFailedException::make(
+                'template_name',
+                __('templates.errors.update_failed', ['template' => $templateName, 'error' => $rawError]),
+                ExtensionUpdateReport::failureFields($e, 'template', $templateName, ['source' => $sourceOverride]),
+            );
         }
     }
 

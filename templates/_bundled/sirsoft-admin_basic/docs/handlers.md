@@ -5,7 +5,7 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 30개 (정의: `src/handlers/index.ts`).
+핸들러 34개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -18,6 +18,10 @@
 | `dismissCoreUpdate` | (템플릿 전용 — 네임스페이스 없음) |
 | `refreshCoreUpdateStatus` | (템플릿 전용 — 네임스페이스 없음) |
 | `submitCoreUpdateSelection` | (템플릿 전용 — 네임스페이스 없음) |
+| `startExtensionUpdateClock` | (템플릿 전용 — 네임스페이스 없음) |
+| `stopExtensionUpdateClock` | (템플릿 전용 — 네임스페이스 없음) |
+| `reconcileExtensionUpdate` | (템플릿 전용 — 네임스페이스 없음) |
+| `captureExtensionUpdateFailure` | (템플릿 전용 — 네임스페이스 없음) |
 | `setTheme` | (템플릿 전용 — 네임스페이스 없음) |
 | `initTheme` | (템플릿 전용 — 네임스페이스 없음) |
 | `scrollToSection` | (템플릿 전용 — 네임스페이스 없음) |

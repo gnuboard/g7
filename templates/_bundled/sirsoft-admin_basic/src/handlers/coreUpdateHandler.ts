@@ -126,6 +126,30 @@ function publishBusy(busy: boolean): void {
     (window as any).G7Core?.state?.setGlobal?.({ coreUpdateBusy: busy });
 }
 
+/**
+ * 응답이 끊겨 서버 상태를 다시 읽으며 기다리는 중인지 전역에 싣는다.
+ *
+ * 화면은 이 값이 참이면 「응답이 끊겨 서버 상태를 확인하는 중」 줄을 그린다 — 그 사이 진행 막대가 멈춰 보여도
+ * 멈춘 것이 아니라는 것을 알린다.
+ *
+ * @param reconnecting 기다리는 중이면 true
+ */
+function publishReconnecting(reconnecting: boolean): void {
+    (window as any).G7Core?.state?.setGlobal?.({ coreUpdateReconnecting: reconnecting });
+}
+
+/**
+ * 화면이 스스로 이어 가기를 멈췄는지 전역에 싣는다.
+ *
+ * 연달아 실패했거나 반복 호출 상한·자동 이어받기 상한에 닿으면 참이 되고, 화면은
+ * 「자동으로 이어 가지 못했습니다 — [이어서 진행]을 누르세요」 안내를 그린다. 다시 몰기 시작하면 거짓으로 되돌린다.
+ *
+ * @param stopped 자동 진행을 멈췄으면 true
+ */
+function publishAutoStopped(stopped: boolean): void {
+    (window as any).G7Core?.state?.setGlobal?.({ coreUpdateAutoStopped: stopped });
+}
+
 /** 패키지 무결성 거절 표지  — 같은 409 를 작업 잠금도 쓰므로 상태 코드가 아니라 이 표지로 가른다. */
 const INTEGRITY_MARKERS = ['package_unsigned', 'package_signature_invalid', 'package_signer_untrusted'] as const;
 
@@ -356,6 +380,11 @@ async function drive(initial?: any): Promise<any> {
     let status = initial ?? (await refreshCoreUpdateStatusHandler());
     let failures = 0;
 
+    if (isActive(status) && !isAwaitingSelection(status)) {
+        // 다시 몰기 시작한다 — 지난번 「자동으로 이어 가지 못했습니다」 안내는 지금과 무관하다
+        publishAutoStopped(false);
+    }
+
     // 선택을 기다리는 동안은 부르지 않는다 — 운영자가 고르고 [계속] 을 누르면 그 핸들러가 다시 몬다
     for (let i = 0; i < MAX_ADVANCES && isActive(status) && !isAwaitingSelection(status); i++) {
         try {
@@ -377,10 +406,18 @@ async function drive(initial?: any): Promise<any> {
 
             // 실패 뒤에는 한 번 쉰다 — 점유가 이미 풀린 실패(동시에 도는 명령줄 업데이트의 409, 예기치 못한 500)는
             // 아래 대기가 곧바로 돌아오므로, 쉬지 않으면 같은 요청을 쉼 없이 되풀이한다.
-            await sleep(RECOVERY_POLL_MS);
-
             const before = progressMarkerOf(status);
-            const latest = await waitUntilStepReleased(status);
+            let latest: any = null;
+
+            // 기다리는 동안 화면에 「응답이 끊겨 서버 상태를 확인하는 중」을 보인다
+            publishReconnecting(true);
+
+            try {
+                await sleep(RECOVERY_POLL_MS);
+                latest = await waitUntilStepReleased(status);
+            } finally {
+                publishReconnecting(false);
+            }
 
             if (latest !== null) {
                 failures = progressMarkerOf(latest) !== before ? 0 : failures + 1;
@@ -394,6 +431,7 @@ async function drive(initial?: any): Promise<any> {
                 // 멈춘다 — 운영자가 [이어서 진행] 으로 같은 지점부터 다시 부를 수 있다.
                 logger.error('코어 업데이트 단계 수행 실패', error);
                 G7Core?.toast?.error?.(messageOf(error));
+                publishAutoStopped(true);
 
                 return latest ?? status;
             }
@@ -402,6 +440,7 @@ async function drive(initial?: any): Promise<any> {
 
     if (isActive(status) && !isAwaitingSelection(status)) {
         logger.warn('반복 호출 상한에 도달했습니다 — 진행 상태는 서버에 남아 있습니다.');
+        publishAutoStopped(true);
         G7Core?.toast?.error?.(
             G7Core?.t?.('admin.settings.core_update.advance_limit')
             ?? '진행이 예상보다 오래 걸립니다. [이어서 진행] 을 눌러 계속하세요.',
@@ -536,6 +575,20 @@ export async function submitCoreUpdateSelectionHandler(): Promise<void> {
 
         await drive(status);
     } catch (error) {
+        if (statusCodeOf(error) === 409) {
+            // 다른 화면(다른 관리자·다른 창)이 먼저 답했거나 같은 실행을 몰고 있다 — 이 화면의 선택 창은 낡았다.
+            // 최신 상태를 다시 읽어 낡은 선택 창을 닫고, 고르던 값은 버린다. 진행은 먼저 답한 화면이 몬다.
+            logger.warn('선택을 기다리던 실행이 다른 화면에서 이미 바뀌었습니다 — 상태를 다시 읽습니다.', error);
+            G7Core?.state?.setGlobal?.({ coreUpdateChoices: null });
+            G7Core?.toast?.info?.(
+                G7Core?.t?.('admin.settings.core_update.selection.taken_elsewhere')
+                ?? '다른 화면에서 이미 선택했습니다. 최신 상태로 다시 읽었습니다.',
+            );
+            await refreshCoreUpdateStatusHandler();
+
+            return;
+        }
+
         logger.error('코어 업데이트 선택 저장 실패', error);
         G7Core?.toast?.error?.(messageOf(error));
         await refreshCoreUpdateStatusHandler();
@@ -624,6 +677,7 @@ export async function autoResumeCoreUpdateHandler(): Promise<void> {
 
     if (autoResumeCount >= MAX_AUTO_RESUMES) {
         logger.warn('자동 이어받기 상한에 도달했습니다 — [이어서 진행] 으로 계속하세요.');
+        publishAutoStopped(true);
 
         return;
     }

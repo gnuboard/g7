@@ -42,6 +42,8 @@ class LanguagePackResource extends BaseApiResource
             'license' => $this->getValue('license'),
             'description' => $this->getLocalizedField('description'),
             'status' => $this->getValue('status'),
+            // 끝나지 않은 업데이트 — 확장 행과 같은 모양을 맞춘다. 언어팩 업데이트는 진행 기록을 남기지 않아 늘 null 이다(7.2.1 출시 전)
+            'unfinished_update' => null,
             'is_protected' => (bool) $this->getValue('is_protected', false),
             'source_type' => $this->getValue('source_type'),
             // 패키지 서명 검증 결과(verified·unsigned·unverifiable·bundled, 기록 없으면 null) — 상세 「패키지 서명」 배지 (7.2.0)

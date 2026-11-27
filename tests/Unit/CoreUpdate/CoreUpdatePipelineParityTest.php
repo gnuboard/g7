@@ -52,7 +52,6 @@ class CoreUpdatePipelineParityTest extends TestCase
 
         // 콘솔이 실패·성공 로그 파일 이름을 만드는 자리. 웹은 같은 사실을 진행 기록과
         // 실패 리포트 경로(`generateFailureReport()` 반환값)로 화면에 나른다.
-        'updateReportPath' => '콘솔 로그 파일 이름 도출 전용 — 웹은 리포트 경로를 응답에 싣는다',
 
         // 웹은 한 요청의 시간 몫 안에서 멈추는 커서 판을 부른다. 명령줄의 아래 메서드는 같은 커서 판을
         // 멈춤 없이 부르는 래퍼라 하는 일이 같다(백업·복원), 또는 같은 안전 해제를 쓴다(내려받기·ZIP 추출).

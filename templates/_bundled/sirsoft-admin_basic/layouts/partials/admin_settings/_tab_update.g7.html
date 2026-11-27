@@ -36,6 +36,51 @@
         </ul>
         <p class="text-secondary text-xs">$t:admin.settings.core_update.preflight_blocked_hint</p>
       </div>
+      <!-- 개발자 custom 자리 사전 검사 — 직전 시도가 이 검사로 시작 전에 멈췄으면(같은 새 버전 한정, 확인 응답 custom_preflight) 정보 탭 결과 창과 같은 충돌 표를 이 탭에서도 보인다. -->
+      <div data-ref="core_update_custom_preflight" data-if="{{!_computed.coreUpdateRun &amp;&amp; !!_local.coreUpdateInfo?.custom_preflight}}" class="space-y-3 mb-4" role="alert">
+        <div class="alert-warning space-y-1">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">$t:admin.settings.info.custom_preflight_title</p>
+          <p data-if="{{(_local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length > 0}}" class="text-sm text-gray-700 dark:text-gray-300">$t:admin.settings.info.custom_preflight_desc|count={{(_local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length}}|version={{_local.coreUpdateInfo?.custom_preflight?.to_version ?? ''}}</p>
+        </div>
+        <div data-if="{{(_local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length > 0}}" class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700/50">
+              <tr>
+                <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">$t:admin.settings.info.custom_conflict_package</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">$t:admin.settings.info.custom_conflict_reason</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">$t:admin.settings.info.custom_conflict_core</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-each="customConflict in _local.coreUpdateInfo?.custom_preflight?.conflicts ?? []" class="border-t border-gray-200 dark:border-gray-700 align-top">
+                <td class="px-3 py-2">
+                  <span class="block font-mono text-gray-900 dark:text-white">{{customConflict.package}}</span>
+                  <span class="block text-xs text-muted">$t:admin.settings.info.custom_conflict_installed|version={{customConflict.installed}}</span>
+                </td>
+                <td class="px-3 py-2 text-gray-700 dark:text-gray-300">
+                  <span data-if="{{customConflict.type === 'duplicate'}}">$t:admin.settings.info.custom_conflict_duplicate</span>
+                  <span data-if="{{customConflict.type !== 'duplicate'}}">$t:admin.settings.info.custom_conflict_constraint|requires={{customConflict.requires}}|constraint={{customConflict.constraint}}</span>
+                </td>
+                <td class="px-3 py-2 font-mono text-xs text-amber-700 dark:text-amber-400">{{(customConflict.core_package ?? '') + ' ' + (customConflict.core_version ?? '')}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div data-if="{{(_local.coreUpdateInfo?.custom_preflight?.reserved_files ?? []).length > 0}}" class="space-y-1">
+          <p class="text-sm text-gray-700 dark:text-gray-300">$t:admin.settings.info.custom_reserved_files</p>
+          <ul class="text-xs font-mono text-gray-600 dark:text-gray-400 list-disc pl-5">
+            <li data-each="customReservedFile in _local.coreUpdateInfo?.custom_preflight?.reserved_files ?? []">{{customReservedFile}}</li>
+          </ul>
+        </div>
+        <div class="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+          <p class="font-semibold">$t:admin.settings.info.custom_fix_title</p>
+          <ol class="list-decimal pl-5 space-y-1">
+            <li>$t:admin.settings.info.custom_fix_step1</li>
+            <li>$t:admin.settings.info.custom_fix_step2</li>
+            <li>$t:admin.settings.info.custom_fix_step3</li>
+          </ol>
+        </div>
+      </div>
       <div data-ref="core_update_idle_actions" data-if="{{core_update_status !== undefined &amp;&amp; (!_computed.coreUpdateRun)}}" class="flex flex-wrap gap-2 mb-4">
         <!-- 새 버전 확인 — 서버가 배포처에 묻는다. 실패 사유는 _local.coreUpdateCheckError 에 남겨 위 오류 알림이 계속 보이게 하고(토스트는 곧 사라진다), 성공하면 그 사유를 지운다. -->
         <button data-ref="core_update_check_button" type="button" class="btn btn-secondary" disabled="{{_local.checkingCoreUpdate === true}}">
@@ -54,7 +99,7 @@
           <icon data-if="{{_local.checkingCoreUpdate === true}}" name="spinner" class="text-sm animate-spin"/>
           <span data-if="{{_local.checkingCoreUpdate !== true}}">$t:admin.settings.core_update.check_update</span>
         </button>
-        <!-- 진행 표시는 정보 탭의 같은 조회 버튼(`_tab_info.json`)과 같은 `loadingChangelog` 플래그를 쓴다 — 두 버튼은 서로 다른 탭에 있어 동시에 그려지지 않는다. -->
+        <!-- 확인 결과 창의 같은 버튼처럼 지금 판 → 새 판 범위를 넘겨 그 사이 이력만 받는다. 진행 표시는 정보 탭의 같은 조회 버튼(`_tab_info.json`)과 같은 `loadingChangelog` 플래그를 쓴다 — 두 버튼은 서로 다른 탭에 있어 동시에 그려지지 않는다. -->
         <button data-ref="core_update_changelog_button" data-if="{{_local.coreUpdateInfo?.update_available}}" type="button" class="btn btn-secondary" disabled="{{_local.loadingChangelog}}">
           <on type="click">
             <set-state target="local" :loadingChangelog="true"/>
@@ -67,6 +112,7 @@
                 <set-state target="local" :loadingChangelog="false"/>
                 <toast type="error" message="{{error.message ?? '$t:admin.settings.info.changelog_load_failed'}}"/>
               </fail>
+              <query from_version="{{_local.coreUpdateInfo?.current_version ?? _computed.coreUpdateStatus?.current_version ?? ''}}" to_version="{{_local.coreUpdateInfo?.latest_version ?? ''}}"/>
             </api-call>
           </on>
           <icon data-if="{{_local.loadingChangelog}}" name="spinner" class="spinner-sm"/>
@@ -87,7 +133,8 @@
             <p class="text-secondary text-xs">$t:admin.settings.core_update.together_bundled_hint</p>
           </div>
         </label>
-        <label data-ref="core_update_rebuild_index_row" class="flex items-start gap-2 cursor-pointer">
+        <!-- 검색 색인 재구성 줄은 엔진이 점검 기능을 제공할 때만 보인다(서버 `search_index_rebuild_available` — 터미널이 묻는 조건과 같다). 값이 없는 옛 서버 응답이면 종전처럼 보인다. -->
+        <label data-ref="core_update_rebuild_index_row" data-if="{{_computed.coreUpdateStatus != null &amp;&amp; _computed.coreUpdateStatus?.search_index_rebuild_available !== false}}" class="flex items-start gap-2 cursor-pointer">
           <!-- 검색 색인 재구성 — 값이 없으면 끈 것으로 본다. 오래 걸리는 작업이라 운영자가 고를 때만 실행 인자로 넘긴다(위 항목처럼 지역 상태로만 든다). -->
           <checkbox :autoBinding="false" checked="{{_local.coreUpdateRebuildIndex === true}}" class="mt-0.5">
             <on type="change">
@@ -131,21 +178,59 @@
         </on>
       </div>
       <div data-ref="core_update_progress" data-if="{{!!_computed.coreUpdateRun}}" class="space-y-4">
-        <div data-ref="core_update_progress_header" data-if="{{_computed.coreUpdateRun?.status === 'running'}}" class="flex items-center justify-between">
-          <span class="text-heading">$t:admin.settings.core_update.progress_title</span>
+        <!-- 실행자 — 다른 관리자가 시작한 실행이면 그 이름을 알린다(판정은 계산값 coreUpdateStartedByOther). 서버가 started_by 를 싣지 않는 옛 판이면 그리지 않는다. -->
+        <p data-ref="core_update_started_by" data-if="{{_computed.coreUpdateStartedByOther === true &amp;&amp; (_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back')}}" class="flex items-center gap-2 text-info-soft text-sm">
+          <icon name="circle-info" class="text-sm"/>
+          <span>$t:admin.settings.core_update.live.started_by_other|name={{_computed.coreUpdateRun?.started_by?.name ?? ''}}</span>
+        </p>
+        <!-- 응답이 끊겨 서버 확인을 기다리는 동안 — 핸들러가 `_global.coreUpdateReconnecting` 을 세우고 내린다. 그동안 막대가 멈춰 보여도 멈춘 것이 아니라는 것을 알린다. -->
+        <p data-ref="core_update_reconnecting" data-if="{{_global.coreUpdateReconnecting === true &amp;&amp; (_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back')}}" role="status" class="flex items-center gap-2 text-warning-soft text-sm">
+          <icon name="spinner" class="text-sm animate-spin"/>
+          <span>$t:admin.settings.core_update.live.reconnecting</span>
+        </p>
+        <!-- 자동 이어 가기가 멈춘 뒤 — 연달아 실패했거나 상한에 닿으면 핸들러가 `_global.coreUpdateAutoStopped` 를 세운다. 몰고 있는 동안·선택을 기다리는 동안은 보이지 않는다. -->
+        <alert data-type="composite" data-ref="core_update_auto_stopped" data-if="{{_global.coreUpdateAutoStopped === true &amp;&amp; _global.coreUpdateBusy !== true &amp;&amp; (_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back') &amp;&amp; !_computed.coreUpdateRun?.awaiting?.kind}}" type="warning" message="$t:admin.settings.core_update.live.auto_stopped"/>
+        <!-- 되돌리는 중 — 실패 뒤 서버가 바꾼 것을 되돌리는 동안에도 진행 머리말·단계 목록·최근 기록을 함께 보이고, 이 줄로 지금 무엇을 하는지 알린다. -->
+        <p data-ref="core_update_rolling_back" data-if="{{_computed.coreUpdateRun?.status === 'rolling_back'}}" role="status" class="flex items-center gap-2 text-secondary text-sm">
+          <icon name="spinner" class="text-sm text-blue-600 dark:text-blue-400 animate-spin"/>
+          <span>$t:admin.settings.core_update.rolling_back_desc</span>
+        </p>
+        <div data-ref="core_update_progress_header" data-if="{{(_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back')}}" class="flex items-center justify-between">
+          <span class="text-heading">{{_computed.coreUpdateRun?.status === 'rolling_back' ? $t('admin.settings.core_update.rolling_back_title') : $t('admin.settings.core_update.progress_title')}}</span>
           <span data-ref="core_update_progress_count" class="text-secondary text-sm">$t:admin.settings.core_update.progress_count|done={{_computed.coreUpdateRun?.completed_count ?? 0}}|total={{_computed.coreUpdateTotalSteps ?? 0}}</span>
         </div>
-        <div data-ref="core_update_progress_track" data-if="{{_computed.coreUpdateRun?.status === 'running'}}" class="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+        <div data-ref="core_update_progress_track" data-if="{{(_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back')}}" class="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
           <div data-ref="core_update_progress_fill" class="h-2 rounded-full bg-blue-600 dark:bg-blue-500 transition-all">
             <prop name="style">
               <field name="width" value="{{Math.round(((_computed.coreUpdateRun?.completed_count ?? 0) / Math.max(_computed.coreUpdateTotalSteps ?? 1, 1)) * 100) + '%'}}"/>
             </prop>
           </div>
         </div>
-        <ul data-ref="core_update_step_list" data-if="{{_computed.coreUpdateRun?.status === 'running'}}" class="space-y-1">
-          <li data-each="step, stepIndex in _computed.coreUpdateSteps ?? []" class="flex items-center gap-2 text-sm">
-            <icon name="{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) ? 'circle-check' : (_computed.coreUpdateRun?.current_step === step.key ? 'spinner' : 'circle')}}" class="{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) ? 'text-sm text-green-600 dark:text-green-400' : (_computed.coreUpdateRun?.current_step === step.key ? 'text-sm text-blue-600 dark:text-blue-400 animate-spin' : 'text-sm text-gray-300 dark:text-gray-600')}}"/>
-            <span class="{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) || _computed.coreUpdateRun?.current_step === step.key ? 'text-heading' : 'text-secondary'}}">{{step.label}}</span>
+        <!-- 단계 목록 — 지금 단계 줄 아래에 그 단계 안의 진행을 붙인다. 서버가 싣는 step_progress(단계 key·끝낸 양·전체 양·단위)가 지금 단계와 같으면 얇은 막대(폭 done/total)와 줄 오른쪽 「n / m 파일」 같은 수치를 보여 준다. 전체 양을 모르면(total=null) 막대 없이 「n개 확인」만 쓴다. 번들 단계는 current_item(다음 요청이 처리할 항목)으로 「번들 n / m」·종류·이름(식별자)·이전 → 새 판을 함께 보여 주고, 막대 폭은 step_progress 를 따르되 없으면 current_item 으로 잡는다. 선택을 기다리는 동안은 처리 중인 것이 없으므로 붙이지 않는다. -->
+        <ul data-ref="core_update_step_list" data-if="{{(_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back')}}" class="space-y-1">
+          <li data-each="step, stepIndex in _computed.coreUpdateSteps ?? []" class="text-sm">
+            <div class="flex items-center gap-2">
+              <icon name="{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) ? 'circle-check' : (_computed.coreUpdateRun?.current_step === step.key ? 'spinner' : 'circle')}}" class="{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) ? 'text-sm text-green-600 dark:text-green-400' : (_computed.coreUpdateRun?.current_step === step.key ? 'text-sm text-blue-600 dark:text-blue-400 animate-spin' : 'text-sm text-gray-300 dark:text-gray-600')}}"/>
+              <span class="{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) || _computed.coreUpdateRun?.current_step === step.key ? 'text-heading' : 'text-secondary'}}">{{step.label}}</span>
+              <span data-if="{{_computed.coreUpdateRun?.current_step === step.key &amp;&amp; !!_computed.coreUpdateRun?.current_item &amp;&amp; !_computed.coreUpdateRun?.awaiting?.kind}}" class="ml-auto text-secondary text-xs whitespace-nowrap">$t:admin.settings.core_update.current_item_position|position={{_computed.coreUpdateRun?.current_item?.position ?? 0}}|total={{_computed.coreUpdateRun?.current_item?.total ?? 0}}</span>
+              <span data-if="{{_computed.coreUpdateRun?.current_step === step.key &amp;&amp; _computed.coreUpdateRun?.step_progress?.step === step.key &amp;&amp; !_computed.coreUpdateRun?.current_item &amp;&amp; !_computed.coreUpdateRun?.awaiting?.kind}}" class="ml-auto text-secondary text-xs whitespace-nowrap">{{_computed.coreUpdateRun?.step_progress?.total == null ? $t('admin.settings.core_update.step_progress.checked', Object.fromEntries([['done', _computed.coreUpdateRun?.step_progress?.done ?? 0]])) : $t('admin.settings.core_update.step_progress.' + (['files', 'entries', 'items', 'tasks'].includes(_computed.coreUpdateRun?.step_progress?.unit) ? _computed.coreUpdateRun?.step_progress?.unit : 'items'), Object.fromEntries([['done', _computed.coreUpdateRun?.step_progress?.done ?? 0], ['total', _computed.coreUpdateRun?.step_progress?.total ?? 0]]))}}</span>
+            </div>
+            <div data-if="{{_computed.coreUpdateRun?.current_step === step.key &amp;&amp; !_computed.coreUpdateRun?.awaiting?.kind &amp;&amp; (!!_computed.coreUpdateRun?.current_item || (_computed.coreUpdateRun?.step_progress?.step === step.key &amp;&amp; _computed.coreUpdateRun?.step_progress?.total != null))}}" class="ml-6 mt-1.5 mb-1 space-y-1.5">
+              <div class="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                <div class="h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 transition-all">
+                  <prop name="style">
+                    <field name="width" value="{{Math.min(Math.round(((_computed.coreUpdateRun?.step_progress?.step === step.key &amp;&amp; _computed.coreUpdateRun?.step_progress?.total != null) ? Math.max(_computed.coreUpdateRun?.step_progress?.done ?? 0, 0) / Math.max(_computed.coreUpdateRun?.step_progress?.total ?? 1, 1) : Math.max((_computed.coreUpdateRun?.current_item?.position ?? 1) - 1, 0) / Math.max(_computed.coreUpdateRun?.current_item?.total ?? 1, 1)) * 100), 100) + '%'}}"/>
+                  </prop>
+                </div>
+              </div>
+              <div data-if="{{_computed.coreUpdateRun?.current_step === step.key &amp;&amp; !!_computed.coreUpdateRun?.current_item &amp;&amp; !_computed.coreUpdateRun?.awaiting?.kind}}" class="flex flex-wrap items-center gap-2 text-xs">
+                <span class="text-secondary">$t:admin.settings.core_update.now_processing</span>
+                <span data-if="{{!!_computed.coreUpdateRun?.current_item?.type}}" class="badge badge-gray">{{$t('admin.settings.core_update.selection.types.' + (_computed.coreUpdateRun?.current_item?.type ?? ''))}}</span>
+                <span data-if="{{!!_computed.coreUpdateRun?.current_item?.name}}" class="text-heading">{{_computed.coreUpdateRun?.current_item?.name ?? ''}}</span>
+                <span class="font-mono text-secondary break-all">{{_computed.coreUpdateRun?.current_item?.identifier ?? ''}}</span>
+                <span data-if="{{!!_computed.coreUpdateRun?.current_item?.from_version || !!_computed.coreUpdateRun?.current_item?.to_version}}" class="text-secondary">{{(_computed.coreUpdateRun?.current_item?.from_version ?? '-') + ' → ' + (_computed.coreUpdateRun?.current_item?.to_version ?? '-')}}</span>
+              </div>
+            </div>
           </li>
         </ul>
         <!-- 진행 중 선택(7.2.1) — 서버가 명령줄 `core:update` 와 같은 자리에서 멈춰 묻는다: 새로 들어온 미배치 공식 번들 배치(bundled_sources), 번들 확장·언어팩 업데이트 항목과 확장별 레이아웃 전략(bundled_updates). 운영자가 바꾼 값만 `_global.coreUpdateChoices` 에 두고, 바꾸지 않은 항목은 [계속] 핸들러가 기본값(업데이트는 올림·항목 전략, 미배치 번들은 배치 안 함)으로 보낸다. -->
@@ -210,14 +295,97 @@
             <span>$t:admin.settings.core_update.selection.continue</span>
           </button>
         </div>
-        <alert data-type="composite" data-ref="core_update_completed" data-if="{{_computed.coreUpdateRun?.status === 'completed'}}" type="success" message="$t:admin.settings.core_update.completed_desc|version={{_computed.coreUpdateRun?.to_version ?? ''}}"/>
+        <!-- 완료 — 번들 실패가 있으면 초록 「성공」 대신 노랑 안내를 보인다(터미널 결과 요약과 같은 판정). bundled_result 가 없는 옛 서버 응답은 실패 0 으로 보고 종전처럼 초록이다. -->
+        <alert data-type="composite" data-ref="core_update_completed_partial" data-if="{{_computed.coreUpdateRun?.status === 'completed' &amp;&amp; (_computed.coreUpdateBundledResult?.failed ?? 0) > 0}}" type="warning" message="$t:admin.settings.core_update.result.completed_with_failures|count={{_computed.coreUpdateBundledResult?.failed ?? 0}}"/>
+        <alert data-type="composite" data-ref="core_update_completed" data-if="{{_computed.coreUpdateRun?.status === 'completed' &amp;&amp; (_computed.coreUpdateBundledResult?.failed ?? 0) === 0}}" type="success" message="$t:admin.settings.core_update.completed_desc|version={{_computed.coreUpdateRun?.to_version ?? ''}}"/>
+        <!-- 결과 요약 — 이전 판 → 새 판, 소요 시간(시작~마지막 갱신), 번들 성공·실패·건너뜀 수, 검색 인덱스 결과, 실행 기록 파일 위치. 값이 없는 칸(옛 서버)은 그리지 않는다. -->
+        <div data-ref="core_update_result_summary" data-if="{{_computed.coreUpdateRun?.status === 'completed'}}" class="kv-list gap-y-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4">
+          <div class="kv-row">
+            <span class="text-label-subtle">$t:admin.settings.core_update.result.versions_label</span>
+            <span class="text-heading">{{(_computed.coreUpdateRun?.from_version ?? '-') + ' → ' + (_computed.coreUpdateRun?.to_version ?? '-')}}</span>
+          </div>
+          <div data-if="{{_computed.coreUpdateDurationSeconds != null}}" class="kv-row">
+            <span class="text-label-subtle">$t:admin.settings.core_update.result.duration_label</span>
+            <span class="text-heading">{{$t('admin.settings.core_update.result.duration', Object.fromEntries([['minutes', Math.floor((_computed.coreUpdateDurationSeconds ?? 0) / 60)], ['seconds', (_computed.coreUpdateDurationSeconds ?? 0) % 60]]))}}</span>
+          </div>
+          <div data-if="{{!!_computed.coreUpdateBundledResult}}" class="kv-row">
+            <span class="text-label-subtle">$t:admin.settings.core_update.result.bundled_label</span>
+            <span class="text-heading">$t:admin.settings.core_update.result.bundled_counts|success={{_computed.coreUpdateBundledResult?.success ?? 0}}|failed={{_computed.coreUpdateBundledResult?.failed ?? 0}}|skipped={{_computed.coreUpdateBundledResult?.skipped ?? 0}}</span>
+          </div>
+          <div data-if="{{!!_computed.coreUpdateBundledResult?.search_index?.status}}" class="kv-row">
+            <span class="text-label-subtle">$t:admin.settings.core_update.result.search_index_label</span>
+            <span class="{{_computed.coreUpdateBundledResult?.search_index?.status === 'failed' ? 'text-warning-soft' : 'text-heading'}}">{{$t('admin.settings.core_update.result.search_index.' + (['rebuilt', 'failed', 'unsupported', 'skipped'].includes(_computed.coreUpdateBundledResult?.search_index?.status) ? _computed.coreUpdateBundledResult?.search_index?.status : 'skipped')) + (_computed.coreUpdateBundledResult?.search_index?.message ? ' — ' + _computed.coreUpdateBundledResult?.search_index?.message : '')}}</span>
+          </div>
+          <div data-if="{{!!_computed.coreUpdateRun?.log_file}}" class="kv-row">
+            <span class="text-label-subtle">$t:admin.settings.core_update.result.log_file_label</span>
+            <span class="font-mono text-xs text-secondary break-all select-all">{{_computed.coreUpdateRun?.log_file ?? ''}}</span>
+          </div>
+        </div>
+        <!-- 실패한 번들 항목 — 종류·식별자·사유·다시 시도 명령(고정폭, 한 번에 골라 복사하기 쉽게). 번들 단계가 끝난 뒤라면 완료·실패 모두 보인다. -->
+        <div data-ref="core_update_bundled_failures" data-if="{{['completed', 'rolled_back', 'rollback_failed'].includes(_computed.coreUpdateRun?.status) &amp;&amp; (_computed.coreUpdateBundledResult?.failed_items ?? []).length > 0}}" class="space-y-2">
+          <span class="text-heading text-sm">$t:admin.settings.core_update.result.failures_title</span>
+          <div class="overflow-x-auto border border-amber-200 dark:border-amber-800 rounded-lg">
+            <table class="min-w-full text-sm">
+              <thead class="bg-amber-50 dark:bg-amber-900/20">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">$t:admin.settings.core_update.result.col_type</th>
+                  <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">$t:admin.settings.core_update.result.col_identifier</th>
+                  <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">$t:admin.settings.core_update.result.col_reason</th>
+                  <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">$t:admin.settings.core_update.result.col_retry</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-each="failedItem in _computed.coreUpdateBundledResult?.failed_items ?? []" class="border-t border-gray-200 dark:border-gray-700 align-top">
+                  <td class="px-3 py-2">
+                    <span class="badge badge-gray">{{$t('admin.settings.core_update.selection.types.' + (failedItem.type ?? 'module'))}}</span>
+                  </td>
+                  <td class="px-3 py-2 font-mono text-xs text-gray-900 dark:text-white break-all">{{failedItem.identifier ?? ''}}</td>
+                  <td class="px-3 py-2 text-xs text-gray-700 dark:text-gray-300 break-words">{{failedItem.reason ?? '-'}}</td>
+                  <td class="px-3 py-2">
+                    <span data-if="{{!!failedItem.retry_command}}" class="block font-mono text-xs rounded bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 px-2 py-1 whitespace-pre-wrap break-all select-all">{{failedItem.retry_command ?? ''}}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
         <div data-ref="core_update_failed" data-if="{{_computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed' || _computed.coreUpdateRun?.status === 'rolling_back'}}" class="space-y-3">
           <alert data-type="composite" data-ref="core_update_failed_alert" type="error" message="$t:admin.settings.core_update.failed_title|step={{_computed.coreUpdateRun?.error?.step_label ?? ''}}|detail={{_computed.coreUpdateRun?.error?.message ?? ''}}"/>
+          <!-- 되돌리기가 점검 모드를 풀지 못했으면(서버 maintenance_left_on) 사이트가 아직 닫혀 있다는 것과 해제 방법을 먼저 알린다. -->
+          <alert data-type="composite" data-ref="core_update_maintenance_left_on" data-if="{{_computed.coreUpdateRun?.maintenance_left_on === true}}" type="warning" message="$t:admin.settings.core_update.maintenance_left_on"/>
           <alert data-type="composite" data-ref="core_update_rolled_back_alert" data-if="{{_computed.coreUpdateRun?.rollback?.restored === true}}" type="success" message="{{_computed.coreUpdateRun?.rollback?.files_were_applied ? $t('admin.settings.core_update.rolled_back') : $t('admin.settings.core_update.rolled_back_not_applied')}}"/>
           <alert data-type="composite" data-ref="core_update_rollback_failed_alert" data-if="{{_computed.coreUpdateRun?.status === 'rollback_failed'}}" type="error" message="{{$t('admin.settings.core_update.rollback_failed') + ' ' + $t('admin.settings.core_update.rollback_manual')}}"/>
           <p data-ref="core_update_rollback_failed_targets" data-if="{{(_computed.coreUpdateRun?.rollback?.failed_targets ?? []).length > 0}}" class="text-error-soft text-xs">$t:admin.settings.core_update.rollback_failed_targets|targets={{(_computed.coreUpdateRun?.rollback?.failed_targets ?? []).join(', ')}}</p>
           <p data-ref="core_update_report_path" data-if="{{_computed.coreUpdateRun?.error?.report_path}}" class="text-secondary text-xs break-all">{{$t('admin.settings.core_update.report_path') + ': ' + (_computed.coreUpdateRun?.error?.report_path ?? '')}}</p>
           <p data-ref="core_update_backup_path" data-if="{{_computed.coreUpdateRun?.status === 'rollback_failed' &amp;&amp; _computed.coreUpdateRun?.rollback?.backup_path}}" class="text-secondary text-xs break-all">{{$t('admin.settings.core_update.backup_path') + ': ' + (_computed.coreUpdateRun?.rollback?.backup_path ?? '')}}</p>
+        </div>
+        <!-- 복구 안내 — 실패 화면의 「조치 방법 보기」가 펼친다. 되돌리기까지 실패했거나 점검 모드가 남았으면 처음부터 펼친다. 순서는 터미널의 수동 복구 안내와 같다: 백업에서 파일 되돌리기 → Composer 재설치 → 점검 해제. -->
+        <div data-ref="core_update_recovery_guide" data-if="{{(_computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed') &amp;&amp; (_local.coreUpdateRecoveryOpen ?? (_computed.coreUpdateRun?.status === 'rollback_failed' || _computed.coreUpdateRun?.maintenance_left_on === true)) === true}}" class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
+          <span class="text-heading text-sm">$t:admin.settings.core_update.recovery.title</span>
+          <p data-if="{{_computed.coreUpdateRun?.rollback?.restored === true}}" class="text-secondary text-xs">$t:admin.settings.core_update.recovery.restored_hint</p>
+          <div data-if="{{!!_computed.coreUpdateRun?.error?.report_path}}" class="space-y-1">
+            <span class="text-label-subtle text-xs">$t:admin.settings.core_update.report_path</span>
+            <span class="block font-mono text-xs text-secondary break-all select-all">{{_computed.coreUpdateRun?.error?.report_path ?? ''}}</span>
+          </div>
+          <div data-if="{{!!_computed.coreUpdateRun?.rollback?.backup_path}}" class="space-y-1">
+            <span class="text-label-subtle text-xs">$t:admin.settings.core_update.backup_path</span>
+            <span class="block font-mono text-xs text-secondary break-all select-all">{{_computed.coreUpdateRun?.rollback?.backup_path ?? ''}}</span>
+          </div>
+          <p class="text-secondary text-xs">$t:admin.settings.core_update.recovery.manual_desc</p>
+          <ol class="list-decimal pl-5 space-y-2 text-sm text-gray-700 dark:text-gray-300">
+            <li>
+              <span>$t:admin.settings.core_update.recovery.step_restore</span>
+              <span data-if="{{!!_computed.coreUpdateRun?.rollback?.backup_path}}" class="block mt-1 rounded bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 font-mono text-xs p-2 whitespace-pre-wrap break-all select-all">{{'cp -r ' + (_computed.coreUpdateRun?.rollback?.backup_path ?? '') + '/* ./'}}</span>
+            </li>
+            <li>
+              <span>$t:admin.settings.core_update.recovery.step_composer</span>
+              <span class="block mt-1 rounded bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 font-mono text-xs p-2 whitespace-pre-wrap break-all select-all">composer install --no-dev --optimize-autoloader</span>
+            </li>
+            <li>
+              <span>$t:admin.settings.core_update.recovery.step_maintenance</span>
+              <span class="block mt-1 rounded bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 font-mono text-xs p-2 whitespace-pre-wrap break-all select-all">php artisan up</span>
+            </li>
+          </ol>
         </div>
         <div data-ref="core_update_notices" data-if="{{(_computed.coreUpdateRun?.notices ?? []).length > 0}}" class="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-3 space-y-1">
           <span class="text-heading text-sm">$t:admin.settings.core_update.notices_title</span>
@@ -247,11 +415,12 @@
             <icon data-if="{{_global.coreUpdateBusy === true}}" name="spinner" class="spinner-sm"/>
             <span>$t:admin.settings.core_update.resume</span>
           </button>
-          <button data-ref="core_update_guide_button" data-if="{{_computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed'}}" type="button" class="btn btn-secondary">
+          <!-- 「조치 방법 보기」 — 실패 뒤에는 터미널 업데이트 안내 창이 아니라 이 화면의 복구 안내(백업 위치·리포트 경로·수동 복구 순서)를 펼치고 접는다. 터미널 업데이트 안내 창은 고급 접기의 명령어 안내 버튼이 그대로 연다. -->
+          <button data-ref="core_update_guide_button" data-if="{{_computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed'}}" type="button" class="btn btn-secondary" aria-expanded="{{(_local.coreUpdateRecoveryOpen ?? (_computed.coreUpdateRun?.status === 'rollback_failed' || _computed.coreUpdateRun?.maintenance_left_on === true)) === true}}" aria-controls="core_update_recovery_guide">
             <on type="click">
-              <open-modal target="core_update_guide_modal"/>
+              <set-state target="local" coreUpdateRecoveryOpen="{{!((_local.coreUpdateRecoveryOpen ?? (_computed.coreUpdateRun?.status === 'rollback_failed' || _computed.coreUpdateRun?.maintenance_left_on === true)) === true)}}"/>
             </on>
-            $t:admin.settings.core_update.view_guide
+            {{((_local.coreUpdateRecoveryOpen ?? (_computed.coreUpdateRun?.status === 'rollback_failed' || _computed.coreUpdateRun?.maintenance_left_on === true)) === true) ? $t('admin.settings.core_update.recovery.hide') : $t('admin.settings.core_update.view_guide')}}
           </button>
           <!-- 형제들과 달리 `dismissCoreUpdate` 는 전역 진행 플래그를 싣지 않는다(기록 정리는 업데이트 진행이 아니다). 그래서 진행 표시는 이 버튼의 지역 플래그로 잡고, 커스텀 핸들러도 `onSuccess`/`onError` 를 지원하므로 되돌리는 자리가 있다. -->
           <button data-ref="core_update_dismiss_button" data-if="{{_computed.coreUpdateRun?.status === 'completed' || _computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed'}}" type="button" class="btn btn-secondary" disabled="{{_local.coreUpdateDismissing || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
@@ -270,8 +439,13 @@
             <span>$t:admin.settings.core_update.dismiss</span>
           </button>
         </div>
-        <pre data-ref="core_update_log" data-if="{{(_local.coreUpdateLogOpen ?? false)}}" class="max-h-72 overflow-auto rounded-lg bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 text-xs p-3 whitespace-pre-wrap">{{(_computed.coreUpdateRun?.logs ?? []).join('
+        <!-- 최근 기록 — 진행 중(되돌리는 중 포함)에는 기록을 접어 두어도 마지막 5줄을 늘 보여 준다(어느 항목을 처리했는지 눌러 보지 않아도 알 수 있게). 전체 기록은 「기록 보기」로 연다. -->
+        <pre data-ref="core_update_log_tail" data-if="{{!(_local.coreUpdateLogOpen ?? false) &amp;&amp; (_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back') &amp;&amp; (_computed.coreUpdateRun?.logs ?? []).length > 0}}" class="rounded-lg bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 text-xs p-3 whitespace-pre-wrap">{{(_computed.coreUpdateRun?.logs ?? []).slice(-5).join('\n')}}</pre>
+        <!-- 전체 기록 — 상자를 세로 역방향 flex 로 두면 브라우저가 스크롤 기준을 맨 아래에 둔다. 그래서 새 줄이 와도 맨 아래를 따라가고, 운영자가 위로 올려 읽는 중이면 그 자리를 지킨다(스크립트 없이 CSS 만으로). -->
+        <div data-ref="core_update_log" data-if="{{(_local.coreUpdateLogOpen ?? false)}}" class="max-h-72 overflow-auto flex flex-col-reverse rounded-lg bg-gray-900 dark:bg-gray-950">
+          <pre data-ref="core_update_log_body" class="text-gray-100 dark:text-gray-200 text-xs p-3 whitespace-pre-wrap">{{(_computed.coreUpdateRun?.logs ?? []).join('
 ')}}</pre>
+        </div>
       </div>
     </div>
     <!-- 접기 카드는 이 템플릿의 `.admin-card-accordion` 자산(이커머스 상품 폼 13곳과 같은 모양)을 쓴다. `Accordion` 컴포넌트를 `admin-card` 안에 넣으면 카드 안에 테두리 상자가 한 번 더 그려지고, trigger 를 직접 넘기는 순간 컴포넌트가 꺾쇠를 그리지 않아 접힌다는 신호가 사라진다(실측 2026-09-13). -->

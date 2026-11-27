@@ -12,6 +12,11 @@
 - 본인인증 정책 창의 「사용자 지정」 범위·확장 지점 선택 문구의 일본어 번역을 추가했습니다.
 - 환경설정 › 업데이트 탭의 진행 중 선택 창(새로 들어온 공식 번들 배치·업데이트할 번들 확장·언어팩 선택, `admin.settings.core_update.selection.*`) 문구의 일본어 번역을 추가하고, 「번들 확장·언어팩 함께 업데이트」·확장별 레이아웃 안내 문구(`together_bundled_hint`·`layout_per_extension_hint`) 번역을 새 동작에 맞게 고쳤습니다.
 
+- 환경설정 › 업데이트 탭 진행 화면의 「지금 처리 중」·번들 항목 위치 문구(`admin.settings.core_update.now_processing`·`current_item_position`)와 단계 안 진행 수치(`step_progress.*` — 파일·항목·작업 수, 「n개 확인」)의 일본어 번역을 추가하고, 직접 올린 ZIP 안내(`manual_zip_hint`)에 서명 파일 자동 검증 문장을 더했습니다.
+- 환경설정 › 업데이트 탭의 결과 요약·번들 실패 표(`result.*`)·복구 안내(`recovery.*`)·점검 모드 남음 경고(`maintenance_left_on`)·되돌리는 중(`rolling_back_*`)·끊김 대기·자동 멈춤·다른 관리자 표시(`live.*`)·선택 충돌 안내(`selection.taken_elsewhere`) 문구의 일본어 번역을 추가했습니다.
+
+- 모듈·플러그인·템플릿·언어팩 업데이트 창의 고급 설정·진행 안내·실패 결과 안내, 업데이트 결과 창, 목록 행의 「끝나지 않은 업데이트」·[다시 업데이트(강제)]·[다시 설치] 문구(`admin.extension_update.*`)의 일본어 번역을 추가했습니다.
+
 ### Changed
 
 - 환경설정 › 정보 탭 「업데이트 확인」 창의 새 버전 안내 문구(`admin.settings.info.update_available_message`) 일본어 번역을 「업데이트」 탭 안내로 고치고, [업데이트 탭으로] 버튼 이름(`admin.settings.info.go_to_update_tab`)의 일본어 번역을 추가했습니다.

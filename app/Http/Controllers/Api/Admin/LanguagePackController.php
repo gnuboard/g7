@@ -7,6 +7,7 @@ use App\Exceptions\LanguagePackOperationException;
 use App\Exceptions\LanguagePackSlotConflictException;
 use App\Exceptions\PackageIntegrityException;
 use App\Extension\Helpers\ChangelogParser;
+use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\LanguagePack\BulkActivateRequest;
 use App\Http\Requests\LanguagePack\IndexLanguagePackRequest;
@@ -437,12 +438,27 @@ class LanguagePackController extends AdminBaseController
             return $this->notFound('language_packs.not_found');
         }
 
-        try {
-            $updated = $this->service->performUpdate($pack, false, $request->packageIntegrityOptions());
+        $validated = $request->validated();
+        $source = $validated['source'] ?? null;
+        // 터미널과 같다 — source=bundled 는 번들 강제 재적용(force)과 같은 뜻이다
+        $force = (bool) ($validated['force'] ?? false) || $source === 'bundled';
+        $fromVersion = $pack->version;
 
+        try {
+            // 소스를 고르지 않았으면 종전과 같은 인자로 부른다
+            $sourceArgs = is_string($source) && $source !== 'auto' ? [$source] : [];
+            $updated = $this->service->performUpdate($pack, $force, $request->packageIntegrityOptions(), ...$sourceArgs);
+
+            // 터미널 「from → to」와 같은 판 변화를 싣는다(7.2.1 출시 전). 언어팩은 의존 경고·멈춘 업데이트 정리가 없다.
             return $this->success(
                 'language_packs.update_success',
-                (new LanguagePackResource($updated))->toArray($request)
+                (new LanguagePackResource($updated))->toArray($request) + [
+                    'from_version' => $fromVersion,
+                    'to_version' => $updated->version,
+                    'dependency_warnings' => [],
+                    'recovered' => null,
+                    'no_update' => false,
+                ]
             );
         } catch (PackageIntegrityException $e) {
             // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 7.2.0
@@ -452,12 +468,28 @@ class LanguagePackController extends AdminBaseController
             return $this->operationLockError($e);
         } catch (LanguagePackOperationException $e) {
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다
-            return $this->error($e->errorKey, 422, null, $e->params);
+            // 「이미 최신」은 실패가 아니라 안내다 — data.no_update 로 화면이 정보로 보이게 한다(7.2.1 출시 전, 상태 코드는 그대로).
+            $messageKey = $e->errorKey;
+
+            return ResponseHelper::error($messageKey, 422, null, $e->params, 'core', [
+                'no_update' => $e->errorKey === 'language_packs.errors.update_already_latest',
+                // 언어팩 서비스는 실패 뒤 상태를 따로 판정하지 않는다 — 모르는 값을 지어내지 않는다
+                'outcome' => null,
+                'warnings' => [],
+                'retry_command' => null,
+            ]);
         } catch (\Throwable $e) {
             // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
             report($e);
 
-            return $this->error('language_packs.update_failed', 500, $e);
+            // 서비스가 백업으로 되돌린 뒤 올라온 실패다 — 터미널 재실행 명령을 함께 싣는다(7.2.1 출시 전)
+            return ResponseHelper::error('language_packs.update_failed', 500, $e, [], 'core', [
+                'no_update' => false,
+                'outcome' => null,
+                'warnings' => [],
+                'retry_command' => 'php artisan language-pack:update '.$pack->identifier
+                    .(is_string($source) && $source !== 'auto' ? ' --source='.$source : ''),
+            ]);
         }
     }
 

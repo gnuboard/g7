@@ -291,6 +291,8 @@ return [
         'github_url' => env('G7_UPDATE_GITHUB_URL', 'https://github.com/gnuboard/g7'),
         'github_token' => env('G7_UPDATE_GITHUB_TOKEN', ''),
         'pending_path' => env('G7_UPDATE_PENDING_PATH') ?: storage_path('app/core_pending'),
+        // 확장(모듈·플러그인·템플릿) 웹 업데이트의 수동 ZIP 대기 폴더 — 운영자가 FTP 로 올린 ZIP 을 이름으로만 고른다(임의 경로 금지).
+        'extension_pending_path' => env('G7_EXTENSION_UPDATE_PENDING_PATH') ?: storage_path('app/extension_pending'),
         // build/ext: 부트스트랩 리소스 정적 게시본(공개 #122) — 각 서버가 재생성하는 로컬 파생물이라
         // 릴리즈 소스에 없다. 제외하지 않으면 --prune 업데이트가 orphan 으로 삭제해
         // 업데이트 완료까지 정적 fast path 가 불필요하게 끊긴다 (백업 대상에서도 제외).

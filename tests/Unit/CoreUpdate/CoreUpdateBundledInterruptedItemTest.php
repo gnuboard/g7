@@ -76,7 +76,7 @@ class CoreUpdateBundledInterruptedItemTest extends TestCase
         $this->finishBundledStep(stillPending: false);
 
         $after = $this->state();
-        $this->assertSame(['success' => 1, 'failed' => 0, 'unconfirmed' => 0, 'planned' => 1], $after->context('bundled_result'), '끝까지 돌아 반영된 항목을 실패로 셌다');
+        $this->assertSame(['success' => 1, 'failed' => 0, 'unconfirmed' => 0, 'planned' => 1], array_intersect_key($after->context('bundled_result'), array_flip(['success', 'failed', 'unconfirmed', 'planned'])), '끝까지 돌아 반영된 항목을 실패로 셌다');
         $this->assertNotContains(trans_count('settings.core_update.web.bundled_partial_failure', ['failed' => '1', 'count' => 1]), $after->all()['warnings'] ?? [], '반영된 항목을 「업데이트되지 않았습니다」로 알렸다');
         // 진행 기록 줄은 `[시:분:초] ` 머리를 단다.
         $applied = (string) __('settings.core_update.web.log_bundled_item_interrupted_applied', ['identifier' => 'sirsoft-basic']);
@@ -100,7 +100,7 @@ class CoreUpdateBundledInterruptedItemTest extends TestCase
         $this->finishBundledStep(stillPending: true);
 
         $after = $this->state();
-        $this->assertSame(['success' => 0, 'failed' => 0, 'unconfirmed' => 1, 'planned' => 1], $after->context('bundled_result'));
+        $this->assertSame(['success' => 0, 'failed' => 0, 'unconfirmed' => 1, 'planned' => 1], array_intersect_key($after->context('bundled_result'), array_flip(['success', 'failed', 'unconfirmed', 'planned'])));
         $warnings = $after->all()['warnings'] ?? [];
         $this->assertContains(trans_count('settings.core_update.web.bundled_interrupted_unconfirmed', ['count' => 1, 'identifiers' => 'sirsoft-basic']), $warnings, '완료 여부를 확인하라는 안내가 없다');
         $this->assertNotContains(trans_count('settings.core_update.web.bundled_partial_failure', ['failed' => '1', 'count' => 1]), $warnings, '끝까지 돌았을 수 있는 항목을 「업데이트되지 않았습니다」로 단정했다');

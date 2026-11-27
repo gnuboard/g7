@@ -539,6 +539,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource)._
 | integrations | body | array | 아니오 | — | 함께 설치할 선택 연동 확장 목록 (7.1.4). 각 원소 `type`(module\|plugin — 템플릿은 고를 수 없다)·`identifier`. install-preview 응답 `integrations[]` 에서 사용자가 고른 항목. 의존 확장 다음·본체 이전에 설치·활성화하며, 실패해도 본체 설치는 계속되고 실패 사유는 응답 `integration_notices` 로 알린다. 권한 판정은 `dependencies` 와 같다 |
 | language_packs | body | array | 아니오 | — | 함께 설치할 동반 번들 언어팩 식별자 배열 (설치 성공 후 best-effort 설치) |
 | layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
+| force | body | boolean | 아니오 | — | 불완전 설치 복구 재설치 (7.2.1) — 이미 설치된 경우에도 `_bundled`/`_pending` 원본으로 덮어쓰고 다시 설치한다(터미널 `install --force` 와 같다). 생략하면 false |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.template.install_validation_rules`).
 
@@ -97925,6 +97926,33 @@ _단건 응답: `data` 객체의 필드._
 **설명** 템플릿 제거 시 함께 삭제될 데이터 정보를 조회합니다(TemplateService::getTemplateUninstallInfo). 제거 확인 다이얼로그에서 사용하며, 템플릿이 없으면 404를 반환합니다. `core.templates.uninstall` 권한이 필요합니다.
 
 
+### GET /api/admin/templates/update-sources/manual-zip
+- **라우트명**: `api.admin.templates.update-sources.manual-zip`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\TemplateController@manualZipSources`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.install`
+
+수동 ZIP 대기 폴더(`storage/app/extension_pending`, 환경변수 `G7_EXTENSION_UPDATE_PENDING_PATH`)에 올라온 `*.zip` 목록 (7.2.1). 업데이트 창 「고급」의 ZIP 선택지가 읽고, 고른 이름을 업데이트 요청 `zip_file` 로 보낸다. 서버 폴더 경로는 싣지 않는다.
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| sources | array | `[{"name":"sirsoft-board-1.0.1.zip","size":1048576,"modified_at":"2026-11-27T10:00:00+09:00"}]` | ZIP 목록 (최근 수정 순) — 각 원소 `name`(파일 이름)·`size`(바이트)·`modified_at`(ISO 8601). 폴더가 없으면 빈 배열 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "성공",
+    "data": {
+        "sources": [
+            { "name": "sirsoft-board-1.0.1.zip", "size": 1048576, "modified_at": "2026-11-27T10:00:00+09:00" }
+        ]
+    }
+}
+```
+
 ### POST /api/admin/templates/{templateName}/update
 <!-- @generated:start:api.admin.templates.update -->
 - **라우트명**: `api.admin.templates.update`
@@ -97939,6 +97967,8 @@ _단건 응답: `data` 객체의 필드._
 | layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 업데이트 시 레이아웃 처리 전략 (overwrite: 새 파일로 전면 교체, keep: 운영자 수정본에 새 버전 3자 병합) |
 | force | body | boolean | 아니오 | — | 강제 실행 여부 (안전 확인/선행 검사 우회) |
 | layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
+| source | body | string | 아니오 | `auto`, `bundled`, `github` | 업데이트 소스 (7.2.1) — 터미널 `--source` 와 같다. auto(기본·지금 동작): 업데이트 확인이 고른 곳, bundled: `_bundled` 만(GitHub 우회), github: GitHub 만(번들 폴백 없음) |
+| zip_file | body | string | 아니오 | 영문·숫자·`.-_` 로 된 `*.zip` 이름 | 수동 ZIP (7.2.1) — 터미널 `--zip` 과 같은 효과(번들·GitHub 비교를 건너뛰고 ZIP 의 manifest 판으로 업데이트). 경로는 받지 않는다: 운영자가 FTP 로 `storage/app/extension_pending`(환경변수 `G7_EXTENSION_UPDATE_PENDING_PATH`)에 올린 파일 이름만 고른다(목록은 `GET …/update-sources/manual-zip`). 폴더에 없거나 폴더 밖을 가리키면 422 `errors.zip_file` |
 | allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
 | integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
 | pending_token | body | string | 아니오 | 영숫자 40자 | 업데이트 미리보기가 GitHub 에서 내려받은 새 판을 다시 쓰는 토큰 (`…/update/preview` 응답의 `pending_token`, 1시간 유효). 미리보기로 본 파일을 그대로 적용한다 |
@@ -97994,6 +98024,12 @@ _단건 응답: `data` 객체의 필드 (업데이트 후 TemplateResource)._
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| from_version | string\|null | `1.0.0` | 업데이트 전 판 (7.2.1 — 터미널 「from → to」와 같다) |
+| to_version | string\|null | `1.0.1` | 업데이트 후 판 (7.2.1) |
+| dependency_warnings | array | `[]` | 의존 확장 버전 경고 (7.2.1 — 터미널이 보이던 경고, 막지 않음) |
+| recovered | array\|null | `null` | 이번 요청이 정리한 멈춘 업데이트 (7.2.1) — 각 원소 `type`·`identifier`·`status`(정리 전 상태)·`unfinished`(`{from,to}` 끝내지 못한 판 전환 또는 null)·`activate_command`(정리는 확장을 끄므로 다시 켜는 터미널 명령). 없으면 null |
+| no_update | boolean | `false` | 업데이트할 것이 없었으면 true (7.2.1) — 응답 `message` 는 「업데이트할 내용이 없습니다」. 화면은 성공이 아니라 안내로 보인다 |
+| unfinished_update | object\|null | `null` | 이 서버에서 끝나지 않은 업데이트 (7.2.1) — 진행 기록이 남아 있으면 `started_at`·`from_version`·`to_version`, 없으면 null. 목록 행에도 같은 값이 실린다 |
 | warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 경우에는 리소스 대신 결과 요약(`success`, `from_version`, `to_version`, `message`)이 `data` 로 반환됩니다._
@@ -98037,6 +98073,8 @@ _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 �
     }
 }
 ```
+
+> **실패 응답 `data`** (7.2.1): 업데이트 실패 422(`errors.{type}_name`)에는 `data` 로 `outcome`(실패 뒤 상태 — `restored` 이전 판으로 되돌림 · `restore_failed` 되돌리기 실패, 파일이 섞였을 수 있음 · `kept_new` 마무리 단계 실패, 새 판이 남음 · `unchanged` 바뀐 것 없음 · 시작 전 거절이면 null)·`warnings`(이번 요청의 경고)·`retry_command`(터미널 재실행 명령, `kept_new`·`restore_failed` 면 `--force` 포함, 시작 전 거절이면 null)·`recovered` 가 실린다. 오류 모양(`success`·`message`·`errors`)은 그대로다.
 
 **에러 응답**
 

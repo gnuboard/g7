@@ -52,8 +52,8 @@ trait BundledSourcePlacementPrompt
         }
 
         $base = $planner->plan($inventory);
-        // 확장 언어팩은 대상 확장을 따라가므로 선택지에 올리지 않는다(대상을 배치하면 함께 배치된다)
-        $candidates = array_filter($base->unplaced, fn (array $entry) => $entry['type'] !== 'language_pack');
+        // 확장 언어팩은 대상 확장을 따라가므로 선택지에 올리지 않는다(대상을 배치하면 함께 배치된다) — 웹과 같은 판정
+        $candidates = $base->askableUnplaced();
 
         if ($candidates === []) {
             $this->logBundledPlan($base, $log, 'nothing_to_ask');
@@ -104,12 +104,7 @@ trait BundledSourcePlacementPrompt
 
         $plan = $planner->plan($inventory, $keys);
 
-        $added = [];
-        foreach ($plan->placedBy('dependency') as $key => $row) {
-            if (! isset($base->placed[$key])) {
-                $added[] = $this->bundledLabel($row['entry']);
-            }
-        }
+        $added = array_values(array_map(fn (array $row) => $this->bundledLabel($row['entry']), $plan->addedByDependencySince($base)));
         if ($added !== []) {
             $this->line(__('settings.bundled_sources.dependency_added', ['items' => implode(', ', $added)]));
         }

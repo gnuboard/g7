@@ -761,6 +761,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('activate', [AdminModuleController::class, 'activate'])->middleware('permission:admin,core.modules.activate')->middleware('deny.stage')->name('api.admin.modules.activate');
         Route::post('deactivate', [AdminModuleController::class, 'deactivate'])->middleware('permission:admin,core.modules.activate')->middleware('deny.stage')->name('api.admin.modules.deactivate');
         Route::post('check-updates', [AdminModuleController::class, 'checkUpdates'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.check-updates');
+        // 수동 ZIP 대기 폴더 목록 — 업데이트 창 「고급」의 ZIP 선택지(7.2.1 출시 전)
+        Route::get('update-sources/manual-zip', [AdminModuleController::class, 'manualZipSources'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.update-sources.manual-zip');
         Route::get('{moduleName}/check-modified-layouts', [AdminModuleController::class, 'checkModifiedLayouts'])->middleware('permission:admin,core.modules.read')->name('api.admin.modules.check-modified-layouts');
         Route::post('{moduleName}/update', [AdminModuleController::class, 'performUpdate'])->middleware('permission:admin,core.modules.install')->middleware('deny.stage')->name('api.admin.modules.update');
         Route::post('{moduleName}/update/preview', [AdminModuleController::class, 'performUpdatePreview'])->middleware('permission:admin,core.modules.install')->middleware('deny.stage')->name('api.admin.modules.update.preview');
@@ -786,6 +788,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('activate', [AdminPluginController::class, 'activate'])->middleware('permission:admin,core.plugins.activate')->middleware('deny.stage')->name('api.admin.plugins.activate');
         Route::post('deactivate', [AdminPluginController::class, 'deactivate'])->middleware('permission:admin,core.plugins.activate')->middleware('deny.stage')->name('api.admin.plugins.deactivate');
         Route::post('check-updates', [AdminPluginController::class, 'checkUpdates'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.check-updates');
+        // 수동 ZIP 대기 폴더 목록 — 업데이트 창 「고급」의 ZIP 선택지(7.2.1 출시 전)
+        Route::get('update-sources/manual-zip', [AdminPluginController::class, 'manualZipSources'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.update-sources.manual-zip');
         Route::get('{pluginName}/check-modified-layouts', [AdminPluginController::class, 'checkModifiedLayouts'])->middleware('permission:admin,core.plugins.read')->name('api.admin.plugins.check-modified-layouts');
         Route::post('{pluginName}/update', [AdminPluginController::class, 'performUpdate'])->middleware('permission:admin,core.plugins.install')->middleware('deny.stage')->name('api.admin.plugins.update');
         Route::post('{pluginName}/update/preview', [AdminPluginController::class, 'performUpdatePreview'])->middleware('permission:admin,core.plugins.install')->middleware('deny.stage')->name('api.admin.plugins.update.preview');
@@ -1248,6 +1252,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('refresh-layouts', [AdminTemplateController::class, 'refreshLayouts'])->middleware('permission:admin,core.templates.activate')->name('api.admin.templates.refresh-layouts');
         Route::post('refresh-layouts/preview', [AdminTemplateController::class, 'refreshLayoutsPreview'])->middleware('permission:admin,core.templates.activate')->name('api.admin.templates.refresh-layouts.preview');
         Route::post('check-updates', [AdminTemplateController::class, 'checkUpdates'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.check-updates');
+        // 수동 ZIP 대기 폴더 목록 — 업데이트 창 「고급」의 ZIP 선택지(7.2.1 출시 전)
+        Route::get('update-sources/manual-zip', [AdminTemplateController::class, 'manualZipSources'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.update-sources.manual-zip');
         Route::get('{identifier}/changelog', [AdminTemplateController::class, 'changelog'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.changelog');
         Route::get('{identifier}/license', [AdminTemplateController::class, 'license'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.license');
 

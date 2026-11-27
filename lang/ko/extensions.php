@@ -27,6 +27,9 @@ return [
     'stuck_update_unfinished_hint' => '이 업데이트(:from → :to)는 끝나지 않았습니다 — 파일은 새 판으로 바뀌었을 수 있어 기록 판을 :from 으로 되돌렸습니다. 업데이트를 다시 실행하면 못 끝낸 단계만 이어서 마칩니다: :command',
 
     'errors' => [
+        'manual_zip_not_found' => '업데이트 ZIP 을 찾을 수 없습니다: :name — storage/app/extension_pending 폴더에 올렸는지 확인하세요.',
+        'invalid_manual_zip_name' => 'ZIP 파일 이름이 올바르지 않습니다. 폴더 경로 없이 영문·숫자·.-_ 로 된 .zip 파일 이름만 고를 수 있습니다.',
+        'invalid_update_source' => '업데이트 소스가 올바르지 않습니다. (auto, bundled, github 만 허용)',
         'update_preview_not_installed' => '미리보기할 확장이 설치돼 있지 않습니다: :identifier',
         'github_check_http_status' => 'GitHub 최신 판 조회에 실패했습니다 (HTTP :status). 요청 한도 초과(403)라면 .env 의 G7_UPDATE_GITHUB_TOKEN 을 설정하거나 잠시 뒤 다시 시도하세요.',
         'update_preview_unknown_type' => '미리보기할 수 없는 확장 종류입니다: :type',

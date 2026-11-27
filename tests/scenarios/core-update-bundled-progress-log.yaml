@@ -1,0 +1,24 @@
+feature: core_update_bundled_progress_log
+
+description: |
+  관리자 화면 코어 업데이트의 번들 단계가 항목마다 남기는 실행 기록과 응답의 `run.current_item` (7.2.1).
+  웹은 요청 하나에 번들 항목 하나를 처리한다. 옛 판 화면도 실행 기록 줄은 보여 주므로, 항목마다 종류·식별자·이전 판 → 새 판·
+  소요(성공), 사유·다시 시도 명령(실패)을 한 줄로 남긴다. 단계 시작 때는 대상 수를 종류별로 한 줄 남긴다. 새 화면은
+  `run.current_item` 으로 다음에 처리할 항목을 그린다 — 번들 단계 밖·마지막 항목 뒤에는 null.
+
+coverage_strategy: full
+
+axes:
+  case: [first_item_success, item_failure, current_item]
+
+effects:
+  - targets_summary_logged_at_step_start            # 번들 단계를 시작할 때 대상 수를 종류별로 한 줄 남긴다
+  - success_line_has_type_identifier_and_versions   # 성공 줄에 종류·식별자·이전 판 → 새 판·소요가 있다
+  - versions_carried_into_progress_items            # 선택 후보의 판을 진행 항목에 싣는다(명령 쪽은 모르는 키를 무시)
+  - failure_line_has_reason_and_retry_command       # 실패 줄에 자식이 알려 준 사유와 다시 시도 명령이 있다
+  - missing_result_line_reports_exit_code           # 결과 줄 없이 끝난 항목은 종료 코드를 사유로 남긴다
+  - current_item_points_to_next_item                # status·advance 응답의 current_item 은 다음에 처리할 항목이다
+  - current_item_null_after_last_item               # 마지막 항목을 마친 뒤에는 null
+
+test_files:
+  - tests/Unit/CoreUpdate/CoreUpdateBundledProgressLogTest.php
