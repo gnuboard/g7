@@ -27,6 +27,7 @@ axes:
     - blocked_reason_all_satisfied
     - check_updates_non_github
     - perform_update_without_source
+    - perform_update_pinned_source_unavailable
     - check_updates_manifest_github_url
     - check_updates_blank_github_url
     - check_updates_github_failure
@@ -51,6 +52,7 @@ effects:
   - list_and_find_return_packs
   - install_blocked_reason_resolved
   - update_check_targets_github_sources_only
+  - pinned_source_unavailable_reports_which_source
   - update_check_reports_github_failure_without_overwrite
   - refresh_cache_reports_status
   - bundled_core_install_activates

@@ -1678,7 +1678,7 @@ HTTP/1.1 200
 | allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
 | integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
 | force | body | boolean | 아니오 | — | 같은 판 재적용 (7.2.1) — 번들 원본을 다시 적용한다(터미널 `language-pack:update --force` 와 같다). 생략하면 false |
-| source | body | string | 아니오 | `auto`, `bundled`, `github` | 업데이트 소스 (7.2.1) — 터미널 `--source` 와 같다. bundled 는 번들만(강제 재적용과 같은 뜻), github 은 GitHub 만. 고른 소스가 없으면 422 `update_no_source`. 생략하면 auto(지금 동작) |
+| source | body | string | 아니오 | `auto`, `bundled`, `github` | 업데이트 소스 (7.2.1) — 터미널 `--source` 와 같다. bundled 는 번들만(강제 재적용과 같은 뜻), github 은 GitHub 만. 고른 소스가 없으면 422 — 번들이 없으면 `update_source_bundled_unavailable`, GitHub 주소가 없으면 `update_source_github_unavailable`(둘 다 없으면 소스와 상관없이 `update_no_source`). 생략하면 auto(지금 동작) |
 
 **요청 예시**
 

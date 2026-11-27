@@ -556,6 +556,52 @@ class LanguagePackServiceTest extends TestCase
     }
 
     /**
+     * 소스를 「번들」로 고정했는데 번들 판이 없으면, 둘 다 없을 때의 문구가 아니라 번들이 없다는 문구로 멈춘다.
+     *
+     * 종전에는 「GitHub 소스 언어팩만 업데이트 가능」이 나와 번들을 고른 운영자가 원인을 알 수 없었다.
+     *
+     * @scenario case=perform_update_pinned_source_unavailable
+     *
+     * @effects pinned_source_unavailable_reports_which_source
+     *
+     * @return void 반환값 없음
+     */
+    public function test_perform_update_pinned_bundled_without_bundle_reports_bundled_unavailable(): void
+    {
+        $pack = $this->makePack('sirsoft', 'ja', LanguagePackStatus::Active->value);
+        $pack->forceFill(['manifest' => ['identifier' => $pack->identifier, 'github_url' => 'https://github.com/gnuboard/'.$pack->identifier]])->save();
+
+        try {
+            $this->service->performUpdate($pack, false, null, 'bundled');
+            $this->fail('번들 판이 없는데 「번들」 고정 업데이트가 멈추지 않았다');
+        } catch (LanguagePackOperationException $e) {
+            $this->assertSame(__('language_packs.errors.update_source_bundled_unavailable'), $e->getMessage());
+        }
+    }
+
+    /**
+     * 소스를 「GitHub」으로 고정했는데 GitHub 주소가 없으면 GitHub 이 없다는 문구로 멈춘다(번들 판이 있어도 넘어가지 않는다).
+     *
+     * @scenario case=perform_update_pinned_source_unavailable
+     *
+     * @effects pinned_source_unavailable_reports_which_source
+     *
+     * @return void 반환값 없음
+     */
+    public function test_perform_update_pinned_github_without_url_reports_github_unavailable(): void
+    {
+        $this->assertFileExists(base_path('lang-packs/_bundled/g7-core-ja/language-pack.json'), '번들 g7-core-ja 가 있어야 하는 시험');
+        $pack = $this->makePack('g7', 'ja', LanguagePackStatus::Active->value);
+
+        try {
+            $this->service->performUpdate($pack, false, null, 'github');
+            $this->fail('GitHub 주소가 없는데 「GitHub」 고정 업데이트가 멈추지 않았다');
+        } catch (LanguagePackOperationException $e) {
+            $this->assertSame(__('language_packs.errors.update_source_github_unavailable'), $e->getMessage());
+        }
+    }
+
+    /**
      * 모듈/플러그인/템플릿과 일관되게, 매니페스트 `github_url` 이 SSoT 로 사용되는지 검증.
      *
      * source_type=bundled 로 설치된 팩이라도 매니페스트에 github_url 이 명시되어 있으면

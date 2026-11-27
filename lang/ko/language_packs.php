@@ -40,6 +40,8 @@ return [
         'download_url_not_public' => '내부 네트워크 주소(사설 IP·localhost 등)에서는 언어팩을 내려받을 수 없습니다. 외부에서 접속 가능한 https 주소를 사용해주세요.',
         'checksum_mismatch' => '체크섬이 일치하지 않습니다.',
         'update_no_source' => '업데이트 소스 정보가 없습니다 (GitHub 소스 언어팩만 업데이트 가능).',
+        'update_source_bundled_unavailable' => '이 언어팩은 서버에 함께 든 판이 없어 「서버에 함께 든 판만」으로 업데이트할 수 없습니다. 가져올 곳을 「자동」이나 「GitHub」으로 바꿔 다시 시도해주세요.',
+        'update_source_github_unavailable' => '이 언어팩은 GitHub 주소가 없어 「GitHub」에서 업데이트할 수 없습니다. 가져올 곳을 「자동」이나 「서버에 함께 든 판만」으로 바꿔 다시 시도해주세요.',
         'update_already_latest' => '이미 최신 버전입니다.',
         'preview_invalid_manifest' => 'manifest 파일이 유효하지 않아 미리보기에 실패했습니다.',
         'operation_in_progress' => '언어팩(:identifier) 에서 다른 작업이 진행 중입니다. 완료 후 다시 시도해주세요.',

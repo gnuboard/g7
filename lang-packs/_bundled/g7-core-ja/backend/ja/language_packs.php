@@ -39,6 +39,8 @@ return [
         'download_url_not_public' => '内部ネットワークアドレス(プライベートIP·localhostなど)からは言語パックをダウンロードできません。外部からアクセス可能なhttpsアドレスを使用してください。',
         'checksum_mismatch' => 'チェックサムが一致しません。',
         'update_no_source' => 'アップデートソース情報がありません(GitHubソース言語パックのみアップデート可能)。',
+        'update_source_bundled_unavailable' => 'この言語パックはサーバー同梱版がないため、「サーバー同梱版のみ」ではアップデートできません。取得元を「自動」または「GitHub」に変更して再試行してください。',
+        'update_source_github_unavailable' => 'この言語パックはGitHubアドレスがないため、「GitHub」からアップデートできません。取得元を「自動」または「サーバー同梱版のみ」に変更して再試行してください。',
         'update_already_latest' => '既に最新バージョンです。',
         'preview_invalid_manifest' => 'manifestファイルが有効でなく、プレビューに失敗しました。',
         'operation_in_progress' => '言語パック(:identifier)で別のタスクが処理中です。完了後に再度お試しください。',
